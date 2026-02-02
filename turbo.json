@@ -6,14 +6,7 @@
         "VITE_FIREBASE_PROJECT_ID",
         "VITE_FIREBASE_STORAGE_BUCKET",
         "VITE_FIREBASE_MESSAGING_ID",
-        "VITE_FIREBASE_APP_ID",
-        "GEMINI_API_KEY",
-        "SERPER_API_KEY",
-        "TELEGRAM_BOT_TOKEN",
-        "OPS_CHAT_ID",
-        "SMTP_HOST",
-        "SMTP_USER",
-        "SMTP_PASS"
+        "VITE_FIREBASE_APP_ID"
     ],
     "tasks": {
         "build": {
@@ -21,7 +14,8 @@
                 "^build"
             ],
             "outputs": [
-                "dist/**"
+                "dist/**",
+                ".vite/**"
             ]
         },
         "lint": {
