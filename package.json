@@ -1,0 +1,28 @@
+{
+    "name": "xiri-platform",
+    "private": true,
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "build": "turbo run build",
+        "dev": "turbo run dev",
+        "lint": "turbo run lint",
+        "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    },
+    "devDependencies": {
+        "@types/node-fetch": "^2.6.13",
+        "firebase-tools": "^15.5.1",
+        "prettier": "latest",
+        "turbo": "latest",
+        "typescript": "^5.0.0"
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "dependencies": {
+        "firebase-admin": "^13.6.0",
+        "node-fetch": "^2.7.0"
+    }
+}
