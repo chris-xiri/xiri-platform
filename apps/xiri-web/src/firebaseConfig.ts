@@ -6,12 +6,12 @@ import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 // Replace with your actual project config if deploying, 
 // but for emulators, the projectId matters most.
 const firebaseConfig = {
-    apiKey: "demo-key",
-    authDomain: "xiri-facility-solutions-485813.firebaseapp.com",
-    projectId: "demo-no-project",
-    storageBucket: "xiri-facility-solutions-485813.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdef"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "demo-key",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "xiri-facility-solutions-485813.firebaseapp.com",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-no-project",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "xiri-facility-solutions-485813.appspot.com",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_ID || "123456789",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789:web:abcdef"
 };
 
 export const app = initializeApp(firebaseConfig);
