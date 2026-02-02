@@ -1,14 +1,27 @@
 {
     "$schema": "https://turbo.build/schema.json",
+    "globalEnv": [
+        "VITE_FIREBASE_API_KEY",
+        "VITE_FIREBASE_AUTH_DOMAIN",
+        "VITE_FIREBASE_PROJECT_ID",
+        "VITE_FIREBASE_STORAGE_BUCKET",
+        "VITE_FIREBASE_MESSAGING_ID",
+        "VITE_FIREBASE_APP_ID",
+        "GEMINI_API_KEY",
+        "SERPER_API_KEY",
+        "TELEGRAM_BOT_TOKEN",
+        "OPS_CHAT_ID",
+        "SMTP_HOST",
+        "SMTP_USER",
+        "SMTP_PASS"
+    ],
     "tasks": {
         "build": {
             "dependsOn": [
                 "^build"
             ],
             "outputs": [
-                "dist/**",
-                ".next/**",
-                "!.next/cache/**"
+                "dist/**"
             ]
         },
         "lint": {

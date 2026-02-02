@@ -1,5 +1,5 @@
 {
   "buildCommand": "npx turbo run build --filter=xiri-web",
   "outputDirectory": "apps/xiri-web/dist",
-  "framework": "vite"
+  "installCommand": "npm install"
 }
