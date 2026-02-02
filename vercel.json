@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx turbo run build --filter=xiri-web && cp -r apps/xiri-web/dist ./dist",
+  "buildCommand": "npx turbo run build --filter=xiri-web && mkdir -p ./dist && cp -r apps/xiri-web/dist/. ./dist/",
   "outputDirectory": "dist",
   "installCommand": "npm install"
 }
