@@ -107,7 +107,7 @@ async function scheduleAutoApproval(vendorId) {
     }
 }
 // 2. Bot Action Handlers
-exports.telegramWebhook = (0, https_1.onRequest)(async (req, res) => {
+exports.telegramWebhook = (0, https_1.onRequest)({ secrets: ["TELEGRAM_BOT_TOKEN", "OPS_CHAT_ID"] }, async (req, res) => {
     // Pass the update to Telegraf
     await bot.handleUpdate(req.body, res);
 });
@@ -158,7 +158,10 @@ exports.autoApproveVendor = (0, https_1.onRequest)(async (req, res) => {
 });
 // 4. Firestore Trigger for New Vendors
 const firestore_1 = require("firebase-functions/v2/firestore");
-exports.onVendorCreated = (0, firestore_1.onDocumentCreated)("vendors/{vendorId}", async (event) => {
+exports.onVendorCreated = (0, firestore_1.onDocumentCreated)({
+    document: "vendors/{vendorId}",
+    secrets: ["TELEGRAM_BOT_TOKEN", "OPS_CHAT_ID"]
+}, async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
         console.log("No data associated with the event");

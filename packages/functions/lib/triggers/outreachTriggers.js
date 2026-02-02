@@ -3,7 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.onVendorApproved = void 0;
 const firestore_1 = require("firebase-functions/v2/firestore");
 const outreach_1 = require("../agents/outreach");
-exports.onVendorApproved = (0, firestore_1.onDocumentUpdated)("vendors/{vendorId}", async (event) => {
+exports.onVendorApproved = (0, firestore_1.onDocumentUpdated)({
+    document: "vendors/{vendorId}",
+    secrets: [
+        "GEMINI_API_KEY",
+        "SMTP_HOST",
+        "SMTP_USER",
+        "SMTP_PASS"
+    ]
+}, async (event) => {
     const change = event.data;
     if (!change)
         return;

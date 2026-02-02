@@ -30,34 +30,22 @@ export const searchVendors = async (query: string, location: string): Promise<Ra
         const response = await axios.post(
             'https://google.serper.dev/places',
             { q: fullQuery },
-            { headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' } }
+            { headers: { 'X-API-KEY': apiKey.trim(), 'Content-Type': 'application/json' } }
         );
 
         const places = response.data.places || [];
         console.log(`Serper returned ${places.length} raw results.`);
 
-        // Filter out results that don't match the requested location strictly
-        // We extract the city name from the "location" argument (e.g. "New Hyde Park, NY" -> "New Hyde Park")
-        // and check if it exists in the vendor's address.
-        const targetCity = location.split(',')[0].trim().toLowerCase();
-
-        return places
-            .filter((place: any) => {
-                if (!place.address) return false;
-                const address = place.address.toLowerCase();
-                const isMatch = address.includes(targetCity);
-                if (!isMatch) console.log(`Skipping "${place.title}" (${place.address}) - Not in ${targetCity}`);
-                // Check if the address contains the city name
-                return isMatch;
-            })
-            .map((place: any) => ({
-                name: place.title,
-                description: `${place.category || ''} - ${place.address || ''}`,
-                location: place.address,
-                phone: place.phoneNumber,
-                website: place.website,
-                source: 'google_maps_serper'
-            }));
+        // Return results directly from Serper without strict string matching on the city
+        // This allows "NYC" -> "New York" matches to persist.
+        return places.map((place: any) => ({
+            name: place.title,
+            description: `${place.category || ''} - ${place.address || ''}`,
+            location: place.address,
+            phone: place.phoneNumber,
+            website: place.website,
+            source: 'google_maps_serper'
+        }));
 
     } catch (error: any) {
         console.error("Error searching vendors:", error.message);

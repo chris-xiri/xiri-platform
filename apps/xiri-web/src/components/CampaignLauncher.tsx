@@ -37,6 +37,22 @@ export default function CampaignLauncher() {
         }
     };
 
+    const handleClear = async () => {
+        if (!confirm("Are you sure you want to clear the entire pipeline? This cannot be undone.")) return;
+        setLoading(true);
+        try {
+            const clearFn = httpsCallable(functions, 'clearPipeline');
+            await clearFn();
+            alert("Pipeline cleared.");
+            // Ideally trigger a refresh in parent or context, but usually Firestore real-time listener updates it.
+        } catch (err: any) {
+            console.error(err);
+            alert("Failed to clear pipeline.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200 mb-8">
             <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
@@ -99,6 +115,14 @@ export default function CampaignLauncher() {
                         ${loading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
                 >
                     {loading ? 'Launching...' : 'Launch Agents'}
+                </button>
+                <button
+                    type="button"
+                    onClick={handleClear}
+                    disabled={loading}
+                    className="h-10 px-4 py-2 ml-4 rounded-md border border-red-300 text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                    Clear Pipeline
                 </button>
             </form>
         </div>

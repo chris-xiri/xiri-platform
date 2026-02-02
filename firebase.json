@@ -14,6 +14,9 @@
             ]
         }
     ],
+    "firestore": {
+        "rules": "firestore.rules"
+    },
     "hosting": {
         "public": "apps/xiri-web/dist",
         "ignore": [

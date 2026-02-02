@@ -13,7 +13,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-export const analyzeVendorLeads = async (rawVendors: any[], hasActiveContract: boolean = false): Promise<RecruitmentAnalysisResult> => {
+export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, hasActiveContract: boolean = false): Promise<RecruitmentAnalysisResult> => {
     let analyzed = 0;
     let qualified = 0;
     const errors: string[] = [];
@@ -31,30 +31,43 @@ export const analyzeVendorLeads = async (rawVendors: any[], hasActiveContract: b
 
     if (rawVendors.length === 0) return { analyzed, qualified, errors };
 
+    // Determine strictness based on contract status
+    // Building Supply (hasActiveContract = false) -> Lenient, database building
+    // Urgent (hasActiveContract = true) -> Strict, need immediate fulfillment
+    const threshold = hasActiveContract ? 50 : 15;
+    const modeDescription = hasActiveContract
+        ? "URGENT FULFILLMENT: We need high-quality vendors ready to deploy. Be strict."
+        : "DATABASE BUILDING: We are building a supply list. Be lenient. If they are in the industry, include them.";
+
     const prompt = `
-    You are an expert procurement officer. Analyze the following list of vendors.
+    You are an expert procurement officer. Analyze the following list of vendors for the job query: "${jobQuery}".
     
-    For each vendor, identify:
-    1. Industry/Category (e.g. Commercial Cleaning, HVAC, Plumbing)
-    2. Fit Score (0-100) based on relevance to "Commercial Cleaning", "Medical Cleaning", "Terminal Cleaning", "High-End Office".
-    3. Business Type: Infer if it is a "Franchise" (e.g. Jan-Pro, Jani-King, ServiceMaster, Vanguard) or "Independent" (LLC, Inc, Mom & Pop). Favor "Independent".
+    Context: ${modeDescription}
     
-    Target Keywords for High Score: "Medical", "Terminal Cleaning", "High-End Office".
-    Franchises should have a slightly lower score unless they explicitly mention medical specialization.
+    For each vendor, calculate a Fit Score (0-100) based on these weighted factors:
+    1. **Relevance (30%)**: Does the vendor explicitly offer services matching "${jobQuery}"?
+    2. **Contact Info (30%)**: +15 points if Phone is present. +15 points if Email/Website indicates reachable contact.
+    3. **Confidence (40%)**: How certain are you that they operate in the target service area and industry?
+    
+    Identify:
+    - **Industry**: Specific category (e.g. Commercial Cleaning, HVAC).
+    - **Business Type**: "Franchise" or "Independent". Favor "Independent" slightly in scoring if equal relevance.
     
     Return a JSON array where each object contains:
-    - index: (original index in the list)
+    - index: (original index)
     - specialty: (classified category)
     - businessType: ("Franchise" or "Independent")
-    - fitScore: (number 0-100)
-    - isQualified: (boolean, true if fitScore >= 40)
+    - fitScore: (calculated 0-100)
+    - isQualified: (boolean, true if fitScore >= ${threshold})
+    - reasoning: (short string explaining the score)
     
     Input List:
     ${JSON.stringify(rawVendors.map((v, i) => ({
         index: i,
         name: v.name || v.companyName,
         description: v.description || v.services,
-        website: v.website
+        website: v.website,
+        phone: v.phone
     })))}
     `;
 
