@@ -60,12 +60,12 @@ const analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = fals
     if (rawVendors.length === 0)
         return { analyzed, qualified, errors };
     // Determine strictness based on contract status
-    // Building Supply (hasActiveContract = false) -> Lenient, database building
-    // Urgent (hasActiveContract = true) -> Strict, need immediate fulfillment
-    const threshold = hasActiveContract ? 50 : 15;
+    // Building Supply (hasActiveContract = false) -> Accept All (0 threshold)
+    // Urgent (hasActiveContract = true) -> Strict (50 threshold)
+    const threshold = hasActiveContract ? 50 : 0;
     const modeDescription = hasActiveContract
         ? "URGENT FULFILLMENT: We need high-quality vendors ready to deploy. Be strict."
-        : "DATABASE BUILDING: We are building a supply list. Be lenient. If they are in the industry, include them.";
+        : "DATABASE BUILDING: We are building a supply list. ACCEPT ALL VENDORS. Do not filter. Score is for reference only.";
     const prompt = `
     You are an expert procurement officer. Analyze the following list of vendors for the job query: "${jobQuery}".
     
