@@ -2,7 +2,15 @@ import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { performOutreach } from "../agents/outreach";
 import { Vendor } from "../utils/types";
 
-export const onVendorApproved = onDocumentUpdated("vendors/{vendorId}", async (event) => {
+export const onVendorApproved = onDocumentUpdated({
+    document: "vendors/{vendorId}",
+    secrets: [
+        "GEMINI_API_KEY",
+        "SMTP_HOST",
+        "SMTP_USER",
+        "SMTP_PASS"
+    ]
+}, async (event) => {
     const change = event.data;
     if (!change) return;
 
