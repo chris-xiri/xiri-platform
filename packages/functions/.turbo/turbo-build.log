@@ -1,0 +1,26 @@
+
+⠙[1G[0K
+> @xiri/functions@1.0.0 build
+> tsc
+
+⠙[1G[0K[96msrc/agents/onboardingChat.ts[0m:[93m28[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'onboarding' does not exist on type 'Vendor'.
+
+[7m28[0m     let onboarding = vendor.onboarding || {
+[7m  [0m [91m                            ~~~~~~~~~~[0m
+
+[96msrc/agents/onboardingChat.ts[0m:[93m34[0m:[93m47[0m - [91merror[0m[90m TS2339: [0mProperty 'onboarding' does not exist on type 'Vendor'.
+
+[7m34[0m     type OnboardingState = NonNullable<Vendor['onboarding']>;
+[7m  [0m [91m                                              ~~~~~~~~~~~~[0m
+
+
+Found 2 errors in the same file, starting at: src/agents/onboardingChat.ts[90m:28[0m
+
+⠙[1G[0K[1mnpm[22m [31merror[39m Lifecycle script `build` failed with error:
+⠙[1G[0K[1mnpm[22m [31merror[39m [94mcode[39m [33m2[39m
+⠙[1G[0K[1mnpm[22m [31merror[39m [94mpath[39m /Users/orchard2206/Desktop/xiri-platform/packages/functions
+⠙[1G[0K[1mnpm[22m [31merror[39m [94mworkspace[39m @xiri/functions@1.0.0
+⠙[1G[0K[1mnpm[22m [31merror[39m [94mlocation[39m /Users/orchard2206/Desktop/xiri-platform/packages/functions
+⠙[1G[0K[1mnpm[22m [31merror[39m command failed
+⠙[1G[0K[1mnpm[22m [31merror[39m [94mcommand[39m sh -c tsc
+⠙[1G[0K

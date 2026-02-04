@@ -1,5 +1,6 @@
 {
-  "buildCommand": "npm run build:web",
-  "outputDirectory": "dist",
+  "buildCommand": "cd apps/xiri-web && npm run build",
+  "outputDirectory": "apps/xiri-web/.next",
+  "framework": "nextjs",
   "installCommand": "npm install"
 }
