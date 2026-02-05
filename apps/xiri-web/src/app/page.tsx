@@ -65,18 +65,11 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-            Vendor Recruitment
-          </h1>
-          <p className="mt-1 text-sm sm:text-base text-gray-500">
-            Manage automated sourcing campaigns and qualify vendor leads.
-          </p>
-        </div>
-
+      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 flex flex-col h-[calc(100vh-64px)]">
         <CampaignLauncher />
-        <VendorList />
+        <div className="flex-1 overflow-hidden">
+            <VendorList />
+        </div>
       </main>
     </div>
   );

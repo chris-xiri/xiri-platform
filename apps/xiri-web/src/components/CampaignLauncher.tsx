@@ -11,6 +11,7 @@ export default function CampaignLauncher() {
     const [location, setLocation] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
+    const [campaignType, setCampaignType] = useState<"supply" | "urgent">("supply");
 
     const handleLaunch = async () => {
         if (!query.trim() || !location.trim()) {
@@ -27,7 +28,7 @@ export default function CampaignLauncher() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ query, location }),
+                body: JSON.stringify({ query, location, campaignType }),
             });
 
             if (!response.ok) {
@@ -46,69 +47,91 @@ export default function CampaignLauncher() {
     };
 
     return (
-        <Card className="mb-6 shadow-lg border-indigo-100">
-            <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50">
-                <CardTitle className="flex items-center gap-2 text-indigo-900">
-                    <Rocket className="w-5 h-5" />
-                    Launch Recruitment Campaign
-                </CardTitle>
-                <CardDescription>
-                    Automated vendor sourcing powered by AI
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="space-y-2">
-                        <label htmlFor="query" className="text-sm font-medium text-gray-700">
-                            Search Query
-                        </label>
-                        <Input
-                            id="query"
-                            type="text"
-                            placeholder="e.g., HVAC contractors"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            className="w-full"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label htmlFor="location" className="text-sm font-medium text-gray-700">
-                            Location
-                        </label>
-                        <Input
-                            id="location"
-                            type="text"
-                            placeholder="e.g., New York, NY"
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
-                            className="w-full"
-                        />
-                    </div>
+        <Card className="mb-4 shadow-md border-indigo-100 relative overflow-hidden">
+            {loading && (
+                <div className="absolute top-0 left-0 w-full h-1 bg-indigo-100">
+                    <div className="h-full bg-blue-600 animate-progress-indeterminate"></div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            )}
+            
+            <CardContent className="p-4">
+                <div className="flex flex-col md:flex-row gap-4 items-end">
+                    {/* Inputs Group */}
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                        <div className="space-y-1">
+                            <label htmlFor="query" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                Search Query
+                            </label>
+                            <Input
+                                id="query"
+                                type="text"
+                                placeholder="e.g., HVAC contractors"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                className="h-9 text-sm"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label htmlFor="location" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                Location
+                            </label>
+                            <Input
+                                id="location"
+                                type="text"
+                                placeholder="e.g., New York, NY"
+                                value={location}
+                                onChange={(e) => setLocation(e.target.value)}
+                                className="h-9 text-sm"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Urgency Slider */}
+                    <div className="flex items-center bg-gray-100 p-1 rounded-lg h-9">
+                        <button
+                            onClick={() => setCampaignType("supply")}
+                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                                campaignType === "supply" 
+                                    ? "bg-white text-indigo-700 shadow-sm" 
+                                    : "text-gray-500 hover:text-gray-700"
+                            }`}
+                        >
+                            Supply Building
+                        </button>
+                        <button
+                            onClick={() => setCampaignType("urgent")}
+                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                                campaignType === "urgent" 
+                                    ? "bg-red-50 text-red-700 shadow-sm border border-red-100" 
+                                    : "text-gray-500 hover:text-gray-700"
+                            }`}
+                        >
+                            Urgent
+                        </button>
+                    </div>
+
+                    {/* Launch Button */}
                     <Button
                         onClick={handleLaunch}
                         disabled={loading}
-                        className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700"
+                        className="h-9 bg-indigo-600 hover:bg-indigo-700 text-sm px-6 whitespace-nowrap"
                     >
                         {loading ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Launching...
-                            </>
+                            <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                             <>
-                                <Rocket className="mr-2 h-4 w-4" />
-                                Launch Campaign
+                                <Rocket className="mr-2 h-3.5 w-3.5" />
+                                Launch
                             </>
                         )}
                     </Button>
-                    {message && (
-                        <p className={`text-sm ${message.includes("Error") ? "text-red-600" : "text-green-600"}`}>
-                            {message}
-                        </p>
-                    )}
                 </div>
+
+                {message && (
+                    <p className={`text-xs mt-2 ${message.includes("Error") ? "text-red-600" : "text-green-600"}`}>
+                        {message}
+                    </p>
+                )}
             </CardContent>
         </Card>
     );
