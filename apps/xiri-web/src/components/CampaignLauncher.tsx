@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Rocket, Loader2 } from "lucide-react";
 
+import ReactGoogleAutocomplete from "react-google-autocomplete";
+
 export default function CampaignLauncher() {
     const [query, setQuery] = useState("");
     const [location, setLocation] = useState("");
@@ -38,6 +40,8 @@ export default function CampaignLauncher() {
             setMessage("Campaign launched successfully! Check the vendor list below.");
             setQuery("");
             setLocation("");
+            // Reset autocomplete input value if possible, tough with Uncontrolled component pattern.
+            // We'll rely on key change or simple reset if needed, but for now state reset works for logic.
         } catch (error: any) {
             console.error("Error launching campaign:", error);
             setMessage(`Error: ${error.message || "Failed to launch campaign"}`);
@@ -75,13 +79,19 @@ export default function CampaignLauncher() {
                             <label htmlFor="location" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                 Location
                             </label>
-                            <Input
-                                id="location"
-                                type="text"
-                                placeholder="e.g., New York, NY"
+                            <ReactGoogleAutocomplete
+                                apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                                onPlaceSelected={(place) => {
+                                    setLocation(place.formatted_address || place.name || "");
+                                }}
+                                options={{
+                                    types: ["geocode"],
+                                    componentRestrictions: { country: "us" },
+                                }}
+                                placeholder="e.g., 11040 or New York, NY"
+                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                onChange={(e: any) => setLocation(e.target.value)}
                                 value={location}
-                                onChange={(e) => setLocation(e.target.value)}
-                                className="h-9 text-sm"
                             />
                         </div>
                     </div>
