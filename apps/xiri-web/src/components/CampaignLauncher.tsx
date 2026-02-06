@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Rocket, Loader2 } from "lucide-react";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "@/lib/firebase";
 
 import ReactGoogleAutocomplete from "react-google-autocomplete";
 
@@ -25,17 +27,17 @@ export default function CampaignLauncher() {
         setMessage("");
 
         try {
-            const response = await fetch("/api/generate-leads", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ query, location, campaignType }),
+            // Directly call the Cloud Function
+            const generateLeads = httpsCallable(functions, 'generateLeads');
+            const result = await generateLeads({ 
+                query, 
+                location, 
+                hasActiveContract: campaignType === 'urgent' 
             });
-
-            if (!response.ok) {
-                throw new Error("Failed to launch campaign");
-            }
+            
+            // Result data is in result.data
+            const data = result.data as any;
+            console.log("Campaign Result:", data);
 
             setMessage("Campaign launched successfully! Check the vendor list below.");
             setQuery("");

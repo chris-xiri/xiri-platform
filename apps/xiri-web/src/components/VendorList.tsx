@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Users, Loader2, ExternalLink } from "lucide-react";
@@ -10,13 +11,16 @@ import { db } from "@/lib/firebase";
 
 interface Vendor {
     id: string;
-    name: string;
+    companyName?: string;
+    name?: string;
     address?: string;
+    location?: string;
     phone?: string;
     website?: string;
     rating?: number;
     totalRatings?: number;
     aiScore?: number;
+    fitScore?: number;
     aiReasoning?: string;
     status?: string;
     createdAt?: any;
@@ -120,8 +124,8 @@ export default function VendorList() {
                                         <TableRow key={vendor.id} className="hover:bg-indigo-50/30 transition-colors border-b border-gray-100">
                                             <TableCell className="py-3">
                                                 <div>
-                                                    <div className="font-medium text-gray-900">{vendor.name}</div>
-                                                    <div className="text-xs text-gray-500 mt-0.5">{vendor.address}</div>
+                                                    <div className="font-medium text-gray-900">{vendor.companyName || vendor.name || "Unknown Vendor"}</div>
+                                                    <div className="text-xs text-gray-500 mt-0.5">{vendor.address || vendor.location}</div>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="py-3">
@@ -154,8 +158,8 @@ export default function VendorList() {
                                             </TableCell>
                                             <TableCell className="py-3">
                                                 <div className="flex flex-col">
-                                                    <div className={getScoreColor(vendor.aiScore)}>
-                                                        {vendor.aiScore ? `${vendor.aiScore}/100` : "N/A"}
+                                                    <div className={getScoreColor(vendor.aiScore || vendor.fitScore)}>
+                                                        {(vendor.aiScore || vendor.fitScore) ? `${vendor.aiScore || vendor.fitScore}/100` : "N/A"}
                                                     </div>
                                                 </div>
                                             </TableCell>
@@ -165,9 +169,24 @@ export default function VendorList() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right py-3">
-                                                <button className="text-gray-400 hover:text-indigo-600 transition-colors">
-                                                    <ExternalLink className="w-4 h-4" />
-                                                </button>
+                                                <div className="flex justify-end gap-2">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm"
+                                                        className="text-green-600 hover:text-green-700 hover:bg-green-50 h-8 px-2"
+                                                        onClick={() => console.log("Approve", vendor.id)}
+                                                    >
+                                                        Approve
+                                                    </Button>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm"
+                                                        className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 px-2"
+                                                        onClick={() => console.log("Reject", vendor.id)}
+                                                    >
+                                                        Reject
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -181,8 +200,8 @@ export default function VendorList() {
                                 <div key={vendor.id} className="border border-gray-200 rounded-lg p-3 space-y-3 bg-white shadow-sm">
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
-                                            <h3 className="font-medium text-gray-900">{vendor.name}</h3>
-                                            <p className="text-xs text-gray-500 mt-0.5">{vendor.address}</p>
+                                            <h3 className="font-medium text-gray-900">{vendor.companyName || vendor.name || "Unknown"}</h3>
+                                            <p className="text-xs text-gray-500 mt-0.5">{vendor.address || vendor.location}</p>
                                         </div>
                                         <Badge className={getStatusColor(vendor.status)}>
                                             {vendor.status || "Pending"}

@@ -4,7 +4,8 @@
     "main": "lib/index.js",
     "scripts": {
         "build": "tsc",
-        "serve": "firebase emulators:start --only functions",
+        "dev": "npm run serve",
+        "serve": "firebase emulators:start",
         "shell": "firebase functions:shell",
         "start": "npm run shell",
         "deploy": "firebase deploy --only functions",

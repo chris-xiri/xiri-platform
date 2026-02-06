@@ -28,3 +28,5 @@ firestore-debug.log
 .env.development.local
 .env.test.local
 .env.production.local
+.secret.local
+**/.secret.local
