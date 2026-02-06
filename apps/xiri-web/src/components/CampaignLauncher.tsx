@@ -29,12 +29,12 @@ export default function CampaignLauncher() {
         try {
             // Directly call the Cloud Function
             const generateLeads = httpsCallable(functions, 'generateLeads');
-            const result = await generateLeads({ 
-                query, 
-                location, 
-                hasActiveContract: campaignType === 'urgent' 
+            const result = await generateLeads({
+                query,
+                location,
+                hasActiveContract: campaignType === 'urgent'
             });
-            
+
             // Result data is in result.data
             const data = result.data as any;
             console.log("Campaign Result:", data);
@@ -53,19 +53,19 @@ export default function CampaignLauncher() {
     };
 
     return (
-        <Card className="mb-4 shadow-md border-indigo-100 relative overflow-hidden">
+        <Card className="mb-4 shadow-md border-border relative overflow-hidden bg-card text-card-foreground">
             {loading && (
-                <div className="absolute top-0 left-0 w-full h-1 bg-indigo-100">
+                <div className="absolute top-0 left-0 w-full h-1 bg-muted">
                     <div className="h-full bg-blue-600 animate-progress-indeterminate"></div>
                 </div>
             )}
-            
-            <CardContent className="p-4">
-                <div className="flex flex-col md:flex-row gap-4 items-end">
+
+            <CardContent className="p-3">
+                <div className="flex flex-col md:flex-row gap-3 items-end">
                     {/* Inputs Group */}
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                        <div className="space-y-1">
-                            <label htmlFor="query" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        <div className="space-y-2">
+                            <label htmlFor="query" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                                 Search Query
                             </label>
                             <Input
@@ -74,11 +74,11 @@ export default function CampaignLauncher() {
                                 placeholder="e.g., HVAC contractors"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                className="h-9 text-sm"
+                                className="h-9 text-sm bg-background"
                             />
                         </div>
-                        <div className="space-y-1">
-                            <label htmlFor="location" className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        <div className="space-y-2">
+                            <label htmlFor="location" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                                 Location
                             </label>
                             <ReactGoogleAutocomplete
@@ -99,24 +99,22 @@ export default function CampaignLauncher() {
                     </div>
 
                     {/* Urgency Slider */}
-                    <div className="flex items-center bg-gray-100 p-1 rounded-lg h-9">
+                    <div className="flex items-center bg-muted p-1 rounded-lg h-9">
                         <button
                             onClick={() => setCampaignType("supply")}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                                campaignType === "supply" 
-                                    ? "bg-white text-indigo-700 shadow-sm" 
-                                    : "text-gray-500 hover:text-gray-700"
-                            }`}
+                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${campaignType === "supply"
+                                    ? "bg-background text-foreground shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
                         >
                             Supply Building
                         </button>
                         <button
                             onClick={() => setCampaignType("urgent")}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                                campaignType === "urgent" 
-                                    ? "bg-red-50 text-red-700 shadow-sm border border-red-100" 
-                                    : "text-gray-500 hover:text-gray-700"
-                            }`}
+                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${campaignType === "urgent"
+                                    ? "bg-red-500/10 text-red-600 shadow-sm border border-red-200 dark:border-red-900"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
                         >
                             Urgent
                         </button>
@@ -126,7 +124,10 @@ export default function CampaignLauncher() {
                     <Button
                         onClick={handleLaunch}
                         disabled={loading}
-                        className="h-9 bg-indigo-600 hover:bg-indigo-700 text-sm px-6 whitespace-nowrap"
+                        className={`h-9 text-sm px-6 whitespace-nowrap transition-colors ${campaignType === 'urgent'
+                                ? "bg-red-600 hover:bg-red-700 focus:ring-red-500 text-white"
+                                : "bg-primary hover:bg-primary/90 focus:ring-ring"
+                            }`}
                     >
                         {loading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -140,7 +141,7 @@ export default function CampaignLauncher() {
                 </div>
 
                 {message && (
-                    <p className={`text-xs mt-2 ${message.includes("Error") ? "text-red-600" : "text-green-600"}`}>
+                    <p className={`text-xs mt-2 ${message.includes("Error") ? "text-red-500" : "text-green-500"}`}>
                         {message}
                     </p>
                 )}

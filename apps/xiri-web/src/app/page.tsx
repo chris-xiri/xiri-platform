@@ -1,12 +1,13 @@
 import CampaignLauncher from "@/components/CampaignLauncher";
 import VendorList from "@/components/VendorList";
-import { LayoutDashboard, Users, Settings } from "lucide-react";
+import { LayoutDashboard, Users } from "lucide-react";
+import { SettingsDropdown } from "@/components/SettingsDropdown";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-background transition-colors duration-300">
       {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+      <nav className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
@@ -18,14 +19,14 @@ export default function Home() {
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 <a
                   href="#"
-                  className="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  className="border-primary text-foreground inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                 >
                   <LayoutDashboard className="w-4 h-4 mr-2" />
                   Recruitment
                 </a>
                 <a
                   href="#"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
+                  className="border-transparent text-muted-foreground hover:border-border hover:text-foreground inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
                 >
                   <Users className="w-4 h-4 mr-2" />
                   CRM
@@ -33,9 +34,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="p-2 rounded-full text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors">
-                <Settings className="w-5 h-5" />
-              </button>
+              <SettingsDropdown />
               <div className="h-8 w-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs shadow-md">
                 JD
               </div>
@@ -45,18 +44,18 @@ export default function Home() {
       </nav>
 
       {/* Mobile Menu - Hidden by default, can be toggled */}
-      <div className="sm:hidden bg-white border-b border-gray-200 px-4 py-3">
+      <div className="sm:hidden bg-card border-b border-border px-4 py-3">
         <div className="flex flex-col space-y-2">
           <a
             href="#"
-            className="text-indigo-600 font-medium flex items-center gap-2 py-2"
+            className="text-primary font-medium flex items-center gap-2 py-2"
           >
             <LayoutDashboard className="w-4 h-4" />
             Recruitment
           </a>
           <a
             href="#"
-            className="text-gray-500 flex items-center gap-2 py-2"
+            className="text-muted-foreground flex items-center gap-2 py-2"
           >
             <Users className="w-4 h-4" />
             CRM

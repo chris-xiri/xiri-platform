@@ -48,9 +48,11 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: oklch(0.96 0.01 285);
+  /* Slightly darker, cooler off-white */
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
+  /* Keep cards white for pop */
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
@@ -82,9 +84,9 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: oklch(0.25 0.02 260); /* Charcoal Gray, slight blue tint */
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.30 0.02 260); /* Lighter Charcoal Card */
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
