@@ -3,7 +3,7 @@ import * as admin from "firebase-admin";
 import { analyzeVendorLeads } from "./agents/recruiter";
 import { searchVendors } from "./agents/sourcer";
 import { telegramWebhook, autoApproveVendor, notifyHumanReview, onVendorCreated } from "./triggers/telegramBot";
-import { onVendorApproved } from "./triggers/outreachTriggers";
+import { onVendorApproved } from "./triggers/onVendorApproved";
 
 // Initialize Admin only once
 if (!admin.apps.length) {

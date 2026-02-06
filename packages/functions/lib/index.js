@@ -42,8 +42,8 @@ const telegramBot_1 = require("./triggers/telegramBot");
 Object.defineProperty(exports, "telegramWebhook", { enumerable: true, get: function () { return telegramBot_1.telegramWebhook; } });
 Object.defineProperty(exports, "autoApproveVendor", { enumerable: true, get: function () { return telegramBot_1.autoApproveVendor; } });
 Object.defineProperty(exports, "onVendorCreated", { enumerable: true, get: function () { return telegramBot_1.onVendorCreated; } });
-const outreachTriggers_1 = require("./triggers/outreachTriggers");
-Object.defineProperty(exports, "onVendorApproved", { enumerable: true, get: function () { return outreachTriggers_1.onVendorApproved; } });
+const onVendorApproved_1 = require("./triggers/onVendorApproved");
+Object.defineProperty(exports, "onVendorApproved", { enumerable: true, get: function () { return onVendorApproved_1.onVendorApproved; } });
 // Initialize Admin only once
 if (!admin.apps.length) {
     admin.initializeApp();

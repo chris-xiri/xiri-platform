@@ -1,5 +1,5 @@
 import { telegramWebhook, autoApproveVendor, onVendorCreated } from "./triggers/telegramBot";
-import { onVendorApproved } from "./triggers/outreachTriggers";
+import { onVendorApproved } from "./triggers/onVendorApproved";
 export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved };
 export declare const generateLeads: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     message: string;

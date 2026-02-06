@@ -5,7 +5,7 @@ import * as path from 'path';
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 // Import the generators
-import { generateEmailContent, generateSMSContent } from "../agents/outreach";
+import { generateOutreachContent } from "../agents/outreach";
 import { Vendor } from "../utils/types";
 
 async function testGeneration() {
@@ -38,19 +38,26 @@ async function runScenario(vendor: Vendor) {
 
     // Test Email
     try {
-        const email = await generateEmailContent(vendor);
+        const emailResult = await generateOutreachContent(vendor, 'EMAIL');
         console.log("\n[Email]");
-        console.log("Subject:", email.subject);
-        console.log("Body:\n", email.body);
+        if (emailResult.error) {
+            console.error(emailResult.content);
+        } else {
+            console.log("Body:\n", emailResult.content);
+        }
     } catch (e) {
         console.error("Email Gen Failed:", e);
     }
 
     // Test SMS
     try {
-        const sms = await generateSMSContent(vendor);
+        const smsResult = await generateOutreachContent(vendor, 'SMS');
         console.log("\n[SMS]");
-        console.log("Message:", sms);
+        if (smsResult.error) {
+            console.error(smsResult.content);
+        } else {
+            console.log("Message:", smsResult.content);
+        }
     } catch (e) {
         console.error("SMS Gen Failed:", e);
     }

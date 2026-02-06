@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Users, Loader2, ExternalLink, Check, X } from "lucide-react";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { Users, Loader2, ExternalLink, Check, X, Eye } from "lucide-react";
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import Link from "next/link";
+// import { toast } from "sonner"; // TODO: Install sonner for notifications
 
 interface Vendor {
     id: string;
@@ -24,9 +26,16 @@ interface Vendor {
     aiReasoning?: string;
     status?: string;
     createdAt?: any;
+    statusUpdatedAt?: any;
 }
 
-export default function VendorList() {
+interface VendorListProps {
+    statusFilters?: string[];
+    title?: string;
+    showActions?: boolean;
+}
+
+export default function VendorList({ statusFilters, title = "Vendor Pipeline", showActions = true }: VendorListProps) {
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -38,7 +47,18 @@ export default function VendorList() {
             (snapshot) => {
                 const vendorData: Vendor[] = [];
                 snapshot.forEach((doc) => {
-                    vendorData.push({ id: doc.id, ...doc.data() } as Vendor);
+                    const data = doc.data() as Vendor;
+                    const status = data.status || "PENDING_REVIEW";
+
+                    // Client-side filtering logic
+                    if (statusFilters) {
+                        // Normalize status for comparison if needed, but strict string match is fine for now
+                        if (statusFilters.includes(status)) {
+                            vendorData.push({ id: doc.id, ...data });
+                        }
+                    } else {
+                        vendorData.push({ id: doc.id, ...data });
+                    }
                 });
                 setVendors(vendorData);
                 setLoading(false);
@@ -50,34 +70,41 @@ export default function VendorList() {
         );
 
         return () => unsubscribe();
-    }, []);
+    }, [statusFilters]);
 
-    const getStatusColor = (status?: string) => {
-        switch (status?.toLowerCase()) {
-            case "qualified":
-                return "bg-green-100 text-green-800 border-green-200";
-            case "pending":
-                return "bg-yellow-100 text-yellow-800 border-yellow-200";
-            case "rejected":
-                return "bg-red-100 text-red-800 border-red-200";
-            default:
-                return "bg-gray-100 text-gray-800 border-gray-200";
+    const handleUpdateStatus = async (id: string, newStatus: string) => {
+        try {
+            await updateDoc(doc(db, "vendors", id), {
+                status: newStatus,
+                statusUpdatedAt: serverTimestamp()
+            });
+            console.log(`Vendor ${id} updated to ${newStatus}`);
+        } catch (error) {
+            console.error("Error updating status:", error);
         }
     };
 
+    const getStatusColor = (status?: string) => {
+        const s = status?.toUpperCase();
+        if (s === "APPROVED") return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
+        if (s === "REJECTED") return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+        if (s === "PENDING_REVIEW" || s === "SCRAPED") return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800";
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    };
+
     const getScoreColor = (score?: number) => {
-        if (!score) return "text-gray-500";
-        if (score >= 80) return "text-green-600 font-semibold";
-        if (score >= 60) return "text-yellow-600 font-semibold";
-        return "text-red-600 font-semibold";
+        if (!score) return "text-muted-foreground";
+        if (score >= 80) return "text-green-600 dark:text-green-400 font-semibold";
+        if (score >= 60) return "text-yellow-600 dark:text-yellow-400 font-semibold";
+        return "text-red-600 dark:text-red-400 font-semibold";
     };
 
     if (loading) {
         return (
             <Card className="shadow-sm h-full flex items-center justify-center border-border bg-card/50 backdrop-blur-sm">
                 <div className="flex flex-col items-center gap-2">
-                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                     <p className="text-sm text-muted-foreground font-medium">Loading ecosystem...</p>
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground font-medium">Loading ecosystem...</p>
                 </div>
             </Card>
         );
@@ -89,20 +116,19 @@ export default function VendorList() {
                 <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-primary text-base">
                         <Users className="w-4 h-4 text-primary" />
-                        Vendor Pipeline 
+                        {title}
                         <Badge variant="secondary" className="bg-secondary text-secondary-foreground ml-2 text-xs px-1.5 py-0">
                             {vendors.length}
                         </Badge>
                     </CardTitle>
-                    {/* Add filters or actions here later */}
                 </div>
             </CardHeader>
             <CardContent className="p-0 flex-1 overflow-hidden flex flex-col">
                 {vendors.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-muted/50">
                         <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                        <p className="text-lg font-medium text-foreground">No vendors yet</p>
-                        <p className="text-sm">Launch a campaign to start sourcing.</p>
+                        <p className="text-lg font-medium text-foreground">No vendors found</p>
+                        <p className="text-sm">Try adjusting your filters or launch a new campaign.</p>
                     </div>
                 ) : (
                     <>
@@ -175,24 +201,40 @@ export default function VendorList() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right py-2">
+                                                {showActions && (
                                                     <div className="flex justify-center gap-1.5">
-                                                        <Button 
-                                                            variant="outline" 
-                                                            size="sm"
-                                                            className="h-7 px-2 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-600 hover:text-white hover:border-green-600 transition-all font-medium text-xs"
-                                                            onClick={() => console.log("Approve", vendor.id)}
-                                                        >
-                                                            <Check className="w-3 h-3 mr-1" /> Approve
-                                                        </Button>
-                                                        <Button 
-                                                            variant="outline" 
-                                                            size="sm"
-                                                            className="h-7 px-2 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all font-medium text-xs"
-                                                            onClick={() => console.log("Reject", vendor.id)}
-                                                        >
-                                                            <X className="w-3 h-3 mr-1" /> Reject
-                                                        </Button>
+                                                        {vendor.status === 'APPROVED' ? (
+                                                            <Link href={`/crm/${vendor.id}`}>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="h-7 px-3 border-primary/20 text-primary hover:bg-primary/10 transition-all font-medium text-xs"
+                                                                >
+                                                                    <Eye className="w-3 h-3 mr-1" /> View
+                                                                </Button>
+                                                            </Link>
+                                                        ) : (
+                                                            <>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handleUpdateStatus(vendor.id, "APPROVED")}
+                                                                    className="h-7 px-2 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-600 hover:text-white hover:border-green-600 transition-all font-medium text-xs"
+                                                                >
+                                                                    <Check className="w-3 h-3 mr-1" /> Approve
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handleUpdateStatus(vendor.id, "REJECTED")}
+                                                                    className="h-7 px-2 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all font-medium text-xs"
+                                                                >
+                                                                    <X className="w-3 h-3 mr-1" /> Reject
+                                                                </Button>
+                                                            </>
+                                                        )}
                                                     </div>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -218,19 +260,30 @@ export default function VendorList() {
                                     </div>
                                     {/* Compact details for mobile */}
                                     <div className="flex items-center justify-between text-sm border-t border-border pt-2">
-                                         <div className="flex items-center gap-2">
-                                             {vendor.rating && (
+                                        <div className="flex items-center gap-2">
+                                            {vendor.rating && (
                                                 <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30 px-1.5 py-0.5 rounded text-xs">
                                                     ★ {vendor.rating.toFixed(1)}
                                                 </span>
-                                             )}
-                                             {vendor.aiScore && (
-                                                 <span className={`text-xs font-medium ${getScoreColor(vendor.aiScore)}`}>
-                                                     Score: {vendor.aiScore}
-                                                 </span>
-                                             )}
-                                         </div>
-                                         <button className="text-primary text-xs font-medium">Details</button>
+                                            )}
+                                            {vendor.aiScore && (
+                                                <span className={`text-xs font-medium ${getScoreColor(vendor.aiScore)}`}>
+                                                    Score: {vendor.aiScore}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {vendor.status === 'APPROVED' ? (
+                                            <Link href={`/crm/${vendor.id}`}>
+                                                <button className="text-primary text-xs font-medium">View Details</button>
+                                            </Link>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleUpdateStatus(vendor.id, "APPROVED")}
+                                                className="text-primary text-xs font-medium"
+                                            >
+                                                Approve
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}

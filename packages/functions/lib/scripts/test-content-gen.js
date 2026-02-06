@@ -64,19 +64,28 @@ async function runScenario(vendor) {
     console.log(`Vendor: ${vendor.companyName}`);
     // Test Email
     try {
-        const email = await (0, outreach_1.generateEmailContent)(vendor);
+        const emailResult = await (0, outreach_1.generateOutreachContent)(vendor, 'EMAIL');
         console.log("\n[Email]");
-        console.log("Subject:", email.subject);
-        console.log("Body:\n", email.body);
+        if (emailResult.error) {
+            console.error(emailResult.content);
+        }
+        else {
+            console.log("Body:\n", emailResult.content);
+        }
     }
     catch (e) {
         console.error("Email Gen Failed:", e);
     }
     // Test SMS
     try {
-        const sms = await (0, outreach_1.generateSMSContent)(vendor);
+        const smsResult = await (0, outreach_1.generateOutreachContent)(vendor, 'SMS');
         console.log("\n[SMS]");
-        console.log("Message:", sms);
+        if (smsResult.error) {
+            console.error(smsResult.content);
+        }
+        else {
+            console.log("Message:", smsResult.content);
+        }
     }
     catch (e) {
         console.error("SMS Gen Failed:", e);

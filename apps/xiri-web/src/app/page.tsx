@@ -1,73 +1,17 @@
 import CampaignLauncher from "@/components/CampaignLauncher";
 import VendorList from "@/components/VendorList";
-import { LayoutDashboard, Users } from "lucide-react";
-import { SettingsDropdown } from "@/components/SettingsDropdown";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
-      {/* Navbar */}
-      <nav className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent tracking-tight">
-                  Xiri Platform
-                </span>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <a
-                  href="#"
-                  className="border-primary text-foreground inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Recruitment
-                </a>
-                <a
-                  href="#"
-                  className="border-transparent text-muted-foreground hover:border-border hover:text-foreground inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  CRM
-                </a>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <SettingsDropdown />
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs shadow-md">
-                JD
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Mobile Menu - Hidden by default, can be toggled */}
-      <div className="sm:hidden bg-card border-b border-border px-4 py-3">
-        <div className="flex flex-col space-y-2">
-          <a
-            href="#"
-            className="text-primary font-medium flex items-center gap-2 py-2"
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Recruitment
-          </a>
-          <a
-            href="#"
-            className="text-muted-foreground flex items-center gap-2 py-2"
-          >
-            <Users className="w-4 h-4" />
-            CRM
-          </a>
-        </div>
-      </div>
-
       {/* Main Content */}
       <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 flex flex-col h-[calc(100vh-64px)]">
         <CampaignLauncher />
         <div className="flex-1 overflow-hidden">
-            <VendorList />
+          <VendorList
+            title="Recruitment Pipeline"
+            statusFilters={['PENDING_REVIEW', 'SCRAPED', 'PENDING']}
+          />
         </div>
       </main>
     </div>
