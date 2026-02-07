@@ -124,11 +124,17 @@ const analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = fals
                     status: 'PENDING_REVIEW', // or 'SCRAPED' depending on workflow
                     createdAt: new Date()
                 };
+                console.log(`Adding qualified vendor to batch: ${newVendor.companyName}`);
                 batch.set(vendorRef, newVendor);
             }
         }
         if (qualified > 0) {
+            console.log(`Committing batch of ${qualified} vendors...`);
             await batch.commit();
+            console.log("Batch commit successful.");
+        }
+        else {
+            console.log("No qualified vendors to commit.");
         }
     }
     catch (err) {

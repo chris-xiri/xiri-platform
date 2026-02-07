@@ -103,12 +103,17 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
                     createdAt: new Date()
                 };
 
+                console.log(`Adding qualified vendor to batch: ${newVendor.companyName}`);
                 batch.set(vendorRef, newVendor);
             }
         }
 
         if (qualified > 0) {
+            console.log(`Committing batch of ${qualified} vendors...`);
             await batch.commit();
+            console.log("Batch commit successful.");
+        } else {
+            console.log("No qualified vendors to commit.");
         }
 
     } catch (err: any) {

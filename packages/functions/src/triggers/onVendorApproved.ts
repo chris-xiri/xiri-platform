@@ -3,6 +3,9 @@ import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import { generateOutreachContent } from "../agents/outreach";
 
+if (!admin.apps.length) {
+    admin.initializeApp();
+}
 const db = admin.firestore();
 
 export const onVendorApproved = onDocumentUpdated("vendors/{vendorId}", async (event) => {
@@ -24,7 +27,7 @@ export const onVendorApproved = onDocumentUpdated("vendors/{vendorId}", async (e
                 vendorId: vendorId,
                 type: "STATUS_CHANGE",
                 description: "Vendor status updated to APPROVED by user.",
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                createdAt: new Date(),
                 metadata: {
                     oldStatus: oldData.status,
                     newStatus: newData.status
@@ -41,7 +44,7 @@ export const onVendorApproved = onDocumentUpdated("vendors/{vendorId}", async (e
                 vendorId: vendorId,
                 type: "OUTREACH_QUEUED",
                 description: `Outreach draft created via ${outreachResult.channel}.`,
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                createdAt: new Date(),
                 metadata: {
                     content: outreachResult.content,
                     channel: outreachResult.channel,

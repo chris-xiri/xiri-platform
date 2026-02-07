@@ -51,8 +51,7 @@ export default function VendorDetailPage() {
         // 2. Listen to Activities
         const qActivity = query(
             collection(db, "vendor_activities"),
-            where("vendorId", "==", id),
-            orderBy("createdAt", "desc")
+            where("vendorId", "==", id)
         );
 
         const unsubActivities = onSnapshot(qActivity, (snapshot) => {
@@ -60,7 +59,15 @@ export default function VendorDetailPage() {
             snapshot.forEach((doc) => {
                 acts.push({ ...doc.data() } as OutreachEvent);
             });
+            // Sort client-side to avoid needing a composite index immediately
+            acts.sort((a, b) => {
+                const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+                const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+                return dateB - dateA;
+            });
             setActivities(acts);
+        }, (error) => {
+            console.error("Error fetching activities:", error);
         });
 
         return () => {
