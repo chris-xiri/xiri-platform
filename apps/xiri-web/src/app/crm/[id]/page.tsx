@@ -214,11 +214,69 @@ export default function VendorDetailPage() {
                                             </p>
 
                                             {/* Metadata Preview */}
+                                            {/* Metadata Preview */}
                                             {act.metadata && (
-                                                <div className="mt-2 text-xs bg-muted/50 p-2 rounded border border-border">
-                                                    <pre className="whitespace-pre-wrap font-mono">
-                                                        {JSON.stringify(act.metadata, null, 2)}
-                                                    </pre>
+                                                <div className="mt-3">
+                                                    {/* New Combined Format (SMS & Email) */}
+                                                    {act.metadata.sms && act.metadata.email ? (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                                            {/* SMS Draft */}
+                                                            <div className="bg-muted/50 rounded-md border border-border overflow-hidden">
+                                                                <div className="bg-muted px-3 py-2 border-b border-border flex items-center justify-between">
+                                                                    <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                                                        <MessageSquare className="w-3 h-3" /> SMS Draft
+                                                                    </div>
+                                                                    <Badge variant="secondary" className="text-[10px] h-5">160 chars</Badge>
+                                                                </div>
+                                                                <div className="p-3 text-sm text-foreground/90 whitespace-pre-wrap font-sans">
+                                                                    {act.metadata.sms}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Email Draft */}
+                                                            <div className="bg-muted/50 rounded-md border border-border overflow-hidden">
+                                                                <div className="bg-muted px-3 py-2 border-b border-border flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                                                    <Mail className="w-3 h-3" /> Email Draft
+                                                                </div>
+                                                                <div className="p-3 space-y-2 text-sm text-foreground/90">
+                                                                    <div>
+                                                                        <span className="text-muted-foreground text-xs uppercase font-bold mr-2">Subject:</span>
+                                                                        <span className="font-medium">{act.metadata.email.subject}</span>
+                                                                    </div>
+                                                                    <div className="whitespace-pre-wrap font-sans border-t border-border pt-2 mt-2">
+                                                                        {act.metadata.email.body}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                        </div>
+                                                    ) : act.metadata.content ? (
+                                                        /* Legacy Format */
+                                                        <div className="bg-muted p-3 rounded-md text-sm italic border-l-4 border-primary/20">
+                                                            <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                                                {act.metadata.channel === 'SMS' ? <MessageSquare className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
+                                                                {act.metadata.channel} Draft
+                                                            </div>
+                                                            <div className="whitespace-pre-wrap font-sans not-italic text-foreground/90">
+                                                                {act.metadata.content}
+                                                            </div>
+                                                        </div>
+                                                    ) : act.metadata.oldStatus && act.metadata.newStatus ? (
+                                                        /* Status Change */
+                                                        <div className="text-sm flex items-center gap-2 text-muted-foreground">
+                                                            <Badge variant="outline" className="text-xs font-normal bg-background">{act.metadata.oldStatus}</Badge>
+                                                            <span>→</span>
+                                                            <Badge variant="outline" className="text-xs font-medium bg-background border-primary/20 text-primary">{act.metadata.newStatus}</Badge>
+                                                        </div>
+                                                    ) : (
+                                                        /* Raw Fallback */
+                                                        <div className="text-xs bg-muted/50 p-2 rounded border border-border">
+                                                            <pre className="whitespace-pre-wrap font-mono">
+                                                                {JSON.stringify(act.metadata, null, 2)}
+                                                            </pre>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

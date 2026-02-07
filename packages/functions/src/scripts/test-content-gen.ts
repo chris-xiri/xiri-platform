@@ -41,9 +41,9 @@ async function runScenario(vendor: Vendor) {
         const emailResult = await generateOutreachContent(vendor, 'EMAIL');
         console.log("\n[Email]");
         if (emailResult.error) {
-            console.error(emailResult.content);
+            console.error(emailResult.email);
         } else {
-            console.log("Body:\n", emailResult.content);
+            console.log("Body:\n", emailResult.email);
         }
     } catch (e) {
         console.error("Email Gen Failed:", e);
@@ -54,9 +54,9 @@ async function runScenario(vendor: Vendor) {
         const smsResult = await generateOutreachContent(vendor, 'SMS');
         console.log("\n[SMS]");
         if (smsResult.error) {
-            console.error(smsResult.content);
+            console.error(smsResult.sms);
         } else {
-            console.log("Message:", smsResult.content);
+            console.log("Message:", smsResult.sms);
         }
     } catch (e) {
         console.error("SMS Gen Failed:", e);

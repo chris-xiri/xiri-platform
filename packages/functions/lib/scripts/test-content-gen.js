@@ -67,10 +67,10 @@ async function runScenario(vendor) {
         const emailResult = await (0, outreach_1.generateOutreachContent)(vendor, 'EMAIL');
         console.log("\n[Email]");
         if (emailResult.error) {
-            console.error(emailResult.content);
+            console.error(emailResult.email);
         }
         else {
-            console.log("Body:\n", emailResult.content);
+            console.log("Body:\n", emailResult.email);
         }
     }
     catch (e) {
@@ -81,10 +81,10 @@ async function runScenario(vendor) {
         const smsResult = await (0, outreach_1.generateOutreachContent)(vendor, 'SMS');
         console.log("\n[SMS]");
         if (smsResult.error) {
-            console.error(smsResult.content);
+            console.error(smsResult.sms);
         }
         else {
-            console.log("Message:", smsResult.content);
+            console.log("Message:", smsResult.sms);
         }
     }
     catch (e) {

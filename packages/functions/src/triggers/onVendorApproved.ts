@@ -43,11 +43,12 @@ export const onVendorApproved = onDocumentUpdated("vendors/{vendorId}", async (e
             await db.collection("vendor_activities").add({
                 vendorId: vendorId,
                 type: "OUTREACH_QUEUED",
-                description: `Outreach draft created via ${outreachResult.channel}.`,
+                description: `Outreach drafts generated (SMS & Email).`,
                 createdAt: new Date(),
                 metadata: {
-                    content: outreachResult.content,
-                    channel: outreachResult.channel,
+                    sms: outreachResult.sms,
+                    email: outreachResult.email,
+                    preferredChannel: outreachResult.channel,
                     campaignUrgency: newData.hasActiveContract ? "URGENT" : "SUPPLY"
                 }
             });
