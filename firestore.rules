@@ -6,6 +6,11 @@ service cloud.firestore {
     match /vendors/{document=**} {
       allow read, write: if true;
     }
+
+    // Allow read/write access to vendor_activities
+    match /vendor_activities/{document=**} {
+      allow read, write: if true;
+    }
     
     // Default deny for other collections
     match /{document=**} {

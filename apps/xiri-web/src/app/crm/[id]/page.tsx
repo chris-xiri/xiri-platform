@@ -14,7 +14,21 @@ import { Vendor, OutreachEvent } from "@/types/vendor";
 // Helper for relative time (e.g. "2 hours ago")
 function timeAgo(date: any) {
     if (!date) return "";
-    const seconds = Math.floor((new Date().getTime() - date.toDate().getTime()) / 1000);
+    let jsDate: Date;
+    if (typeof date.toDate === 'function') {
+        jsDate = date.toDate();
+    } else if (date instanceof Date) {
+        jsDate = date;
+    } else if (typeof date === 'number') {
+        jsDate = new Date(date);
+    } else {
+        // Assume string or other
+        jsDate = new Date(date);
+    }
+
+    if (isNaN(jsDate.getTime())) return "Just now";
+
+    const seconds = Math.floor((new Date().getTime() - jsDate.getTime()) / 1000);
     let interval = seconds / 31536000;
     if (interval > 1) return Math.floor(interval) + " years ago";
     interval = seconds / 2592000;
@@ -61,9 +75,14 @@ export default function VendorDetailPage() {
             });
             // Sort client-side to avoid needing a composite index immediately
             acts.sort((a, b) => {
-                const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
-                const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
-                return dateB - dateA;
+                const getTime = (d: any) => {
+                    if (!d) return 0;
+                    if (typeof d.toDate === 'function') return d.toDate().getTime();
+                    if (d instanceof Date) return d.getTime();
+                    if (typeof d === 'number') return d;
+                    return new Date(d).getTime();
+                };
+                return getTime(b.createdAt) - getTime(a.createdAt);
             });
             setActivities(acts);
         }, (error) => {
