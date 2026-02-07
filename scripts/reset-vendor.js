@@ -4,11 +4,14 @@ admin.initializeApp({ projectId: "xiri-platform" });
 const db = admin.firestore();
 
 async function resetVendor() {
-    console.log("Resetting Debug Plumber...");
-    const snapshot = await db.collection('vendors').where('companyName', '==', 'Debug Plumber').get();
+    console.log("Resetting Rapid Roofers...");
+    const snapshot = await db.collection('vendors')
+        .where('companyName', '==', 'Rapid Roofers')
+        .limit(1)
+        .get();
 
     if (snapshot.empty) {
-        console.log("Debug Plumber not found. Cannot reset.");
+        console.log("Rapid Roofers not found. Cannot reset.");
         return;
     }
 

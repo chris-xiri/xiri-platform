@@ -7,7 +7,6 @@ export default function CRMPage() {
             <div className="flex-1 overflow-hidden">
                 <VendorList
                     title="Active Vendors"
-                    statusFilters={['APPROVED', 'CONTACTED', 'NEGOTIATING', 'CONTRACTED']}
                 />
             </div>
         </main>

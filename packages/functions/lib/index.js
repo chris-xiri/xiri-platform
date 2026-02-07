@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.testNotification = exports.runRecruiterAgent = exports.clearPipeline = exports.generateLeads = exports.onVendorApproved = exports.onVendorCreated = exports.autoApproveVendor = exports.telegramWebhook = void 0;
+exports.testNotification = exports.runRecruiterAgent = exports.clearPipeline = exports.generateLeads = exports.processOutreachQueue = exports.onVendorApproved = exports.onVendorCreated = exports.autoApproveVendor = exports.telegramWebhook = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
 const recruiter_1 = require("./agents/recruiter");
@@ -44,6 +44,8 @@ Object.defineProperty(exports, "autoApproveVendor", { enumerable: true, get: fun
 Object.defineProperty(exports, "onVendorCreated", { enumerable: true, get: function () { return telegramBot_1.onVendorCreated; } });
 const onVendorApproved_1 = require("./triggers/onVendorApproved");
 Object.defineProperty(exports, "onVendorApproved", { enumerable: true, get: function () { return onVendorApproved_1.onVendorApproved; } });
+const outreachWorker_1 = require("./triggers/outreachWorker");
+Object.defineProperty(exports, "processOutreachQueue", { enumerable: true, get: function () { return outreachWorker_1.processOutreachQueue; } });
 // Initialize Admin only once
 if (!admin.apps.length) {
     admin.initializeApp();

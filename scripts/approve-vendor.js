@@ -4,11 +4,14 @@ admin.initializeApp({ projectId: "xiri-platform" });
 const db = admin.firestore();
 
 async function approveVendor() {
-    console.log("Approving Debug Plumber (simulating UI)...");
-    const snapshot = await db.collection('vendors').where('companyName', '==', 'Debug Plumber').get();
+    console.log("Approving Advanced Plumbing (simulating UI)...");
+    const snapshot = await db.collection('vendors')
+        .where('companyName', '==', 'Advanced Plumbing')
+        .limit(1)
+        .get();
 
     if (snapshot.empty) {
-        console.log("Debug Plumber not found.");
+        console.log("Rapid Roofers not found.");
         return;
     }
 

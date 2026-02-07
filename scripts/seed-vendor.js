@@ -9,18 +9,18 @@ async function seedVendor() {
     console.log("Seeding dummy vendor...");
 
     const newVendor = {
-        companyName: "Acme HVAC Services",
-        specialty: "HVAC",
+        companyName: "Advanced Plumbing",
+        specialty: "Plumbing",
         location: "Austin, TX",
-        phone: "+15125550199", // Fake but valid format for SMS logic
-        email: "contact@acmehvac.com",
-        website: "https://acmehvac.com",
-        businessType: "Independent",
-        fitScore: 85,
+        phone: "+15125550500",
+        email: "service@advancedplumbing.com",
+        website: "https://advancedplumbing.com",
+        businessType: "Contractor",
+        fitScore: 87,
         status: "PENDING_REVIEW",
-        hasActiveContract: false,
+        hasActiveContract: true,
         createdAt: new Date(),
-        aiReasoning: "Strong match for HVAC queries. Valid contact info."
+        aiReasoning: "Experienced plumbing team."
     };
 
     const res = await db.collection('vendors').add(newVendor);

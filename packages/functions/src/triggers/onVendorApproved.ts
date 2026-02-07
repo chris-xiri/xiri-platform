@@ -1,7 +1,7 @@
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { generateOutreachContent } from "../agents/outreach";
+
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -34,25 +34,30 @@ export const onVendorApproved = onDocumentUpdated("vendors/{vendorId}", async (e
                 }
             });
 
-            // 2. Generate and Queue Outreach
-            // We call the agent directly here for simplicity in this phase.
-            // Ideally this would be offloaded if it takes > 60s, but Gemini is fast enough.
+            // 1b. Update Vendor Document with Outreach Status
+            await event.data.after.ref.update({
+                outreachStatus: 'PENDING',
+                statusUpdatedAt: new Date()
+            });
 
-            const outreachResult = await generateOutreachContent(newData, newData.phone ? 'SMS' : 'EMAIL');
+            // 2. Enqueue Outreach Generation Task
+            // Decoupled for resilience (429 retries) and smart scheduling
+            const { enqueueTask } = await import("../utils/queueUtils");
 
-            await db.collection("vendor_activities").add({
+            await enqueueTask(db, {
                 vendorId: vendorId,
-                type: "OUTREACH_QUEUED",
-                description: `Outreach drafts generated (SMS & Email).`,
-                createdAt: new Date(),
+                type: 'GENERATE',
+                scheduledAt: new Date() as any, // Process immediately
                 metadata: {
-                    sms: outreachResult.sms,
-                    email: outreachResult.email,
-                    preferredChannel: outreachResult.channel,
-                    campaignUrgency: newData.hasActiveContract ? "URGENT" : "SUPPLY"
+                    status: newData.status,
+                    hasActiveContract: newData.hasActiveContract,
+                    phone: newData.phone,
+                    companyName: newData.companyName,
+                    specialty: newData.specialty
                 }
             });
 
+            logger.info(`Outreach generation task enqueued for vendor ${vendorId}`);
         } catch (error) {
             logger.error("Error in onVendorApproved workflow:", error);
         }

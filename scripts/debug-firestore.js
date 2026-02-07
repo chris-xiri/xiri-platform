@@ -11,7 +11,7 @@ async function checkVendors() {
     } else {
         console.log(`Found ${snapshot.size} vendors:`);
         snapshot.forEach(doc => {
-            console.log(`- [${doc.id}] Status: ${doc.data().status}, Name: ${doc.data().companyName}`);
+            console.log(`- [${doc.id}] Status: ${doc.data().status}, Name: ${doc.data().companyName}, Outreach: ${doc.data().outreachStatus || 'N/A'}`);
         });
     }
 }
