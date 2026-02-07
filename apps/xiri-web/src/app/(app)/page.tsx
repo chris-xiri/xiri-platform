@@ -10,7 +10,7 @@ export default function Home() {
         <div className="flex-1 overflow-hidden">
           <VendorList
             title="Recruitment Pipeline"
-            statusFilters={['PENDING_REVIEW', 'SCRAPED', 'PENDING']}
+            statusFilters={['PENDING_REVIEW', 'SCRAPED']}
           />
         </div>
       </main>

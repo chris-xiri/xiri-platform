@@ -5,6 +5,7 @@ import { searchVendors } from "./agents/sourcer";
 import { telegramWebhook, autoApproveVendor, notifyHumanReview, onVendorCreated } from "./triggers/telegramBot";
 import { onVendorApproved } from "./triggers/onVendorApproved";
 import { processOutreachQueue } from "./triggers/outreachWorker";
+import { onIncomingMessage } from "./triggers/onIncomingMessage";
 
 // Initialize Admin only once
 if (!admin.apps.length) {
@@ -13,7 +14,7 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 // Export Bot Functions
-export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue };
+export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage };
 
 // 1. Lead Sourcing Agent Trigger
 export const generateLeads = onCall({

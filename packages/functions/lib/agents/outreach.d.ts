@@ -14,4 +14,5 @@ export declare const generateOutreachContent: (vendor: any, preferredChannel: "S
     error: boolean;
     generatedAt?: undefined;
 }>;
+export declare const analyzeIncomingMessage: (vendor: any, messageContent: string, previousContext: string) => Promise<any>;
 //# sourceMappingURL=outreach.d.ts.map

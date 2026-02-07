@@ -37,7 +37,7 @@ export const generateOutreachContent = async (vendor: any, preferredChannel: 'SM
         let text = result.response.text();
 
         // Sanitize code blocks if present
-        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        text = text.replace(/^```json/gm, '').replace(/^```/gm, '').trim();
 
         const jsonContent = JSON.parse(text);
 
@@ -55,5 +55,45 @@ export const generateOutreachContent = async (vendor: any, preferredChannel: 'SM
             email: { subject: "Error", body: "Error generating content. Please draft manually." },
             error: true
         };
+    }
+};
+
+export const analyzeIncomingMessage = async (vendor: any, messageContent: string, previousContext: string) => {
+    const prompt = `
+    You are an AI assistant for Xiri Facility Solutions. You are analyzing a reply from a vendor.
+
+    Vendor: ${vendor.companyName}
+    Message: "${messageContent}"
+    Previous Context (What we sent them): "${previousContext}"
+
+    Task:
+    1. Classify the intent:
+        - INTERESTED (Positive reply, wants to proceed)
+        - NOT_INTERESTED (Negative, stop, unsubscribe)
+        - QUESTION (Asking for more info, pricing, etc.)
+        - OTHER (Spam, unclear)
+
+    2. Generate a response based on the intent:
+        - If INTERESTED: Reply warmly and ask them to click the onboarding link: https://xiri.com/vendor/onboarding/${vendor.id}
+        - If NOT_INTERESTED: Acknowledge and confirm removal.
+        - If QUESTION: Draft a helpful, concise answer.
+        - If OTHER: Ask for clarification.
+
+    Output strictly in JSON format:
+    {
+        "intent": "INTERESTED" | "NOT_INTERESTED" | "QUESTION" | "OTHER",
+        "reply": "string"
+    }
+    `;
+
+    try {
+        const result = await model.generateContent(prompt);
+        let text = result.response.text();
+        text = text.replace(/^```json/gm, '').replace(/^```/gm, '').trim();
+        const jsonContent = JSON.parse(text);
+        return jsonContent;
+    } catch (error) {
+        console.error("Error analyzing message:", error);
+        return { intent: "OTHER", reply: "Error analyzing message." };
     }
 };

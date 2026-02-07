@@ -16,6 +16,7 @@ interface Vendor {
     id: string;
     companyName?: string;
     name?: string;
+    specialty?: string;
     address?: string;
     location?: string;
     phone?: string;
@@ -88,7 +89,10 @@ export default function VendorList({ statusFilters, title = "Vendor Pipeline", s
             else if (outreachFilter === "NONE") matchesOutreach = !vendor.outreachStatus;
         }
 
-        return matchesSearch && matchesStatus && matchesOutreach;
+        // Strict Prop Filter (View Separation)
+        const matchesPropFilters = !statusFilters || statusFilters.length === 0 || statusFilters.includes(vendor.status || "PENDING_REVIEW");
+
+        return matchesSearch && matchesStatus && matchesOutreach && matchesPropFilters;
     });
 
     const handleUpdateStatus = async (id: string, newStatus: string) => {
@@ -242,10 +246,12 @@ export default function VendorList({ statusFilters, title = "Vendor Pipeline", s
                                                 {index + 1}
                                             </TableCell>
                                             <TableCell className="py-2">
-                                                <div>
-                                                    <div className="font-medium text-foreground text-sm">{vendor.companyName || vendor.name || "Unknown Vendor"}</div>
-                                                    <div className="text-[10px] text-muted-foreground">{vendor.address || vendor.location}</div>
-                                                </div>
+                                                <Link href={`/crm/${vendor.id}`} className="block group cursor-pointer">
+                                                    <div>
+                                                        <div className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">{vendor.companyName || vendor.name || "Unknown Vendor"}</div>
+                                                        <div className="text-[10px] text-muted-foreground">{vendor.address || vendor.location}</div>
+                                                    </div>
+                                                </Link>
                                             </TableCell>
                                             <TableCell className="py-2 text-center">
                                                 <div className="flex flex-col items-center">
@@ -311,10 +317,29 @@ export default function VendorList({ statusFilters, title = "Vendor Pipeline", s
                                                                 <Button
                                                                     variant="outline"
                                                                     size="sm"
-                                                                    onClick={() => handleUpdateStatus(vendor.id, "APPROVED")}
+                                                                    onClick={() => {
+                                                                        const nextStatus =
+                                                                            vendor.status === 'PENDING_REVIEW' ? 'APPROVED' :
+                                                                                vendor.status === 'APPROVED' ? 'NEGOTIATING' :
+                                                                                    vendor.status === 'NEGOTIATING' ? 'QUALIFIED' :
+                                                                                        vendor.status === 'QUALIFIED' ? 'COMPLIANCE_REVIEW' :
+                                                                                            vendor.status === 'COMPLIANCE_REVIEW' ? 'CONTRACT_PENDING' :
+                                                                                                vendor.status === 'ONBOARDING_SCHEDULED' ? 'CONTRACT_PENDING' :
+                                                                                                    vendor.status === 'CONTRACT_PENDING' ? 'ACTIVE' :
+                                                                                                        'ACTIVE';
+                                                                        handleUpdateStatus(vendor.id, nextStatus);
+                                                                    }}
                                                                     className="h-7 px-2 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-600 hover:text-white hover:border-green-600 transition-all font-medium text-xs"
                                                                 >
-                                                                    <Check className="w-3 h-3 mr-1" /> Approve
+                                                                    <Check className="w-3 h-3 mr-1" />
+                                                                    {vendor.status === 'PENDING_REVIEW' ? 'Approve' :
+                                                                        vendor.status === 'APPROVED' ? 'Start Outreach' :
+                                                                            vendor.status === 'NEGOTIATING' ? 'Qualify' :
+                                                                                vendor.status === 'QUALIFIED' ? 'Review Docs' :
+                                                                                    vendor.status === 'COMPLIANCE_REVIEW' ? 'Approve Docs' :
+                                                                                        vendor.status === 'ONBOARDING_SCHEDULED' ? 'Complete Call' :
+                                                                                            vendor.status === 'CONTRACT_PENDING' ? 'Sign Contract' :
+                                                                                                'Complete'}
                                                                 </Button>
                                                                 <Button
                                                                     variant="outline"
