@@ -56,6 +56,14 @@ async function runVerification(vendorId: string, docType: 'COI' | 'W9', vendorDa
             }
         });
 
+        // Send email notification
+        if (result.valid) {
+            const { sendTemplatedEmail } = await import('../utils/emailUtils');
+            await sendTemplatedEmail(vendorId, 'doc_upload_notification', {
+                documentType: docType === 'COI' ? 'Certificate of Insurance' : 'W-9 Form'
+            });
+        }
+
     } catch (error) {
         console.error(`Verification failed for ${docType}:`, error);
     }

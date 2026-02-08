@@ -1,9 +1,9 @@
-import * as admin from 'firebase-admin';
 
 // Business Hours Config
 const START_HOUR = 9; // 9 AM
 const END_HOUR = 17; // 5 PM
-const TIMEZONE_OFFSET = -6; // CST (approximate for Austin demo)
+// Timezone offset for Austin, TX (CST)
+// const TIMEZONE_OFFSET = -6; // CST (approximate for Austin demo)
 
 export function getNextBusinessSlot(urgency: 'URGENT' | 'SUPPLY'): Date {
     const now = new Date();

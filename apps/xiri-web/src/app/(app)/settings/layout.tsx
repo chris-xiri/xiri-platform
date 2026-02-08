@@ -1,0 +1,55 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Settings, Mail, MessageSquare } from "lucide-react";
+
+export default function SettingsLayout({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+
+    const navItems = [
+        { href: "/settings/templates", label: "Email Templates", icon: Mail },
+        { href: "/settings/agents", label: "AI Agents", icon: MessageSquare }
+    ];
+
+    return (
+        <div className="min-h-screen bg-background">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="flex items-center gap-3 mb-8">
+                    <Settings className="w-8 h-8" />
+                    <h1 className="text-3xl font-bold">Settings</h1>
+                </div>
+
+                <div className="grid grid-cols-12 gap-6">
+                    {/* Sidebar */}
+                    <div className="col-span-3">
+                        <nav className="space-y-1">
+                            {navItems.map((item) => {
+                                const Icon = item.icon;
+                                const isActive = pathname === item.href;
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                                            ? "bg-primary text-primary-foreground"
+                                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                                            }`}
+                                    >
+                                        <Icon className="w-5 h-5" />
+                                        <span className="font-medium">{item.label}</span>
+                                    </Link>
+                                );
+                            })}
+                        </nav>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="col-span-9">
+                        {children}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

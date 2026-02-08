@@ -94,7 +94,12 @@ Requirements:
 1. Name must match "{{vendorName}}" (fuzzy match ok).
 2. {{requirements}}
 
-Output strict JSON:
+OCR Text:
+"""
+{{ocrText}}
+"""
+
+Output strictly JSON:
 {
     "valid": boolean,
     "reasoning": "string (concise summary for admin)",
@@ -102,7 +107,102 @@ Output strict JSON:
         // key fields found
     }
 }`,
-            variables: ["documentType", "vendorName", "specialty", "requirements"],
+            variables: ["documentType", "vendorName", "specialty", "requirements", "ocrText"],
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        },
+        {
+            id: "recruiter_analysis_prompt",
+            type: "prompt",
+            name: "Recruiter Vendor Analysis Prompt",
+            category: "agents",
+            content: `You are an expert procurement officer. Analyze the following list of vendors for the job query: "{{query}}".
+
+Context: {{modeDescription}}
+
+For each vendor, calculate a Fit Score (0-100) based on these weighted factors:
+1. **Relevance (30%)**: Does the vendor explicitly offer services matching "{{query}}"?
+2. **Contact Info (30%)**: +15 points if Phone is present. +15 points if Email/Website indicates reachable contact.
+3. **Confidence (40%)**: How certain are you that they operate in the target service area and industry?
+
+Identify:
+- **Industry**: Specific category (e.g. Commercial Cleaning, HVAC).
+- **Business Type**: "Franchise" or "Independent". Favor "Independent" slightly in scoring if equal relevance.
+
+Return a JSON array where each object contains:
+- index: (original index)
+- specialty: (classified category)
+- businessType: ("Franchise" or "Independent")
+- fitScore: (calculated 0-100)
+- isQualified: (boolean, true if fitScore >= {{threshold}})
+- reasoning: (short string explaining the score)
+
+Input List:
+{{vendorList}}`,
+            variables: ["query", "modeDescription", "threshold", "vendorList"],
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        },
+        {
+            id: "outreach_generation_prompt",
+            type: "prompt",
+            name: "Outreach Content Generation Prompt",
+            category: "agents",
+            content: `You are an AI assistant for Xiri Facility Solutions, drafting introductory messages to a vendor.
+
+Vendor: {{vendorName}}
+Industry: {{specialty}}
+Campaign Context: {{campaignContext}}
+
+Goal: Persuade them to reply or sign up.
+Tone: Professional, direct, and valuable.
+
+Constraints:
+- SMS: Max 160 characters. No fluff. Clear CTA.
+- Email: Subject line + Body. Concise (< 150 words).
+
+Output strictly in JSON format:
+{
+    "sms": "string",
+    "email": {
+        "subject": "string",
+        "body": "string"
+    }
+}`,
+            variables: ["vendorName", "specialty", "campaignContext"],
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        },
+        {
+            id: "message_analysis_prompt",
+            type: "prompt",
+            name: "Incoming Message Analysis Prompt",
+            category: "agents",
+            content: `You are an AI assistant for Xiri Facility Solutions. You are analyzing a reply from a vendor.
+
+Vendor: {{vendorName}}
+Message: "{{messageContent}}"
+Previous Context (What we sent them): "{{previousContext}}"
+
+Task:
+1. Classify the intent:
+    - INTERESTED (Positive reply, wants to proceed)
+    - NOT_INTERESTED (Negative, stop, unsubscribe)
+    - QUESTION (Asking for more info, pricing, etc.)
+    - OTHER (Spam, unclear)
+
+2. Generate a response based on the intent:
+    - If INTERESTED: Reply warmly and ask them to click the onboarding link: https://xiri.com/vendor/onboarding/{{vendorId}}
+    - If NOT_INTERESTED: Acknowledge and confirm removal.
+    - If QUESTION: Draft a helpful, concise answer.
+    - If OTHER: Ask for clarification.
+
+Output strictly in JSON format:
+{
+    "intent": "INTERESTED" | "NOT_INTERESTED" | "QUESTION" | "OTHER",
+    "reply": "string"
+}`,
+            variables: ["vendorName", "messageContent", "previousContext", "vendorId"],
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         }

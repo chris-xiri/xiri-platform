@@ -1,38 +1,33 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import * as admin from "firebase-admin";
 
 const API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCSmKaZsBUm4SIrxouk3tAmhHZUY0jClUw";
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const db = admin.firestore();
 
 export const generateOutreachContent = async (vendor: any, preferredChannel: 'SMS' | 'EMAIL') => {
     const isUrgent = vendor.hasActiveContract;
-    const channel = preferredChannel; // Could refine logic here (e.g. if SMS fails validation, swap to Email)
-
-    const prompt = `
-    You are an AI assistant for Xiri Facility Solutions, drafting introductory messages to a vendor.
-    
-    Vendor: ${vendor.companyName}
-    Industry: ${vendor.specialty || "Services"}
-    Campaign Context: ${isUrgent ? "URGENT JOB OPPORTUNITY (We have a contract ready)" : "Building Supply Network (Partnership Opportunity)"}
-
-    Goal: Persuade them to reply or sign up.
-    Tone: Professional, direct, and valuable.
-
-    Constraints:
-    - SMS: Max 160 characters. No fluff. Clear CTA.
-    - Email: Subject line + Body. Concise (< 150 words).
-
-    Output strictly in JSON format:
-    {
-        "sms": "string",
-        "email": {
-            "subject": "string",
-            "body": "string"
-        }
-    }
-    `;
+    const channel = preferredChannel;
 
     try {
+        // Fetch prompt from database
+        const templateDoc = await db.collection("templates").doc("outreach_generation_prompt").get();
+        if (!templateDoc.exists) {
+            throw new Error("Outreach generation prompt not found in database");
+        }
+
+        const template = templateDoc.data();
+        const campaignContext = isUrgent
+            ? "URGENT JOB OPPORTUNITY (We have a contract ready)"
+            : "Building Supply Network (Partnership Opportunity)";
+
+        // Replace variables
+        const prompt = template?.content
+            .replace(/\{\{vendorName\}\}/g, vendor.companyName)
+            .replace(/\{\{specialty\}\}/g, vendor.specialty || "Services")
+            .replace(/\{\{campaignContext\}\}/g, campaignContext);
+
         const result = await model.generateContent(prompt);
         let text = result.response.text();
 
@@ -58,35 +53,24 @@ export const generateOutreachContent = async (vendor: any, preferredChannel: 'SM
     }
 };
 
+
 export const analyzeIncomingMessage = async (vendor: any, messageContent: string, previousContext: string) => {
-    const prompt = `
-    You are an AI assistant for Xiri Facility Solutions. You are analyzing a reply from a vendor.
-
-    Vendor: ${vendor.companyName}
-    Message: "${messageContent}"
-    Previous Context (What we sent them): "${previousContext}"
-
-    Task:
-    1. Classify the intent:
-        - INTERESTED (Positive reply, wants to proceed)
-        - NOT_INTERESTED (Negative, stop, unsubscribe)
-        - QUESTION (Asking for more info, pricing, etc.)
-        - OTHER (Spam, unclear)
-
-    2. Generate a response based on the intent:
-        - If INTERESTED: Reply warmly and ask them to click the onboarding link: https://xiri.com/vendor/onboarding/${vendor.id}
-        - If NOT_INTERESTED: Acknowledge and confirm removal.
-        - If QUESTION: Draft a helpful, concise answer.
-        - If OTHER: Ask for clarification.
-
-    Output strictly in JSON format:
-    {
-        "intent": "INTERESTED" | "NOT_INTERESTED" | "QUESTION" | "OTHER",
-        "reply": "string"
-    }
-    `;
-
     try {
+        // Fetch prompt from database
+        const templateDoc = await db.collection("templates").doc("message_analysis_prompt").get();
+        if (!templateDoc.exists) {
+            throw new Error("Message analysis prompt not found in database");
+        }
+
+        const template = templateDoc.data();
+
+        // Replace variables
+        const prompt = template?.content
+            .replace(/\{\{vendorName\}\}/g, vendor.companyName)
+            .replace(/\{\{messageContent\}\}/g, messageContent)
+            .replace(/\{\{previousContext\}\}/g, previousContext)
+            .replace(/\{\{vendorId\}\}/g, vendor.id);
+
         const result = await model.generateContent(prompt);
         let text = result.response.text();
         text = text.replace(/^```json/gm, '').replace(/^```/gm, '').trim();

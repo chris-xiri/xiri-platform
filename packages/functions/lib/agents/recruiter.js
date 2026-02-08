@@ -66,38 +66,22 @@ const analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = fals
     const modeDescription = hasActiveContract
         ? "URGENT FULFILLMENT: We need high-quality vendors ready to deploy. Be strict."
         : "DATABASE BUILDING: We are building a supply list. ACCEPT ALL VENDORS. Do not filter. Score is for reference only.";
-    const prompt = `
-    You are an expert procurement officer. Analyze the following list of vendors for the job query: "${jobQuery}".
-    
-    Context: ${modeDescription}
-    
-    For each vendor, calculate a Fit Score (0-100) based on these weighted factors:
-    1. **Relevance (30%)**: Does the vendor explicitly offer services matching "${jobQuery}"?
-    2. **Contact Info (30%)**: +15 points if Phone is present. +15 points if Email/Website indicates reachable contact.
-    3. **Confidence (40%)**: How certain are you that they operate in the target service area and industry?
-    
-    Identify:
-    - **Industry**: Specific category (e.g. Commercial Cleaning, HVAC).
-    - **Business Type**: "Franchise" or "Independent". Favor "Independent" slightly in scoring if equal relevance.
-    
-    Return a JSON array where each object contains:
-    - index: (original index)
-    - specialty: (classified category)
-    - businessType: ("Franchise" or "Independent")
-    - fitScore: (calculated 0-100)
-    - isQualified: (boolean, true if fitScore >= ${threshold})
-    - reasoning: (short string explaining the score)
-    
-    Input List:
-    ${JSON.stringify(rawVendors.map((v, i) => ({
-        index: i,
-        name: v.name || v.companyName,
-        description: v.description || v.services,
-        website: v.website,
-        phone: v.phone
-    })))}
-    `;
     try {
+        // Fetch prompt from database
+        const templateDoc = await db.collection("templates").doc("recruiter_analysis_prompt").get();
+        if (!templateDoc.exists) {
+            throw new Error("Recruiter analysis prompt not found in database");
+        }
+        const template = templateDoc.data();
+        const vendorList = JSON.stringify(rawVendors.map((v, i) => ({
+            index: i,
+            name: v.name || v.companyName,
+            description: v.description || v.services,
+            website: v.website,
+            phone: v.phone
+        })));
+        // Replace variables
+        const prompt = template === null || template === void 0 ? void 0 : template.content.replace(/\{\{query\}\}/g, jobQuery).replace(/\{\{modeDescription\}\}/g, modeDescription).replace(/\{\{threshold\}\}/g, threshold.toString()).replace(/\{\{vendorList\}\}/g, vendorList);
         const result = await model.generateContent(prompt);
         const response = result.response;
         const text = response.text();

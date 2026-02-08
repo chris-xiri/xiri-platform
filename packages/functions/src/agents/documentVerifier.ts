@@ -1,6 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import * as admin from "firebase-admin";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const db = admin.firestore();
 
 interface VerificationResult {
     valid: boolean;
@@ -53,30 +55,26 @@ export async function verifyDocument(docType: 'COI' | 'W9', vendorName: string, 
         `;
     }
 
-    const prompt = `
-        You are an expert Insurance Compliance Officer.
-        Analyze the following OCR text extracted from a ${docType} document for vendor "${vendorName}" (${specialty}).
-
-        Requirements:
-        1. Name must match "${vendorName}" (fuzzy match ok).
-        2. ${docType === 'COI' ? 'Must have General Liability > $1,000,000 and valid dates.' : 'Must be signed and have a TIN.'}
-
-        OCR Text:
-        """
-        ${simulatedOcrText}
-        """
-
-        Output strictly JSON:
-        {
-            "valid": boolean,
-            "reasoning": "string (concise summary for admin)",
-            "extracted": {
-                // key fields found
-            }
-        }
-    `;
-
     try {
+        // Fetch prompt from database
+        const templateDoc = await db.collection("templates").doc("document_verifier_prompt").get();
+        if (!templateDoc.exists) {
+            throw new Error("Document verifier prompt not found in database");
+        }
+
+        const template = templateDoc.data();
+        const requirements = docType === 'COI'
+            ? 'Must have General Liability > $1,000,000 and valid dates.'
+            : 'Must be signed and have a TIN.';
+
+        // Replace variables
+        const prompt = template?.content
+            .replace(/\{\{documentType\}\}/g, docType)
+            .replace(/\{\{vendorName\}\}/g, vendorName)
+            .replace(/\{\{specialty\}\}/g, specialty)
+            .replace(/\{\{requirements\}\}/g, requirements)
+            .replace(/\{\{ocrText\}\}/g, simulatedOcrText);
+
         const result = await model.generateContent({
             contents: [{ role: "user", parts: [{ text: prompt }] }]
         });

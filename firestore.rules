@@ -12,6 +12,22 @@ service cloud.firestore {
       allow read, write: if true;
     }
     
+    match /outreach_queue/{queueId} {
+      allow read, write: if true;
+    }
+
+    // Templates collection (read-only for frontend, write for admin)
+    match /templates/{templateId} {
+      allow read: if true; // Allow all reads for now
+      allow write: if true; // TODO: Restrict to admin users
+    }
+
+    // Agent configs collection
+    match /agent_configs/{agentId} {
+      allow read: if true;
+      allow write: if true; // TODO: Restrict to admin users
+    }
+    
     // Default deny for other collections
     match /{document=**} {
       allow read, write: if false;
