@@ -18,6 +18,24 @@ export interface Vendor {
     statusUpdatedAt?: any;
     rating?: number;
     totalRatings?: number;
+    onboardingStep?: number;
+    speedTrack?: boolean;
+    qualification?: Record<string, boolean | null>;
+    compliance?: {
+        coi?: ComplianceDoc;
+        w9?: ComplianceDoc;
+    };
+}
+
+export interface ComplianceDoc {
+    status: 'PENDING' | 'VERIFIED' | 'REJECTED';
+    url?: string;
+    uploadedAt?: any;
+    aiAnalysis?: {
+        valid: boolean;
+        reasoning: string;
+        extracted?: Record<string, any>;
+    };
 }
 
 export interface OutreachEvent {

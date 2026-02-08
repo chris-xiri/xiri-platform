@@ -2,7 +2,8 @@ import { telegramWebhook, autoApproveVendor, onVendorCreated } from "./triggers/
 import { onVendorApproved } from "./triggers/onVendorApproved";
 import { processOutreachQueue } from "./triggers/outreachWorker";
 import { onIncomingMessage } from "./triggers/onIncomingMessage";
-export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage };
+import { onDocumentUploaded } from "./triggers/onDocumentUploaded";
+export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };
 export declare const generateLeads: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     message: string;
     sourced: number;

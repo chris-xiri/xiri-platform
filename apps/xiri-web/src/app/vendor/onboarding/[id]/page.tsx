@@ -158,6 +158,16 @@ export default function OnboardingPage() {
 
             toast({ title: "Uploaded!", description: `${type} received.` });
 
+            // Save to Vendor Doc
+            const field = type === 'COI' ? 'compliance.coi' : 'compliance.w9';
+            await updateDoc(doc(db, "vendors", id), {
+                [field]: {
+                    status: 'PENDING',
+                    url: `https://mock.storage/${type}.pdf`,
+                    uploadedAt: serverTimestamp()
+                }
+            });
+
             await addDoc(collection(db, "vendor_activities"), {
                 vendorId: id,
                 type: 'DOC_UPLOAD',
@@ -247,8 +257,9 @@ export default function OnboardingPage() {
                 </div>
 
             </CardContent>
-            <CardFooter>
-                <Button className="w-full" onClick={handleQualification} disabled={!requirements.every(r => answers[r.id] !== undefined) || answers['entity'] === undefined}>
+            <CardFooter className="flex gap-4">
+                <Button variant="ghost" onClick={() => setStep(1)}>Back</Button>
+                <Button className="flex-1" onClick={handleQualification} disabled={!requirements.every(r => answers[r.id] !== undefined) || answers['entity'] === undefined}>
                     Continue <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
             </CardFooter>
@@ -348,6 +359,9 @@ export default function OnboardingPage() {
                                 </Button>
                             </div>
                         </CardContent>
+                        <CardFooter>
+                            <Button variant="ghost" className="w-full" onClick={() => setStep(2)}>Back to Qualification</Button>
+                        </CardFooter>
                     </>
                 )}
 

@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.testNotification = exports.runRecruiterAgent = exports.clearPipeline = exports.generateLeads = exports.onIncomingMessage = exports.processOutreachQueue = exports.onVendorApproved = exports.onVendorCreated = exports.autoApproveVendor = exports.telegramWebhook = void 0;
+exports.testNotification = exports.runRecruiterAgent = exports.clearPipeline = exports.generateLeads = exports.onDocumentUploaded = exports.onIncomingMessage = exports.processOutreachQueue = exports.onVendorApproved = exports.onVendorCreated = exports.autoApproveVendor = exports.telegramWebhook = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
 const recruiter_1 = require("./agents/recruiter");
@@ -48,6 +48,8 @@ const outreachWorker_1 = require("./triggers/outreachWorker");
 Object.defineProperty(exports, "processOutreachQueue", { enumerable: true, get: function () { return outreachWorker_1.processOutreachQueue; } });
 const onIncomingMessage_1 = require("./triggers/onIncomingMessage");
 Object.defineProperty(exports, "onIncomingMessage", { enumerable: true, get: function () { return onIncomingMessage_1.onIncomingMessage; } });
+const onDocumentUploaded_1 = require("./triggers/onDocumentUploaded");
+Object.defineProperty(exports, "onDocumentUploaded", { enumerable: true, get: function () { return onDocumentUploaded_1.onDocumentUploaded; } });
 // Initialize Admin only once
 if (!admin.apps.length) {
     admin.initializeApp();

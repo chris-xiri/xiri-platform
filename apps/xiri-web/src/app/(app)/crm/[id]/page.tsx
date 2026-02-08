@@ -371,17 +371,63 @@ export default function VendorDetailPage() {
                                     </div>
                                 )}
 
-                                {(vendor.status === 'COMPLIANCE_REVIEW' || vendor.status === 'ACTIVE') && (
-                                    <div className="space-y-2 pt-2 border-t text-sm">
-                                        <p className="font-medium">Documents</p>
-                                        <div className="flex gap-2">
-                                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open('https://mock.storage/COI.pdf', '_blank')}>
-                                                View COI
-                                            </Button>
-                                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open('https://mock.storage/W9.pdf', '_blank')}>
-                                                View W9
-                                            </Button>
+                                {(vendor.status === 'COMPLIANCE_REVIEW' || vendor.status === 'ACTIVE' || vendor.compliance) && (
+                                    <div className="space-y-3 pt-2 border-t text-sm">
+                                        <p className="font-medium">Compliance Documents</p>
+
+                                        {/* COI */}
+                                        <div className="flex items-center justify-between border p-2 rounded bg-muted/20">
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant={vendor.compliance?.coi?.status === 'VERIFIED' ? 'secondary' : 'outline'} className={
+                                                    vendor.compliance?.coi?.status === 'VERIFIED' ? "bg-green-100 text-green-800 border-green-200" :
+                                                        vendor.compliance?.coi?.status === 'REJECTED' ? "bg-red-100 text-red-800 border-red-200" : "bg-yellow-50 text-yellow-800 border-yellow-200"
+                                                }>
+                                                    {vendor.compliance?.coi?.status || 'MISSING'}
+                                                </Badge>
+                                                <span>General Liability (COI)</span>
+                                            </div>
+                                            {vendor.compliance?.coi?.url ? (
+                                                <Button variant="ghost" size="sm" className="h-6 text-xs text-blue-600 hover:text-blue-800" onClick={() => window.open(vendor.compliance?.coi?.url, '_blank')}>
+                                                    View
+                                                </Button>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground italic">Not uploaded</span>
+                                            )}
                                         </div>
+
+                                        {/* W9 */}
+                                        <div className="flex items-center justify-between border p-2 rounded bg-muted/20">
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant={vendor.compliance?.w9?.status === 'VERIFIED' ? 'secondary' : 'outline'} className={
+                                                    vendor.compliance?.w9?.status === 'VERIFIED' ? "bg-green-100 text-green-800 border-green-200" :
+                                                        vendor.compliance?.w9?.status === 'REJECTED' ? "bg-red-100 text-red-800 border-red-200" : "bg-yellow-50 text-yellow-800 border-yellow-200"
+                                                }>
+                                                    {vendor.compliance?.w9?.status || 'MISSING'}
+                                                </Badge>
+                                                <span>W-9 Form</span>
+                                            </div>
+                                            {vendor.compliance?.w9?.url ? (
+                                                <Button variant="ghost" size="sm" className="h-6 text-xs text-blue-600 hover:text-blue-800" onClick={() => window.open(vendor.compliance?.w9?.url, '_blank')}>
+                                                    View
+                                                </Button>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground italic">Not uploaded</span>
+                                            )}
+                                        </div>
+
+                                        {/* AI Analysis Placeholder */}
+                                        {(vendor.compliance?.coi?.aiAnalysis || vendor.compliance?.w9?.aiAnalysis) && (
+                                            <div className="bg-blue-50 border border-blue-100 p-3 rounded text-xs space-y-2">
+                                                <p className="font-bold flex items-center gap-1 text-blue-800">
+                                                    <Bot className="w-3 h-3" /> AI Analysis
+                                                </p>
+                                                {vendor.compliance?.coi?.aiAnalysis && (
+                                                    <div>
+                                                        <span className="font-semibold">COI:</span> {vendor.compliance.coi.aiAnalysis.reasoning}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </CardContent>
