@@ -34,32 +34,62 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             Xiri Platform
                         </Link>
                         <div className="flex gap-4">
-                            {/* Supply Section */}
+                            {/* Supply Dropdown */}
                             {showSupplyNav && (
-                                <>
-                                    <Link href="/supply/recruitment" className="flex items-center gap-2 text-sm hover:text-primary">
-                                        <Package className="w-4 h-4" />
-                                        Recruitment
-                                    </Link>
-                                    <Link href="/supply/crm" className="flex items-center gap-2 text-sm hover:text-primary">
-                                        <Users className="w-4 h-4" />
-                                        Vendor CRM
-                                    </Link>
-                                </>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="flex items-center gap-1">
+                                            <Package className="w-4 h-4" />
+                                            Supply
+                                            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/supply/recruitment" className="flex items-center gap-2 cursor-pointer">
+                                                <Package className="w-4 h-4" />
+                                                Sourcing
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/supply/crm" className="flex items-center gap-2 cursor-pointer">
+                                                <Users className="w-4 h-4" />
+                                                Contractors
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             )}
 
-                            {/* Sales Section */}
+                            {/* Sales Dropdown */}
                             {showSalesNav && (
-                                <>
-                                    <Link href="/sales/dashboard" className="flex items-center gap-2 text-sm hover:text-primary">
-                                        <DollarSign className="w-4 h-4" />
-                                        Sales Dashboard
-                                    </Link>
-                                    <Link href="/sales/crm" className="flex items-center gap-2 text-sm hover:text-primary">
-                                        <Users className="w-4 h-4" />
-                                        Sales CRM
-                                    </Link>
-                                </>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="flex items-center gap-1">
+                                            <DollarSign className="w-4 h-4" />
+                                            Sales
+                                            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/sales/dashboard" className="flex items-center gap-2 cursor-pointer">
+                                                <DollarSign className="w-4 h-4" />
+                                                Dashboard
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/sales/crm" className="flex items-center gap-2 cursor-pointer">
+                                                <Users className="w-4 h-4" />
+                                                Sales CRM
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             )}
                         </div>
                     </div>
