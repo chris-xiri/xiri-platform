@@ -2,33 +2,64 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write access to the vendors collection
-    match /vendors/{document=**} {
-      allow read, write: if true;
+    
+    // Helper function to check if user has a specific role
+    function hasRole(role) {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny([role]);
     }
-
-    // Allow read/write access to vendor_activities
-    match /vendor_activities/{document=**} {
-      allow read, write: if true;
+    
+    // Helper function to check if user has any of the specified roles
+    function hasAnyRole(roles) {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(roles);
+    }
+    
+    // Users collection - users can only read/write their own document
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null; // Allow user creation on signup
+    }
+    
+    // SUPPLY SIDE (Vendors, Recruitment)
+    match /vendors/{vendorId} {
+      allow read, write: if hasAnyRole(['admin', 'recruiter']);
+    }
+    
+    match /vendor_activities/{activityId} {
+      allow read, write: if hasAnyRole(['admin', 'recruiter']);
     }
     
     match /outreach_queue/{queueId} {
-      allow read, write: if true;
-    }
-
-    // Templates collection (read-only for frontend, write for admin)
-    match /templates/{templateId} {
-      allow read: if true; // Allow all reads for now
-      allow write: if true; // TODO: Restrict to admin users
-    }
-
-    // Agent configs collection
-    match /agent_configs/{agentId} {
-      allow read: if true;
-      allow write: if true; // TODO: Restrict to admin users
+      allow read, write: if hasAnyRole(['admin', 'recruiter']);
     }
     
-    // Default deny for other collections
+    // SALES SIDE (Leads, Clients) - NEW
+    match /sales_leads/{leadId} {
+      allow read, write: if hasAnyRole(['admin', 'sales']);
+    }
+    
+    match /sales_activities/{activityId} {
+      allow read, write: if hasAnyRole(['admin', 'sales']);
+    }
+    
+    match /sales_outreach_queue/{queueId} {
+      allow read, write: if hasAnyRole(['admin', 'sales']);
+    }
+    
+    // ADMIN ONLY (Settings, Templates, Agents)
+    match /templates/{templateId} {
+      allow read: if request.auth != null; // All authenticated users can read
+      allow write: if hasRole('admin');
+    }
+    
+    match /agent_configs/{agentId} {
+      allow read: if request.auth != null;
+      allow write: if hasRole('admin');
+    }
+    
+    // Default deny
     match /{document=**} {
       allow read, write: if false;
     }

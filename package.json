@@ -24,6 +24,7 @@
         "node": ">=22"
     },
     "dependencies": {
+        "@radix-ui/react-label": "^2.1.8",
         "firebase-admin": "^13.6.0",
         "node-fetch": "^2.7.0"
     }
