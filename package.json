@@ -1,15 +1,15 @@
 {
     "name": "xiri-platform",
-    "packageManager": "npm@11.6.2",
     "private": true,
     "workspaces": [
         "apps/*",
         "packages/*"
     ],
     "scripts": {
+        "dev": "turbo dev --parallel",
+        "dev:public": "npm run dev -w @xiri/public-site",
+        "dev:dash": "npm run dev -w @xiri/dashboard",
         "build": "turbo run build",
-        "build:web": "turbo run build --filter=xiri-web",
-        "dev": "turbo run dev",
         "lint": "turbo run lint",
         "format": "prettier --write \"**/*.{ts,tsx,md}\""
     },
@@ -27,5 +27,12 @@
         "@radix-ui/react-label": "^2.1.8",
         "firebase-admin": "^13.6.0",
         "node-fetch": "^2.7.0"
-    }
+    },
+    "overrides": {
+        "react": "19.2.3",
+        "react-dom": "19.2.3",
+        "@types/react": "npm:types-react@19.0.0-rc.1",
+        "@types/react-dom": "npm:types-react-dom@19.0.0-rc.1"
+    },
+    "packageManager": "npm@10.8.2"
 }

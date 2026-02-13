@@ -26,10 +26,10 @@ export const notifyHumanReview = async (vendorId: string) => {
 
     const message = `🚨 *New Vendor Review*
 
-*Name:* ${vendor.companyName}
+*Name:* ${vendor.businessName}
 *Type:* ${vendor.businessType || 'Unknown'}
-*Specialty:* ${vendor.specialty}
-*Location:* ${vendor.location}
+*Specialty:* ${vendor.capabilities?.join(', ') || 'N/A'}
+*Location:* ${vendor.address}
 *AI Fit Score:* ${vendor.fitScore}
 
 *Contact:*
@@ -90,12 +90,12 @@ export const telegramWebhook = onRequest({ secrets: ["TELEGRAM_BOT_TOKEN", "OPS_
 // Define actions
 bot.action(/approve_(.+)/, async (ctx) => {
     const vendorId = ctx.match[1].replace('approve_', ''); // regex match group 1
-    await updateVendorStatus(vendorId, 'APPROVED', ctx);
+    await updateVendorStatus(vendorId, 'active', ctx);
 });
 
 bot.action(/reject_(.+)/, async (ctx) => {
     const vendorId = ctx.match[1].replace('reject_', '');
-    await updateVendorStatus(vendorId, 'REJECTED', ctx);
+    await updateVendorStatus(vendorId, 'rejected', ctx);
 });
 
 // Fix regex matching access: ctx.match is RegExpExecArray in newer telegraf? 
@@ -129,8 +129,8 @@ export const autoApproveVendor = onRequest(async (req, res) => {
 
     if (doc.exists) {
         const data = doc.data() as Vendor;
-        if (data.status === 'PENDING_REVIEW') {
-            await ref.update({ status: 'AI_AUTO_APPROVED' });
+        if (data.status === 'pending_review') {
+            await ref.update({ status: 'qualified' });
             console.log(`Auto-approved vendor ${vendorId}`);
         } else {
             console.log(`Vendor ${vendorId} status is ${data.status}, skipping auto-approve.`);
@@ -154,7 +154,7 @@ export const onVendorCreated = onDocumentCreated({
     }
     const data = snapshot.data() as Vendor;
 
-    if (data.status === 'PENDING_REVIEW') {
+    if (data.status === 'pending_review') {
         const vendorId = event.params.vendorId;
         console.log(`New pending vendor detected: ${vendorId}. Sending notification.`);
         await notifyHumanReview(vendorId);

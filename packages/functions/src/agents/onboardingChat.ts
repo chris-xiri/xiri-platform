@@ -46,9 +46,9 @@ export async function processVendorMessage(vendorId: string, userMessage: string
 
     if (onboarding.status === 'NOT_STARTED' || onboarding.currentStep === 'WELCOME') {
         // TRANSITION: WELCOME -> ENTITY_CHECK
-        nextStatus = 'IN_PROGRESS';
+        nextStatus = 'onboarding'; // Use valid status
         nextStep = 'ENTITY_CHECK';
-        reply = `Hi ${vendor.companyName}. To verify eligibility for ${vendor.location || 'contracts'}, are you a registered LLC or Inc?`;
+        reply = `Hi ${vendor.businessName}. To verify eligibility for ${vendor.address || 'contracts'}, are you a registered LLC or Inc?`;
 
     } else if (onboarding.currentStep === 'ENTITY_CHECK') {
         // CLASSIFY ANSWER
@@ -61,7 +61,7 @@ export async function processVendorMessage(vendorId: string, userMessage: string
             reply = "Great. Do you carry at least $2M General Liability Insurance?";
         } else {
             // FAIL
-            nextStatus = 'DISQUALIFIED';
+            nextStatus = 'DISQUALIFIED'; // This is onboarding status, fine
             nextStep = 'DONE';
             updates['onboarding.disqualificationReason'] = 'Entity Type (Not LLC/Inc)';
             reply = "We currently require vendors to be incorporated (LLC or Inc) to join our network.";
@@ -76,7 +76,7 @@ export async function processVendorMessage(vendorId: string, userMessage: string
             nextStatus = 'COMPLETED';
             nextStep = 'DONE';
             updates['onboarding.hasInsurance'] = true;
-            updates['status'] = 'ONBOARDED'; // Global Vendor Status
+            updates['status'] = 'active'; // Global Vendor Status
             reply = "✅ Verified. You are now in our Preferred Network. We will contact you via SMS when a job matches your profile.";
         } else {
             // FAIL

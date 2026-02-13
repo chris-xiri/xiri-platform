@@ -13,28 +13,28 @@ async function testGeneration() {
 
     const vendor: Vendor = {
         id: "test-id",
-        companyName: "Chris' Cleaning",
-        location: "New Hyde Park, NY",
-        specialty: "Commercial Cleaning",
+        businessName: "Chris' Cleaning",
+        address: "New Hyde Park, NY",
+        capabilities: ["general"],
         email: "test@example.com",
         phone: "+15555555555",
-        status: "APPROVED",
+        status: "active",
         createdAt: new Date()
     };
 
     // SCENARIO 1: Building Supply (Default)
     console.log(`\n=== SCENARIO 1: Building Supply (No Active Contract) ===`);
-    vendor.hasActiveContract = false;
+    // vendor.hasActiveContract = false; // Removed from type
     await runScenario(vendor);
 
     // SCENARIO 2: Active Contract
     console.log(`\n=== SCENARIO 2: Active Contract (Immediate Need) ===`);
-    vendor.hasActiveContract = true;
+    // vendor.hasActiveContract = true; // Removed from type
     await runScenario(vendor);
 }
 
 async function runScenario(vendor: Vendor) {
-    console.log(`Vendor: ${vendor.companyName}`);
+    console.log(`Vendor: ${vendor.businessName}`);
 
     // Test Email
     try {

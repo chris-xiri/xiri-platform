@@ -1,0 +1,62 @@
+
+> @xiri/public-site@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1244.4ms
+  Running TypeScript ...
+  Collecting page data using 19 workers ...
+  Generating static pages using 19 workers (0/568) ...
+  Generating static pages using 19 workers (142/568) 
+  Generating static pages using 19 workers (284/568) 
+  Generating static pages using 19 workers (426/568) 
+✓ Generating static pages using 19 workers (568/568) in 2.5s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ● /[slug]
+│ ├ /medical-office-cleaning
+│ ├ /urgent-care-cleaning
+│ ├ /surgery-center-cleaning
+│ └ [+45 more paths]
+└ ● /[slug]/[location]
+  ├ /medical-office-cleaning/garden-city-ny
+  ├ /medical-office-cleaning/hempstead-ny
+  ├ /medical-office-cleaning/great-neck-ny
+  └ [+513 more paths]
+
+
+○  (Static)  prerendered as static content
+●  (SSG)     prerendered as static HTML (uses generateStaticParams)
+
+
+> @xiri/public-site@0.1.0 postbuild
+> next-sitemap
+
+✨ [next-sitemap] Loading next-sitemap config: file:///K:/Repos/xiri-platform/apps/public-site/next-sitemap.config.js
+✅ [next-sitemap] Generation completed
+┌───────────────┬────────┐
+│ (index)       │ Values │
+├───────────────┼────────┤
+│ indexSitemaps │ 1      │
+│ sitemaps      │ 1      │
+└───────────────┴────────┘
+-----------------------------------------------------
+ SITEMAP INDICES 
+-----------------------------------------------------
+
+   ○ https://www.xiri.com/sitemap.xml
+
+
+-----------------------------------------------------
+ SITEMAPS 
+-----------------------------------------------------
+
+   ○ https://www.xiri.com/sitemap-0.xml
+
+

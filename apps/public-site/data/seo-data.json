@@ -1,0 +1,1230 @@
+{
+  "industries": [
+    {
+      "slug": "medical-offices",
+      "name": "Medical Offices",
+      "heroTitle": "Clinical-Grade Facility Management",
+      "heroSubtitle": "We protect your accreditation with JCAHO-compliant cleaning and documentation. From waiting rooms to sterile fields.",
+      "coreServices": [
+        "medical-office-cleaning",
+        "consumable-procurement",
+        "floor-care",
+        "waste-management",
+        "disinfecting-services",
+        "handyman-services"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "JCAHO Compliant",
+          "description": "Our FSMs ensure your facility logs and standards meet JCAHO & OSHA requirements.",
+          "icon": "shield-check"
+        },
+        {
+          "title": "Nightly Audits",
+          "description": "Our Night Manager physically verifies terminal cleaning protocols every night.",
+          "icon": "microscope"
+        },
+        {
+          "title": "One Invoice",
+          "description": "Consolidate cleaning, biohazard, and supplies into one tracked monthly bill.",
+          "icon": "invoice"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How do you handle audit documentation?",
+          "answer": "We maintain digital logs of every service, chemical used, and inspection performed, readily available for your JCAHO or state inspections."
+        },
+        {
+          "question": "Do you handle biohazard waste?",
+          "answer": "Yes. Our partnered waste management contractors are fully certified to handle red-bag waste in compliance with OSHA and local regulations."
+        },
+        {
+          "question": "How do you ensure quality?",
+          "answer": "Unlike other companies that set it and forget it, we employ Night Managers who physically audit our contractors' work to ensuring consistent quality."
+        }
+      ]
+    },
+    {
+      "slug": "urgent-care",
+      "name": "Urgent Care Centers",
+      "heroTitle": "High-Velocity Urgent Care Maintenance",
+      "heroSubtitle": "Keep your waiting rooms empty and your exam rooms sterile with rapid-turnover cleaning.",
+      "coreServices": [
+        "urgent-care-cleaning",
+        "consumable-procurement",
+        "floor-care",
+        "waste-management",
+        "day-porter",
+        "parking-lot-maintenance"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "Rapid Response",
+          "description": "Our FSMs are on call 24/7 to handle spills and biohazards immediately.",
+          "icon": "lightning"
+        },
+        {
+          "title": "Infection Control",
+          "description": "Hospital-grade disinfectants to prevent cross-contamination in high-traffic areas.",
+          "icon": "shield"
+        },
+        {
+          "title": "One Invoice",
+          "description": "Simplify your AP process with a single invoice for all facility services.",
+          "icon": "invoice"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Can you handle high-traffic waiting rooms?",
+          "answer": "Absolutely. Our contractors specialize in high-turnover environments, using hospital-grade disinfectants to keep waiting areas safe for patients."
+        },
+        {
+          "question": "What about flu season demands?",
+          "answer": "We scale our porter services during peak seasons to ensure your facility remains sanitary despite increased patient volume."
+        }
+      ]
+    },
+    {
+      "slug": "surgery-centers",
+      "name": "Surgery Centers",
+      "heroTitle": "Audit-Ready Management for Surgery Centers",
+      "heroSubtitle": "Terminal cleaning and sterile protocols designed for AAAHC and CMS compliance.",
+      "coreServices": [
+        "surgery-center-cleaning",
+        "consumable-procurement",
+        "floor-care",
+        "biohazard-waste",
+        "hvac-filter-replacement",
+        "terminal-cleaning"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "Audit Ready",
+          "description": "We guarantee your facility is ready for AAAHC/CMS unannounced surveys.",
+          "icon": "clipboard-check"
+        },
+        {
+          "title": "Terminal Cleaning",
+          "description": "AORN-standard cleaning verified nightly by our clinical auditors.",
+          "icon": "microscope"
+        },
+        {
+          "title": "One Invoice",
+          "description": "Streamline your overhead with a single consolidated facility invoice.",
+          "icon": "invoice"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Are your contractors certified for OR cleaning?",
+          "answer": "Yes. We only deploy contractors with specific training in AORN standards and terminal cleaning protocols for operating rooms."
+        },
+        {
+          "question": "How do you verify sterilization?",
+          "answer": "Our Night Managers utilize ATP testing and visual inspections to audit the performance of our cleaning contractors every night."
+        }
+      ]
+    },
+    {
+      "slug": "auto-dealerships",
+      "name": "Auto Dealerships",
+      "heroTitle": "Facility Services That Drive Sales",
+      "heroSubtitle": "Boost your CSI scores with a spotless showroom. We handle the cleaning so you can sell cars.",
+      "coreServices": [
+        "auto-dealership-cleaning",
+        "consumable-procurement",
+        "floor-care",
+        "window-cleaning",
+        "pressure-washing",
+        "snow-removal"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "Boost CSI Scores",
+          "description": "A cleaner facility leads to happier customers and better survey scores.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Showroom Shine",
+          "description": "High-gloss floor care to make your inventory pop under the lights.",
+          "icon": "moon"
+        },
+        {
+          "title": "One Invoice",
+          "description": "Manage janitorial, windows, and snow removal with one simple bill.",
+          "icon": "invoice"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Do you clean shop floors?",
+          "answer": "Yes. Our contractors use industrial scrubbers to remove grease and oil from service bay floors, keeping your shop safe and professional."
+        },
+        {
+          "question": "Can you handle late night showroom cleaning?",
+          "answer": "Yes. We work around your sales hours, typically overnight, to ensure you open to a pristine showroom every morning."
+        }
+      ]
+    },
+    {
+      "slug": "daycare-preschool",
+      "name": "Daycares & Preschools",
+      "heroTitle": "The Safest Standard for Childcare Facilities",
+      "heroSubtitle": "Viral prevention and non-toxic cleaning to keep children safe and parents reassured.",
+      "coreServices": [
+        "daycare-cleaning",
+        "consumable-procurement",
+        "floor-care",
+        "safe-pest-control",
+        "security-access-control",
+        "carpet-upholstery"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "Viral Prevention",
+          "description": "Proactive disinfecting protocols to stop the spread of colds and flu.",
+          "icon": "shield-check"
+        },
+        {
+          "title": "Non-Toxic Safety",
+          "description": "We strictly enforce the use of Green Seal certified, child-safe products.",
+          "icon": "baby-carriage"
+        },
+        {
+          "title": "Background Checked",
+          "description": "Every single contractor is vetted for safety in child-focused environments.",
+          "icon": "user-tie"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Are your cleaning products safe for kids?",
+          "answer": "Absolutely. We strictly require our contractors to use Green Seal certified, non-toxic products that are safe for children and pets."
+        },
+        {
+          "question": "How do you handle flu outbreaks?",
+          "answer": "We have specific viral prevention protocols (electrostatic spraying) ready to deploy immediately upon notification of an illness."
+        }
+      ]
+    }
+  ],
+  "services": [
+    {
+      "slug": "medical-office-cleaning",
+      "targetFacilityType": "medical_private",
+      "name": "Medical Office Cleaning",
+      "shortDescription": "Specialized cleaning for healthcare facilities focused on infection control.",
+      "benefits": [
+        "JCAHO & OSHA Compliant",
+        "Hospital-Grade Disinfectants",
+        "Trained in Bloodborne Pathogens",
+        "Nightly Terminal Cleaning"
+      ],
+      "valueProps": [
+        {
+          "icon": "🏥",
+          "title": "Medical Grade",
+          "description": "JCAHO & OSHA compliant."
+        }
+      ],
+      "heroTitle": "Professional Medical Office Cleaning"
+    },
+    {
+      "slug": "urgent-care-cleaning",
+      "targetFacilityType": "medical_urgent_care",
+      "name": "Urgent Care Cleaning",
+      "shortDescription": "Rapid response cleaning for high-traffic urgent care centers.",
+      "benefits": [
+        "Rapid Response",
+        "High-Traffic Disinfection"
+      ],
+      "valueProps": [
+        {
+          "icon": "⚡",
+          "title": "Rapid Response",
+          "description": "Fast resolution."
+        }
+      ],
+      "heroTitle": "Urgent Care Cleaning Services"
+    },
+    {
+      "slug": "surgery-center-cleaning",
+      "targetFacilityType": "medical_surgery",
+      "name": "Surgery Center Cleaning",
+      "shortDescription": "Sterile audit-ready cleaning for ambulatory surgery centers.",
+      "benefits": [
+        "Terminal Cleaning",
+        "CMS Compliance"
+      ],
+      "valueProps": [
+        {
+          "icon": "🧼",
+          "title": "Sterile",
+          "description": "OR-grade cleaning."
+        }
+      ],
+      "heroTitle": "Surgery Center Cleaning"
+    },
+    {
+      "slug": "auto-dealership-cleaning",
+      "targetFacilityType": "auto_dealer_showroom",
+      "name": "Auto Dealership Cleaning",
+      "shortDescription": "Showroom-ready cleaning to enhance customer experience.",
+      "benefits": [
+        "High-Gloss Floors",
+        "Streak-Free Windows"
+      ],
+      "valueProps": [
+        {
+          "icon": "🚗",
+          "title": "Showroom Shine",
+          "description": "Spotless presentation."
+        }
+      ],
+      "heroTitle": "Auto Dealership Cleaning"
+    },
+    {
+      "slug": "daycare-cleaning",
+      "targetFacilityType": "edu_daycare",
+      "name": "Daycare Cleaning",
+      "shortDescription": "Safe, non-toxic cleaning for sensitive environments.",
+      "benefits": [
+        "Green Seal Products",
+        "Toy Sanitization"
+      ],
+      "valueProps": [
+        {
+          "icon": "🧸",
+          "title": "Child Safe",
+          "description": "Non-toxic products."
+        }
+      ],
+      "heroTitle": "Daycare & Preschool Cleaning"
+    },
+    {
+      "slug": "consumable-procurement",
+      "targetFacilityType": "other",
+      "name": "Consumables & Supplies",
+      "shortDescription": "Never run out of toilet paper, soap, or paper towels again.",
+      "valueProps": [
+        {
+          "icon": "🧻",
+          "title": "Always Stocked",
+          "description": "Automatic replenishment."
+        }
+      ],
+      "benefits": [
+        "Inventory Management",
+        "Cost Savings"
+      ],
+      "heroTitle": "Janitorial Supply Procurement"
+    },
+    {
+      "slug": "floor-care",
+      "targetFacilityType": "other",
+      "name": "Floor Care",
+      "shortDescription": "Hard floor maintenance, stripping, waxing, and buffing.",
+      "valueProps": [
+        {
+          "icon": "✨",
+          "title": "High Shine",
+          "description": "Extend floor life."
+        }
+      ],
+      "benefits": [
+        "Strip & Wax",
+        "Tile & Grout"
+      ],
+      "heroTitle": "Commercial Floor Care Services"
+    },
+    {
+      "slug": "window-cleaning",
+      "targetFacilityType": "other",
+      "name": "Window Washing",
+      "shortDescription": "Interior and exterior window cleaning for a crystal clear view.",
+      "valueProps": [
+        {
+          "icon": "🪟",
+          "title": "Streak Free",
+          "description": "Professional equipment."
+        }
+      ],
+      "benefits": [
+        "Interior/Exterior",
+        "High Rise Capable"
+      ],
+      "heroTitle": "Commercial Window Washing"
+    },
+    {
+      "slug": "carpet-upholstery",
+      "targetFacilityType": "other",
+      "name": "Carpet & Upholstery",
+      "shortDescription": "Deep cleaning extraction to remove stains and allergens.",
+      "valueProps": [
+        {
+          "icon": "🧹",
+          "title": "Deep Clean",
+          "description": "Hot water extraction."
+        }
+      ],
+      "benefits": [
+        "Stain Removal",
+        "Odor Elimination"
+      ],
+      "heroTitle": "Commercial Carpet Cleaning"
+    },
+    {
+      "slug": "annual-maintenance",
+      "targetFacilityType": "other",
+      "name": "Annual Maintenance Program",
+      "shortDescription": "Preventative maintenance programs to prevent costly repairs.",
+      "valueProps": [
+        {
+          "icon": "📅",
+          "title": "Scheduled",
+          "description": "Routine upkeep."
+        }
+      ],
+      "benefits": [
+        "Cost Savings",
+        "Equipment Longevity"
+      ],
+      "heroTitle": "Preventative Maintenance"
+    },
+    {
+      "slug": "blinds-cleaning",
+      "targetFacilityType": "other",
+      "name": "Blinds Cleaning",
+      "shortDescription": "Ultrasonic cleaning to brighten up your facility windows.",
+      "valueProps": [
+        {
+          "icon": "🌤️",
+          "title": "Brighten Up",
+          "description": "Remove dust & grime."
+        }
+      ],
+      "benefits": [
+        "Ultrasonic Tech",
+        "Dust Removal"
+      ],
+      "heroTitle": "Commercial Blinds Cleaning"
+    },
+    {
+      "slug": "commercial-cleaning",
+      "targetFacilityType": "other",
+      "name": "Commercial Cleaning",
+      "shortDescription": "Consistent pristine clean tailored to your facility type.",
+      "valueProps": [
+        {
+          "icon": "🏢",
+          "title": "Tailored",
+          "description": "Custom scopes."
+        }
+      ],
+      "benefits": [
+        "Consistent Quality",
+        "Trained Crews"
+      ],
+      "heroTitle": "Commercial Cleaning Services"
+    },
+    {
+      "slug": "construction-cleaning",
+      "targetFacilityType": "other",
+      "name": "Construction Cleaning",
+      "shortDescription": "Post-construction clean-up for renovations or new builds.",
+      "valueProps": [
+        {
+          "icon": "🚧",
+          "title": "Post-Reno",
+          "description": "Dust & debris removal."
+        }
+      ],
+      "benefits": [
+        "Rough Clean",
+        "Final Clean"
+      ],
+      "heroTitle": "Post-Construction Cleaning"
+    },
+    {
+      "slug": "day-porter",
+      "targetFacilityType": "other",
+      "name": "Day Porters",
+      "shortDescription": "Daytime staff to oversee your building during business hours.",
+      "valueProps": [
+        {
+          "icon": "☀️",
+          "title": "Daytime Support",
+          "description": "Continuous care."
+        }
+      ],
+      "benefits": [
+        "Restroom Restocking",
+        "Spill Cleanup"
+      ],
+      "heroTitle": "Day Porter Services"
+    },
+    {
+      "slug": "detail-cleaning",
+      "targetFacilityType": "other",
+      "name": "Detail Cleaning",
+      "shortDescription": "Thorough cleaning for events, VIP visits, or deep cleans.",
+      "valueProps": [
+        {
+          "icon": "🔍",
+          "title": "Meticulous",
+          "description": "High attention to detail."
+        }
+      ],
+      "benefits": [
+        "Event Prep",
+        "Deep Clean"
+      ],
+      "heroTitle": "Detail Cleaning Services"
+    },
+    {
+      "slug": "disinfecting-services",
+      "targetFacilityType": "other",
+      "name": "Disinfecting Services",
+      "shortDescription": "EPA-registered disinfectants to eliminate germs and viruses.",
+      "valueProps": [
+        {
+          "icon": "🦠",
+          "title": "Sanitized",
+          "description": "EPA-registered."
+        }
+      ],
+      "benefits": [
+        "Viral Control",
+        "Healthier Workplace"
+      ],
+      "heroTitle": "Commercial Disinfecting"
+    },
+    {
+      "slug": "emergency-response",
+      "targetFacilityType": "other",
+      "name": "Emergency Response",
+      "shortDescription": "24/7 response for fire, flood, and weather emergencies.",
+      "valueProps": [
+        {
+          "icon": "🚨",
+          "title": "24/7 Ready",
+          "description": "Immediate dispatch."
+        }
+      ],
+      "benefits": [
+        "Water Mitigation",
+        "Storm Cleanup"
+      ],
+      "heroTitle": "Emergency Response Services"
+    },
+    {
+      "slug": "event-services",
+      "targetFacilityType": "other",
+      "name": "Event Services",
+      "shortDescription": "Cleaning and maintenance management for corporate or engaging events.",
+      "valueProps": [
+        {
+          "icon": "🎉",
+          "title": "Event Ready",
+          "description": "Pre & post clean."
+        }
+      ],
+      "benefits": [
+        "Venue Turnovers",
+        "Trash Management"
+      ],
+      "heroTitle": "Event Cleaning Services"
+    },
+    {
+      "slug": "exterior-painting",
+      "targetFacilityType": "other",
+      "name": "Exterior Painting",
+      "shortDescription": "Refresh your building's curb appeal with professional painting.",
+      "valueProps": [
+        {
+          "icon": "🎨",
+          "title": "Curb Appeal",
+          "description": "Fresh look."
+        }
+      ],
+      "benefits": [
+        "Weather Protection",
+        "Branding"
+      ],
+      "heroTitle": "Commercial Exterior Painting"
+    },
+    {
+      "slug": "flood-restoration",
+      "targetFacilityType": "other",
+      "name": "Flood Restoration",
+      "shortDescription": "Quick response to water damage to prevent disruption.",
+      "valueProps": [
+        {
+          "icon": "💧",
+          "title": "Water Damage",
+          "description": "Extraction & drying."
+        }
+      ],
+      "benefits": [
+        "Mold Prevention",
+        "Structural Drying"
+      ],
+      "heroTitle": "Flood Restoration Services"
+    },
+    {
+      "slug": "hvac-services",
+      "targetFacilityType": "other",
+      "name": "HVAC Services",
+      "shortDescription": "Routine maintenance and air quality improvements.",
+      "valueProps": [
+        {
+          "icon": "❄️",
+          "title": "Climate Control",
+          "description": "Efficient systems."
+        }
+      ],
+      "benefits": [
+        "Filter Changes",
+        "Preventative Maint"
+      ],
+      "heroTitle": "Commercial HVAC Services"
+    },
+    {
+      "slug": "handyman-services",
+      "targetFacilityType": "other",
+      "name": "Handyman",
+      "shortDescription": "Preventative maintenance and repairs for small facility issues.",
+      "valueProps": [
+        {
+          "icon": "🔧",
+          "title": "Fix It All",
+          "description": "General repairs."
+        }
+      ],
+      "benefits": [
+        "Minor Repairs",
+        "Assembly"
+      ],
+      "heroTitle": "Commercial Handyman Services"
+    },
+    {
+      "slug": "interior-painting",
+      "targetFacilityType": "other",
+      "name": "Interior Painting",
+      "shortDescription": "Refresh your business interior to increase property value.",
+      "valueProps": [
+        {
+          "icon": "🖌️",
+          "title": "Fresh Look",
+          "description": "Professional finish."
+        }
+      ],
+      "benefits": [
+        "Wall Repair",
+        "Color Consultation"
+      ],
+      "heroTitle": "Commercial Interior Painting"
+    },
+    {
+      "slug": "janitorial-services",
+      "targetFacilityType": "other",
+      "name": "Janitorial Services",
+      "shortDescription": "Daily or nightly cleaning services for professional maintenance.",
+      "valueProps": [
+        {
+          "icon": "🧹",
+          "title": "Daily Clean",
+          "description": "Reliable crews."
+        }
+      ],
+      "benefits": [
+        "Trash Removal",
+        "Vacuuming"
+      ],
+      "heroTitle": "Commercial Janitorial Services"
+    },
+    {
+      "slug": "kitchen-cleaning",
+      "targetFacilityType": "other",
+      "name": "Kitchen Cleaning",
+      "shortDescription": "Deep cleaning for hoods, ovens, and large equipment.",
+      "valueProps": [
+        {
+          "icon": "🍳",
+          "title": "Deep Clean",
+          "description": "Grease removal."
+        }
+      ],
+      "benefits": [
+        "Hood Cleaning",
+        "Compliance"
+      ],
+      "heroTitle": "Commercial Kitchen Cleaning"
+    },
+    {
+      "slug": "labor-solutions",
+      "targetFacilityType": "other",
+      "name": "Labor Solutions",
+      "shortDescription": "Staffing support for general facility needs.",
+      "valueProps": [
+        {
+          "icon": "👷",
+          "title": "Staffing",
+          "description": "Reliable hands."
+        }
+      ],
+      "benefits": [
+        "Temp Staff",
+        "General Labor"
+      ],
+      "heroTitle": "Facility Labor Solutions"
+    },
+    {
+      "slug": "landscaping",
+      "targetFacilityType": "other",
+      "name": "Lawn & Landscaping",
+      "shortDescription": "Commercial grounds maintenance and oversight.",
+      "valueProps": [
+        {
+          "icon": "🌳",
+          "title": "Curb Appeal",
+          "description": "Mowing & pruning."
+        }
+      ],
+      "benefits": [
+        "Seasonal Color",
+        "Irrigation"
+      ],
+      "heroTitle": "Commercial Landscaping"
+    },
+    {
+      "slug": "lighting",
+      "targetFacilityType": "other",
+      "name": "Lighting",
+      "shortDescription": "Bulb replacement and fixture maintenance.",
+      "valueProps": [
+        {
+          "icon": "💡",
+          "title": "Bright",
+          "description": "LED upgrades."
+        }
+      ],
+      "benefits": [
+        "Energy Savings",
+        "Maintenance"
+      ],
+      "heroTitle": "Commercial Lighting Services"
+    },
+    {
+      "slug": "matting-services",
+      "targetFacilityType": "other",
+      "name": "Matting Services",
+      "shortDescription": "Entryway mats to protect floors and improve safety.",
+      "valueProps": [
+        {
+          "icon": "👣",
+          "title": "Safety",
+          "description": "Slip prevention."
+        }
+      ],
+      "benefits": [
+        "Custom Logos",
+        "Rental Service"
+      ],
+      "heroTitle": "Commercial Matting Services"
+    },
+    {
+      "slug": "mold-remediation",
+      "targetFacilityType": "other",
+      "name": "Mold Remediation",
+      "shortDescription": "Removal of mold caused by excess moisture.",
+      "valueProps": [
+        {
+          "icon": "🍄",
+          "title": "Removal",
+          "description": "Safe remediation."
+        }
+      ],
+      "benefits": [
+        "Air Quality",
+        "Moisture Control"
+      ],
+      "heroTitle": "Commercial Mold Remediation"
+    },
+    {
+      "slug": "parking-lot-maintenance",
+      "targetFacilityType": "other",
+      "name": "Parking Lot/Paving",
+      "shortDescription": "Pothole repair, striping, and safety maintenance.",
+      "valueProps": [
+        {
+          "icon": "🅿️",
+          "title": "Safety",
+          "description": "Smooth surfaces."
+        }
+      ],
+      "benefits": [
+        "Striping",
+        "Sealcoating"
+      ],
+      "heroTitle": "Parking Lot Maintenance"
+    },
+    {
+      "slug": "safe-pest-control",
+      "targetFacilityType": "other",
+      "name": "Pest Control Services",
+      "shortDescription": "Essential pest management for a healthy environment.",
+      "valueProps": [
+        {
+          "icon": "🐜",
+          "title": "Pest Free",
+          "description": "Integrated management."
+        }
+      ],
+      "benefits": [
+        "Prevention",
+        "Treatment"
+      ],
+      "heroTitle": "Commercial Pest Control"
+    },
+    {
+      "slug": "plumbing",
+      "targetFacilityType": "other",
+      "name": "Plumbing",
+      "shortDescription": "Proactive maintenance and emergency plumbing support.",
+      "valueProps": [
+        {
+          "icon": "🚰",
+          "title": "Flow",
+          "description": "Leak repair."
+        }
+      ],
+      "benefits": [
+        "Drain Cleaning",
+        "Fixture Repair"
+      ],
+      "heroTitle": "Commercial Plumbing Services"
+    },
+    {
+      "slug": "pressure-washing",
+      "targetFacilityType": "other",
+      "name": "Pressure Washing",
+      "shortDescription": "Remove mold, mildew, and grime from exterior surfaces.",
+      "valueProps": [
+        {
+          "icon": "💦",
+          "title": "Deep Clean",
+          "description": "High pressure."
+        }
+      ],
+      "benefits": [
+        "Facades",
+        "Sidewalks"
+      ],
+      "heroTitle": "Commercial Pressure Washing"
+    },
+    {
+      "slug": "roofing",
+      "targetFacilityType": "other",
+      "name": "Roofing",
+      "shortDescription": "Repairs, replacements, and inspections.",
+      "valueProps": [
+        {
+          "icon": "🏠",
+          "title": "Protection",
+          "description": "Leak prevention."
+        }
+      ],
+      "benefits": [
+        "Inspections",
+        "Repairs"
+      ],
+      "heroTitle": "Commercial Roofing Services"
+    },
+    {
+      "slug": "security-access-control",
+      "targetFacilityType": "other",
+      "name": "Security & Access Control",
+      "shortDescription": "Maintaining safety with secure areas and access control.",
+      "valueProps": [
+        {
+          "icon": "🔒",
+          "title": "Secure",
+          "description": "Data protection."
+        }
+      ],
+      "benefits": [
+        "Cameras",
+        "Access Systems"
+      ],
+      "heroTitle": "Facility Security Services"
+    },
+    {
+      "slug": "snow-removal",
+      "targetFacilityType": "other",
+      "name": "Snow Services",
+      "shortDescription": "Commercial snow removal and ice management.",
+      "valueProps": [
+        {
+          "icon": "❄️",
+          "title": "Clear",
+          "description": "Plowing & salting."
+        }
+      ],
+      "benefits": [
+        "24/7 Response",
+        "Liability Reduction"
+      ],
+      "heroTitle": "Commercial Snow Removal"
+    },
+    {
+      "slug": "tenant-improvement",
+      "targetFacilityType": "other",
+      "name": "Tenant Improvement",
+      "shortDescription": "Building upkeep and appearance improvements.",
+      "valueProps": [
+        {
+          "icon": "🔨",
+          "title": "Upgrades",
+          "description": "Value add."
+        }
+      ],
+      "benefits": [
+        "Renovations",
+        "Remodels"
+      ],
+      "heroTitle": "Tenant Improvement Services"
+    },
+    {
+      "slug": "waste-management",
+      "targetFacilityType": "other",
+      "name": "Waste Management",
+      "shortDescription": "Trash, recycling, and biohazard removal.",
+      "benefits": [
+        "Regular Pickup",
+        "Compliance"
+      ],
+      "valueProps": [
+        {
+          "icon": "🗑️",
+          "title": "Removal",
+          "description": "Responsible disposal."
+        }
+      ],
+      "heroTitle": "Commercial Waste Management"
+    },
+    {
+      "slug": "biohazard-waste",
+      "targetFacilityType": "other",
+      "name": "Biohazard Waste",
+      "shortDescription": "Specialized red-bag waste removal for medical facilities.",
+      "benefits": [
+        "Compliance",
+        "Safety"
+      ],
+      "valueProps": [
+        {
+          "icon": "☣️",
+          "title": "Biohazard",
+          "description": "Compliant disposal."
+        }
+      ],
+      "heroTitle": "Biohazard Waste Removal"
+    },
+    {
+      "slug": "safes-pest-control",
+      "targetFacilityType": "other",
+      "name": "Safe Pest Control",
+      "shortDescription": "Non-toxic pest control for sensitive environments.",
+      "benefits": [
+        "Non-Toxic",
+        "Effective"
+      ],
+      "valueProps": [
+        {
+          "icon": "🐞",
+          "title": "Safe",
+          "description": "Pet & child safe."
+        }
+      ],
+      "heroTitle": "Safe Pest Control"
+    },
+    {
+      "slug": "terminal-cleaning",
+      "targetFacilityType": "other",
+      "name": "Terminal Cleaning",
+      "shortDescription": "Deep cleaning and disinfection of healthcare environments.",
+      "benefits": [
+        "Infection Prevention",
+        "Patient Safety"
+      ],
+      "valueProps": [
+        {
+          "icon": "🏥",
+          "title": "Terminal",
+          "description": "Highest standard."
+        }
+      ],
+      "heroTitle": "Terminal Cleaning Services"
+    },
+    {
+      "slug": "hvac-filter-replacement",
+      "targetFacilityType": "other",
+      "name": "HVAC Filter Replacement",
+      "shortDescription": "Regular filter changes to ensure air quality.",
+      "benefits": [
+        "Air Quality",
+        "Efficiency"
+      ],
+      "valueProps": [
+        {
+          "icon": "💨",
+          "title": "Clean Air",
+          "description": "Regular rotation."
+        }
+      ],
+      "heroTitle": "HVAC Filter Replacement"
+    }
+  ],
+  "locations": [
+    {
+      "slug": "garden-city-ny",
+      "name": "Garden City, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "zipCodes": [
+        "11530",
+        "11531"
+      ],
+      "landmarks": [
+        "Roosevelt Field Mall",
+        "Adelphi University",
+        "Nassau Community College"
+      ],
+      "nearbyCities": [
+        "Hempstead",
+        "Mineola",
+        "Westbury"
+      ]
+    },
+    {
+      "slug": "hempstead-ny",
+      "name": "Hempstead, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "zipCodes": [
+        "11549",
+        "11550",
+        "11551"
+      ],
+      "landmarks": [
+        "Hofstra University",
+        "Hempstead Lake State Park"
+      ],
+      "nearbyCities": [
+        "Garden City",
+        "West Hempstead",
+        "Uniondale"
+      ]
+    },
+    {
+      "slug": "great-neck-ny",
+      "name": "Great Neck, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "zipCodes": [
+        "11020",
+        "11021",
+        "11022",
+        "11023",
+        "11024"
+      ],
+      "landmarks": [
+        "Merchant Marine Academy",
+        "Great Neck Plaza"
+      ],
+      "nearbyCities": [
+        "Manhasset",
+        "Roslyn",
+        "Port Washington"
+      ]
+    },
+    {
+      "slug": "mineola-ny",
+      "name": "Mineola, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "zipCodes": [
+        "11501"
+      ],
+      "landmarks": [
+        "NYU Langone Hospital",
+        "Mineola LIRR Station"
+      ],
+      "nearbyCities": [
+        "Garden City",
+        "Williston Park",
+        "East Williston"
+      ]
+    },
+    {
+      "slug": "huntington-ny",
+      "name": "Huntington, NY",
+      "state": "NY",
+      "region": "Suffolk County",
+      "zipCodes": [
+        "11743"
+      ],
+      "landmarks": [
+        "The Paramount",
+        "Heckscher Park"
+      ],
+      "nearbyCities": [
+        "Cold Spring Harbor",
+        "Greenlawn",
+        "Huntington Station"
+      ]
+    },
+    {
+      "slug": "islip-ny",
+      "name": "Islip, NY",
+      "state": "NY",
+      "region": "Suffolk County",
+      "zipCodes": [
+        "11751"
+      ],
+      "landmarks": [
+        "Islip Town Hall",
+        "Heckscher State Park"
+      ],
+      "nearbyCities": [
+        "Bay Shore",
+        "East Islip",
+        "Great River"
+      ]
+    },
+    {
+      "slug": "babylon-ny",
+      "name": "Babylon, NY",
+      "state": "NY",
+      "region": "Suffolk County",
+      "zipCodes": [
+        "11702"
+      ],
+      "landmarks": [
+        "Argyle Park",
+        "Babylon LIRR"
+      ],
+      "nearbyCities": [
+        "West Babylon",
+        "North Babylon",
+        "Lindenhurst"
+      ]
+    },
+    {
+      "slug": "brookhaven-ny",
+      "name": "Brookhaven, NY",
+      "state": "NY",
+      "region": "Suffolk County",
+      "zipCodes": [
+        "11719"
+      ],
+      "landmarks": [
+        "Brookhaven National Lab",
+        "Wertheim National Wildlife Refuge"
+      ],
+      "nearbyCities": [
+        "Bellport",
+        "Mastic",
+        "Shirley"
+      ]
+    },
+    {
+      "slug": "flushing-ny",
+      "name": "Flushing, NY",
+      "state": "NY",
+      "region": "Queens",
+      "zipCodes": [
+        "11354",
+        "11355",
+        "11358"
+      ],
+      "landmarks": [
+        "Citi Field",
+        "Flushing Meadows Corona Park",
+        "Queens Botanical Garden"
+      ],
+      "nearbyCities": [
+        "Whitestone",
+        "College Point",
+        "Bayside"
+      ]
+    },
+    {
+      "slug": "jamaica-ny",
+      "name": "Jamaica, NY",
+      "state": "NY",
+      "region": "Queens",
+      "zipCodes": [
+        "11432",
+        "11433",
+        "11434"
+      ],
+      "landmarks": [
+        "JFK Airport",
+        "York College"
+      ],
+      "nearbyCities": [
+        "St. Albans",
+        "South Ozone Park",
+        "Richmond Hill"
+      ]
+    },
+    {
+      "slug": "astoria-ny",
+      "name": "Astoria, NY",
+      "state": "NY",
+      "region": "Queens",
+      "zipCodes": [
+        "11102",
+        "11103",
+        "11105",
+        "11106"
+      ],
+      "landmarks": [
+        "Astoria Park",
+        "Museum of the Moving Image"
+      ],
+      "nearbyCities": [
+        "Long Island City",
+        "Sunnyside",
+        "Woodside"
+      ]
+    },
+    {
+      "slug": "forest-hills-ny",
+      "name": "Forest Hills, NY",
+      "state": "NY",
+      "region": "Queens",
+      "zipCodes": [
+        "11375"
+      ],
+      "landmarks": [
+        "Forest Hills Stadium",
+        "Austin Street"
+      ],
+      "nearbyCities": [
+        "Rego Park",
+        "Kew Gardens",
+        "Briarwood"
+      ]
+    }
+  ]
+}

@@ -80,20 +80,20 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
                 const vendorRef = db.collection('vendors').doc(); // Auto-ID
                 const newVendor: Vendor = {
                     id: vendorRef.id,
-                    companyName: originalVendor.name || originalVendor.companyName,
-                    specialty: item.specialty,
-                    location: originalVendor.location || "Unknown",
-                    phone: originalVendor.phone || null,
-                    email: originalVendor.email || null, // Ensure email is passed if sourced
-                    website: originalVendor.website || null,
-                    businessType: item.businessType || "Unknown",
+                    businessName: originalVendor.name || originalVendor.companyName || "Unknown",
+                    capabilities: item.specialty ? [item.specialty] : [],
+                    address: originalVendor.location || "Unknown",
+                    phone: originalVendor.phone || undefined,
+                    email: originalVendor.email || undefined,
+                    website: originalVendor.website || undefined,
+                    // businessType: item.businessType || "Unknown", // Removing as it's not in shared Vendor? Wait, checking shared
                     fitScore: item.fitScore,
-                    hasActiveContract: hasActiveContract, // Use the passed parameter
-                    status: 'PENDING_REVIEW', // or 'SCRAPED' depending on workflow
+                    // hasActiveContract: hasActiveContract, // Not in shared Vendor
+                    status: 'pending_review',
                     createdAt: new Date()
                 };
 
-                console.log(`Adding qualified vendor to batch: ${newVendor.companyName}`);
+                console.log(`Adding qualified vendor to batch: ${newVendor.businessName}`);
                 batch.set(vendorRef, newVendor);
             }
         }
@@ -107,7 +107,35 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
         }
 
     } catch (err: any) {
+        console.error("AI Analysis Failed:", err.message);
         errors.push(err.message);
+
+        // Fallback: Save vendors without analysis if AI fails
+        console.log("Saving raw vendors with 'pending_review' status due to AI failure...");
+
+        for (const originalVendor of rawVendors) {
+            const vendorRef = db.collection('vendors').doc();
+            const newVendor: Vendor = {
+                id: vendorRef.id,
+                businessName: originalVendor.name || originalVendor.companyName || "Unknown",
+                capabilities: [],
+                address: originalVendor.location || "Unknown",
+                phone: originalVendor.phone || undefined,
+                email: originalVendor.email || undefined,
+                website: originalVendor.website || undefined,
+                fitScore: 0,
+                status: 'pending_review',
+                aiReasoning: `AI Analysis Failed: ${err.message}`,
+                createdAt: new Date()
+            };
+            batch.set(vendorRef, newVendor);
+            qualified++;
+        }
+
+        if (qualified > 0) {
+            console.log(`Committing batch of ${qualified} fallback vendors...`);
+            await batch.commit();
+        }
     }
 
     return { analyzed, qualified, errors };
