@@ -40,13 +40,16 @@ export interface Lead {
 }
 
 export type VendorStatus =
-    | 'pending_review'      // New/Scraped
-    | 'qualified'           // AI or Human verified fit
-    | 'compliance_review'   // Collecting COI/W9
-    | 'onboarding'          // Scheduling setup
-    | 'active'              // Ready for jobs
-    | 'suspended'           // Temporary hold
-    | 'rejected';           // Not a fit
+    | 'PENDING_REVIEW'        // New/Scraped (legacy uppercase)
+    | 'pending_review'        // New/Scraped
+    | 'QUALIFIED'             // AI or Human verified fit (legacy uppercase)
+    | 'qualified'             // AI or Human verified fit
+    | 'compliance_review'     // NEW: Form submitted, awaiting doc verification
+    | 'onboarding_scheduled'  // NEW: Docs approved, intro call scheduled
+    | 'ready_for_assignment'  // NEW: Call completed, ready for jobs
+    | 'active'                // Ready for jobs / Working contracts
+    | 'suspended'             // Temporary hold
+    | 'rejected';             // Not a fit
 
 export interface Vendor {
     id?: string;
@@ -86,6 +89,7 @@ export interface Vendor {
 
     // Compliance
     compliance?: {
+        // Legacy fields
         insuranceExp?: Date;
         backgroundCheck?: boolean;
         hipaaTrained?: boolean;
@@ -94,6 +98,26 @@ export interface Vendor {
         // Detailed Compliance (Supply Engine)
         coi?: ComplianceDoc;
         w9?: ComplianceDoc;
+
+        // Onboarding Form Fields (New)
+        hasBusinessEntity?: boolean;
+        generalLiability?: {
+            hasInsurance: boolean;
+            verified: boolean;
+        };
+        workersComp?: {
+            hasInsurance: boolean;
+            verified: boolean;
+        };
+        autoInsurance?: {
+            hasInsurance: boolean;
+            verified: boolean;
+        };
+        additionalInsurance?: Array<{
+            type: string;
+            hasInsurance: boolean;
+            verified: boolean;
+        }>;
     };
 
     // Legacy Fields (Optional)

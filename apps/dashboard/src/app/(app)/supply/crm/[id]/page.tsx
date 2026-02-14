@@ -21,6 +21,7 @@ import Link from 'next/link';
 import VendorContacts from '@/components/vendor/VendorContacts';
 import VendorAssignments from '@/components/vendor/VendorAssignments';
 import VendorFinancials from '@/components/vendor/VendorFinancials';
+import VendorCompliance from '@/components/vendor/VendorCompliance';
 
 interface PageProps {
     params: Promise<{
@@ -182,13 +183,9 @@ export default function CRMDetailPage(props: PageProps) {
                         <VendorFinancials vendor={vendor} />
                     </TabsContent>
 
-                    {/* PLACEHOLDERS */}
+                    {/* TAB: COMPLIANCE */}
                     <TabsContent value="compliance">
-                        <div className="p-8 text-center bg-muted/20 rounded-lg border border-dashed">
-                            <ShieldCheck className="w-12 h-12 mx-auto text-muted-foreground/30 mb-2" />
-                            <h3 className="font-medium">Compliance Module</h3>
-                            <p className="text-sm text-muted-foreground">Document verification coming soon.</p>
-                        </div>
+                        <VendorCompliance vendor={vendor} />
                     </TabsContent>
                     <TabsContent value="activity">
                         <div className="p-8 text-center bg-muted/20 rounded-lg border border-dashed">

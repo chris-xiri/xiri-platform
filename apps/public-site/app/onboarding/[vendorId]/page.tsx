@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../../lib/firebase"; // Check path
+import { db } from "../../../lib/firebase";
 import { Vendor } from "@xiri/shared";
-import { Loader2, CheckCircle, Upload, ShieldCheck, Briefcase, Building } from "lucide-react";
+import { Loader2, CheckCircle, Upload, ShieldCheck, Briefcase, Building, Globe } from "lucide-react";
+import { t } from "../translations";
 
 export default function OnboardingPage() {
     const params = useParams();
@@ -15,21 +16,48 @@ export default function OnboardingPage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [completed, setCompleted] = useState(false);
+    const [language, setLanguage] = useState<'en' | 'es'>('en');
 
-    // Form State
-    const [liabilityInsurance, setLiabilityInsurance] = useState(false);
-    const [hasLLC, setHasLLC] = useState(false);
+    // Editable Business Info
+    const [companyName, setCompanyName] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+
+    // Form State - Insurance
+    const [hasBusinessEntity, setHasBusinessEntity] = useState(false);
+    const [hasGeneralLiability, setHasGeneralLiability] = useState(false);
+    const [hasWorkersComp, setHasWorkersComp] = useState(false);
+    const [hasAutoInsurance, setHasAutoInsurance] = useState(false);
+    const [hasPollutionLiability, setHasPollutionLiability] = useState(false);
 
     // File Upload Mock (In real app, use Firebase Storage)
     const [coiUploaded, setCoiUploaded] = useState(false);
     const [w9Uploaded, setW9Uploaded] = useState(false);
+
+    // State-based insurance requirements
+    const vendorState = vendor?.state || 'NY';
+    const requiresWorkersComp = vendorState !== 'TX';
+    const requiresPollution = vendor?.capabilities?.includes('medical');
 
     useEffect(() => {
         if (!vendorId) return;
 
         const unsubscribe = onSnapshot(doc(db, "vendors", vendorId), (doc) => {
             if (doc.exists()) {
-                setVendor({ id: doc.id, ...doc.data() } as Vendor);
+                const vendorData = { id: doc.id, ...doc.data() } as Vendor;
+                setVendor(vendorData);
+
+                // Initialize editable fields from vendor data
+                setCompanyName(vendorData.businessName || '');
+                setEmail(vendorData.email || '');
+                // Format phone number on load
+                const rawPhone = vendorData.phone || '';
+                const formattedPhone = rawPhone.replace(/\D/g, '');
+                if (formattedPhone.length === 10) {
+                    setPhone(`(${formattedPhone.slice(0, 3)}) ${formattedPhone.slice(3, 6)}-${formattedPhone.slice(6, 10)}`);
+                } else {
+                    setPhone(rawPhone);
+                }
             }
             setLoading(false);
         });
@@ -37,19 +65,60 @@ export default function OnboardingPage() {
         return () => unsubscribe();
     }, [vendorId]);
 
+    // Phone number formatting helper
+    const formatPhoneNumber = (value: string) => {
+        // Remove all non-digits
+        const phoneNumber = value.replace(/\D/g, '');
+
+        // Format as (xxx) xxx-xxxx
+        if (phoneNumber.length <= 3) {
+            return phoneNumber;
+        } else if (phoneNumber.length <= 6) {
+            return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+        } else {
+            return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+        }
+    };
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const formatted = formatPhoneNumber(e.target.value);
+        setPhone(formatted);
+    };
+
     const handleSubmit = async () => {
         if (!vendor) return;
         setSubmitting(true);
 
         try {
-            await updateDoc(doc(db, "vendors", vendor.id!), {
-                status: vendor.onboardingTrack === "FAST_TRACK" ? "compliance_review" : "pending_review",
-                // Simulate saving form data
-                compliance: {
-                    ...vendor.compliance,
-                    insuranceExp: liabilityInsurance ? new Date() : undefined, // Mock
-                    w9Collected: w9Uploaded
+            const complianceData: any = {
+                hasBusinessEntity,
+                generalLiability: {
+                    hasInsurance: hasGeneralLiability,
+                    verified: false
                 },
+                workersComp: {
+                    hasInsurance: hasWorkersComp,
+                    verified: false
+                },
+                autoInsurance: {
+                    hasInsurance: hasAutoInsurance,
+                    verified: false
+                },
+                w9Collected: w9Uploaded
+            };
+
+            // Add trade-specific insurance if applicable
+            if (requiresPollution) {
+                complianceData.additionalInsurance = [{
+                    type: 'Pollution Liability',
+                    hasInsurance: hasPollutionLiability,
+                    verified: false
+                }];
+            }
+
+            await updateDoc(doc(db, "vendors", vendor.id!), {
+                status: vendor.onboardingTrack === "FAST_TRACK" ? "compliance_review" : "active",
+                compliance: complianceData,
                 updatedAt: serverTimestamp()
             });
             setCompleted(true);
@@ -120,107 +189,221 @@ export default function OnboardingPage() {
 
             <main className="max-w-3xl mx-auto -mt-8 px-6 pb-20">
                 <div className="bg-white rounded-xl shadow-xl p-8 border border-slate-100">
+                    {/* Qualification Questions FIRST */}
                     <div className="mb-8 pb-8 border-b border-slate-100">
-                        <h2 className="text-xl font-semibold text-slate-900 mb-2">Business Information</h2>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <h2 className="text-xl font-semibold text-slate-900 mb-2">Qualification</h2>
+                        <p className="text-sm text-slate-600 mb-6 italic">Calificación</p>
+
+                        <div className="space-y-6">
+                            {/* Business Entity */}
                             <div>
-                                <span className="block text-slate-500 mb-1">Company Name</span>
-                                <span className="font-medium text-slate-900">{vendor.businessName}</span>
+                                <label className="block text-sm font-medium text-slate-900 mb-3">
+                                    Do you have a registered business entity (LLC/Corp)?
+                                    <span className="block text-xs text-slate-500 italic mt-1">¿Tiene una entidad comercial registrada (LLC/Corp)?</span>
+                                </label>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setHasBusinessEntity(true)}
+                                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasBusinessEntity === true
+                                            ? 'bg-green-600 text-white shadow-lg shadow-green-200'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                    >
+                                        Yes <span className="text-sm opacity-80">/ Sí</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setHasBusinessEntity(false)}
+                                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasBusinessEntity === false
+                                            ? 'bg-red-600 text-white shadow-lg shadow-red-200'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                    >
+                                        No
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* General Liability */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-900 mb-3">
+                                    Do you have General Liability Insurance ($1M minimum)?
+                                    <span className="block text-xs text-slate-500 italic mt-1">¿Tiene Seguro de Responsabilidad General (mínimo $1M)?</span>
+                                </label>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setHasGeneralLiability(true)}
+                                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasGeneralLiability === true
+                                            ? 'bg-green-600 text-white shadow-lg shadow-green-200'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                    >
+                                        Yes <span className="text-sm opacity-80">/ Sí</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setHasGeneralLiability(false)}
+                                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasGeneralLiability === false
+                                            ? 'bg-red-600 text-white shadow-lg shadow-red-200'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                    >
+                                        No
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Workers Comp */}
+                            <div className={requiresWorkersComp ? 'p-4 bg-orange-50 border border-orange-200 rounded-lg' : ''}>
+                                <label className="block text-sm font-medium text-slate-900 mb-3">
+                                    Do you have Workers' Compensation Insurance?
+                                    {requiresWorkersComp && <span className="text-orange-600 ml-2">(Required in {vendorState})</span>}
+                                    <span className="block text-xs text-slate-500 italic mt-1">¿Tiene Seguro de Compensación para Trabajadores?</span>
+                                </label>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setHasWorkersComp(true)}
+                                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasWorkersComp === true
+                                            ? 'bg-green-600 text-white shadow-lg shadow-green-200'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                    >
+                                        Yes <span className="text-sm opacity-80">/ Sí</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setHasWorkersComp(false)}
+                                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasWorkersComp === false
+                                            ? 'bg-red-600 text-white shadow-lg shadow-red-200'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                    >
+                                        No
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Commercial Auto */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-900 mb-3">
+                                    Do you have Commercial Auto Insurance?
+                                    <span className="block text-xs text-slate-500 italic mt-1">¿Tiene Seguro de Auto Comercial?</span>
+                                </label>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setHasAutoInsurance(true)}
+                                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasAutoInsurance === true
+                                            ? 'bg-green-600 text-white shadow-lg shadow-green-200'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                    >
+                                        Yes <span className="text-sm opacity-80">/ Sí</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setHasAutoInsurance(false)}
+                                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasAutoInsurance === false
+                                            ? 'bg-red-600 text-white shadow-lg shadow-red-200'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                    >
+                                        No
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Pollution Liability (if medical) */}
+                            {requiresPollution && (
+                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <label className="block text-sm font-medium text-blue-900 mb-3">
+                                        Do you have Pollution Liability Insurance?
+                                        <span className="text-blue-600 ml-2">(Required for medical facilities)</span>
+                                        <span className="block text-xs text-blue-700 italic mt-1">¿Tiene Seguro de Responsabilidad por Contaminación?</span>
+                                    </label>
+                                    <div className="flex gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setHasPollutionLiability(true)}
+                                            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasPollutionLiability === true
+                                                ? 'bg-green-600 text-white shadow-lg shadow-green-200'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                }`}
+                                        >
+                                            Yes <span className="text-sm opacity-80">/ Sí</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setHasPollutionLiability(false)}
+                                            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasPollutionLiability === false
+                                                ? 'bg-red-600 text-white shadow-lg shadow-red-200'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                }`}
+                                        >
+                                            No
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Business Info SECOND */}
+                    <div className="mb-8 pb-8 border-b border-slate-100">
+                        <h2 className="text-xl font-semibold text-slate-900 mb-4">Business Information</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Company Name
+                                </label>
+                                <input
+                                    type="text"
+                                    value={companyName}
+                                    onChange={(e) => setCompanyName(e.target.value)}
+                                    placeholder="Enter company name"
+                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
                             </div>
                             <div>
-                                <span className="block text-slate-500 mb-1">Primary Email</span>
-                                <span className="font-medium text-slate-900">{vendor.email || "N/A"}</span>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Primary Email
+                                </label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Enter email address"
+                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Phone
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={phone}
+                                    onChange={handlePhoneChange}
+                                    placeholder="(555) 123-4567"
+                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
                             </div>
                         </div>
                     </div>
 
-                    {isFastTrack ? (
-                        /* FAST TRACK UI: File Uploads */
-                        <div className="space-y-6">
-                            <div className="bg-red-50 border border-red-100 rounded-lg p-4 flex gap-3">
-                                <ShieldCheck className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                                <div>
-                                    <h3 className="font-medium text-red-900">Compliance Required</h3>
-                                    <p className="text-sm text-red-700 mt-1">
-                                        You must upload proof of insurance and a W-9 to be assigned this contract.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${coiUploaded ? "border-green-300 bg-green-50" : "border-slate-200 hover:border-slate-300"}`}>
-                                    <Upload className={`w-8 h-8 mx-auto mb-3 ${coiUploaded ? "text-green-600" : "text-slate-400"}`} />
-                                    <h4 className="font-medium text-slate-900 mb-1">Liability Insurance (COI)</h4>
-                                    <p className="text-xs text-slate-500 mb-4">Must be valid for at least 3 months</p>
-                                    <button
-                                        onClick={() => setCoiUploaded(true)}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium ${coiUploaded ? "text-green-700 bg-green-200" : "bg-slate-900 text-white hover:bg-slate-800"}`}
-                                    >
-                                        {coiUploaded ? "Uploaded" : "Select File"}
-                                    </button>
-                                </div>
-
-                                <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${w9Uploaded ? "border-green-300 bg-green-50" : "border-slate-200 hover:border-slate-300"}`}>
-                                    <Upload className={`w-8 h-8 mx-auto mb-3 ${w9Uploaded ? "text-green-600" : "text-slate-400"}`} />
-                                    <h4 className="font-medium text-slate-900 mb-1">IRS Form W-9</h4>
-                                    <p className="text-xs text-slate-500 mb-4">Most recent tax year</p>
-                                    <button
-                                        onClick={() => setW9Uploaded(true)}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium ${w9Uploaded ? "text-green-700 bg-green-200" : "bg-slate-900 text-white hover:bg-slate-800"}`}
-                                    >
-                                        {w9Uploaded ? "Uploaded" : "Select File"}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        /* STANDARD TRACK UI: Checkboxes */
-                        <div className="space-y-6">
-                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3">
-                                <Network className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                                <div>
-                                    <h3 className="font-medium text-blue-900">Verification Steps</h3>
-                                    <p className="text-sm text-blue-700 mt-1">
-                                        Please confirm your eligibility. We will request documents only when a job is assigned.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-slate-50">
-                                    <input
-                                        type="checkbox"
-                                        checked={hasLLC}
-                                        onChange={(e) => setHasLLC(e.target.checked)}
-                                        className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span className="text-slate-700 font-medium">I have a registered business entity (LLC/Corp)</span>
-                                </label>
-                                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-slate-50">
-                                    <input
-                                        type="checkbox"
-                                        checked={liabilityInsurance}
-                                        onChange={(e) => setLiabilityInsurance(e.target.checked)}
-                                        className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span className="text-slate-700 font-medium">I have General Liability Insurance (Min $1M)</span>
-                                </label>
-                            </div>
-                        </div>
-                    )}
-
                     <div className="mt-8 pt-8 border-t border-slate-100 flex justify-end">
                         <button
                             onClick={handleSubmit}
-                            disabled={submitting || (isFastTrack && (!coiUploaded || !w9Uploaded)) || (!isFastTrack && (!hasLLC || !liabilityInsurance))}
-                            className={`px-8 py-3 rounded-lg font-bold text-white shadow-lg transition-all ${submitting
+                            disabled={submitting || hasBusinessEntity !== true || hasGeneralLiability !== true}
+                            className={`px-8 py-3 rounded-lg font-bold text-white shadow-lg transition-all ${submitting || hasBusinessEntity !== true || hasGeneralLiability !== true
                                     ? "bg-slate-400 cursor-not-allowed"
-                                    : isFastTrack
-                                        ? "bg-red-600 hover:bg-red-700 hover:shadow-red-200"
-                                        : "bg-blue-600 hover:bg-blue-700 hover:shadow-blue-200"
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    : "bg-blue-600 hover:bg-blue-700 hover:shadow-xl"
+                                }`}
                         >
-                            {submitting ? "Processing..." : isFastTrack ? "Submit Compliance Docs" : "Complete Registration"}
+                            {submitting ? "Submitting..." : "Complete Onboarding"}
                         </button>
                     </div>
                 </div>

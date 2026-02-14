@@ -23,8 +23,16 @@ service cloud.firestore {
     }
     
     // SUPPLY SIDE (Vendors, Recruitment)
+    // Vendors collection - allow public read/update for onboarding form
     match /vendors/{vendorId} {
-      allow read, write: if hasAnyRole(['admin', 'recruiter']);
+      // Public can read vendor data for onboarding form
+      allow read: if true;
+      
+      // Public can update vendor data for onboarding form submission
+      allow update: if true;
+      
+      // Only authenticated admin/recruiter can create/delete
+      allow create, delete: if hasAnyRole(['admin', 'recruiter']);
     }
     
     match /vendor_activities/{activityId} {
