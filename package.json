@@ -6,7 +6,8 @@
         "packages/*"
     ],
     "scripts": {
-        "dev": "turbo dev --parallel",
+        "dev": "node scripts/sync-env.js && turbo dev --parallel",
+        "sync:env": "node scripts/sync-env.js",
         "dev:public": "npm run dev -w @xiri/public-site",
         "dev:dash": "npm run dev -w @xiri/dashboard",
         "build": "turbo run build",

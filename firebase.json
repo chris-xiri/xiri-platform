@@ -18,7 +18,7 @@
         "rules": "firestore.rules"
     },
     "hosting": {
-        "public": "apps/xiri-web/dist",
+        "public": "apps/dashboard/public",
         "ignore": [
             "firebase.json",
             "**/.*",

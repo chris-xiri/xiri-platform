@@ -96,6 +96,24 @@ function IndustryHubPage({ industry }: { industry: SeoIndustry }) {
         s.targetFacilityType === 'other'
     );
 
+    // Map industry slug to icon/label
+    const getIndustryVisuals = (slug: string) => {
+        switch (slug) {
+            case 'medical-offices':
+                return { icon: '🏥', label: 'Medical & Surgical' };
+            case 'auto-dealerships':
+                return { icon: '🚘', label: 'Showroom & Service' };
+            case 'daycare-preschool':
+                return { icon: '🧸', label: 'Daycare & Education' };
+            case 'office-commercial':
+                return { icon: '🏢', label: 'Commercial Office' };
+            default:
+                return { icon: '✨', label: 'Facility Solutions' };
+        }
+    };
+
+    const visuals = getIndustryVisuals(industry.slug);
+
     return (
         <div className="min-h-screen bg-white">
             <JsonLd
@@ -113,6 +131,8 @@ function IndustryHubPage({ industry }: { industry: SeoIndustry }) {
                 title={industry.heroTitle}
                 subtitle={industry.heroSubtitle}
                 ctaText="Get a Facility Proposal"
+                industryIcon={visuals.icon}
+                industryLabel={visuals.label}
             />
 
             {/* TRUST / BENEFITS SECTION */}

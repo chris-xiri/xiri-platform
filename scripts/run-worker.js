@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8085';
 process.env.GEMINI_API_KEY = "AIza..."; // Will inherit from env if set, else might fail. Using placeholder.
 
 if (!admin.apps.length) {

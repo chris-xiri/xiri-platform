@@ -1,6 +1,6 @@
 const admin = require('firebase-admin');
 
-process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8085';
 process.env.GCLOUD_PROJECT = 'xiri-facility-solutions';
 
 admin.initializeApp({

@@ -20,7 +20,12 @@ export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, 
 // 1. Lead Sourcing Agent Trigger
 export const generateLeads = onCall({
     secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
-    cors: true,
+    cors: [
+        "http://localhost:3001", // Dashboard Dev
+        "http://localhost:3000", // Public Site Dev
+        "https://xiri-facility-solutions.web.app", // Production
+        "https://xiri-facility-solutions.firebaseapp.com"
+    ],
     timeoutSeconds: 540
 }, async (request) => {
     const data = request.data || {};

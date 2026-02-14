@@ -27,8 +27,11 @@ export default function CampaignLauncher() {
         setMessage("");
 
         try {
-            // Directly call the Cloud Function
-            const generateLeads = httpsCallable(functions, 'generateLeads');
+            // Directly call the Cloud Function with 60s timeout
+            // Directly call the Cloud Function with 60s timeout
+            // Note: The function name 'generateLeads' must match exactly what is exported in packages/functions/src/index.ts
+            const generateLeads = httpsCallable(functions, 'generateLeads', { timeout: 60000 });
+
             const result = await generateLeads({
                 query,
                 location,
@@ -103,8 +106,8 @@ export default function CampaignLauncher() {
                         <button
                             onClick={() => setCampaignType("supply")}
                             className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${campaignType === "supply"
-                                    ? "bg-background text-foreground shadow-sm"
-                                    : "text-muted-foreground hover:text-foreground"
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
                                 }`}
                         >
                             Supply Building
@@ -112,8 +115,8 @@ export default function CampaignLauncher() {
                         <button
                             onClick={() => setCampaignType("urgent")}
                             className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${campaignType === "urgent"
-                                    ? "bg-red-500/10 text-red-600 shadow-sm border border-red-200 dark:border-red-900"
-                                    : "text-muted-foreground hover:text-foreground"
+                                ? "bg-red-500/10 text-red-600 shadow-sm border border-red-200 dark:border-red-900"
+                                : "text-muted-foreground hover:text-foreground"
                                 }`}
                         >
                             Urgent
@@ -125,8 +128,8 @@ export default function CampaignLauncher() {
                         onClick={handleLaunch}
                         disabled={loading}
                         className={`h-9 text-sm px-6 whitespace-nowrap transition-colors ${campaignType === 'urgent'
-                                ? "bg-red-600 hover:bg-red-700 focus:ring-red-500 text-white"
-                                : "bg-primary hover:bg-primary/90 focus:ring-ring"
+                            ? "bg-red-600 hover:bg-red-700 focus:ring-red-500 text-white"
+                            : "bg-primary hover:bg-primary/90 focus:ring-ring"
                             }`}
                     >
                         {loading ? (

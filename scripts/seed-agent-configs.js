@@ -1,7 +1,7 @@
 const admin = require("firebase-admin");
 
 // Connect to emulator
-process.env.FIRESTORE_EMULATOR_HOST = "localhost:8080";
+process.env.FIRESTORE_EMULATOR_HOST = "localhost:8085";
 
 if (!admin.apps.length) {
     admin.initializeApp({

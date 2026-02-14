@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080'; // Force emulator
+process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8085'; // Force emulator
 admin.initializeApp({ projectId: "xiri-platform" });
 const db = admin.firestore();
 

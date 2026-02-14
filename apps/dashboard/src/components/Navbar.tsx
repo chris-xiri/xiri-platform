@@ -17,16 +17,17 @@ export function Navbar() {
                 <div className="flex justify-between h-16">
                     <div className="flex">
                         <div className="flex-shrink-0 flex items-center">
-                            <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent tracking-tight">
-                                Xiri Platform
+                            <span className="text-2xl font-bold text-sky-700 tracking-tight flex items-center gap-2">
+                                XIRI
+                                <span className="text-xs font-normal text-gray-500 mt-1 hidden sm:block">FACILITY SOLUTIONS</span>
                             </span>
                         </div>
                         <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                             <Link
                                 href="/"
                                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${isRecruitment
-                                        ? "border-primary text-foreground"
-                                        : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
+                                    ? "border-primary text-foreground"
+                                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
                                     }`}
                             >
                                 <LayoutDashboard className="w-4 h-4 mr-2" />
@@ -35,8 +36,8 @@ export function Navbar() {
                             <Link
                                 href="/crm"
                                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${isCRM
-                                        ? "border-primary text-foreground"
-                                        : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
+                                    ? "border-primary text-foreground"
+                                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
                                     }`}
                             >
                                 <Users className="w-4 h-4 mr-2" />

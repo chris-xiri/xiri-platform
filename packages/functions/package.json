@@ -4,15 +4,15 @@
     "main": "lib/index.js",
     "scripts": {
         "build": "tsc",
-        "dev": "npm run serve",
-        "serve": "firebase emulators:start",
+        "dev": "concurrently \"tsc -w\" \"npm run serve\"",
+        "serve": "firebase emulators:start --import=../../firebase-data --export-on-exit",
         "shell": "firebase functions:shell",
         "start": "npm run shell",
         "deploy": "firebase deploy --only functions",
         "logs": "firebase functions:log"
     },
     "engines": {
-        "node": ">=22"
+        "node": "22"
     },
     "dependencies": {
         "@google-cloud/tasks": "^6.2.1",
@@ -29,6 +29,7 @@
     },
     "devDependencies": {
         "@types/nodemailer": "^7.0.9",
+        "concurrently": "^9.2.1",
         "typescript": "^5.0.0"
     },
     "private": true

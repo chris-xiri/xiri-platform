@@ -64,7 +64,29 @@ Instead of generic stock photos, use **Iconography**.
 *   **Progress Bar**: Visual indicator of completion.
 *   **Micro-Copy**: "No credit card required. Get a quote in 24h."
 
-## 4. Implementation Plan
+## 4. Dashboard Interface ("The Control Center")
+The Builder Agent must enforce this "App Aesthetic" to match the Public Site's premium feel.
+
+### A. The "Glass & Steel" Look
+*   **Background**: `bg-slate-50` (Clinical White) for the app frame.
+*   **Cards**: `bg-white` with `shadow-sm` and `border-slate-200`. No deep drop shadows.
+*   **Density**: High. This is a work tool. Use `text-sm` (14px) for body and `text-xs` (12px) for metadata.
+
+### B. Shared Components (Shadcn + Brand)
+*   **Buttons**:
+    *   Primary: `bg-sky-600 hover:bg-sky-700` (Medical Blue).
+    *   Destructive: `bg-red-600` (Safety Red).
+*   **Badges** (Status Indicators):
+    *   *Pending*: `bg-yellow-50 text-yellow-700 border-yellow-200`
+    *   *Qualified*: `bg-sky-50 text-sky-700 border-sky-200`
+    *   *Compliant*: `bg-emerald-50 text-emerald-700 border-emerald-200`
+
+### C. Layout Principles
+1.  **Sticky Headers**: Keep context (Vendor Name, Actions) always visible.
+2.  **Data Density**: Use Tables for lists, not giant cards (unless mobile).
+3.  **Visual Hierarchy**: The "Primary Action" (e.g., "Approve Vendor") must be the only solid blue button on the screen.
+
+## 5. Implementation Plan
 1.  **Install Fonts**: Add `next/font` for Outfit & Inter.
 2.  **Config Tailwind**: Extend the theme with `colors.medical` and `colors.surgical`.
 3.  **Refactor Layout**: Apply the "Clinical White" background globally.

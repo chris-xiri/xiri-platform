@@ -5,13 +5,17 @@ interface HeroProps {
     subtitle: string;
     ctaText?: string;
     ctaLink?: string;
+    industryIcon?: string;
+    industryLabel?: string;
 }
 
 export function Hero({
     title,
     subtitle,
     ctaText = "Schedule Free Facility Survey",
-    ctaLink = "#audit"
+    ctaLink = "#audit",
+    industryIcon = "🏥",
+    industryLabel = "Medical • Auto • Education"
 }: HeroProps) {
     return (
         <section className="relative overflow-hidden bg-gradient-to-br from-sky-50 to-white border-b border-gray-100">
@@ -57,9 +61,11 @@ export function Hero({
                         <div className="absolute inset-0 bg-gradient-to-tr from-sky-100/50 to-transparent rounded-3xl transform rotate-3 scale-105 -z-10"></div>
                         <div className="bg-white rounded-3xl overflow-hidden shadow-2xl shadow-sky-900/5 border border-gray-100 aspect-[4/3] flex items-center justify-center relative group">
                             <div className="text-center p-8">
-                                <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform duration-500">🏥</div>
+                                <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform duration-500">
+                                    {industryIcon}
+                                </div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-2">Facility Solutions</h3>
-                                <p className="text-gray-500">Medical • Auto • Education</p>
+                                <p className="text-gray-500">{industryLabel}</p>
                             </div>
 
                             {/* Decorative Elements */}
