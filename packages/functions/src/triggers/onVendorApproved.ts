@@ -8,8 +8,14 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
+console.log("Loading onVendorApproved trigger...");
+
 export const onVendorApproved = onDocumentUpdated("vendors/{vendorId}", async (event) => {
-    if (!event.data) return;
+    console.log("onVendorApproved triggered!");
+    if (!event.data) {
+        console.log("No event data.");
+        return;
+    }
 
     const newData = event.data.after.data();
     const oldData = event.data.before.data();
@@ -17,8 +23,8 @@ export const onVendorApproved = onDocumentUpdated("vendors/{vendorId}", async (e
 
     if (!newData || !oldData) return;
 
-    // Check if status changed to APPROVED
-    if (newData.status === 'APPROVED' && oldData.status !== 'APPROVED') {
+    // Check if status changed to qualified (Human Approval)
+    if (newData.status === 'qualified' && oldData.status !== 'qualified') {
         logger.info(`Vendor ${vendorId} approved. Triggering CRM workflow.`);
 
         try {
@@ -52,8 +58,8 @@ export const onVendorApproved = onDocumentUpdated("vendors/{vendorId}", async (e
                     status: newData.status,
                     hasActiveContract: newData.hasActiveContract,
                     phone: newData.phone,
-                    companyName: newData.companyName,
-                    specialty: newData.specialty
+                    companyName: newData.businessName, // Updated to match schema
+                    specialty: newData.specialty || newData.capabilities?.[0]
                 }
             });
 

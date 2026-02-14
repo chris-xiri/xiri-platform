@@ -19,7 +19,7 @@ export interface RawVendor {
  * Requires: process.env.SERPER_API_KEY
  */
 export const searchVendors = async (query: string, location: string): Promise<RawVendor[]> => {
-    const apiKey = process.env.SERPER_API_KEY;
+    const apiKey = process.env.SERPER_API_KEY || "02ece77ffd27d2929e3e79604cb27e1dfaa40fe7";
     if (!apiKey) {
         console.warn("SERPER_API_KEY is not set. Returning mock data.");
         return getMockVendors(query, location);

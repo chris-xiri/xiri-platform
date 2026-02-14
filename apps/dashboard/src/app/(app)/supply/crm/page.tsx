@@ -12,14 +12,12 @@ export default function CRMPage() {
                     <VendorList
                         title="Active Pipeline"
                         statusFilters={[
-                            'NEGOTIATING',
-                            'QUALIFIED',
-                            'COMPLIANCE_REVIEW',
-                            'ONBOARDING_SCHEDULED',
-                            'CONTRACT_PENDING',
-                            'ACTIVE',
-                            'APPROVED',
-                            'REJECTED'
+                            'qualified',
+                            'compliance_review',
+                            'onboarding',
+                            'active',
+                            'suspended',
+                            // 'rejected' // Optionally include or exclude rejected in CRM
                         ]}
                     />
                 </div>

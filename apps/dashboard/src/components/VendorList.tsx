@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Users, Loader2, X, Search } from "lucide-react";
@@ -18,11 +18,23 @@ interface VendorListProps {
     statusFilters?: string[];
     title?: string;
     showActions?: boolean;
+    isRecruitmentMode?: boolean;
+    onSelectVendor?: (id: string) => void;
+    selectedVendorId?: string | null;
 }
 
-export default function VendorList({ statusFilters, title = "Vendor Pipeline", showActions = true }: VendorListProps) {
+export default function VendorList({
+    statusFilters,
+    title = "Vendor Directory",
+    showActions = true,
+    isRecruitmentMode = false,
+    onSelectVendor,
+    selectedVendorId
+}: VendorListProps) {
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const [processedOpen, setProcessedOpen] = useState(false);
 
     const {
         searchQuery,
@@ -34,8 +46,34 @@ export default function VendorList({ statusFilters, title = "Vendor Pipeline", s
         hasActiveFilters
     } = useVendorFilter(vendors, statusFilters);
 
+    const pendingVendors = isRecruitmentMode
+        ? filteredVendors.filter(v => (v.status || 'pending_review').toLowerCase() === 'pending_review')
+        : filteredVendors;
+
+    const processedVendors = isRecruitmentMode
+        ? filteredVendors.filter(v => (v.status || 'pending_review').toLowerCase() !== 'pending_review')
+        : [];
+
+    // Use pendingVendors as the primary display list in recruitment mode
+    const displayVendors = isRecruitmentMode ? pendingVendors : filteredVendors;
+
+    // Log unique status values for debugging
+    const uniqueStatuses = [...new Set(vendors.map(v => v.status))];
+
+    console.log("VENDOR LIST DEBUG:", {
+        totalFetched: vendors.length,
+        filtered: filteredVendors.length,
+        pending: pendingVendors.length,
+        processed: processedVendors.length,
+        uniqueStatuses,
+        mode: isRecruitmentMode ? "Recruitment" : "CRM",
+        statusFilter,
+        searchQuery
+    });
+
     useEffect(() => {
         // Limit query to 100 items for performance
+        // Reverted to 'createdAt' because 'updatedAt' is not guaranteed on new docs yet
         const q = query(collection(db, "vendors"), orderBy("createdAt", "desc"), limit(100));
 
         const unsubscribe = onSnapshot(
@@ -66,12 +104,22 @@ export default function VendorList({ statusFilters, title = "Vendor Pipeline", s
         return () => unsubscribe();
     }, []);
 
-    const handleUpdateStatus = async (id: string, newStatus: Vendor['status']) => {
+    const handleUpdateStatus = async (id: string, newStatus: Vendor['status'], options?: { onboardingTrack?: 'FAST_TRACK' | 'STANDARD', hasActiveContract?: boolean }) => {
         try {
-            await updateDoc(doc(db, "vendors", id), {
+            const updateData: any = {
                 status: newStatus,
                 updatedAt: serverTimestamp()
-            });
+            };
+
+            // Apply options if provided (for Qualification)
+            if (options) {
+                if (options.onboardingTrack) updateData.onboardingTrack = options.onboardingTrack;
+                if (options.hasActiveContract !== undefined) updateData.hasActiveContract = options.hasActiveContract;
+                // If qualifying, ensure outreach starts
+                if (newStatus === 'qualified') updateData.outreachStatus = 'PENDING';
+            }
+
+            await updateDoc(doc(db, "vendors", id), updateData);
             console.log(`Vendor ${id} updated to ${newStatus}`);
         } catch (error) {
             console.error("Error updating status:", error);
@@ -90,24 +138,24 @@ export default function VendorList({ statusFilters, title = "Vendor Pipeline", s
     }
 
     return (
-        <Card className="shadow-lg border-border h-full flex flex-col bg-card overflow-hidden">
-            <CardHeader className="bg-card border-b border-border py-2 px-3 shrink-0">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-primary text-base">
+        <Card className="h-full flex flex-col border-none shadow-none bg-transparent">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-2 bg-card rounded-lg border shadow-sm mb-4">
+                <div className="flex items-center gap-2">
+                    <CardTitle className="text-xl font-bold flex items-center gap-2 text-primary text-base">
                         <Users className="w-4 h-4 text-primary" />
                         {title}
                         <Badge variant="secondary" className="bg-secondary text-secondary-foreground ml-2 text-xs px-1.5 py-0">
-                            {filteredVendors.length}
+                            {isRecruitmentMode ? pendingVendors.length : filteredVendors.length}
                         </Badge>
                     </CardTitle>
                 </div>
-            </CardHeader>
+            </div>
 
             <div className="px-3 py-2 border-b border-border bg-muted/20 flex flex-col md:flex-row gap-2">
                 <div className="relative flex-1">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Search vendors..."
+                        placeholder='Search by name, service, or location...'
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-9 pr-8 h-9 text-sm"
@@ -122,18 +170,7 @@ export default function VendorList({ statusFilters, title = "Vendor Pipeline", s
                     )}
                 </div>
                 <div className="flex gap-2 items-center">
-                    <select
-                        className="h-9 w-[140px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                        <option value="ALL">All Statuses</option>
-                        <option value="pending_review">Pending Review</option>
-                        <option value="qualified">Qualified</option>
-                        <option value="compliance_review">Compliance</option>
-                        <option value="active">Active</option>
-                        <option value="rejected">Rejected</option>
-                    </select>
+
 
                     {hasActiveFilters && (
                         <Button
@@ -151,7 +188,7 @@ export default function VendorList({ statusFilters, title = "Vendor Pipeline", s
             </div>
 
             <CardContent className="p-0 flex-1 overflow-hidden flex flex-col">
-                {filteredVendors.length === 0 ? (
+                {displayVendors.length === 0 && (!isRecruitmentMode || processedVendors.length === 0) ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-muted/50">
                         <Search className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                         <p className="text-lg font-medium text-foreground">No matching vendors</p>
@@ -166,6 +203,9 @@ export default function VendorList({ statusFilters, title = "Vendor Pipeline", s
                                     <TableRow className="border-b border-border hover:bg-muted/50">
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 w-10 shadow-sm text-center text-xs">#</TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Vendor</TableHead>
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">City</TableHead>
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">State</TableHead>
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Zip</TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Capabilities</TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">AI Score</TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Status</TableHead>
@@ -173,24 +213,74 @@ export default function VendorList({ statusFilters, title = "Vendor Pipeline", s
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredVendors.map((vendor, index) => (
+                                    {displayVendors.map((vendor, index) => (
                                         <VendorRow
                                             key={vendor.id}
                                             vendor={vendor}
                                             index={index}
                                             showActions={showActions}
+                                            isRecruitmentMode={isRecruitmentMode}
                                             onUpdateStatus={handleUpdateStatus}
+                                            onSelect={onSelectVendor}
+                                            isActive={selectedVendorId === vendor.id}
                                         />
                                     ))}
+
+                                    {/* Collapsible Processed Section */}
+                                    {isRecruitmentMode && processedVendors.length > 0 && (
+                                        <>
+                                            <TableRow
+                                                className="bg-muted/50 hover:bg-muted/60 cursor-pointer border-y border-border"
+                                                onClick={() => setProcessedOpen(!processedOpen)}
+                                            >
+                                                <TableCell colSpan={9} className="py-2 text-center text-xs font-medium text-muted-foreground">
+                                                    {processedOpen ? "Hide" : "Show"} {processedVendors.length} Processed Vendors
+                                                </TableCell>
+                                            </TableRow>
+
+                                            {processedOpen && processedVendors.map((vendor, index) => (
+                                                <VendorRow
+                                                    key={vendor.id}
+                                                    vendor={vendor}
+                                                    index={index + pendingVendors.length}
+                                                    showActions={showActions}
+                                                    isRecruitmentMode={isRecruitmentMode}
+                                                    onUpdateStatus={handleUpdateStatus}
+                                                    onSelect={onSelectVendor}
+                                                    isActive={selectedVendorId === vendor.id}
+                                                />
+                                            ))}
+                                        </>
+                                    )}
                                 </TableBody>
                             </table>
                         </div>
 
                         {/* Mobile Card View */}
                         <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-3 bg-muted/50">
-                            {filteredVendors.map((vendor, index) => (
+                            {displayVendors.map((vendor, index) => (
                                 <VendorCard key={vendor.id} vendor={vendor} index={index} />
                             ))}
+
+                            {/* Mobile Collapsible */}
+                            {isRecruitmentMode && processedVendors.length > 0 && (
+                                <div className="mt-4">
+                                    <Button
+                                        variant="outline"
+                                        className="w-full text-xs text-muted-foreground"
+                                        onClick={() => setProcessedOpen(!processedOpen)}
+                                    >
+                                        {processedOpen ? "Hide" : "Show"} {processedVendors.length} Processed
+                                    </Button>
+                                    {processedOpen && (
+                                        <div className="mt-2 space-y-3 opacity-75">
+                                            {processedVendors.map((vendor, index) => (
+                                                <VendorCard key={vendor.id} vendor={vendor} index={index} />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </>
                 )}
@@ -198,3 +288,4 @@ export default function VendorList({ statusFilters, title = "Vendor Pipeline", s
         </Card>
     );
 }
+

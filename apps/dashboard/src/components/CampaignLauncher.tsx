@@ -15,7 +15,7 @@ export default function CampaignLauncher() {
     const [location, setLocation] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
-    const [campaignType, setCampaignType] = useState<"supply" | "urgent">("supply");
+    // const [campaignType, setCampaignType] = useState<"supply" | "urgent">("supply"); // Removed
 
     const handleLaunch = async () => {
         if (!query.trim() || !location.trim()) {
@@ -35,14 +35,18 @@ export default function CampaignLauncher() {
             const result = await generateLeads({
                 query,
                 location,
-                hasActiveContract: campaignType === 'urgent'
+                hasActiveContract: false // Default to standard building mode
             });
 
             // Result data is in result.data
             const data = result.data as any;
             console.log("Campaign Result:", data);
 
-            setMessage("Campaign launched successfully! Check the vendor list below.");
+            if (data.analysis && data.analysis.errors && data.analysis.errors.length > 0) {
+                console.error("Backend Analysis Errors:", data.analysis.errors);
+            }
+
+            setMessage(`Campaign completed. Found ${data.sourced} vendors. Qualified ${data.analysis?.qualified || 0}.`);
             setQuery("");
             setLocation("");
             // Reset autocomplete input value if possible, tough with Uncontrolled component pattern.
@@ -87,7 +91,11 @@ export default function CampaignLauncher() {
                             <ReactGoogleAutocomplete
                                 apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
                                 onPlaceSelected={(place) => {
-                                    setLocation(place.formatted_address || place.name || "");
+                                    if (place && (place.formatted_address || place.name)) {
+                                        setLocation(place.formatted_address || place.name);
+                                    } else {
+                                        console.warn("Invalid place selected:", place);
+                                    }
                                 }}
                                 options={{
                                     types: ["geocode"],
@@ -101,36 +109,13 @@ export default function CampaignLauncher() {
                         </div>
                     </div>
 
-                    {/* Urgency Slider */}
-                    <div className="flex items-center bg-muted p-1 rounded-lg h-9">
-                        <button
-                            onClick={() => setCampaignType("supply")}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${campaignType === "supply"
-                                ? "bg-background text-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
-                                }`}
-                        >
-                            Supply Building
-                        </button>
-                        <button
-                            onClick={() => setCampaignType("urgent")}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${campaignType === "urgent"
-                                ? "bg-red-500/10 text-red-600 shadow-sm border border-red-200 dark:border-red-900"
-                                : "text-muted-foreground hover:text-foreground"
-                                }`}
-                        >
-                            Urgent
-                        </button>
-                    </div>
+                    {/* Urgency Slider Removed as per user request */}
 
                     {/* Launch Button */}
                     <Button
                         onClick={handleLaunch}
                         disabled={loading}
-                        className={`h-9 text-sm px-6 whitespace-nowrap transition-colors ${campaignType === 'urgent'
-                            ? "bg-red-600 hover:bg-red-700 focus:ring-red-500 text-white"
-                            : "bg-primary hover:bg-primary/90 focus:ring-ring"
-                            }`}
+                        className="h-9 text-sm px-6 whitespace-nowrap transition-colors bg-primary hover:bg-primary/90 focus:ring-ring"
                     >
                         {loading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />

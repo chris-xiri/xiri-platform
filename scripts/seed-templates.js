@@ -42,8 +42,34 @@ A JSON list of vendors with name, description, website, and phone.
 RETURN ONLY JSON. NO MARKDOWN.
 `;
 
+const OUTREACH_PROMPT_CONTENT = `
+You are an expert copywriter for Xiri Facility Solutions.
+Your goal is to write a personalized outreach message to a facility service vendor.
+
+**Context:**
+{{campaignContext}}
+
+**Vendor:**
+Name: {{vendorName}}
+Specialty: {{specialty}}
+
+**Instructions:**
+1.  Write a short, professional SMS (max 160 chars). Include a placeholder for the link: [Link].
+2.  Write a professional Email (Subject + Body). The tone should be authoritative yet inviting.
+
+**Format:**
+Return ONLY JSON:
+{
+  "sms": "string",
+  "email": {
+    "subject": "string",
+    "body": "string"
+  }
+}
+`;
+
 async function seedTemplate() {
-    console.log("Seeding recruiter_analysis_prompt...");
+    console.log("Seeding templates...");
     try {
         await db.collection('templates').doc('recruiter_analysis_prompt').set({
             name: "Recruiter Analysis Agent",
@@ -52,8 +78,17 @@ async function seedTemplate() {
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
         console.log("✅ Successfully seeded 'recruiter_analysis_prompt'.");
+
+        await db.collection('templates').doc('outreach_generation_prompt').set({
+            name: "Outreach Generation Agent",
+            content: OUTREACH_PROMPT_CONTENT,
+            version: "1.0",
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        console.log("✅ Successfully seeded 'outreach_generation_prompt'.");
+
     } catch (error) {
-        console.error("❌ Error seeding template:", error);
+        console.error("❌ Error seeding templates:", error);
     }
 }
 

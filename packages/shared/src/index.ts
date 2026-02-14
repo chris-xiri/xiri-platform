@@ -60,12 +60,25 @@ export interface Vendor {
     aiReasoning?: string;
     outreachStatus?: 'PENDING' | 'SENT' | 'NONE';
 
+    // Campaign & Onboarding
+    hasActiveContract?: boolean;
+    onboardingTrack?: 'FAST_TRACK' | 'STANDARD';
+    campaignId?: string;
+
     // Contact Info
     contactName?: string;
     website?: string;
+    websiteScreenshotUrl?: string; // For visual qualification
+    address: string; // Mapped from location
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
     phone?: string;
     email?: string;
-    address?: string; // Mapped from location
+
+    // Structured Contacts (CRM)
+    contacts?: VendorContact[];
 
     // Ratings (Legacy/External)
     rating?: number;
@@ -102,6 +115,8 @@ export interface Vendor {
         disqualificationReason?: string;
         [key: string]: any;
     };
+    description?: string; // Legacy or scraped description
+    notes?: string;       // Internal Notes
 }
 
 export interface ComplianceDoc {
@@ -182,5 +197,74 @@ export interface SeoIndustry {
         question: string;
         answer: string;
     }[];
+}
+
+
+export interface VendorContact {
+    id: string;
+    firstName: string;
+    lastName: string;
+    role: 'Owner' | 'Dispatch' | 'Billing' | 'Sales' | 'Other';
+    phone?: string;
+    email?: string;
+}
+
+// --- BROKERAGE CORE (CRM) ---
+
+export type JobStatus = 'draft' | 'posted' | 'assigned' | 'scheduled' | 'in_progress' | 'completed' | 'verified' | 'invoiced' | 'paid';
+
+export interface Client {
+    id: string;
+    businessName: string;
+    facilityType: FacilityType;
+    status: 'active' | 'churned' | 'lead';
+    billingAddress: string;
+    primaryContact: {
+        name: string;
+        email: string;
+        phone: string;
+    };
+    createdAt: any;
+}
+
+export interface ClientLocation {
+    id: string;
+    clientId: string;
+    name: string; // e.g. "Garden City Branch"
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+    managerName?: string;
+    managerPhone?: string;
+}
+
+export interface Job {
+    id: string;
+    clientId: string;
+    locationId: string;
+    vendorId?: string; // Assigned vendor
+
+    title: string; // e.g. "Nightly Cleaning"
+    description: string;
+    serviceDate: Date;
+    status: JobStatus;
+
+    // Financials
+    clientRate: number; // What we charge
+    vendorRate: number; // What we pay
+    margin: number;     // clientRate - vendorRate
+
+    createdAt: any;
+}
+
+export interface Invoice {
+    id: string;
+    clientId: string;
+    jobIds: string[];
+    totalAmount: number;
+    status: 'draft' | 'sent' | 'paid' | 'overdue';
+    dueDate: Date;
+    createdAt: any;
 }
 

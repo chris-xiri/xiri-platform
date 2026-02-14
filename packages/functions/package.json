@@ -4,8 +4,8 @@
     "main": "lib/index.js",
     "scripts": {
         "build": "tsc",
-        "dev": "concurrently \"tsc -w\" \"npm run serve\"",
-        "serve": "firebase emulators:start --import=../../firebase-data --export-on-exit",
+        "dev": "concurrently \"tsc -w\" \"npm run serve\" \"node ../../scripts/wait-and-seed.js\"",
+        "serve": "firebase emulators:start --config ../../firebase.json --import=../../firebase-data --export-on-exit",
         "shell": "firebase functions:shell",
         "start": "npm run shell",
         "deploy": "firebase deploy --only functions",

@@ -14,6 +14,7 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, hasActiveContract: boolean = false): Promise<RecruitmentAnalysisResult> => {
+    console.log("!!! RECRUITER AGENT UPDATED - V3 (Deduplication) !!!");
     let analyzed = 0;
     let qualified = 0;
     const errors: string[] = [];
@@ -39,7 +40,58 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
         ? "URGENT FULFILLMENT: We need high-quality vendors ready to deploy. Be strict."
         : "DATABASE BUILDING: We are building a supply list. ACCEPT ALL VENDORS. Do not filter. Score is for reference only.";
 
+    // List to process, defaults to rawVendors if deduplication fails or isn't run
+    let vendorsToAnalyze = rawVendors;
+
     try {
+        // Pre-process for duplicates
+        const vendorsToProcess: any[] = [];
+        const duplicateUpdates: Promise<any>[] = [];
+
+        console.log(`Checking ${rawVendors.length} vendors for duplicates...`);
+
+        for (const vendor of rawVendors) {
+            const bName = vendor.name || vendor.companyName || vendor.title;
+            if (!bName) {
+                vendorsToProcess.push(vendor);
+                continue;
+            }
+
+            // Check if exists
+            const existingSnapshot = await db.collection('vendors')
+                .where('businessName', '==', bName)
+                .limit(1)
+                .get();
+
+            if (!existingSnapshot.empty) {
+                const docId = existingSnapshot.docs[0].id;
+                console.log(`Found existing vendor: ${bName} (${docId}). Updating timestamp.`);
+                duplicateUpdates.push(
+                    db.collection('vendors').doc(docId).update({
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        // Optional: Add a note or campaign ID if we were tracking campaigns strictly
+                        // 'metadata.lastSourcedAt': admin.firestore.FieldValue.serverTimestamp() 
+                    })
+                );
+            } else {
+                vendorsToProcess.push(vendor);
+            }
+        }
+
+        // Execute duplicate updates
+        if (duplicateUpdates.length > 0) {
+            await Promise.all(duplicateUpdates);
+            console.log(`Updated ${duplicateUpdates.length} existing vendors.`);
+        }
+
+        if (vendorsToProcess.length === 0) {
+            console.log("All vendors were duplicates. Sourcing complete.");
+            return { analyzed, qualified, errors };
+        }
+
+        // Continue with unique vendors
+        vendorsToAnalyze = vendorsToProcess;
+
         // Fetch prompt from database
         const templateDoc = await db.collection("templates").doc("recruiter_analysis_prompt").get();
         if (!templateDoc.exists) {
@@ -47,10 +99,11 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
         }
 
         const template = templateDoc.data();
-        const vendorList = JSON.stringify(rawVendors.map((v, i) => ({
+        const vendorList = JSON.stringify(vendorsToAnalyze.map((v, i) => ({
             index: i,
             name: v.name || v.companyName,
             description: v.description || v.services,
+            address: v.location || v.address || v.vicinity, // Google Places often uses 'vicinity'
             website: v.website,
             phone: v.phone
         })));
@@ -65,6 +118,7 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
         const result = await model.generateContent(prompt);
         const response = result.response;
         const text = response.text();
+        console.log("Gemini Raw Response:", text); // Debug log
 
         // Naive JSON clean up
         const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -75,22 +129,36 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
         for (const item of analysis) {
             if (item.isQualified) {
                 qualified++;
-                const originalVendor = rawVendors[item.index];
+                // Ensure index matches the filtered list
+                const originalVendor = vendorsToAnalyze[item.index];
+                if (!originalVendor) {
+                    console.warn(`Analysis returned index ${item.index} but we only have ${vendorsToAnalyze.length} vendors.`);
+                    continue;
+                }
+
+                // Fallback for business name
+                const bName = originalVendor.name || originalVendor.companyName || originalVendor.title || "Unknown Vendor";
 
                 const vendorRef = db.collection('vendors').doc(); // Auto-ID
                 const newVendor: Vendor = {
                     id: vendorRef.id,
-                    businessName: originalVendor.name || originalVendor.companyName || "Unknown",
+                    businessName: bName,
                     capabilities: item.specialty ? [item.specialty] : [],
-                    address: originalVendor.location || "Unknown",
-                    phone: originalVendor.phone || undefined,
-                    email: originalVendor.email || undefined,
-                    website: originalVendor.website || undefined,
+                    address: originalVendor.location || item.address || "Unknown",
+                    city: item.city || undefined,
+                    state: item.state || undefined,
+                    zip: item.zip || undefined,
+                    country: item.country || "USA",
+                    phone: originalVendor.phone || item.phone || undefined,
+                    email: originalVendor.email || item.email || undefined,
+                    website: originalVendor.website || item.website || undefined,
                     // businessType: item.businessType || "Unknown", // Removing as it's not in shared Vendor? Wait, checking shared
                     fitScore: item.fitScore,
-                    // hasActiveContract: hasActiveContract, // Not in shared Vendor
+                    hasActiveContract: hasActiveContract,
+                    onboardingTrack: hasActiveContract ? 'FAST_TRACK' : 'STANDARD',
                     status: 'pending_review',
-                    createdAt: new Date()
+                    createdAt: admin.firestore.FieldValue.serverTimestamp() as any,
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp() as any
                 };
 
                 console.log(`Adding qualified vendor to batch: ${newVendor.businessName}`);
@@ -108,25 +176,32 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
 
     } catch (err: any) {
         console.error("AI Analysis Failed:", err.message);
+        console.error("Prompt used:", prompt); // Log the prompt to debug formatting issues
         errors.push(err.message);
 
         // Fallback: Save vendors without analysis if AI fails
         console.log("Saving raw vendors with 'pending_review' status due to AI failure...");
 
-        for (const originalVendor of rawVendors) {
+        for (const originalVendor of vendorsToAnalyze) {
             const vendorRef = db.collection('vendors').doc();
+            // Fallback for business name: Use 'name' or 'companyName' or 'title' from raw source
+            const bName = originalVendor.name || originalVendor.companyName || originalVendor.title || "Unknown Vendor";
+
             const newVendor: Vendor = {
                 id: vendorRef.id,
-                businessName: originalVendor.name || originalVendor.companyName || "Unknown",
+                businessName: bName,
                 capabilities: [],
-                address: originalVendor.location || "Unknown",
+                address: originalVendor.location || originalVendor.address || "Unknown",
                 phone: originalVendor.phone || undefined,
                 email: originalVendor.email || undefined,
                 website: originalVendor.website || undefined,
                 fitScore: 0,
                 status: 'pending_review',
+                hasActiveContract: hasActiveContract,
+                onboardingTrack: hasActiveContract ? 'FAST_TRACK' : 'STANDARD',
                 aiReasoning: `AI Analysis Failed: ${err.message}`,
-                createdAt: new Date()
+                createdAt: admin.firestore.FieldValue.serverTimestamp() as any,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp() as any
             };
             batch.set(vendorRef, newVendor);
             qualified++;
