@@ -259,7 +259,12 @@ export default function VendorList({
                         {/* Mobile Card View */}
                         <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-3 bg-muted/50">
                             {displayVendors.map((vendor, index) => (
-                                <VendorCard key={vendor.id} vendor={vendor} index={index} />
+                                <VendorCard
+                                    key={vendor.id}
+                                    vendor={vendor}
+                                    index={index}
+                                    isRecruitmentMode={isRecruitmentMode}
+                                />
                             ))}
 
                             {/* Mobile Collapsible */}
@@ -275,7 +280,12 @@ export default function VendorList({
                                     {processedOpen && (
                                         <div className="mt-2 space-y-3 opacity-75">
                                             {processedVendors.map((vendor, index) => (
-                                                <VendorCard key={vendor.id} vendor={vendor} index={index} />
+                                                <VendorCard
+                                                    key={vendor.id}
+                                                    vendor={vendor}
+                                                    index={index}
+                                                    isRecruitmentMode={isRecruitmentMode}
+                                                />
                                             ))}
                                         </div>
                                     )}

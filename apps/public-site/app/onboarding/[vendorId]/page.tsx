@@ -199,11 +199,11 @@ export default function OnboardingPage() {
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                         <CheckCircle className="w-8 h-8 text-green-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-900">Application Received</h2>
+                    <h2 className="text-2xl font-bold text-slate-900">{t('success.title', language)}</h2>
                     <p className="text-slate-600">
                         {currentTrack === "FAST_TRACK"
-                            ? "Our compliance team is reviewing your documents. Expect a call within 24 hours."
-                            : "You have been added to the Xiri Supply Network. We will contact you when jobs match your profile."}
+                            ? t('success.express.message', language)
+                            : t('success.network.message', language)}
                     </p>
                 </div>
             </div>

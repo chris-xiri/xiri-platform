@@ -88,7 +88,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                 <Link href={detailLink} onClick={handleRowClick} className="block group cursor-pointer">
                     <div className="flex flex-col">
                         <div className="flex items-center gap-1.5">
-                            {vendor.preferredLanguage === 'es' ? (
+                            {!isRecruitmentMode && vendor.preferredLanguage === 'es' ? (
                                 <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 px-1 py-0 h-4 text-[9px]">ES</Badge>
                             ) : null}
                             <span className="text-sm text-foreground group-hover:text-primary transition-colors">{vendor.businessName}</span>
@@ -177,13 +177,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                                     <X className="w-3 h-3" />
                                 </Button>
                             </>
-                        ) : (
-                            <Link href={`/crm/${vendor.id}`}>
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                                    <Eye className="w-3 h-3 mr-1" /> Details
-                                </Button>
-                            </Link>
-                        )}
+                        ) : null}
                     </div>
                 )}
             </TableCell>

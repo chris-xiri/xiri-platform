@@ -23,6 +23,13 @@ import VendorAssignments from '@/components/vendor/VendorAssignments';
 import VendorFinancials from '@/components/vendor/VendorFinancials';
 import VendorCompliance from '@/components/vendor/VendorCompliance';
 
+const LanguageBadge = ({ lang }: { lang?: 'en' | 'es' }) => {
+    if (lang === 'es') {
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">🇪🇸 ES</Badge>;
+    }
+    return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">🇺🇸 EN</Badge>;
+};
+
 interface PageProps {
     params: Promise<{
         id: string;
@@ -77,7 +84,10 @@ export default function CRMDetailPage(props: PageProps) {
                             {vendor.businessName?.charAt(0) || '?'}
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight">{vendor.businessName}</h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-2xl font-bold tracking-tight">{vendor.businessName}</h1>
+                                <LanguageBadge lang={vendor.preferredLanguage} />
+                            </div>
                             <div className="flex items-center gap-2 mt-1">
                                 <Badge variant={vendor.status === 'active' ? 'default' : 'secondary'}>
                                     {vendor.status}
