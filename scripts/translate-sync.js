@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * AI-Powered Translation Sync Script
  * 

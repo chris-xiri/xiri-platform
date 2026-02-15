@@ -23,6 +23,7 @@ export function VendorCard({ vendor, index, isRecruitmentMode = false }: VendorC
                             <h3 className="font-medium text-foreground hover:text-primary transition-colors">{vendor.businessName}</h3>
                         </Link>
                         <p className="text-xs text-muted-foreground mt-0.5">{vendor.address}</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-1 font-mono select-all">ID: {vendor.id}</p>
                     </div>
                 </div>
                 <div className="flex items-center justify-between mb-3">

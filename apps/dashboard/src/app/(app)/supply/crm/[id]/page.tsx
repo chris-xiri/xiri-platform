@@ -22,6 +22,8 @@ import VendorContacts from '@/components/vendor/VendorContacts';
 import VendorAssignments from '@/components/vendor/VendorAssignments';
 import VendorFinancials from '@/components/vendor/VendorFinancials';
 import VendorCompliance from '@/components/vendor/VendorCompliance';
+import EditVendorDialog from '@/components/vendor/EditVendorDialog';
+import VendorStatusTimeline from '@/components/vendor/VendorStatusTimeline';
 
 const LanguageBadge = ({ lang }: { lang?: 'en' | 'es' }) => {
     if (lang === 'es') {
@@ -92,12 +94,12 @@ export default function CRMDetailPage(props: PageProps) {
                                 <Badge variant={vendor.status === 'active' ? 'default' : 'secondary'}>
                                     {vendor.status}
                                 </Badge>
-                                <span className="text-sm text-muted-foreground border-l pl-2 ml-2">ID: {vendor.id?.slice(0, 8)}</span>
+                                <span className="text-sm text-muted-foreground border-l pl-2 ml-2 font-mono select-all">ID: {vendor.id}</span>
                             </div>
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline">Edit Profile</Button>
+                        <EditVendorDialog vendor={vendor} />
                         <Button variant="default">Log Activity</Button>
                         <Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>
                     </div>
@@ -106,6 +108,7 @@ export default function CRMDetailPage(props: PageProps) {
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-auto p-6">
+                <VendorStatusTimeline status={vendor.status} />
                 <Tabs defaultValue="overview" className="space-y-4">
                     <TabsList>
                         <TabsTrigger value="overview" className="gap-2"><LayoutDashboard className="w-4 h-4" /> Overview</TabsTrigger>

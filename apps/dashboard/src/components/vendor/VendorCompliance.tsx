@@ -14,6 +14,8 @@ interface VendorComplianceProps {
     vendor: Vendor;
 }
 
+// ... imports ...
+
 export default function VendorCompliance({ vendor }: VendorComplianceProps) {
     const compliance = vendor.compliance;
 
@@ -40,199 +42,98 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
     const totalRequirements = requirements.length;
     const complianceScore = Math.round((metRequirements / totalRequirements) * 100);
 
-    const ComplianceItem = ({
-        icon: Icon,
-        label,
-        value,
-        verified,
-        required = false,
-        description
-    }: {
-        icon: any;
-        label: string;
-        value: boolean | undefined;
-        verified?: boolean;
-        required?: boolean;
-        description?: string;
-    }) => (
-        <div className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-            <div className={`p-2 rounded-lg ${value ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                <Icon className="w-5 h-5" />
+    const CompactItem = ({ icon: Icon, label, value, verified, required }: any) => (
+        <div className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors text-sm">
+            <div className="flex items-center gap-2">
+                <div className={`p-1.5 rounded-full ${value ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <Icon className="w-3.5 h-3.5" />
+                </div>
+                <span className="font-medium text-foreground">{label}</span>
+                {required && <span className="text-[10px] text-red-500 font-semibold">*</span>}
             </div>
-            <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium">{label}</h4>
-                    {required && <Badge variant="destructive" className="text-xs">Required</Badge>}
-                </div>
-                {description && <p className="text-sm text-muted-foreground mb-2">{description}</p>}
-                <div className="flex items-center gap-2">
-                    {value ? (
-                        <>
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                            <span className="text-sm font-medium text-green-700">Confirmed</span>
-                        </>
-                    ) : (
-                        <>
-                            <XCircle className="w-4 h-4 text-red-600" />
-                            <span className="text-sm font-medium text-red-700">Not Available</span>
-                        </>
-                    )}
-                    {verified !== undefined && (
-                        <Badge variant={verified ? "default" : "outline"} className="ml-2">
-                            {verified ? "Verified ✓" : "Pending Verification"}
-                        </Badge>
-                    )}
-                </div>
+            <div className="flex items-center gap-2">
+                {verified !== undefined && (
+                    <Badge variant={verified ? "outline" : "secondary"} className="text-[10px] h-5 px-1.5 font-normal">
+                        {verified ? "Verified" : "Pending"}
+                    </Badge>
+                )}
+                {value ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                ) : (
+                    <XCircle className="w-4 h-4 text-red-600" />
+                )}
             </div>
         </div>
     );
 
     return (
-        <div className="space-y-6">
-            {/* Compliance Score Card */}
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Compliance Overview</CardTitle>
-                            <CardDescription>Onboarding form responses and verification status</CardDescription>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-3xl font-bold">{complianceScore}%</div>
-                            <div className="text-sm text-muted-foreground">Compliance Score</div>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center gap-2">
-                        {complianceScore === 100 ? (
-                            <>
-                                <ShieldCheck className="w-5 h-5 text-green-600" />
-                                <span className="text-sm font-medium text-green-700">Fully Compliant</span>
-                            </>
-                        ) : complianceScore >= 75 ? (
-                            <>
-                                <ShieldAlert className="w-5 h-5 text-yellow-600" />
-                                <span className="text-sm font-medium text-yellow-700">Mostly Compliant</span>
-                            </>
-                        ) : (
-                            <>
-                                <ShieldAlert className="w-5 h-5 text-red-600" />
-                                <span className="text-sm font-medium text-red-700">Non-Compliant</span>
-                            </>
-                        )}
-                        <span className="text-sm text-muted-foreground ml-2">
-                            ({metRequirements} of {totalRequirements} requirements met)
-                        </span>
-                    </div>
-                </CardContent>
-            </Card>
+        <div className="space-y-4">
+            {/* Header / Score */}
+            <div className="flex items-center justify-between bg-muted/30 p-3 rounded-lg border">
+                <div>
+                    <h3 className="font-semibold text-sm">Compliance Score</h3>
+                    <p className="text-xs text-muted-foreground">{metRequirements}/{totalRequirements} Requirements Met</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className={`text-xl font-bold ${complianceScore === 100 ? 'text-green-600' : 'text-yellow-600'}`}>
+                        {complianceScore}%
+                    </span>
+                    <Badge variant={complianceScore === 100 ? "default" : "outline"}>
+                        {complianceScore === 100 ? "Compliant" : "Review"}
+                    </Badge>
+                </div>
+            </div>
 
-            {/* Business Structure */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Building2 className="w-5 h-5" />
-                        Business Structure
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <ComplianceItem
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Column 1: Core Legal */}
+                <div className="space-y-2">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Legal & Structure</h4>
+                    <CompactItem
                         icon={Building2}
-                        label="Registered Business Entity"
+                        label="Business Entity"
                         value={compliance.hasBusinessEntity}
                         required={true}
-                        description="LLC, Corporation, or other registered business entity"
                     />
-                </CardContent>
-            </Card>
+                    <CompactItem
+                        icon={FileText}
+                        label="W-9 Form"
+                        value={compliance.w9Collected}
+                    />
+                </div>
 
-            {/* Insurance Coverage */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Shield className="w-5 h-5" />
-                        Insurance Coverage
-                    </CardTitle>
-                    <CardDescription>All insurance responses from onboarding form</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <ComplianceItem
+                {/* Column 2: Insurance */}
+                <div className="space-y-2">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Insurance</h4>
+                    <CompactItem
                         icon={Shield}
-                        label="General Liability Insurance"
+                        label="General Liability"
                         value={compliance.generalLiability?.hasInsurance}
                         verified={compliance.generalLiability?.verified}
                         required={true}
-                        description="Minimum $1M coverage required"
                     />
-
-                    <ComplianceItem
+                    <CompactItem
                         icon={Users}
-                        label="Workers' Compensation Insurance"
+                        label="Workers' Comp"
                         value={compliance.workersComp?.hasInsurance}
                         verified={compliance.workersComp?.verified}
-                        description={`Required in certain states (CA, NY, IL, etc.)`}
                     />
-
-                    <ComplianceItem
+                    <CompactItem
                         icon={Car}
-                        label="Commercial Auto Insurance"
+                        label="Commercial Auto"
                         value={compliance.autoInsurance?.hasInsurance}
                         verified={compliance.autoInsurance?.verified}
-                        description="Required for vendors with company vehicles"
                     />
-
-                    {/* Additional Insurance */}
-                    {compliance.additionalInsurance && compliance.additionalInsurance.length > 0 && (
-                        <>
-                            <div className="pt-4 border-t">
-                                <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
-                                    Trade-Specific Insurance
-                                </h4>
-                            </div>
-                            {compliance.additionalInsurance.map((ins: any, idx: number) => (
-                                <ComplianceItem
-                                    key={idx}
-                                    icon={Droplet}
-                                    label={ins.type}
-                                    value={ins.hasInsurance}
-                                    verified={ins.verified}
-                                    required={true}
-                                    description="Required for medical facility janitorial services"
-                                />
-                            ))}
-                        </>
-                    )}
-                </CardContent>
-            </Card>
-
-            {/* Documentation */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <FileText className="w-5 h-5" />
-                        Required Documentation
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <ComplianceItem
-                        icon={FileText}
-                        label="IRS Form W-9"
-                        value={compliance.w9Collected}
-                        description="Tax documentation for 1099 reporting"
-                    />
-                </CardContent>
-            </Card>
-
-            {/* Action Items */}
-            {complianceScore < 100 && (
-                <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                        <strong>Action Required:</strong> This vendor needs to complete missing compliance items before being assigned to contracts.
-                    </AlertDescription>
-                </Alert>
-            )}
+                    {compliance.additionalInsurance?.map((ins: any, idx: number) => (
+                        <CompactItem
+                            key={idx}
+                            icon={Droplet}
+                            label={ins.type}
+                            value={ins.hasInsurance}
+                            verified={ins.verified}
+                        />
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }
