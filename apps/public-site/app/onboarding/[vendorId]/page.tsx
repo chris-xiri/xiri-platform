@@ -275,7 +275,7 @@ export default function OnboardingPage() {
                                     </div>
                                     <div className="flex-1">
                                         <div className="font-semibold text-slate-900 text-base">Join Our Network</div>
-                                        <div className="text-sm text-slate-600 mt-1">We'll call you when we have work that fits</div>
+                                        <div className="text-sm text-slate-600 mt-1">We'll actively find work that matches your skills</div>
                                     </div>
                                 </div>
                             </button>
@@ -294,7 +294,7 @@ export default function OnboardingPage() {
                                     </div>
                                     <div className="flex-1">
                                         <div className="font-semibold text-slate-900 text-base">I Need Work Now</div>
-                                        <div className="text-sm text-slate-600 mt-1">We have jobs ready - just need your paperwork</div>
+                                        <div className="text-sm text-slate-600 mt-1">Jobs ready - just need your paperwork</div>
                                     </div>
                                 </div>
                             </button>
@@ -309,32 +309,47 @@ export default function OnboardingPage() {
                         <div className="space-y-6">
                             {/* Business Entity */}
                             <div>
-                                <label className="block text-sm font-medium text-slate-900 mb-3">
+                                <label className="block text-sm font-medium text-slate-900 mb-2">
                                     Do you have a registered business entity (LLC/Corp)?
-                                    <span className="block text-xs text-slate-500 italic mt-1">¿Tiene una entidad comercial registrada (LLC/Corp)?</span>
+                                    <span className="block text-xs text-slate-500 mt-1">¿Tiene una entidad comercial registrada (LLC/Corp)?</span>
                                 </label>
-                                <div className="flex gap-3">
+                                <div className="flex gap-2">
                                     <button
                                         type="button"
                                         onClick={() => setHasBusinessEntity(true)}
-                                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasBusinessEntity === true
-                                            ? 'bg-green-600 text-white shadow-lg shadow-green-200'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${hasBusinessEntity === true
+                                            ? 'bg-emerald-600 text-white'
+                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                             }`}
                                     >
-                                        Yes <span className="text-sm opacity-80">/ Sí</span>
+                                        Yes / Sí
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setHasBusinessEntity(false)}
-                                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasBusinessEntity === false
-                                            ? 'bg-red-600 text-white shadow-lg shadow-red-200'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${hasBusinessEntity === false
+                                            ? 'bg-rose-600 text-white'
+                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                             }`}
                                     >
                                         No
                                     </button>
                                 </div>
+
+                                {/* LLC Name Input - appears after Yes */}
+                                {hasBusinessEntity === true && (
+                                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <label className="block text-sm font-medium text-slate-900 mb-2">
+                                            What's your business name?
+                                            <span className="block text-xs text-slate-500 mt-0.5">¿Cuál es el nombre de su negocio?</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g., ABC Cleaning Services LLC"
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             {/* General Liability */}
@@ -348,7 +363,7 @@ export default function OnboardingPage() {
                                         type="button"
                                         onClick={() => setHasGeneralLiability(true)}
                                         className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${hasGeneralLiability === true
-                                            ? 'bg-green-600 text-white'
+                                            ? 'bg-emerald-600 text-white'
                                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                             }`}
                                     >
@@ -358,7 +373,7 @@ export default function OnboardingPage() {
                                         type="button"
                                         onClick={() => setHasGeneralLiability(false)}
                                         className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${hasGeneralLiability === false
-                                            ? 'bg-red-600 text-white'
+                                            ? 'bg-rose-600 text-white'
                                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                             }`}
                                     >
@@ -406,7 +421,7 @@ export default function OnboardingPage() {
                                         type="button"
                                         onClick={() => setHasWorkersComp(true)}
                                         className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${hasWorkersComp === true
-                                            ? 'bg-green-600 text-white'
+                                            ? 'bg-emerald-600 text-white'
                                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                             }`}
                                     >
@@ -416,7 +431,7 @@ export default function OnboardingPage() {
                                         type="button"
                                         onClick={() => setHasWorkersComp(false)}
                                         className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${hasWorkersComp === false
-                                            ? 'bg-red-600 text-white'
+                                            ? 'bg-rose-600 text-white'
                                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                             }`}
                                     >
@@ -463,7 +478,7 @@ export default function OnboardingPage() {
                                         type="button"
                                         onClick={() => setHasAutoInsurance(true)}
                                         className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${hasAutoInsurance === true
-                                            ? 'bg-green-600 text-white'
+                                            ? 'bg-emerald-600 text-white'
                                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                             }`}
                                     >
@@ -473,7 +488,7 @@ export default function OnboardingPage() {
                                         type="button"
                                         onClick={() => setHasAutoInsurance(false)}
                                         className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${hasAutoInsurance === false
-                                            ? 'bg-red-600 text-white'
+                                            ? 'bg-rose-600 text-white'
                                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                             }`}
                                     >
@@ -510,7 +525,7 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasPollutionLiability(true)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasPollutionLiability === true
-                                                ? 'bg-green-600 text-white shadow-lg shadow-green-200'
+                                                ? 'bg-emerald-600 text-white shadow-lg shadow-green-200'
                                                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                                 }`}
                                         >
@@ -520,7 +535,7 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasPollutionLiability(false)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${hasPollutionLiability === false
-                                                ? 'bg-red-600 text-white shadow-lg shadow-red-200'
+                                                ? 'bg-rose-600 text-white shadow-lg shadow-red-200'
                                                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                                 }`}
                                         >
