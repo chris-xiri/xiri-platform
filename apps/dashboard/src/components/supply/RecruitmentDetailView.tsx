@@ -14,6 +14,13 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+const LanguageBadge = ({ lang }: { lang?: 'en' | 'es' }) => {
+    if (lang === 'es') {
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">🇪🇸 ES</Badge>;
+    }
+    return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">🇺🇸 EN</Badge>;
+};
+
 interface RecruitmentDetailViewProps {
     vendorId: string;
     onClose: () => void;
@@ -96,9 +103,16 @@ export default function RecruitmentDetailView({ vendorId, onClose }: Recruitment
                         <Card className="bg-card border-secondary/20 shadow-sm">
                             <CardHeader className="py-3 px-4 pb-2">
                                 <CardTitle className="text-sm font-medium flex justify-between items-center">
-                                    <span className="flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-500 fill-current" /> AI Analysis</span>
-                                    <span className={`font-bold ${(vendor.fitScore || 0) > 70 ? 'text-green-600' : 'text-yellow-600'
-                                        }`}>{vendor.fitScore || 0}/100</span>
+                                    <span className="flex items-center gap-2">
+                                        <Zap className="w-4 h-4 text-yellow-500 fill-current" />
+                                        AI Analysis
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <LanguageBadge lang={vendor.preferredLanguage} />
+                                        <span className={`font-bold ${(vendor.fitScore || 0) > 70 ? 'text-green-600' : 'text-yellow-600'}`}>
+                                            {vendor.fitScore || 0}/100
+                                        </span>
+                                    </div>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="px-4 pb-3 pt-0">

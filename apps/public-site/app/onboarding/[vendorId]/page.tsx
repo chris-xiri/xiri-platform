@@ -163,6 +163,7 @@ export default function OnboardingPage() {
                 phone,
                 status: 'compliance_review',
                 onboardingTrack: currentTrack,
+                preferredLanguage: language, // Save 'en' or 'es'
                 compliance: complianceData,
                 updatedAt: serverTimestamp()
             });

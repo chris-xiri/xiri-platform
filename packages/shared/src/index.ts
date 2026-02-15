@@ -62,6 +62,7 @@ export interface Vendor {
     fitScore?: number;
     aiReasoning?: string;
     outreachStatus?: 'PENDING' | 'SENT' | 'NONE';
+    preferredLanguage?: 'en' | 'es'; // 'en' (default) or 'es'
 
     // Campaign & Onboarding
     hasActiveContract?: boolean;
