@@ -319,7 +319,7 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasBusinessEntity(false)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasBusinessEntity === false
-                                                ? 'bg-rose-600 text-white'
+                                                ? 'bg-orange-600 text-white'
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
@@ -366,7 +366,7 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasGeneralLiability(false)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasGeneralLiability === false
-                                                ? 'bg-rose-600 text-white'
+                                                ? 'bg-orange-600 text-white'
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
@@ -397,7 +397,7 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasWorkersComp(false)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasWorkersComp === false
-                                                ? 'bg-rose-600 text-white'
+                                                ? 'bg-orange-600 text-white'
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
@@ -427,7 +427,7 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasAutoInsurance(false)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasAutoInsurance === false
-                                                ? 'bg-rose-600 text-white'
+                                                ? 'bg-orange-600 text-white'
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
@@ -459,7 +459,7 @@ export default function OnboardingPage() {
                                                 type="button"
                                                 onClick={() => setHasPollutionLiability(false)}
                                                 className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasPollutionLiability === false
-                                                    ? 'bg-rose-600 text-white'
+                                                    ? 'bg-orange-600 text-white'
                                                     : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
                                                     }`}
                                             >
