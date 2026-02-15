@@ -12,7 +12,8 @@
         "dev:dash": "npm run dev -w @xiri/dashboard",
         "build": "turbo run build",
         "lint": "turbo run lint",
-        "format": "prettier --write \"**/*.{ts,tsx,md}\""
+        "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+        "translate:sync": "node scripts/translate-sync.js"
     },
     "devDependencies": {
         "@types/node-fetch": "^2.6.13",
