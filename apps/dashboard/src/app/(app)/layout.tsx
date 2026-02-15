@@ -43,8 +43,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <nav className="border-b">
                 <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-6">
-                        <Link href="/" className="text-xl font-bold">
-                            Xiri Platform
+                        <Link href="/" className="flex items-center gap-2">
+                            <span className="text-3xl font-bold text-sky-700 tracking-tight">XIRI</span>
+                            <span className="text-xs font-normal text-gray-500 mt-1.5 hidden sm:block">FACILITY SOLUTIONS</span>
                         </Link>
                         <div className="flex gap-4">
                             {/* Supply Dropdown */}

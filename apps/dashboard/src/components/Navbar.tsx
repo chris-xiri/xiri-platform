@@ -17,10 +17,10 @@ export function Navbar() {
                 <div className="flex justify-between h-16">
                     <div className="flex">
                         <div className="flex-shrink-0 flex items-center">
-                            <span className="text-2xl font-bold text-sky-700 tracking-tight flex items-center gap-2">
-                                XIRI
-                                <span className="text-xs font-normal text-gray-500 mt-1 hidden sm:block">FACILITY SOLUTIONS</span>
-                            </span>
+                            <Link href="/" className="flex items-center gap-2">
+                                <span className="text-3xl font-bold text-sky-700 tracking-tight">XIRI</span>
+                                <span className="text-xs font-normal text-gray-500 mt-1.5 hidden sm:block">FACILITY SOLUTIONS</span>
+                            </Link>
                         </div>
                         <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                             <Link

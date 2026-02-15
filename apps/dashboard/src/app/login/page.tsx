@@ -34,7 +34,10 @@ export default function LoginPage() {
         <div className="flex min-h-screen items-center justify-center bg-background p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-1">
-                    <CardTitle className="text-2xl font-bold text-center">Xiri Platform</CardTitle>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                        <span className="text-3xl font-bold text-sky-700 tracking-tight">XIRI</span>
+                        <span className="text-xs font-normal text-gray-500 mt-1.5">FACILITY SOLUTIONS</span>
+                    </div>
                     <CardDescription className="text-center">
                         Sign in to access your dashboard
                     </CardDescription>

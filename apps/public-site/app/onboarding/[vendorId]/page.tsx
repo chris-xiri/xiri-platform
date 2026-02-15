@@ -5,7 +5,8 @@ import { useParams, useSearchParams } from "next/navigation";
 import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { Vendor } from "@xiri/shared";
-import { Loader2, CheckCircle, Upload, ChevronRight, ChevronLeft } from "lucide-react";
+import { Loader2, CheckCircle, Upload, ChevronRight, ChevronLeft, Globe } from "lucide-react";
+import { translations, t, type Language } from "./translations";
 
 export default function OnboardingPage() {
     const params = useParams();
@@ -16,9 +17,13 @@ export default function OnboardingPage() {
     const [submitting, setSubmitting] = useState(false);
     const [completed, setCompleted] = useState(false);
 
-    // Multi-Step State
-    const [currentStep, setCurrentStep] = useState(1);
-    const totalSteps = 4;
+    // Language Selection
+    const [language, setLanguage] = useState<Language>('en');
+    const [languageSelected, setLanguageSelected] = useState(false);
+
+    // Multi-Step State (Step 0 = Language, Step 1-4 = Form)
+    const [currentStep, setCurrentStep] = useState(0);
+    const totalSteps = 4; // Not counting language selector
 
     // Track Selection
     const searchParams = useSearchParams();
@@ -223,8 +228,12 @@ export default function OnboardingPage() {
             <div className="bg-white border-b border-slate-200">
                 <div className="max-w-2xl mx-auto px-6 py-4">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-slate-700">Step {currentStep} of {effectiveSteps}</span>
-                        <span className="text-sm text-slate-500">{Math.round(effectiveProgress)}% Complete</span>
+                        <span className="text-sm font-medium text-slate-700">
+                            {t('progress.stepOf', language, { current: currentStep.toString(), total: effectiveSteps.toString() })}
+                        </span>
+                        <span className="text-sm text-slate-500">
+                            {t('progress.complete', language, { percent: Math.round(effectiveProgress).toString() })}
+                        </span>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-2">
                         <div
@@ -237,12 +246,59 @@ export default function OnboardingPage() {
 
             <main className="max-w-2xl mx-auto px-6 py-12">
                 <div className="bg-white rounded-xl shadow-lg p-8">
+                    {/* STEP 0: Language Selection */}
+                    {currentStep === 0 && (
+                        <div className="space-y-8 text-center">
+                            <div>
+                                <Globe className="w-16 h-16 mx-auto mb-4 text-sky-600" />
+                                <h1 className="text-3xl font-bold text-slate-900 mb-2">
+                                    {translations.en.languageSelector.title}
+                                </h1>
+                                <p className="text-slate-600">
+                                    {translations.en.languageSelector.subtitle}
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setLanguage('en');
+                                        setLanguageSelected(true);
+                                        setCurrentStep(1);
+                                    }}
+                                    className="p-6 border-2 border-slate-200 rounded-lg hover:border-sky-600 hover:bg-sky-50 transition-all group"
+                                >
+                                    <div className="text-4xl mb-2">🇺🇸</div>
+                                    <div className="font-semibold text-slate-900 group-hover:text-sky-600">
+                                        {translations.en.languageSelector.english}
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setLanguage('es');
+                                        setLanguageSelected(true);
+                                        setCurrentStep(1);
+                                    }}
+                                    className="p-6 border-2 border-slate-200 rounded-lg hover:border-sky-600 hover:bg-sky-50 transition-all group"
+                                >
+                                    <div className="text-4xl mb-2">🇪🇸</div>
+                                    <div className="font-semibold text-slate-900 group-hover:text-sky-600">
+                                        {translations.es.languageSelector.spanish}
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* STEP 1: Track Selection */}
                     {currentStep === 1 && (
                         <div className="space-y-6">
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 mb-2">What brings you here?</h2>
-                                <p className="text-slate-600">Choose the option that best describes your situation</p>
+                                <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step1.title', language)}</h2>
+                                <p className="text-slate-600">{t('step1.subtitle', language)}</p>
                             </div>
 
                             <div className="space-y-3">
@@ -260,8 +316,8 @@ export default function OnboardingPage() {
                                             {currentTrack === 'STANDARD' && <div className="w-3.5 h-3.5 rounded-full bg-sky-600" />}
                                         </div>
                                         <div className="flex-1">
-                                            <div className="font-semibold text-slate-900 text-lg mb-1">Join Our Network</div>
-                                            <div className="text-sm text-slate-600">We'll actively find work that matches your services</div>
+                                            <div className="font-semibold text-slate-900 text-lg mb-1">{t('step1.network.title', language)}</div>
+                                            <div className="text-sm text-slate-600">{t('step1.network.subtitle', language)}</div>
                                         </div>
                                     </div>
                                 </button>
@@ -280,10 +336,22 @@ export default function OnboardingPage() {
                                             {currentTrack === 'FAST_TRACK' && <div className="w-3.5 h-3.5 rounded-full bg-sky-600" />}
                                         </div>
                                         <div className="flex-1">
-                                            <div className="font-semibold text-slate-900 text-lg mb-1">I Need Work Now</div>
-                                            <div className="text-sm text-slate-600">Jobs ready - just need your paperwork</div>
+                                            <div className="font-semibold text-slate-900 text-lg mb-1">{t('step1.express.title', language)}</div>
+                                            <div className="text-sm text-slate-600">{t('step1.express.subtitle', language)}</div>
                                         </div>
                                     </div>
+                                </button>
+                            </div>
+
+                            {/* Back to Language Selector */}
+                            <div className="flex justify-start">
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentStep(0)}
+                                    className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                    {t('common.back', language)}
                                 </button>
                             </div>
                         </div>
@@ -301,8 +369,7 @@ export default function OnboardingPage() {
                                 {/* Business Entity */}
                                 <div>
                                     <label className="block text-sm font-medium text-slate-900 mb-2">
-                                        Do you have a registered business entity (LLC/Corp)?
-                                        <span className="block text-xs text-slate-500 mt-0.5">¿Tiene una entidad comercial registrada?</span>
+                                        {t('step2.businessEntity.question', language)}
                                     </label>
                                     <div className="flex gap-2">
                                         <button
@@ -313,7 +380,7 @@ export default function OnboardingPage() {
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
-                                            Yes / Sí
+                                            {t('common.yes', language)}
                                         </button>
                                         <button
                                             type="button"
@@ -323,7 +390,7 @@ export default function OnboardingPage() {
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
-                                            No
+                                            {t('common.no', language)}
                                         </button>
                                     </div>
 
