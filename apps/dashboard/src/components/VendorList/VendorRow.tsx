@@ -130,7 +130,9 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                 <Badge className={`${getStatusColor(vendor.status, vendor.outreachStatus)} shadow-none text-[10px] px-1.5 py-0 h-5`}>
                     {vendor.status === 'pending_review' ? 'Review Needed' :
                         vendor.status === 'compliance_review' ? 'Compliance' :
-                            vendor.status.replace('_', ' ')}
+                            vendor.status === 'onboarding_scheduled' ? 'Onboarding' :
+                                vendor.status === 'ready_for_assignment' ? 'Ready' :
+                                    vendor.status.replace('_', ' ')}
                 </Badge>
             </TableCell>
             <TableCell className="text-right py-2">

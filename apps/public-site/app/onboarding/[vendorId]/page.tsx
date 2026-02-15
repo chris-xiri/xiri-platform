@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
+import { useParams, useSearchParams } from "next/navigation";
+import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { Vendor } from "@xiri/shared";
 import { Loader2, CheckCircle, Upload, ShieldCheck, Briefcase, Building, Globe } from "lucide-react";
@@ -29,6 +29,12 @@ export default function OnboardingPage() {
     const [hasWorkersComp, setHasWorkersComp] = useState(false);
     const [hasAutoInsurance, setHasAutoInsurance] = useState(false);
     const [hasPollutionLiability, setHasPollutionLiability] = useState(false);
+
+    // Track Selection & Analytics
+    const searchParams = useSearchParams();
+    const initialTrack = (searchParams?.get('track')?.toUpperCase() || 'STANDARD') as 'STANDARD' | 'FAST_TRACK';
+    const [currentTrack, setCurrentTrack] = useState<'STANDARD' | 'FAST_TRACK'>(initialTrack);
+    const [analyticsDocRef, setAnalyticsDocRef] = useState<any>(null);
 
     // File Upload Mock (In real app, use Firebase Storage)
     const [coiUploaded, setCoiUploaded] = useState(false);
@@ -64,6 +70,49 @@ export default function OnboardingPage() {
 
         return () => unsubscribe();
     }, [vendorId]);
+
+    // Initialize Analytics on Page Load
+    useEffect(() => {
+        const initAnalytics = async () => {
+            if (!vendorId) return;
+
+            const analyticsRef = doc(db, 'onboarding_analytics', vendorId);
+            setAnalyticsDocRef(analyticsRef);
+
+            try {
+                await setDoc(analyticsRef, {
+                    vendorId,
+                    track: currentTrack,
+                    steps: {
+                        step1_contact_info: { startedAt: serverTimestamp() }
+                    },
+                    createdAt: serverTimestamp(),
+                    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+                    referrer: typeof document !== 'undefined' ? document.referrer : ''
+                }, { merge: true });
+            } catch (error) {
+                console.error('Error initializing analytics:', error);
+            }
+        };
+
+        initAnalytics();
+    }, [vendorId, currentTrack]);
+
+    // Track Toggle Handler
+    const handleTrackToggle = async (newTrack: 'STANDARD' | 'FAST_TRACK') => {
+        setCurrentTrack(newTrack);
+
+        if (analyticsDocRef) {
+            try {
+                await updateDoc(analyticsDocRef, {
+                    track: newTrack,
+                    trackToggled: true
+                });
+            } catch (error) {
+                console.error('Error updating track:', error);
+            }
+        }
+    };
 
     // Phone number formatting helper
     const formatPhoneNumber = (value: string) => {
@@ -116,11 +165,29 @@ export default function OnboardingPage() {
                 }];
             }
 
+            // Update vendor document
             await updateDoc(doc(db, "vendors", vendor.id!), {
-                status: vendor.onboardingTrack === "FAST_TRACK" ? "compliance_review" : "active",
+                businessName: companyName,
+                email,
+                phone,
+                status: 'compliance_review', // NEW: Set to compliance_review instead of active
+                onboardingTrack: currentTrack, // NEW: Save selected track
                 compliance: complianceData,
                 updatedAt: serverTimestamp()
             });
+
+            // Mark analytics as completed
+            if (analyticsDocRef) {
+                try {
+                    await updateDoc(analyticsDocRef, {
+                        'steps.step4_submission.completedAt': serverTimestamp(),
+                        completedAt: serverTimestamp()
+                    });
+                } catch (error) {
+                    console.error('Error completing analytics:', error);
+                }
+            }
+
             setCompleted(true);
         } catch (error) {
             console.error("Error submitting onboarding:", error);
@@ -163,12 +230,12 @@ export default function OnboardingPage() {
         );
     }
 
-    const isFastTrack = vendor.onboardingTrack === "FAST_TRACK";
+    const isFastTrack = currentTrack === "FAST_TRACK";
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans">
             {/* Dynamic Header */}
-            <header className={`${isFastTrack ? "bg-red-600" : "bg-blue-600"} text-white py-12 px-6`}>
+            <header className={`${isFastTrack ? "bg-purple-600" : "bg-blue-600"} text-white py-12 px-6`}>
                 <div className="max-w-3xl mx-auto">
                     <div className="flex items-center gap-3 mb-4 opacity-90">
                         {isFastTrack ? <Briefcase className="w-5 h-5" /> : <Building className="w-5 h-5" />}
@@ -189,7 +256,40 @@ export default function OnboardingPage() {
 
             <main className="max-w-3xl mx-auto -mt-8 px-6 pb-20">
                 <div className="bg-white rounded-xl shadow-xl p-8 border border-slate-100">
-                    {/* Qualification Questions FIRST */}
+                    {/* Track Toggle - At Top of Form */}
+                    <div className="mb-8 pb-8 border-b border-slate-200">
+                        <h2 className="text-xl font-semibold text-slate-900 mb-4 text-center">Select Your Track</h2>
+                        <div className="flex justify-center gap-4">
+                            <button
+                                type="button"
+                                onClick={() => handleTrackToggle('STANDARD')}
+                                className={`flex-1 max-w-xs px-6 py-4 rounded-lg font-semibold transition-all shadow-sm hover:shadow-md border-2 ${currentTrack === 'STANDARD'
+                                        ? 'bg-blue-50 text-blue-700 border-blue-600'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                                    }`}
+                            >
+                                <div className="text-center">
+                                    <div className="text-base font-bold">Standard Network</div>
+                                    <div className="text-xs mt-1 opacity-75">Join our contractor network</div>
+                                </div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleTrackToggle('FAST_TRACK')}
+                                className={`flex-1 max-w-xs px-6 py-4 rounded-lg font-semibold transition-all shadow-sm hover:shadow-md border-2 ${currentTrack === 'FAST_TRACK'
+                                        ? 'bg-purple-50 text-purple-700 border-purple-600'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                                    }`}
+                            >
+                                <div className="text-center">
+                                    <div className="text-base font-bold">Urgent Contract</div>
+                                    <div className="text-xs mt-1 opacity-75">Fast-track for immediate work</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Qualification Questions */}
                     <div className="mb-8 pb-8 border-b border-slate-100">
                         <h2 className="text-xl font-semibold text-slate-900 mb-2">Qualification</h2>
                         <p className="text-sm text-slate-600 mb-6 italic">Calificación</p>
@@ -399,8 +499,8 @@ export default function OnboardingPage() {
                             onClick={handleSubmit}
                             disabled={submitting || hasBusinessEntity !== true || hasGeneralLiability !== true}
                             className={`px-8 py-3 rounded-lg font-bold text-white shadow-lg transition-all ${submitting || hasBusinessEntity !== true || hasGeneralLiability !== true
-                                    ? "bg-slate-400 cursor-not-allowed"
-                                    : "bg-blue-600 hover:bg-blue-700 hover:shadow-xl"
+                                ? "bg-slate-400 cursor-not-allowed"
+                                : "bg-blue-600 hover:bg-blue-700 hover:shadow-xl"
                                 }`}
                         >
                             {submitting ? "Submitting..." : "Complete Onboarding"}

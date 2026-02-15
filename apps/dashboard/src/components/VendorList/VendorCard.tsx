@@ -22,9 +22,15 @@ export function VendorCard({ vendor, index }: VendorCardProps) {
                         <p className="text-xs text-muted-foreground mt-0.5">{vendor.address}</p>
                     </div>
                 </div>
-                <Badge className={getStatusColor(vendor.status, vendor.outreachStatus)}>
-                    {vendor.status.replace('_', ' ')}
-                </Badge>
+                <div className="flex items-center justify-between mb-3">
+                    <Badge className={getStatusColor(vendor.status, vendor.outreachStatus)}>
+                        {vendor.status === 'pending_review' ? 'Review Needed' :
+                            vendor.status === 'compliance_review' ? 'Compliance' :
+                                vendor.status === 'onboarding_scheduled' ? 'Onboarding' :
+                                    vendor.status === 'ready_for_assignment' ? 'Ready' :
+                                        vendor.status.replace('_', ' ')}
+                    </Badge>
+                </div>
             </div>
             <div className="flex items-center justify-between text-sm border-t border-border pt-2">
                 <div className="flex items-center gap-2">

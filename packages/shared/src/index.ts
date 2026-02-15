@@ -118,6 +118,13 @@ export interface Vendor {
             hasInsurance: boolean;
             verified: boolean;
         }>;
+
+        // Document Upload URLs (Fast Track)
+        uploadedDocs?: {
+            coi?: string;        // Certificate of Insurance URL
+            llc?: string;        // Business License/LLC URL
+            w9?: string;         // W-9 Form URL
+        };
     };
 
     // Legacy Fields (Optional)
@@ -160,6 +167,27 @@ export interface OutreachEvent {
     description: string;
     metadata?: Record<string, any>;
     createdAt: any;
+}
+
+export interface OnboardingAnalytics {
+    vendorId: string;
+    track: 'STANDARD' | 'FAST_TRACK';
+    trackToggled?: boolean;
+
+    steps: {
+        step1_contact_info?: { startedAt: any; completedAt?: any };
+        step2_business_info?: { startedAt: any; completedAt?: any };
+        step3_compliance?: { startedAt: any; completedAt?: any };
+        step4_submission?: { startedAt: any; completedAt?: any };
+    };
+
+    lastActiveStep?: string;
+    abandonedAt?: any;
+    completedAt?: any;
+
+    createdAt: any;
+    userAgent?: string;
+    referrer?: string;
 }
 
 // --- SEO & CONTENT ENGINE TYPES ---

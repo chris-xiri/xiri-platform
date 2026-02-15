@@ -11,7 +11,11 @@ export const getStatusColor = (status: Vendor['status'], outreachStatus?: string
         case 'qualified':
             return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
         case 'compliance_review':
+            return "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800";
+        case 'onboarding_scheduled':
             return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
+        case 'ready_for_assignment':
+            return "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
         case 'pending_review':
         default:
             if (outreachStatus === 'SENT') return "bg-blue-50 text-blue-700 border-blue-200";
