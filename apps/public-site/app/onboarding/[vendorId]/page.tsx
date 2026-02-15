@@ -235,7 +235,7 @@ export default function OnboardingPage() {
     return (
         <div className="min-h-screen bg-slate-50 font-sans">
             {/* Dynamic Header */}
-            <header className={`${isFastTrack ? "bg-purple-600" : "bg-blue-600"} text-white py-12 px-6`}>
+            <header className={`${isFastTrack ? "bg-purple-700" : "bg-blue-600"} text-white py-12 px-6`}>
                 <div className="max-w-3xl mx-auto">
                     <div className="flex items-center gap-3 mb-4 opacity-90">
                         {isFastTrack ? <Briefcase className="w-5 h-5" /> : <Building className="w-5 h-5" />}
@@ -283,14 +283,14 @@ export default function OnboardingPage() {
                                 type="button"
                                 onClick={() => handleTrackToggle('FAST_TRACK')}
                                 className={`p-4 rounded-lg text-left transition-all border-2 ${currentTrack === 'FAST_TRACK'
-                                    ? 'bg-purple-50 border-purple-500 shadow-sm'
+                                    ? 'bg-purple-50 border-purple-600 shadow-sm'
                                     : 'bg-white border-gray-200 hover:border-gray-300'
                                     }`}
                             >
                                 <div className="flex items-start gap-3">
-                                    <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center ${currentTrack === 'FAST_TRACK' ? 'border-purple-500' : 'border-gray-300'
+                                    <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center ${currentTrack === 'FAST_TRACK' ? 'border-purple-600' : 'border-gray-300'
                                         }`}>
-                                        {currentTrack === 'FAST_TRACK' && <div className="w-3 h-3 rounded-full bg-purple-500" />}
+                                        {currentTrack === 'FAST_TRACK' && <div className="w-3 h-3 rounded-full bg-purple-600" />}
                                     </div>
                                     <div className="flex-1">
                                         <div className="font-semibold text-slate-900 text-base">I Need Work Now</div>
@@ -385,7 +385,7 @@ export default function OnboardingPage() {
                                 {currentTrack === 'FAST_TRACK' && hasGeneralLiability === true && (
                                     <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <Upload className="w-4 h-4 text-purple-600" />
+                                            <Upload className="w-4 h-4 text-purple-700" />
                                             <span className="text-sm font-medium text-purple-900">Upload proof of General Liability</span>
                                         </div>
                                         <input
@@ -443,7 +443,7 @@ export default function OnboardingPage() {
                                 {currentTrack === 'FAST_TRACK' && hasWorkersComp === true && (
                                     <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <Upload className="w-4 h-4 text-purple-600" />
+                                            <Upload className="w-4 h-4 text-purple-700" />
                                             <span className="text-sm font-medium text-purple-900">Upload proof of Workers' Comp</span>
                                         </div>
                                         <input
@@ -500,7 +500,7 @@ export default function OnboardingPage() {
                                 {currentTrack === 'FAST_TRACK' && hasAutoInsurance === true && (
                                     <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <Upload className="w-4 h-4 text-purple-600" />
+                                            <Upload className="w-4 h-4 text-purple-700" />
                                             <span className="text-sm font-medium text-purple-900">Upload proof of Commercial Auto</span>
                                         </div>
                                         <input
@@ -551,18 +551,7 @@ export default function OnboardingPage() {
                     <div className="mb-8 pb-8 border-b border-slate-100">
                         <h2 className="text-xl font-semibold text-slate-900 mb-4">Business Information</h2>
                         <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Company Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={companyName}
-                                    onChange={(e) => setCompanyName(e.target.value)}
-                                    placeholder="Enter company name"
-                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">
                                     Primary Email
