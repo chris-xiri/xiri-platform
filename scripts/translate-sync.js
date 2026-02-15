@@ -176,8 +176,80 @@ async function syncTranslations() {
     // Optionally auto-update the file (disabled by default for safety)
     if (process.argv.includes('--auto-apply')) {
         console.log('⚠️  Auto-apply is enabled. Updating translation file...');
-        // TODO: Implement auto-update logic
-        console.log('   (Not implemented - manual review required)\n');
+
+        // Read the file again to be sure
+        let content = fs.readFileSync(TRANSLATIONS_FILE, 'utf-8');
+
+        // Find the end of the 'es' object
+        // We look for "es: {" and then find the closing brace before "};"
+        // This is a simple heuristic - assuming the file structure matches the regex
+        const esStartMatch = content.match(/es:\s*\{/);
+        if (esStartMatch) {
+            const esStartIndex = esStartMatch.index + esStartMatch[0].length;
+
+            // We need to insert the new keys before the closing brace of the 'es' object
+            // For simplicity, we'll append them at the end of the object
+            // Finding the closing brace is tricky without a parser, but we can look for the last "  }" before "};"
+            // or just append to the 'es' object string we extracted earlier and replace the whole block
+
+            const { es: currentEsBlock } = extractTranslations(content);
+            let newEsBlock = currentEsBlock.trimEnd(); // Remove trailing spaces/newlines
+
+            // Generate the new lines to add
+            const newLines = Object.entries(translations).map(([key, value]) => {
+                return `        ${key}: "${value}"`; // Indentation assumption: 8 spaces
+            }).join(',\n');
+
+            if (newEsBlock.endsWith(',')) {
+                newEsBlock += '\n' + newLines;
+            } else {
+                newEsBlock += ',\n' + newLines;
+            }
+
+            // Replace the old es block with the new one in the file content
+            // We use the exact string match from extraction
+            // Note: This relies on extractTranslations returning the exact substring
+
+            // Alternative: Insert before the last closing brace of the es object
+            // Let's assume the standard formatting:
+            // es: {
+            //    ...
+            // }
+            // };
+
+            const closingBraceIndex = content.lastIndexOf('    }'); // Assuming indentation
+            if (closingBraceIndex !== -1) {
+                // Insert before the closing brace
+                // Check if we need a comma for the previous item
+                // This is getting complicated to do safely with regex. 
+
+                // Let's go with a safer manual instruction approach for now to avoid breaking the file
+                // OR use a placeholder if we can controls the file format.
+
+                // Better approach: Re-construct the file? No, too risky.
+
+                console.log('   (Auto-apply logic is complex for TS files. Appending to review file instead.)');
+                console.log('   Please copy-paste from review file or manually add to translations.ts');
+            }
+
+            // Let's try to inject it simply if we can find the "es: {" block
+            const esBlockRegex = /(es:\s*\{[\s\S]*?)(\n\s*\}\s*;)/;
+            const match = content.match(esBlockRegex);
+            if (match) {
+                const [fullMatch, beforeClosing, closing] = match;
+                // Check if `beforeClosing` ends with comma
+                const trimmedBefore = beforeClosing.trimEnd();
+                const needsComma = !trimmedBefore.endsWith(',') && !trimmedBefore.endsWith('{');
+
+                const insertion = (needsComma ? ',' : '') + '\n' + newLines;
+                const newContent = content.replace(esBlockRegex, beforeClosing + insertion + closing);
+
+                fs.writeFileSync(TRANSLATIONS_FILE, newContent);
+                console.log('✅ Updated translations.ts successfully!');
+            } else {
+                console.error('❌ Could not safe-patch the file. Please modify manually.');
+            }
+        }
     } else {
         console.log('💡 To auto-apply translations, run:');
         console.log('   npm run translate:sync -- --auto-apply\n');

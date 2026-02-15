@@ -361,8 +361,8 @@ export default function OnboardingPage() {
                     {currentStep === 2 && (
                         <div className="space-y-6">
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 mb-2">Quick Qualification</h2>
-                                <p className="text-slate-600">Just a few Yes/No questions</p>
+                                <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step2.title', language)}</h2>
+                                <p className="text-slate-600">{t('step2.subtitle', language)}</p>
                             </div>
 
                             <div className="space-y-5">
@@ -398,15 +398,14 @@ export default function OnboardingPage() {
                                     {hasBusinessEntity === true && (
                                         <div className="mt-3 p-3 bg-sky-50 border border-sky-200 rounded-lg">
                                             <label className="block text-sm font-medium text-slate-900 mb-2">
-                                                What's your business name?
-                                                <span className="block text-xs text-slate-500 mt-0.5">¿Cuál es el nombre de su negocio?</span>
+                                                {t('step2.businessEntity.businessNameLabel', language)}
                                             </label>
                                             <input
                                                 type="text"
                                                 value={businessName}
                                                 onChange={(e) => setBusinessName(e.target.value)}
-                                                placeholder="e.g., ABC Cleaning Services LLC"
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent"
+                                                placeholder={t('step2.businessEntity.businessNamePlaceholder', language)}
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent"
                                             />
                                         </div>
                                     )}
@@ -415,8 +414,7 @@ export default function OnboardingPage() {
                                 {/* General Liability */}
                                 <div>
                                     <label className="block text-sm font-medium text-slate-900 mb-2">
-                                        Do you have General Liability insurance?
-                                        <span className="block text-xs text-slate-500 mt-0.5">¿Tiene seguro de responsabilidad general?</span>
+                                        {t('step2.generalLiability.question', language)}
                                     </label>
                                     <div className="flex gap-2">
                                         <button
@@ -427,7 +425,7 @@ export default function OnboardingPage() {
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
-                                            Yes / Sí
+                                            {t('common.yes', language)}
                                         </button>
                                         <button
                                             type="button"
@@ -437,7 +435,7 @@ export default function OnboardingPage() {
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
-                                            No
+                                            {t('common.no', language)}
                                         </button>
                                     </div>
                                 </div>
@@ -445,9 +443,8 @@ export default function OnboardingPage() {
                                 {/* Workers' Comp */}
                                 <div className={requiresWorkersComp ? 'p-4 bg-orange-50 border border-orange-200 rounded-lg' : ''}>
                                     <label className="block text-sm font-medium text-slate-900 mb-2">
-                                        Do you have Workers' Compensation insurance?
-                                        {requiresWorkersComp && <span className="text-orange-600 ml-2">(Required in {vendorState})</span>}
-                                        <span className="block text-xs text-slate-500 mt-0.5">¿Tiene seguro de compensación para trabajadores?</span>
+                                        {t('step2.workersComp.question', language)}
+                                        {requiresWorkersComp && <span className="text-orange-600 ml-2">({t('step2.workersComp.requiredIn', language, { state: vendorState })})</span>}
                                     </label>
                                     <div className="flex gap-2">
                                         <button
@@ -458,7 +455,7 @@ export default function OnboardingPage() {
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
-                                            Yes / Sí
+                                            {t('common.yes', language)}
                                         </button>
                                         <button
                                             type="button"
@@ -468,7 +465,7 @@ export default function OnboardingPage() {
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
-                                            No
+                                            {t('common.no', language)}
                                         </button>
                                     </div>
                                 </div>
@@ -476,8 +473,7 @@ export default function OnboardingPage() {
                                 {/* Commercial Auto */}
                                 <div>
                                     <label className="block text-sm font-medium text-slate-900 mb-2">
-                                        Do you have Commercial Auto insurance?
-                                        <span className="block text-xs text-slate-500 mt-0.5">¿Tiene seguro de auto comercial?</span>
+                                        {t('step2.commercialAuto.question', language)}
                                     </label>
                                     <div className="flex gap-2">
                                         <button
@@ -488,7 +484,7 @@ export default function OnboardingPage() {
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
-                                            Yes / Sí
+                                            {t('common.yes', language)}
                                         </button>
                                         <button
                                             type="button"
@@ -498,7 +494,7 @@ export default function OnboardingPage() {
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
-                                            No
+                                            {t('common.no', language)}
                                         </button>
                                     </div>
                                 </div>
@@ -507,9 +503,8 @@ export default function OnboardingPage() {
                                 {requiresPollution && (
                                     <div className="p-4 bg-sky-50 border border-sky-200 rounded-lg">
                                         <label className="block text-sm font-medium text-sky-900 mb-2">
-                                            Do you have Pollution Liability insurance?
-                                            <span className="text-sky-700 ml-2">(Required for medical facilities)</span>
-                                            <span className="block text-xs text-sky-700 mt-0.5">¿Tiene seguro de responsabilidad por contaminación?</span>
+                                            {t('step2.pollutionLiability.question', language)}
+                                            <span className="text-sky-700 ml-2">({t('step2.pollutionLiability.requiredFor', language)})</span>
                                         </label>
                                         <div className="flex gap-2">
                                             <button
@@ -539,7 +534,7 @@ export default function OnboardingPage() {
 
                             {!isStep2Valid() && hasBusinessEntity !== null && (
                                 <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                    ✓ Please answer all questions to continue
+                                    {t('step2.validation.answerAll', language)}
                                 </div>
                             )}
                         </div>
@@ -549,33 +544,33 @@ export default function OnboardingPage() {
                     {currentStep === 3 && (
                         <div className="space-y-6">
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 mb-2">✓ Great! You're qualified</h2>
-                                <p className="text-slate-600">How can we reach you?</p>
+                                <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step3.title', language)}</h2>
+                                <p className="text-slate-600">{t('step3.subtitle', language)}</p>
                             </div>
 
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                                        Primary Email
+                                        {t('step3.email.label', language)}
                                     </label>
                                     <input
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="john@example.com"
+                                        placeholder={t('step3.email.placeholder', language)}
                                         className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-sky-600 focus:border-transparent"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                                        Phone
+                                        {t('step3.phone.label', language)}
                                     </label>
                                     <input
                                         type="tel"
                                         value={phone}
                                         onChange={handlePhoneChange}
-                                        placeholder="(555) 123-4567"
+                                        placeholder={t('step3.phone.placeholder', language)}
                                         className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-sky-600 focus:border-transparent"
                                     />
                                 </div>
@@ -583,7 +578,7 @@ export default function OnboardingPage() {
 
                             {!isStep3Valid() && email && phone && (
                                 <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                    Please enter a valid email and 10-digit phone number
+                                    {t('step3.validation.invalidEmail', language)}
                                 </div>
                             )}
                         </div>
@@ -593,8 +588,8 @@ export default function OnboardingPage() {
                     {currentStep === 4 && currentTrack === 'FAST_TRACK' && (
                         <div className="space-y-6">
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 mb-2">✓ Almost there!</h2>
-                                <p className="text-slate-600">Upload your documents to complete your application</p>
+                                <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step4.title', language)}</h2>
+                                <p className="text-slate-600">{t('step4.subtitle', language)}</p>
                             </div>
 
                             <div className="space-y-4">
@@ -602,8 +597,8 @@ export default function OnboardingPage() {
                                 <div className="p-4 bg-sky-50 border-2 border-dashed border-sky-300 rounded-lg">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Upload className="w-5 h-5 text-sky-700" />
-                                        <span className="text-sm font-medium text-sky-900">Certificate of Insurance (COI)</span>
-                                        <span className="text-xs text-red-600">*Required</span>
+                                        <span className="text-sm font-medium text-sky-900">{t('step4.coi.label', language)}</span>
+                                        <span className="text-xs text-red-600">*{t('common.required', language)}</span>
                                     </div>
                                     <input
                                         type="file"
@@ -619,7 +614,7 @@ export default function OnboardingPage() {
                                     {coiUploaded && (
                                         <div className="flex items-center gap-1 mt-2 text-sm text-green-700">
                                             <CheckCircle className="w-4 h-4" />
-                                            <span>Uploaded successfully</span>
+                                            <span>{t('step4.uploaded', language)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -628,8 +623,8 @@ export default function OnboardingPage() {
                                 <div className="p-4 bg-sky-50 border-2 border-dashed border-sky-300 rounded-lg">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Upload className="w-5 h-5 text-sky-700" />
-                                        <span className="text-sm font-medium text-sky-900">Business License / LLC Certificate</span>
-                                        <span className="text-xs text-red-600">*Required</span>
+                                        <span className="text-sm font-medium text-sky-900">{t('step4.llc.label', language)}</span>
+                                        <span className="text-xs text-red-600">*{t('common.required', language)}</span>
                                     </div>
                                     <input
                                         type="file"
@@ -645,7 +640,7 @@ export default function OnboardingPage() {
                                     {llcUploaded && (
                                         <div className="flex items-center gap-1 mt-2 text-sm text-green-700">
                                             <CheckCircle className="w-4 h-4" />
-                                            <span>Uploaded successfully</span>
+                                            <span>{t('step4.uploaded', language)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -654,8 +649,8 @@ export default function OnboardingPage() {
                                 <div className="p-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Upload className="w-5 h-5 text-slate-600" />
-                                        <span className="text-sm font-medium text-slate-900">W-9 Form</span>
-                                        <span className="text-xs text-slate-500">Optional</span>
+                                        <span className="text-sm font-medium text-slate-900">{t('step4.w9.label', language)}</span>
+                                        <span className="text-xs text-slate-500">{t('common.optional', language)}</span>
                                     </div>
                                     <input
                                         type="file"
@@ -671,7 +666,7 @@ export default function OnboardingPage() {
                                     {w9Uploaded && (
                                         <div className="flex items-center gap-1 mt-2 text-sm text-green-700">
                                             <CheckCircle className="w-4 h-4" />
-                                            <span>Uploaded successfully</span>
+                                            <span>{t('step4.uploaded', language)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -679,7 +674,7 @@ export default function OnboardingPage() {
 
                             {!isStep4Valid() && (
                                 <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                    Please upload COI and Business License to continue
+                                    {t('step4.validation.uploadRequired', language)}
                                 </div>
                             )}
                         </div>
@@ -693,7 +688,7 @@ export default function OnboardingPage() {
                                 className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
                             >
                                 <ChevronLeft className="w-5 h-5" />
-                                Back
+                                {t('common.back', language)}
                             </button>
                         ) : (
                             <div />
@@ -716,7 +711,7 @@ export default function OnboardingPage() {
                                     : 'bg-slate-300 text-slate-500 cursor-not-allowed'
                                     }`}
                             >
-                                Continue
+                                {t('common.continue', language)}
                                 <ChevronRight className="w-5 h-5" />
                             </button>
                         ) : (
@@ -728,7 +723,7 @@ export default function OnboardingPage() {
                                     : 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg hover:shadow-xl'
                                     }`}
                             >
-                                {submitting ? 'Submitting...' : 'Complete Application'}
+                                {submitting ? t('common.loading', language) : t('common.submit', language)}
                             </button>
                         )}
                     </div>
