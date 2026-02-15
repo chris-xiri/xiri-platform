@@ -1,8 +1,10 @@
 import * as admin from "firebase-admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Resend } from 'resend';
 
 const db = admin.firestore();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface EmailTemplate {
     subject: string;
@@ -94,6 +96,15 @@ BODY:
 }
 
 /**
+ * Extract ZIP code from address string
+ */
+function extractZipFromAddress(address?: string): string | null {
+    if (!address) return null;
+    const zipMatch = address.match(/\b\d{5}\b/);
+    return zipMatch ? zipMatch[0] : null;
+}
+
+/**
  * Send templated email (mock for now)
  */
 export async function sendTemplatedEmail(
@@ -113,9 +124,10 @@ export async function sendTemplatedEmail(
 
         // Build variables
         const variables = {
-            vendorName: vendor?.companyName || "Vendor",
+            vendorName: vendor?.businessName || "Vendor",
+            zipCode: vendor?.zipCode || extractZipFromAddress(vendor?.address) || "your area",
             specialty: vendor?.specialty || "your trade",
-            portalLink: `https://xiri.app/vendor/onboarding/${vendorId}`,
+            portalLink: `https://xiri.ai/vendor/onboarding/${vendorId}`,
             ...customVariables
         };
 
@@ -126,7 +138,36 @@ export async function sendTemplatedEmail(
             return;
         }
 
-        // Log to vendor_activities (mock send)
+        // Send email via Resend
+        let resendId: string | undefined;
+        try {
+            const { data } = await resend.emails.send({
+                from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+                to: vendor?.email || '',
+                subject: email.subject,
+                html: email.body,
+            });
+            resendId = data?.id;
+            console.log(`✅ Email sent to ${vendor?.companyName}: ${email.subject} (Resend ID: ${data?.id})`);
+        } catch (error) {
+            console.error('❌ Resend API error:', error);
+            // Log failure but don't throw - non-blocking
+            await db.collection("vendor_activities").add({
+                vendorId,
+                type: "EMAIL_FAILED",
+                description: `Failed to send email: ${email.subject}`,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                metadata: {
+                    templateId,
+                    subject: email.subject,
+                    to: vendor?.email || "unknown",
+                    error: String(error)
+                }
+            });
+            return;
+        }
+
+        // Log successful send to vendor_activities
         await db.collection("vendor_activities").add({
             vendorId,
             type: "EMAIL_SENT",
@@ -136,11 +177,10 @@ export async function sendTemplatedEmail(
                 templateId,
                 subject: email.subject,
                 body: email.body,
-                to: vendor?.email || "unknown"
+                to: vendor?.email || "unknown",
+                resendId // NEW: Track Resend email ID
             }
         });
-
-        console.log(`✅ Email sent to ${vendor?.companyName}: ${email.subject}`);
     } catch (error) {
         console.error("Error sending email:", error);
     }

@@ -64,8 +64,8 @@ export default function VendorStatusTimeline({ status }: VendorStatusTimelinePro
             </div>
 
             {isOpen && (
-                <div className="p-6 pt-2 border-t border-border/50 bg-card">
-                    <div className="relative flex items-center justify-between w-full mt-6 mb-2">
+                <div className="px-6 py-4 border-t border-border/50 bg-card">
+                    <div className="relative flex items-center justify-between w-full py-6">
                         {/* Progress Bar Background */}
                         <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -translate-y-1/2 z-0" />
 
@@ -81,7 +81,7 @@ export default function VendorStatusTimeline({ status }: VendorStatusTimelinePro
                             const isUpcoming = index > currentIndex;
 
                             return (
-                                <div key={step.id} className="relative z-10 flex flex-col items-center group">
+                                <div key={step.id} className="relative z-10 flex flex-col items-center group flex-1">
                                     <div
                                         className={cn(
                                             "w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-card",
@@ -94,26 +94,23 @@ export default function VendorStatusTimeline({ status }: VendorStatusTimelinePro
                                             isCurrent ? <Clock className="w-4 h-4 animate-pulse" /> :
                                                 <Circle className="w-3 h-3" />}
                                     </div>
-                                    <div className="absolute top-10 flex flex-col items-center w-32 text-center pointer-events-none">
-                                        <span className={cn(
-                                            "text-xs font-semibold mb-0.5 transition-colors pointer-events-auto",
-                                            (isCompleted || isCurrent) ? "text-foreground" : "text-muted-foreground"
-                                        )}>
-                                            {step.label}
-                                        </span>
-                                        <span className={cn(
-                                            "text-[10px] leading-tight px-1 transition-colors",
-                                            isCurrent ? "text-primary font-medium" : "text-muted-foreground/70"
-                                        )}>
+                                    <span className={cn(
+                                        "text-[11px] font-medium mt-2 transition-colors text-center",
+                                        (isCompleted || isCurrent) ? "text-foreground" : "text-muted-foreground"
+                                    )}>
+                                        {step.label}
+                                    </span>
+                                    {/* Hover Tooltip */}
+                                    <div className="absolute top-full mt-12 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                        <div className="bg-popover text-popover-foreground text-[10px] px-2 py-1 rounded shadow-lg border whitespace-nowrap">
                                             {step.description}
-                                        </span>
+                                        </div>
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
-                    {/* Spacing for labels + descriptions */}
-                    <div className="h-20" />
+
                 </div>
             )}
         </Card>

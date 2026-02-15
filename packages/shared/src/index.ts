@@ -170,6 +170,16 @@ export interface OutreachEvent {
     createdAt: any;
 }
 
+export interface VendorActivityMetadata {
+    templateId?: string;
+    subject?: string;
+    body?: string;
+    to?: string;
+    resendId?: string; // Resend email tracking ID
+    error?: string; // For failed emails
+}
+
+
 export interface OnboardingAnalytics {
     vendorId: string;
     track: 'STANDARD' | 'FAST_TRACK';

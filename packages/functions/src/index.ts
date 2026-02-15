@@ -23,7 +23,10 @@ export const generateLeads = onCall({
     cors: [
         "http://localhost:3001", // Dashboard Dev
         "http://localhost:3000", // Public Site Dev
-        "https://xiri-facility-solutions.web.app", // Production
+        "https://xiri.ai", // Public Site Production
+        "https://www.xiri.ai", // Public Site WWW
+        "https://app.xiri.ai", // Dashboard Production
+        "https://xiri-facility-solutions.web.app", // Firebase Hosting
         "https://xiri-facility-solutions.firebaseapp.com"
     ],
     timeoutSeconds: 540
@@ -60,7 +63,15 @@ export const generateLeads = onCall({
 });
 
 // 2. Clear Pipeline Tool
-export const clearPipeline = onCall({ cors: true }, async (request) => {
+export const clearPipeline = onCall({
+    cors: [
+        "http://localhost:3001",
+        "http://localhost:3000",
+        "https://xiri.ai",
+        "https://www.xiri.ai",
+        "https://app.xiri.ai"
+    ]
+}, async (request) => {
     try {
         const snapshot = await db.collection('vendors').get();
 
@@ -113,5 +124,31 @@ export const testNotification = onRequest(async (req, res) => {
         res.send(`Notification sent for ${vendorId}`);
     } else {
         res.status(400).send("Provide vendorId query param");
+    }
+});
+
+export const testSendEmail = onCall({
+    secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
+    cors: [
+        "http://localhost:3001",
+        "http://localhost:3000",
+        "https://xiri.ai",
+        "https://www.xiri.ai",
+        "https://app.xiri.ai"
+    ]
+}, async (request) => {
+    const { sendTemplatedEmail } = await import("./utils/emailUtils");
+    const { vendorId, templateId } = request.data;
+
+    if (!vendorId || !templateId) {
+        throw new HttpsError("invalid-argument", "Missing vendorId or templateId");
+    }
+
+    try {
+        await sendTemplatedEmail(vendorId, templateId);
+        return { success: true, message: `Email sent to vendor ${vendorId}` };
+    } catch (error: any) {
+        console.error("Error sending test email:", error);
+        throw new HttpsError("internal", error.message || "Failed to send email");
     }
 });

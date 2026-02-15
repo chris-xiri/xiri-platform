@@ -29,6 +29,7 @@
     "dependencies": {
         "@google/generative-ai": "^0.24.1",
         "@radix-ui/react-label": "^2.1.8",
+        "firebase": "^12.9.0",
         "firebase-admin": "^13.6.1",
         "node-fetch": "^2.7.0"
     },
