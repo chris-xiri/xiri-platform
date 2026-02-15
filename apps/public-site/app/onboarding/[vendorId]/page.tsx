@@ -250,8 +250,8 @@ export default function OnboardingPage() {
                                     type="button"
                                     onClick={() => setCurrentTrack('STANDARD')}
                                     className={`w-full p-5 rounded-lg text-left transition-all border-2 ${currentTrack === 'STANDARD'
-                                            ? 'bg-sky-50 border-sky-600 shadow-md'
-                                            : 'bg-white border-slate-200 hover:border-slate-300'
+                                        ? 'bg-sky-50 border-sky-600 shadow-md'
+                                        : 'bg-white border-slate-200 hover:border-slate-300'
                                         }`}
                                 >
                                     <div className="flex items-start gap-4">
@@ -261,7 +261,7 @@ export default function OnboardingPage() {
                                         </div>
                                         <div className="flex-1">
                                             <div className="font-semibold text-slate-900 text-lg mb-1">Join Our Network</div>
-                                            <div className="text-sm text-slate-600">We'll actively find work that matches your skills</div>
+                                            <div className="text-sm text-slate-600">We'll actively find work that matches your services</div>
                                         </div>
                                     </div>
                                 </button>
@@ -270,8 +270,8 @@ export default function OnboardingPage() {
                                     type="button"
                                     onClick={() => setCurrentTrack('FAST_TRACK')}
                                     className={`w-full p-5 rounded-lg text-left transition-all border-2 ${currentTrack === 'FAST_TRACK'
-                                            ? 'bg-sky-50 border-sky-600 shadow-md'
-                                            : 'bg-white border-slate-200 hover:border-slate-300'
+                                        ? 'bg-sky-50 border-sky-600 shadow-md'
+                                        : 'bg-white border-slate-200 hover:border-slate-300'
                                         }`}
                                 >
                                     <div className="flex items-start gap-4">
@@ -309,8 +309,8 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasBusinessEntity(true)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasBusinessEntity === true
-                                                    ? 'bg-sky-600 text-white'
-                                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                                ? 'bg-sky-600 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
                                             Yes / Sí
@@ -319,8 +319,8 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasBusinessEntity(false)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasBusinessEntity === false
-                                                    ? 'bg-rose-600 text-white'
-                                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                                ? 'bg-rose-600 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
                                             No
@@ -356,8 +356,8 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasGeneralLiability(true)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasGeneralLiability === true
-                                                    ? 'bg-sky-600 text-white'
-                                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                                ? 'bg-sky-600 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
                                             Yes / Sí
@@ -366,8 +366,8 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasGeneralLiability(false)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasGeneralLiability === false
-                                                    ? 'bg-rose-600 text-white'
-                                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                                ? 'bg-rose-600 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
                                             No
@@ -387,8 +387,8 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasWorkersComp(true)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasWorkersComp === true
-                                                    ? 'bg-sky-600 text-white'
-                                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                                ? 'bg-sky-600 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
                                             Yes / Sí
@@ -397,8 +397,8 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasWorkersComp(false)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasWorkersComp === false
-                                                    ? 'bg-rose-600 text-white'
-                                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                                ? 'bg-rose-600 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
                                             No
@@ -417,8 +417,8 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasAutoInsurance(true)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasAutoInsurance === true
-                                                    ? 'bg-sky-600 text-white'
-                                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                                ? 'bg-sky-600 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
                                             Yes / Sí
@@ -427,8 +427,8 @@ export default function OnboardingPage() {
                                             type="button"
                                             onClick={() => setHasAutoInsurance(false)}
                                             className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasAutoInsurance === false
-                                                    ? 'bg-rose-600 text-white'
-                                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                                ? 'bg-rose-600 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                 }`}
                                         >
                                             No
@@ -449,8 +449,8 @@ export default function OnboardingPage() {
                                                 type="button"
                                                 onClick={() => setHasPollutionLiability(true)}
                                                 className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasPollutionLiability === true
-                                                        ? 'bg-sky-600 text-white'
-                                                        : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+                                                    ? 'bg-sky-600 text-white'
+                                                    : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
                                                     }`}
                                             >
                                                 Yes / Sí
@@ -459,8 +459,8 @@ export default function OnboardingPage() {
                                                 type="button"
                                                 onClick={() => setHasPollutionLiability(false)}
                                                 className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all ${hasPollutionLiability === false
-                                                        ? 'bg-rose-600 text-white'
-                                                        : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+                                                    ? 'bg-rose-600 text-white'
+                                                    : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
                                                     }`}
                                             >
                                                 No
@@ -642,11 +642,11 @@ export default function OnboardingPage() {
                                     (currentStep === 4 && !isStep4Valid())
                                 }
                                 className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${(currentStep === 1 && isStep1Valid()) ||
-                                        (currentStep === 2 && isStep2Valid()) ||
-                                        (currentStep === 3 && isStep3Valid()) ||
-                                        (currentStep === 4 && isStep4Valid())
-                                        ? 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg hover:shadow-xl'
-                                        : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                                    (currentStep === 2 && isStep2Valid()) ||
+                                    (currentStep === 3 && isStep3Valid()) ||
+                                    (currentStep === 4 && isStep4Valid())
+                                    ? 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg hover:shadow-xl'
+                                    : 'bg-slate-300 text-slate-500 cursor-not-allowed'
                                     }`}
                             >
                                 Continue
@@ -657,8 +657,8 @@ export default function OnboardingPage() {
                                 onClick={handleSubmit}
                                 disabled={submitting || (currentStep === 4 && !isStep4Valid())}
                                 className={`px-8 py-3 rounded-lg font-bold transition-all ${submitting || (currentStep === 4 && !isStep4Valid())
-                                        ? 'bg-slate-400 text-white cursor-not-allowed'
-                                        : 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg hover:shadow-xl'
+                                    ? 'bg-slate-400 text-white cursor-not-allowed'
+                                    : 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg hover:shadow-xl'
                                     }`}
                             >
                                 {submitting ? 'Submitting...' : 'Complete Application'}
