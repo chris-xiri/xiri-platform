@@ -6,14 +6,14 @@
 - Environments: .env.local
 
   Creating an optimized production build ...
-✓ Compiled successfully in 1244.4ms
+✓ Compiled successfully in 2.4s
   Running TypeScript ...
   Collecting page data using 19 workers ...
   Generating static pages using 19 workers (0/568) ...
   Generating static pages using 19 workers (142/568) 
   Generating static pages using 19 workers (284/568) 
   Generating static pages using 19 workers (426/568) 
-✓ Generating static pages using 19 workers (568/568) in 2.5s
+✓ Generating static pages using 19 workers (568/568) in 2.2s
   Finalizing page optimization ...
 
 Route (app)
@@ -24,15 +24,17 @@ Route (app)
 │ ├ /urgent-care-cleaning
 │ ├ /surgery-center-cleaning
 │ └ [+45 more paths]
-└ ● /[slug]/[location]
-  ├ /medical-office-cleaning/garden-city-ny
-  ├ /medical-office-cleaning/hempstead-ny
-  ├ /medical-office-cleaning/great-neck-ny
-  └ [+513 more paths]
+├ ● /[slug]/[location]
+│ ├ /medical-office-cleaning/garden-city-ny
+│ ├ /medical-office-cleaning/hempstead-ny
+│ ├ /medical-office-cleaning/great-neck-ny
+│ └ [+513 more paths]
+└ ƒ /onboarding/[vendorId]
 
 
-○  (Static)  prerendered as static content
-●  (SSG)     prerendered as static HTML (uses generateStaticParams)
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
 
 
 > @xiri/public-site@0.1.0 postbuild
