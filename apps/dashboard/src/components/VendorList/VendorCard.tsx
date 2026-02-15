@@ -34,6 +34,11 @@ export function VendorCard({ vendor, index }: VendorCardProps) {
             </div>
             <div className="flex items-center justify-between text-sm border-t border-border pt-2">
                 <div className="flex items-center gap-2">
+                    {vendor.preferredLanguage === 'es' ? (
+                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 px-1.5 h-5 text-[10px]">ES</Badge>
+                    ) : (
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 px-1.5 h-5 text-[10px]">EN</Badge>
+                    )}
                     <span className={`text-xs font-medium ${getScoreColor(vendor.fitScore)}`}>
                         Score: {vendor.fitScore || "N/A"}
                     </span>

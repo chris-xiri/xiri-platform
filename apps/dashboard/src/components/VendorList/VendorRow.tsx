@@ -87,7 +87,12 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
             <TableCell className="py-2">
                 <Link href={detailLink} onClick={handleRowClick} className="block group cursor-pointer">
                     <div className="flex flex-col">
-                        <span className="text-sm text-foreground group-hover:text-primary transition-colors">{vendor.businessName}</span>
+                        <div className="flex items-center gap-1.5">
+                            {vendor.preferredLanguage === 'es' ? (
+                                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 px-1 py-0 h-4 text-[9px]">ES</Badge>
+                            ) : null}
+                            <span className="text-sm text-foreground group-hover:text-primary transition-colors">{vendor.businessName}</span>
+                        </div>
                         <span className="text-xs text-muted-foreground truncate max-w-[180px]">
                             {vendor.contactName || vendor.email || "No contact info"}
                         </span>
