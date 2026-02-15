@@ -2,7 +2,7 @@
 /**
  * AI-Powered Translation Sync Script
  * 
- * This script uses OpenAI to automatically translate new English text to Spanish
+ * This script uses Google Gemini to automatically translate new English text to Spanish
  * when the translation file is updated.
  * 
  * Usage:
@@ -12,7 +12,7 @@
  * 1. Reads the English translations
  * 2. Compares with Spanish translations
  * 3. Identifies missing or outdated Spanish translations
- * 4. Uses OpenAI to translate with cultural context
+ * 4. Uses Google Gemini to translate with cultural context
  * 5. Updates the translation file
  * 6. Creates a review file for human verification
  * 
@@ -21,12 +21,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const OpenAI = require('openai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Initialize OpenAI (requires OPENAI_API_KEY in environment)
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
+// Initialize Gemini (requires GEMINI_API_KEY in environment)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const TRANSLATIONS_FILE = path.join(__dirname, '../apps/public-site/app/onboarding/[vendorId]/translations.ts');
 const REVIEW_FILE = path.join(__dirname, '../.translations-review.md');
@@ -49,28 +47,26 @@ Requirements:
 3. Keep technical terms like "LLC" but add Spanish equivalent in parentheses
 4. Maintain professional, encouraging tone
 5. Keep placeholders like {state}, {current}, {total} exactly as-is
+6. Return ONLY the Spanish translation, no explanations
 
 Translation:`;
 
 async function translateText(text) {
     try {
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4',
-            messages: [
-                {
-                    role: 'system',
-                    content: 'You are a professional translator specializing in business Spanish for U.S. Hispanic markets.'
-                },
-                {
-                    role: 'user',
-                    content: TRANSLATION_PROMPT.replace('{text}', text)
-                }
-            ],
-            temperature: 0.3, // Lower temperature for more consistent translations
-            max_tokens: 500
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-1.5-flash',
+            generationConfig: {
+                temperature: 0.3, // Lower temperature for more consistent translations
+                maxOutputTokens: 500,
+            }
         });
 
-        return response.choices[0].message.content.trim();
+        const prompt = TRANSLATION_PROMPT.replace('{text}', text);
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const translation = response.text().trim();
+
+        return translation;
     } catch (error) {
         console.error('Translation error:', error.message);
         return null;
@@ -107,11 +103,11 @@ function findMissingTranslations(enText, esText) {
 async function syncTranslations() {
     console.log('🌍 Starting translation sync...\n');
 
-    // Check for OpenAI API key
-    if (!process.env.OPENAI_API_KEY) {
-        console.error('❌ Error: OPENAI_API_KEY environment variable not set');
+    // Check for Gemini API key
+    if (!process.env.GEMINI_API_KEY) {
+        console.error('❌ Error: GEMINI_API_KEY environment variable not set');
         console.log('   Set it in packages/functions/.env or your shell:');
-        console.log('   export OPENAI_API_KEY=sk-...\n');
+        console.log('   export GEMINI_API_KEY=your-api-key\n');
         process.exit(1);
     }
 
@@ -138,7 +134,8 @@ async function syncTranslations() {
 
     // Create review file
     let reviewContent = '# Translation Review\n\n';
-    reviewContent += `Generated: ${new Date().toISOString()}\n\n`;
+    reviewContent += `Generated: ${new Date().toISOString()}\n`;
+    reviewContent += `Model: Google Gemini 1.5 Flash\n\n`;
     reviewContent += '## AI-Generated Translations\n\n';
     reviewContent += 'Please review these translations before deploying:\n\n';
 
