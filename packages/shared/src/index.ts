@@ -151,6 +151,50 @@ export interface Vendor {
     notes?: string;       // Internal Notes
 }
 
+// --- pSEO: PARTNER MARKETS ---
+
+export type TradeType = 'janitorial' | 'hvac' | 'plumbing' | 'electrical' | 'landscaping' | 'snow_removal';
+
+export interface PartnerMarket {
+    slug: string; // e.g., "medical-cleaning-contracts-in-garden-city-nassau-ny"
+
+    geography: {
+        town: string;      // "Garden City"
+        county: 'nassau' | 'suffolk' | 'queens';
+        state: 'ny';
+        zipCodes?: string[];
+    };
+
+    trade: TradeType;
+
+    // Hyper-local context for AI content generation & credibility
+    localContext: {
+        corridor?: string; // e.g. "Medical Mile", "Northern Blvd"
+        nearbyLandmarks?: string[]; // e.g. "Roosevelt Field Mall"
+        painPoints?: string[]; // e.g. "High traffic inspections", "Salt damage in winter"
+    };
+
+    // Metadata
+    metaTitle?: string;
+    description?: string;
+
+    // Localized Overrides (Optional)
+    translations?: {
+        es?: {
+            metaTitle?: string;
+            description?: string;
+            hero: {
+                headline: string;
+                subheadline: string;
+            };
+            localContext: {
+                corridor: string;
+                painPoints: string[];
+            }
+        }
+    }
+}
+
 export interface ComplianceDoc {
     status: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'MISSING';
     url?: string;

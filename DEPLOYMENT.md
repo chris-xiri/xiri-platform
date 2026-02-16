@@ -82,6 +82,26 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
 2. Add your custom domain
 3. Follow Vercel's instructions to update your DNS records
 
+## 🔀 Branching Strategy (Gitflow-lite)
+
+We follow a strict "Main vs Develop" workflow:
+
+### 1. `main` Branch (Production)
+- **Status:** 🔒 Locked / Production Ready
+- **Deployment:** Automatically deploys to Vercel (Production) & Firebase (via manual CLI or CI)
+- **Rule:** NEVER push directly to `main`. Only merge via Pull Request (PR) from `develop`.
+
+### 2. `develop` Branch (Local Dev)
+- **Status:** 🚧 Active Development
+- **Deployment:** Localhost (Emulators) or Vercel Preview
+- **Workflow:**
+  1. `git checkout develop`
+  2. Write code & test locally
+  3. `git push origin develop`
+  4. Create PR to `main` when feature is complete
+
+---
+
 ## 🔄 Continuous Deployment
 
 Once set up, Vercel will automatically deploy:

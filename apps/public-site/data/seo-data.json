@@ -273,24 +273,6 @@
       "heroTitle": "Surgery Center Cleaning"
     },
     {
-      "slug": "auto-dealership-cleaning",
-      "targetFacilityType": "auto_dealer_showroom",
-      "name": "Auto Dealership Cleaning",
-      "shortDescription": "Showroom-ready cleaning to enhance customer experience.",
-      "benefits": [
-        "High-Gloss Floors",
-        "Streak-Free Windows"
-      ],
-      "valueProps": [
-        {
-          "icon": "🚗",
-          "title": "Showroom Shine",
-          "description": "Spotless presentation."
-        }
-      ],
-      "heroTitle": "Auto Dealership Cleaning"
-    },
-    {
       "slug": "daycare-cleaning",
       "targetFacilityType": "edu_daycare",
       "name": "Daycare Cleaning",
@@ -307,24 +289,6 @@
         }
       ],
       "heroTitle": "Daycare & Preschool Cleaning"
-    },
-    {
-      "slug": "consumable-procurement",
-      "targetFacilityType": "other",
-      "name": "Consumables & Supplies",
-      "shortDescription": "Never run out of toilet paper, soap, or paper towels again.",
-      "valueProps": [
-        {
-          "icon": "🧻",
-          "title": "Always Stocked",
-          "description": "Automatic replenishment."
-        }
-      ],
-      "benefits": [
-        "Inventory Management",
-        "Cost Savings"
-      ],
-      "heroTitle": "Janitorial Supply Procurement"
     },
     {
       "slug": "floor-care",
@@ -345,24 +309,6 @@
       "heroTitle": "Commercial Floor Care Services"
     },
     {
-      "slug": "window-cleaning",
-      "targetFacilityType": "other",
-      "name": "Window Washing",
-      "shortDescription": "Interior and exterior window cleaning for a crystal clear view.",
-      "valueProps": [
-        {
-          "icon": "🪟",
-          "title": "Streak Free",
-          "description": "Professional equipment."
-        }
-      ],
-      "benefits": [
-        "Interior/Exterior",
-        "High Rise Capable"
-      ],
-      "heroTitle": "Commercial Window Washing"
-    },
-    {
       "slug": "carpet-upholstery",
       "targetFacilityType": "other",
       "name": "Carpet & Upholstery",
@@ -379,42 +325,6 @@
         "Odor Elimination"
       ],
       "heroTitle": "Commercial Carpet Cleaning"
-    },
-    {
-      "slug": "annual-maintenance",
-      "targetFacilityType": "other",
-      "name": "Annual Maintenance Program",
-      "shortDescription": "Preventative maintenance programs to prevent costly repairs.",
-      "valueProps": [
-        {
-          "icon": "📅",
-          "title": "Scheduled",
-          "description": "Routine upkeep."
-        }
-      ],
-      "benefits": [
-        "Cost Savings",
-        "Equipment Longevity"
-      ],
-      "heroTitle": "Preventative Maintenance"
-    },
-    {
-      "slug": "blinds-cleaning",
-      "targetFacilityType": "other",
-      "name": "Blinds Cleaning",
-      "shortDescription": "Ultrasonic cleaning to brighten up your facility windows.",
-      "valueProps": [
-        {
-          "icon": "🌤️",
-          "title": "Brighten Up",
-          "description": "Remove dust & grime."
-        }
-      ],
-      "benefits": [
-        "Ultrasonic Tech",
-        "Dust Removal"
-      ],
-      "heroTitle": "Commercial Blinds Cleaning"
     },
     {
       "slug": "commercial-cleaning",
@@ -435,24 +345,6 @@
       "heroTitle": "Commercial Cleaning Services"
     },
     {
-      "slug": "construction-cleaning",
-      "targetFacilityType": "other",
-      "name": "Construction Cleaning",
-      "shortDescription": "Post-construction clean-up for renovations or new builds.",
-      "valueProps": [
-        {
-          "icon": "🚧",
-          "title": "Post-Reno",
-          "description": "Dust & debris removal."
-        }
-      ],
-      "benefits": [
-        "Rough Clean",
-        "Final Clean"
-      ],
-      "heroTitle": "Post-Construction Cleaning"
-    },
-    {
       "slug": "day-porter",
       "targetFacilityType": "other",
       "name": "Day Porters",
@@ -469,24 +361,6 @@
         "Spill Cleanup"
       ],
       "heroTitle": "Day Porter Services"
-    },
-    {
-      "slug": "detail-cleaning",
-      "targetFacilityType": "other",
-      "name": "Detail Cleaning",
-      "shortDescription": "Thorough cleaning for events, VIP visits, or deep cleans.",
-      "valueProps": [
-        {
-          "icon": "🔍",
-          "title": "Meticulous",
-          "description": "High attention to detail."
-        }
-      ],
-      "benefits": [
-        "Event Prep",
-        "Deep Clean"
-      ],
-      "heroTitle": "Detail Cleaning Services"
     },
     {
       "slug": "disinfecting-services",
@@ -507,132 +381,6 @@
       "heroTitle": "Commercial Disinfecting"
     },
     {
-      "slug": "emergency-response",
-      "targetFacilityType": "other",
-      "name": "Emergency Response",
-      "shortDescription": "24/7 response for fire, flood, and weather emergencies.",
-      "valueProps": [
-        {
-          "icon": "🚨",
-          "title": "24/7 Ready",
-          "description": "Immediate dispatch."
-        }
-      ],
-      "benefits": [
-        "Water Mitigation",
-        "Storm Cleanup"
-      ],
-      "heroTitle": "Emergency Response Services"
-    },
-    {
-      "slug": "event-services",
-      "targetFacilityType": "other",
-      "name": "Event Services",
-      "shortDescription": "Cleaning and maintenance management for corporate or engaging events.",
-      "valueProps": [
-        {
-          "icon": "🎉",
-          "title": "Event Ready",
-          "description": "Pre & post clean."
-        }
-      ],
-      "benefits": [
-        "Venue Turnovers",
-        "Trash Management"
-      ],
-      "heroTitle": "Event Cleaning Services"
-    },
-    {
-      "slug": "exterior-painting",
-      "targetFacilityType": "other",
-      "name": "Exterior Painting",
-      "shortDescription": "Refresh your building's curb appeal with professional painting.",
-      "valueProps": [
-        {
-          "icon": "🎨",
-          "title": "Curb Appeal",
-          "description": "Fresh look."
-        }
-      ],
-      "benefits": [
-        "Weather Protection",
-        "Branding"
-      ],
-      "heroTitle": "Commercial Exterior Painting"
-    },
-    {
-      "slug": "flood-restoration",
-      "targetFacilityType": "other",
-      "name": "Flood Restoration",
-      "shortDescription": "Quick response to water damage to prevent disruption.",
-      "valueProps": [
-        {
-          "icon": "💧",
-          "title": "Water Damage",
-          "description": "Extraction & drying."
-        }
-      ],
-      "benefits": [
-        "Mold Prevention",
-        "Structural Drying"
-      ],
-      "heroTitle": "Flood Restoration Services"
-    },
-    {
-      "slug": "hvac-services",
-      "targetFacilityType": "other",
-      "name": "HVAC Services",
-      "shortDescription": "Routine maintenance and air quality improvements.",
-      "valueProps": [
-        {
-          "icon": "❄️",
-          "title": "Climate Control",
-          "description": "Efficient systems."
-        }
-      ],
-      "benefits": [
-        "Filter Changes",
-        "Preventative Maint"
-      ],
-      "heroTitle": "Commercial HVAC Services"
-    },
-    {
-      "slug": "handyman-services",
-      "targetFacilityType": "other",
-      "name": "Handyman",
-      "shortDescription": "Preventative maintenance and repairs for small facility issues.",
-      "valueProps": [
-        {
-          "icon": "🔧",
-          "title": "Fix It All",
-          "description": "General repairs."
-        }
-      ],
-      "benefits": [
-        "Minor Repairs",
-        "Assembly"
-      ],
-      "heroTitle": "Commercial Handyman Services"
-    },
-    {
-      "slug": "interior-painting",
-      "targetFacilityType": "other",
-      "name": "Interior Painting",
-      "shortDescription": "Refresh your business interior to increase property value.",
-      "valueProps": [
-        {
-          "icon": "🖌️",
-          "title": "Fresh Look",
-          "description": "Professional finish."
-        }
-      ],
-      "benefits": [
-        "Wall Repair",
-        "Color Consultation"
-      ],
-      "heroTitle": "Commercial Interior Painting"
-    },
-    {
       "slug": "janitorial-services",
       "targetFacilityType": "other",
       "name": "Janitorial Services",
@@ -649,391 +397,9 @@
         "Vacuuming"
       ],
       "heroTitle": "Commercial Janitorial Services"
-    },
-    {
-      "slug": "kitchen-cleaning",
-      "targetFacilityType": "other",
-      "name": "Kitchen Cleaning",
-      "shortDescription": "Deep cleaning for hoods, ovens, and large equipment.",
-      "valueProps": [
-        {
-          "icon": "🍳",
-          "title": "Deep Clean",
-          "description": "Grease removal."
-        }
-      ],
-      "benefits": [
-        "Hood Cleaning",
-        "Compliance"
-      ],
-      "heroTitle": "Commercial Kitchen Cleaning"
-    },
-    {
-      "slug": "labor-solutions",
-      "targetFacilityType": "other",
-      "name": "Labor Solutions",
-      "shortDescription": "Staffing support for general facility needs.",
-      "valueProps": [
-        {
-          "icon": "👷",
-          "title": "Staffing",
-          "description": "Reliable hands."
-        }
-      ],
-      "benefits": [
-        "Temp Staff",
-        "General Labor"
-      ],
-      "heroTitle": "Facility Labor Solutions"
-    },
-    {
-      "slug": "landscaping",
-      "targetFacilityType": "other",
-      "name": "Lawn & Landscaping",
-      "shortDescription": "Commercial grounds maintenance and oversight.",
-      "valueProps": [
-        {
-          "icon": "🌳",
-          "title": "Curb Appeal",
-          "description": "Mowing & pruning."
-        }
-      ],
-      "benefits": [
-        "Seasonal Color",
-        "Irrigation"
-      ],
-      "heroTitle": "Commercial Landscaping"
-    },
-    {
-      "slug": "lighting",
-      "targetFacilityType": "other",
-      "name": "Lighting",
-      "shortDescription": "Bulb replacement and fixture maintenance.",
-      "valueProps": [
-        {
-          "icon": "💡",
-          "title": "Bright",
-          "description": "LED upgrades."
-        }
-      ],
-      "benefits": [
-        "Energy Savings",
-        "Maintenance"
-      ],
-      "heroTitle": "Commercial Lighting Services"
-    },
-    {
-      "slug": "matting-services",
-      "targetFacilityType": "other",
-      "name": "Matting Services",
-      "shortDescription": "Entryway mats to protect floors and improve safety.",
-      "valueProps": [
-        {
-          "icon": "👣",
-          "title": "Safety",
-          "description": "Slip prevention."
-        }
-      ],
-      "benefits": [
-        "Custom Logos",
-        "Rental Service"
-      ],
-      "heroTitle": "Commercial Matting Services"
-    },
-    {
-      "slug": "mold-remediation",
-      "targetFacilityType": "other",
-      "name": "Mold Remediation",
-      "shortDescription": "Removal of mold caused by excess moisture.",
-      "valueProps": [
-        {
-          "icon": "🍄",
-          "title": "Removal",
-          "description": "Safe remediation."
-        }
-      ],
-      "benefits": [
-        "Air Quality",
-        "Moisture Control"
-      ],
-      "heroTitle": "Commercial Mold Remediation"
-    },
-    {
-      "slug": "parking-lot-maintenance",
-      "targetFacilityType": "other",
-      "name": "Parking Lot/Paving",
-      "shortDescription": "Pothole repair, striping, and safety maintenance.",
-      "valueProps": [
-        {
-          "icon": "🅿️",
-          "title": "Safety",
-          "description": "Smooth surfaces."
-        }
-      ],
-      "benefits": [
-        "Striping",
-        "Sealcoating"
-      ],
-      "heroTitle": "Parking Lot Maintenance"
-    },
-    {
-      "slug": "safe-pest-control",
-      "targetFacilityType": "other",
-      "name": "Pest Control Services",
-      "shortDescription": "Essential pest management for a healthy environment.",
-      "valueProps": [
-        {
-          "icon": "🐜",
-          "title": "Pest Free",
-          "description": "Integrated management."
-        }
-      ],
-      "benefits": [
-        "Prevention",
-        "Treatment"
-      ],
-      "heroTitle": "Commercial Pest Control"
-    },
-    {
-      "slug": "plumbing",
-      "targetFacilityType": "other",
-      "name": "Plumbing",
-      "shortDescription": "Proactive maintenance and emergency plumbing support.",
-      "valueProps": [
-        {
-          "icon": "🚰",
-          "title": "Flow",
-          "description": "Leak repair."
-        }
-      ],
-      "benefits": [
-        "Drain Cleaning",
-        "Fixture Repair"
-      ],
-      "heroTitle": "Commercial Plumbing Services"
-    },
-    {
-      "slug": "pressure-washing",
-      "targetFacilityType": "other",
-      "name": "Pressure Washing",
-      "shortDescription": "Remove mold, mildew, and grime from exterior surfaces.",
-      "valueProps": [
-        {
-          "icon": "💦",
-          "title": "Deep Clean",
-          "description": "High pressure."
-        }
-      ],
-      "benefits": [
-        "Facades",
-        "Sidewalks"
-      ],
-      "heroTitle": "Commercial Pressure Washing"
-    },
-    {
-      "slug": "roofing",
-      "targetFacilityType": "other",
-      "name": "Roofing",
-      "shortDescription": "Repairs, replacements, and inspections.",
-      "valueProps": [
-        {
-          "icon": "🏠",
-          "title": "Protection",
-          "description": "Leak prevention."
-        }
-      ],
-      "benefits": [
-        "Inspections",
-        "Repairs"
-      ],
-      "heroTitle": "Commercial Roofing Services"
-    },
-    {
-      "slug": "security-access-control",
-      "targetFacilityType": "other",
-      "name": "Security & Access Control",
-      "shortDescription": "Maintaining safety with secure areas and access control.",
-      "valueProps": [
-        {
-          "icon": "🔒",
-          "title": "Secure",
-          "description": "Data protection."
-        }
-      ],
-      "benefits": [
-        "Cameras",
-        "Access Systems"
-      ],
-      "heroTitle": "Facility Security Services"
-    },
-    {
-      "slug": "snow-removal",
-      "targetFacilityType": "other",
-      "name": "Snow Services",
-      "shortDescription": "Commercial snow removal and ice management.",
-      "valueProps": [
-        {
-          "icon": "❄️",
-          "title": "Clear",
-          "description": "Plowing & salting."
-        }
-      ],
-      "benefits": [
-        "24/7 Response",
-        "Liability Reduction"
-      ],
-      "heroTitle": "Commercial Snow Removal"
-    },
-    {
-      "slug": "tenant-improvement",
-      "targetFacilityType": "other",
-      "name": "Tenant Improvement",
-      "shortDescription": "Building upkeep and appearance improvements.",
-      "valueProps": [
-        {
-          "icon": "🔨",
-          "title": "Upgrades",
-          "description": "Value add."
-        }
-      ],
-      "benefits": [
-        "Renovations",
-        "Remodels"
-      ],
-      "heroTitle": "Tenant Improvement Services"
-    },
-    {
-      "slug": "waste-management",
-      "targetFacilityType": "other",
-      "name": "Waste Management",
-      "shortDescription": "Trash, recycling, and biohazard removal.",
-      "benefits": [
-        "Regular Pickup",
-        "Compliance"
-      ],
-      "valueProps": [
-        {
-          "icon": "🗑️",
-          "title": "Removal",
-          "description": "Responsible disposal."
-        }
-      ],
-      "heroTitle": "Commercial Waste Management"
-    },
-    {
-      "slug": "biohazard-waste",
-      "targetFacilityType": "other",
-      "name": "Biohazard Waste",
-      "shortDescription": "Specialized red-bag waste removal for medical facilities.",
-      "benefits": [
-        "Compliance",
-        "Safety"
-      ],
-      "valueProps": [
-        {
-          "icon": "☣️",
-          "title": "Biohazard",
-          "description": "Compliant disposal."
-        }
-      ],
-      "heroTitle": "Biohazard Waste Removal"
-    },
-    {
-      "slug": "safes-pest-control",
-      "targetFacilityType": "other",
-      "name": "Safe Pest Control",
-      "shortDescription": "Non-toxic pest control for sensitive environments.",
-      "benefits": [
-        "Non-Toxic",
-        "Effective"
-      ],
-      "valueProps": [
-        {
-          "icon": "🐞",
-          "title": "Safe",
-          "description": "Pet & child safe."
-        }
-      ],
-      "heroTitle": "Safe Pest Control"
-    },
-    {
-      "slug": "terminal-cleaning",
-      "targetFacilityType": "other",
-      "name": "Terminal Cleaning",
-      "shortDescription": "Deep cleaning and disinfection of healthcare environments.",
-      "benefits": [
-        "Infection Prevention",
-        "Patient Safety"
-      ],
-      "valueProps": [
-        {
-          "icon": "🏥",
-          "title": "Terminal",
-          "description": "Highest standard."
-        }
-      ],
-      "heroTitle": "Terminal Cleaning Services"
-    },
-    {
-      "slug": "hvac-filter-replacement",
-      "targetFacilityType": "other",
-      "name": "HVAC Filter Replacement",
-      "shortDescription": "Regular filter changes to ensure air quality.",
-      "benefits": [
-        "Air Quality",
-        "Efficiency"
-      ],
-      "valueProps": [
-        {
-          "icon": "💨",
-          "title": "Clean Air",
-          "description": "Regular rotation."
-        }
-      ],
-      "heroTitle": "HVAC Filter Replacement"
     }
   ],
   "locations": [
-    {
-      "slug": "garden-city-ny",
-      "name": "Garden City, NY",
-      "state": "NY",
-      "region": "Nassau County",
-      "zipCodes": [
-        "11530",
-        "11531"
-      ],
-      "landmarks": [
-        "Roosevelt Field Mall",
-        "Adelphi University",
-        "Nassau Community College"
-      ],
-      "nearbyCities": [
-        "Hempstead",
-        "Mineola",
-        "Westbury"
-      ]
-    },
-    {
-      "slug": "hempstead-ny",
-      "name": "Hempstead, NY",
-      "state": "NY",
-      "region": "Nassau County",
-      "zipCodes": [
-        "11549",
-        "11550",
-        "11551"
-      ],
-      "landmarks": [
-        "Hofstra University",
-        "Hempstead Lake State Park"
-      ],
-      "nearbyCities": [
-        "Garden City",
-        "West Hempstead",
-        "Uniondale"
-      ]
-    },
     {
       "slug": "great-neck-ny",
       "name": "Great Neck, NY",
@@ -1047,183 +413,34 @@
         "11024"
       ],
       "landmarks": [
+        "Northwell Health System",
         "Merchant Marine Academy",
         "Great Neck Plaza"
       ],
       "nearbyCities": [
+        "New Hyde Park",
         "Manhasset",
-        "Roslyn",
-        "Port Washington"
+        "Roslyn"
       ]
     },
     {
-      "slug": "mineola-ny",
-      "name": "Mineola, NY",
+      "slug": "new-hyde-park-ny",
+      "name": "New Hyde Park, NY",
       "state": "NY",
       "region": "Nassau County",
       "zipCodes": [
-        "11501"
+        "11040",
+        "11042"
       ],
       "landmarks": [
-        "NYU Langone Hospital",
-        "Mineola LIRR Station"
+        "Long Island Jewish Medical Center",
+        "Lake Success Business Park",
+        "Parker Jewish Institute"
       ],
       "nearbyCities": [
-        "Garden City",
-        "Williston Park",
-        "East Williston"
-      ]
-    },
-    {
-      "slug": "huntington-ny",
-      "name": "Huntington, NY",
-      "state": "NY",
-      "region": "Suffolk County",
-      "zipCodes": [
-        "11743"
-      ],
-      "landmarks": [
-        "The Paramount",
-        "Heckscher Park"
-      ],
-      "nearbyCities": [
-        "Cold Spring Harbor",
-        "Greenlawn",
-        "Huntington Station"
-      ]
-    },
-    {
-      "slug": "islip-ny",
-      "name": "Islip, NY",
-      "state": "NY",
-      "region": "Suffolk County",
-      "zipCodes": [
-        "11751"
-      ],
-      "landmarks": [
-        "Islip Town Hall",
-        "Heckscher State Park"
-      ],
-      "nearbyCities": [
-        "Bay Shore",
-        "East Islip",
-        "Great River"
-      ]
-    },
-    {
-      "slug": "babylon-ny",
-      "name": "Babylon, NY",
-      "state": "NY",
-      "region": "Suffolk County",
-      "zipCodes": [
-        "11702"
-      ],
-      "landmarks": [
-        "Argyle Park",
-        "Babylon LIRR"
-      ],
-      "nearbyCities": [
-        "West Babylon",
-        "North Babylon",
-        "Lindenhurst"
-      ]
-    },
-    {
-      "slug": "brookhaven-ny",
-      "name": "Brookhaven, NY",
-      "state": "NY",
-      "region": "Suffolk County",
-      "zipCodes": [
-        "11719"
-      ],
-      "landmarks": [
-        "Brookhaven National Lab",
-        "Wertheim National Wildlife Refuge"
-      ],
-      "nearbyCities": [
-        "Bellport",
-        "Mastic",
-        "Shirley"
-      ]
-    },
-    {
-      "slug": "flushing-ny",
-      "name": "Flushing, NY",
-      "state": "NY",
-      "region": "Queens",
-      "zipCodes": [
-        "11354",
-        "11355",
-        "11358"
-      ],
-      "landmarks": [
-        "Citi Field",
-        "Flushing Meadows Corona Park",
-        "Queens Botanical Garden"
-      ],
-      "nearbyCities": [
-        "Whitestone",
-        "College Point",
-        "Bayside"
-      ]
-    },
-    {
-      "slug": "jamaica-ny",
-      "name": "Jamaica, NY",
-      "state": "NY",
-      "region": "Queens",
-      "zipCodes": [
-        "11432",
-        "11433",
-        "11434"
-      ],
-      "landmarks": [
-        "JFK Airport",
-        "York College"
-      ],
-      "nearbyCities": [
-        "St. Albans",
-        "South Ozone Park",
-        "Richmond Hill"
-      ]
-    },
-    {
-      "slug": "astoria-ny",
-      "name": "Astoria, NY",
-      "state": "NY",
-      "region": "Queens",
-      "zipCodes": [
-        "11102",
-        "11103",
-        "11105",
-        "11106"
-      ],
-      "landmarks": [
-        "Astoria Park",
-        "Museum of the Moving Image"
-      ],
-      "nearbyCities": [
-        "Long Island City",
-        "Sunnyside",
-        "Woodside"
-      ]
-    },
-    {
-      "slug": "forest-hills-ny",
-      "name": "Forest Hills, NY",
-      "state": "NY",
-      "region": "Queens",
-      "zipCodes": [
-        "11375"
-      ],
-      "landmarks": [
-        "Forest Hills Stadium",
-        "Austin Street"
-      ],
-      "nearbyCities": [
-        "Rego Park",
-        "Kew Gardens",
-        "Briarwood"
+        "Great Neck",
+        "Floral Park",
+        "Garden City"
       ]
     }
   ]

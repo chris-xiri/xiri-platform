@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { trackEvent } from '@/lib/tracking';
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const FACILITY_TYPES = [
     { group: "Medical", label: "Medical Offices", slug: "medical-offices" },
@@ -13,7 +16,10 @@ const FACILITY_TYPES = [
 ];
 
 export default function Navigation() {
+    const pathname = usePathname();
+    const router = useRouter();
     const [industriesOpen, setIndustriesOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const handleNavClick = (destination: string, label: string) => {
         trackEvent('click_cta', {
@@ -23,6 +29,31 @@ export default function Navigation() {
             position: 'header',
             text: label,
         });
+    };
+
+    const handleContractorStart = async () => {
+        setLoading(true);
+        handleNavClick('/onboarding', 'Apply to Join');
+
+        try {
+            // Create a blank Vendor Record to initialize the onboarding flow
+            const docRef = await addDoc(collection(db, "vendors"), {
+                status: 'new',
+                source: 'web_nav_cta',
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                onboarding: {
+                    status: 'started',
+                    currentStep: '0' // Starts at Language Selection
+                }
+            });
+
+            router.push(`/onboarding/${docRef.id}`);
+
+        } catch (err: any) {
+            console.error("Error creating vendor:", err);
+            setLoading(false);
+        }
     };
 
     // Group facilities by category
@@ -118,16 +149,28 @@ export default function Navigation() {
 
                         {/* CTA Button */}
                         <div className="flex items-center gap-4">
-                            <span className="hidden lg:block text-sm font-medium text-gray-500">
-                                Need a quote?
-                            </span>
-                            <Link
-                                href="/medical-offices#survey"
-                                className="bg-sky-600 text-white px-6 py-2.5 rounded-full font-medium shadow-md shadow-sky-600/20 hover:bg-sky-700 hover:shadow-lg hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
-                                onClick={() => handleNavClick('/medical-offices#survey', 'Get Audit')}
-                            >
-                                Get Facility Audit
-                            </Link>
+                            {pathname === '/contractors' || pathname?.includes('/partners') ? (
+                                <button
+                                    onClick={handleContractorStart}
+                                    disabled={loading}
+                                    className="bg-sky-600 text-white px-6 py-2.5 rounded-full font-medium shadow-md shadow-sky-600/20 hover:bg-sky-700 hover:shadow-lg hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? 'Starting...' : 'Apply to Join Network'}
+                                </button>
+                            ) : (
+                                <>
+                                    <span className="hidden lg:block text-sm font-medium text-gray-500">
+                                        Need a quote?
+                                    </span>
+                                    <Link
+                                        href="/medical-offices#survey"
+                                        className="bg-sky-600 text-white px-6 py-2.5 rounded-full font-medium shadow-md shadow-sky-600/20 hover:bg-sky-700 hover:shadow-lg hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
+                                        onClick={() => handleNavClick('/medical-offices#survey', 'Get Audit')}
+                                    >
+                                        Get Facility Audit
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

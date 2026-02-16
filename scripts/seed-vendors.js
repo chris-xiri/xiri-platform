@@ -1,6 +1,10 @@
 const admin = require('firebase-admin');
 
 // Initialize Firebase Admin
+// We rely on FIRESTORE_EMULATOR_HOST env var
+process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8085';
+process.env.GCLOUD_PROJECT = 'xiri-facility-solutions';
+
 if (!admin.apps.length) {
     admin.initializeApp({
         projectId: 'xiri-facility-solutions',

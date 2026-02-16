@@ -3,6 +3,7 @@ import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import TrackingProvider from "@/components/TrackingProvider";
 import Navigation from "@/components/Navigation";
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -18,7 +19,7 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "XIRI Facility Solutions | Medical-Grade Facility Management",
-  description: "The facility management standard for medical offices, surgery centers, and auto dealerships. One partner. Zero headaches. Nightly verified.",
+  description: "The facility management standard for single-tenant buildings. One partner. Zero headaches. Nightly verified.",
 };
 
 export default function RootLayout({
@@ -33,6 +34,7 @@ export default function RootLayout({
           <Navigation />
           {children}
         </TrackingProvider>
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-XXXXXXXXXX"} />
       </body>
     </html>
   );

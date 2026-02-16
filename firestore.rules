@@ -31,8 +31,11 @@ service cloud.firestore {
       // Public can update vendor data for onboarding form submission
       allow update: if true;
       
-      // Only authenticated admin/recruiter can create/delete
-      allow create, delete: if hasAnyRole(['admin', 'recruiter']);
+      // Public can create vendor data for onboarding
+      allow create: if true;
+      
+      // Only authenticated admin/recruiter can delete
+      allow delete: if hasAnyRole(['admin', 'recruiter']);
     }
     
     match /vendor_activities/{activityId} {

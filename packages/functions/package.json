@@ -13,7 +13,7 @@
         "logs": "firebase functions:log"
     },
     "engines": {
-        "node": "22"
+        "node": ">=22"
     },
     "dependencies": {
         "@google-cloud/tasks": "^6.2.1",
