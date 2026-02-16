@@ -33,15 +33,12 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.testSendEmail = exports.testNotification = exports.runRecruiterAgent = exports.clearPipeline = exports.generateLeads = exports.onDocumentUploaded = exports.onIncomingMessage = exports.processOutreachQueue = exports.onVendorApproved = exports.onVendorCreated = exports.autoApproveVendor = exports.telegramWebhook = void 0;
+exports.testSendEmail = exports.runRecruiterAgent = exports.clearPipeline = exports.generateLeads = exports.onDocumentUploaded = exports.onIncomingMessage = exports.processOutreachQueue = exports.onVendorApproved = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
 const recruiter_1 = require("./agents/recruiter");
 const sourcer_1 = require("./agents/sourcer");
-const telegramBot_1 = require("./triggers/telegramBot");
-Object.defineProperty(exports, "telegramWebhook", { enumerable: true, get: function () { return telegramBot_1.telegramWebhook; } });
-Object.defineProperty(exports, "autoApproveVendor", { enumerable: true, get: function () { return telegramBot_1.autoApproveVendor; } });
-Object.defineProperty(exports, "onVendorCreated", { enumerable: true, get: function () { return telegramBot_1.onVendorCreated; } });
+// import { telegramWebhook, autoApproveVendor, notifyHumanReview, onVendorCreated } from "./triggers/telegramBot";
 const onVendorApproved_1 = require("./triggers/onVendorApproved");
 Object.defineProperty(exports, "onVendorApproved", { enumerable: true, get: function () { return onVendorApproved_1.onVendorApproved; } });
 const outreachWorker_1 = require("./triggers/outreachWorker");
@@ -50,6 +47,9 @@ const onIncomingMessage_1 = require("./triggers/onIncomingMessage");
 Object.defineProperty(exports, "onIncomingMessage", { enumerable: true, get: function () { return onIncomingMessage_1.onIncomingMessage; } });
 const onDocumentUploaded_1 = require("./triggers/onDocumentUploaded");
 Object.defineProperty(exports, "onDocumentUploaded", { enumerable: true, get: function () { return onDocumentUploaded_1.onDocumentUploaded; } });
+// Load environment variables from .env file
+const dotenv = __importStar(require("dotenv"));
+dotenv.config();
 // Initialize Admin only once
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -61,7 +61,11 @@ exports.generateLeads = (0, https_1.onCall)({
     cors: [
         "http://localhost:3001", // Dashboard Dev
         "http://localhost:3000", // Public Site Dev
-        "https://xiri-facility-solutions.web.app", // Production
+        "https://xiri.ai", // Public Site Production
+        "https://www.xiri.ai", // Public Site WWW
+        "https://app.xiri.ai", // Dashboard Production
+        "https://xiri-dashboard.vercel.app", // Dashboard Vercel
+        "https://xiri-facility-solutions.web.app", // Firebase Hosting
         "https://xiri-facility-solutions.firebaseapp.com"
     ],
     timeoutSeconds: 540
@@ -93,7 +97,16 @@ exports.generateLeads = (0, https_1.onCall)({
     }
 });
 // 2. Clear Pipeline Tool
-exports.clearPipeline = (0, https_1.onCall)({ cors: true }, async (request) => {
+exports.clearPipeline = (0, https_1.onCall)({
+    cors: [
+        "http://localhost:3001",
+        "http://localhost:3000",
+        "https://xiri.ai",
+        "https://www.xiri.ai",
+        "https://app.xiri.ai",
+        "https://xiri-dashboard.vercel.app"
+    ]
+}, async (request) => {
     try {
         const snapshot = await db.collection('vendors').get();
         if (snapshot.empty) {
@@ -131,21 +144,26 @@ exports.runRecruiterAgent = (0, https_1.onRequest)({ secrets: ["GEMINI_API_KEY"]
     const result = await (0, recruiter_1.analyzeVendorLeads)(rawVendors, "Commercial Cleaning");
     res.json(result);
 });
-// Test Function to manually trigger notification (since we don't have a live scraped list trigger yet)
-exports.testNotification = (0, https_1.onRequest)(async (req, res) => {
-    const vendorId = req.query.vendorId;
+// Test Function to manually trigger notification (Telegram disabled for now)
+/* export const testNotification = onRequest(async (req, res) => {
+    const vendorId = req.query.vendorId as any;
     if (vendorId) {
-        await (0, telegramBot_1.notifyHumanReview)(vendorId);
+        await notifyHumanReview(vendorId);
         res.send(`Notification sent for ${vendorId}`);
-    }
-    else {
+    } else {
         res.status(400).send("Provide vendorId query param");
     }
-});
-// Test Function to send email via Resend
+}); */
 exports.testSendEmail = (0, https_1.onCall)({
     secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
-    cors: true
+    cors: [
+        "http://localhost:3001",
+        "http://localhost:3000",
+        "https://xiri.ai",
+        "https://www.xiri.ai",
+        "https://app.xiri.ai",
+        "https://xiri-dashboard.vercel.app"
+    ]
 }, async (request) => {
     const { sendTemplatedEmail } = await Promise.resolve().then(() => __importStar(require("./utils/emailUtils")));
     const { vendorId, templateId } = request.data;
