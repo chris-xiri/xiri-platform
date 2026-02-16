@@ -12,6 +12,7 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+db.settings({ ignoreUndefinedProperties: true });
 
 export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, hasActiveContract: boolean = false): Promise<RecruitmentAnalysisResult> => {
     console.log("!!! RECRUITER AGENT UPDATED - V3 (Deduplication) !!!");

@@ -17,6 +17,7 @@ if (!admin.apps.length) {
     admin.initializeApp();
 }
 const db = admin.firestore();
+db.settings({ ignoreUndefinedProperties: true });
 
 // Export Bot Functions (Telegram disabled for now)
 // export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };
