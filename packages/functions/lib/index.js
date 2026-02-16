@@ -242,6 +242,7 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 var db = admin.firestore();
+db.settings({ ignoreUndefinedProperties: true });
 var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false) => {
   console.log("!!! RECRUITER AGENT UPDATED - V3 (Deduplication) !!!");
   let analyzed = 0;
@@ -889,6 +890,7 @@ if (!admin10.apps.length) {
   admin10.initializeApp();
 }
 var db9 = admin10.firestore();
+db9.settings({ ignoreUndefinedProperties: true });
 var generateLeads = (0, import_https.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: [

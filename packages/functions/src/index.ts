@@ -1,5 +1,5 @@
 import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+import { db } from "./utils/firebase";
 import { analyzeVendorLeads } from "./agents/recruiter";
 import { searchVendors } from "./agents/sourcer";
 // import { telegramWebhook, autoApproveVendor, notifyHumanReview, onVendorCreated } from "./triggers/telegramBot";
@@ -7,17 +7,6 @@ import { onVendorApproved } from "./triggers/onVendorApproved";
 import { processOutreachQueue } from "./triggers/outreachWorker";
 import { onIncomingMessage } from "./triggers/onIncomingMessage";
 import { onDocumentUploaded } from "./triggers/onDocumentUploaded";
-
-// Load environment variables from .env file
-import * as dotenv from "dotenv";
-dotenv.config();
-
-// Initialize Admin only once
-if (!admin.apps.length) {
-    admin.initializeApp();
-}
-const db = admin.firestore();
-db.settings({ ignoreUndefinedProperties: true });
 
 // Export Bot Functions (Telegram disabled for now)
 // export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };

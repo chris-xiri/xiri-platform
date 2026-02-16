@@ -1,18 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import * as admin from "firebase-admin";
+import { admin, db } from "../utils/firebase";
 import { Vendor, RecruitmentAnalysisResult } from "../utils/types";
 
 // Initialize Gemini
 const API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCSmKaZsBUm4SIrxouk3tAmhHZUY0jClUw";
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-if (!admin.apps.length) {
-    admin.initializeApp();
-}
-
-const db = admin.firestore();
-db.settings({ ignoreUndefinedProperties: true });
 
 export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, hasActiveContract: boolean = false): Promise<RecruitmentAnalysisResult> => {
     console.log("!!! RECRUITER AGENT UPDATED - V3 (Deduplication) !!!");
