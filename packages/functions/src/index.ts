@@ -26,6 +26,7 @@ export const generateLeads = onCall({
         "https://xiri.ai", // Public Site Production
         "https://www.xiri.ai", // Public Site WWW
         "https://app.xiri.ai", // Dashboard Production
+        "https://xiri-dashboard.vercel.app", // Dashboard Vercel
         "https://xiri-facility-solutions.web.app", // Firebase Hosting
         "https://xiri-facility-solutions.firebaseapp.com"
     ],
@@ -69,7 +70,8 @@ export const clearPipeline = onCall({
         "http://localhost:3000",
         "https://xiri.ai",
         "https://www.xiri.ai",
-        "https://app.xiri.ai"
+        "https://app.xiri.ai",
+        "https://xiri-dashboard.vercel.app"
     ]
 }, async (request) => {
     try {
@@ -134,7 +136,8 @@ export const testSendEmail = onCall({
         "http://localhost:3000",
         "https://xiri.ai",
         "https://www.xiri.ai",
-        "https://app.xiri.ai"
+        "https://app.xiri.ai",
+        "https://xiri-dashboard.vercel.app"
     ]
 }, async (request) => {
     const { sendTemplatedEmail } = await import("./utils/emailUtils");
