@@ -23,6 +23,7 @@ export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, 
 
 // 1. Lead Sourcing Agent Trigger
 export const generateLeads = onCall({
+    secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
     cors: [
         "http://localhost:3001", // Dashboard Dev
         "http://localhost:3000", // Public Site Dev
@@ -133,6 +134,7 @@ export const testNotification = onRequest(async (req, res) => {
 });
 
 export const testSendEmail = onCall({
+    secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
     cors: [
         "http://localhost:3001",
         "http://localhost:3000",
