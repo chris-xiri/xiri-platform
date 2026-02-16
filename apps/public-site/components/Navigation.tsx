@@ -70,8 +70,8 @@ export default function Navigation() {
             {/* Trust Bar - Sticky Top */}
             <div className="bg-sky-900 text-white text-[10px] md:text-xs font-bold tracking-widest text-center py-2 relative z-50">
                 <div className="max-w-7xl mx-auto px-4">
-                    <span className="hidden md:inline">SERVING NATIONWIDE</span>
-                    <span className="md:hidden">NATIONWIDE</span>
+                    <span className="hidden md:inline">SERVING NATIONWIDE (ALPHA)</span>
+                    <span className="md:hidden">NATIONWIDE (ALPHA)</span>
                     <span className="mx-3 text-sky-400">•</span>
                     <span>100% BONDED & INSURED</span>
                     <span className="mx-3 text-sky-400">•</span>
