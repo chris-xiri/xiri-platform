@@ -37,21 +37,21 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db10, task) {
-  return db10.collection(COLLECTION).add({
+async function enqueueTask(db9, task) {
+  return db9.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db10) {
+async function fetchPendingTasks(db9) {
   const now = admin2.firestore.Timestamp.now();
-  const snapshot = await db10.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db9.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function updateTaskStatus(db10, taskId, status, updates = {}) {
-  await db10.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db9, taskId, status, updates = {}) {
+  await db9.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
@@ -230,19 +230,26 @@ __export(index_exports, {
 });
 module.exports = __toCommonJS(index_exports);
 var import_https = require("firebase-functions/v2/https");
-var admin10 = __toESM(require("firebase-admin"));
 
-// src/agents/recruiter.ts
-var import_generative_ai = require("@google/generative-ai");
+// src/utils/firebase.ts
 var admin = __toESM(require("firebase-admin"));
-var API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCSmKaZsBUm4SIrxouk3tAmhHZUY0jClUw";
-var genAI = new import_generative_ai.GoogleGenerativeAI(API_KEY);
-var model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+var dotenv = __toESM(require("dotenv"));
+dotenv.config();
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 var db = admin.firestore();
-db.settings({ ignoreUndefinedProperties: true });
+try {
+  db.settings({ ignoreUndefinedProperties: true });
+} catch (error4) {
+  console.log("Firestore settings usage note:", error4);
+}
+
+// src/agents/recruiter.ts
+var import_generative_ai = require("@google/generative-ai");
+var API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCSmKaZsBUm4SIrxouk3tAmhHZUY0jClUw";
+var genAI = new import_generative_ai.GoogleGenerativeAI(API_KEY);
+var model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false) => {
   console.log("!!! RECRUITER AGENT UPDATED - V3 (Deduplication) !!!");
   let analyzed = 0;
@@ -884,13 +891,6 @@ async function runVerification(vendorId, docType, vendorData) {
 }
 
 // src/index.ts
-var dotenv = __toESM(require("dotenv"));
-dotenv.config();
-if (!admin10.apps.length) {
-  admin10.initializeApp();
-}
-var db9 = admin10.firestore();
-db9.settings({ ignoreUndefinedProperties: true });
 var generateLeads = (0, import_https.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: [
@@ -945,19 +945,19 @@ var clearPipeline = (0, import_https.onCall)({
   ]
 }, async (request) => {
   try {
-    const snapshot = await db9.collection("vendors").get();
+    const snapshot = await db.collection("vendors").get();
     if (snapshot.empty) {
       return { message: "Pipeline already empty." };
     }
     let count = 0;
     const chunks = [];
-    let currentBatch = db9.batch();
+    let currentBatch = db.batch();
     snapshot.docs.forEach((doc, index) => {
       currentBatch.delete(doc.ref);
       count++;
       if (count % 400 === 0) {
         chunks.push(currentBatch.commit());
-        currentBatch = db9.batch();
+        currentBatch = db.batch();
       }
     });
     chunks.push(currentBatch.commit());
