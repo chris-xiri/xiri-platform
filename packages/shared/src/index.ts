@@ -26,6 +26,8 @@ export interface Lead {
     contactPhone: string;
     email: string;
     zipCode: string;
+    serviceInterest?: string; // e.g. "janitorial", "floor_care"
+    notes?: string;
 
     // Growth Engine Attribution
     attribution: {
