@@ -2,7 +2,7 @@ import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { analyzeVendorLeads } from "./agents/recruiter";
 import { searchVendors } from "./agents/sourcer";
-import { telegramWebhook, autoApproveVendor, notifyHumanReview, onVendorCreated } from "./triggers/telegramBot";
+// import { telegramWebhook, autoApproveVendor, notifyHumanReview, onVendorCreated } from "./triggers/telegramBot";
 import { onVendorApproved } from "./triggers/onVendorApproved";
 import { processOutreachQueue } from "./triggers/outreachWorker";
 import { onIncomingMessage } from "./triggers/onIncomingMessage";
@@ -18,8 +18,9 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
-// Export Bot Functions
-export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };
+// Export Bot Functions (Telegram disabled for now)
+// export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };
+export { onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };
 
 // 1. Lead Sourcing Agent Trigger
 export const generateLeads = onCall({
