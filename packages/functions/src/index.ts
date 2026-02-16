@@ -8,6 +8,10 @@ import { processOutreachQueue } from "./triggers/outreachWorker";
 import { onIncomingMessage } from "./triggers/onIncomingMessage";
 import { onDocumentUploaded } from "./triggers/onDocumentUploaded";
 
+// Load environment variables from .env file
+import * as dotenv from "dotenv";
+dotenv.config();
+
 // Initialize Admin only once
 if (!admin.apps.length) {
     admin.initializeApp();
