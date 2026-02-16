@@ -24,11 +24,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
         });
     });
 
-    // 2. Industry Hubs (/industries/[slug])
+    // 2. Industry Hubs (/[slug])
     const industries = seoData.industries || [];
     industries.forEach((item) => {
         sitemapEntries.push({
-            url: `${BASE_URL}/industries/${item.slug}`,
+            url: `${BASE_URL}/${item.slug}`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.9,

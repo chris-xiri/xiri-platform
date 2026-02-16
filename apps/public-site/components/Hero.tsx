@@ -82,7 +82,7 @@ export function Hero({
                                     href="/contractors"
                                     className="inline-flex justify-center items-center px-8 py-4 rounded-full text-lg font-medium text-gray-600 hover:text-sky-600 hover:bg-sky-50 transition-all duration-300"
                                 >
-                                    Vendor Portal
+                                    For Contractors
                                 </Link>
                             )}
                         </div>

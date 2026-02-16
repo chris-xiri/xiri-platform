@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
             title: `${industry.heroTitle} | XIRI Facility Solutions`, // e.g. "Clinical-Grade Facility Management | XIRI"
             description: industry.heroSubtitle,
             localAlternate: {
-                canonical: `https://xiri.ai/industries/${industry.slug}`
+                canonical: `https://xiri.ai/${industry.slug}`
             }
         };
     }
