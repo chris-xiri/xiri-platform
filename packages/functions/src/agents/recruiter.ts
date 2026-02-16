@@ -42,8 +42,7 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
 
     // List to process, defaults to rawVendors if deduplication fails or isn't run
     let vendorsToAnalyze = rawVendors;
-    let prompt = ""; // Declared outside try block for error logging access
-    let prompt = ""; // Scope fix for error logging
+    let prompt = "";
 
     try {
         // Pre-process for duplicates
