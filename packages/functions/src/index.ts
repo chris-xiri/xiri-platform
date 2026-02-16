@@ -123,8 +123,9 @@ export const runRecruiterAgent = onRequest({ secrets: ["GEMINI_API_KEY"] }, asyn
     res.json(result);
 });
 
-// Test Function to manually trigger notification (since we don't have a live scraped list trigger yet)
-export const testNotification = onRequest(async (req, res) => {
+
+// Test Function to manually trigger notification (Telegram disabled for now)
+/* export const testNotification = onRequest(async (req, res) => {
     const vendorId = req.query.vendorId as any;
     if (vendorId) {
         await notifyHumanReview(vendorId);
@@ -132,7 +133,7 @@ export const testNotification = onRequest(async (req, res) => {
     } else {
         res.status(400).send("Provide vendorId query param");
     }
-});
+}); */
 
 export const testSendEmail = onCall({
     secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
