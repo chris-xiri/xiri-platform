@@ -46,7 +46,15 @@ service cloud.firestore {
       allow read, write: if hasAnyRole(['admin', 'recruiter']);
     }
     
-    // SALES SIDE (Leads, Clients) - NEW
+    // SALES SIDE (Leads, Clients)
+    match /leads/{leadId} {
+      // Public wizard needs read/update access
+      allow create: if true;
+      allow read: if true;
+      allow update: if true;
+      allow delete: if hasAnyRole(['admin', 'sales']);
+    }
+
     match /sales_leads/{leadId} {
       allow read, write: if hasAnyRole(['admin', 'sales']);
     }
