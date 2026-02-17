@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { LeadFormModal } from './LeadFormModal';
 
 interface HeroProps {
     title: React.ReactNode;
@@ -36,6 +37,7 @@ export function Hero({
     onCtaClick
 }: HeroProps) {
     const [logoIndex, setLogoIndex] = useState<number>(0);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const currentLogo = COMPANY_LOGOS[logoIndex];
 
     const isDark = variant === 'dark';
@@ -70,12 +72,12 @@ export function Hero({
                                     {ctaText}
                                 </button>
                             ) : (
-                                <Link
-                                    href={ctaLink}
+                                <button
+                                    onClick={() => setIsModalOpen(true)}
                                     className="inline-flex justify-center items-center bg-sky-600 text-white px-8 py-4 rounded-full text-lg font-medium shadow-lg shadow-sky-600/20 hover:bg-sky-700 hover:shadow-xl hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
                                 >
                                     {ctaText}
-                                </Link>
+                                </button>
                             )}
                             {showSecondaryBtn && (
                                 <Link
@@ -137,6 +139,12 @@ export function Hero({
                     </div>
                 </div>
             </div>
+
+            {/* Internal Modal */}
+            <LeadFormModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+            />
         </section>
     );
 }

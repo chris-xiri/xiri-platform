@@ -26,7 +26,9 @@ export interface Lead {
     contactPhone: string;
     email: string;
     zipCode: string;
+    address?: string;      // Full address from Maps Autocomplete
     serviceInterest?: string; // e.g. "janitorial", "floor_care"
+    preferredAuditTimes?: Date[]; // Array of 3 options
     notes?: string;
 
     // Growth Engine Attribution

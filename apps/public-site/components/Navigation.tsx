@@ -15,11 +15,14 @@ const FACILITY_TYPES = [
     { group: "Education", label: "Daycares & Preschools", slug: "daycare-preschool" }
 ];
 
+import { LeadFormModal } from './LeadFormModal';
+
 export default function Navigation() {
     const pathname = usePathname();
     const router = useRouter();
     const [industriesOpen, setIndustriesOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
 
     const handleNavClick = (destination: string, label: string) => {
         trackEvent('click_cta', {
@@ -68,15 +71,27 @@ export default function Navigation() {
     return (
         <header className="fixed top-0 z-50 w-full font-sans shadow-md">
             {/* Trust Bar - Sticky Top */}
-            <div className="bg-sky-900 text-white text-[10px] md:text-xs font-bold tracking-widest text-center py-2 relative z-50">
-                <div className="max-w-7xl mx-auto px-4">
-                    <span className="hidden md:inline">SERVING NATIONWIDE (ALPHA)</span>
-                    <span className="md:hidden">NATIONWIDE (ALPHA)</span>
-                    <span className="mx-3 text-sky-400">•</span>
-                    <span>100% BONDED & INSURED</span>
-                    <span className="mx-3 text-sky-400">•</span>
-                    <span className="hidden md:inline">NIGHTLY AUDITED QUALITY</span>
-                    <span className="md:hidden">NIGHTLY AUDITS</span>
+            <div className="bg-[#0f172a] text-white text-[14px] md:text-[14px] font-bold tracking-[0.15em] text-center py-2.5 relative z-50 border-b border-white/10">
+                <div className="max-w-7xl mx-auto px-4 flex items-center justify-center">
+                    {/* Nationwide Section */}
+                    <span className="hidden md:inline">NATIONWIDE SCALE</span>
+                    <span className="md:hidden">NATIONWIDE SCALE</span>
+
+                    <span className="mx-2 md:mx-4 text-sky-500 opacity-60">|</span>
+
+                    {/* Precision/Local Section */}
+                    <span className="hidden md:inline">LOCAL PRECISION</span>
+                    <span className="md:hidden">LOCAL PRECISION</span>
+
+                    <span className="mx-2 md:mx-4 text-sky-500 opacity-60">|</span>
+
+                    {/* Security Section */}
+                    <span>FULLY BONDED & INSURED</span>
+
+                    <span className="mx-2 md:mx-4 text-sky-500 opacity-60">|</span>
+
+                    {/* Compliance Section */}
+                    <span className="text-sky-400">AUDIT-READY 24/7</span>
                 </div>
             </div>
 
@@ -162,19 +177,26 @@ export default function Navigation() {
                                     <span className="hidden lg:block text-sm font-medium text-gray-500">
                                         Need a quote?
                                     </span>
-                                    <Link
-                                        href="/medical-offices#survey"
+                                    <button
                                         className="bg-sky-600 text-white px-6 py-2.5 rounded-full font-medium shadow-md shadow-sky-600/20 hover:bg-sky-700 hover:shadow-lg hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
-                                        onClick={() => handleNavClick('/medical-offices#survey', 'Get Audit')}
+                                        onClick={() => {
+                                            handleNavClick('modal_open', 'Get Audit');
+                                            setIsAuditModalOpen(true);
+                                        }}
                                     >
                                         Get Facility Audit
-                                    </Link>
+                                    </button>
                                 </>
                             )}
                         </div>
                     </div>
                 </div>
             </nav>
+
+            <LeadFormModal
+                isOpen={isAuditModalOpen}
+                onClose={() => setIsAuditModalOpen(false)}
+            />
         </header>
     );
 }

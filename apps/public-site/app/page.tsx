@@ -1,7 +1,7 @@
 import { Hero } from '@/components/Hero';
 import { ValuePropsSection } from '@/components/ValueProps';
 import { CTAButton } from '@/components/CTAButton';
-import { LeadForm } from '@/components/LeadForm';
+import { ClientLeadForm } from '@/components/ClientLeadForm';
 import Link from "next/link";
 
 export default function Home() {
@@ -91,7 +91,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="font-bold text-lg">100% Insured & Vetted</h4>
-                    <p className="text-sky-200/80">$5M Liability Policy for every single contractor.</p>
+                    <p className="text-sky-200/80">$1M Liability Policy for every single contractor.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -117,7 +117,7 @@ export default function Home() {
 
             {/* Right: Lead Form (Generic Mode) */}
             <div className="lg:pl-10">
-              <LeadForm />
+              <ClientLeadForm />
             </div>
           </div>
         </div>
