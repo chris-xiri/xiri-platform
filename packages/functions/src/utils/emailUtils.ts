@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 
 const db = admin.firestore();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key");
 
 interface EmailTemplate {
     subject: string;
@@ -183,5 +183,36 @@ export async function sendTemplatedEmail(
         });
     } catch (error) {
         console.error("Error sending email:", error);
+    }
+}
+
+/**
+ * Send a raw email with optional attachments
+ */
+export async function sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+    attachments?: any[]
+): Promise<boolean> {
+    try {
+        const { data, error } = await resend.emails.send({
+            from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+            to,
+            subject,
+            html,
+            attachments
+        });
+
+        if (error) {
+            console.error('❌ Resend API error:', error);
+            return false;
+        }
+
+        console.log(`✅ Email sent to ${to}: ${subject} (ID: ${data?.id})`);
+        return true;
+    } catch (err) {
+        console.error('Error sending raw email:', err);
+        return false;
     }
 }

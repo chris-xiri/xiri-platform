@@ -71,6 +71,7 @@ __export(emailUtils_exports, {
   generatePersonalizedEmail: () => generatePersonalizedEmail,
   getTemplate: () => getTemplate,
   replaceVariables: () => replaceVariables,
+  sendEmail: () => sendEmail,
   sendTemplatedEmail: () => sendTemplatedEmail
 });
 async function getTemplate(templateId) {
@@ -203,6 +204,26 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
     console.error("Error sending email:", error4);
   }
 }
+async function sendEmail(to, subject, html, attachments) {
+  try {
+    const { data, error: error4 } = await resend.emails.send({
+      from: "Xiri Facility Solutions <onboarding@xiri.ai>",
+      to,
+      subject,
+      html,
+      attachments
+    });
+    if (error4) {
+      console.error("\u274C Resend API error:", error4);
+      return false;
+    }
+    console.log(`\u2705 Email sent to ${to}: ${subject} (ID: ${data?.id})`);
+    return true;
+  } catch (err) {
+    console.error("Error sending raw email:", err);
+    return false;
+  }
+}
 var admin8, import_generative_ai4, import_resend, db7, genAI4, resend;
 var init_emailUtils = __esm({
   "src/utils/emailUtils.ts"() {
@@ -212,7 +233,7 @@ var init_emailUtils = __esm({
     import_resend = require("resend");
     db7 = admin8.firestore();
     genAI4 = new import_generative_ai4.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-    resend = new import_resend.Resend(process.env.RESEND_API_KEY);
+    resend = new import_resend.Resend(process.env.RESEND_API_KEY || "re_dummy_key");
   }
 });
 
@@ -226,6 +247,7 @@ __export(index_exports, {
   onVendorApproved: () => onVendorApproved,
   processOutreachQueue: () => processOutreachQueue,
   runRecruiterAgent: () => runRecruiterAgent,
+  sendBookingConfirmation: () => sendBookingConfirmation,
   testSendEmail: () => testSendEmail
 });
 module.exports = __toCommonJS(index_exports);
@@ -890,6 +912,91 @@ async function runVerification(vendorId, docType, vendorData) {
   }
 }
 
+// src/triggers/sendBookingConfirmation.ts
+var import_firestore4 = require("firebase-functions/v2/firestore");
+init_emailUtils();
+var import_date_fns = require("date-fns");
+var TIMEOUT_SECONDS = 300;
+var sendBookingConfirmation = (0, import_firestore4.onDocumentWritten)({
+  document: "leads/{leadId}",
+  secrets: ["RESEND_API_KEY"],
+  timeoutSeconds: TIMEOUT_SECONDS
+}, async (event) => {
+  if (!event.data) return;
+  const before = event.data.before.data();
+  const after = event.data.after.data();
+  const statusChangedToNew = before?.status !== "new" && after?.status === "new";
+  const timesChanged = JSON.stringify(before?.preferredAuditTimes) !== JSON.stringify(after?.preferredAuditTimes);
+  const shouldSend = after?.status === "new" && (statusChangedToNew || timesChanged);
+  if (!shouldSend) return;
+  const { email, contactName, preferredAuditTimes, meetingType, meetingDuration, businessName } = after;
+  if (!email || !preferredAuditTimes || preferredAuditTimes.length === 0) {
+    console.log("Missing email or times for lead", event.params.leadId);
+    return;
+  }
+  const startTimeStr = preferredAuditTimes[0];
+  const startTime = new Date(startTimeStr);
+  const duration = meetingDuration || 60;
+  const endTime = (0, import_date_fns.addMinutes)(startTime, duration);
+  const type = meetingType === "intro" ? "Intro Call" : "Internal Audit";
+  const icsContent = generateICS({
+    start: startTime,
+    end: endTime,
+    summary: `Xiri ${type}: ${businessName || "Facility Audit"}`,
+    description: `Meeting with ${contactName || "Client"}.
+
+Type: ${type}
+Duration: ${duration} mins
+
+Power to the Facilities!`,
+    location: type === "intro" ? "Phone Call" : after.address || after.zipCode || "On Site",
+    organizer: { name: "Xiri Facility Solutions", email: "onboarding@xiri.ai" }
+  });
+  const subject = `Confirmed: Your Xini ${type}`;
+  const htmlBody = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #0ea5e9;">You're booked!</h1>
+            <p>Hi ${contactName || "there"},</p>
+            <p>We've confirmed your <strong>${type}</strong> for:</p>
+            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 0; font-size: 18px; font-weight: bold;">
+                    ${(0, import_date_fns.format)(startTime, "EEEE, MMMM do 'at' h:mm a")}
+                </p>
+                <p style="margin: 5px 0 0; color: #6b7280;">Duration: ${duration} mins</p>
+            </div>
+            <p>A calendar invitation has been attached to this email.</p>
+            <p>Best,<br/>The Xiri Team</p>
+        </div>
+    `;
+  await sendEmail(email, subject, htmlBody, [
+    {
+      filename: "invite.ics",
+      content: icsContent
+    }
+  ]);
+});
+function generateICS(event) {
+  const formatDate = (date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Xiri//Facility Solutions//EN
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+UID:${Date.now()}@xiri.ai
+DTSTAMP:${formatDate(/* @__PURE__ */ new Date())}
+DTSTART:${formatDate(event.start)}
+DTEND:${formatDate(event.end)}
+SUMMARY:${event.summary}
+DESCRIPTION:${event.description.replace(/\n/g, "\\n")}
+LOCATION:${event.location}
+ORGANIZER;CN=${event.organizer.name}:mailto:${event.organizer.email}
+STATUS:CONFIRMED
+sequence:0
+END:VEVENT
+END:VCALENDAR`;
+}
+
 // src/index.ts
 var generateLeads = (0, import_https.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
@@ -1009,6 +1116,7 @@ var testSendEmail = (0, import_https.onCall)({
   onVendorApproved,
   processOutreachQueue,
   runRecruiterAgent,
+  sendBookingConfirmation,
   testSendEmail
 });
 //# sourceMappingURL=index.js.map
