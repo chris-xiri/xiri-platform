@@ -67,7 +67,9 @@ async function handleGenerate(task: QueueItem) {
     // In production, might be better to fetch fresh vendor data
     const vendorData = task.metadata;
 
-    const outreachResult = await generateOutreachContent(vendorData, vendorData.phone ? 'SMS' : 'EMAIL');
+    // TODO: Re-enable SMS channel when Twilio is integrated
+    // const preferredChannel = vendorData.phone ? 'SMS' : 'EMAIL';
+    const outreachResult = await generateOutreachContent(vendorData, 'EMAIL');
 
     if (outreachResult.error) {
         throw new Error("AI Generation Failed: " + (outreachResult.sms || "Unknown Error"));
@@ -117,8 +119,8 @@ async function handleSend(task: QueueItem) {
 
     let sendSuccess = false;
 
-    if (task.metadata.channel === 'EMAIL' && vendorEmail) {
-        // ─── Real Resend Email ───
+    if (vendorEmail) {
+        // ─── Always send via Email until Twilio SMS is integrated ───
         const emailData = task.metadata.email;
         const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${(emailData?.body || '').replace(/\n/g, '<br/>')}</div>`;
 
@@ -132,12 +134,8 @@ async function handleSend(task: QueueItem) {
             logger.error(`Failed to send email to ${vendorEmail} for task ${task.id}`);
             throw new Error(`Resend email failed for vendor ${task.vendorId}`);
         }
-    } else if (task.metadata.channel === 'SMS') {
-        // ─── SMS: Twilio integration deferred ───
-        logger.info(`SMS send deferred for task ${task.id} (Twilio not yet integrated)`);
-        sendSuccess = true; // Log as success for now
     } else {
-        logger.warn(`No valid channel/email for task ${task.id}. Channel: ${task.metadata.channel}, Email: ${vendorEmail}`);
+        logger.warn(`No email for task ${task.id}. Channel: ${task.metadata.channel}`);
         sendSuccess = false;
     }
 
