@@ -24,6 +24,16 @@ export const enrichFromWebsite = onCall<EnrichRequest, Promise<EnrichResponse>>(
     secrets: [GEMINI_API_KEY],
     timeoutSeconds: 60,
     memory: '512MiB',
+    cors: [
+        "http://localhost:3001",
+        "http://localhost:3000",
+        "https://xiri.ai",
+        "https://www.xiri.ai",
+        "https://app.xiri.ai",
+        "https://xiri-dashboard.vercel.app",
+        "https://xiri-facility-solutions.web.app",
+        "https://xiri-facility-solutions.firebaseapp.com"
+    ],
 }, async (request) => {
     // 1. Validate request
     if (!request.auth) {
