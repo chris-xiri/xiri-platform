@@ -286,10 +286,30 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
   let vendorsToAnalyze = rawVendors;
   let prompt = "";
   try {
+    let filteredRawVendors = rawVendors;
+    try {
+      const dismissedSnapshot = await db.collection("dismissed_vendors").get();
+      if (!dismissedSnapshot.empty) {
+        const dismissedNames = new Set(
+          dismissedSnapshot.docs.map((doc) => (doc.data().businessName || "").toLowerCase().trim())
+        );
+        const beforeCount = filteredRawVendors.length;
+        filteredRawVendors = filteredRawVendors.filter((v) => {
+          const name = (v.name || v.companyName || v.title || "").toLowerCase().trim();
+          return !name || !dismissedNames.has(name);
+        });
+        const skipped = beforeCount - filteredRawVendors.length;
+        if (skipped > 0) {
+          console.log(`Skipped ${skipped} dismissed vendors from blacklist.`);
+        }
+      }
+    } catch (dismissErr) {
+      console.warn("Could not check dismissed_vendors:", dismissErr.message);
+    }
     const vendorsToProcess = [];
     const duplicateUpdates = [];
-    console.log(`Checking ${rawVendors.length} vendors for duplicates...`);
-    for (const vendor of rawVendors) {
+    console.log(`Checking ${filteredRawVendors.length} vendors for duplicates...`);
+    for (const vendor of filteredRawVendors) {
       const bName = vendor.name || vendor.companyName || vendor.title;
       if (!bName) {
         vendorsToProcess.push(vendor);
@@ -302,8 +322,6 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
         duplicateUpdates.push(
           db.collection("vendors").doc(docId).update({
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
-            // Optional: Add a note or campaign ID if we were tracking campaigns strictly
-            // 'metadata.lastSourcedAt': admin.firestore.FieldValue.serverTimestamp() 
           })
         );
       } else {
@@ -315,7 +333,7 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
       console.log(`Updated ${duplicateUpdates.length} existing vendors.`);
     }
     if (vendorsToProcess.length === 0) {
-      console.log("All vendors were duplicates. Sourcing complete.");
+      console.log("All vendors were duplicates or dismissed. Sourcing complete.");
       return { analyzed, qualified, errors };
     }
     vendorsToAnalyze = vendorsToProcess;

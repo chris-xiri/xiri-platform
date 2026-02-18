@@ -5,120 +5,196 @@ import CampaignLauncher from "@/components/CampaignLauncher";
 import VendorList from "@/components/VendorList";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import RecruitmentDetailView from "@/components/supply/RecruitmentDetailView";
-import CampaignResultsTable from "@/components/supply/CampaignResultsTable";
+import CampaignResultsTable, { Campaign } from "@/components/supply/CampaignResultsTable";
 import { cn } from "@/lib/utils";
 import { Vendor } from "@xiri/shared";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+// Generate a simple unique ID for campaigns
+const generateId = () => `campaign_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+
+// Helper: write vendor to dismissed_vendors collection
+const dismissVendorInFirestore = async (vendor: Vendor, campaignQuery?: string, campaignLocation?: string) => {
+    try {
+        await addDoc(collection(db, "dismissed_vendors"), {
+            businessName: vendor.businessName,
+            dismissedAt: serverTimestamp(),
+            campaignQuery: campaignQuery || null,
+            campaignLocation: campaignLocation || null,
+        });
+    } catch (err) {
+        console.error(`Failed to persist dismissal for "${vendor.businessName}":`, err);
+    }
+};
+
 export default function RecruitmentPage() {
     const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
-    const [campaignResults, setCampaignResults] = useState<Vendor[]>([]);
-    const [campaignMeta, setCampaignMeta] = useState<{ query: string; location: string; sourced: number; qualified: number } | undefined>();
+    const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+    const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
 
-    // Toggle Selection (Clicking active row or background closes it)
+    // Toggle Selection
     const handleSelectVendor = (id: string | null) => {
-        if (id === null) {
-            setSelectedVendorId(null);
-            return;
-        }
+        if (id === null) { setSelectedVendorId(null); return; }
         setSelectedVendorId(prev => prev === id ? null : id);
     };
 
-    // Close on Escape Key
+    // Close on Escape
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                setSelectedVendorId(null);
-            }
-        };
+        const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelectedVendorId(null); };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    // Handle campaign results from CampaignLauncher
+    // Handle campaign results — create a new campaign tab
     const handleCampaignResults = useCallback((vendors: Vendor[], meta: { query: string; location: string; sourced: number; qualified: number }) => {
-        // Append to existing results (don't replace in case of multiple campaigns)
-        setCampaignResults(prev => [...prev, ...vendors]);
-        setCampaignMeta(meta);
+        const newCampaign: Campaign = {
+            id: generateId(),
+            query: meta.query,
+            location: meta.location,
+            vendors,
+            timestamp: new Date(),
+            sourced: meta.sourced,
+            qualified: meta.qualified,
+        };
+        setCampaigns(prev => [...prev, newCampaign]);
+        setActiveCampaignId(newCampaign.id);
     }, []);
 
-    // Approve a vendor — save to Firestore vendors collection
-    const handleApprove = useCallback(async (vendorId: string) => {
-        const vendor = campaignResults.find(v => v.id === vendorId);
+    // Approve a vendor — save to Firestore, remove from campaign
+    const handleApprove = useCallback(async (campaignId: string, vendorId: string) => {
+        const campaign = campaigns.find(c => c.id === campaignId);
+        const vendor = campaign?.vendors.find(v => v.id === vendorId);
         if (!vendor) return;
 
         try {
-            // Save to Firestore vendors collection
             const { id, ...vendorData } = vendor;
             await addDoc(collection(db, "vendors"), {
                 ...vendorData,
                 status: 'pending_review',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-                source: 'campaign_approved'
+                source: 'campaign_approved',
             });
-
-            // Remove from preview state
-            setCampaignResults(prev => prev.filter(v => v.id !== vendorId));
-            console.log(`✅ Vendor "${vendor.businessName}" approved and saved to CRM.`);
+            console.log(`✅ Approved "${vendor.businessName}" into CRM.`);
         } catch (error) {
             console.error("Error approving vendor:", error);
+            return;
         }
-    }, [campaignResults]);
 
-    // Dismiss a vendor — remove from preview state
-    const handleDismiss = useCallback((vendorId: string) => {
-        setCampaignResults(prev => prev.filter(v => v.id !== vendorId));
-    }, []);
+        // Remove from campaign
+        setCampaigns(prev => {
+            const updated = prev.map(c =>
+                c.id === campaignId ? { ...c, vendors: c.vendors.filter(v => v.id !== vendorId) } : c
+            ).filter(c => c.vendors.length > 0); // Auto-remove empty campaigns
+            // If active campaign was emptied, switch to last remaining
+            if (!updated.find(c => c.id === campaignId) && updated.length > 0) {
+                setActiveCampaignId(updated[updated.length - 1].id);
+            } else if (updated.length === 0) {
+                setActiveCampaignId(null);
+            }
+            return updated;
+        });
+    }, [campaigns]);
 
-    // Approve all vendors
-    const handleApproveAll = useCallback(async () => {
-        for (const vendor of campaignResults) {
-            const { id, ...vendorData } = vendor;
+    // Dismiss a vendor — remove from campaign + blacklist in Firestore
+    const handleDismiss = useCallback(async (campaignId: string, vendorId: string) => {
+        const campaign = campaigns.find(c => c.id === campaignId);
+        const vendor = campaign?.vendors.find(v => v.id === vendorId);
+        if (!vendor) return;
+
+        // Persist to dismissed_vendors
+        await dismissVendorInFirestore(vendor, campaign?.query, campaign?.location);
+        console.log(`❌ Dismissed "${vendor.businessName}" — blacklisted from future campaigns.`);
+
+        // Remove from campaign
+        setCampaigns(prev => {
+            const updated = prev.map(c =>
+                c.id === campaignId ? { ...c, vendors: c.vendors.filter(v => v.id !== vendorId) } : c
+            ).filter(c => c.vendors.length > 0);
+            if (!updated.find(c => c.id === campaignId) && updated.length > 0) {
+                setActiveCampaignId(updated[updated.length - 1].id);
+            } else if (updated.length === 0) {
+                setActiveCampaignId(null);
+            }
+            return updated;
+        });
+    }, [campaigns]);
+
+    // Approve all vendors in a campaign
+    const handleApproveAll = useCallback(async (campaignId: string) => {
+        const campaign = campaigns.find(c => c.id === campaignId);
+        if (!campaign) return;
+
+        for (const vendor of campaign.vendors) {
             try {
+                const { id, ...vendorData } = vendor;
                 await addDoc(collection(db, "vendors"), {
                     ...vendorData,
                     status: 'pending_review',
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
-                    source: 'campaign_approved'
+                    source: 'campaign_approved',
                 });
             } catch (error) {
-                console.error(`Error approving vendor "${vendor.businessName}":`, error);
+                console.error(`Error approving "${vendor.businessName}":`, error);
             }
         }
-        setCampaignResults([]);
-        console.log(`✅ All ${campaignResults.length} vendors approved and saved to CRM.`);
-    }, [campaignResults]);
+        console.log(`✅ Approved all ${campaign.vendors.length} vendors from "${campaign.query}".`);
 
-    // Dismiss all vendors
-    const handleDismissAll = useCallback(() => {
-        setCampaignResults([]);
-        setCampaignMeta(undefined);
-    }, []);
+        setCampaigns(prev => {
+            const updated = prev.filter(c => c.id !== campaignId);
+            if (updated.length > 0) { setActiveCampaignId(updated[updated.length - 1].id); }
+            else { setActiveCampaignId(null); }
+            return updated;
+        });
+    }, [campaigns]);
+
+    // Dismiss all vendors in a campaign (blacklist all)
+    const handleDismissAll = useCallback(async (campaignId: string) => {
+        const campaign = campaigns.find(c => c.id === campaignId);
+        if (!campaign) return;
+
+        // Blacklist all remaining vendors
+        for (const vendor of campaign.vendors) {
+            await dismissVendorInFirestore(vendor, campaign.query, campaign.location);
+        }
+        console.log(`❌ Dismissed all ${campaign.vendors.length} vendors from "${campaign.query}".`);
+
+        setCampaigns(prev => {
+            const updated = prev.filter(c => c.id !== campaignId);
+            if (updated.length > 0) { setActiveCampaignId(updated[updated.length - 1].id); }
+            else { setActiveCampaignId(null); }
+            return updated;
+        });
+    }, [campaigns]);
+
+    // Close campaign tab — dismisses all remaining vendors
+    const handleCloseCampaign = useCallback(async (campaignId: string) => {
+        await handleDismissAll(campaignId);
+    }, [handleDismissAll]);
 
     return (
         <ProtectedRoute resource="supply/recruitment">
             <div className="min-h-screen bg-background transition-colors duration-300 overflow-hidden">
-                {/* Main Content */}
                 <main className="w-full h-[calc(100vh-64px)] flex">
-                    {/* LEFT PANEL: List View */}
+                    {/* LEFT PANEL */}
                     <div
                         className={cn(
                             "flex flex-col h-full transition-all duration-300 ease-in-out border-r border-border",
                             selectedVendorId ? "w-1/3 min-w-[400px]" : "w-full"
                         )}
-                        onClick={() => handleSelectVendor(null)} // Click whitespace to close
+                        onClick={() => handleSelectVendor(null)}
                     >
                         <div className="p-2 pb-0" onClick={(e) => e.stopPropagation()}>
-                            {/* Stop propagation for header controls */}
                             <CampaignLauncher onResults={handleCampaignResults} />
 
-                            {/* Campaign Preview Results (in-memory, not saved yet) */}
+                            {/* Campaign Tabs with Preview Results */}
                             <CampaignResultsTable
-                                vendors={campaignResults}
-                                campaignMeta={campaignMeta}
+                                campaigns={campaigns}
+                                activeCampaignId={activeCampaignId}
+                                onSetActiveCampaign={setActiveCampaignId}
+                                onCloseCampaign={handleCloseCampaign}
                                 onApprove={handleApprove}
                                 onDismiss={handleDismiss}
                                 onApproveAll={handleApproveAll}
@@ -135,7 +211,7 @@ export default function RecruitmentPage() {
                         </div>
                     </div>
 
-                    {/* RIGHT PANEL: Detail View (Split Screen) */}
+                    {/* RIGHT PANEL */}
                     {selectedVendorId && (
                         <div className="flex-1 h-full bg-background animate-in slide-in-from-right-10 duration-200">
                             <RecruitmentDetailView
@@ -149,4 +225,3 @@ export default function RecruitmentPage() {
         </ProtectedRoute>
     );
 }
-
