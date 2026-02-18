@@ -270,7 +270,7 @@ try {
 
 // src/agents/recruiter.ts
 var import_generative_ai = require("@google/generative-ai");
-var API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCSmKaZsBUm4SIrxouk3tAmhHZUY0jClUw";
+var API_KEY = process.env.GEMINI_API_KEY || "";
 var genAI = new import_generative_ai.GoogleGenerativeAI(API_KEY);
 var model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false, previewOnly = false) => {
@@ -587,7 +587,7 @@ function getNextBusinessSlot(urgency) {
 // src/agents/outreach.ts
 var import_generative_ai2 = require("@google/generative-ai");
 var admin4 = __toESM(require("firebase-admin"));
-var API_KEY2 = process.env.GEMINI_API_KEY || "AIzaSyCSmKaZsBUm4SIrxouk3tAmhHZUY0jClUw";
+var API_KEY2 = process.env.GEMINI_API_KEY || "";
 var genAI2 = new import_generative_ai2.GoogleGenerativeAI(API_KEY2);
 var model2 = genAI2.getGenerativeModel({ model: "gemini-2.0-flash" });
 var db3 = admin4.firestore();

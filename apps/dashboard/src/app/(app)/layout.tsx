@@ -3,8 +3,9 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Home, Users, User, Settings, LogOut, Package, DollarSign } from "lucide-react";
+import { Home, Users, User, Settings, LogOut, Package, DollarSign, Sun, Moon, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -19,6 +20,7 @@ import { canAccess } from "@/lib/accessControl";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { profile, loading, signOut } = useAuth();
     const router = useRouter();
+    const { setTheme, theme } = useTheme();
 
     useEffect(() => {
         if (!loading && !profile) {
@@ -41,7 +43,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-screen bg-background">
             <nav className="border-b">
-                <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+                <div className="w-full px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         <Link href="/" className="flex items-center gap-2">
                             <span className="text-3xl font-bold text-sky-700 tracking-tight">XIRI</span>
@@ -124,6 +126,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-xs text-muted-foreground">Theme</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => setTheme('light')} className={`flex items-center gap-2 cursor-pointer ${theme === 'light' ? 'bg-muted' : ''}`}>
+                                <Sun className="w-4 h-4" /> Light
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTheme('dark')} className={`flex items-center gap-2 cursor-pointer ${theme === 'dark' ? 'bg-muted' : ''}`}>
+                                <Moon className="w-4 h-4" /> Dark
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTheme('system')} className={`flex items-center gap-2 cursor-pointer ${theme === 'system' ? 'bg-muted' : ''}`}>
+                                <Monitor className="w-4 h-4" /> System
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             {showAdminNav && (
                                 <>
                                     <DropdownMenuItem asChild>
@@ -155,7 +168,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </DropdownMenu>
                 </div>
             </nav>
-            <main className="container mx-auto px-4 py-8">
+            <main className="w-full px-4 py-4">
                 {children}
             </main>
         </div>
