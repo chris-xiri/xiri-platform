@@ -4,6 +4,7 @@ import * as logger from "firebase-functions/logger";
 import { fetchPendingTasks, updateTaskStatus, enqueueTask, QueueItem } from "../utils/queueUtils";
 import { getNextBusinessSlot } from "../utils/timeUtils";
 import { generateOutreachContent } from "../agents/outreach";
+import { sendEmail } from "../utils/emailUtils";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -12,7 +13,10 @@ const db = admin.firestore();
 
 // Run every minute to check for pending tasks
 // Region must match project config
-export const processOutreachQueue = onSchedule("every 1 minutes", async (event) => {
+export const processOutreachQueue = onSchedule({
+    schedule: "every 1 minutes",
+    secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
+}, async (event) => {
     logger.info("Processing outreach queue...");
 
     try {
@@ -105,25 +109,55 @@ async function handleGenerate(task: QueueItem) {
 async function handleSend(task: QueueItem) {
     logger.info(`Executing SEND for task ${task.id}`);
 
-    // In a real system, call Twilio/SendGrid here.
-    // For now, we log the "Simulated Send".
+    const vendorDoc = await db.collection("vendors").doc(task.vendorId).get();
+    const vendor = vendorDoc.exists ? vendorDoc.data() : null;
+    const vendorEmail = vendor?.email || task.metadata?.email?.to;
+
+    let sendSuccess = false;
+
+    if (task.metadata.channel === 'EMAIL' && vendorEmail) {
+        // ─── Real Resend Email ───
+        const emailData = task.metadata.email;
+        const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${(emailData?.body || '').replace(/\n/g, '<br/>')}</div>`;
+
+        sendSuccess = await sendEmail(
+            vendorEmail,
+            emailData?.subject || 'Xiri Facility Solutions — Partnership Opportunity',
+            htmlBody
+        );
+
+        if (!sendSuccess) {
+            logger.error(`Failed to send email to ${vendorEmail} for task ${task.id}`);
+            throw new Error(`Resend email failed for vendor ${task.vendorId}`);
+        }
+    } else if (task.metadata.channel === 'SMS') {
+        // ─── SMS: Twilio integration deferred ───
+        logger.info(`SMS send deferred for task ${task.id} (Twilio not yet integrated)`);
+        sendSuccess = true; // Log as success for now
+    } else {
+        logger.warn(`No valid channel/email for task ${task.id}. Channel: ${task.metadata.channel}, Email: ${vendorEmail}`);
+        sendSuccess = false;
+    }
 
     await db.collection("vendor_activities").add({
         vendorId: task.vendorId,
-        type: "OUTREACH_SENT",
-        description: `Automated ${task.metadata.channel} sent to vendor.`,
+        type: sendSuccess ? "OUTREACH_SENT" : "OUTREACH_FAILED",
+        description: sendSuccess
+            ? `Automated ${task.metadata.channel} sent to ${vendorEmail || 'vendor'}.`
+            : `Failed to send ${task.metadata.channel} to vendor.`,
         createdAt: new Date(),
         metadata: {
             channel: task.metadata.channel,
-            content: task.metadata.channel === 'SMS' ? task.metadata.sms : task.metadata.email.subject
+            to: vendorEmail || 'unknown',
+            content: task.metadata.channel === 'SMS' ? task.metadata.sms : task.metadata.email?.subject
         }
     });
 
-    await updateTaskStatus(db, task.id!, 'COMPLETED');
+    await updateTaskStatus(db, task.id!, sendSuccess ? 'COMPLETED' : 'FAILED');
 
     // Update Vendor Record
     await db.collection("vendors").doc(task.vendorId).update({
-        outreachStatus: 'SENT',
+        outreachStatus: sendSuccess ? 'SENT' : 'PENDING',
         outreachChannel: task.metadata.channel,
         outreachTime: new Date()
     });

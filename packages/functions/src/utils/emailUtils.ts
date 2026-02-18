@@ -143,6 +143,7 @@ export async function sendTemplatedEmail(
         try {
             const { data } = await resend.emails.send({
                 from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+                replyTo: 'chris@xiri.ai',
                 to: vendor?.email || '',
                 subject: email.subject,
                 html: email.body,
@@ -198,6 +199,7 @@ export async function sendEmail(
     try {
         const { data, error } = await resend.emails.send({
             from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+            replyTo: 'chris@xiri.ai',
             to,
             subject,
             html,
