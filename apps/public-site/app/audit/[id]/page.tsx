@@ -252,6 +252,9 @@ export default function AuditWizardPage() {
                     <div className="border border-gray-200 rounded-xl p-2">
                         <GooglePlacesAutocomplete
                             apiKey={apiKey}
+                            autocompletionRequest={{
+                                componentRestrictions: { country: ['us'] },
+                            }}
                             selectProps={{
                                 value: address,
                                 onChange: setAddress,
@@ -703,6 +706,9 @@ export default function AuditWizardPage() {
                                     <div className="border border-gray-200 rounded-xl p-2">
                                         <GooglePlacesAutocomplete
                                             apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                                            autocompletionRequest={{
+                                                componentRestrictions: { country: ['us'] },
+                                            }}
                                             selectProps={{
                                                 value: address,
                                                 onChange: setAddress,

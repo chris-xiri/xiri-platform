@@ -235,6 +235,9 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                         <Label>Address *</Label>
                         <GooglePlacesAutocomplete
                             apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                            autocompletionRequest={{
+                                componentRestrictions: { country: ['us'] },
+                            }}
                             selectProps={{
                                 value: address,
                                 onChange: handleAddressSelect,
