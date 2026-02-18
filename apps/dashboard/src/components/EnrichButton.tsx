@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sparkles, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { getFunctions, httpsCallable } from "firebase/functions";
 
@@ -54,22 +53,16 @@ export function EnrichButton({
             if (data.success) {
                 setStatus('success');
                 onSuccess?.(data);
-
-                // Reset success status after 3 seconds
                 setTimeout(() => setStatus('idle'), 3000);
             } else {
                 setStatus('error');
                 onError?.(data.error || 'Enrichment failed');
-
-                // Reset error status after 3 seconds
                 setTimeout(() => setStatus('idle'), 3000);
             }
         } catch (error: any) {
             console.error('Enrichment error:', error);
             setStatus('error');
             onError?.(error.message || 'Failed to enrich data');
-
-            // Reset error status after 3 seconds
             setTimeout(() => setStatus('idle'), 3000);
         } finally {
             setLoading(false);
@@ -91,25 +84,16 @@ export function EnrichButton({
     };
 
     return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button
-                        onClick={handleEnrich}
-                        disabled={disabled || loading || !website}
-                        size={size}
-                        variant={variant}
-                        className="gap-2"
-                    >
-                        {getIcon()}
-                        {getButtonText()}
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Auto-fill missing contact info from website</p>
-                    {!website && <p className="text-xs text-muted-foreground">No website URL</p>}
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+        <Button
+            onClick={handleEnrich}
+            disabled={disabled || loading || !website}
+            size={size}
+            variant={variant}
+            className="gap-2"
+            title={website ? 'Auto-fill missing contact info from website' : 'No website URL'}
+        >
+            {getIcon()}
+            {getButtonText()}
+        </Button>
     );
 }
