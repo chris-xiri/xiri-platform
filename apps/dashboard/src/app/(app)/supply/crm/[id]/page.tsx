@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Vendor } from '@xiri/shared';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
     LayoutDashboard, Users, Briefcase, DollarSign,
     ShieldCheck, Activity, ArrowLeft, MoreHorizontal,
-    Phone, Mail, MapPin, Globe
+    Phone, Mail, MapPin, Globe, Copy, Check, Rocket, AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -43,6 +43,10 @@ export default function CRMDetailPage(props: PageProps) {
     const router = useRouter();
     const [vendor, setVendor] = useState<Vendor | null>(null);
     const [loading, setLoading] = useState(true);
+    const [copied, setCopied] = useState(false);
+    const [startingSequence, setStartingSequence] = useState(false);
+
+    const ONBOARDING_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://xiri.ai';
 
     useEffect(() => {
 
@@ -94,11 +98,78 @@ export default function CRMDetailPage(props: PageProps) {
                                 <Badge variant={vendor.status === 'active' ? 'default' : 'secondary'}>
                                     {vendor.status}
                                 </Badge>
+                                {vendor.outreachStatus && (
+                                    <Badge variant="outline" className={
+                                        vendor.outreachStatus === 'NEEDS_CONTACT' ? 'border-amber-400 text-amber-600 dark:text-amber-400' :
+                                            vendor.outreachStatus === 'ENRICHING' ? 'border-blue-400 text-blue-600 dark:text-blue-400' :
+                                                vendor.outreachStatus === 'PENDING' ? 'border-purple-400 text-purple-600 dark:text-purple-400' :
+                                                    vendor.outreachStatus === 'SENT' ? 'border-green-400 text-green-600 dark:text-green-400' : ''
+                                    }>
+                                        {vendor.outreachStatus === 'NEEDS_CONTACT' && <><AlertTriangle className="w-3 h-3 mr-1" /> Needs Contact</>}
+                                        {vendor.outreachStatus === 'ENRICHING' && 'Enriching...'}
+                                        {vendor.outreachStatus === 'PENDING' && 'Outreach Queued'}
+                                        {vendor.outreachStatus === 'SENT' && 'Outreach Sent'}
+                                    </Badge>
+                                )}
                                 <span className="text-sm text-muted-foreground border-l pl-2 ml-2 font-mono select-all">ID: {vendor.id}</span>
                             </div>
                         </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
+                        {/* Copy Onboarding Link */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                const link = `${ONBOARDING_BASE_URL}/onboarding/${vendor.id}`;
+                                navigator.clipboard.writeText(link);
+                                setCopied(true);
+                                setTimeout(() => setCopied(false), 2000);
+                            }}
+                            className="h-8 text-xs"
+                        >
+                            {copied ? <><Check className="w-3 h-3 mr-1 text-green-600" /> Copied!</> : <><Copy className="w-3 h-3 mr-1" /> Onboarding Link</>}
+                        </Button>
+
+                        {/* Start Sequence — for NEEDS_CONTACT vendors */}
+                        {vendor.outreachStatus === 'NEEDS_CONTACT' && vendor.email && (
+                            <Button
+                                variant="default"
+                                size="sm"
+                                disabled={startingSequence}
+                                onClick={async () => {
+                                    setStartingSequence(true);
+                                    try {
+                                        // Re-trigger the pipeline by resetting status
+                                        const vendorRef = doc(db, 'vendors', vendor.id!);
+                                        // Temporarily set to a non-qualified status, then back to qualified
+                                        await updateDoc(vendorRef, { status: 'pending_review', outreachStatus: null });
+                                        // Small delay to ensure Firestore processes
+                                        setTimeout(async () => {
+                                            await updateDoc(vendorRef, { status: 'qualified' });
+                                            setStartingSequence(false);
+                                        }, 500);
+                                    } catch (err) {
+                                        console.error('Failed to start sequence:', err);
+                                        setStartingSequence(false);
+                                    }
+                                }}
+                                className="h-8 text-xs bg-green-600 hover:bg-green-700"
+                            >
+                                <Rocket className="w-3 h-3 mr-1" /> {startingSequence ? 'Starting...' : 'Start Sequence'}
+                            </Button>
+                        )}
+                        {vendor.outreachStatus === 'NEEDS_CONTACT' && !vendor.email && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled
+                                className="h-8 text-xs border-amber-300 text-amber-600"
+                            >
+                                <AlertTriangle className="w-3 h-3 mr-1" /> Add email first
+                            </Button>
+                        )}
+
                         <EditVendorDialog vendor={vendor} />
                         <Button variant="default">Log Activity</Button>
                         <Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>

@@ -27,7 +27,7 @@ export interface Vendor {
     aiScore?: number;
     fitScore?: number;
     aiReasoning?: string;
-    outreachStatus?: 'PENDING' | 'SENT' | 'NONE';
+    outreachStatus?: 'PENDING' | 'SENT' | 'NONE' | 'ENRICHING' | 'NEEDS_CONTACT';
     preferredLanguage?: 'en' | 'es';
     hasActiveContract?: boolean;
     onboardingTrack?: 'FAST_TRACK' | 'STANDARD';
