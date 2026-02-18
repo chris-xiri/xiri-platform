@@ -141,12 +141,23 @@ export default function VendorList({
 
     const handleAddEmailAndRetrigger = async (id: string, email: string) => {
         try {
-            await updateDoc(doc(db, "vendors", id), {
+            const vendorRef = doc(db, "vendors", id);
+            // Step 1: Save email and temporarily set to pending_review + clear outreach
+            await updateDoc(vendorRef, {
                 email,
-                outreachStatus: 'PENDING',
+                status: 'pending_review',
+                outreachStatus: null,
                 updatedAt: serverTimestamp()
             });
-            console.log(`Email added and outreach re-triggered for vendor ${id}`);
+            // Step 2: After a brief delay, set back to qualified — this triggers
+            // onVendorApproved which enqueues the GENERATE task for the outreach worker
+            setTimeout(async () => {
+                await updateDoc(vendorRef, {
+                    status: 'qualified',
+                    updatedAt: serverTimestamp()
+                });
+                console.log(`Email added and outreach pipeline re-triggered for vendor ${id}`);
+            }, 500);
         } catch (error) {
             console.error("Error re-triggering outreach:", error);
         }
