@@ -38,28 +38,28 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db11, task) {
-  return db11.collection(COLLECTION).add({
+async function enqueueTask(db12, task) {
+  return db12.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db11) {
+async function fetchPendingTasks(db12) {
   const now = admin2.firestore.Timestamp.now();
-  const snapshot = await db11.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db12.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function updateTaskStatus(db11, taskId, status, updates = {}) {
-  await db11.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db12, taskId, status, updates = {}) {
+  await db12.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db11, vendorId) {
-  const snapshot = await db11.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db11.batch();
+async function cancelVendorTasks(db12, vendorId) {
+  const snapshot = await db12.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db12.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
@@ -1526,6 +1526,8 @@ async function runVerification(vendorId, docType, vendorData) {
 var import_firestore5 = require("firebase-functions/v2/firestore");
 init_emailUtils();
 var import_date_fns = require("date-fns");
+var admin10 = __toESM(require("firebase-admin"));
+var db9 = admin10.firestore();
 var TIMEOUT_SECONDS = 300;
 var sendBookingConfirmation = (0, import_firestore5.onDocumentWritten)({
   document: "leads/{leadId}",
@@ -1578,12 +1580,26 @@ Power to the Facilities!`,
             <p>Best,<br/>The Xiri Team</p>
         </div>
     `;
-  await sendEmail(email, subject, htmlBody, [
+  const sendSuccess = await sendEmail(email, subject, htmlBody, [
     {
       filename: "invite.ics",
       content: icsContent
     }
   ]);
+  await db9.collection("activity_logs").add({
+    entityType: "lead",
+    entityId: event.params.leadId,
+    type: sendSuccess ? "EMAIL_SENT" : "EMAIL_FAILED",
+    description: `Booking confirmation ${sendSuccess ? "sent" : "failed"}: ${subject}`,
+    createdAt: admin10.firestore.FieldValue.serverTimestamp(),
+    metadata: {
+      to: email,
+      subject,
+      meetingType: type,
+      meetingTime: startTimeStr,
+      channel: "EMAIL"
+    }
+  });
 });
 function generateICS(event) {
   const formatDate = (date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
@@ -1687,8 +1703,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db11 = (0, import_firestore6.getFirestore)();
-    const docRef = db11.collection(collection).doc(documentId);
+    const db12 = (0, import_firestore6.getFirestore)();
+    const docRef = db12.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -1768,11 +1784,11 @@ var enrichFromWebsite = (0, import_https.onCall)({
 
 // src/triggers/onOnboardingComplete.ts
 var import_firestore7 = require("firebase-functions/v2/firestore");
-var admin10 = __toESM(require("firebase-admin"));
+var admin11 = __toESM(require("firebase-admin"));
 var logger4 = __toESM(require("firebase-functions/logger"));
 var import_resend2 = require("resend");
-if (!admin10.apps.length) {
-  admin10.initializeApp();
+if (!admin11.apps.length) {
+  admin11.initializeApp();
 }
 var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   document: "vendors/{vendorId}",
@@ -1917,7 +1933,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger4.error("Error sending vendor confirmation:", err);
     }
   }
-  const db11 = admin10.firestore();
+  const db12 = admin11.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -1942,9 +1958,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "pending_verification";
   }
-  await db11.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db12.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger4.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db11.collection("vendor_activities").add({
+  await db12.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -1955,13 +1971,13 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
 
 // src/triggers/dripScheduler.ts
 var import_firestore8 = require("firebase-functions/v2/firestore");
-var admin11 = __toESM(require("firebase-admin"));
+var admin12 = __toESM(require("firebase-admin"));
 var logger5 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
-if (!admin11.apps.length) {
-  admin11.initializeApp();
+if (!admin12.apps.length) {
+  admin12.initializeApp();
 }
-var db9 = admin11.firestore();
+var db10 = admin12.firestore();
 var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
   document: "vendors/{vendorId}"
 }, async (event) => {
@@ -1983,10 +1999,10 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
     const scheduledDate = new Date(now);
     scheduledDate.setDate(scheduledDate.getDate() + fu.dayOffset);
     scheduledDate.setHours(15, 0, 0, 0);
-    await enqueueTask(db9, {
+    await enqueueTask(db10, {
       vendorId,
       type: "FOLLOW_UP",
-      scheduledAt: admin11.firestore.Timestamp.fromDate(scheduledDate),
+      scheduledAt: admin12.firestore.Timestamp.fromDate(scheduledDate),
       metadata: {
         sequence: fu.sequence,
         subject: fu.subject,
@@ -1996,7 +2012,7 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
       }
     });
   }
-  await db9.collection("vendor_activities").add({
+  await db10.collection("vendor_activities").add({
     vendorId,
     type: "DRIP_SCHEDULED",
     description: `Drip campaign scheduled: 3 follow-ups over 14 days for ${businessName}.`,
@@ -2008,13 +2024,13 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
 
 // src/triggers/handleUnsubscribe.ts
 var import_https2 = require("firebase-functions/v2/https");
-var admin12 = __toESM(require("firebase-admin"));
+var admin13 = __toESM(require("firebase-admin"));
 var logger6 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
-if (!admin12.apps.length) {
-  admin12.initializeApp();
+if (!admin13.apps.length) {
+  admin13.initializeApp();
 }
-var db10 = admin12.firestore();
+var db11 = admin13.firestore();
 var handleUnsubscribe = (0, import_https2.onRequest)({
   cors: true
 }, async (req, res) => {
@@ -2028,7 +2044,7 @@ var handleUnsubscribe = (0, import_https2.onRequest)({
     return;
   }
   try {
-    const vendorDoc = await db10.collection("vendors").doc(vendorId).get();
+    const vendorDoc = await db11.collection("vendors").doc(vendorId).get();
     if (!vendorDoc.exists) {
       res.status(404).send(renderPage(
         "Not Found",
@@ -2047,14 +2063,14 @@ var handleUnsubscribe = (0, import_https2.onRequest)({
       ));
       return;
     }
-    await db10.collection("vendors").doc(vendorId).update({
+    await db11.collection("vendors").doc(vendorId).update({
       status: "dismissed",
       statusUpdatedAt: /* @__PURE__ */ new Date(),
       dismissReason: "unsubscribed",
       unsubscribedAt: /* @__PURE__ */ new Date()
     });
-    const cancelledCount = await cancelVendorTasks(db10, vendorId);
-    await db10.collection("vendor_activities").add({
+    const cancelledCount = await cancelVendorTasks(db11, vendorId);
+    await db11.collection("vendor_activities").add({
       vendorId,
       type: "STATUS_CHANGE",
       description: `${businessName} unsubscribed via email link. ${cancelledCount} pending tasks cancelled.`,

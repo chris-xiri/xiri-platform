@@ -23,6 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import ReactGoogleAutocomplete from 'react-google-autocomplete';
 
 interface EditVendorDialogProps {
     vendor: Vendor;
@@ -35,20 +36,66 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         businessName: vendor.businessName || '',
-        address: vendor.address || '',
+        streetAddress: vendor.streetAddress || vendor.address || '',
+        city: vendor.city || '',
+        state: vendor.state || '',
+        zip: vendor.zip || '',
         status: vendor.status || 'pending_review',
         onboardingTrack: vendor.onboardingTrack || 'STANDARD'
     });
 
+    const handlePlaceSelected = (place: any) => {
+        if (!place?.address_components) return;
+
+        let street = '';
+        let city = '';
+        let state = '';
+        let zip = '';
+
+        for (const component of place.address_components) {
+            const types = component.types;
+            if (types.includes('street_number')) {
+                street = component.long_name + ' ';
+            }
+            if (types.includes('route')) {
+                street += component.long_name;
+            }
+            if (types.includes('locality') || types.includes('sublocality_level_1')) {
+                city = component.long_name;
+            }
+            if (types.includes('administrative_area_level_1')) {
+                state = component.short_name;
+            }
+            if (types.includes('postal_code')) {
+                zip = component.long_name;
+            }
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            streetAddress: street.trim(),
+            city,
+            state,
+            zip
+        }));
+    };
+
     const handleSave = async () => {
         setLoading(true);
         try {
+            const fullAddress = [formData.streetAddress, formData.city, formData.state, formData.zip]
+                .filter(Boolean).join(', ');
+
             await updateDoc(doc(db, 'vendors', vendor.id!), {
                 businessName: formData.businessName,
-                address: formData.address,
+                streetAddress: formData.streetAddress,
+                city: formData.city,
+                state: formData.state,
+                zip: formData.zip,
+                address: fullAddress, // Keep legacy field in sync
                 status: formData.status,
                 onboardingTrack: formData.onboardingTrack,
-                updatedAt: new Date() // Updates timestamp
+                updatedAt: new Date()
             });
             setOpen(false);
             if (onUpdate) onUpdate();
@@ -64,7 +111,7 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
             <DialogTrigger asChild>
                 {trigger || <Button variant="outline">Edit Profile</Button>}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Edit Profile</DialogTitle>
                     <DialogDescription>
@@ -72,9 +119,10 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                    {/* Business Name */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">
-                            Business Name
+                        <Label htmlFor="name" className="text-right text-xs">
+                            Business
                         </Label>
                         <Input
                             id="name"
@@ -83,19 +131,66 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                             className="col-span-3"
                         />
                     </div>
+
+                    {/* Street Address with Google Autocomplete */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="address" className="text-right">
-                            Address
+                        <Label htmlFor="street" className="text-right text-xs">
+                            Street
+                        </Label>
+                        <div className="col-span-3">
+                            <ReactGoogleAutocomplete
+                                apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                                onPlaceSelected={handlePlaceSelected}
+                                options={{
+                                    types: ['address'],
+                                    componentRestrictions: { country: 'us' }
+                                }}
+                                defaultValue={formData.streetAddress}
+                                onChange={(e: any) => setFormData({ ...formData, streetAddress: e.target.value })}
+                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                placeholder="Start typing an address..."
+                            />
+                        </div>
+                    </div>
+
+                    {/* City / State / Zip — 3 columns */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right text-xs">
+                            City
                         </Label>
                         <Input
-                            id="address"
-                            value={formData.address}
-                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                            value={formData.city}
+                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                            placeholder="City"
                             className="col-span-3"
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="status" className="text-right">
+                        <Label className="text-right text-xs">
+                            State
+                        </Label>
+                        <Input
+                            value={formData.state}
+                            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                            placeholder="NY"
+                            className="col-span-1"
+                            maxLength={2}
+                        />
+                        <Label className="text-right text-xs">
+                            ZIP
+                        </Label>
+                        <Input
+                            value={formData.zip}
+                            onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
+                            placeholder="10001"
+                            className="col-span-1"
+                            maxLength={5}
+                        />
+                    </div>
+
+                    {/* Status */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="status" className="text-right text-xs">
                             Status
                         </Label>
                         <div className="col-span-3">
@@ -107,20 +202,25 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                                     <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="pending_review">Pending Review</SelectItem>
+                                    <SelectItem value="pending_review">Sourced</SelectItem>
                                     <SelectItem value="qualified">Qualified</SelectItem>
+                                    <SelectItem value="awaiting_onboarding">Awaiting Form</SelectItem>
                                     <SelectItem value="compliance_review">Compliance Review</SelectItem>
-                                    <SelectItem value="onboarding_scheduled">Onboarding Scheduled</SelectItem>
-                                    <SelectItem value="ready_for_assignment">Ready for Assignment</SelectItem>
+                                    <SelectItem value="pending_verification">Verifying Docs</SelectItem>
+                                    <SelectItem value="onboarding_scheduled">Onboarding Call</SelectItem>
+                                    <SelectItem value="ready_for_assignment">Ready</SelectItem>
                                     <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="rejected">Rejected</SelectItem>
                                     <SelectItem value="suspended">Suspended</SelectItem>
+                                    <SelectItem value="dismissed">Dismissed</SelectItem>
+                                    <SelectItem value="rejected">Rejected</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
+
+                    {/* Track */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="track" className="text-right">
+                        <Label htmlFor="track" className="text-right text-xs">
                             Track
                         </Label>
                         <div className="col-span-3">

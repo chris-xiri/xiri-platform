@@ -81,7 +81,8 @@ export interface Vendor {
     contactName?: string;
     website?: string;
     websiteScreenshotUrl?: string; // For visual qualification
-    address: string; // Mapped from location
+    address: string; // Full address (legacy/concatenated)
+    streetAddress?: string; // Street only (new)
     city?: string;
     state?: string;
     zip?: string;

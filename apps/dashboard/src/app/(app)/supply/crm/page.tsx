@@ -12,14 +12,15 @@ import {
     Rocket, Star, Pause, XCircle, Mail, Clock, FileSearch, Ban
 } from "lucide-react";
 
-// Status tab definitions — order reflects the pipeline
+// Status tab definitions — mirrors VendorStatusTimeline pipeline
 const STATUS_TABS = [
     { key: 'all', label: 'All', icon: Users, color: '' },
-    { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-sky-600' },
+    { key: 'pending_review', label: 'Sourced', icon: Users, color: 'text-sky-600' },
+    { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-blue-600' },
     { key: 'awaiting_onboarding', label: 'Awaiting Form', icon: Mail, color: 'text-indigo-600' },
     { key: 'compliance_review', label: 'Compliance', icon: ShieldCheck, color: 'text-amber-600' },
     { key: 'pending_verification', label: 'Verifying Docs', icon: FileSearch, color: 'text-orange-600' },
-    { key: 'onboarding_scheduled', label: 'Onboarding', icon: CalendarCheck, color: 'text-violet-600' },
+    { key: 'onboarding_scheduled', label: 'Onboarding Call', icon: CalendarCheck, color: 'text-violet-600' },
     { key: 'ready_for_assignment', label: 'Ready', icon: Rocket, color: 'text-teal-600' },
     { key: 'active', label: 'Active', icon: Star, color: 'text-emerald-600' },
     { key: 'suspended', label: 'Suspended', icon: Pause, color: 'text-orange-600' },
@@ -43,18 +44,22 @@ export default function CRMPage() {
         return () => unsubscribe();
     }, []);
 
-    // Count vendors per status
+    // Count vendors per status (normalized to lowercase)
     const counts = useMemo(() => {
         const map: Record<string, number> = { all: vendors.length };
         for (const v of vendors) {
-            const s = v.status || 'pending_review';
+            const s = (v.status || 'pending_review').toLowerCase();
             map[s] = (map[s] || 0) + 1;
         }
         return map;
     }, [vendors]);
 
-    // Derive statusFilters from active tab
-    const statusFilters = activeTab === 'all' ? undefined : [activeTab];
+    // Derive statusFilters from active tab (include legacy uppercase variants)
+    const statusFilters = useMemo(() => {
+        if (activeTab === 'all') return undefined;
+        const upper = activeTab.toUpperCase();
+        return [activeTab, upper];
+    }, [activeTab]);
 
     return (
         <ProtectedRoute resource="supply/crm">

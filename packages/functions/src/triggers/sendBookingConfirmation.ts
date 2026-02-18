@@ -1,7 +1,9 @@
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { sendEmail } from "../utils/emailUtils";
 import { addMinutes, format } from "date-fns";
+import * as admin from "firebase-admin";
 
+const db = admin.firestore();
 const TIMEOUT_SECONDS = 300;
 
 export const sendBookingConfirmation = onDocumentWritten({
@@ -69,12 +71,28 @@ export const sendBookingConfirmation = onDocumentWritten({
         </div>
     `;
 
-    await sendEmail(email, subject, htmlBody, [
+    const sendSuccess = await sendEmail(email, subject, htmlBody, [
         {
             filename: 'invite.ics',
             content: icsContent,
         },
     ]);
+
+    // Log to activity_logs for audit trail
+    await db.collection("activity_logs").add({
+        entityType: 'lead',
+        entityId: event.params.leadId,
+        type: sendSuccess ? 'EMAIL_SENT' : 'EMAIL_FAILED',
+        description: `Booking confirmation ${sendSuccess ? 'sent' : 'failed'}: ${subject}`,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        metadata: {
+            to: email,
+            subject,
+            meetingType: type,
+            meetingTime: startTimeStr,
+            channel: 'EMAIL'
+        }
+    });
 });
 
 // Helper: Generate ICS String

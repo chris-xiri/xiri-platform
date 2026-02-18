@@ -40,6 +40,7 @@ export interface Vendor {
     website?: string;
     websiteScreenshotUrl?: string;
     address: string;
+    streetAddress?: string;
     city?: string;
     state?: string;
     zip?: string;
