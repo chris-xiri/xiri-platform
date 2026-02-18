@@ -16,6 +16,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import {
     Select,
     SelectContent,
@@ -24,6 +26,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import ReactGoogleAutocomplete from 'react-google-autocomplete';
+import { X, Plus } from 'lucide-react';
 
 interface EditVendorDialogProps {
     vendor: Vendor;
@@ -34,6 +37,7 @@ interface EditVendorDialogProps {
 export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVendorDialogProps) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [capabilityInput, setCapabilityInput] = useState('');
     const [formData, setFormData] = useState({
         businessName: vendor.businessName || '',
         contactName: vendor.contactName || '',
@@ -45,7 +49,10 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
         state: vendor.state || '',
         zip: vendor.zip || '',
         status: vendor.status || 'pending_review',
-        onboardingTrack: vendor.onboardingTrack || 'STANDARD'
+        onboardingTrack: vendor.onboardingTrack || 'STANDARD',
+        preferredLanguage: vendor.preferredLanguage || 'en',
+        capabilities: [...(vendor.capabilities || [])],
+        notes: (vendor as any).notes || (vendor as any).description || '',
     });
 
     const handlePlaceSelected = (place: any) => {
@@ -84,6 +91,24 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
         }));
     };
 
+    const addCapability = () => {
+        const cap = capabilityInput.trim();
+        if (cap && !formData.capabilities.includes(cap)) {
+            setFormData(prev => ({
+                ...prev,
+                capabilities: [...prev.capabilities, cap]
+            }));
+            setCapabilityInput('');
+        }
+    };
+
+    const removeCapability = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            capabilities: prev.capabilities.filter((_, i) => i !== index)
+        }));
+    };
+
     const handleSave = async () => {
         setLoading(true);
         try {
@@ -103,6 +128,9 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                 address: fullAddress,
                 status: formData.status,
                 onboardingTrack: formData.onboardingTrack,
+                preferredLanguage: formData.preferredLanguage,
+                capabilities: formData.capabilities,
+                notes: formData.notes || null,
                 updatedAt: new Date()
             });
             setOpen(false);
@@ -119,19 +147,20 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
             <DialogTrigger asChild>
                 {trigger || <Button variant="outline">Edit Profile</Button>}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Edit Profile</DialogTitle>
+                    <DialogTitle>Edit Vendor Profile</DialogTitle>
                     <DialogDescription>
-                        Update vendor core details.
+                        Update vendor details, contact info, and capabilities.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                    {/* Business Name */}
+
+                    {/* === SECTION: Business === */}
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1">Business Info</div>
+
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right text-xs">
-                            Business
-                        </Label>
+                        <Label htmlFor="name" className="text-right text-xs">Business</Label>
                         <Input
                             id="name"
                             value={formData.businessName}
@@ -140,11 +169,30 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                         />
                     </div>
 
-                    {/* Contact Name */}
+                    {/* Preferred Language */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="contactName" className="text-right text-xs">
-                            Contact
-                        </Label>
+                        <Label className="text-right text-xs">Language</Label>
+                        <div className="col-span-3">
+                            <Select
+                                value={formData.preferredLanguage}
+                                onValueChange={(val: any) => setFormData({ ...formData, preferredLanguage: val })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select language" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="en">English</SelectItem>
+                                    <SelectItem value="es">Español</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    {/* === SECTION: Contact === */}
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1 mt-2">Contact</div>
+
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="contactName" className="text-right text-xs">Name</Label>
                         <Input
                             id="contactName"
                             value={formData.contactName}
@@ -154,11 +202,8 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                         />
                     </div>
 
-                    {/* Email */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="email" className="text-right text-xs">
-                            Email
-                        </Label>
+                        <Label htmlFor="email" className="text-right text-xs">Email</Label>
                         <Input
                             id="email"
                             type="email"
@@ -169,11 +214,8 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                         />
                     </div>
 
-                    {/* Phone */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="phone" className="text-right text-xs">
-                            Phone
-                        </Label>
+                        <Label htmlFor="phone" className="text-right text-xs">Phone</Label>
                         <Input
                             id="phone"
                             type="tel"
@@ -184,11 +226,8 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                         />
                     </div>
 
-                    {/* Website */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="website" className="text-right text-xs">
-                            Website
-                        </Label>
+                        <Label htmlFor="website" className="text-right text-xs">Website</Label>
                         <Input
                             id="website"
                             value={formData.website}
@@ -198,11 +237,11 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                         />
                     </div>
 
-                    {/* Street Address with Google Autocomplete */}
+                    {/* === SECTION: Address === */}
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1 mt-2">Address</div>
+
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="street" className="text-right text-xs">
-                            Street
-                        </Label>
+                        <Label htmlFor="street" className="text-right text-xs">Street</Label>
                         <div className="col-span-3">
                             <ReactGoogleAutocomplete
                                 apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
@@ -219,11 +258,8 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                         </div>
                     </div>
 
-                    {/* City / State / Zip — 3 columns */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label className="text-right text-xs">
-                            City
-                        </Label>
+                        <Label className="text-right text-xs">City</Label>
                         <Input
                             value={formData.city}
                             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
@@ -232,9 +268,7 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label className="text-right text-xs">
-                            State
-                        </Label>
+                        <Label className="text-right text-xs">State</Label>
                         <Input
                             value={formData.state}
                             onChange={(e) => setFormData({ ...formData, state: e.target.value })}
@@ -242,9 +276,7 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                             className="col-span-1"
                             maxLength={2}
                         />
-                        <Label className="text-right text-xs">
-                            ZIP
-                        </Label>
+                        <Label className="text-right text-xs">ZIP</Label>
                         <Input
                             value={formData.zip}
                             onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
@@ -254,11 +286,58 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                         />
                     </div>
 
-                    {/* Status */}
+                    {/* === SECTION: Capabilities === */}
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1 mt-2">Capabilities</div>
+
+                    <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right text-xs mt-2">Services</Label>
+                        <div className="col-span-3 space-y-2">
+                            <div className="flex flex-wrap gap-1.5">
+                                {formData.capabilities.map((cap, i) => (
+                                    <Badge key={i} variant="secondary" className="pr-1 gap-1">
+                                        {cap}
+                                        <button
+                                            type="button"
+                                            onClick={() => removeCapability(i)}
+                                            className="ml-0.5 rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive transition-colors"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </Badge>
+                                ))}
+                            </div>
+                            <div className="flex gap-1.5">
+                                <Input
+                                    value={capabilityInput}
+                                    onChange={(e) => setCapabilityInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            addCapability();
+                                        }
+                                    }}
+                                    placeholder="Add capability (e.g. Janitorial)"
+                                    className="flex-1"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addCapability}
+                                    disabled={!capabilityInput.trim()}
+                                    className="h-9"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* === SECTION: Pipeline === */}
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1 mt-2">Pipeline</div>
+
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="status" className="text-right text-xs">
-                            Status
-                        </Label>
+                        <Label htmlFor="status" className="text-right text-xs">Status</Label>
                         <div className="col-span-3">
                             <Select
                                 value={formData.status}
@@ -284,11 +363,8 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                         </div>
                     </div>
 
-                    {/* Track */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="track" className="text-right text-xs">
-                            Track
-                        </Label>
+                        <Label htmlFor="track" className="text-right text-xs">Track</Label>
                         <div className="col-span-3">
                             <Select
                                 value={formData.onboardingTrack}
@@ -304,8 +380,22 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                             </Select>
                         </div>
                     </div>
+
+                    {/* === SECTION: Notes === */}
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1 mt-2">Notes</div>
+
+                    <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right text-xs mt-2">Internal</Label>
+                        <Textarea
+                            value={formData.notes}
+                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                            placeholder="Add internal notes about this vendor..."
+                            className="col-span-3 min-h-[80px]"
+                        />
+                    </div>
                 </div>
                 <DialogFooter>
+                    <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
                     <Button type="submit" onClick={handleSave} disabled={loading}>
                         {loading ? 'Saving...' : 'Save changes'}
                     </Button>
