@@ -746,16 +746,15 @@ export default function AuditWizardPage() {
                         <div className="space-y-6 animate-fadeIn">
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900">Select a Date & Time</h2>
-<<<<<<< HEAD
-    <p className="text-gray-600 mt-2">
-        {meetingType === 'audit'
-            ? 'Choose a time for your 1-hour site walkthrough (Early/Late hours available)'
-            : 'Schedule a 30-min intro call to discuss your needs'}
-    </p>
-                            </div >
+                                <p className="text-gray-600 mt-2">
+                                    {meetingType === 'audit'
+                                        ? 'Choose a time for your 1-hour site walkthrough (Early/Late hours available)'
+                                        : 'Schedule a 30-min intro call to discuss your needs'}
+                                </p>
+                            </div>
 
-        {/* Meeting Type Toggle */ }
-        < div className = "flex p-1 bg-gray-100 rounded-lg" >
+                            {/* Meeting Type Toggle */}
+                            <div className="flex p-1 bg-gray-100 rounded-lg">
                                 <button
                                     onClick={() => setMeetingType('audit')}
                                     className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${meetingType === 'audit'
@@ -776,261 +775,221 @@ export default function AuditWizardPage() {
                                     <Phone className="w-4 h-4" />
                                     Intro Call
                                 </button>
-=======
-                                <p className="text-gray-600 mt-2">Choose a time that works best for your site walkthrough</p>
->>>>>>> origin/develop
-                            </div >
-
-        <div className="grid md:grid-cols-[200px_1fr] gap-6">
-            {/* Date Selector (Left Column) */}
-            <div className="space-y-2">
-                {(() => {
-                    const dates = [];
-                    let current = addDays(new Date(), 1);
-                    let daysAdded = 0;
-<<<<<<< HEAD
-                    // Show next 5 business days
-=======
-
->>>>>>> origin/develop
-                    while (daysAdded < 5) {
-                        const dayOfWeek = current.getDay();
-                        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-                            dates.push(new Date(current));
-                            daysAdded++;
-                        }
-                        current = addDays(current, 1);
-                    }
-                    return dates;
-                })().map((date, idx) => {
-                    const isSelected = auditSlots.length > 0 &&
-                        format(new Date(auditSlots[0]), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
-                    const isTomorrow = format(date, 'yyyy-MM-dd') === format(addDays(new Date(), 1), 'yyyy-MM-dd');
-
-                    return (
-                        <button
-                            key={idx}
-                            onClick={() => {
-<<<<<<< HEAD
-                                const baseDate = startOfHour(date);
-                                // Default to 9am when selecting a new date
-=======
-                                                    // When clicking a date, select the first available time slot for that day
-                                                    const baseDate = startOfHour(date);
->>>>>>> origin/develop
-                                const firstSlot = addHours(baseDate, 9);
-                                setAuditSlots([firstSlot.toISOString()]);
-                            }}
-                            className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${isSelected
-<<<<<<< HEAD
-                                ? 'border-sky-600 bg-sky-50 text-sky-900'
-                                : 'border-gray-200 hover:border-gray-300 bg-white'
-=======
-                                                        ? 'border-sky-600 bg-sky-50 text-sky-900'
-                                                        : 'border-gray-200 hover:border-gray-300 bg-white'
->>>>>>> origin/develop
-                                }`}
-                        >
-                            <div className={`text-xs font-medium ${isSelected ? 'text-sky-600' : 'text-gray-500'}`}>
-                                {format(date, 'EEE')}
                             </div>
-                            <div className={`text-lg font-semibold ${isSelected ? 'text-sky-900' : 'text-gray-900'}`}>
-                                {format(date, 'd')}
-                            </div>
-                            {isTomorrow && (
-                                <div className="text-xs text-sky-600 font-medium mt-0.5">Tomorrow</div>
-                            )}
-                        </button>
-                    );
-                })}
-            </div>
 
-            {/* Time Slots (Right Column) */}
-            <div>
-                {auditSlots.length > 0 ? (
-                    <div className="space-y-3">
-                        <div className="text-sm font-medium text-gray-700 mb-3">
-                            {format(new Date(auditSlots[0]), 'EEEE, MMMM d')}
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {(() => {
-                                const selectedDate = new Date(auditSlots[0]);
-                                const baseDate = startOfHour(selectedDate);
-<<<<<<< HEAD
-                                // Extended hours: 7am to 6pm
-                                const times = [
-                                    { label: '7:00am', value: addHours(baseDate, 7) },
-                                    { label: '8:00am', value: addHours(baseDate, 8) },
-                                    { label: '9:00am', value: addHours(baseDate, 9) },
-                                    { label: '10:00am', value: addHours(baseDate, 10) },
-                                    { label: '11:00am', value: addHours(baseDate, 11) },
-                                    { label: '12:00pm', value: addHours(baseDate, 12) },
-=======
-                                                    const times = [
-                                                        { label: '9:00am', value: addHours(baseDate, 9) },
-                                                        { label: '10:00am', value: addHours(baseDate, 10) },
-                                                        { label: '11:00am', value: addHours(baseDate, 11) },
->>>>>>> origin/develop
-                                    { label: '1:00pm', value: addHours(baseDate, 13) },
-                                    { label: '2:00pm', value: addHours(baseDate, 14) },
-                                    { label: '3:00pm', value: addHours(baseDate, 15) },
-                                    { label: '4:00pm', value: addHours(baseDate, 16) },
-<<<<<<< HEAD
-                                    { label: '5:00pm', value: addHours(baseDate, 17) },
-                                    { label: '6:00pm', value: addHours(baseDate, 18) },
-=======
->>>>>>> origin/develop
-                                ];
-                                return times;
-                            })().map((time, idx) => {
-                                const str = time.value.toISOString();
-                                const selected = auditSlots.includes(str);
-<<<<<<< HEAD
-                                const hour = time.value.getHours();
-                                const isExtended = hour < 9 || hour > 17; // Visual cue for extended hours?
-=======
->>>>>>> origin/develop
+                            <div className="space-y-4">
+                                {/* Date Selector (Horizontal) */}
+                                <div className="overflow-x-auto pb-2">
+                                    <div className="flex gap-2 min-w-max">
+                                        {(() => {
+                                            const dates = [];
+                                            let current = addDays(new Date(), 1);
+                                            // Show next 7 days (including weekends)
+                                            for (let i = 0; i < 7; i++) {
+                                                dates.push(new Date(current));
+                                                current = addDays(current, 1);
+                                            }
+                                            return dates;
+                                        })().map((date, idx) => {
+                                            const isSelected = auditSlots.length > 0 &&
+                                                format(new Date(auditSlots[0]), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+                                            const isTomorrow = format(date, 'yyyy-MM-dd') === format(addDays(new Date(), 1), 'yyyy-MM-dd');
+                                            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
-                                return (
-                                    <button
-                                        key={idx}
-                                        onClick={() => setAuditSlots([str])}
-                                        className={`py-2.5 px-4 rounded-lg border text-sm font-medium transition-all ${selected
-<<<<<<< HEAD
-                                            ? 'border-sky-600 bg-sky-600 text-white'
-                                            : 'border-gray-200 hover:border-sky-600 hover:text-sky-600 bg-white text-gray-700'
-                                            } ${isExtended ? 'opacity-90' : ''}`}
-                                    >
-                                        {time.label}
-                                        {isExtended && selected && <span className="text-[10px] ml-1 opacity-75 block leading-none">Extended</span>}
-=======
-                                                                    ? 'border-sky-600 bg-sky-600 text-white'
-                                                                    : 'border-gray-200 hover:border-sky-600 hover:text-sky-600 bg-white text-gray-700'
-                                                                }`}
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        // Create a new date at 9am on the selected day
+                                                        const selectedDate = new Date(date);
+                                                        selectedDate.setHours(9, 0, 0, 0);
+                                                        setAuditSlots([selectedDate.toISOString()]);
+                                                    }}
+                                                    className={`flex-shrink-0 w-20 text-center px-3 py-3 rounded-lg border transition-all ${isSelected
+                                                        ? 'border-sky-600 bg-sky-600 text-white shadow-md'
+                                                        : isWeekend
+                                                            ? 'border-gray-200 bg-gray-50 hover:border-sky-300 hover:bg-sky-50'
+                                                            : 'border-gray-200 bg-white hover:border-sky-300 hover:bg-sky-50'
+                                                        }`}
+                                                >
+                                                    <div className={`text-xs font-medium uppercase ${isSelected ? 'text-white' : 'text-gray-500'}`}>
+                                                        {format(date, 'EEE')}
+                                                    </div>
+                                                    <div className={`text-xs font-medium uppercase mt-1 ${isSelected ? 'text-sky-100' : 'text-gray-400'}`}>
+                                                        {format(date, 'MMM')}
+                                                    </div>
+                                                    <div className={`text-2xl font-bold mt-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                                                        {format(date, 'd')}
+                                                    </div>
+                                                    {isTomorrow && !isSelected && (
+                                                        <div className="text-[10px] text-sky-600 font-medium mt-1">Tomorrow</div>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Time Slots */}
+                                <div>
+                                    {auditSlots.length > 0 ? (
+                                        <div className="space-y-3">
+                                            <div className="text-sm font-medium text-gray-700 mb-3">
+                                                {format(new Date(auditSlots[0]), 'EEEE, MMMM d')}
+                                            </div>
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                {(() => {
+                                                    const selectedDate = new Date(auditSlots[0]);
+                                                    // Create time slots by setting hours directly to avoid timezone issues
+                                                    const times = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map(hour => {
+                                                        const timeSlot = new Date(selectedDate);
+                                                        timeSlot.setHours(hour, 0, 0, 0);
+                                                        return {
+                                                            label: hour < 12 ? `${hour}:00am` : hour === 12 ? '12:00pm' : `${hour - 12}:00pm`,
+                                                            value: timeSlot
+                                                        };
+                                                    });
+                                                    return times;
+                                                })().map((time, idx) => {
+                                                    const str = time.value.toISOString();
+                                                    const selected = auditSlots.includes(str);
+                                                    const hour = time.value.getHours();
+                                                    const isExtended = hour < 9 || hour > 17; // Visual cue for extended hours?
+
+                                                    return (
+                                                        <button
+                                                            key={idx}
+                                                            onClick={() => setAuditSlots([str])}
+                                                            className={`py-3 px-4 rounded-lg border text-sm font-semibold transition-all transform ${selected
+                                                                ? 'border-sky-600 bg-sky-600 text-white shadow-lg shadow-sky-600/30 scale-105 ring-2 ring-sky-600 ring-offset-2'
+                                                                : 'border-gray-200 hover:border-sky-400 hover:bg-sky-50 hover:text-sky-700 bg-white text-gray-700'
+                                                                } ${isExtended ? 'opacity-90' : ''}`}
                                                         >
                                                             {time.label}
->>>>>>> origin/develop
-                                    </button>
-                                );
-                            })}
-                        </div>
-<<<<<<< HEAD
-    <p className="text-xs text-center text-gray-400 mt-4">
-        Need a time outside these hours? Call us at (555) 123-4567
-    </p>
-=======
->>>>>>> origin/develop
-                                        </div >
+                                                            {isExtended && selected && <span className="text-[10px] ml-1 opacity-75 block leading-none">Extended</span>}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <p className="text-xs text-center text-gray-400 mt-4">
+                                                Need a time outside these hours? Call us at (555) 123-4567
+                                            </p>
+                                        </div>
                                     ) : (
-        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-            Select a date to see available times
-        </div>
-    )
-}
-                                </div >
-                            </div >
+                                        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                                            Select a date to see available times
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
-    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-        <div className="flex items-center gap-4">
-            <button
-                onClick={() => setCurrentStep(1)}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
-            >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-            </button>
-            <p className="text-sm text-gray-600">
-                {auditSlots.length === 0 ? 'No time selected' : '✓ Time selected'}
-            </p>
-        </div>
-        <button
-<<<<<<< HEAD
-            onClick={() => updateLead({
-                preferredAuditTimes: auditSlots,
-                meetingType,
-                meetingDuration: meetingType === 'audit' ? 60 : 30
-            }, 3)}
-=======
-                                    onClick={() => updateLead({ preferredAuditTimes: auditSlots }, 3)}
->>>>>>> origin/develop
-            disabled={auditSlots.length === 0 || submitting}
-            className="px-6 py-2.5 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-        >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continue'}
-            {!submitting && <ArrowRight className="w-4 h-4" />}
-        </button>
-    </div>
-                        </div >
+                            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        onClick={() => setCurrentStep(1)}
+                                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                                    >
+                                        <ArrowLeft className="w-4 h-4" />
+                                        Back
+                                    </button>
+                                    {auditSlots.length > 0 && (
+                                        <div className="flex items-center gap-2 px-3 py-2 bg-sky-50 border border-sky-200 rounded-lg">
+                                            <svg className="w-4 h-4 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span className="text-sm font-semibold text-sky-900">
+                                                {format(new Date(auditSlots[0]), 'MMM d, h:mm a')}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {auditSlots.length === 0 && (
+                                        <p className="text-sm text-gray-500">No time selected</p>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => updateLead({
+                                        preferredAuditTimes: auditSlots,
+                                        meetingType,
+                                        meetingDuration: meetingType === 'audit' ? 60 : 30
+                                    }, 3)}
+                                    disabled={auditSlots.length === 0 || submitting}
+                                    className="px-6 py-2.5 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+                                >
+                                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continue'}
+                                    {!submitting && <ArrowRight className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </div>
                     )}
 
-{/* STEP 3: Contact */ }
-{
-    currentStep === 3 && (
-        <div className="space-y-6 animate-fadeIn">
-            <h2 className="text-2xl font-bold text-gray-900">Who should we contact?</h2>
-            <div className="space-y-4">
-                <input
-                    type="text" placeholder="Full Name"
-                    value={contact.name} onChange={e => setContact({ ...contact, name: e.target.value })}
-                    className="w-full p-4 rounded-xl border border-gray-200"
-                />
-                <input
-                    type="email" placeholder="Email Address"
-                    value={contact.email} onChange={e => setContact({ ...contact, email: e.target.value })}
-                    className="w-full p-4 rounded-xl border border-gray-200"
-                />
-                <input
-                    type="tel" placeholder="Phone Number"
-                    value={contact.phone} onChange={e => setContact({ ...contact, phone: e.target.value })}
-                    className="w-full p-4 rounded-xl border border-gray-200"
-                />
-            </div>
-            <div className="flex items-center justify-between pt-4">
-                <button
-                    onClick={() => setCurrentStep(2)}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back
-                </button>
-                <button
-                    onClick={() => updateLead({ ...contact, contactName: contact.name, contactPhone: contact.phone, status: 'new' }, 4)}
-                    disabled={!contact.name || !contact.email || submitting}
-                    className="btn-primary w-full max-w-xs"
-                >
-                    Submit Request
-                </button>
-            </div>
-        </div>
-    )
-}
+                    {/* STEP 3: Contact */}
+                    {
+                        currentStep === 3 && (
+                            <div className="space-y-6 animate-fadeIn">
+                                <h2 className="text-2xl font-bold text-gray-900">Who should we contact?</h2>
+                                <div className="space-y-4">
+                                    <input
+                                        type="text" placeholder="Full Name"
+                                        value={contact.name} onChange={e => setContact({ ...contact, name: e.target.value })}
+                                        className="w-full p-4 rounded-xl border border-gray-200"
+                                    />
+                                    <input
+                                        type="email" placeholder="Email Address"
+                                        value={contact.email} onChange={e => setContact({ ...contact, email: e.target.value })}
+                                        className="w-full p-4 rounded-xl border border-gray-200"
+                                    />
+                                    <input
+                                        type="tel" placeholder="Phone Number"
+                                        value={contact.phone} onChange={e => setContact({ ...contact, phone: e.target.value })}
+                                        className="w-full p-4 rounded-xl border border-gray-200"
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between pt-4">
+                                    <button
+                                        onClick={() => setCurrentStep(2)}
+                                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                                    >
+                                        <ArrowLeft className="w-4 h-4" />
+                                        Back
+                                    </button>
+                                    <button
+                                        onClick={() => updateLead({ ...contact, contactName: contact.name, contactPhone: contact.phone, status: 'new' }, 4)}
+                                        disabled={!contact.name || !contact.email || submitting}
+                                        className="btn-primary w-full max-w-xs"
+                                    >
+                                        Submit Request
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    }
 
-{/* STEP 4: Success */ }
-{
-    currentStep === 4 && (
-        <div className="text-center py-10 animate-fadeIn">
-            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
-                <CheckCircle className="w-12 h-12" />
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Request Received!</h2>
-            <p className="text-lg text-gray-600 mb-8 max-w-sm mx-auto">
-                We have received your audit request for <strong>{companyName}</strong>.
-                A Facility Solutions Manager will confirm your time shortly.
-            </p>
-            <button
-                onClick={() => router.push("/")}
-                className="text-sky-600 font-bold hover:underline"
-            >
-                Return Home
-            </button>
-        </div>
-    )
-}
+                    {/* STEP 4: Success */}
+                    {
+                        currentStep === 4 && (
+                            <div className="text-center py-10 animate-fadeIn">
+                                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+                                    <CheckCircle className="w-12 h-12" />
+                                </div>
+                                <h2 className="text-3xl font-bold text-gray-900 mb-4">Request Received!</h2>
+                                <p className="text-lg text-gray-600 mb-8 max-w-sm mx-auto">
+                                    We have received your audit request for <strong>{companyName}</strong>.
+                                    A Facility Solutions Manager will confirm your time shortly.
+                                </p>
+                                <button
+                                    onClick={() => router.push("/")}
+                                    className="text-sky-600 font-bold hover:underline"
+                                >
+                                    Return Home
+                                </button>
+                            </div>
+                        )
+                    }
                 </div >
             </div >
 
-    {/* Inline Styles for Google Places Autocomplete */ }
-    < style jsx global > {`
+            {/* Inline Styles for Google Places Autocomplete */}
+            < style jsx global > {`
                 .btn-primary {
                     @apply bg-sky-600 text-white font-bold py-4 rounded-xl hover:bg-sky-700 transition-all shadow-lg hover:shadow-sky-600/30 flex items-center justify-center gap-2;
                 }
