@@ -33,26 +33,29 @@ export const generateLeads = onCall({
     const query = data.query;
     const location = data.location;
     const hasActiveContract = data.hasActiveContract || false; // Default to false (Building Supply)
+    const previewOnly = data.previewOnly || false; // Preview mode: don't save to Firestore
 
     if (!query || !location) {
         throw new HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
     }
 
     try {
-        console.log(`Analyzing leads for query: ${query}, location: ${location}`);
+        console.log(`Analyzing leads for query: ${query}, location: ${location}${previewOnly ? ' (PREVIEW MODE)' : ''}`);
 
         // 1. Source Leads
         const rawVendors = await searchVendors(query, location);
         console.log(`Sourced ${rawVendors.length} vendors.`);
 
         // 2. Analyze & Qualify (Recruiter Agent)
-        // This function automatically saves qualified vendors to Firestore
-        const result = await analyzeVendorLeads(rawVendors, query, hasActiveContract);
+        // When previewOnly=true, vendors are NOT saved to Firestore
+        const result = await analyzeVendorLeads(rawVendors, query, hasActiveContract, previewOnly);
 
         return {
             message: "Lead generation process completed.",
             sourced: rawVendors.length,
-            analysis: result
+            analysis: result,
+            // Include vendor data in response for preview mode
+            vendors: previewOnly ? result.vendors : undefined
         };
     } catch (error: any) {
         console.error("Error in generateLeads:", error);

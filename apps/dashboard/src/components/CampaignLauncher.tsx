@@ -7,15 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Rocket, Loader2 } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "@/lib/firebase";
+import { Vendor } from "@xiri/shared";
 
 import ReactGoogleAutocomplete from "react-google-autocomplete";
 
-export default function CampaignLauncher() {
+interface CampaignLauncherProps {
+    onResults?: (vendors: Vendor[], meta: { query: string; location: string; sourced: number; qualified: number }) => void;
+}
+
+export default function CampaignLauncher({ onResults }: CampaignLauncherProps) {
     const [query, setQuery] = useState("");
     const [location, setLocation] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
-    // const [campaignType, setCampaignType] = useState<"supply" | "urgent">("supply"); // Removed
 
     const handleLaunch = async () => {
         if (!query.trim() || !location.trim()) {
@@ -27,18 +31,15 @@ export default function CampaignLauncher() {
         setMessage("");
 
         try {
-            // Directly call the Cloud Function with 60s timeout
-            // Directly call the Cloud Function with 60s timeout
-            // Note: The function name 'generateLeads' must match exactly what is exported in packages/functions/src/index.ts
             const generateLeads = httpsCallable(functions, 'generateLeads', { timeout: 60000 });
 
             const result = await generateLeads({
                 query,
                 location,
-                hasActiveContract: false // Default to standard building mode
+                hasActiveContract: false,
+                previewOnly: true // Don't save to Firestore — return vendor data for preview
             });
 
-            // Result data is in result.data
             const data = result.data as any;
             console.log("Campaign Result:", data);
 
@@ -46,11 +47,17 @@ export default function CampaignLauncher() {
                 console.error("Backend Analysis Errors:", data.analysis.errors);
             }
 
-            setMessage(`Campaign completed. Found ${data.sourced} vendors. Qualified ${data.analysis?.qualified || 0}.`);
+            const vendors: Vendor[] = data.vendors || [];
+            const sourced = data.sourced || 0;
+            const qualified = data.analysis?.qualified || 0;
+
+            if (onResults && vendors.length > 0) {
+                onResults(vendors, { query, location, sourced, qualified });
+            }
+
+            setMessage(`Campaign completed. Found ${sourced} vendors. Qualified ${qualified}.`);
             setQuery("");
             setLocation("");
-            // Reset autocomplete input value if possible, tough with Uncontrolled component pattern.
-            // We'll rely on key change or simple reset if needed, but for now state reset works for logic.
         } catch (error: any) {
             console.error("Error launching campaign:", error);
             setMessage(`Error: ${error.message || "Failed to launch campaign"}`);
@@ -109,8 +116,6 @@ export default function CampaignLauncher() {
                         </div>
                     </div>
 
-                    {/* Urgency Slider Removed as per user request */}
-
                     {/* Launch Button */}
                     <Button
                         onClick={handleLaunch}
@@ -137,3 +142,4 @@ export default function CampaignLauncher() {
         </Card>
     );
 }
+

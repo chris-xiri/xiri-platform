@@ -7,12 +7,13 @@ const API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCSmKaZsBUm4SIrxouk3tAmhHZUY
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, hasActiveContract: boolean = false): Promise<RecruitmentAnalysisResult> => {
+export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, hasActiveContract: boolean = false, previewOnly: boolean = false): Promise<RecruitmentAnalysisResult> => {
     console.log("!!! RECRUITER AGENT UPDATED - V3 (Deduplication) !!!");
     let analyzed = 0;
     let qualified = 0;
     const errors: string[] = [];
     const batch = db.batch();
+    const previewVendors: Vendor[] = [];
 
     // We process in chunks if rawVendors is huge, but per prompt "db.batch() ... processing 50+ vendors"
     // Firestore batch limit is 500. We'll assume rawVendors length < 500 for this iteration or just one batch.
@@ -157,14 +158,20 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
                 };
 
                 console.log(`Adding qualified vendor to batch: ${newVendor.businessName}`);
-                batch.set(vendorRef, newVendor);
+                if (previewOnly) {
+                    previewVendors.push(newVendor);
+                } else {
+                    batch.set(vendorRef, newVendor);
+                }
             }
         }
 
-        if (qualified > 0) {
+        if (qualified > 0 && !previewOnly) {
             console.log(`Committing batch of ${qualified} vendors...`);
             await batch.commit();
             console.log("Batch commit successful.");
+        } else if (previewOnly) {
+            console.log(`Preview mode: ${qualified} vendors ready for review (not saved).`);
         } else {
             console.log("No qualified vendors to commit.");
         }
@@ -199,14 +206,17 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
                 updatedAt: admin.firestore.FieldValue.serverTimestamp() as any
             };
             batch.set(vendorRef, newVendor);
+            if (previewOnly) {
+                previewVendors.push(newVendor);
+            }
             qualified++;
         }
 
-        if (qualified > 0) {
+        if (qualified > 0 && !previewOnly) {
             console.log(`Committing batch of ${qualified} fallback vendors...`);
             await batch.commit();
         }
     }
 
-    return { analyzed, qualified, errors };
+    return { analyzed, qualified, errors, vendors: previewOnly ? previewVendors : undefined };
 };
