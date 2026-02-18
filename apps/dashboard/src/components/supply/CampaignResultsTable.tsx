@@ -408,7 +408,7 @@ export default function CampaignResultsTable({
                                                 </div>
                                                 <div className="flex items-center gap-1 text-muted-foreground">
                                                     <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
-                                                    <span className="truncate">{vendor.city && vendor.state ? `${vendor.city}, ${vendor.state}` : 'N/A'}</span>
+                                                    <span className="truncate">{vendor.city && vendor.state ? `${vendor.city}, ${vendor.state}` : vendor.address || 'N/A'}</span>
                                                 </div>
                                             </div>
 
