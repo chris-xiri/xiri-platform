@@ -1183,11 +1183,28 @@ async function handleSend(task) {
     }
   });
   await updateTaskStatus(db5, task.id, sendSuccess ? "COMPLETED" : "FAILED");
-  await db5.collection("vendors").doc(task.vendorId).update({
-    outreachStatus: sendSuccess ? "SENT" : "PENDING",
-    outreachChannel: task.metadata.channel,
-    outreachTime: /* @__PURE__ */ new Date()
-  });
+  if (sendSuccess) {
+    await db5.collection("vendors").doc(task.vendorId).update({
+      status: "awaiting_onboarding",
+      outreachStatus: "SENT",
+      outreachChannel: task.metadata.channel,
+      outreachSentAt: /* @__PURE__ */ new Date(),
+      statusUpdatedAt: /* @__PURE__ */ new Date()
+    });
+    await db5.collection("vendor_activities").add({
+      vendorId: task.vendorId,
+      type: "STATUS_CHANGE",
+      description: `Pipeline advanced: qualified \u2192 awaiting_onboarding (outreach ${task.metadata.channel} delivered)`,
+      createdAt: /* @__PURE__ */ new Date(),
+      metadata: { from: "qualified", to: "awaiting_onboarding", trigger: "outreach_sent" }
+    });
+  } else {
+    await db5.collection("vendors").doc(task.vendorId).update({
+      outreachStatus: "PENDING",
+      outreachChannel: task.metadata.channel,
+      outreachTime: /* @__PURE__ */ new Date()
+    });
+  }
 }
 
 // src/triggers/onIncomingMessage.ts
@@ -1785,12 +1802,39 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger4.error("Error sending vendor confirmation:", err);
     }
   }
-  await admin10.firestore().collection("vendor_activities").add({
+  const db9 = admin10.firestore();
+  const hasEntity = !!compliance.hasBusinessEntity;
+  const hasGL = !!compliance.generalLiability?.hasInsurance;
+  const hasWC = !!compliance.workersComp?.hasInsurance;
+  const hasAuto = !!compliance.autoInsurance?.hasInsurance;
+  const hasW9 = !!compliance.w9Collected;
+  const attestationItems = [hasEntity, hasGL, hasWC, hasAuto, hasW9];
+  const attestationScore = attestationItems.filter(Boolean).length * 10;
+  const uploads = compliance.uploadedDocs || {};
+  const docsCount = [uploads.coi, uploads.llc, uploads.w9].filter(Boolean).length;
+  const docsUploadedScore = docsCount * 10;
+  const docsVerifiedScore = 0;
+  const totalScore = attestationScore + docsUploadedScore + docsVerifiedScore;
+  const complianceUpdate = {
+    complianceScore: totalScore,
+    complianceBreakdown: {
+      attestation: attestationScore,
+      docsUploaded: docsUploadedScore,
+      docsVerified: docsVerifiedScore
+    },
+    statusUpdatedAt: /* @__PURE__ */ new Date()
+  };
+  if (totalScore >= 80) {
+    complianceUpdate.status = "pending_verification";
+  }
+  await db9.collection("vendors").doc(vendorId).update(complianceUpdate);
+  logger4.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
+  await db9.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
-    description: `${businessName} completed onboarding form (${track}). Notifications sent to chris@xiri.ai and ${email}.`,
+    description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
     createdAt: /* @__PURE__ */ new Date(),
-    metadata: { track, email, phone, lang }
+    metadata: { track, email, phone, lang, complianceScore: totalScore }
   });
 });
 

@@ -9,6 +9,10 @@ export interface Lead {
     contactPhone: string;
     email: string;
     zipCode: string;
+    address?: string;
+    serviceInterest?: string;
+    preferredAuditTimes?: Date[];
+    notes?: string;
     attribution: {
         source: string;
         medium: string;
@@ -18,7 +22,7 @@ export interface Lead {
     createdAt: Date;
     status: LeadStatus;
 }
-export type VendorStatus = 'PENDING_REVIEW' | 'pending_review' | 'QUALIFIED' | 'qualified' | 'compliance_review' | 'onboarding_scheduled' | 'ready_for_assignment' | 'active' | 'suspended' | 'rejected';
+export type VendorStatus = 'PENDING_REVIEW' | 'pending_review' | 'QUALIFIED' | 'qualified' | 'outreach_sent' | 'awaiting_onboarding' | 'compliance_review' | 'pending_verification' | 'onboarding_scheduled' | 'ready_for_assignment' | 'active' | 'suspended' | 'dismissed' | 'rejected';
 export interface Vendor {
     id?: string;
     businessName: string;
@@ -92,6 +96,44 @@ export interface Vendor {
     };
     description?: string;
     notes?: string;
+    complianceScore?: number;
+    complianceBreakdown?: {
+        attestation: number;
+        docsUploaded: number;
+        docsVerified: number;
+    };
+}
+export type TradeType = 'janitorial' | 'hvac' | 'plumbing' | 'electrical' | 'landscaping' | 'snow_removal';
+export interface PartnerMarket {
+    slug: string;
+    geography: {
+        town: string;
+        county: 'nassau' | 'suffolk' | 'queens';
+        state: 'ny';
+        zipCodes?: string[];
+    };
+    trade: TradeType;
+    localContext: {
+        corridor?: string;
+        nearbyLandmarks?: string[];
+        painPoints?: string[];
+    };
+    metaTitle?: string;
+    description?: string;
+    translations?: {
+        es?: {
+            metaTitle?: string;
+            description?: string;
+            hero: {
+                headline: string;
+                subheadline: string;
+            };
+            localContext: {
+                corridor: string;
+                painPoints: string[];
+            };
+        };
+    };
 }
 export interface ComplianceDoc {
     status: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'MISSING';

@@ -156,9 +156,28 @@ async function handleSend(task: QueueItem) {
     await updateTaskStatus(db, task.id!, sendSuccess ? 'COMPLETED' : 'FAILED');
 
     // Update Vendor Record
-    await db.collection("vendors").doc(task.vendorId).update({
-        outreachStatus: sendSuccess ? 'SENT' : 'PENDING',
-        outreachChannel: task.metadata.channel,
-        outreachTime: new Date()
-    });
+    if (sendSuccess) {
+        await db.collection("vendors").doc(task.vendorId).update({
+            status: 'awaiting_onboarding',
+            outreachStatus: 'SENT',
+            outreachChannel: task.metadata.channel,
+            outreachSentAt: new Date(),
+            statusUpdatedAt: new Date()
+        });
+
+        // Log status transition
+        await db.collection("vendor_activities").add({
+            vendorId: task.vendorId,
+            type: "STATUS_CHANGE",
+            description: `Pipeline advanced: qualified → awaiting_onboarding (outreach ${task.metadata.channel} delivered)`,
+            createdAt: new Date(),
+            metadata: { from: 'qualified', to: 'awaiting_onboarding', trigger: 'outreach_sent' }
+        });
+    } else {
+        await db.collection("vendors").doc(task.vendorId).update({
+            outreachStatus: 'PENDING',
+            outreachChannel: task.metadata.channel,
+            outreachTime: new Date()
+        });
+    }
 }

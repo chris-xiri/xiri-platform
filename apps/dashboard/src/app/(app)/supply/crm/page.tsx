@@ -9,19 +9,21 @@ import { db } from "@/lib/firebase";
 import { Vendor } from "@xiri/shared";
 import {
     Users, CheckCircle, ShieldCheck, CalendarCheck,
-    Rocket, Star, Pause, XCircle
+    Rocket, Star, Pause, XCircle, Mail, Clock, FileSearch, Ban
 } from "lucide-react";
 
 // Status tab definitions — order reflects the pipeline
 const STATUS_TABS = [
     { key: 'all', label: 'All', icon: Users, color: '' },
-    { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-blue-600' },
+    { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-sky-600' },
+    { key: 'awaiting_onboarding', label: 'Awaiting Form', icon: Mail, color: 'text-indigo-600' },
     { key: 'compliance_review', label: 'Compliance', icon: ShieldCheck, color: 'text-amber-600' },
-    { key: 'onboarding_scheduled', label: 'Onboarding', icon: CalendarCheck, color: 'text-purple-600' },
-    { key: 'ready_for_assignment', label: 'Ready', icon: Rocket, color: 'text-green-600' },
+    { key: 'pending_verification', label: 'Verifying Docs', icon: FileSearch, color: 'text-orange-600' },
+    { key: 'onboarding_scheduled', label: 'Onboarding', icon: CalendarCheck, color: 'text-violet-600' },
+    { key: 'ready_for_assignment', label: 'Ready', icon: Rocket, color: 'text-teal-600' },
     { key: 'active', label: 'Active', icon: Star, color: 'text-emerald-600' },
     { key: 'suspended', label: 'Suspended', icon: Pause, color: 'text-orange-600' },
-    { key: 'rejected', label: 'Rejected', icon: XCircle, color: 'text-red-600' },
+    { key: 'dismissed', label: 'Dismissed', icon: Ban, color: 'text-red-600' },
 ] as const;
 
 export default function CRMPage() {

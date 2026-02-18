@@ -174,12 +174,53 @@ export const onOnboardingComplete = onDocumentUpdated({
         }
     }
 
+    // ─── Compliance Score Calculation ───
+    const db = admin.firestore();
+    const hasEntity = !!compliance.hasBusinessEntity;
+    const hasGL = !!compliance.generalLiability?.hasInsurance;
+    const hasWC = !!compliance.workersComp?.hasInsurance;
+    const hasAuto = !!compliance.autoInsurance?.hasInsurance;
+    const hasW9 = !!compliance.w9Collected;
+
+    // Attestation: up to 50 points (10 per item)
+    const attestationItems = [hasEntity, hasGL, hasWC, hasAuto, hasW9];
+    const attestationScore = attestationItems.filter(Boolean).length * 10;
+
+    // Doc uploads: up to 30 points (10 per doc type)
+    const uploads = compliance.uploadedDocs || {};
+    const docsCount = [uploads.coi, uploads.llc, uploads.w9].filter(Boolean).length;
+    const docsUploadedScore = docsCount * 10;
+
+    // AI verification: 0 for now (Phase 3)
+    const docsVerifiedScore = 0;
+
+    const totalScore = attestationScore + docsUploadedScore + docsVerifiedScore;
+
+    const complianceUpdate: Record<string, any> = {
+        complianceScore: totalScore,
+        complianceBreakdown: {
+            attestation: attestationScore,
+            docsUploaded: docsUploadedScore,
+            docsVerified: docsVerifiedScore,
+        },
+        statusUpdatedAt: new Date(),
+    };
+
+    // Auto-advance if docs are uploaded (score >= 80)
+    if (totalScore >= 80) {
+        complianceUpdate.status = 'pending_verification';
+    }
+
+    await db.collection("vendors").doc(vendorId).update(complianceUpdate);
+
+    logger.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
+
     // Log activity
-    await admin.firestore().collection("vendor_activities").add({
+    await db.collection("vendor_activities").add({
         vendorId,
         type: "ONBOARDING_COMPLETE",
-        description: `${businessName} completed onboarding form (${track}). Notifications sent to chris@xiri.ai and ${email}.`,
+        description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
         createdAt: new Date(),
-        metadata: { track, email, phone, lang }
+        metadata: { track, email, phone, lang, complianceScore: totalScore }
     });
 });

@@ -44,16 +44,20 @@ export interface Lead {
 }
 
 export type VendorStatus =
-    | 'PENDING_REVIEW'        // New/Scraped (legacy uppercase)
-    | 'pending_review'        // New/Scraped
-    | 'QUALIFIED'             // AI or Human verified fit (legacy uppercase)
-    | 'qualified'             // AI or Human verified fit
-    | 'compliance_review'     // NEW: Form submitted, awaiting doc verification
-    | 'onboarding_scheduled'  // NEW: Docs approved, intro call scheduled
-    | 'ready_for_assignment'  // NEW: Call completed, ready for jobs
-    | 'active'                // Ready for jobs / Working contracts
+    | 'PENDING_REVIEW'        // Legacy uppercase (deprecated)
+    | 'pending_review'        // Sourced, not yet reviewed
+    | 'QUALIFIED'             // Legacy uppercase (deprecated)
+    | 'qualified'             // Approved, pipeline started
+    | 'outreach_sent'         // Outreach email sent, awaiting delivery
+    | 'awaiting_onboarding'   // Delivered, waiting for onboarding form
+    | 'compliance_review'     // Form submitted, reviewing attestation
+    | 'pending_verification'  // Docs uploaded, AI review in progress
+    | 'onboarding_scheduled'  // Call booked (hand-holding path)
+    | 'ready_for_assignment'  // Verified & compliant, no active job
+    | 'active'                // Deployed to a client site
     | 'suspended'             // Temporary hold
-    | 'rejected';             // Not a fit
+    | 'dismissed'             // Unsubscribed / rejected / blacklisted
+    | 'rejected';             // Legacy (use 'dismissed')
 
 export interface Vendor {
     id?: string;
@@ -153,6 +157,14 @@ export interface Vendor {
     };
     description?: string; // Legacy or scraped description
     notes?: string;       // Internal Notes
+
+    // Pipeline Scoring
+    complianceScore?: number;  // 0-100
+    complianceBreakdown?: {
+        attestation: number;   // 0-50
+        docsUploaded: number;  // 0-30
+        docsVerified: number;  // 0-20
+    };
 }
 
 // --- pSEO: PARTNER MARKETS ---
