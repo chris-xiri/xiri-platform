@@ -1038,30 +1038,6 @@ var admin6 = __toESM(require("firebase-admin"));
 var logger2 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
 
-// src/utils/timeUtils.ts
-var START_HOUR = 9;
-var END_HOUR = 17;
-function getNextBusinessSlot(urgency) {
-  const now = /* @__PURE__ */ new Date();
-  const day = now.getDay();
-  const hour = now.getHours();
-  const isWeekend = day === 0 || day === 6;
-  const isBusinessHours = !isWeekend && hour >= START_HOUR && hour < END_HOUR;
-  if (urgency === "URGENT" && isBusinessHours) {
-    return new Date(now.getTime() + 10 * 6e4);
-  }
-  let nextDate = new Date(now);
-  if (day === 5) {
-    nextDate.setDate(now.getDate() + 3);
-  } else if (day === 6) {
-    nextDate.setDate(now.getDate() + 2);
-  } else {
-    nextDate.setDate(now.getDate() + 1);
-  }
-  nextDate.setHours(urgency === "URGENT" ? START_HOUR : START_HOUR + 1, 0, 0, 0);
-  return nextDate;
-}
-
 // src/agents/outreach.ts
 var import_generative_ai4 = require("@google/generative-ai");
 var admin5 = __toESM(require("firebase-admin"));
@@ -1183,7 +1159,7 @@ async function handleGenerate(task) {
       campaignUrgency: vendorData.hasActiveContract ? "URGENT" : "SUPPLY"
     }
   });
-  const scheduledTime = getNextBusinessSlot(vendorData.hasActiveContract ? "URGENT" : "SUPPLY");
+  const scheduledTime = /* @__PURE__ */ new Date();
   await enqueueTask(db5, {
     vendorId: task.vendorId,
     type: "SEND",

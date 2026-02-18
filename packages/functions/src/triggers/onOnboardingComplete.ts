@@ -206,9 +206,10 @@ export const onOnboardingComplete = onDocumentUpdated({
         statusUpdatedAt: new Date(),
     };
 
-    // Auto-advance if docs are uploaded (score >= 80)
+    // Auto-advance: skip pending_verification, go straight to onboarding call
+    // Doc verification happens later in the "ready" stage
     if (totalScore >= 80) {
-        complianceUpdate.status = 'pending_verification';
+        complianceUpdate.status = 'onboarding_scheduled';
     }
 
     await db.collection("vendors").doc(vendorId).update(complianceUpdate);
