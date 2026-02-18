@@ -939,8 +939,19 @@ export default function AuditWizardPage() {
                                         className="w-full p-4 rounded-xl border border-gray-200"
                                     />
                                     <input
-                                        type="tel" placeholder="Phone Number"
-                                        value={contact.phone} onChange={e => setContact({ ...contact, phone: e.target.value })}
+                                        type="tel"
+                                        placeholder="Phone Number"
+                                        value={contact.phone}
+                                        onChange={e => {
+                                            const formatted = e.target.value
+                                                .replace(/\D/g, '') // Remove non-digits
+                                                .replace(/^(\d{3})(\d{3})(\d{4}).*/, '($1) $2-$3') // Format as (xxx) xxx-xxxx
+                                                .replace(/^(\d{3})(\d{3})(\d{0,4}).*/, '($1) $2-$3') // Partial format
+                                                .replace(/^(\d{3})(\d{0,3}).*/, '($1) $2') // Partial format
+                                                .replace(/^(\d{0,3})/, '($1'); // Start format
+                                            setContact({ ...contact, phone: formatted.replace(/\(\)|\s-$/, '').trim() });
+                                        }}
+                                        maxLength={14}
                                         className="w-full p-4 rounded-xl border border-gray-200"
                                     />
                                 </div>
