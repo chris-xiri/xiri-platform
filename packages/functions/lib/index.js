@@ -286,30 +286,22 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
   let vendorsToAnalyze = rawVendors;
   let prompt = "";
   try {
-    let filteredRawVendors = rawVendors;
+    let dismissedNames = /* @__PURE__ */ new Set();
     try {
       const dismissedSnapshot = await db.collection("dismissed_vendors").get();
       if (!dismissedSnapshot.empty) {
-        const dismissedNames = new Set(
+        dismissedNames = new Set(
           dismissedSnapshot.docs.map((doc) => (doc.data().businessName || "").toLowerCase().trim())
         );
-        const beforeCount = filteredRawVendors.length;
-        filteredRawVendors = filteredRawVendors.filter((v) => {
-          const name = (v.name || v.companyName || v.title || "").toLowerCase().trim();
-          return !name || !dismissedNames.has(name);
-        });
-        const skipped = beforeCount - filteredRawVendors.length;
-        if (skipped > 0) {
-          console.log(`Skipped ${skipped} dismissed vendors from blacklist.`);
-        }
+        console.log(`Loaded ${dismissedNames.size} dismissed vendor names for tagging.`);
       }
     } catch (dismissErr) {
       console.warn("Could not check dismissed_vendors:", dismissErr.message);
     }
     const vendorsToProcess = [];
     const duplicateUpdates = [];
-    console.log(`Checking ${filteredRawVendors.length} vendors for duplicates...`);
-    for (const vendor of filteredRawVendors) {
+    console.log(`Checking ${rawVendors.length} vendors for duplicates...`);
+    for (const vendor of rawVendors) {
       const bName = vendor.name || vendor.companyName || vendor.title;
       if (!bName) {
         vendorsToProcess.push(vendor);
@@ -391,7 +383,8 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
         };
         console.log(`Adding qualified vendor to batch: ${newVendor.businessName}`);
         if (previewOnly) {
-          previewVendors.push(newVendor);
+          const isDismissed = dismissedNames.has((newVendor.businessName || "").toLowerCase().trim());
+          previewVendors.push({ ...newVendor, isDismissed });
         } else {
           batch.set(vendorRef, newVendor);
         }
