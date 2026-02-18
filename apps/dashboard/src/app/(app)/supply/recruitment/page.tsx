@@ -169,10 +169,18 @@ export default function RecruitmentPage() {
         });
     }, [campaigns]);
 
-    // Close campaign tab — dismisses all remaining vendors
-    const handleCloseCampaign = useCallback(async (campaignId: string) => {
-        await handleDismissAll(campaignId);
-    }, [handleDismissAll]);
+    // Close campaign tab — just discards preview data (no blacklisting)
+    const handleCloseCampaign = useCallback((campaignId: string) => {
+        setCampaigns(prev => {
+            const updated = prev.filter(c => c.id !== campaignId);
+            if (!updated.find(c => c.id === activeCampaignId) && updated.length > 0) {
+                setActiveCampaignId(updated[updated.length - 1].id);
+            } else if (updated.length === 0) {
+                setActiveCampaignId(null);
+            }
+            return updated;
+        });
+    }, [activeCampaignId]);
 
     return (
         <ProtectedRoute resource="supply/recruitment">

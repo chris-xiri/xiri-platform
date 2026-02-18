@@ -345,13 +345,13 @@ export default function CampaignResultsTable({
                     <AlertDialogHeader>
                         <AlertDialogTitle>Close Campaign Tab?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            All remaining vendors in this campaign will be dismissed and blacklisted from future campaigns.
+                            This will discard the remaining vendors from this preview. They are not blacklisted and may appear in future campaigns.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmCloseTab} className="bg-red-600 hover:bg-red-700 text-white">
-                            Close & Dismiss All
+                        <AlertDialogAction onClick={confirmCloseTab} className="bg-slate-600 hover:bg-slate-700 text-white">
+                            Close Tab
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
