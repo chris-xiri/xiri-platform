@@ -199,9 +199,8 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                             <Label htmlFor="website">Website (optional)</Label>
                             {website && (
                                 <EnrichButton
-                                    collection="leads"
-                                    documentId={tempLeadId || 'temp'}
                                     website={website}
+                                    previewOnly={true}
                                     size="sm"
                                     variant="outline"
                                     onSuccess={(data) => {
@@ -210,7 +209,6 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                                         if (data.data?.phone && !phone) setPhone(data.data.phone);
                                         if (data.data?.address && !address) {
                                             // Note: Can't auto-fill address field as it requires Google Places object
-                                            // Could show a notification instead
                                         }
                                         if (data.data?.businessName && !businessName) setBusinessName(data.data.businessName);
                                     }}

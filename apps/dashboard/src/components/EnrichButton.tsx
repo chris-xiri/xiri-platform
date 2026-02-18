@@ -6,9 +6,10 @@ import { Sparkles, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { getFunctions, httpsCallable } from "firebase/functions";
 
 interface EnrichButtonProps {
-    collection: 'leads' | 'vendors';
-    documentId: string;
+    collection?: 'leads' | 'vendors';
+    documentId?: string;
     website: string;
+    previewOnly?: boolean;
     onSuccess?: (data: any) => void;
     onError?: (error: string) => void;
     disabled?: boolean;
@@ -20,6 +21,7 @@ export function EnrichButton({
     collection,
     documentId,
     website,
+    previewOnly = false,
     onSuccess,
     onError,
     disabled = false,
@@ -43,9 +45,10 @@ export function EnrichButton({
             const enrichFromWebsite = httpsCallable(functions, 'enrichFromWebsite');
 
             const result = await enrichFromWebsite({
-                collection,
-                documentId,
+                collection: collection || 'leads',
+                documentId: documentId || 'preview',
                 website,
+                previewOnly,
             });
 
             const data = result.data as any;

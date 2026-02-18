@@ -11,6 +11,7 @@ interface EnrichRequest {
     collection: 'leads' | 'vendors';
     documentId: string;
     website: string;
+    previewOnly?: boolean;
 }
 
 interface EnrichResponse {
@@ -40,13 +41,17 @@ export const enrichFromWebsite = onCall<EnrichRequest, Promise<EnrichResponse>>(
         throw new HttpsError('unauthenticated', 'User must be authenticated');
     }
 
-    const { collection, documentId, website } = request.data;
+    const { collection, documentId, website, previewOnly } = request.data;
 
-    if (!collection || !documentId || !website) {
+    if (!website) {
+        throw new HttpsError('invalid-argument', 'Missing website URL');
+    }
+
+    if (!previewOnly && (!collection || !documentId)) {
         throw new HttpsError('invalid-argument', 'Missing required fields');
     }
 
-    if (!['leads', 'vendors'].includes(collection)) {
+    if (!previewOnly && !['leads', 'vendors'].includes(collection)) {
         throw new HttpsError('invalid-argument', 'Invalid collection');
     }
 
@@ -86,6 +91,30 @@ export const enrichFromWebsite = onCall<EnrichRequest, Promise<EnrichResponse>>(
             } else {
                 console.log(`Phone ${scrapedData.phone} failed validation:`, phoneValidation.reason);
             }
+        }
+
+        // 4b. If preview only, return scraped data without updating Firestore
+        if (previewOnly) {
+            return {
+                success: true,
+                enrichedFields: [
+                    ...(verifiedEmail ? ['email'] : []),
+                    ...(validatedPhone ? ['phone'] : []),
+                    ...(scrapedData.address ? ['address'] : []),
+                    ...(scrapedData.businessName ? ['businessName'] : []),
+                    ...(scrapedData.socialMedia?.linkedin ? ['linkedin'] : []),
+                    ...(scrapedData.socialMedia?.facebook ? ['facebook'] : []),
+                    ...(scrapedData.socialMedia?.twitter ? ['twitter'] : []),
+                ],
+                data: {
+                    email: verifiedEmail,
+                    phone: validatedPhone,
+                    address: scrapedData.address,
+                    businessName: scrapedData.businessName,
+                    socialMedia: scrapedData.socialMedia,
+                    confidence: scrapedData.confidence,
+                },
+            };
         }
 
         // 5. Prepare update data
