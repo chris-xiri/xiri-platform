@@ -36,6 +36,10 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         businessName: vendor.businessName || '',
+        contactName: vendor.contactName || '',
+        email: vendor.email || '',
+        phone: vendor.phone || '',
+        website: vendor.website || '',
         streetAddress: vendor.streetAddress || vendor.address || '',
         city: vendor.city || '',
         state: vendor.state || '',
@@ -88,11 +92,15 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
 
             await updateDoc(doc(db, 'vendors', vendor.id!), {
                 businessName: formData.businessName,
+                contactName: formData.contactName || null,
+                email: formData.email || null,
+                phone: formData.phone || null,
+                website: formData.website || null,
                 streetAddress: formData.streetAddress,
                 city: formData.city,
                 state: formData.state,
                 zip: formData.zip,
-                address: fullAddress, // Keep legacy field in sync
+                address: fullAddress,
                 status: formData.status,
                 onboardingTrack: formData.onboardingTrack,
                 updatedAt: new Date()
@@ -129,6 +137,64 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                             value={formData.businessName}
                             onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                             className="col-span-3"
+                        />
+                    </div>
+
+                    {/* Contact Name */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="contactName" className="text-right text-xs">
+                            Contact
+                        </Label>
+                        <Input
+                            id="contactName"
+                            value={formData.contactName}
+                            onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+                            className="col-span-3"
+                            placeholder="John Doe"
+                        />
+                    </div>
+
+                    {/* Email */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="email" className="text-right text-xs">
+                            Email
+                        </Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            className="col-span-3"
+                            placeholder="contact@company.com"
+                        />
+                    </div>
+
+                    {/* Phone */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="phone" className="text-right text-xs">
+                            Phone
+                        </Label>
+                        <Input
+                            id="phone"
+                            type="tel"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            className="col-span-3"
+                            placeholder="(555) 123-4567"
+                        />
+                    </div>
+
+                    {/* Website */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="website" className="text-right text-xs">
+                            Website
+                        </Label>
+                        <Input
+                            id="website"
+                            value={formData.website}
+                            onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                            className="col-span-3"
+                            placeholder="https://example.com"
                         />
                     </div>
 
