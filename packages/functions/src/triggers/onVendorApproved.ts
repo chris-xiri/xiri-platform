@@ -1,4 +1,5 @@
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
@@ -14,27 +15,47 @@ const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 
 console.log("Loading onVendorApproved trigger...");
 
+// ─── Trigger 1: Existing vendor updated TO 'qualified' ───
 export const onVendorApproved = onDocumentUpdated({
     document: "vendors/{vendorId}",
     secrets: [GEMINI_API_KEY],
 }, async (event) => {
-    console.log("onVendorApproved triggered!");
-    if (!event.data) {
-        console.log("No event data.");
-        return;
-    }
+    if (!event.data) return;
 
     const newData = event.data.after.data();
     const oldData = event.data.before.data();
     const vendorId = event.params.vendorId;
 
     if (!newData || !oldData) return;
-
-    // Only trigger on status change TO qualified
     if (newData.status !== 'qualified' || oldData.status === 'qualified') return;
 
-    logger.info(`Vendor ${vendorId} approved. Starting enrich-first pipeline.`);
+    logger.info(`[UPDATE] Vendor ${vendorId} status changed to qualified.`);
+    await runEnrichPipeline(vendorId, newData, oldData.status);
+});
 
+// ─── Trigger 2: New vendor created WITH status 'qualified' ───
+export const onVendorCreated = onDocumentCreated({
+    document: "vendors/{vendorId}",
+    secrets: [GEMINI_API_KEY],
+}, async (event) => {
+    if (!event.data) return;
+
+    const data = event.data.data();
+    const vendorId = event.params.vendorId;
+
+    if (!data) return;
+    if (data.status !== 'qualified') return;
+
+    logger.info(`[CREATE] Vendor ${vendorId} created with status qualified.`);
+    await runEnrichPipeline(vendorId, data, 'new');
+});
+
+
+// ═══════════════════════════════════════════════════════════
+//  SHARED PIPELINE LOGIC
+// ═══════════════════════════════════════════════════════════
+
+async function runEnrichPipeline(vendorId: string, vendorData: any, previousStatus: string) {
     try {
         // 1. Log Activity: "Vendor Approved"
         await db.collection("vendor_activities").add({
@@ -43,19 +64,19 @@ export const onVendorApproved = onDocumentUpdated({
             description: "Vendor approved — starting onboarding pipeline.",
             createdAt: new Date(),
             metadata: {
-                oldStatus: oldData.status,
-                newStatus: newData.status,
-                onboardingTrack: newData.onboardingTrack || 'STANDARD',
+                oldStatus: previousStatus,
+                newStatus: 'qualified',
+                onboardingTrack: vendorData.onboardingTrack || 'STANDARD',
             }
         });
 
-        const vendorEmail = newData.email?.trim();
-        const vendorWebsite = newData.website?.trim();
+        const vendorEmail = vendorData.email?.trim();
+        const vendorWebsite = vendorData.website?.trim();
 
         // ─── BRANCH 1: Already has email → go straight to outreach ───
         if (vendorEmail) {
             logger.info(`Vendor ${vendorId} has email (${vendorEmail}). Proceeding to outreach.`);
-            await setOutreachPending(vendorId, newData);
+            await setOutreachPending(vendorId, vendorData);
             return;
         }
 
@@ -63,7 +84,7 @@ export const onVendorApproved = onDocumentUpdated({
         if (vendorWebsite) {
             logger.info(`Vendor ${vendorId} has no email but has website. Enriching...`);
 
-            await event.data.after.ref.update({
+            await db.collection("vendors").doc(vendorId).update({
                 outreachStatus: 'ENRICHING',
                 statusUpdatedAt: new Date(),
             });
@@ -80,7 +101,7 @@ export const onVendorApproved = onDocumentUpdated({
 
                 if (!scrapedResult.success || !scrapedResult.data) {
                     logger.warn(`Enrichment failed for ${vendorId}: ${scrapedResult.error}`);
-                    await markNeedsContact(vendorId, event, "Website scrape failed");
+                    await markNeedsContact(vendorId, "Website scrape failed");
                     return;
                 }
 
@@ -105,7 +126,7 @@ export const onVendorApproved = onDocumentUpdated({
                 }
 
                 // Validate and save phone
-                if (scrapedData.phone && !newData.phone) {
+                if (scrapedData.phone && !vendorData.phone) {
                     const phoneValidation = validatePhone(scrapedData.phone);
                     if (phoneValidation.valid) {
                         updateData.phone = phoneValidation.formatted;
@@ -114,7 +135,7 @@ export const onVendorApproved = onDocumentUpdated({
                 }
 
                 // Save address if missing
-                if (scrapedData.address && !newData.address) {
+                if (scrapedData.address && !vendorData.address) {
                     updateData.address = scrapedData.address;
                     enrichedFields.push('address');
                 }
@@ -139,7 +160,7 @@ export const onVendorApproved = onDocumentUpdated({
 
                 // Update vendor doc with scraped data
                 if (enrichedFields.length > 0) {
-                    await event.data.after.ref.update(updateData);
+                    await db.collection("vendors").doc(vendorId).update(updateData);
                 }
 
                 await db.collection("vendor_activities").add({
@@ -155,16 +176,15 @@ export const onVendorApproved = onDocumentUpdated({
                 // Did we find an email?
                 if (foundEmail) {
                     logger.info(`Found email ${foundEmail} for vendor ${vendorId}. Proceeding to outreach.`);
-                    // Re-read the vendor data with the new email
-                    const updatedVendor = (await event.data.after.ref.get()).data();
-                    await setOutreachPending(vendorId, updatedVendor || newData);
+                    const updatedDoc = await db.collection("vendors").doc(vendorId).get();
+                    await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
                 } else {
-                    await markNeedsContact(vendorId, event, "No email found after enrichment");
+                    await markNeedsContact(vendorId, "No email found after enrichment");
                 }
 
             } catch (enrichError: any) {
                 logger.error(`Enrichment error for ${vendorId}:`, enrichError);
-                await markNeedsContact(vendorId, event, `Enrichment error: ${enrichError.message}`);
+                await markNeedsContact(vendorId, `Enrichment error: ${enrichError.message}`);
             }
 
             return;
@@ -172,12 +192,12 @@ export const onVendorApproved = onDocumentUpdated({
 
         // ─── BRANCH 3: No email AND no website → needs manual contact ───
         logger.info(`Vendor ${vendorId} has no email and no website. Marking NEEDS_CONTACT.`);
-        await markNeedsContact(vendorId, event, "No email or website available");
+        await markNeedsContact(vendorId, "No email or website available");
 
     } catch (error) {
-        logger.error("Error in onVendorApproved pipeline:", error);
+        logger.error("Error in enrich pipeline:", error);
     }
-});
+}
 
 
 // ─── Helper: set outreach pending and enqueue GENERATE task ───
@@ -206,8 +226,8 @@ async function setOutreachPending(vendorId: string, vendorData: any) {
 
 
 // ─── Helper: mark vendor as NEEDS_CONTACT ───
-async function markNeedsContact(vendorId: string, event: any, reason: string) {
-    await event.data.after.ref.update({
+async function markNeedsContact(vendorId: string, reason: string) {
+    await db.collection("vendors").doc(vendorId).update({
         outreachStatus: 'NEEDS_CONTACT',
         statusUpdatedAt: new Date(),
     });

@@ -249,6 +249,7 @@ __export(index_exports, {
   onIncomingMessage: () => onIncomingMessage,
   onOnboardingComplete: () => onOnboardingComplete,
   onVendorApproved: () => onVendorApproved,
+  onVendorCreated: () => onVendorCreated,
   processOutreachQueue: () => processOutreachQueue,
   runRecruiterAgent: () => runRecruiterAgent,
   sendBookingConfirmation: () => sendBookingConfirmation,
@@ -501,6 +502,7 @@ var getMockVendors = (query, location) => {
 
 // src/triggers/onVendorApproved.ts
 var import_firestore = require("firebase-functions/v2/firestore");
+var import_firestore2 = require("firebase-functions/v2/firestore");
 var import_params = require("firebase-functions/params");
 var admin3 = __toESM(require("firebase-admin"));
 var logger = __toESM(require("firebase-functions/logger"));
@@ -809,17 +811,28 @@ var onVendorApproved = (0, import_firestore.onDocumentUpdated)({
   document: "vendors/{vendorId}",
   secrets: [GEMINI_API_KEY]
 }, async (event) => {
-  console.log("onVendorApproved triggered!");
-  if (!event.data) {
-    console.log("No event data.");
-    return;
-  }
+  if (!event.data) return;
   const newData = event.data.after.data();
   const oldData = event.data.before.data();
   const vendorId = event.params.vendorId;
   if (!newData || !oldData) return;
   if (newData.status !== "qualified" || oldData.status === "qualified") return;
-  logger.info(`Vendor ${vendorId} approved. Starting enrich-first pipeline.`);
+  logger.info(`[UPDATE] Vendor ${vendorId} status changed to qualified.`);
+  await runEnrichPipeline(vendorId, newData, oldData.status);
+});
+var onVendorCreated = (0, import_firestore2.onDocumentCreated)({
+  document: "vendors/{vendorId}",
+  secrets: [GEMINI_API_KEY]
+}, async (event) => {
+  if (!event.data) return;
+  const data = event.data.data();
+  const vendorId = event.params.vendorId;
+  if (!data) return;
+  if (data.status !== "qualified") return;
+  logger.info(`[CREATE] Vendor ${vendorId} created with status qualified.`);
+  await runEnrichPipeline(vendorId, data, "new");
+});
+async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
   try {
     await db2.collection("vendor_activities").add({
       vendorId,
@@ -827,21 +840,21 @@ var onVendorApproved = (0, import_firestore.onDocumentUpdated)({
       description: "Vendor approved \u2014 starting onboarding pipeline.",
       createdAt: /* @__PURE__ */ new Date(),
       metadata: {
-        oldStatus: oldData.status,
-        newStatus: newData.status,
-        onboardingTrack: newData.onboardingTrack || "STANDARD"
+        oldStatus: previousStatus,
+        newStatus: "qualified",
+        onboardingTrack: vendorData.onboardingTrack || "STANDARD"
       }
     });
-    const vendorEmail = newData.email?.trim();
-    const vendorWebsite = newData.website?.trim();
+    const vendorEmail = vendorData.email?.trim();
+    const vendorWebsite = vendorData.website?.trim();
     if (vendorEmail) {
       logger.info(`Vendor ${vendorId} has email (${vendorEmail}). Proceeding to outreach.`);
-      await setOutreachPending(vendorId, newData);
+      await setOutreachPending(vendorId, vendorData);
       return;
     }
     if (vendorWebsite) {
       logger.info(`Vendor ${vendorId} has no email but has website. Enriching...`);
-      await event.data.after.ref.update({
+      await db2.collection("vendors").doc(vendorId).update({
         outreachStatus: "ENRICHING",
         statusUpdatedAt: /* @__PURE__ */ new Date()
       });
@@ -855,7 +868,7 @@ var onVendorApproved = (0, import_firestore.onDocumentUpdated)({
         const scrapedResult = await scrapeWebsite(vendorWebsite, GEMINI_API_KEY.value());
         if (!scrapedResult.success || !scrapedResult.data) {
           logger.warn(`Enrichment failed for ${vendorId}: ${scrapedResult.error}`);
-          await markNeedsContact(vendorId, event, "Website scrape failed");
+          await markNeedsContact(vendorId, "Website scrape failed");
           return;
         }
         const scrapedData = scrapedResult.data;
@@ -872,14 +885,14 @@ var onVendorApproved = (0, import_firestore.onDocumentUpdated)({
             logger.info(`Scraped email ${scrapedData.email} failed verification.`);
           }
         }
-        if (scrapedData.phone && !newData.phone) {
+        if (scrapedData.phone && !vendorData.phone) {
           const phoneValidation = validatePhone(scrapedData.phone);
           if (phoneValidation.valid) {
             updateData.phone = phoneValidation.formatted;
             enrichedFields.push("phone");
           }
         }
-        if (scrapedData.address && !newData.address) {
+        if (scrapedData.address && !vendorData.address) {
           updateData.address = scrapedData.address;
           enrichedFields.push("address");
         }
@@ -907,7 +920,7 @@ var onVendorApproved = (0, import_firestore.onDocumentUpdated)({
           confidence: scrapedData.confidence
         };
         if (enrichedFields.length > 0) {
-          await event.data.after.ref.update(updateData);
+          await db2.collection("vendors").doc(vendorId).update(updateData);
         }
         await db2.collection("vendor_activities").add({
           vendorId,
@@ -918,23 +931,23 @@ var onVendorApproved = (0, import_firestore.onDocumentUpdated)({
         });
         if (foundEmail) {
           logger.info(`Found email ${foundEmail} for vendor ${vendorId}. Proceeding to outreach.`);
-          const updatedVendor = (await event.data.after.ref.get()).data();
-          await setOutreachPending(vendorId, updatedVendor || newData);
+          const updatedDoc = await db2.collection("vendors").doc(vendorId).get();
+          await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
         } else {
-          await markNeedsContact(vendorId, event, "No email found after enrichment");
+          await markNeedsContact(vendorId, "No email found after enrichment");
         }
       } catch (enrichError) {
         logger.error(`Enrichment error for ${vendorId}:`, enrichError);
-        await markNeedsContact(vendorId, event, `Enrichment error: ${enrichError.message}`);
+        await markNeedsContact(vendorId, `Enrichment error: ${enrichError.message}`);
       }
       return;
     }
     logger.info(`Vendor ${vendorId} has no email and no website. Marking NEEDS_CONTACT.`);
-    await markNeedsContact(vendorId, event, "No email or website available");
+    await markNeedsContact(vendorId, "No email or website available");
   } catch (error5) {
-    logger.error("Error in onVendorApproved pipeline:", error5);
+    logger.error("Error in enrich pipeline:", error5);
   }
-});
+}
 async function setOutreachPending(vendorId, vendorData) {
   await db2.collection("vendors").doc(vendorId).update({
     outreachStatus: "PENDING",
@@ -955,8 +968,8 @@ async function setOutreachPending(vendorId, vendorData) {
   });
   logger.info(`Outreach GENERATE task enqueued for vendor ${vendorId}`);
 }
-async function markNeedsContact(vendorId, event, reason) {
-  await event.data.after.ref.update({
+async function markNeedsContact(vendorId, reason) {
+  await db2.collection("vendors").doc(vendorId).update({
     outreachStatus: "NEEDS_CONTACT",
     statusUpdatedAt: /* @__PURE__ */ new Date()
   });
@@ -1178,14 +1191,14 @@ async function handleSend(task) {
 }
 
 // src/triggers/onIncomingMessage.ts
-var import_firestore2 = require("firebase-functions/v2/firestore");
+var import_firestore3 = require("firebase-functions/v2/firestore");
 var admin7 = __toESM(require("firebase-admin"));
 var logger3 = __toESM(require("firebase-functions/logger"));
 if (!admin7.apps.length) {
   admin7.initializeApp();
 }
 var db6 = admin7.firestore();
-var onIncomingMessage = (0, import_firestore2.onDocumentCreated)("vendor_activities/{activityId}", async (event) => {
+var onIncomingMessage = (0, import_firestore3.onDocumentCreated)("vendor_activities/{activityId}", async (event) => {
   if (!event.data) return;
   const activity = event.data.data();
   const vendorId = activity.vendorId;
@@ -1250,7 +1263,7 @@ var onIncomingMessage = (0, import_firestore2.onDocumentCreated)("vendor_activit
 });
 
 // src/triggers/onDocumentUploaded.ts
-var import_firestore3 = require("firebase-functions/v2/firestore");
+var import_firestore4 = require("firebase-functions/v2/firestore");
 var admin9 = __toESM(require("firebase-admin"));
 
 // src/agents/documentVerifier.ts
@@ -1324,7 +1337,7 @@ async function verifyDocument(docType, vendorName, specialty) {
 
 // src/triggers/onDocumentUploaded.ts
 var db8 = admin9.firestore();
-var onDocumentUploaded = (0, import_firestore3.onDocumentUpdated)({
+var onDocumentUploaded = (0, import_firestore4.onDocumentUpdated)({
   document: "vendors/{vendorId}",
   secrets: ["GEMINI_API_KEY"]
 }, async (event) => {
@@ -1378,11 +1391,11 @@ async function runVerification(vendorId, docType, vendorData) {
 }
 
 // src/triggers/sendBookingConfirmation.ts
-var import_firestore4 = require("firebase-functions/v2/firestore");
+var import_firestore5 = require("firebase-functions/v2/firestore");
 init_emailUtils();
 var import_date_fns = require("date-fns");
 var TIMEOUT_SECONDS = 300;
-var sendBookingConfirmation = (0, import_firestore4.onDocumentWritten)({
+var sendBookingConfirmation = (0, import_firestore5.onDocumentWritten)({
   document: "leads/{leadId}",
   secrets: ["RESEND_API_KEY"],
   timeoutSeconds: TIMEOUT_SECONDS
@@ -1464,7 +1477,7 @@ END:VCALENDAR`;
 
 // src/triggers/enrichFromWebsite.ts
 var import_https = require("firebase-functions/v2/https");
-var import_firestore5 = require("firebase-admin/firestore");
+var import_firestore6 = require("firebase-admin/firestore");
 var import_params2 = require("firebase-functions/params");
 var GEMINI_API_KEY2 = (0, import_params2.defineSecret)("GEMINI_API_KEY");
 var enrichFromWebsite = (0, import_https.onCall)({
@@ -1542,7 +1555,7 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db9 = (0, import_firestore5.getFirestore)();
+    const db9 = (0, import_firestore6.getFirestore)();
     const docRef = db9.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
@@ -1551,7 +1564,7 @@ var enrichFromWebsite = (0, import_https.onCall)({
     const existingData = docSnap.data();
     const enrichedFields = [];
     const updateData = {
-      updatedAt: import_firestore5.FieldValue.serverTimestamp()
+      updatedAt: import_firestore6.FieldValue.serverTimestamp()
     };
     if (verifiedEmail && !existingData.email) {
       updateData.email = verifiedEmail;
@@ -1588,7 +1601,7 @@ var enrichFromWebsite = (0, import_https.onCall)({
       }
     }
     updateData.enrichment = {
-      lastEnriched: import_firestore5.FieldValue.serverTimestamp(),
+      lastEnriched: import_firestore6.FieldValue.serverTimestamp(),
       enrichedFields,
       enrichmentSource: "manual",
       scrapedWebsite: website,
@@ -1622,14 +1635,14 @@ var enrichFromWebsite = (0, import_https.onCall)({
 });
 
 // src/triggers/onOnboardingComplete.ts
-var import_firestore6 = require("firebase-functions/v2/firestore");
+var import_firestore7 = require("firebase-functions/v2/firestore");
 var admin10 = __toESM(require("firebase-admin"));
 var logger4 = __toESM(require("firebase-functions/logger"));
 var import_resend2 = require("resend");
 if (!admin10.apps.length) {
   admin10.initializeApp();
 }
-var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
+var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   document: "vendors/{vendorId}",
   secrets: ["RESEND_API_KEY"]
 }, async (event) => {
@@ -1697,10 +1710,85 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
   } catch (err) {
     logger4.error("Error sending onboarding notification:", err);
   }
+  if (email && email !== "N/A") {
+    const isSpanish = lang === "es";
+    const vendorHtml = isSpanish ? `
+    <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px; color: #1e293b;">
+        <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 22px;">\xA1Recibimos su solicitud!</h1>
+        </div>
+        <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+            <p>Hola <strong>${businessName}</strong>,</p>
+            <p>Gracias por completar su solicitud para unirse a la Red de Contratistas de Xiri. Hemos recibido su informaci\xF3n y nuestro equipo la revisar\xE1 en breve.</p>
+
+            <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <h3 style="margin: 0 0 12px 0; color: #0c4a6e; font-size: 15px;">Lo que recibimos:</h3>
+                <p style="margin: 4px 0; font-size: 14px;">\u{1F4E7} Email: ${email}</p>
+                <p style="margin: 4px 0; font-size: 14px;">\u{1F4DE} Tel\xE9fono: ${phone}</p>
+                <p style="margin: 4px 0; font-size: 14px;">\u{1F4CB} Modalidad: ${track === "FAST_TRACK" ? "\u26A1 Contrato Express" : "\u{1F91D} Red de Socios"}</p>
+            </div>
+
+            <h3 style="color: #0c4a6e; font-size: 15px;">Pr\xF3ximos Pasos:</h3>
+            <ol style="font-size: 14px; padding-left: 20px;">
+                <li>Nuestro equipo revisar\xE1 sus documentos e informaci\xF3n</li>
+                <li>Recibir\xE1 una confirmaci\xF3n cuando su cuenta est\xE9 verificada</li>
+                <li>Una vez aprobado, comenzar\xE1 a recibir oportunidades de trabajo</li>
+            </ol>
+
+            <p style="font-size: 14px; color: #64748b;">Si tiene alguna pregunta, simplemente responda a este correo.</p>
+
+            <p style="margin-top: 24px;">Saludos cordiales,<br/><strong>Equipo Xiri Facility Solutions</strong></p>
+        </div>
+    </div>` : `
+    <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px; color: #1e293b;">
+        <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 22px;">We've received your application!</h1>
+        </div>
+        <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+            <p>Hi <strong>${businessName}</strong>,</p>
+            <p>Thank you for completing your application to join the Xiri Contractor Network. We've received your information and our team will review it shortly.</p>
+
+            <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <h3 style="margin: 0 0 12px 0; color: #0c4a6e; font-size: 15px;">What we received:</h3>
+                <p style="margin: 4px 0; font-size: 14px;">\u{1F4E7} Email: ${email}</p>
+                <p style="margin: 4px 0; font-size: 14px;">\u{1F4DE} Phone: ${phone}</p>
+                <p style="margin: 4px 0; font-size: 14px;">\u{1F4CB} Track: ${track === "FAST_TRACK" ? "\u26A1 Express Contract" : "\u{1F91D} Partner Network"}</p>
+            </div>
+
+            <h3 style="color: #0c4a6e; font-size: 15px;">What happens next:</h3>
+            <ol style="font-size: 14px; padding-left: 20px;">
+                <li>Our team will review your documents and information</li>
+                <li>You'll receive a confirmation once your account is verified</li>
+                <li>Once approved, you'll start receiving work opportunities</li>
+            </ol>
+
+            <p style="font-size: 14px; color: #64748b;">If you have any questions, just reply to this email.</p>
+
+            <p style="margin-top: 24px;">Best regards,<br/><strong>Xiri Facility Solutions Team</strong></p>
+        </div>
+    </div>`;
+    const vendorSubject = isSpanish ? `\u2705 Solicitud recibida \u2014 ${businessName}` : `\u2705 Application received \u2014 ${businessName}`;
+    try {
+      const { error: vendorError } = await resend2.emails.send({
+        from: "Xiri Facility Solutions <onboarding@xiri.ai>",
+        replyTo: "chris@xiri.ai",
+        to: email,
+        subject: vendorSubject,
+        html: vendorHtml
+      });
+      if (vendorError) {
+        logger4.error("Failed to send vendor confirmation:", vendorError);
+      } else {
+        logger4.info(`Vendor confirmation sent to ${email}`);
+      }
+    } catch (err) {
+      logger4.error("Error sending vendor confirmation:", err);
+    }
+  }
   await admin10.firestore().collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
-    description: `${businessName} completed onboarding form (${track}). Notification sent to chris@xiri.ai.`,
+    description: `${businessName} completed onboarding form (${track}). Notifications sent to chris@xiri.ai and ${email}.`,
     createdAt: /* @__PURE__ */ new Date(),
     metadata: { track, email, phone, lang }
   });
@@ -1832,6 +1920,7 @@ var testSendEmail = (0, import_https2.onCall)({
   onIncomingMessage,
   onOnboardingComplete,
   onVendorApproved,
+  onVendorCreated,
   processOutreachQueue,
   runRecruiterAgent,
   sendBookingConfirmation,

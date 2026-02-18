@@ -3,7 +3,7 @@ import { db } from "./utils/firebase";
 import { analyzeVendorLeads } from "./agents/recruiter";
 import { searchVendors } from "./agents/sourcer";
 // import { telegramWebhook, autoApproveVendor, notifyHumanReview, onVendorCreated } from "./triggers/telegramBot";
-import { onVendorApproved } from "./triggers/onVendorApproved";
+import { onVendorApproved, onVendorCreated } from "./triggers/onVendorApproved";
 import { processOutreachQueue } from "./triggers/outreachWorker";
 import { onIncomingMessage } from "./triggers/onIncomingMessage";
 import { onDocumentUploaded } from "./triggers/onDocumentUploaded";
@@ -13,7 +13,7 @@ import { onOnboardingComplete } from "./triggers/onOnboardingComplete";
 
 // Export Bot Functions (Telegram disabled for now)
 // export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };
-export { onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete };
+export { onVendorApproved, onVendorCreated, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete };
 
 // 1. Lead Sourcing Agent Trigger
 export const generateLeads = onCall({
