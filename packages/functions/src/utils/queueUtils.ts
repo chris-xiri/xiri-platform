@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 
-export type QueueTaskType = 'GENERATE' | 'SEND';
-export type QueueStatus = 'PENDING' | 'RETRY' | 'COMPLETED' | 'FAILED';
+export type QueueTaskType = 'GENERATE' | 'SEND' | 'FOLLOW_UP';
+export type QueueStatus = 'PENDING' | 'RETRY' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
 export interface QueueItem {
     id?: string;
@@ -12,7 +12,7 @@ export interface QueueItem {
     createdAt: admin.firestore.Timestamp;
     retryCount: number;
     error?: string;
-    metadata?: any; // e.g. drafts for SEND task
+    metadata?: any; // e.g. drafts for SEND task, sequence number for FOLLOW_UP
 }
 
 const COLLECTION = 'outreach_queue';
@@ -48,3 +48,21 @@ export async function updateTaskStatus(db: admin.firestore.Firestore, taskId: st
         ...updates
     });
 }
+
+/**
+ * Cancel all pending/retry tasks for a vendor (used on unsubscribe/dismiss).
+ */
+export async function cancelVendorTasks(db: admin.firestore.Firestore, vendorId: string) {
+    const snapshot = await db.collection(COLLECTION)
+        .where('vendorId', '==', vendorId)
+        .where('status', 'in', ['PENDING', 'RETRY'])
+        .get();
+
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => {
+        batch.update(doc.ref, { status: 'CANCELLED', cancelledAt: new Date() });
+    });
+    await batch.commit();
+    return snapshot.size;
+}
+

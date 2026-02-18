@@ -34,6 +34,8 @@ export const processOutreachQueue = onSchedule({
                     await handleGenerate(task);
                 } else if (task.type === 'SEND') {
                     await handleSend(task);
+                } else if (task.type === 'FOLLOW_UP') {
+                    await handleFollowUp(task);
                 }
             } catch (err) {
                 logger.error(`Error processing task ${task.id}:`, err);
@@ -180,4 +182,119 @@ async function handleSend(task: QueueItem) {
             outreachTime: new Date()
         });
     }
+}
+
+async function handleFollowUp(task: QueueItem) {
+    logger.info(`Processing FOLLOW_UP task ${task.id} (sequence ${task.metadata?.sequence})`);
+
+    const vendorDoc = await db.collection("vendors").doc(task.vendorId).get();
+    const vendor = vendorDoc.exists ? vendorDoc.data() : null;
+
+    if (!vendor) {
+        logger.warn(`Vendor ${task.vendorId} not found, marking task completed.`);
+        await updateTaskStatus(db, task.id!, 'COMPLETED');
+        return;
+    }
+
+    // Skip if vendor has already progressed past awaiting_onboarding
+    if (vendor.status !== 'awaiting_onboarding') {
+        logger.info(`Vendor ${task.vendorId} is now '${vendor.status}', skipping follow-up.`);
+        await updateTaskStatus(db, task.id!, 'COMPLETED');
+        return;
+    }
+
+    const vendorEmail = vendor.email || task.metadata?.email;
+    if (!vendorEmail) {
+        logger.warn(`No email for vendor ${task.vendorId}, skipping follow-up.`);
+        await updateTaskStatus(db, task.id!, 'COMPLETED');
+        return;
+    }
+
+    const sequence = task.metadata?.sequence || 1;
+    const businessName = task.metadata?.businessName || vendor.businessName || 'there';
+    const isSpanish = (task.metadata?.preferredLanguage || vendor.preferredLanguage) === 'es';
+
+    const unsubscribeUrl = `https://us-central1-xiri-facility-solutions.cloudfunctions.net/handleUnsubscribe?vendorId=${task.vendorId}`;
+    const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
+
+    const subject = task.metadata?.subject || `Follow-up: Complete your Xiri profile`;
+    const html = buildFollowUpEmail(sequence, businessName, onboardingUrl, unsubscribeUrl, isSpanish);
+
+    const sendSuccess = await sendEmail(vendorEmail, subject, html);
+
+    if (sendSuccess) {
+        await db.collection("vendor_activities").add({
+            vendorId: task.vendorId,
+            type: "FOLLOW_UP_SENT",
+            description: `Follow-up #${sequence} sent to ${vendorEmail}`,
+            createdAt: new Date(),
+            metadata: { sequence, email: vendorEmail, channel: 'EMAIL' }
+        });
+        await updateTaskStatus(db, task.id!, 'COMPLETED');
+        logger.info(`Follow-up #${sequence} sent to ${vendorEmail} for vendor ${task.vendorId}`);
+    } else {
+        throw new Error(`Failed to send follow-up #${sequence} to ${vendorEmail}`);
+    }
+}
+
+function buildFollowUpEmail(sequence: number, businessName: string, onboardingUrl: string, unsubscribeUrl: string, isSpanish: boolean): string {
+    const msgs: Record<number, { en: { body: string; cta: string }; es: { body: string; cta: string } }> = {
+        1: {
+            en: {
+                body: `We noticed you haven't completed your Xiri profile yet. Completing your profile is the first step to receiving work opportunities from our network of medical and commercial facilities.`,
+                cta: 'Complete My Profile'
+            },
+            es: {
+                body: `Notamos que aún no ha completado su perfil de Xiri. Completar su perfil es el primer paso para recibir oportunidades de trabajo de nuestra red de instalaciones médicas y comerciales.`,
+                cta: 'Completar Mi Perfil'
+            }
+        },
+        2: {
+            en: {
+                body: `Just checking in — we'd love to have you on board. Our contractor network is growing and there are active opportunities in your area. It only takes a few minutes to complete your profile.`,
+                cta: 'Finish My Application'
+            },
+            es: {
+                body: `Solo queríamos saber cómo está — nos encantaría contar con usted. Nuestra red de contratistas está creciendo y hay oportunidades activas en su área.`,
+                cta: 'Finalizar Mi Solicitud'
+            }
+        },
+        3: {
+            en: {
+                body: `This is our final follow-up. We don't want you to miss out on work opportunities with Xiri. If you're still interested, please complete your profile. Otherwise, we'll remove you from our outreach list.`,
+                cta: 'Complete Profile Now'
+            },
+            es: {
+                body: `Este es nuestro último seguimiento. No queremos que pierda las oportunidades de trabajo con Xiri. Si aún está interesado, complete su perfil.`,
+                cta: 'Completar Perfil Ahora'
+            }
+        }
+    };
+
+    const msg = msgs[sequence]?.[isSpanish ? 'es' : 'en'] || msgs[1].en;
+    const greeting = isSpanish ? `Hola ${businessName},` : `Hi ${businessName},`;
+    const reply = isSpanish ? '¿Preguntas? Simplemente responda a este correo.' : 'Questions? Just reply to this email.';
+    const unsub = isSpanish ? 'Cancelar suscripción' : 'Unsubscribe from future emails';
+    const signoff = isSpanish ? 'Saludos cordiales' : 'Best regards';
+
+    return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
+        <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 20px;">Xiri Facility Solutions</h1>
+        </div>
+        <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+            <p style="font-size: 15px;">${greeting}</p>
+            <p style="font-size: 15px; line-height: 1.7;">${msg.body}</p>
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="${onboardingUrl}" style="display: inline-block; padding: 14px 32px; background: #0369a1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">
+                    ${msg.cta}
+                </a>
+            </div>
+            <p style="font-size: 14px; color: #64748b;">${reply}</p>
+            <p style="margin-top: 24px; font-size: 14px;">${signoff},<br/><strong>Xiri Facility Solutions Team</strong></p>
+        </div>
+        <div style="text-align: center; margin-top: 16px;">
+            <a href="${unsubscribeUrl}" style="font-size: 11px; color: #94a3b8; text-decoration: underline;">${unsub}</a>
+        </div>
+    </div>`;
 }

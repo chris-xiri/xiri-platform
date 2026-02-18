@@ -33,28 +33,38 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/utils/queueUtils.ts
 var queueUtils_exports = {};
 __export(queueUtils_exports, {
+  cancelVendorTasks: () => cancelVendorTasks,
   enqueueTask: () => enqueueTask,
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db9, task) {
-  return db9.collection(COLLECTION).add({
+async function enqueueTask(db11, task) {
+  return db11.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db9) {
+async function fetchPendingTasks(db11) {
   const now = admin2.firestore.Timestamp.now();
-  const snapshot = await db9.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db11.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function updateTaskStatus(db9, taskId, status, updates = {}) {
-  await db9.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db11, taskId, status, updates = {}) {
+  await db11.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
+}
+async function cancelVendorTasks(db11, vendorId) {
+  const snapshot = await db11.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db11.batch();
+  snapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
+  });
+  await batch.commit();
+  return snapshot.size;
 }
 var admin2, COLLECTION;
 var init_queueUtils = __esm({
@@ -82,8 +92,8 @@ async function getTemplate(templateId) {
       return null;
     }
     return doc.data();
-  } catch (error5) {
-    console.error("Error fetching template:", error5);
+  } catch (error6) {
+    console.error("Error fetching template:", error6);
     return null;
   }
 }
@@ -130,8 +140,8 @@ BODY:
       subject: subjectMatch[1].trim(),
       body: bodyMatch[1].trim()
     };
-  } catch (error5) {
-    console.error("Error generating email:", error5);
+  } catch (error6) {
+    console.error("Error generating email:", error6);
     return null;
   }
 }
@@ -171,8 +181,8 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
       });
       resendId = data?.id;
       console.log(`\u2705 Email sent to ${vendor?.companyName}: ${email.subject} (Resend ID: ${data?.id})`);
-    } catch (error5) {
-      console.error("\u274C Resend API error:", error5);
+    } catch (error6) {
+      console.error("\u274C Resend API error:", error6);
       await db4.collection("vendor_activities").add({
         vendorId,
         type: "EMAIL_FAILED",
@@ -182,7 +192,7 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
           templateId,
           subject: email.subject,
           to: vendor?.email || "unknown",
-          error: String(error5)
+          error: String(error6)
         }
       });
       return;
@@ -201,13 +211,13 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
         // NEW: Track Resend email ID
       }
     });
-  } catch (error5) {
-    console.error("Error sending email:", error5);
+  } catch (error6) {
+    console.error("Error sending email:", error6);
   }
 }
 async function sendEmail(to, subject, html, attachments) {
   try {
-    const { data, error: error5 } = await resend.emails.send({
+    const { data, error: error6 } = await resend.emails.send({
       from: "Xiri Facility Solutions <onboarding@xiri.ai>",
       replyTo: "chris@xiri.ai",
       to,
@@ -215,8 +225,8 @@ async function sendEmail(to, subject, html, attachments) {
       html,
       attachments
     });
-    if (error5) {
-      console.error("\u274C Resend API error:", error5);
+    if (error6) {
+      console.error("\u274C Resend API error:", error6);
       return false;
     }
     console.log(`\u2705 Email sent to ${to}: ${subject} (ID: ${data?.id})`);
@@ -245,6 +255,8 @@ __export(index_exports, {
   clearPipeline: () => clearPipeline,
   enrichFromWebsite: () => enrichFromWebsite,
   generateLeads: () => generateLeads,
+  handleUnsubscribe: () => handleUnsubscribe,
+  onAwaitingOnboarding: () => onAwaitingOnboarding,
   onDocumentUploaded: () => onDocumentUploaded,
   onIncomingMessage: () => onIncomingMessage,
   onOnboardingComplete: () => onOnboardingComplete,
@@ -256,7 +268,7 @@ __export(index_exports, {
   testSendEmail: () => testSendEmail
 });
 module.exports = __toCommonJS(index_exports);
-var import_https2 = require("firebase-functions/v2/https");
+var import_https3 = require("firebase-functions/v2/https");
 
 // src/utils/firebase.ts
 var admin = __toESM(require("firebase-admin"));
@@ -268,8 +280,8 @@ if (!admin.apps.length) {
 var db = admin.firestore();
 try {
   db.settings({ ignoreUndefinedProperties: true });
-} catch (error5) {
-  console.log("Firestore settings usage note:", error5);
+} catch (error6) {
+  console.log("Firestore settings usage note:", error6);
 }
 
 // src/agents/recruiter.ts
@@ -472,9 +484,9 @@ var searchVendors = async (query, location) => {
     const filteredVendors = rawVendors.filter((v) => v.rating === void 0 || v.rating >= 3.5);
     console.log(`Filtered ${rawVendors.length} -> ${filteredVendors.length} vendors (Rating >= 3.5 or N/A).`);
     return filteredVendors;
-  } catch (error5) {
-    console.error("Error searching vendors:", error5.message);
-    throw new Error(`Failed to source vendors: ${error5.message}`);
+  } catch (error6) {
+    console.error("Error searching vendors:", error6.message);
+    throw new Error(`Failed to source vendors: ${error6.message}`);
   }
 };
 var getMockVendors = (query, location) => {
@@ -559,8 +571,8 @@ async function scrapeWebsite(url, geminiApiKey) {
       combinedData.phone = formatPhone(combinedData.phone);
     }
     return { success: true, data: combinedData };
-  } catch (error5) {
-    return { success: false, error: error5.message };
+  } catch (error6) {
+    return { success: false, error: error6.message };
   }
 }
 function extractStructuredData($) {
@@ -644,7 +656,7 @@ async function scrapeContactPage(url) {
     const html = await response.text();
     const $ = cheerio.load(html);
     return extractFromPatterns($, html);
-  } catch (error5) {
+  } catch (error6) {
     return {};
   }
 }
@@ -676,8 +688,8 @@ ${text}`;
       };
     }
     return {};
-  } catch (error5) {
-    console.error("AI extraction error:", error5);
+  } catch (error6) {
+    console.error("AI extraction error:", error6);
     return {};
   }
 }
@@ -720,7 +732,7 @@ async function verifyEmail(email) {
     } else {
       return { valid: true, deliverable: false, reason: "No MX records found" };
     }
-  } catch (error5) {
+  } catch (error6) {
     return { valid: true, deliverable: false, reason: "Domain not found" };
   }
 }
@@ -730,7 +742,7 @@ async function resolveMX(domain) {
   const resolveMx = promisify(dns.resolveMx);
   try {
     return await resolveMx(domain);
-  } catch (error5) {
+  } catch (error6) {
     return [];
   }
 }
@@ -944,8 +956,8 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
     }
     logger.info(`Vendor ${vendorId} has no email and no website. Marking NEEDS_CONTACT.`);
     await markNeedsContact(vendorId, "No email or website available");
-  } catch (error5) {
-    logger.error("Error in enrich pipeline:", error5);
+  } catch (error6) {
+    logger.error("Error in enrich pipeline:", error6);
   }
 }
 async function setOutreachPending(vendorId, vendorData) {
@@ -1040,8 +1052,8 @@ var generateOutreachContent = async (vendor, preferredChannel) => {
       email: jsonContent.email,
       generatedAt: /* @__PURE__ */ new Date()
     };
-  } catch (error5) {
-    console.error("Error generating outreach content:", error5);
+  } catch (error6) {
+    console.error("Error generating outreach content:", error6);
     return {
       channel,
       sms: "Error generating SMS.",
@@ -1063,8 +1075,8 @@ var analyzeIncomingMessage = async (vendor, messageContent, previousContext) => 
     text = text.replace(/^```json/gm, "").replace(/^```/gm, "").trim();
     const jsonContent = JSON.parse(text);
     return jsonContent;
-  } catch (error5) {
-    console.error("Error analyzing message:", error5);
+  } catch (error6) {
+    console.error("Error analyzing message:", error6);
     return { intent: "OTHER", reply: "Error analyzing message." };
   }
 };
@@ -1093,6 +1105,8 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
           await handleGenerate(task);
         } else if (task.type === "SEND") {
           await handleSend(task);
+        } else if (task.type === "FOLLOW_UP") {
+          await handleFollowUp(task);
         }
       } catch (err) {
         logger2.error(`Error processing task ${task.id}:`, err);
@@ -1107,8 +1121,8 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
         });
       }
     }
-  } catch (error5) {
-    logger2.error("Fatal error in queue processor:", error5);
+  } catch (error6) {
+    logger2.error("Fatal error in queue processor:", error6);
   }
 });
 async function handleGenerate(task) {
@@ -1206,6 +1220,107 @@ async function handleSend(task) {
     });
   }
 }
+async function handleFollowUp(task) {
+  logger2.info(`Processing FOLLOW_UP task ${task.id} (sequence ${task.metadata?.sequence})`);
+  const vendorDoc = await db5.collection("vendors").doc(task.vendorId).get();
+  const vendor = vendorDoc.exists ? vendorDoc.data() : null;
+  if (!vendor) {
+    logger2.warn(`Vendor ${task.vendorId} not found, marking task completed.`);
+    await updateTaskStatus(db5, task.id, "COMPLETED");
+    return;
+  }
+  if (vendor.status !== "awaiting_onboarding") {
+    logger2.info(`Vendor ${task.vendorId} is now '${vendor.status}', skipping follow-up.`);
+    await updateTaskStatus(db5, task.id, "COMPLETED");
+    return;
+  }
+  const vendorEmail = vendor.email || task.metadata?.email;
+  if (!vendorEmail) {
+    logger2.warn(`No email for vendor ${task.vendorId}, skipping follow-up.`);
+    await updateTaskStatus(db5, task.id, "COMPLETED");
+    return;
+  }
+  const sequence = task.metadata?.sequence || 1;
+  const businessName = task.metadata?.businessName || vendor.businessName || "there";
+  const isSpanish = (task.metadata?.preferredLanguage || vendor.preferredLanguage) === "es";
+  const unsubscribeUrl = `https://us-central1-xiri-facility-solutions.cloudfunctions.net/handleUnsubscribe?vendorId=${task.vendorId}`;
+  const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
+  const subject = task.metadata?.subject || `Follow-up: Complete your Xiri profile`;
+  const html = buildFollowUpEmail(sequence, businessName, onboardingUrl, unsubscribeUrl, isSpanish);
+  const sendSuccess = await sendEmail(vendorEmail, subject, html);
+  if (sendSuccess) {
+    await db5.collection("vendor_activities").add({
+      vendorId: task.vendorId,
+      type: "FOLLOW_UP_SENT",
+      description: `Follow-up #${sequence} sent to ${vendorEmail}`,
+      createdAt: /* @__PURE__ */ new Date(),
+      metadata: { sequence, email: vendorEmail, channel: "EMAIL" }
+    });
+    await updateTaskStatus(db5, task.id, "COMPLETED");
+    logger2.info(`Follow-up #${sequence} sent to ${vendorEmail} for vendor ${task.vendorId}`);
+  } else {
+    throw new Error(`Failed to send follow-up #${sequence} to ${vendorEmail}`);
+  }
+}
+function buildFollowUpEmail(sequence, businessName, onboardingUrl, unsubscribeUrl, isSpanish) {
+  const msgs = {
+    1: {
+      en: {
+        body: `We noticed you haven't completed your Xiri profile yet. Completing your profile is the first step to receiving work opportunities from our network of medical and commercial facilities.`,
+        cta: "Complete My Profile"
+      },
+      es: {
+        body: `Notamos que a\xFAn no ha completado su perfil de Xiri. Completar su perfil es el primer paso para recibir oportunidades de trabajo de nuestra red de instalaciones m\xE9dicas y comerciales.`,
+        cta: "Completar Mi Perfil"
+      }
+    },
+    2: {
+      en: {
+        body: `Just checking in \u2014 we'd love to have you on board. Our contractor network is growing and there are active opportunities in your area. It only takes a few minutes to complete your profile.`,
+        cta: "Finish My Application"
+      },
+      es: {
+        body: `Solo quer\xEDamos saber c\xF3mo est\xE1 \u2014 nos encantar\xEDa contar con usted. Nuestra red de contratistas est\xE1 creciendo y hay oportunidades activas en su \xE1rea.`,
+        cta: "Finalizar Mi Solicitud"
+      }
+    },
+    3: {
+      en: {
+        body: `This is our final follow-up. We don't want you to miss out on work opportunities with Xiri. If you're still interested, please complete your profile. Otherwise, we'll remove you from our outreach list.`,
+        cta: "Complete Profile Now"
+      },
+      es: {
+        body: `Este es nuestro \xFAltimo seguimiento. No queremos que pierda las oportunidades de trabajo con Xiri. Si a\xFAn est\xE1 interesado, complete su perfil.`,
+        cta: "Completar Perfil Ahora"
+      }
+    }
+  };
+  const msg = msgs[sequence]?.[isSpanish ? "es" : "en"] || msgs[1].en;
+  const greeting = isSpanish ? `Hola ${businessName},` : `Hi ${businessName},`;
+  const reply = isSpanish ? "\xBFPreguntas? Simplemente responda a este correo." : "Questions? Just reply to this email.";
+  const unsub = isSpanish ? "Cancelar suscripci\xF3n" : "Unsubscribe from future emails";
+  const signoff = isSpanish ? "Saludos cordiales" : "Best regards";
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
+        <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 20px;">Xiri Facility Solutions</h1>
+        </div>
+        <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+            <p style="font-size: 15px;">${greeting}</p>
+            <p style="font-size: 15px; line-height: 1.7;">${msg.body}</p>
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="${onboardingUrl}" style="display: inline-block; padding: 14px 32px; background: #0369a1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">
+                    ${msg.cta}
+                </a>
+            </div>
+            <p style="font-size: 14px; color: #64748b;">${reply}</p>
+            <p style="margin-top: 24px; font-size: 14px;">${signoff},<br/><strong>Xiri Facility Solutions Team</strong></p>
+        </div>
+        <div style="text-align: center; margin-top: 16px;">
+            <a href="${unsubscribeUrl}" style="font-size: 11px; color: #94a3b8; text-decoration: underline;">${unsub}</a>
+        </div>
+    </div>`;
+}
 
 // src/triggers/onIncomingMessage.ts
 var import_firestore3 = require("firebase-functions/v2/firestore");
@@ -1274,8 +1389,8 @@ var onIncomingMessage = (0, import_firestore3.onDocumentCreated)("vendor_activit
         inReplyTo: event.params.activityId
       }
     });
-  } catch (error5) {
-    logger3.error("Error processing inbound message:", error5);
+  } catch (error6) {
+    logger3.error("Error processing inbound message:", error6);
   }
 });
 
@@ -1342,11 +1457,11 @@ async function verifyDocument(docType, vendorName, specialty) {
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON found in response");
     return JSON.parse(jsonMatch[0]);
-  } catch (error5) {
-    console.error("AI Verification Failed:", error5);
+  } catch (error6) {
+    console.error("AI Verification Failed:", error6);
     return {
       valid: false,
-      reasoning: "AI Verification Failed: " + error5,
+      reasoning: "AI Verification Failed: " + error6,
       extracted: {}
     };
   }
@@ -1402,8 +1517,8 @@ async function runVerification(vendorId, docType, vendorData) {
         documentType: docType === "COI" ? "Certificate of Insurance" : "W-9 Form"
       });
     }
-  } catch (error5) {
-    console.error(`Verification failed for ${docType}:`, error5);
+  } catch (error6) {
+    console.error(`Verification failed for ${docType}:`, error6);
   }
 }
 
@@ -1572,8 +1687,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db9 = (0, import_firestore6.getFirestore)();
-    const docRef = db9.collection(collection).doc(documentId);
+    const db11 = (0, import_firestore6.getFirestore)();
+    const docRef = db11.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -1642,12 +1757,12 @@ var enrichFromWebsite = (0, import_https.onCall)({
         confidence: scrapedData.confidence
       }
     };
-  } catch (error5) {
-    console.error("Enrichment error:", error5);
-    if (error5 instanceof import_https.HttpsError) {
-      throw error5;
+  } catch (error6) {
+    console.error("Enrichment error:", error6);
+    if (error6 instanceof import_https.HttpsError) {
+      throw error6;
     }
-    throw new import_https.HttpsError("internal", `Enrichment failed: ${error5.message}`);
+    throw new import_https.HttpsError("internal", `Enrichment failed: ${error6.message}`);
   }
 });
 
@@ -1713,14 +1828,14 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
         </p>
     </div>`;
   try {
-    const { data, error: error5 } = await resend2.emails.send({
+    const { data, error: error6 } = await resend2.emails.send({
       from: "Xiri Facility Solutions <onboarding@xiri.ai>",
       to: "chris@xiri.ai",
       subject: `\u{1F3D7}\uFE0F Vendor Onboarded: ${businessName}`,
       html
     });
-    if (error5) {
-      logger4.error("Failed to send onboarding notification:", error5);
+    if (error6) {
+      logger4.error("Failed to send onboarding notification:", error6);
     } else {
       logger4.info(`Notification sent to chris@xiri.ai (Resend ID: ${data?.id})`);
     }
@@ -1802,7 +1917,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger4.error("Error sending vendor confirmation:", err);
     }
   }
-  const db9 = admin10.firestore();
+  const db11 = admin10.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -1827,9 +1942,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "pending_verification";
   }
-  await db9.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db11.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger4.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db9.collection("vendor_activities").add({
+  await db11.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -1838,8 +1953,165 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   });
 });
 
+// src/triggers/dripScheduler.ts
+var import_firestore8 = require("firebase-functions/v2/firestore");
+var admin11 = __toESM(require("firebase-admin"));
+var logger5 = __toESM(require("firebase-functions/logger"));
+init_queueUtils();
+if (!admin11.apps.length) {
+  admin11.initializeApp();
+}
+var db9 = admin11.firestore();
+var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
+  document: "vendors/{vendorId}"
+}, async (event) => {
+  const before = event.data?.before?.data();
+  const after = event.data?.after?.data();
+  if (!before || !after) return;
+  if (before.status === after.status) return;
+  if (after.status !== "awaiting_onboarding") return;
+  const vendorId = event.params.vendorId;
+  const businessName = after.businessName || "Unknown";
+  logger5.info(`Scheduling drip campaign for vendor ${vendorId} (${businessName})`);
+  const now = /* @__PURE__ */ new Date();
+  const followUps = [
+    { dayOffset: 3, sequence: 1, subject: "Quick reminder \u2014 complete your Xiri profile" },
+    { dayOffset: 7, sequence: 2, subject: "Just checking in \u2014 your Xiri application" },
+    { dayOffset: 14, sequence: 3, subject: "Final follow-up \u2014 don't miss out on work opportunities" }
+  ];
+  for (const fu of followUps) {
+    const scheduledDate = new Date(now);
+    scheduledDate.setDate(scheduledDate.getDate() + fu.dayOffset);
+    scheduledDate.setHours(15, 0, 0, 0);
+    await enqueueTask(db9, {
+      vendorId,
+      type: "FOLLOW_UP",
+      scheduledAt: admin11.firestore.Timestamp.fromDate(scheduledDate),
+      metadata: {
+        sequence: fu.sequence,
+        subject: fu.subject,
+        businessName,
+        email: after.email,
+        preferredLanguage: after.preferredLanguage || "en"
+      }
+    });
+  }
+  await db9.collection("vendor_activities").add({
+    vendorId,
+    type: "DRIP_SCHEDULED",
+    description: `Drip campaign scheduled: 3 follow-ups over 14 days for ${businessName}.`,
+    createdAt: /* @__PURE__ */ new Date(),
+    metadata: { followUpCount: 3, schedule: "3d/7d/14d" }
+  });
+  logger5.info(`Drip campaign scheduled for ${vendorId}: 3 follow-ups at days 3, 7, 14`);
+});
+
+// src/triggers/handleUnsubscribe.ts
+var import_https2 = require("firebase-functions/v2/https");
+var admin12 = __toESM(require("firebase-admin"));
+var logger6 = __toESM(require("firebase-functions/logger"));
+init_queueUtils();
+if (!admin12.apps.length) {
+  admin12.initializeApp();
+}
+var db10 = admin12.firestore();
+var handleUnsubscribe = (0, import_https2.onRequest)({
+  cors: true
+}, async (req, res) => {
+  const vendorId = req.query.vendorId;
+  if (!vendorId) {
+    res.status(400).send(renderPage(
+      "Invalid Request",
+      "Missing vendor identifier. If you clicked a link from an email, please try again.",
+      false
+    ));
+    return;
+  }
+  try {
+    const vendorDoc = await db10.collection("vendors").doc(vendorId).get();
+    if (!vendorDoc.exists) {
+      res.status(404).send(renderPage(
+        "Not Found",
+        "We couldn't find your record. You may have already been unsubscribed.",
+        false
+      ));
+      return;
+    }
+    const vendor = vendorDoc.data();
+    const businessName = vendor.businessName || "Vendor";
+    if (vendor.status === "dismissed") {
+      res.status(200).send(renderPage(
+        "Already Unsubscribed",
+        `${businessName} has already been removed from our outreach list. You won't receive any more emails.`,
+        true
+      ));
+      return;
+    }
+    await db10.collection("vendors").doc(vendorId).update({
+      status: "dismissed",
+      statusUpdatedAt: /* @__PURE__ */ new Date(),
+      dismissReason: "unsubscribed",
+      unsubscribedAt: /* @__PURE__ */ new Date()
+    });
+    const cancelledCount = await cancelVendorTasks(db10, vendorId);
+    await db10.collection("vendor_activities").add({
+      vendorId,
+      type: "STATUS_CHANGE",
+      description: `${businessName} unsubscribed via email link. ${cancelledCount} pending tasks cancelled.`,
+      createdAt: /* @__PURE__ */ new Date(),
+      metadata: {
+        from: vendor.status,
+        to: "dismissed",
+        trigger: "unsubscribe_link",
+        cancelledTasks: cancelledCount
+      }
+    });
+    logger6.info(`Vendor ${vendorId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
+    res.status(200).send(renderPage(
+      "Unsubscribed Successfully",
+      `${businessName} has been removed from our outreach list. You won't receive any more emails from Xiri Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
+      true
+    ));
+  } catch (err) {
+    logger6.error(`Error processing unsubscribe for ${vendorId}:`, err);
+    res.status(500).send(renderPage(
+      "Something Went Wrong",
+      'We encountered an error processing your request. Please try again or contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.',
+      false
+    ));
+  }
+});
+function renderPage(title, message, success) {
+  const icon = success ? "\u2705" : "\u26A0\uFE0F";
+  const color = success ? "#059669" : "#dc2626";
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title} \u2014 Xiri Facility Solutions</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f8fafc; }
+        .card { background: white; border-radius: 16px; padding: 48px; max-width: 480px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .icon { font-size: 48px; margin-bottom: 16px; }
+        h1 { color: ${color}; font-size: 24px; margin: 0 0 16px 0; }
+        p { color: #475569; line-height: 1.6; font-size: 15px; margin: 0; }
+        .footer { margin-top: 32px; font-size: 12px; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">${icon}</div>
+        <h1>${title}</h1>
+        <p>${message}</p>
+        <div class="footer">Xiri Facility Solutions</div>
+    </div>
+</body>
+</html>`;
+}
+
 // src/index.ts
-var generateLeads = (0, import_https2.onCall)({
+var generateLeads = (0, import_https3.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: [
     "http://localhost:3001",
@@ -1870,7 +2142,7 @@ var generateLeads = (0, import_https2.onCall)({
   const hasActiveContract = data.hasActiveContract || false;
   const previewOnly = data.previewOnly || false;
   if (!query || !location) {
-    throw new import_https2.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https3.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`Analyzing leads for query: ${query}, location: ${location}${previewOnly ? " (PREVIEW MODE)" : ""}`);
@@ -1884,12 +2156,12 @@ var generateLeads = (0, import_https2.onCall)({
       // Include vendor data in response for preview mode
       vendors: previewOnly ? result.vendors : void 0
     };
-  } catch (error5) {
-    console.error("Error in generateLeads:", error5);
-    throw new import_https2.HttpsError("internal", error5.message || "An internal error occurred.");
+  } catch (error6) {
+    console.error("Error in generateLeads:", error6);
+    throw new import_https3.HttpsError("internal", error6.message || "An internal error occurred.");
   }
 });
-var clearPipeline = (0, import_https2.onCall)({
+var clearPipeline = (0, import_https3.onCall)({
   cors: [
     "http://localhost:3001",
     "http://localhost:3000",
@@ -1918,11 +2190,11 @@ var clearPipeline = (0, import_https2.onCall)({
     chunks.push(currentBatch.commit());
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
-  } catch (error5) {
-    throw new import_https2.HttpsError("internal", error5.message);
+  } catch (error6) {
+    throw new import_https3.HttpsError("internal", error6.message);
   }
 });
-var runRecruiterAgent = (0, import_https2.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
+var runRecruiterAgent = (0, import_https3.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
   const rawVendors = req.body.vendors || [
     { name: "ABC Cleaning", services: "We do medical office cleaning and terminal cleaning." },
     { name: "Joe's Pizza", services: "Best pizza in town" },
@@ -1931,7 +2203,7 @@ var runRecruiterAgent = (0, import_https2.onRequest)({ secrets: ["GEMINI_API_KEY
   const result = await analyzeVendorLeads(rawVendors, "Commercial Cleaning");
   res.json(result);
 });
-var testSendEmail = (0, import_https2.onCall)({
+var testSendEmail = (0, import_https3.onCall)({
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
   cors: [
     "http://localhost:3001",
@@ -1945,14 +2217,14 @@ var testSendEmail = (0, import_https2.onCall)({
   const { sendTemplatedEmail: sendTemplatedEmail2 } = await Promise.resolve().then(() => (init_emailUtils(), emailUtils_exports));
   const { vendorId, templateId } = request.data;
   if (!vendorId || !templateId) {
-    throw new import_https2.HttpsError("invalid-argument", "Missing vendorId or templateId");
+    throw new import_https3.HttpsError("invalid-argument", "Missing vendorId or templateId");
   }
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
-  } catch (error5) {
-    console.error("Error sending test email:", error5);
-    throw new import_https2.HttpsError("internal", error5.message || "Failed to send email");
+  } catch (error6) {
+    console.error("Error sending test email:", error6);
+    throw new import_https3.HttpsError("internal", error6.message || "Failed to send email");
   }
 });
 // Annotate the CommonJS export names for ESM import in node:
@@ -1960,6 +2232,8 @@ var testSendEmail = (0, import_https2.onCall)({
   clearPipeline,
   enrichFromWebsite,
   generateLeads,
+  handleUnsubscribe,
+  onAwaitingOnboarding,
   onDocumentUploaded,
   onIncomingMessage,
   onOnboardingComplete,
