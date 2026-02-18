@@ -943,13 +943,20 @@ export default function AuditWizardPage() {
                                         placeholder="Phone Number"
                                         value={contact.phone}
                                         onChange={e => {
-                                            const formatted = e.target.value
-                                                .replace(/\D/g, '') // Remove non-digits
-                                                .replace(/^(\d{3})(\d{3})(\d{4}).*/, '($1) $2-$3') // Format as (xxx) xxx-xxxx
-                                                .replace(/^(\d{3})(\d{3})(\d{0,4}).*/, '($1) $2-$3') // Partial format
-                                                .replace(/^(\d{3})(\d{0,3}).*/, '($1) $2') // Partial format
-                                                .replace(/^(\d{0,3})/, '($1'); // Start format
-                                            setContact({ ...contact, phone: formatted.replace(/\(\)|\s-$/, '').trim() });
+                                            const input = e.target.value.replace(/\D/g, ''); // Remove all non-digits
+                                            let formatted = '';
+
+                                            if (input.length > 0) {
+                                                formatted = '(' + input.substring(0, 3);
+                                                if (input.length >= 3) {
+                                                    formatted += ') ' + input.substring(3, 6);
+                                                }
+                                                if (input.length >= 6) {
+                                                    formatted += '-' + input.substring(6, 10);
+                                                }
+                                            }
+
+                                            setContact({ ...contact, phone: formatted });
                                         }}
                                         maxLength={14}
                                         className="w-full p-4 rounded-xl border border-gray-200"
