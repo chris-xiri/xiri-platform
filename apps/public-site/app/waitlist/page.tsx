@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Loader2, ArrowRight, MapPin } from "lucide-react";
 
-export default function WaitlistPage() {
+function WaitlistContent() {
     const searchParams = useSearchParams();
     const zip = searchParams.get("zip");
     const [email, setEmail] = useState("");
@@ -77,5 +77,19 @@ export default function WaitlistPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function WaitlistPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+                <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-400" />
+                </div>
+            </div>
+        }>
+            <WaitlistContent />
+        </Suspense>
     );
 }
