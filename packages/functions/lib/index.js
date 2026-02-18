@@ -1496,6 +1496,10 @@ var generateLeads = (0, import_https2.onCall)({
     // Dashboard Production
     "https://xiri-dashboard.vercel.app",
     // Dashboard Vercel
+    "https://xiri-dashboard-git-develop-xiri-facility-solutions.vercel.app",
+    // Vercel develop branch
+    /https:\/\/xiri-dashboard-.*\.vercel\.app$/,
+    // All Vercel preview deployments
     "https://xiri-facility-solutions.web.app",
     // Firebase Hosting
     "https://xiri-facility-solutions.firebaseapp.com"
