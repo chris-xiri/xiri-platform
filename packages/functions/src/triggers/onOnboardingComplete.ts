@@ -91,11 +91,94 @@ export const onOnboardingComplete = onDocumentUpdated({
         logger.error('Error sending onboarding notification:', err);
     }
 
+    // ─── Vendor Confirmation Email ───
+    if (email && email !== 'N/A') {
+        const isSpanish = lang === 'es';
+
+        const vendorHtml = isSpanish ? `
+    <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px; color: #1e293b;">
+        <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 22px;">¡Recibimos su solicitud!</h1>
+        </div>
+        <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+            <p>Hola <strong>${businessName}</strong>,</p>
+            <p>Gracias por completar su solicitud para unirse a la Red de Contratistas de Xiri. Hemos recibido su información y nuestro equipo la revisará en breve.</p>
+
+            <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <h3 style="margin: 0 0 12px 0; color: #0c4a6e; font-size: 15px;">Lo que recibimos:</h3>
+                <p style="margin: 4px 0; font-size: 14px;">📧 Email: ${email}</p>
+                <p style="margin: 4px 0; font-size: 14px;">📞 Teléfono: ${phone}</p>
+                <p style="margin: 4px 0; font-size: 14px;">📋 Modalidad: ${track === 'FAST_TRACK' ? '⚡ Contrato Express' : '🤝 Red de Socios'}</p>
+            </div>
+
+            <h3 style="color: #0c4a6e; font-size: 15px;">Próximos Pasos:</h3>
+            <ol style="font-size: 14px; padding-left: 20px;">
+                <li>Nuestro equipo revisará sus documentos e información</li>
+                <li>Recibirá una confirmación cuando su cuenta esté verificada</li>
+                <li>Una vez aprobado, comenzará a recibir oportunidades de trabajo</li>
+            </ol>
+
+            <p style="font-size: 14px; color: #64748b;">Si tiene alguna pregunta, simplemente responda a este correo.</p>
+
+            <p style="margin-top: 24px;">Saludos cordiales,<br/><strong>Equipo Xiri Facility Solutions</strong></p>
+        </div>
+    </div>` : `
+    <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px; color: #1e293b;">
+        <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 22px;">We've received your application!</h1>
+        </div>
+        <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+            <p>Hi <strong>${businessName}</strong>,</p>
+            <p>Thank you for completing your application to join the Xiri Contractor Network. We've received your information and our team will review it shortly.</p>
+
+            <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <h3 style="margin: 0 0 12px 0; color: #0c4a6e; font-size: 15px;">What we received:</h3>
+                <p style="margin: 4px 0; font-size: 14px;">📧 Email: ${email}</p>
+                <p style="margin: 4px 0; font-size: 14px;">📞 Phone: ${phone}</p>
+                <p style="margin: 4px 0; font-size: 14px;">📋 Track: ${track === 'FAST_TRACK' ? '⚡ Express Contract' : '🤝 Partner Network'}</p>
+            </div>
+
+            <h3 style="color: #0c4a6e; font-size: 15px;">What happens next:</h3>
+            <ol style="font-size: 14px; padding-left: 20px;">
+                <li>Our team will review your documents and information</li>
+                <li>You'll receive a confirmation once your account is verified</li>
+                <li>Once approved, you'll start receiving work opportunities</li>
+            </ol>
+
+            <p style="font-size: 14px; color: #64748b;">If you have any questions, just reply to this email.</p>
+
+            <p style="margin-top: 24px;">Best regards,<br/><strong>Xiri Facility Solutions Team</strong></p>
+        </div>
+    </div>`;
+
+        const vendorSubject = isSpanish
+            ? `✅ Solicitud recibida — ${businessName}`
+            : `✅ Application received — ${businessName}`;
+
+        try {
+            const { error: vendorError } = await resend.emails.send({
+                from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+                replyTo: 'chris@xiri.ai',
+                to: email,
+                subject: vendorSubject,
+                html: vendorHtml,
+            });
+
+            if (vendorError) {
+                logger.error('Failed to send vendor confirmation:', vendorError);
+            } else {
+                logger.info(`Vendor confirmation sent to ${email}`);
+            }
+        } catch (err) {
+            logger.error('Error sending vendor confirmation:', err);
+        }
+    }
+
     // Log activity
     await admin.firestore().collection("vendor_activities").add({
         vendorId,
         type: "ONBOARDING_COMPLETE",
-        description: `${businessName} completed onboarding form (${track}). Notification sent to chris@xiri.ai.`,
+        description: `${businessName} completed onboarding form (${track}). Notifications sent to chris@xiri.ai and ${email}.`,
         createdAt: new Date(),
         metadata: { track, email, phone, lang }
     });
