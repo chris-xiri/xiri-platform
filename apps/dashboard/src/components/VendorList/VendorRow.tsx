@@ -5,6 +5,7 @@ import { Vendor } from "@xiri/shared";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Check, X, Eye, Briefcase, Zap } from "lucide-react";
 import Link from "next/link";
 import { getStatusColor, getScoreColor } from "./utils";
@@ -17,9 +18,11 @@ interface VendorRowProps {
     onUpdateStatus: (id: string, newStatus: Vendor['status'], options?: { onboardingTrack?: 'FAST_TRACK' | 'STANDARD', hasActiveContract?: boolean }) => void;
     onSelect?: (id: string) => void;
     isActive?: boolean;
+    isSelected?: boolean;
+    onSelectChange?: (checked: boolean) => void;
 }
 
-export function VendorRow({ vendor, index, showActions, isRecruitmentMode = false, onUpdateStatus, onSelect, isActive }: VendorRowProps) {
+export function VendorRow({ vendor, index, showActions, isRecruitmentMode = false, onUpdateStatus, onSelect, isActive, isSelected, onSelectChange }: VendorRowProps) {
     const isGrayedOut = isRecruitmentMode && (vendor.status || 'pending_review').toLowerCase() !== 'pending_review';
 
     // Helper to parse legacy address strings
@@ -83,6 +86,15 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                 ${isActive ? 'bg-primary/10 hover:bg-primary/15 border-l-4 border-l-primary' : 'hover:bg-muted/50'}
             `}
         >
+            {onSelectChange && (
+                <TableCell className="text-center py-2" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={onSelectChange}
+                        aria-label="Select vendor"
+                    />
+                </TableCell>
+            )}
             <TableCell className="font-medium py-2">{index + 1}</TableCell>
             <TableCell className="py-2">
                 <Link href={detailLink} onClick={handleRowClick} className="block group cursor-pointer">

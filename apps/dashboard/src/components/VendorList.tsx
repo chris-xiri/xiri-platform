@@ -6,8 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Users, Loader2, X, Search } from "lucide-react";
-import { collection, onSnapshot, query, orderBy, limit, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Users, Loader2, X, Search, Trash2 } from "lucide-react";
+import { collection, onSnapshot, query, orderBy, limit, doc, updateDoc, serverTimestamp, writeBatch, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Vendor } from "@xiri/shared";
 import { useVendorFilter } from "@/hooks/useVendorFilter";
@@ -33,6 +44,8 @@ export default function VendorList({
 }: VendorListProps) {
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     const [processedOpen, setProcessedOpen] = useState(false);
 
@@ -126,6 +139,42 @@ export default function VendorList({
         }
     };
 
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedVendors(new Set(displayVendors.map(v => v.id!)));
+        } else {
+            setSelectedVendors(new Set());
+        }
+    };
+
+    const handleSelectVendor = (vendorId: string, checked: boolean) => {
+        const newSelected = new Set(selectedVendors);
+        if (checked) {
+            newSelected.add(vendorId);
+        } else {
+            newSelected.delete(vendorId);
+        }
+        setSelectedVendors(newSelected);
+    };
+
+    const handleBulkDelete = async () => {
+        try {
+            const batch = writeBatch(db);
+            selectedVendors.forEach(vendorId => {
+                const vendorRef = doc(db, "vendors", vendorId);
+                batch.delete(vendorRef);
+            });
+            await batch.commit();
+            setSelectedVendors(new Set());
+            setShowDeleteDialog(false);
+        } catch (error) {
+            console.error("Error deleting vendors:", error);
+        }
+    };
+
+    const allSelected = displayVendors.length > 0 && selectedVendors.size === displayVendors.length;
+    const someSelected = selectedVendors.size > 0 && selectedVendors.size < displayVendors.length;
+
     if (loading) {
         return (
             <Card className="shadow-sm h-full flex items-center justify-center border-border bg-card/50 backdrop-blur-sm">
@@ -187,6 +236,34 @@ export default function VendorList({
                 </div>
             </div>
 
+            {/* Bulk Actions Bar */}
+            {selectedVendors.size > 0 && (
+                <div className="px-3 py-2 bg-blue-50 border-b border-blue-200 flex items-center justify-between">
+                    <span className="text-sm font-medium text-blue-900">
+                        {selectedVendors.size} selected
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setShowDeleteDialog(true)}
+                            className="h-8 text-sm"
+                        >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedVendors(new Set())}
+                            className="h-8 text-sm"
+                        >
+                            Clear
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             <CardContent className="p-0 flex-1 overflow-hidden flex flex-col">
                 {displayVendors.length === 0 && (!isRecruitmentMode || processedVendors.length === 0) ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-muted/50">
@@ -201,6 +278,13 @@ export default function VendorList({
                             <table className="w-full caption-bottom text-sm text-foreground">
                                 <TableHeader className="bg-muted/50 shadow-sm">
                                     <TableRow className="border-b border-border hover:bg-muted/50">
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 w-10 shadow-sm text-center">
+                                            <Checkbox
+                                                checked={allSelected}
+                                                onCheckedChange={handleSelectAll}
+                                                aria-label="Select all vendors"
+                                            />
+                                        </TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 w-10 shadow-sm text-center text-xs">#</TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Vendor</TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">City</TableHead>
@@ -223,6 +307,8 @@ export default function VendorList({
                                             onUpdateStatus={handleUpdateStatus}
                                             onSelect={onSelectVendor}
                                             isActive={selectedVendorId === vendor.id}
+                                            isSelected={selectedVendors.has(vendor.id!)}
+                                            onSelectChange={(checked: boolean) => handleSelectVendor(vendor.id!, checked)}
                                         />
                                     ))}
 
@@ -264,6 +350,8 @@ export default function VendorList({
                                     vendor={vendor}
                                     index={index}
                                     isRecruitmentMode={isRecruitmentMode}
+                                    isSelected={selectedVendors.has(vendor.id!)}
+                                    onSelectChange={(checked: boolean) => handleSelectVendor(vendor.id!, checked)}
                                 />
                             ))}
 
@@ -285,6 +373,8 @@ export default function VendorList({
                                                     vendor={vendor}
                                                     index={index}
                                                     isRecruitmentMode={isRecruitmentMode}
+                                                    isSelected={selectedVendors.has(vendor.id!)}
+                                                    onSelectChange={(checked: boolean) => handleSelectVendor(vendor.id!, checked)}
                                                 />
                                             ))}
                                         </div>
@@ -295,6 +385,25 @@ export default function VendorList({
                     </>
                 )}
             </CardContent>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Vendors?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete {selectedVendors.size} vendor{selectedVendors.size > 1 ? 's' : ''}?
+                            This action cannot be undone and will permanently remove the vendor{selectedVendors.size > 1 ? 's' : ''} from Firestore.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Card>
     );
 }

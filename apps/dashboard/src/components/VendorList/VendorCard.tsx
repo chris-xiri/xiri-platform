@@ -3,6 +3,7 @@
 
 import { Vendor } from "@xiri/shared";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { getStatusColor, getScoreColor } from "./utils";
 
@@ -10,13 +11,24 @@ interface VendorCardProps {
     vendor: Vendor;
     index: number;
     isRecruitmentMode?: boolean;
+    isSelected?: boolean;
+    onSelectChange?: (checked: boolean) => void;
 }
 
-export function VendorCard({ vendor, index, isRecruitmentMode = false }: VendorCardProps) {
+export function VendorCard({ vendor, index, isRecruitmentMode = false, isSelected, onSelectChange }: VendorCardProps) {
     return (
         <div className="border border-border rounded-lg p-3 space-y-3 bg-card shadow-sm">
             <div className="flex items-start justify-between">
                 <div className="flex-1 flex gap-2">
+                    {onSelectChange && (
+                        <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={onSelectChange}
+                            aria-label="Select vendor"
+                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                            className="mt-1"
+                        />
+                    )}
                     <span className="text-muted-foreground font-medium text-xs mt-0.5">#{index + 1}</span>
                     <div>
                         <Link href={isRecruitmentMode ? `/supply/recruitment/${vendor.id}` : `/supply/crm/${vendor.id}`} className="hover:opacity-80 transition-opacity">
