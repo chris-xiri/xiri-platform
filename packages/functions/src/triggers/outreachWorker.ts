@@ -2,7 +2,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from 'firebase-admin';
 import * as logger from "firebase-functions/logger";
 import { fetchPendingTasks, updateTaskStatus, enqueueTask, QueueItem } from "../utils/queueUtils";
-import { getNextBusinessSlot } from "../utils/timeUtils";
+// import { getNextBusinessSlot } from "../utils/timeUtils"; // TODO: Re-enable for production
 import { generateOutreachContent } from "../agents/outreach";
 import { sendEmail } from "../utils/emailUtils";
 
@@ -89,8 +89,10 @@ async function handleGenerate(task: QueueItem) {
         }
     });
 
-    // 2. Calculate Schedule
-    const scheduledTime = getNextBusinessSlot(vendorData.hasActiveContract ? "URGENT" : "SUPPLY");
+    // 2. Schedule SEND immediately (next queue cycle ~1 min)
+    // TODO: Re-enable business-hours scheduling when in production
+    // const scheduledTime = getNextBusinessSlot(vendorData.hasActiveContract ? "URGENT" : "SUPPLY");
+    const scheduledTime = new Date();
 
     // 3. Enqueue SEND Task
     await enqueueTask(db, {

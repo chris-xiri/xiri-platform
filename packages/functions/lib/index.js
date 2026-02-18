@@ -1166,7 +1166,7 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
 async function handleGenerate(task) {
   logger2.info(`Generating content for task ${task.id}`);
   const vendorData = task.metadata;
-  const outreachResult = await generateOutreachContent(vendorData, vendorData.phone ? "SMS" : "EMAIL");
+  const outreachResult = await generateOutreachContent(vendorData, "EMAIL");
   if (outreachResult.error) {
     throw new Error("AI Generation Failed: " + (outreachResult.sms || "Unknown Error"));
   }
@@ -1204,7 +1204,7 @@ async function handleSend(task) {
   const vendor = vendorDoc.exists ? vendorDoc.data() : null;
   const vendorEmail = vendor?.email || task.metadata?.email?.to;
   let sendSuccess = false;
-  if (task.metadata.channel === "EMAIL" && vendorEmail) {
+  if (vendorEmail) {
     const emailData = task.metadata.email;
     const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${(emailData?.body || "").replace(/\n/g, "<br/>")}</div>`;
     sendSuccess = await sendEmail(
@@ -1216,11 +1216,8 @@ async function handleSend(task) {
       logger2.error(`Failed to send email to ${vendorEmail} for task ${task.id}`);
       throw new Error(`Resend email failed for vendor ${task.vendorId}`);
     }
-  } else if (task.metadata.channel === "SMS") {
-    logger2.info(`SMS send deferred for task ${task.id} (Twilio not yet integrated)`);
-    sendSuccess = true;
   } else {
-    logger2.warn(`No valid channel/email for task ${task.id}. Channel: ${task.metadata.channel}, Email: ${vendorEmail}`);
+    logger2.warn(`No email for task ${task.id}. Channel: ${task.metadata.channel}`);
     sendSuccess = false;
   }
   await db5.collection("vendor_activities").add({
