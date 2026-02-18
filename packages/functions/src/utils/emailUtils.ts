@@ -96,12 +96,66 @@ BODY:
 }
 
 /**
- * Extract ZIP code from address string
+ * Parse a raw US address string into structured components.
+ * Handles formats like:
+ * - "123 Main St, New Hyde Park, NY 11040"
+ * - "123 Main St, New Hyde Park, NY"
+ * - "New Hyde Park, NY 11040"
+ */
+export function parseAddress(raw?: string): {
+    streetAddress: string;
+    city: string;
+    state: string;
+    zip: string;
+} {
+    const empty = { streetAddress: '', city: '', state: '', zip: '' };
+    if (!raw || raw === 'Unknown') return empty;
+
+    // Extract ZIP first
+    const zipMatch = raw.match(/\b(\d{5})(-\d{4})?\b/);
+    const zip = zipMatch ? zipMatch[1] : '';
+
+    // Remove ZIP from string for easier parsing
+    let cleaned = raw.replace(/\b\d{5}(-\d{4})?\b/, '').trim().replace(/,\s*$/, '');
+
+    // Split by commas
+    const parts = cleaned.split(',').map(p => p.trim()).filter(Boolean);
+
+    if (parts.length >= 3) {
+        // "123 Main St, New Hyde Park, NY"
+        return {
+            streetAddress: parts[0],
+            city: parts[1],
+            state: parts[2].replace(/[^A-Za-z]/g, '').substring(0, 2).toUpperCase(),
+            zip
+        };
+    } else if (parts.length === 2) {
+        // Could be "123 Main St, New Hyde Park" or "New Hyde Park, NY"
+        const stateMatch = parts[1].match(/^([A-Z]{2})\b/);
+        if (stateMatch) {
+            // "New Hyde Park, NY" — no street
+            return { streetAddress: '', city: parts[0], state: stateMatch[1], zip };
+        }
+        // "123 Main St, New Hyde Park" — no state
+        return { streetAddress: parts[0], city: parts[1], state: '', zip };
+    } else if (parts.length === 1) {
+        // Single string — try to extract state
+        const stateMatch = parts[0].match(/\b([A-Z]{2})\b/);
+        if (stateMatch) {
+            const beforeState = parts[0].substring(0, parts[0].indexOf(stateMatch[1])).trim();
+            return { streetAddress: '', city: beforeState, state: stateMatch[1], zip };
+        }
+        return { streetAddress: '', city: parts[0], state: '', zip };
+    }
+
+    return empty;
+}
+
+/**
+ * Extract ZIP code from address string (legacy wrapper)
  */
 function extractZipFromAddress(address?: string): string | null {
-    if (!address) return null;
-    const zipMatch = address.match(/\b\d{5}\b/);
-    return zipMatch ? zipMatch[0] : null;
+    return parseAddress(address).zip || null;
 }
 
 /**

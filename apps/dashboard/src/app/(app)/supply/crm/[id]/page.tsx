@@ -204,8 +204,8 @@ export default function CRMDetailPage(props: PageProps) {
                                                 <div className="flex items-start gap-2">
                                                     <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
                                                     <div className="text-sm">
-                                                        {vendor.address}<br />
-                                                        {vendor.city}, {vendor.state} {vendor.zip}
+                                                        {vendor.streetAddress || vendor.address}<br />
+                                                        {[vendor.city, vendor.state].filter(Boolean).join(', ')} {vendor.zip}
                                                     </div>
                                                 </div>
                                             </div>

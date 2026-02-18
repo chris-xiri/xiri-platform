@@ -30,63 +30,19 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/utils/queueUtils.ts
-var queueUtils_exports = {};
-__export(queueUtils_exports, {
-  cancelVendorTasks: () => cancelVendorTasks,
-  enqueueTask: () => enqueueTask,
-  fetchPendingTasks: () => fetchPendingTasks,
-  updateTaskStatus: () => updateTaskStatus
-});
-async function enqueueTask(db12, task) {
-  return db12.collection(COLLECTION).add({
-    ...task,
-    status: "PENDING",
-    retryCount: 0,
-    createdAt: /* @__PURE__ */ new Date()
-  });
-}
-async function fetchPendingTasks(db12) {
-  const now = admin2.firestore.Timestamp.now();
-  const snapshot = await db12.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-}
-async function updateTaskStatus(db12, taskId, status, updates = {}) {
-  await db12.collection(COLLECTION).doc(taskId).update({
-    status,
-    ...updates
-  });
-}
-async function cancelVendorTasks(db12, vendorId) {
-  const snapshot = await db12.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db12.batch();
-  snapshot.docs.forEach((doc) => {
-    batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
-  });
-  await batch.commit();
-  return snapshot.size;
-}
-var admin2, COLLECTION;
-var init_queueUtils = __esm({
-  "src/utils/queueUtils.ts"() {
-    "use strict";
-    admin2 = __toESM(require("firebase-admin"));
-    COLLECTION = "outreach_queue";
-  }
-});
-
 // src/utils/emailUtils.ts
 var emailUtils_exports = {};
 __export(emailUtils_exports, {
   generatePersonalizedEmail: () => generatePersonalizedEmail,
   getTemplate: () => getTemplate,
+  parseAddress: () => parseAddress,
   replaceVariables: () => replaceVariables,
   sendEmail: () => sendEmail,
   sendTemplatedEmail: () => sendTemplatedEmail
 });
 async function getTemplate(templateId) {
   try {
-    const doc = await db4.collection("templates").doc(templateId).get();
+    const doc = await db2.collection("templates").doc(templateId).get();
     if (!doc.exists) {
       console.error(`Template ${templateId} not found`);
       return null;
@@ -104,7 +60,7 @@ async function generatePersonalizedEmail(templateId, variables) {
   try {
     const template = await getTemplate(templateId);
     if (!template) return null;
-    const model3 = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model3 = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const prompt = `You are a professional email writer for Xiri Facility Solutions.
 
 Take this email template and personalize it while maintaining the core message:
@@ -145,14 +101,42 @@ BODY:
     return null;
   }
 }
+function parseAddress(raw) {
+  const empty = { streetAddress: "", city: "", state: "", zip: "" };
+  if (!raw || raw === "Unknown") return empty;
+  const zipMatch = raw.match(/\b(\d{5})(-\d{4})?\b/);
+  const zip = zipMatch ? zipMatch[1] : "";
+  let cleaned = raw.replace(/\b\d{5}(-\d{4})?\b/, "").trim().replace(/,\s*$/, "");
+  const parts = cleaned.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length >= 3) {
+    return {
+      streetAddress: parts[0],
+      city: parts[1],
+      state: parts[2].replace(/[^A-Za-z]/g, "").substring(0, 2).toUpperCase(),
+      zip
+    };
+  } else if (parts.length === 2) {
+    const stateMatch = parts[1].match(/^([A-Z]{2})\b/);
+    if (stateMatch) {
+      return { streetAddress: "", city: parts[0], state: stateMatch[1], zip };
+    }
+    return { streetAddress: parts[0], city: parts[1], state: "", zip };
+  } else if (parts.length === 1) {
+    const stateMatch = parts[0].match(/\b([A-Z]{2})\b/);
+    if (stateMatch) {
+      const beforeState = parts[0].substring(0, parts[0].indexOf(stateMatch[1])).trim();
+      return { streetAddress: "", city: beforeState, state: stateMatch[1], zip };
+    }
+    return { streetAddress: "", city: parts[0], state: "", zip };
+  }
+  return empty;
+}
 function extractZipFromAddress(address) {
-  if (!address) return null;
-  const zipMatch = address.match(/\b\d{5}\b/);
-  return zipMatch ? zipMatch[0] : null;
+  return parseAddress(address).zip || null;
 }
 async function sendTemplatedEmail(vendorId, templateId, customVariables) {
   try {
-    const vendorDoc = await db4.collection("vendors").doc(vendorId).get();
+    const vendorDoc = await db2.collection("vendors").doc(vendorId).get();
     if (!vendorDoc.exists) {
       console.error(`Vendor ${vendorId} not found`);
       return;
@@ -183,11 +167,11 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
       console.log(`\u2705 Email sent to ${vendor?.companyName}: ${email.subject} (Resend ID: ${data?.id})`);
     } catch (error6) {
       console.error("\u274C Resend API error:", error6);
-      await db4.collection("vendor_activities").add({
+      await db2.collection("vendor_activities").add({
         vendorId,
         type: "EMAIL_FAILED",
         description: `Failed to send email: ${email.subject}`,
-        createdAt: admin5.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin2.firestore.FieldValue.serverTimestamp(),
         metadata: {
           templateId,
           subject: email.subject,
@@ -197,11 +181,11 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
       });
       return;
     }
-    await db4.collection("vendor_activities").add({
+    await db2.collection("vendor_activities").add({
       vendorId,
       type: "EMAIL_SENT",
       description: `Email sent: ${email.subject}`,
-      createdAt: admin5.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin2.firestore.FieldValue.serverTimestamp(),
       metadata: {
         templateId,
         subject: email.subject,
@@ -236,16 +220,61 @@ async function sendEmail(to, subject, html, attachments) {
     return false;
   }
 }
-var admin5, import_generative_ai4, import_resend, db4, genAI3, resend;
+var admin2, import_generative_ai, import_resend, db2, genAI, resend;
 var init_emailUtils = __esm({
   "src/utils/emailUtils.ts"() {
     "use strict";
-    admin5 = __toESM(require("firebase-admin"));
-    import_generative_ai4 = require("@google/generative-ai");
+    admin2 = __toESM(require("firebase-admin"));
+    import_generative_ai = require("@google/generative-ai");
     import_resend = require("resend");
-    db4 = admin5.firestore();
-    genAI3 = new import_generative_ai4.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+    db2 = admin2.firestore();
+    genAI = new import_generative_ai.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     resend = new import_resend.Resend(process.env.RESEND_API_KEY || "re_dummy_key");
+  }
+});
+
+// src/utils/queueUtils.ts
+var queueUtils_exports = {};
+__export(queueUtils_exports, {
+  cancelVendorTasks: () => cancelVendorTasks,
+  enqueueTask: () => enqueueTask,
+  fetchPendingTasks: () => fetchPendingTasks,
+  updateTaskStatus: () => updateTaskStatus
+});
+async function enqueueTask(db12, task) {
+  return db12.collection(COLLECTION).add({
+    ...task,
+    status: "PENDING",
+    retryCount: 0,
+    createdAt: /* @__PURE__ */ new Date()
+  });
+}
+async function fetchPendingTasks(db12) {
+  const now = admin3.firestore.Timestamp.now();
+  const snapshot = await db12.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+}
+async function updateTaskStatus(db12, taskId, status, updates = {}) {
+  await db12.collection(COLLECTION).doc(taskId).update({
+    status,
+    ...updates
+  });
+}
+async function cancelVendorTasks(db12, vendorId) {
+  const snapshot = await db12.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db12.batch();
+  snapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
+  });
+  await batch.commit();
+  return snapshot.size;
+}
+var admin3, COLLECTION;
+var init_queueUtils = __esm({
+  "src/utils/queueUtils.ts"() {
+    "use strict";
+    admin3 = __toESM(require("firebase-admin"));
+    COLLECTION = "outreach_queue";
   }
 });
 
@@ -285,10 +314,11 @@ try {
 }
 
 // src/agents/recruiter.ts
-var import_generative_ai = require("@google/generative-ai");
+var import_generative_ai2 = require("@google/generative-ai");
+init_emailUtils();
 var API_KEY = process.env.GEMINI_API_KEY || "";
-var genAI = new import_generative_ai.GoogleGenerativeAI(API_KEY);
-var model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+var genAI2 = new import_generative_ai2.GoogleGenerativeAI(API_KEY);
+var model = genAI2.getGenerativeModel({ model: "gemini-2.0-flash" });
 var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false, previewOnly = false) => {
   console.log("!!! RECRUITER AGENT UPDATED - V3 (Deduplication) !!!");
   let analyzed = 0;
@@ -377,19 +407,21 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
         }
         const bName = originalVendor.name || originalVendor.companyName || originalVendor.title || "Unknown Vendor";
         const vendorRef = db.collection("vendors").doc();
+        const rawAddr = originalVendor.location || item.address || "Unknown";
+        const parsed = parseAddress(rawAddr);
         const newVendor = {
           id: vendorRef.id,
           businessName: bName,
           capabilities: item.specialty ? [item.specialty] : [],
-          address: originalVendor.location || item.address || "Unknown",
-          city: item.city || void 0,
-          state: item.state || void 0,
-          zip: item.zip || void 0,
+          address: rawAddr,
+          streetAddress: parsed.streetAddress || void 0,
+          city: item.city || parsed.city || void 0,
+          state: item.state || parsed.state || void 0,
+          zip: item.zip || parsed.zip || void 0,
           country: item.country || "USA",
           phone: originalVendor.phone || item.phone || void 0,
           email: originalVendor.email || item.email || void 0,
           website: originalVendor.website || item.website || void 0,
-          // businessType: item.businessType || "Unknown", // Removing as it's not in shared Vendor? Wait, checking shared
           fitScore: item.fitScore,
           hasActiveContract,
           onboardingTrack: hasActiveContract ? "FAST_TRACK" : "STANDARD",
@@ -423,11 +455,17 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
     for (const originalVendor of vendorsToAnalyze) {
       const vendorRef = db.collection("vendors").doc();
       const bName = originalVendor.name || originalVendor.companyName || originalVendor.title || "Unknown Vendor";
+      const rawAddr = originalVendor.location || originalVendor.address || "Unknown";
+      const parsed = parseAddress(rawAddr);
       const newVendor = {
         id: vendorRef.id,
         businessName: bName,
         capabilities: [],
-        address: originalVendor.location || originalVendor.address || "Unknown",
+        address: rawAddr,
+        streetAddress: parsed.streetAddress || void 0,
+        city: parsed.city || void 0,
+        state: parsed.state || void 0,
+        zip: parsed.zip || void 0,
         phone: originalVendor.phone || void 0,
         email: originalVendor.email || void 0,
         website: originalVendor.website || void 0,
@@ -516,12 +554,12 @@ var getMockVendors = (query, location) => {
 var import_firestore = require("firebase-functions/v2/firestore");
 var import_firestore2 = require("firebase-functions/v2/firestore");
 var import_params = require("firebase-functions/params");
-var admin3 = __toESM(require("firebase-admin"));
+var admin4 = __toESM(require("firebase-admin"));
 var logger = __toESM(require("firebase-functions/logger"));
 
 // src/utils/websiteScraper.ts
 var cheerio = __toESM(require("cheerio"));
-var import_generative_ai2 = require("@google/generative-ai");
+var import_generative_ai3 = require("@google/generative-ai");
 async function scrapeWebsite(url, geminiApiKey) {
   try {
     const response = await fetch(url, {
@@ -662,7 +700,7 @@ async function scrapeContactPage(url) {
 }
 async function extractWithAI(html, geminiApiKey) {
   try {
-    const genAI5 = new import_generative_ai2.GoogleGenerativeAI(geminiApiKey);
+    const genAI5 = new import_generative_ai3.GoogleGenerativeAI(geminiApiKey);
     const model3 = genAI5.getGenerativeModel({ model: "gemini-1.5-flash" });
     const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 1e4);
     const prompt = `Extract business contact information from this website content. Return ONLY a JSON object with these fields (use null if not found):
@@ -813,10 +851,10 @@ function determinePhoneType(digits) {
 }
 
 // src/triggers/onVendorApproved.ts
-if (!admin3.apps.length) {
-  admin3.initializeApp();
+if (!admin4.apps.length) {
+  admin4.initializeApp();
 }
-var db2 = admin3.firestore();
+var db3 = admin4.firestore();
 var GEMINI_API_KEY = (0, import_params.defineSecret)("GEMINI_API_KEY");
 console.log("Loading onVendorApproved trigger...");
 var onVendorApproved = (0, import_firestore.onDocumentUpdated)({
@@ -846,7 +884,7 @@ var onVendorCreated = (0, import_firestore2.onDocumentCreated)({
 });
 async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
   try {
-    await db2.collection("vendor_activities").add({
+    await db3.collection("vendor_activities").add({
       vendorId,
       type: "STATUS_CHANGE",
       description: "Vendor approved \u2014 starting onboarding pipeline.",
@@ -866,11 +904,11 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
     }
     if (vendorWebsite) {
       logger.info(`Vendor ${vendorId} has no email but has website. Enriching...`);
-      await db2.collection("vendors").doc(vendorId).update({
+      await db3.collection("vendors").doc(vendorId).update({
         outreachStatus: "ENRICHING",
         statusUpdatedAt: /* @__PURE__ */ new Date()
       });
-      await db2.collection("vendor_activities").add({
+      await db3.collection("vendor_activities").add({
         vendorId,
         type: "ENRICHMENT",
         description: `Scraping ${vendorWebsite} for contact info...`,
@@ -884,7 +922,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           return;
         }
         const scrapedData = scrapedResult.data;
-        const updateData = { updatedAt: admin3.firestore.FieldValue.serverTimestamp() };
+        const updateData = { updatedAt: admin4.firestore.FieldValue.serverTimestamp() };
         const enrichedFields = [];
         let foundEmail;
         if (scrapedData.email) {
@@ -925,16 +963,16 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           if (Object.keys(sm).length > 0) updateData.socialMedia = sm;
         }
         updateData.enrichment = {
-          lastEnriched: admin3.firestore.FieldValue.serverTimestamp(),
+          lastEnriched: admin4.firestore.FieldValue.serverTimestamp(),
           enrichedFields,
           enrichmentSource: "auto_onboarding",
           scrapedWebsite: vendorWebsite,
           confidence: scrapedData.confidence
         };
         if (enrichedFields.length > 0) {
-          await db2.collection("vendors").doc(vendorId).update(updateData);
+          await db3.collection("vendors").doc(vendorId).update(updateData);
         }
-        await db2.collection("vendor_activities").add({
+        await db3.collection("vendor_activities").add({
           vendorId,
           type: "ENRICHMENT",
           description: enrichedFields.length > 0 ? `Enriched ${enrichedFields.length} field(s): ${enrichedFields.join(", ")}` : "No new fields found from website.",
@@ -943,7 +981,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
         });
         if (foundEmail) {
           logger.info(`Found email ${foundEmail} for vendor ${vendorId}. Proceeding to outreach.`);
-          const updatedDoc = await db2.collection("vendors").doc(vendorId).get();
+          const updatedDoc = await db3.collection("vendors").doc(vendorId).get();
           await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
         } else {
           await markNeedsContact(vendorId, "No email found after enrichment");
@@ -961,12 +999,12 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
   }
 }
 async function setOutreachPending(vendorId, vendorData) {
-  await db2.collection("vendors").doc(vendorId).update({
+  await db3.collection("vendors").doc(vendorId).update({
     outreachStatus: "PENDING",
     statusUpdatedAt: /* @__PURE__ */ new Date()
   });
   const { enqueueTask: enqueueTask2 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
-  await enqueueTask2(db2, {
+  await enqueueTask2(db3, {
     vendorId,
     type: "GENERATE",
     scheduledAt: /* @__PURE__ */ new Date(),
@@ -981,11 +1019,11 @@ async function setOutreachPending(vendorId, vendorData) {
   logger.info(`Outreach GENERATE task enqueued for vendor ${vendorId}`);
 }
 async function markNeedsContact(vendorId, reason) {
-  await db2.collection("vendors").doc(vendorId).update({
+  await db3.collection("vendors").doc(vendorId).update({
     outreachStatus: "NEEDS_CONTACT",
     statusUpdatedAt: /* @__PURE__ */ new Date()
   });
-  await db2.collection("vendor_activities").add({
+  await db3.collection("vendor_activities").add({
     vendorId,
     type: "NEEDS_CONTACT",
     description: `Manual outreach required: ${reason}`,
@@ -1025,17 +1063,17 @@ function getNextBusinessSlot(urgency) {
 }
 
 // src/agents/outreach.ts
-var import_generative_ai3 = require("@google/generative-ai");
-var admin4 = __toESM(require("firebase-admin"));
+var import_generative_ai4 = require("@google/generative-ai");
+var admin5 = __toESM(require("firebase-admin"));
 var API_KEY2 = process.env.GEMINI_API_KEY || "";
-var genAI2 = new import_generative_ai3.GoogleGenerativeAI(API_KEY2);
-var model2 = genAI2.getGenerativeModel({ model: "gemini-2.0-flash" });
-var db3 = admin4.firestore();
+var genAI3 = new import_generative_ai4.GoogleGenerativeAI(API_KEY2);
+var model2 = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
+var db4 = admin5.firestore();
 var generateOutreachContent = async (vendor, preferredChannel) => {
   const isUrgent = vendor.hasActiveContract;
   const channel = preferredChannel;
   try {
-    const templateDoc = await db3.collection("templates").doc("outreach_generation_prompt").get();
+    const templateDoc = await db4.collection("templates").doc("outreach_generation_prompt").get();
     if (!templateDoc.exists) {
       throw new Error("Outreach generation prompt not found in database");
     }
@@ -1064,7 +1102,7 @@ var generateOutreachContent = async (vendor, preferredChannel) => {
 };
 var analyzeIncomingMessage = async (vendor, messageContent, previousContext) => {
   try {
-    const templateDoc = await db3.collection("templates").doc("message_analysis_prompt").get();
+    const templateDoc = await db4.collection("templates").doc("message_analysis_prompt").get();
     if (!templateDoc.exists) {
       throw new Error("Message analysis prompt not found in database");
     }

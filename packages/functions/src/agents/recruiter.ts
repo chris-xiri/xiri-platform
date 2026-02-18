@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { admin, db } from "../utils/firebase";
 import { Vendor, RecruitmentAnalysisResult } from "../utils/types";
+import { parseAddress } from "../utils/emailUtils";
 
 // Initialize Gemini
 const API_KEY = process.env.GEMINI_API_KEY || "";
@@ -148,19 +149,21 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
                 const bName = originalVendor.name || originalVendor.companyName || originalVendor.title || "Unknown Vendor";
 
                 const vendorRef = db.collection('vendors').doc(); // Auto-ID
+                const rawAddr = originalVendor.location || item.address || "Unknown";
+                const parsed = parseAddress(rawAddr);
                 const newVendor: Vendor = {
                     id: vendorRef.id,
                     businessName: bName,
                     capabilities: item.specialty ? [item.specialty] : [],
-                    address: originalVendor.location || item.address || "Unknown",
-                    city: item.city || undefined,
-                    state: item.state || undefined,
-                    zip: item.zip || undefined,
+                    address: rawAddr,
+                    streetAddress: parsed.streetAddress || undefined,
+                    city: item.city || parsed.city || undefined,
+                    state: item.state || parsed.state || undefined,
+                    zip: item.zip || parsed.zip || undefined,
                     country: item.country || "USA",
                     phone: originalVendor.phone || item.phone || undefined,
                     email: originalVendor.email || item.email || undefined,
                     website: originalVendor.website || item.website || undefined,
-                    // businessType: item.businessType || "Unknown", // Removing as it's not in shared Vendor? Wait, checking shared
                     fitScore: item.fitScore,
                     hasActiveContract: hasActiveContract,
                     onboardingTrack: hasActiveContract ? 'FAST_TRACK' : 'STANDARD',
@@ -203,11 +206,17 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
             // Fallback for business name: Use 'name' or 'companyName' or 'title' from raw source
             const bName = originalVendor.name || originalVendor.companyName || originalVendor.title || "Unknown Vendor";
 
+            const rawAddr = originalVendor.location || originalVendor.address || "Unknown";
+            const parsed = parseAddress(rawAddr);
             const newVendor: Vendor = {
                 id: vendorRef.id,
                 businessName: bName,
                 capabilities: [],
-                address: originalVendor.location || originalVendor.address || "Unknown",
+                address: rawAddr,
+                streetAddress: parsed.streetAddress || undefined,
+                city: parsed.city || undefined,
+                state: parsed.state || undefined,
+                zip: parsed.zip || undefined,
                 phone: originalVendor.phone || undefined,
                 email: originalVendor.email || undefined,
                 website: originalVendor.website || undefined,
