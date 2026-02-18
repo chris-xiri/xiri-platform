@@ -1,13 +1,38 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import CampaignResultsTable, { Campaign, PreviewVendor } from "@/components/supply/CampaignResultsTable";
 import { collection, addDoc, getDocs, deleteDoc, query, where, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const generateId = () => `campaign_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+const STORAGE_KEY = 'xiri_campaigns';
 
+// ─── sessionStorage helpers ───
+function saveCampaigns(campaigns: Campaign[], activeCampaignId: string | null) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ campaigns, activeCampaignId }));
+    } catch { /* quota exceeded or SSR */ }
+}
+
+function loadCampaigns(): { campaigns: Campaign[]; activeCampaignId: string | null } | null {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        // Restore Date objects in searches
+        if (parsed.campaigns) {
+            parsed.campaigns = parsed.campaigns.map((c: any) => ({
+                ...c,
+                searches: (c.searches || []).map((s: any) => ({ ...s, timestamp: new Date(s.timestamp) })),
+            }));
+        }
+        return parsed;
+    } catch { return null; }
+}
+
+// ─── Firestore helpers ───
 const dismissVendorInFirestore = async (vendor: PreviewVendor) => {
     try {
         await addDoc(collection(db, "dismissed_vendors"), {
@@ -28,6 +53,24 @@ const reviveVendorInFirestore = async (vendor: PreviewVendor) => {
 export default function RecruitmentPage() {
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
+    const initialized = useRef(false);
+
+    // Load from sessionStorage on mount
+    useEffect(() => {
+        if (initialized.current) return;
+        initialized.current = true;
+        const saved = loadCampaigns();
+        if (saved && saved.campaigns.length > 0) {
+            setCampaigns(saved.campaigns);
+            setActiveCampaignId(saved.activeCampaignId);
+        }
+    }, []);
+
+    // Persist to sessionStorage on every change (after init)
+    useEffect(() => {
+        if (!initialized.current) return;
+        saveCampaigns(campaigns, activeCampaignId);
+    }, [campaigns, activeCampaignId]);
 
     // Create new empty campaign tab
     const handleNewCampaign = useCallback(() => {
@@ -63,8 +106,9 @@ export default function RecruitmentPage() {
             const { id, isDismissed, ...vendorData } = vendor;
             await addDoc(collection(db, "vendors"), {
                 ...vendorData,
-                status: 'pending_review',
+                status: 'qualified',
                 onboardingTrack: track,
+                hasActiveContract: track === 'FAST_TRACK',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 source: 'campaign_approved',
@@ -107,8 +151,9 @@ export default function RecruitmentPage() {
                 const { id, isDismissed, ...vendorData } = vendor;
                 await addDoc(collection(db, "vendors"), {
                     ...vendorData,
-                    status: 'pending_review',
+                    status: 'qualified',
                     onboardingTrack: track,
+                    hasActiveContract: track === 'FAST_TRACK',
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
                     source: 'campaign_approved',
@@ -133,7 +178,7 @@ export default function RecruitmentPage() {
         ));
     }, [campaigns]);
 
-    // Close campaign tab — discard only
+    // Close campaign tab — discard only + clear from storage
     const handleCloseCampaign = useCallback((campaignId: string) => {
         setCampaigns(prev => {
             const updated = prev.filter(c => c.id !== campaignId);

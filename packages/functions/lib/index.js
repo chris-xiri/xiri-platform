@@ -224,15 +224,15 @@ async function sendEmail(to, subject, html, attachments) {
     return false;
   }
 }
-var admin8, import_generative_ai4, import_resend, db7, genAI4, resend;
+var admin8, import_generative_ai5, import_resend, db7, genAI4, resend;
 var init_emailUtils = __esm({
   "src/utils/emailUtils.ts"() {
     "use strict";
     admin8 = __toESM(require("firebase-admin"));
-    import_generative_ai4 = require("@google/generative-ai");
+    import_generative_ai5 = require("@google/generative-ai");
     import_resend = require("resend");
     db7 = admin8.firestore();
-    genAI4 = new import_generative_ai4.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+    genAI4 = new import_generative_ai5.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     resend = new import_resend.Resend(process.env.RESEND_API_KEY || "re_dummy_key");
   }
 });
@@ -498,14 +498,314 @@ var getMockVendors = (query, location) => {
 
 // src/triggers/onVendorApproved.ts
 var import_firestore = require("firebase-functions/v2/firestore");
+var import_params = require("firebase-functions/params");
 var admin3 = __toESM(require("firebase-admin"));
 var logger = __toESM(require("firebase-functions/logger"));
+
+// src/utils/websiteScraper.ts
+var cheerio = __toESM(require("cheerio"));
+var import_generative_ai2 = require("@google/generative-ai");
+async function scrapeWebsite(url, geminiApiKey) {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; XiriBot/1.0; +https://xiri.ai/bot)"
+      },
+      signal: AbortSignal.timeout(1e4)
+      // 10 second timeout
+    });
+    if (!response.ok) {
+      return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
+    }
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    const structuredData = extractStructuredData($);
+    const patternData = extractFromPatterns($, html);
+    let contactPageData = {};
+    if (!structuredData.email || !structuredData.phone) {
+      const contactUrl = findContactPage($, url);
+      if (contactUrl) {
+        contactPageData = await scrapeContactPage(contactUrl);
+      }
+    }
+    const combinedData = {
+      email: structuredData.email || patternData.email || contactPageData.email,
+      phone: structuredData.phone || patternData.phone || contactPageData.phone,
+      address: structuredData.address || patternData.address || contactPageData.address,
+      businessName: structuredData.businessName || patternData.businessName,
+      socialMedia: {
+        linkedin: patternData.socialMedia?.linkedin,
+        facebook: patternData.socialMedia?.facebook,
+        twitter: patternData.socialMedia?.twitter
+      },
+      confidence: determineConfidence(structuredData, patternData, contactPageData),
+      source: "web-scraper"
+    };
+    if (!combinedData.email || !combinedData.phone) {
+      const aiData = await extractWithAI(html, geminiApiKey);
+      combinedData.email = combinedData.email || aiData.email;
+      combinedData.phone = combinedData.phone || aiData.phone;
+      combinedData.address = combinedData.address || aiData.address;
+    }
+    if (combinedData.email) {
+      combinedData.email = validateEmail(combinedData.email);
+    }
+    if (combinedData.phone) {
+      combinedData.phone = formatPhone(combinedData.phone);
+    }
+    return { success: true, data: combinedData };
+  } catch (error4) {
+    return { success: false, error: error4.message };
+  }
+}
+function extractStructuredData($) {
+  const data = {};
+  data.email = $('meta[property="og:email"]').attr("content") || $('meta[name="contact:email"]').attr("content");
+  data.phone = $('meta[property="og:phone_number"]').attr("content") || $('meta[name="contact:phone"]').attr("content");
+  $('script[type="application/ld+json"]').each((_, elem) => {
+    try {
+      const json = JSON.parse($(elem).html() || "{}");
+      if (json["@type"] === "Organization" || json["@type"] === "LocalBusiness") {
+        data.email = data.email || json.email;
+        data.phone = data.phone || json.telephone;
+        data.businessName = data.businessName || json.name;
+        if (json.address) {
+          data.address = typeof json.address === "string" ? json.address : `${json.address.streetAddress}, ${json.address.addressLocality}, ${json.address.addressRegion} ${json.address.postalCode}`;
+        }
+      }
+    } catch (e) {
+    }
+  });
+  data.businessName = data.businessName || $('meta[property="og:site_name"]').attr("content") || $("title").text().split("|")[0].trim() || $("h1").first().text().trim();
+  return data;
+}
+function extractFromPatterns($, html) {
+  const data = {
+    socialMedia: {}
+  };
+  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  const emails = html.match(emailRegex) || [];
+  const validEmails = emails.filter(
+    (email) => !email.match(/^(info|admin|noreply|no-reply|support|hello|contact)@/i) && !email.includes("example.com") && !email.includes("domain.com")
+  );
+  data.email = validEmails[0];
+  const phoneRegex = /(\+1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
+  const phones = html.match(phoneRegex) || [];
+  data.phone = phones[0];
+  $('a[href*="linkedin.com"]').each((_, elem) => {
+    const href = $(elem).attr("href");
+    if (href && href.includes("/company/")) {
+      data.socialMedia.linkedin = href;
+    }
+  });
+  $('a[href*="facebook.com"]').each((_, elem) => {
+    const href = $(elem).attr("href");
+    if (href) {
+      data.socialMedia.facebook = href;
+    }
+  });
+  $('a[href*="twitter.com"], a[href*="x.com"]').each((_, elem) => {
+    const href = $(elem).attr("href");
+    if (href) {
+      data.socialMedia.twitter = href;
+    }
+  });
+  return data;
+}
+function findContactPage($, baseUrl) {
+  const contactKeywords = ["contact", "about", "location", "reach-us", "get-in-touch"];
+  let contactUrl = null;
+  $("a").each((_, elem) => {
+    const href = $(elem).attr("href");
+    const text = $(elem).text().toLowerCase();
+    if (href && contactKeywords.some(
+      (keyword) => href.toLowerCase().includes(keyword) || text.includes(keyword)
+    )) {
+      contactUrl = new URL(href, baseUrl).href;
+      return false;
+    }
+  });
+  return contactUrl;
+}
+async function scrapeContactPage(url) {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; XiriBot/1.0; +https://xiri.ai/bot)"
+      },
+      signal: AbortSignal.timeout(1e4)
+    });
+    if (!response.ok) return {};
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    return extractFromPatterns($, html);
+  } catch (error4) {
+    return {};
+  }
+}
+async function extractWithAI(html, geminiApiKey) {
+  try {
+    const genAI5 = new import_generative_ai2.GoogleGenerativeAI(geminiApiKey);
+    const model3 = genAI5.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 1e4);
+    const prompt = `Extract business contact information from this website content. Return ONLY a JSON object with these fields (use null if not found):
+{
+  "email": "primary business email (not info@, admin@, noreply@)",
+  "phone": "primary phone number in format (xxx) xxx-xxxx",
+  "address": "full physical address if available",
+  "businessName": "official business name"
+}
+
+Website content:
+${text}`;
+    const result = await model3.generateContent(prompt);
+    const response = result.response.text();
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const data = JSON.parse(jsonMatch[0]);
+      return {
+        email: data.email !== "null" ? data.email : void 0,
+        phone: data.phone !== "null" ? data.phone : void 0,
+        address: data.address !== "null" ? data.address : void 0,
+        businessName: data.businessName !== "null" ? data.businessName : void 0
+      };
+    }
+    return {};
+  } catch (error4) {
+    console.error("AI extraction error:", error4);
+    return {};
+  }
+}
+function determineConfidence(structured, pattern, contact) {
+  if (structured.email || structured.phone) return "high";
+  if (contact.email || contact.phone) return "medium";
+  if (pattern.email || pattern.phone) return "low";
+  return "low";
+}
+function validateEmail(email) {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) return void 0;
+  if (email.match(/^(info|admin|noreply|no-reply|support|hello|contact|webmaster)@/i)) {
+    return void 0;
+  }
+  return email.toLowerCase();
+}
+function formatPhone(phone) {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 10) {
+    return `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6, 10)}`;
+  }
+  if (digits.length === 11 && digits[0] === "1") {
+    return `(${digits.substring(1, 4)}) ${digits.substring(4, 7)}-${digits.substring(7, 11)}`;
+  }
+  return void 0;
+}
+
+// src/utils/emailVerification.ts
+async function verifyEmail(email) {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) {
+    return { valid: false, reason: "Invalid email format" };
+  }
+  const domain = email.split("@")[1];
+  try {
+    const mxRecords = await resolveMX(domain);
+    if (mxRecords && mxRecords.length > 0) {
+      return { valid: true, deliverable: true };
+    } else {
+      return { valid: true, deliverable: false, reason: "No MX records found" };
+    }
+  } catch (error4) {
+    return { valid: true, deliverable: false, reason: "Domain not found" };
+  }
+}
+async function resolveMX(domain) {
+  const dns = await import("dns");
+  const { promisify } = await import("util");
+  const resolveMx = promisify(dns.resolveMx);
+  try {
+    return await resolveMx(domain);
+  } catch (error4) {
+    return [];
+  }
+}
+function isDisposableEmail(email) {
+  const disposableDomains = [
+    "tempmail.com",
+    "guerrillamail.com",
+    "10minutemail.com",
+    "mailinator.com",
+    "throwaway.email",
+    "temp-mail.org"
+  ];
+  const domain = email.split("@")[1].toLowerCase();
+  return disposableDomains.includes(domain);
+}
+function isRoleBasedEmail(email) {
+  const roleBasedPrefixes = [
+    "info",
+    "admin",
+    "support",
+    "sales",
+    "contact",
+    "hello",
+    "help",
+    "noreply",
+    "no-reply",
+    "webmaster",
+    "postmaster",
+    "hostmaster",
+    "abuse"
+  ];
+  const prefix = email.split("@")[0].toLowerCase();
+  return roleBasedPrefixes.includes(prefix);
+}
+
+// src/utils/phoneValidation.ts
+function validatePhone(phone) {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 10) {
+    const formatted = `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6, 10)}`;
+    return {
+      valid: true,
+      formatted,
+      type: determinePhoneType(digits)
+    };
+  } else if (digits.length === 11 && digits[0] === "1") {
+    const formatted = `(${digits.substring(1, 4)}) ${digits.substring(4, 7)}-${digits.substring(7, 11)}`;
+    return {
+      valid: true,
+      formatted,
+      type: determinePhoneType(digits.substring(1))
+    };
+  } else {
+    return {
+      valid: false,
+      reason: `Invalid phone number length: ${digits.length} digits`
+    };
+  }
+}
+function determinePhoneType(digits) {
+  const areaCode = digits.substring(0, 3);
+  const prefix = digits.substring(3, 6);
+  const voipAreaCodes = ["800", "888", "877", "866", "855", "844", "833"];
+  if (voipAreaCodes.includes(areaCode)) {
+    return "voip";
+  }
+  return "unknown";
+}
+
+// src/triggers/onVendorApproved.ts
 if (!admin3.apps.length) {
   admin3.initializeApp();
 }
 var db2 = admin3.firestore();
+var GEMINI_API_KEY = (0, import_params.defineSecret)("GEMINI_API_KEY");
 console.log("Loading onVendorApproved trigger...");
-var onVendorApproved = (0, import_firestore.onDocumentUpdated)("vendors/{vendorId}", async (event) => {
+var onVendorApproved = (0, import_firestore.onDocumentUpdated)({
+  document: "vendors/{vendorId}",
+  secrets: [GEMINI_API_KEY]
+}, async (event) => {
   console.log("onVendorApproved triggered!");
   if (!event.data) {
     console.log("No event data.");
@@ -515,44 +815,156 @@ var onVendorApproved = (0, import_firestore.onDocumentUpdated)("vendors/{vendorI
   const oldData = event.data.before.data();
   const vendorId = event.params.vendorId;
   if (!newData || !oldData) return;
-  if (newData.status === "qualified" && oldData.status !== "qualified") {
-    logger.info(`Vendor ${vendorId} approved. Triggering CRM workflow.`);
-    try {
-      await db2.collection("vendor_activities").add({
-        vendorId,
-        type: "STATUS_CHANGE",
-        description: "Vendor status updated to APPROVED by user.",
-        createdAt: /* @__PURE__ */ new Date(),
-        metadata: {
-          oldStatus: oldData.status,
-          newStatus: newData.status
-        }
-      });
+  if (newData.status !== "qualified" || oldData.status === "qualified") return;
+  logger.info(`Vendor ${vendorId} approved. Starting enrich-first pipeline.`);
+  try {
+    await db2.collection("vendor_activities").add({
+      vendorId,
+      type: "STATUS_CHANGE",
+      description: "Vendor approved \u2014 starting onboarding pipeline.",
+      createdAt: /* @__PURE__ */ new Date(),
+      metadata: {
+        oldStatus: oldData.status,
+        newStatus: newData.status,
+        onboardingTrack: newData.onboardingTrack || "STANDARD"
+      }
+    });
+    const vendorEmail = newData.email?.trim();
+    const vendorWebsite = newData.website?.trim();
+    if (vendorEmail) {
+      logger.info(`Vendor ${vendorId} has email (${vendorEmail}). Proceeding to outreach.`);
+      await setOutreachPending(vendorId, newData);
+      return;
+    }
+    if (vendorWebsite) {
+      logger.info(`Vendor ${vendorId} has no email but has website. Enriching...`);
       await event.data.after.ref.update({
-        outreachStatus: "PENDING",
+        outreachStatus: "ENRICHING",
         statusUpdatedAt: /* @__PURE__ */ new Date()
       });
-      const { enqueueTask: enqueueTask2 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
-      await enqueueTask2(db2, {
+      await db2.collection("vendor_activities").add({
         vendorId,
-        type: "GENERATE",
-        scheduledAt: /* @__PURE__ */ new Date(),
-        // Process immediately
-        metadata: {
-          status: newData.status,
-          hasActiveContract: newData.hasActiveContract,
-          phone: newData.phone,
-          companyName: newData.businessName,
-          // Updated to match schema
-          specialty: newData.specialty || newData.capabilities?.[0]
-        }
+        type: "ENRICHMENT",
+        description: `Scraping ${vendorWebsite} for contact info...`,
+        createdAt: /* @__PURE__ */ new Date()
       });
-      logger.info(`Outreach generation task enqueued for vendor ${vendorId}`);
-    } catch (error4) {
-      logger.error("Error in onVendorApproved workflow:", error4);
+      try {
+        const scrapedResult = await scrapeWebsite(vendorWebsite, GEMINI_API_KEY.value());
+        if (!scrapedResult.success || !scrapedResult.data) {
+          logger.warn(`Enrichment failed for ${vendorId}: ${scrapedResult.error}`);
+          await markNeedsContact(vendorId, event, "Website scrape failed");
+          return;
+        }
+        const scrapedData = scrapedResult.data;
+        const updateData = { updatedAt: admin3.firestore.FieldValue.serverTimestamp() };
+        const enrichedFields = [];
+        let foundEmail;
+        if (scrapedData.email) {
+          const emailVerification = await verifyEmail(scrapedData.email);
+          if (emailVerification.valid && emailVerification.deliverable && !isDisposableEmail(scrapedData.email) && !isRoleBasedEmail(scrapedData.email)) {
+            foundEmail = scrapedData.email;
+            updateData.email = foundEmail;
+            enrichedFields.push("email");
+          } else {
+            logger.info(`Scraped email ${scrapedData.email} failed verification.`);
+          }
+        }
+        if (scrapedData.phone && !newData.phone) {
+          const phoneValidation = validatePhone(scrapedData.phone);
+          if (phoneValidation.valid) {
+            updateData.phone = phoneValidation.formatted;
+            enrichedFields.push("phone");
+          }
+        }
+        if (scrapedData.address && !newData.address) {
+          updateData.address = scrapedData.address;
+          enrichedFields.push("address");
+        }
+        if (scrapedData.socialMedia) {
+          const sm = {};
+          if (scrapedData.socialMedia.linkedin) {
+            sm.linkedin = scrapedData.socialMedia.linkedin;
+            enrichedFields.push("linkedin");
+          }
+          if (scrapedData.socialMedia.facebook) {
+            sm.facebook = scrapedData.socialMedia.facebook;
+            enrichedFields.push("facebook");
+          }
+          if (scrapedData.socialMedia.twitter) {
+            sm.twitter = scrapedData.socialMedia.twitter;
+            enrichedFields.push("twitter");
+          }
+          if (Object.keys(sm).length > 0) updateData.socialMedia = sm;
+        }
+        updateData.enrichment = {
+          lastEnriched: admin3.firestore.FieldValue.serverTimestamp(),
+          enrichedFields,
+          enrichmentSource: "auto_onboarding",
+          scrapedWebsite: vendorWebsite,
+          confidence: scrapedData.confidence
+        };
+        if (enrichedFields.length > 0) {
+          await event.data.after.ref.update(updateData);
+        }
+        await db2.collection("vendor_activities").add({
+          vendorId,
+          type: "ENRICHMENT",
+          description: enrichedFields.length > 0 ? `Enriched ${enrichedFields.length} field(s): ${enrichedFields.join(", ")}` : "No new fields found from website.",
+          createdAt: /* @__PURE__ */ new Date(),
+          metadata: { enrichedFields, confidence: scrapedData.confidence }
+        });
+        if (foundEmail) {
+          logger.info(`Found email ${foundEmail} for vendor ${vendorId}. Proceeding to outreach.`);
+          const updatedVendor = (await event.data.after.ref.get()).data();
+          await setOutreachPending(vendorId, updatedVendor || newData);
+        } else {
+          await markNeedsContact(vendorId, event, "No email found after enrichment");
+        }
+      } catch (enrichError) {
+        logger.error(`Enrichment error for ${vendorId}:`, enrichError);
+        await markNeedsContact(vendorId, event, `Enrichment error: ${enrichError.message}`);
+      }
+      return;
     }
+    logger.info(`Vendor ${vendorId} has no email and no website. Marking NEEDS_CONTACT.`);
+    await markNeedsContact(vendorId, event, "No email or website available");
+  } catch (error4) {
+    logger.error("Error in onVendorApproved pipeline:", error4);
   }
 });
+async function setOutreachPending(vendorId, vendorData) {
+  await db2.collection("vendors").doc(vendorId).update({
+    outreachStatus: "PENDING",
+    statusUpdatedAt: /* @__PURE__ */ new Date()
+  });
+  const { enqueueTask: enqueueTask2 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
+  await enqueueTask2(db2, {
+    vendorId,
+    type: "GENERATE",
+    scheduledAt: /* @__PURE__ */ new Date(),
+    metadata: {
+      status: vendorData.status,
+      hasActiveContract: vendorData.hasActiveContract,
+      phone: vendorData.phone,
+      companyName: vendorData.businessName,
+      specialty: vendorData.specialty || vendorData.capabilities?.[0]
+    }
+  });
+  logger.info(`Outreach GENERATE task enqueued for vendor ${vendorId}`);
+}
+async function markNeedsContact(vendorId, event, reason) {
+  await event.data.after.ref.update({
+    outreachStatus: "NEEDS_CONTACT",
+    statusUpdatedAt: /* @__PURE__ */ new Date()
+  });
+  await db2.collection("vendor_activities").add({
+    vendorId,
+    type: "NEEDS_CONTACT",
+    description: `Manual outreach required: ${reason}`,
+    createdAt: /* @__PURE__ */ new Date()
+  });
+  logger.info(`Vendor ${vendorId} marked NEEDS_CONTACT: ${reason}`);
+}
 
 // src/triggers/outreachWorker.ts
 var import_scheduler = require("firebase-functions/v2/scheduler");
@@ -585,10 +997,10 @@ function getNextBusinessSlot(urgency) {
 }
 
 // src/agents/outreach.ts
-var import_generative_ai2 = require("@google/generative-ai");
+var import_generative_ai3 = require("@google/generative-ai");
 var admin4 = __toESM(require("firebase-admin"));
 var API_KEY2 = process.env.GEMINI_API_KEY || "";
-var genAI2 = new import_generative_ai2.GoogleGenerativeAI(API_KEY2);
+var genAI2 = new import_generative_ai3.GoogleGenerativeAI(API_KEY2);
 var model2 = genAI2.getGenerativeModel({ model: "gemini-2.0-flash" });
 var db3 = admin4.firestore();
 var generateOutreachContent = async (vendor, preferredChannel) => {
@@ -811,9 +1223,9 @@ var import_firestore3 = require("firebase-functions/v2/firestore");
 var admin9 = __toESM(require("firebase-admin"));
 
 // src/agents/documentVerifier.ts
-var import_generative_ai3 = require("@google/generative-ai");
+var import_generative_ai4 = require("@google/generative-ai");
 var admin7 = __toESM(require("firebase-admin"));
-var genAI3 = new import_generative_ai3.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+var genAI3 = new import_generative_ai4.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 var db6 = admin7.firestore();
 async function verifyDocument(docType, vendorName, specialty) {
   const model3 = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
@@ -1022,305 +1434,10 @@ END:VCALENDAR`;
 // src/triggers/enrichFromWebsite.ts
 var import_https = require("firebase-functions/v2/https");
 var import_firestore5 = require("firebase-admin/firestore");
-
-// src/utils/websiteScraper.ts
-var cheerio = __toESM(require("cheerio"));
-var import_generative_ai5 = require("@google/generative-ai");
-async function scrapeWebsite(url, geminiApiKey) {
-  try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; XiriBot/1.0; +https://xiri.ai/bot)"
-      },
-      signal: AbortSignal.timeout(1e4)
-      // 10 second timeout
-    });
-    if (!response.ok) {
-      return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
-    }
-    const html = await response.text();
-    const $ = cheerio.load(html);
-    const structuredData = extractStructuredData($);
-    const patternData = extractFromPatterns($, html);
-    let contactPageData = {};
-    if (!structuredData.email || !structuredData.phone) {
-      const contactUrl = findContactPage($, url);
-      if (contactUrl) {
-        contactPageData = await scrapeContactPage(contactUrl);
-      }
-    }
-    const combinedData = {
-      email: structuredData.email || patternData.email || contactPageData.email,
-      phone: structuredData.phone || patternData.phone || contactPageData.phone,
-      address: structuredData.address || patternData.address || contactPageData.address,
-      businessName: structuredData.businessName || patternData.businessName,
-      socialMedia: {
-        linkedin: patternData.socialMedia?.linkedin,
-        facebook: patternData.socialMedia?.facebook,
-        twitter: patternData.socialMedia?.twitter
-      },
-      confidence: determineConfidence(structuredData, patternData, contactPageData),
-      source: "web-scraper"
-    };
-    if (!combinedData.email || !combinedData.phone) {
-      const aiData = await extractWithAI(html, geminiApiKey);
-      combinedData.email = combinedData.email || aiData.email;
-      combinedData.phone = combinedData.phone || aiData.phone;
-      combinedData.address = combinedData.address || aiData.address;
-    }
-    if (combinedData.email) {
-      combinedData.email = validateEmail(combinedData.email);
-    }
-    if (combinedData.phone) {
-      combinedData.phone = formatPhone(combinedData.phone);
-    }
-    return { success: true, data: combinedData };
-  } catch (error4) {
-    return { success: false, error: error4.message };
-  }
-}
-function extractStructuredData($) {
-  const data = {};
-  data.email = $('meta[property="og:email"]').attr("content") || $('meta[name="contact:email"]').attr("content");
-  data.phone = $('meta[property="og:phone_number"]').attr("content") || $('meta[name="contact:phone"]').attr("content");
-  $('script[type="application/ld+json"]').each((_, elem) => {
-    try {
-      const json = JSON.parse($(elem).html() || "{}");
-      if (json["@type"] === "Organization" || json["@type"] === "LocalBusiness") {
-        data.email = data.email || json.email;
-        data.phone = data.phone || json.telephone;
-        data.businessName = data.businessName || json.name;
-        if (json.address) {
-          data.address = typeof json.address === "string" ? json.address : `${json.address.streetAddress}, ${json.address.addressLocality}, ${json.address.addressRegion} ${json.address.postalCode}`;
-        }
-      }
-    } catch (e) {
-    }
-  });
-  data.businessName = data.businessName || $('meta[property="og:site_name"]').attr("content") || $("title").text().split("|")[0].trim() || $("h1").first().text().trim();
-  return data;
-}
-function extractFromPatterns($, html) {
-  const data = {
-    socialMedia: {}
-  };
-  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-  const emails = html.match(emailRegex) || [];
-  const validEmails = emails.filter(
-    (email) => !email.match(/^(info|admin|noreply|no-reply|support|hello|contact)@/i) && !email.includes("example.com") && !email.includes("domain.com")
-  );
-  data.email = validEmails[0];
-  const phoneRegex = /(\+1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
-  const phones = html.match(phoneRegex) || [];
-  data.phone = phones[0];
-  $('a[href*="linkedin.com"]').each((_, elem) => {
-    const href = $(elem).attr("href");
-    if (href && href.includes("/company/")) {
-      data.socialMedia.linkedin = href;
-    }
-  });
-  $('a[href*="facebook.com"]').each((_, elem) => {
-    const href = $(elem).attr("href");
-    if (href) {
-      data.socialMedia.facebook = href;
-    }
-  });
-  $('a[href*="twitter.com"], a[href*="x.com"]').each((_, elem) => {
-    const href = $(elem).attr("href");
-    if (href) {
-      data.socialMedia.twitter = href;
-    }
-  });
-  return data;
-}
-function findContactPage($, baseUrl) {
-  const contactKeywords = ["contact", "about", "location", "reach-us", "get-in-touch"];
-  let contactUrl = null;
-  $("a").each((_, elem) => {
-    const href = $(elem).attr("href");
-    const text = $(elem).text().toLowerCase();
-    if (href && contactKeywords.some(
-      (keyword) => href.toLowerCase().includes(keyword) || text.includes(keyword)
-    )) {
-      contactUrl = new URL(href, baseUrl).href;
-      return false;
-    }
-  });
-  return contactUrl;
-}
-async function scrapeContactPage(url) {
-  try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; XiriBot/1.0; +https://xiri.ai/bot)"
-      },
-      signal: AbortSignal.timeout(1e4)
-    });
-    if (!response.ok) return {};
-    const html = await response.text();
-    const $ = cheerio.load(html);
-    return extractFromPatterns($, html);
-  } catch (error4) {
-    return {};
-  }
-}
-async function extractWithAI(html, geminiApiKey) {
-  try {
-    const genAI5 = new import_generative_ai5.GoogleGenerativeAI(geminiApiKey);
-    const model3 = genAI5.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 1e4);
-    const prompt = `Extract business contact information from this website content. Return ONLY a JSON object with these fields (use null if not found):
-{
-  "email": "primary business email (not info@, admin@, noreply@)",
-  "phone": "primary phone number in format (xxx) xxx-xxxx",
-  "address": "full physical address if available",
-  "businessName": "official business name"
-}
-
-Website content:
-${text}`;
-    const result = await model3.generateContent(prompt);
-    const response = result.response.text();
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const data = JSON.parse(jsonMatch[0]);
-      return {
-        email: data.email !== "null" ? data.email : void 0,
-        phone: data.phone !== "null" ? data.phone : void 0,
-        address: data.address !== "null" ? data.address : void 0,
-        businessName: data.businessName !== "null" ? data.businessName : void 0
-      };
-    }
-    return {};
-  } catch (error4) {
-    console.error("AI extraction error:", error4);
-    return {};
-  }
-}
-function determineConfidence(structured, pattern, contact) {
-  if (structured.email || structured.phone) return "high";
-  if (contact.email || contact.phone) return "medium";
-  if (pattern.email || pattern.phone) return "low";
-  return "low";
-}
-function validateEmail(email) {
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (!emailRegex.test(email)) return void 0;
-  if (email.match(/^(info|admin|noreply|no-reply|support|hello|contact|webmaster)@/i)) {
-    return void 0;
-  }
-  return email.toLowerCase();
-}
-function formatPhone(phone) {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.length === 10) {
-    return `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6, 10)}`;
-  }
-  if (digits.length === 11 && digits[0] === "1") {
-    return `(${digits.substring(1, 4)}) ${digits.substring(4, 7)}-${digits.substring(7, 11)}`;
-  }
-  return void 0;
-}
-
-// src/utils/emailVerification.ts
-async function verifyEmail(email) {
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (!emailRegex.test(email)) {
-    return { valid: false, reason: "Invalid email format" };
-  }
-  const domain = email.split("@")[1];
-  try {
-    const mxRecords = await resolveMX(domain);
-    if (mxRecords && mxRecords.length > 0) {
-      return { valid: true, deliverable: true };
-    } else {
-      return { valid: true, deliverable: false, reason: "No MX records found" };
-    }
-  } catch (error4) {
-    return { valid: true, deliverable: false, reason: "Domain not found" };
-  }
-}
-async function resolveMX(domain) {
-  const dns = await import("dns");
-  const { promisify } = await import("util");
-  const resolveMx = promisify(dns.resolveMx);
-  try {
-    return await resolveMx(domain);
-  } catch (error4) {
-    return [];
-  }
-}
-function isDisposableEmail(email) {
-  const disposableDomains = [
-    "tempmail.com",
-    "guerrillamail.com",
-    "10minutemail.com",
-    "mailinator.com",
-    "throwaway.email",
-    "temp-mail.org"
-  ];
-  const domain = email.split("@")[1].toLowerCase();
-  return disposableDomains.includes(domain);
-}
-function isRoleBasedEmail(email) {
-  const roleBasedPrefixes = [
-    "info",
-    "admin",
-    "support",
-    "sales",
-    "contact",
-    "hello",
-    "help",
-    "noreply",
-    "no-reply",
-    "webmaster",
-    "postmaster",
-    "hostmaster",
-    "abuse"
-  ];
-  const prefix = email.split("@")[0].toLowerCase();
-  return roleBasedPrefixes.includes(prefix);
-}
-
-// src/utils/phoneValidation.ts
-function validatePhone(phone) {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.length === 10) {
-    const formatted = `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6, 10)}`;
-    return {
-      valid: true,
-      formatted,
-      type: determinePhoneType(digits)
-    };
-  } else if (digits.length === 11 && digits[0] === "1") {
-    const formatted = `(${digits.substring(1, 4)}) ${digits.substring(4, 7)}-${digits.substring(7, 11)}`;
-    return {
-      valid: true,
-      formatted,
-      type: determinePhoneType(digits.substring(1))
-    };
-  } else {
-    return {
-      valid: false,
-      reason: `Invalid phone number length: ${digits.length} digits`
-    };
-  }
-}
-function determinePhoneType(digits) {
-  const areaCode = digits.substring(0, 3);
-  const prefix = digits.substring(3, 6);
-  const voipAreaCodes = ["800", "888", "877", "866", "855", "844", "833"];
-  if (voipAreaCodes.includes(areaCode)) {
-    return "voip";
-  }
-  return "unknown";
-}
-
-// src/triggers/enrichFromWebsite.ts
-var import_params = require("firebase-functions/params");
-var GEMINI_API_KEY = (0, import_params.defineSecret)("GEMINI_API_KEY");
+var import_params2 = require("firebase-functions/params");
+var GEMINI_API_KEY2 = (0, import_params2.defineSecret)("GEMINI_API_KEY");
 var enrichFromWebsite = (0, import_https.onCall)({
-  secrets: [GEMINI_API_KEY],
+  secrets: [GEMINI_API_KEY2],
   timeoutSeconds: 60,
   memory: "512MiB",
   cors: [
@@ -1349,7 +1466,7 @@ var enrichFromWebsite = (0, import_https.onCall)({
   }
   try {
     console.log(`Enriching ${collection}/${documentId} from ${website}`);
-    const scrapedResult = await scrapeWebsite(website, GEMINI_API_KEY.value());
+    const scrapedResult = await scrapeWebsite(website, GEMINI_API_KEY2.value());
     if (!scrapedResult.success) {
       throw new import_https.HttpsError("internal", `Scraping failed: ${scrapedResult.error}`);
     }
