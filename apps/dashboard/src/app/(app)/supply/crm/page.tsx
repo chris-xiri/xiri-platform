@@ -10,15 +10,7 @@ export default function CRMPage() {
                 <h1 className="text-2xl font-bold text-foreground mb-4">CRM Dashboard</h1>
                 <div className="flex-1 overflow-hidden">
                     <VendorList
-                        title="Active Pipeline"
-                        statusFilters={[
-                            'qualified',
-                            'compliance_review',
-                            'onboarding',
-                            'active',
-                            'suspended',
-                            // 'rejected' // Optionally include or exclude rejected in CRM
-                        ]}
+                        title="Vendor CRM"
                     />
                 </div>
             </main>
