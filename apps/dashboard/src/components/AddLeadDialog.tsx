@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, Sparkles } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
+import { EnrichButton } from "@/components/EnrichButton";
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 
 interface AddLeadDialogProps {
@@ -42,6 +43,7 @@ const ATTRIBUTION_SOURCES = [
 export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     const { user } = useAuth();
     const [submitting, setSubmitting] = useState(false);
+    const [tempLeadId, setTempLeadId] = useState<string | null>(null);
 
     // Form state
     const [businessName, setBusinessName] = useState("");
@@ -193,7 +195,31 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
 
                     {/* Website */}
                     <div>
-                        <Label htmlFor="website">Website (optional)</Label>
+                        <div className="flex items-center justify-between mb-2">
+                            <Label htmlFor="website">Website (optional)</Label>
+                            {website && (
+                                <EnrichButton
+                                    collection="leads"
+                                    documentId={tempLeadId || 'temp'}
+                                    website={website}
+                                    size="sm"
+                                    variant="outline"
+                                    onSuccess={(data) => {
+                                        // Auto-populate form fields
+                                        if (data.data?.email && !email) setEmail(data.data.email);
+                                        if (data.data?.phone && !phone) setPhone(data.data.phone);
+                                        if (data.data?.address && !address) {
+                                            // Note: Can't auto-fill address field as it requires Google Places object
+                                            // Could show a notification instead
+                                        }
+                                        if (data.data?.businessName && !businessName) setBusinessName(data.data.businessName);
+                                    }}
+                                    onError={(error) => {
+                                        console.error('Enrichment error:', error);
+                                    }}
+                                />
+                            )}
+                        </div>
                         <Input
                             id="website"
                             type="url"
@@ -202,7 +228,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                             placeholder="https://example.com"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
-                            We'll try to auto-fill business details from the website
+                            {website ? 'Click "Enrich" to auto-fill contact details' : 'Enter website to enable auto-fill'}
                         </p>
                     </div>
 
