@@ -6,9 +6,10 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, X, Eye, Briefcase, Zap } from "lucide-react";
+import { Check, X, Eye, Briefcase, Zap, Send } from "lucide-react";
 import Link from "next/link";
 import { getStatusColor, getScoreColor, getStatusLabel } from "./utils";
+import { useState } from "react";
 
 interface VendorRowProps {
     vendor: Vendor;
@@ -20,10 +21,14 @@ interface VendorRowProps {
     isActive?: boolean;
     isSelected?: boolean;
     onSelectChange?: (checked: boolean) => void;
+    onAddEmailAndRetrigger?: (id: string, email: string) => void;
 }
 
-export function VendorRow({ vendor, index, showActions, isRecruitmentMode = false, onUpdateStatus, onSelect, isActive, isSelected, onSelectChange }: VendorRowProps) {
+export function VendorRow({ vendor, index, showActions, isRecruitmentMode = false, onUpdateStatus, onSelect, isActive, isSelected, onSelectChange, onAddEmailAndRetrigger }: VendorRowProps) {
     const isGrayedOut = isRecruitmentMode && (vendor.status || 'pending_review').toLowerCase() !== 'pending_review';
+    const [emailInput, setEmailInput] = useState('');
+    const [showEmailInput, setShowEmailInput] = useState(false);
+    const isNeedsContact = vendor.outreachStatus === 'NEEDS_CONTACT' && (vendor.status === 'qualified' || vendor.status === 'QUALIFIED');
 
     // Helper to parse legacy address strings
     const parseLegacyAddress = (addr: string | undefined) => {
@@ -185,6 +190,59 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                                     <X className="w-3 h-3" />
                                 </Button>
                             </>
+                        ) : isNeedsContact && !isRecruitmentMode ? (
+                            /* NEEDS_CONTACT: show email input + send */
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                {showEmailInput ? (
+                                    <>
+                                        <input
+                                            type="email"
+                                            placeholder="email@company.com"
+                                            value={emailInput}
+                                            onChange={(e) => setEmailInput(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && emailInput.includes('@')) {
+                                                    onAddEmailAndRetrigger?.(vendor.id!, emailInput);
+                                                    setShowEmailInput(false);
+                                                    setEmailInput('');
+                                                }
+                                            }}
+                                            className="h-7 px-2 text-xs border border-border rounded-md bg-background text-foreground w-[160px] focus:outline-none focus:ring-1 focus:ring-primary"
+                                            autoFocus
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={!emailInput.includes('@')}
+                                            onClick={() => {
+                                                onAddEmailAndRetrigger?.(vendor.id!, emailInput);
+                                                setShowEmailInput(false);
+                                                setEmailInput('');
+                                            }}
+                                            className="h-7 px-2 border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white"
+                                        >
+                                            <Send className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => { setShowEmailInput(false); setEmailInput(''); }}
+                                            className="h-7 px-1.5 text-muted-foreground"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowEmailInput(true)}
+                                        className="h-7 px-2 border-amber-200 text-amber-700 hover:bg-amber-600 hover:text-white text-xs font-medium"
+                                    >
+                                        <Send className="w-3 h-3 mr-1" /> Add Email
+                                    </Button>
+                                )}
+                            </div>
                         ) : null}
                     </div>
                 )}

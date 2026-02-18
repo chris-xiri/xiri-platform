@@ -139,6 +139,19 @@ export default function VendorList({
         }
     };
 
+    const handleAddEmailAndRetrigger = async (id: string, email: string) => {
+        try {
+            await updateDoc(doc(db, "vendors", id), {
+                email,
+                outreachStatus: 'PENDING',
+                updatedAt: serverTimestamp()
+            });
+            console.log(`Email added and outreach re-triggered for vendor ${id}`);
+        } catch (error) {
+            console.error("Error re-triggering outreach:", error);
+        }
+    };
+
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
             setSelectedVendors(new Set(displayVendors.map(v => v.id!)));
@@ -305,6 +318,7 @@ export default function VendorList({
                                             showActions={showActions}
                                             isRecruitmentMode={isRecruitmentMode}
                                             onUpdateStatus={handleUpdateStatus}
+                                            onAddEmailAndRetrigger={handleAddEmailAndRetrigger}
                                             onSelect={onSelectVendor}
                                             isActive={selectedVendorId === vendor.id}
                                             isSelected={selectedVendors.has(vendor.id!)}
@@ -332,6 +346,7 @@ export default function VendorList({
                                                     showActions={showActions}
                                                     isRecruitmentMode={isRecruitmentMode}
                                                     onUpdateStatus={handleUpdateStatus}
+                                                    onAddEmailAndRetrigger={handleAddEmailAndRetrigger}
                                                     onSelect={onSelectVendor}
                                                     isActive={selectedVendorId === vendor.id}
                                                 />

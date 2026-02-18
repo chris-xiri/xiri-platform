@@ -268,7 +268,15 @@ export default function CampaignResultsTable({
             const existingNames = new Set(activeCampaign.vendors.map(v => (v.businessName || '').toLowerCase().trim()));
             const uniqueNew = newVendors.filter(v => !existingNames.has((v.businessName || '').toLowerCase().trim()));
             if (uniqueNew.length > 0) { onSearchResults(activeCampaign.id, uniqueNew, { query, location, sourced, qualified }); }
-            if (activeCampaign.label === 'New Campaign' && query.trim()) { onRenameCampaign(activeCampaign.id, `${query} — ${location.split(',')[0]}`); }
+            if (activeCampaign.label === 'New Campaign' && query.trim()) {
+                // Structured label: Trade\nTown\nState (rendered as 3 lines)
+                const loc = location.trim();
+                const parts = loc.split(',').map(p => p.trim());
+                const town = parts[0] || loc;
+                const state = parts.length >= 2 ? parts[1].replace(/\s*\d{5}.*/, '').trim() : '';
+                const tradeLabel = query.trim();
+                onRenameCampaign(activeCampaign.id, `${tradeLabel}\n${town}\n${state}`);
+            }
             setSearchMessage(`Found ${sourced} vendors · ${qualified} qualified · ${uniqueNew.length} new added`);
             setQuery(''); setLocation('');
         } catch (error: any) {
@@ -287,16 +295,26 @@ export default function CampaignResultsTable({
                         <Eye className="w-3.5 h-3.5 text-blue-500 flex-shrink-0 mr-1.5" />
                         {campaigns.map((campaign) => {
                             const activeCount = campaign.vendors.filter(v => !v.isDismissed).length;
+                            const labelLines = campaign.label.split('\n');
+                            const isStructured = labelLines.length >= 2;
                             return (
                                 <div key={campaign.id}
-                                    className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-t-md cursor-pointer text-xs font-medium transition-all whitespace-nowrap max-w-[200px]
+                                    className={`group flex items-start gap-1.5 px-3 py-1.5 rounded-t-md cursor-pointer text-xs font-medium transition-all
                                         ${campaign.id === activeCampaign.id
                                             ? 'bg-card text-primary border border-b-0 border-border shadow-sm -mb-px'
                                             : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
                                     onClick={() => handleTabSwitch(campaign.id)}>
-                                    <span className="truncate">{campaign.label}</span>
-                                    {activeCount > 0 && <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 flex-shrink-0">{activeCount}</Badge>}
-                                    <button className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all flex-shrink-0 ml-0.5"
+                                    {isStructured ? (
+                                        <div className="flex flex-col leading-tight min-w-0">
+                                            <span className="text-[11px] font-semibold">{labelLines[0]}</span>
+                                            <span className="text-[10px] font-normal text-muted-foreground">{labelLines[1]}</span>
+                                            {labelLines[2] && <span className="text-[9px] font-normal text-muted-foreground/70">{labelLines[2]}</span>}
+                                        </div>
+                                    ) : (
+                                        <span className="truncate">{campaign.label}</span>
+                                    )}
+                                    {activeCount > 0 && <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 flex-shrink-0 mt-0.5">{activeCount}</Badge>}
+                                    <button className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all flex-shrink-0 ml-0.5 mt-0.5"
                                         onClick={(e) => { e.stopPropagation(); setShowCloseTabDialog(campaign.id); }}>
                                         <X className="w-3 h-3" />
                                     </button>
