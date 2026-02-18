@@ -152,6 +152,18 @@ export default function VendorList({
         }
     };
 
+    const handleUpdateContact = async (id: string, data: { email?: string; phone?: string }) => {
+        try {
+            const updateData: any = { updatedAt: serverTimestamp() };
+            if (data.email) updateData.email = data.email;
+            if (data.phone) updateData.phone = data.phone;
+            await updateDoc(doc(db, "vendors", id), updateData);
+            console.log(`Contact info updated for vendor ${id}`);
+        } catch (error) {
+            console.error("Error updating contact:", error);
+        }
+    };
+
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
             setSelectedVendors(new Set(displayVendors.map(v => v.id!)));
@@ -319,6 +331,7 @@ export default function VendorList({
                                             isRecruitmentMode={isRecruitmentMode}
                                             onUpdateStatus={handleUpdateStatus}
                                             onAddEmailAndRetrigger={handleAddEmailAndRetrigger}
+                                            onUpdateContact={handleUpdateContact}
                                             onSelect={onSelectVendor}
                                             isActive={selectedVendorId === vendor.id}
                                             isSelected={selectedVendors.has(vendor.id!)}
@@ -347,6 +360,7 @@ export default function VendorList({
                                                     isRecruitmentMode={isRecruitmentMode}
                                                     onUpdateStatus={handleUpdateStatus}
                                                     onAddEmailAndRetrigger={handleAddEmailAndRetrigger}
+                                                    onUpdateContact={handleUpdateContact}
                                                     onSelect={onSelectVendor}
                                                     isActive={selectedVendorId === vendor.id}
                                                 />

@@ -6,7 +6,7 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, X, Eye, Briefcase, Zap, Send } from "lucide-react";
+import { Check, X, Eye, Briefcase, Zap, Send, Phone, Mail } from "lucide-react";
 import Link from "next/link";
 import { getStatusColor, getScoreColor, getStatusLabel } from "./utils";
 import { useState } from "react";
@@ -22,20 +22,20 @@ interface VendorRowProps {
     isSelected?: boolean;
     onSelectChange?: (checked: boolean) => void;
     onAddEmailAndRetrigger?: (id: string, email: string) => void;
+    onUpdateContact?: (id: string, data: { email?: string; phone?: string }) => void;
 }
 
-export function VendorRow({ vendor, index, showActions, isRecruitmentMode = false, onUpdateStatus, onSelect, isActive, isSelected, onSelectChange, onAddEmailAndRetrigger }: VendorRowProps) {
+export function VendorRow({ vendor, index, showActions, isRecruitmentMode = false, onUpdateStatus, onSelect, isActive, isSelected, onSelectChange, onAddEmailAndRetrigger, onUpdateContact }: VendorRowProps) {
     const isGrayedOut = isRecruitmentMode && (vendor.status || 'pending_review').toLowerCase() !== 'pending_review';
     const [emailInput, setEmailInput] = useState('');
-    const [showEmailInput, setShowEmailInput] = useState(false);
+    const [phoneInput, setPhoneInput] = useState('');
+    const [showContactInputs, setShowContactInputs] = useState(false);
     const isNeedsContact = vendor.outreachStatus === 'NEEDS_CONTACT' && (vendor.status === 'qualified' || vendor.status === 'QUALIFIED');
 
     // Helper to parse legacy address strings
     const parseLegacyAddress = (addr: string | undefined) => {
         if (!addr) return { city: '-', state: '-', zip: '-' };
 
-        // Try to match "City, ST Zip" pattern
-        // Matches: "New York, NY 10001" or "New York, NY 10001, USA"
         const stateZipRegex = /([A-Za-z\s]+)[,]\s+([A-Z]{2})\s+(\d{5})/;
         const match = addr.match(stateZipRegex);
 
@@ -47,10 +47,8 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
             };
         }
 
-        // Fallback: Naive comma split
         const parts = addr.split(',');
         if (parts.length >= 2) {
-            // Assume last part is "ST Zip"
             const lastPart = parts[parts.length - 1].trim();
             const stateZipMatch = lastPart.match(/([A-Z]{2})\s+(\d{5})/);
             if (stateZipMatch) {
@@ -71,7 +69,6 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
         zip: vendor.zip || parseLegacyAddress(vendor.address).zip
     };
 
-    // Determine Link Destination based on Mode
     const detailLink = isRecruitmentMode
         ? `/supply/recruitment/${vendor.id}`
         : `/supply/crm/${vendor.id}`;
@@ -82,6 +79,29 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
             e.stopPropagation();
             if (vendor.id) onSelect(vendor.id);
         }
+    };
+
+    const handleSaveContact = () => {
+        const data: { email?: string; phone?: string } = {};
+        if (emailInput.includes('@')) data.email = emailInput;
+        if (phoneInput.trim()) data.phone = phoneInput.trim();
+
+        if (data.email || data.phone) {
+            // If email provided and is NEEDS_CONTACT, use the retrigger handler
+            if (data.email && isNeedsContact && onAddEmailAndRetrigger) {
+                onAddEmailAndRetrigger(vendor.id!, data.email);
+                // Also save phone if present
+                if (data.phone && onUpdateContact) {
+                    onUpdateContact(vendor.id!, { phone: data.phone });
+                }
+            } else if (onUpdateContact) {
+                onUpdateContact(vendor.id!, data);
+            }
+        }
+
+        setShowContactInputs(false);
+        setEmailInput('');
+        setPhoneInput('');
     };
 
     return (
@@ -191,55 +211,65 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                                 </Button>
                             </>
                         ) : isNeedsContact && !isRecruitmentMode ? (
-                            /* NEEDS_CONTACT: show email input + send */
+                            /* NEEDS_CONTACT: show email + phone inputs */
                             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                {showEmailInput ? (
-                                    <>
-                                        <input
-                                            type="email"
-                                            placeholder="email@company.com"
-                                            value={emailInput}
-                                            onChange={(e) => setEmailInput(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && emailInput.includes('@')) {
-                                                    onAddEmailAndRetrigger?.(vendor.id!, emailInput);
-                                                    setShowEmailInput(false);
-                                                    setEmailInput('');
-                                                }
-                                            }}
-                                            className="h-7 px-2 text-xs border border-border rounded-md bg-background text-foreground w-[160px] focus:outline-none focus:ring-1 focus:ring-primary"
-                                            autoFocus
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={!emailInput.includes('@')}
-                                            onClick={() => {
-                                                onAddEmailAndRetrigger?.(vendor.id!, emailInput);
-                                                setShowEmailInput(false);
-                                                setEmailInput('');
-                                            }}
-                                            className="h-7 px-2 border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white"
-                                        >
-                                            <Send className="w-3 h-3" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => { setShowEmailInput(false); setEmailInput(''); }}
-                                            className="h-7 px-1.5 text-muted-foreground"
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </Button>
-                                    </>
+                                {showContactInputs ? (
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-1">
+                                            <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                            <input
+                                                type="email"
+                                                placeholder="email@company.com"
+                                                value={emailInput}
+                                                onChange={(e) => setEmailInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleSaveContact();
+                                                }}
+                                                className="h-7 px-2 text-xs border border-border rounded-md bg-background text-foreground w-[150px] focus:outline-none focus:ring-1 focus:ring-primary"
+                                                autoFocus
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                            <input
+                                                type="tel"
+                                                placeholder="(555) 123-4567"
+                                                value={phoneInput}
+                                                onChange={(e) => setPhoneInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleSaveContact();
+                                                }}
+                                                className="h-7 px-2 text-xs border border-border rounded-md bg-background text-foreground w-[150px] focus:outline-none focus:ring-1 focus:ring-primary"
+                                            />
+                                        </div>
+                                        <div className="flex justify-end gap-1">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={!emailInput.includes('@') && !phoneInput.trim()}
+                                                onClick={handleSaveContact}
+                                                className="h-6 px-2 border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white text-[10px]"
+                                            >
+                                                <Send className="w-3 h-3 mr-0.5" /> Save
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => { setShowContactInputs(false); setEmailInput(''); setPhoneInput(''); }}
+                                                className="h-6 px-1.5 text-muted-foreground text-[10px]"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                    </div>
                                 ) : (
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => setShowEmailInput(true)}
+                                        onClick={() => setShowContactInputs(true)}
                                         className="h-7 px-2 border-amber-200 text-amber-700 hover:bg-amber-600 hover:text-white text-xs font-medium"
                                     >
-                                        <Send className="w-3 h-3 mr-1" /> Add Email
+                                        <Send className="w-3 h-3 mr-1" /> Add Contact
                                     </Button>
                                 )}
                             </div>

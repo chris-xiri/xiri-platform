@@ -212,9 +212,24 @@ export default function CRMDetailPage(props: PageProps) {
                                             <div className="space-y-1">
                                                 <div className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">Contact</div>
                                                 <div className="space-y-1 text-sm">
-                                                    <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-muted-foreground" /> {vendor.phone || '-'}</div>
-                                                    <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-muted-foreground" /> {vendor.email || '-'}</div>
-                                                    <div className="flex items-center gap-2"><Globe className="w-4 h-4 text-muted-foreground" /> {vendor.website || '-'}</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Phone className="w-4 h-4 text-muted-foreground" />
+                                                        {vendor.phone ? (
+                                                            <a href={`tel:${vendor.phone}`} className="text-primary hover:underline">{vendor.phone}</a>
+                                                        ) : <span className="text-muted-foreground">-</span>}
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Mail className="w-4 h-4 text-muted-foreground" />
+                                                        {vendor.email ? (
+                                                            <a href={`mailto:${vendor.email}`} className="text-primary hover:underline">{vendor.email}</a>
+                                                        ) : <span className="text-muted-foreground">-</span>}
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Globe className="w-4 h-4 text-muted-foreground" />
+                                                        {vendor.website ? (
+                                                            <a href={vendor.website.startsWith('http') ? vendor.website : `https://${vendor.website}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate max-w-[200px]">{vendor.website}</a>
+                                                        ) : <span className="text-muted-foreground">-</span>}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
