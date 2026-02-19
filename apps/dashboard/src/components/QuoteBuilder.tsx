@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Lead, QuoteLineItem } from '@xiri/shared';
@@ -23,6 +23,18 @@ import {
 interface QuoteBuilderProps {
     onClose: () => void;
     onCreated: (quoteId: string) => void;
+    existingQuote?: {
+        quoteId: string;
+        leadId: string;
+        leadBusinessName: string;
+        lineItems: QuoteLineItem[];
+        locations?: { id: string; name: string; address: string; city: string; state: string; zip: string }[];
+        contractTenure: number;
+        paymentTerms: string;
+        exitClause: string;
+        notes?: string;
+        version: number;
+    };
 }
 
 interface Location {
@@ -48,9 +60,10 @@ function FrequencyDisplay(item: QuoteLineItem): string {
     return item.frequency.charAt(0).toUpperCase() + item.frequency.slice(1);
 }
 
-export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) {
+export default function QuoteBuilder({ onClose, onCreated, existingQuote }: QuoteBuilderProps) {
     const { profile } = useAuth();
-    const [step, setStep] = useState(0);
+    const isEditing = !!existingQuote;
+    const [step, setStep] = useState(isEditing ? 2 : 0); // Skip to Services when editing
     const [submitting, setSubmitting] = useState(false);
 
     // Step 1: Client selection
@@ -59,7 +72,9 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
     const [leadSearch, setLeadSearch] = useState('');
 
     // Step 2: Locations
-    const [locations, setLocations] = useState<Location[]>([]);
+    const [locations, setLocations] = useState<Location[]>(
+        existingQuote?.locations || []
+    );
     const [newLocationName, setNewLocationName] = useState('');
     const [newLocationAddress, setNewLocationAddress] = useState<any>(null);
     const [newLocationCity, setNewLocationCity] = useState('');
@@ -67,13 +82,15 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
     const [newLocationZip, setNewLocationZip] = useState('');
 
     // Step 3: Line items
-    const [lineItems, setLineItems] = useState<QuoteLineItem[]>([]);
+    const [lineItems, setLineItems] = useState<QuoteLineItem[]>(
+        existingQuote?.lineItems || []
+    );
 
     // Step 4: Terms
-    const [contractTenure, setContractTenure] = useState(12);
-    const [paymentTerms, setPaymentTerms] = useState('Net 25');
-    const [exitClause, setExitClause] = useState('30-day written notice');
-    const [notes, setNotes] = useState('');
+    const [contractTenure, setContractTenure] = useState(existingQuote?.contractTenure || 12);
+    const [paymentTerms, setPaymentTerms] = useState(existingQuote?.paymentTerms || 'Net 25');
+    const [exitClause, setExitClause] = useState(existingQuote?.exitClause || '30-day written notice');
+    const [notes, setNotes] = useState(existingQuote?.notes || '');
 
     // Fetch leads
     useEffect(() => {
@@ -82,12 +99,20 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
             const snap = await getDocs(q);
             const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Lead & { id: string }));
             setLeads(data);
+
+            // If editing, auto-select the lead
+            if (existingQuote) {
+                const match = data.find(l => l.id === existingQuote.leadId);
+                if (match) setSelectedLead(match);
+            }
         }
         fetchLeads();
     }, []);
 
     // When a lead is selected, pre-populate locations
     useEffect(() => {
+        // Don't override locations when editing — they're pre-filled from the quote
+        if (isEditing && locations.length > 0) return;
         if (selectedLead?.locations && selectedLead.locations.length > 0) {
             setLocations(selectedLead.locations.map((loc: any, i: number) => ({
                 id: `loc_${i}`,
@@ -208,46 +233,75 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
     const totalMonthly = lineItems.reduce((sum, li) => sum + (li.clientRate || 0), 0);
 
     const handleSubmit = async () => {
-        if (!selectedLead || lineItems.length === 0 || !profile) return;
+        if (lineItems.length === 0 || !profile) return;
         setSubmitting(true);
 
         try {
-            const docRef = await addDoc(collection(db, 'quotes'), {
-                leadId: selectedLead.id,
-                leadBusinessName: selectedLead.businessName,
-                lineItems,
-                totalMonthlyRate: totalMonthly,
-                contractTenure,
-                paymentTerms,
-                exitClause,
-                notes,
-                version: 1,
-                revisionHistory: [],
-                status: 'draft',
-                createdBy: profile.uid || profile.email || 'unknown',
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            });
+            if (isEditing && existingQuote) {
+                // Update existing quote
+                const newVersion = (existingQuote.version || 1) + 1;
+                await updateDoc(doc(db, 'quotes', existingQuote.quoteId), {
+                    lineItems,
+                    totalMonthlyRate: totalMonthly,
+                    contractTenure,
+                    paymentTerms,
+                    exitClause,
+                    notes,
+                    version: newVersion,
+                    status: 'draft',
+                    updatedAt: serverTimestamp(),
+                });
 
-            await addDoc(collection(db, 'activity_logs'), {
-                type: 'QUOTE_CREATED',
-                quoteId: docRef.id,
-                leadId: selectedLead.id,
-                totalRate: totalMonthly,
-                createdBy: profile.uid || profile.email || 'unknown',
-                createdAt: serverTimestamp(),
-            });
+                await addDoc(collection(db, 'activity_logs'), {
+                    type: 'QUOTE_REVISED',
+                    quoteId: existingQuote.quoteId,
+                    toVersion: newVersion,
+                    revisedBy: profile.uid || profile.email || 'unknown',
+                    createdAt: serverTimestamp(),
+                });
 
-            onCreated(docRef.id);
+                onCreated(existingQuote.quoteId);
+            } else {
+                // Create new
+                if (!selectedLead) return;
+                const docRef = await addDoc(collection(db, 'quotes'), {
+                    leadId: selectedLead.id,
+                    leadBusinessName: selectedLead.businessName,
+                    lineItems,
+                    totalMonthlyRate: totalMonthly,
+                    contractTenure,
+                    paymentTerms,
+                    exitClause,
+                    notes,
+                    version: 1,
+                    revisionHistory: [],
+                    status: 'draft',
+                    createdBy: profile.uid || profile.email || 'unknown',
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                });
+
+                await addDoc(collection(db, 'activity_logs'), {
+                    type: 'QUOTE_CREATED',
+                    quoteId: docRef.id,
+                    leadId: selectedLead.id,
+                    totalRate: totalMonthly,
+                    createdBy: profile.uid || profile.email || 'unknown',
+                    createdAt: serverTimestamp(),
+                });
+
+                onCreated(docRef.id);
+            }
         } catch (err) {
-            console.error('Error creating quote:', err);
+            console.error('Error saving quote:', err);
+            alert('Failed to save quote. Check console for details.');
         } finally {
             setSubmitting(false);
         }
     };
 
     const canAdvance = () => {
-        if (step === 0) return selectedLead !== null;
+        if (step === 0) return selectedLead !== null || isEditing;
         if (step === 1) return locations.length > 0;
         if (step === 2) return lineItems.length > 0 && lineItems.every(li => li.serviceType && li.clientRate > 0);
         return true;

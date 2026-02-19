@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Quote, QuoteLineItem, QuoteRevision } from '@xiri/shared';
 import { SCOPE_TEMPLATES } from '@/data/scopeTemplates';
+import QuoteBuilder from '@/components/QuoteBuilder';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -59,6 +60,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
     // Revision state
     const [revising, setRevising] = useState(false);
+    const [showReviseBuilder, setShowReviseBuilder] = useState(false);
 
     useEffect(() => {
         async function fetchQuote() {
@@ -282,50 +284,8 @@ export default function QuoteDetailPage({ params }: PageProps) {
         }
     };
 
-    const handleRevise = async () => {
-        if (!quote || !profile) return;
-        setRevising(true);
-        try {
-            const userId = profile.uid || profile.email || 'unknown';
-            const snapshot: QuoteRevision = {
-                version: quote.version || 1,
-                totalMonthlyRate: quote.totalMonthlyRate,
-                lineItems: [...quote.lineItems],
-                changedBy: userId,
-                changedAt: new Date(),
-            };
-            const newVersion = (quote.version || 1) + 1;
-            const updatedHistory = [...(quote.revisionHistory || []), snapshot];
-
-            await updateDoc(doc(db, 'quotes', quote.id), {
-                version: newVersion,
-                revisionHistory: updatedHistory,
-                status: 'draft',
-                updatedAt: serverTimestamp(),
-            });
-
-            await addDoc(collection(db, 'activity_logs'), {
-                type: 'QUOTE_REVISED',
-                quoteId: quote.id,
-                fromVersion: quote.version || 1,
-                toVersion: newVersion,
-                revisedBy: userId,
-                createdAt: serverTimestamp(),
-            });
-
-            // Refresh the page to show updated draft state
-            setQuote({
-                ...quote,
-                version: newVersion,
-                revisionHistory: updatedHistory,
-                status: 'draft',
-            });
-        } catch (err) {
-            console.error('Error revising quote:', err);
-            alert('Failed to revise quote. Check console for details.');
-        } finally {
-            setRevising(false);
-        }
+    const handleRevise = () => {
+        setShowReviseBuilder(true);
     };
 
     if (loading) return <div className="p-8 flex justify-center">Loading...</div>;
@@ -699,6 +659,46 @@ export default function QuoteDetailPage({ params }: PageProps) {
                         ))}
                     </CardContent>
                 </Card>
+            )}
+            {/* Revise Quote Builder */}
+            {showReviseBuilder && quote && (
+                <QuoteBuilder
+                    onClose={() => setShowReviseBuilder(false)}
+                    onCreated={(quoteId) => {
+                        setShowReviseBuilder(false);
+                        // Force full refresh to get updated data
+                        window.location.reload();
+                    }}
+                    existingQuote={{
+                        quoteId: quote.id,
+                        leadId: quote.leadId,
+                        leadBusinessName: quote.leadBusinessName,
+                        lineItems: quote.lineItems || [],
+                        locations: (() => {
+                            // Extract unique locations from line items
+                            const seen = new Set<string>();
+                            return (quote.lineItems || [])
+                                .filter(li => {
+                                    if (seen.has(li.locationId)) return false;
+                                    seen.add(li.locationId);
+                                    return true;
+                                })
+                                .map(li => ({
+                                    id: li.locationId,
+                                    name: li.locationName,
+                                    address: '',
+                                    city: '',
+                                    state: '',
+                                    zip: '',
+                                }));
+                        })(),
+                        contractTenure: quote.contractTenure,
+                        paymentTerms: quote.paymentTerms,
+                        exitClause: quote.exitClause || '',
+                        notes: quote.notes || '',
+                        version: quote.version || 1,
+                    }}
+                />
             )}
         </div>
     );
