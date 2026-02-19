@@ -15,26 +15,19 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(roles);
     }
     
-    // Users collection - users can only read/write their own document
+    // Users collection
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+      // Any authenticated user can read user profiles (needed for FSM assignment dropdown)
+      allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null; // Allow user creation on signup
+      allow create: if request.auth != null;
     }
     
     // SUPPLY SIDE (Vendors, Recruitment)
-    // Vendors collection - allow public read/update for onboarding form
     match /vendors/{vendorId} {
-      // Public can read vendor data for onboarding form
       allow read: if true;
-      
-      // Public can update vendor data for onboarding form submission
       allow update: if true;
-      
-      // Public can create vendor data for onboarding
       allow create: if true;
-      
-      // Only authenticated admin/recruiter can delete
       allow delete: if hasAnyRole(['admin', 'recruiter']);
     }
     
@@ -48,7 +41,6 @@ service cloud.firestore {
     
     // SALES SIDE (Leads, Clients)
     match /leads/{leadId} {
-      // Public wizard needs read/update access
       allow create: if true;
       allow read: if true;
       allow update: if true;
@@ -67,9 +59,54 @@ service cloud.firestore {
       allow read, write: if hasAnyRole(['admin', 'sales']);
     }
     
+    // OPERATIONS BACKBONE (Quotes, Contracts, Work Orders)
+    match /quotes/{quoteId} {
+      allow read: if hasAnyRole(['admin', 'sales', 'fsm']);
+      allow create: if hasAnyRole(['admin', 'sales']);
+      allow update: if hasAnyRole(['admin', 'sales', 'fsm']);
+      allow delete: if hasRole('admin');
+    }
+
+    // Public quote review (by token) - handled by Cloud Functions, not direct Firestore access
+
+    match /contracts/{contractId} {
+      allow read: if hasAnyRole(['admin', 'sales', 'fsm', 'accounting']);
+      allow create: if hasAnyRole(['admin', 'sales']);
+      allow update: if hasAnyRole(['admin', 'fsm']);
+      allow delete: if hasRole('admin');
+    }
+
+    match /work_orders/{workOrderId} {
+      allow read: if hasAnyRole(['admin', 'fsm', 'night_mgr']);
+      allow create: if hasAnyRole(['admin', 'sales', 'fsm']);
+      allow update: if hasAnyRole(['admin', 'fsm']);
+      allow delete: if hasRole('admin');
+    }
+
+    match /check_ins/{checkInId} {
+      allow read: if hasAnyRole(['admin', 'fsm', 'night_mgr']);
+      allow create: if hasAnyRole(['admin', 'fsm', 'night_mgr']);
+      allow update: if hasAnyRole(['admin', 'fsm']);
+      allow delete: if hasRole('admin');
+    }
+
+    match /invoices/{invoiceId} {
+      allow read: if hasAnyRole(['admin', 'fsm', 'accounting']);
+      allow create: if hasAnyRole(['admin', 'accounting']);
+      allow update: if hasAnyRole(['admin', 'accounting']);
+      allow delete: if hasRole('admin');
+    }
+
+    // Activity logs - append-only for all authenticated users
+    match /activity_logs/{logId} {
+      allow read: if hasAnyRole(['admin', 'fsm']);
+      allow create: if request.auth != null;
+      allow update, delete: if false; // Immutable audit trail
+    }
+    
     // ADMIN ONLY (Settings, Templates, Agents)
     match /templates/{templateId} {
-      allow read: if request.auth != null; // All authenticated users can read
+      allow read: if request.auth != null;
       allow write: if hasRole('admin');
     }
     

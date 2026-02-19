@@ -444,9 +444,20 @@ export interface Quote {
     paymentTerms: string;
     exitClause?: string;
 
+    // Email flow
+    reviewToken?: string;
+    clientEmail?: string;
+    sentAt?: any;
+    viewedAt?: any;
+    clientResponseAt?: any;
+    clientResponseNotes?: string;
+
+    // Assignment
+    assignedFsmId?: string;
+    assignedFsmName?: string;
+
     status: QuoteStatus;
     createdBy: string;
-    sentAt?: any;
     expiresAt?: any;
     acceptedAt?: any;
     notes?: string;
@@ -540,6 +551,7 @@ export interface WorkOrder {
     margin?: number;
 
     status: WorkOrderStatus;
+    assignedFsmId?: string;
     assignedBy?: string;
     notes?: string;
     createdAt: any;

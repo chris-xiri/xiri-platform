@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Quote, QuoteLineItem } from '@xiri/shared';
@@ -11,10 +12,13 @@ import { SCOPE_TEMPLATES } from '@/data/scopeTemplates';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
     ArrowLeft, Check, X, Printer, FileText, MapPin,
-    DollarSign, Calendar, Clock, Building2, AlertTriangle
+    DollarSign, Calendar, Clock, Building2, AlertTriangle,
+    Send, Eye, MessageSquare, Mail, UserRoundCheck
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -30,12 +34,28 @@ const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destruc
     expired: { variant: 'secondary', label: 'Expired' },
 };
 
+interface FsmUser {
+    uid: string;
+    displayName: string;
+    email: string;
+}
+
 export default function QuoteDetailPage({ params }: PageProps) {
     const router = useRouter();
     const { profile } = useAuth();
     const [quote, setQuote] = useState<(Quote & { id: string }) | null>(null);
     const [loading, setLoading] = useState(true);
     const [converting, setConverting] = useState(false);
+
+    // Send-to-client state
+    const [showSendModal, setShowSendModal] = useState(false);
+    const [clientEmail, setClientEmail] = useState('');
+    const [clientName, setClientName] = useState('');
+    const [sending, setSending] = useState(false);
+
+    // FSM assignment state
+    const [fsmUsers, setFsmUsers] = useState<FsmUser[]>([]);
+    const [showFsmDropdown, setShowFsmDropdown] = useState(false);
 
     useEffect(() => {
         async function fetchQuote() {
@@ -53,8 +73,75 @@ export default function QuoteDetailPage({ params }: PageProps) {
         fetchQuote();
     }, [params.id]);
 
+    // Fetch FSM users for dropdown
+    useEffect(() => {
+        async function fetchFsmUsers() {
+            try {
+                const usersSnap = await getDocs(collection(db, 'users'));
+                const fsms: FsmUser[] = [];
+                usersSnap.forEach(d => {
+                    const data = d.data();
+                    if (data.roles?.includes('fsm') || data.roles?.includes('admin')) {
+                        fsms.push({ uid: d.id, displayName: data.displayName, email: data.email });
+                    }
+                });
+                setFsmUsers(fsms);
+            } catch (err) {
+                console.error('Error fetching FSM users:', err);
+            }
+        }
+        fetchFsmUsers();
+    }, []);
+
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
+
+    const handleSendToClient = async () => {
+        if (!quote || !clientEmail) return;
+        setSending(true);
+        try {
+            const functions = getFunctions();
+            const sendQuoteEmailFn = httpsCallable(functions, 'sendQuoteEmail');
+            await sendQuoteEmailFn({ quoteId: quote.id, clientEmail, clientName });
+
+            setQuote({ ...quote, status: 'sent', clientEmail, sentAt: new Date() });
+            setShowSendModal(false);
+        } catch (err) {
+            console.error('Error sending quote email:', err);
+            alert('Failed to send email. Check console for details.');
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const handleAssignFsm = async (fsm: FsmUser) => {
+        if (!quote) return;
+        try {
+            await updateDoc(doc(db, 'quotes', quote.id), {
+                assignedFsmId: fsm.uid,
+                assignedFsmName: fsm.displayName,
+                updatedAt: serverTimestamp(),
+            });
+            // Also update the lead
+            await updateDoc(doc(db, 'leads', quote.leadId), {
+                assignedFsmId: fsm.uid,
+            });
+            setQuote({ ...quote, assignedFsmId: fsm.uid, assignedFsmName: fsm.displayName });
+            setShowFsmDropdown(false);
+
+            await addDoc(collection(db, 'activity_logs'), {
+                type: 'FSM_ASSIGNED',
+                quoteId: quote.id,
+                leadId: quote.leadId,
+                fsmId: fsm.uid,
+                fsmName: fsm.displayName,
+                assignedBy: profile?.uid || 'unknown',
+                createdAt: serverTimestamp(),
+            });
+        } catch (err) {
+            console.error('Error assigning FSM:', err);
+        }
+    };
 
     const handleAccept = async () => {
         if (!quote || !profile) return;
@@ -86,7 +173,6 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
             // 2. Create Work Orders (one per line item)
             for (const item of quote.lineItems) {
-                // Find matching scope template for tasks
                 const template = SCOPE_TEMPLATES.find(t => t.name.toLowerCase().includes(item.serviceType.toLowerCase()));
                 const tasks = template
                     ? template.tasks.map((t, i) => ({ id: `task_${i}`, name: t.name, description: t.description, required: t.required }))
@@ -105,7 +191,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     vendorRate: null,
                     vendorHistory: [],
                     schedule: {
-                        daysOfWeek: [false, true, true, true, true, true, false], // Mon-Fri
+                        daysOfWeek: [false, true, true, true, true, true, false],
                         startTime: template?.defaultStartTime || '21:00',
                         frequency: item.frequency,
                     },
@@ -113,6 +199,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     clientRate: item.clientRate,
                     margin: null,
                     status: 'pending_assignment',
+                    assignedFsmId: quote.assignedFsmId || null,
                     assignedBy: null,
                     notes: '',
                     createdAt: serverTimestamp(),
@@ -145,7 +232,6 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 createdAt: serverTimestamp(),
             });
 
-            // Refresh
             setQuote({ ...quote, status: 'accepted' });
         } catch (err) {
             console.error('Error accepting quote:', err);
@@ -211,11 +297,93 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
                 {/* Actions */}
                 <div className="flex gap-2">
+                    {(quote.status === 'draft') && (
+                        <Button variant="default" size="sm" className="gap-2" onClick={() => setShowSendModal(true)}>
+                            <Send className="w-4 h-4" /> Send to Client
+                        </Button>
+                    )}
                     <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
                         <Printer className="w-4 h-4" /> Print
                     </Button>
                 </div>
             </div>
+
+            {/* Status Timeline + FSM Assignment */}
+            <Card className="print:hidden">
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                        {/* Timeline */}
+                        <div className="flex items-center gap-6 text-sm">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-green-500" />
+                                <span className="text-muted-foreground">Created</span>
+                            </div>
+                            <div className="w-8 h-px bg-border" />
+                            <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 rounded-full ${quote.sentAt ? 'bg-green-500' : 'bg-muted'}`} />
+                                <span className={quote.sentAt ? '' : 'text-muted-foreground'}>
+                                    Sent {quote.sentAt ? (quote.sentAt?.toDate?.()?.toLocaleDateString() || '') : ''}
+                                </span>
+                            </div>
+                            <div className="w-8 h-px bg-border" />
+                            <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 rounded-full ${quote.viewedAt ? 'bg-green-500' : 'bg-muted'}`} />
+                                <span className={quote.viewedAt ? '' : 'text-muted-foreground'}>Viewed</span>
+                            </div>
+                            <div className="w-8 h-px bg-border" />
+                            <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 rounded-full ${quote.status === 'accepted' ? 'bg-green-500' : quote.status === 'rejected' ? 'bg-red-500' : 'bg-muted'}`} />
+                                <span className={quote.clientResponseAt ? '' : 'text-muted-foreground'}>
+                                    {quote.status === 'accepted' ? 'Accepted ✓' : quote.status === 'rejected' ? 'Rejected' : 'Response'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* FSM Assignment */}
+                        <div className="relative">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                                onClick={() => setShowFsmDropdown(!showFsmDropdown)}
+                            >
+                                <UserRoundCheck className="w-4 h-4" />
+                                {quote.assignedFsmName || 'Assign FSM'}
+                            </Button>
+                            {showFsmDropdown && (
+                                <div className="absolute right-0 mt-1 w-56 bg-background border rounded-lg shadow-xl z-50 py-1">
+                                    {fsmUsers.length === 0 ? (
+                                        <p className="text-xs text-muted-foreground p-3">No FSM users found</p>
+                                    ) : (
+                                        fsmUsers.map(fsm => (
+                                            <button
+                                                key={fsm.uid}
+                                                className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center justify-between"
+                                                onClick={() => handleAssignFsm(fsm)}
+                                            >
+                                                <span>{fsm.displayName}</span>
+                                                {quote.assignedFsmId === fsm.uid && <Check className="w-4 h-4 text-green-600" />}
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Client email info */}
+                    {quote.clientEmail && (
+                        <div className="mt-3 pt-3 border-t flex items-center gap-2 text-xs text-muted-foreground">
+                            <Mail className="w-3.5 h-3.5" /> Sent to {quote.clientEmail}
+                            {quote.clientResponseNotes && (
+                                <span className="ml-4 flex items-center gap-1">
+                                    <MessageSquare className="w-3.5 h-3.5" /> Client notes: "{quote.clientResponseNotes}"
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
             {/* Quote Content (Print-friendly) */}
             <div className="print:shadow-none" id="quote-printable">
@@ -364,6 +532,62 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     </CardContent>
                 </Card>
             ) : null}
+
+            {/* Send to Client Modal */}
+            {showSendModal && (
+                <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+                    <div className="bg-background rounded-xl shadow-2xl w-full max-w-md">
+                        <div className="flex items-center justify-between p-6 border-b">
+                            <div>
+                                <h2 className="text-lg font-bold flex items-center gap-2">
+                                    <Send className="w-5 h-5 text-primary" /> Send Quote to Client
+                                </h2>
+                                <p className="text-sm text-muted-foreground">{quote.leadBusinessName} • {formatCurrency(quote.totalMonthlyRate)}/mo</p>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => setShowSendModal(false)}>✕</Button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <Label className="text-sm">Client Email *</Label>
+                                <Input
+                                    type="email"
+                                    placeholder="client@example.com"
+                                    value={clientEmail}
+                                    onChange={(e) => setClientEmail(e.target.value)}
+                                    className="mt-1"
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-sm">Client Name (optional)</Label>
+                                <Input
+                                    placeholder="John Smith"
+                                    value={clientName}
+                                    onChange={(e) => setClientName(e.target.value)}
+                                    className="mt-1"
+                                />
+                            </div>
+                            <div className="bg-muted/30 rounded-lg p-3 text-xs text-muted-foreground">
+                                <p className="font-medium text-foreground mb-1">What the client will receive:</p>
+                                <ul className="space-y-1 ml-3 list-disc">
+                                    <li>Branded email with full service breakdown</li>
+                                    <li>Link to review and respond (no login needed)</li>
+                                    <li>Options to "Accept" or "Request Changes"</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 p-6 border-t">
+                            <Button variant="outline" onClick={() => setShowSendModal(false)}>Cancel</Button>
+                            <Button
+                                onClick={handleSendToClient}
+                                disabled={!clientEmail || sending}
+                                className="gap-2"
+                            >
+                                {sending ? 'Sending...' : <><Send className="w-4 h-4" /> Send Email</>}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

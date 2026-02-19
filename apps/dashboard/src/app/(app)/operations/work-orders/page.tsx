@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import { WorkOrder } from '@xiri/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, MapPin, User2, Clock, AlertCircle, CheckCircle2, PauseCircle } from 'lucide-react';
+import { ClipboardList, MapPin, User2, Clock, AlertCircle, CheckCircle2, PauseCircle, Filter } from 'lucide-react';
 import Link from 'next/link';
 
 const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string; icon: any }> = {
@@ -19,14 +20,30 @@ const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destru
 };
 
 export default function WorkOrdersPage() {
+    const { profile, hasRole } = useAuth();
     const [workOrders, setWorkOrders] = useState<(WorkOrder & { id: string })[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filterMode, setFilterMode] = useState<'mine' | 'all'>(
+        // FSMs default to "My Work Orders", admins default to "All"
+        'all' // Will be set properly after profile loads
+    );
+
+    // Set default filter once profile loads
+    useEffect(() => {
+        if (profile) {
+            const isAdmin = profile.roles?.includes('admin');
+            setFilterMode(isAdmin ? 'all' : 'mine');
+        }
+    }, [profile]);
 
     useEffect(() => {
         const q = query(collection(db, 'work_orders'), orderBy('createdAt', 'desc'));
         const unsub = onSnapshot(q, (snap) => {
             const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkOrder & { id: string }));
             setWorkOrders(data);
+            setLoading(false);
+        }, (err) => {
+            console.error('Error fetching work orders:', err);
             setLoading(false);
         });
         return () => unsub();
@@ -35,16 +52,46 @@ export default function WorkOrdersPage() {
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
 
-    const pending = workOrders.filter(wo => wo.status === 'pending_assignment');
-    const active = workOrders.filter(wo => wo.status === 'active');
+    // Apply FSM filter
+    const filteredOrders = filterMode === 'mine' && profile
+        ? workOrders.filter(wo => wo.assignedFsmId === profile.uid)
+        : workOrders;
+
+    const pending = filteredOrders.filter(wo => wo.status === 'pending_assignment');
+    const active = filteredOrders.filter(wo => wo.status === 'active');
+    const isAdmin = profile?.roles?.includes('admin');
 
     if (loading) return <div className="p-8 flex justify-center">Loading work orders...</div>;
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold">Work Orders</h1>
-                <p className="text-sm text-muted-foreground">Manage vendor assignments and service fulfillment</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold">Work Orders</h1>
+                    <p className="text-sm text-muted-foreground">Manage vendor assignments and service fulfillment</p>
+                </div>
+
+                {/* Filter Toggle */}
+                <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+                    <Button
+                        variant={filterMode === 'mine' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => setFilterMode('mine')}
+                    >
+                        <User2 className="w-3.5 h-3.5" /> My Orders
+                    </Button>
+                    {isAdmin && (
+                        <Button
+                            variant={filterMode === 'all' ? 'default' : 'ghost'}
+                            size="sm"
+                            className="gap-1.5"
+                            onClick={() => setFilterMode('all')}
+                        >
+                            <Filter className="w-3.5 h-3.5" /> All
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {/* Stats */}
@@ -76,7 +123,7 @@ export default function WorkOrdersPage() {
                         <div className="flex items-center gap-2">
                             <ClipboardList className="w-5 h-5 text-muted-foreground" />
                             <div>
-                                <p className="text-2xl font-bold">{workOrders.length}</p>
+                                <p className="text-2xl font-bold">{filteredOrders.length}</p>
                                 <p className="text-xs text-muted-foreground">Total</p>
                             </div>
                         </div>
@@ -98,13 +145,17 @@ export default function WorkOrdersPage() {
             </div>
 
             {/* Work Orders Table */}
-            {workOrders.length === 0 ? (
+            {filteredOrders.length === 0 ? (
                 <Card>
                     <CardContent className="py-16 text-center">
                         <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
-                        <h3 className="text-lg font-medium mb-1">No work orders yet</h3>
+                        <h3 className="text-lg font-medium mb-1">
+                            {filterMode === 'mine' ? 'No work orders assigned to you' : 'No work orders yet'}
+                        </h3>
                         <p className="text-sm text-muted-foreground">
-                            Work orders are created automatically when a Sales quote is accepted.
+                            {filterMode === 'mine'
+                                ? 'Work orders will appear here when a quote is accepted with you assigned as FSM.'
+                                : 'Work orders are created automatically when a Sales quote is accepted.'}
                         </p>
                     </CardContent>
                 </Card>
@@ -125,7 +176,7 @@ export default function WorkOrdersPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {workOrders.map((wo) => {
+                                {filteredOrders.map((wo) => {
                                     const config = STATUS_CONFIG[wo.status] || STATUS_CONFIG.pending_assignment;
                                     const margin = wo.vendorRate ? wo.clientRate - wo.vendorRate : null;
                                     return (
