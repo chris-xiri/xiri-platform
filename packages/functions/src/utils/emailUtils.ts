@@ -248,11 +248,12 @@ export async function sendEmail(
     to: string,
     subject: string,
     html: string,
-    attachments?: any[]
+    attachments?: any[],
+    from?: string
 ): Promise<boolean> {
     try {
         const { data, error } = await resend.emails.send({
-            from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+            from: from || 'Xiri Facility Solutions <onboarding@xiri.ai>',
             replyTo: 'chris@xiri.ai',
             to,
             subject,

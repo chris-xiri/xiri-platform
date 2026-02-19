@@ -199,10 +199,10 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
     console.error("Error sending email:", error8);
   }
 }
-async function sendEmail(to, subject, html, attachments) {
+async function sendEmail(to, subject, html, attachments, from) {
   try {
     const { data, error: error8 } = await resend.emails.send({
-      from: "Xiri Facility Solutions <onboarding@xiri.ai>",
+      from: from || "Xiri Facility Solutions <onboarding@xiri.ai>",
       replyTo: "chris@xiri.ai",
       to,
       subject,
@@ -2586,58 +2586,58 @@ var sendQuoteEmail = (0, import_https3.onCall)({
     const labels = { nightly: "Nightly", weekly: "Weekly", biweekly: "Bi-Weekly", monthly: "Monthly", quarterly: "Quarterly", custom_days: "Custom" };
     return labels[freq] || freq;
   };
-  const lineItemRows = (quote.lineItems || []).map(
-    (item) => `<tr>
-            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.locationName}</td>
-            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.serviceType}</td>
-            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${formatFrequency(item.frequency, item.daysOfWeek)}</td>
-            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${formatCurrency(item.clientRate)}/mo</td>
-        </tr>`
+  const lineItemCards = (quote.lineItems || []).map(
+    (item) => `<div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
+            <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">${item.locationName}</div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span style="color: #6b7280; font-size: 14px;">${item.serviceType}</span>
+                    <span style="color: #9ca3af; font-size: 13px;"> \xB7 ${formatFrequency(item.frequency, item.daysOfWeek)}</span>
+                </div>
+                <span style="font-weight: 700; color: #0369a1; font-size: 16px; white-space: nowrap;">${formatCurrency(item.clientRate)}/mo</span>
+            </div>
+        </div>`
   ).join("");
   const html = `
     <!DOCTYPE html>
     <html>
-    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6;">
-        <div style="max-width: 640px; margin: 0 auto; padding: 32px 16px;">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; -webkit-text-size-adjust: 100%;">
+        <div style="max-width: 560px; margin: 0 auto; padding: 24px 12px;">
             <!-- Header -->
-            <div style="background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%); border-radius: 12px 12px 0 0; padding: 32px; text-align: center;">
-                <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">XIRI</h1>
-                <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">FACILITY SOLUTIONS</p>
+            <div style="background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%); border-radius: 12px 12px 0 0; padding: 24px;">
+                <div style="display: flex; align-items: baseline; justify-content: center; gap: 10px;">
+                    <span style="color: white; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">XIRI</span>
+                    <span style="color: rgba(255,255,255,0.8); font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">FACILITY SOLUTIONS</span>
+                </div>
             </div>
 
             <!-- Body -->
-            <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                <h2 style="color: #111827; margin: 0 0 8px; font-size: 22px;">Your Service Proposal</h2>
-                <p style="color: #6b7280; margin: 0 0 24px; font-size: 14px;">
+            <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <h2 style="color: #111827; margin: 0 0 8px; font-size: 20px;">Your Service Proposal</h2>
+                <p style="color: #6b7280; margin: 0 0 20px; font-size: 14px; line-height: 1.5;">
                     Hi${clientName ? ` ${clientName}` : ""},<br/>
                     Thank you for considering XIRI Facility Solutions. Below is a summary of the proposed services for <strong>${quote.leadBusinessName}</strong>.
                 </p>
 
-                <!-- Service Table -->
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
-                    <thead>
-                        <tr style="background: #f9fafb;">
-                            <th style="padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px;">Location</th>
-                            <th style="padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px;">Service</th>
-                            <th style="padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px;">Frequency</th>
-                            <th style="padding: 10px 12px; text-align: right; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px;">Rate</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${lineItemRows}
-                    </tbody>
-                </table>
+                <!-- Service Cards -->
+                <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                    ${lineItemCards}
+                </div>
 
                 <!-- Total -->
-                <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 32px;">
-                    <p style="color: #6b7280; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total Monthly Investment</p>
-                    <p style="color: #0369a1; margin: 4px 0 0; font-size: 32px; font-weight: 700;">${formatCurrency(quote.totalMonthlyRate)}<span style="font-size: 14px; font-weight: 400; color: #6b7280;">/month</span></p>
-                    <p style="color: #6b7280; margin: 4px 0 0; font-size: 13px;">${quote.contractTenure}-month agreement \u2022 ${quote.paymentTerms}</p>
+                <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 28px;">
+                    <p style="color: #6b7280; margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Total Monthly Investment</p>
+                    <p style="color: #0369a1; margin: 4px 0 0; font-size: 28px; font-weight: 700;">${formatCurrency(quote.totalMonthlyRate)}<span style="font-size: 14px; font-weight: 400; color: #6b7280;">/month</span></p>
+                    <p style="color: #6b7280; margin: 4px 0 0; font-size: 13px;">${quote.contractTenure}-month agreement \xB7 ${quote.paymentTerms}</p>
                 </div>
 
                 <!-- CTA Button -->
                 <div style="text-align: center; margin-bottom: 16px;">
-                    <a href="${reviewUrl}" style="display: inline-block; background: #0369a1; color: white; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">Review & Respond</a>
+                    <a href="${reviewUrl}" style="display: inline-block; background: #0369a1; color: white; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-weight: 600; font-size: 16px;">Review & Respond</a>
                 </div>
                 <p style="text-align: center; color: #9ca3af; font-size: 12px; margin: 0;">
                     Click the button above to accept or request changes to this proposal.
@@ -2645,9 +2645,9 @@ var sendQuoteEmail = (0, import_https3.onCall)({
             </div>
 
             <!-- Footer -->
-            <div style="text-align: center; padding: 24px 0;">
+            <div style="text-align: center; padding: 20px 0;">
                 <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                    XIRI Facility Solutions \u2022 Professional Facility Management<br/>
+                    XIRI Facility Solutions \xB7 Professional Facility Management<br/>
                     <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
                 </p>
             </div>
@@ -2657,7 +2657,9 @@ var sendQuoteEmail = (0, import_https3.onCall)({
   const sent = await sendEmail(
     clientEmail,
     `Service Proposal for ${quote.leadBusinessName} \u2014 XIRI Facility Solutions`,
-    html
+    html,
+    void 0,
+    "Xiri Facility Solutions <quotes@xiri.ai>"
   );
   if (!sent) {
     throw new import_https3.HttpsError("internal", "Failed to send email");
