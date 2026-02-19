@@ -6,7 +6,7 @@
 1.  **Outreach Generation (The Hook):**
     *   **Trigger:** User approves vendor in Dashboard (`hasActiveContract` flag relates to the *internal need*).
     *   **Content (Urgent Mode):** "We have a contract in [Zip]. Complete profile to bid."
-    *   **Content (Supply Mode):** "Get paid faster. Join Xiri. Guaranteed returns."
+    *   **Content (Supply Mode):** "You do the specialized work you love; we do the office work you hate. Get paid on time."
     *   **Link:** All lead to `/onboarding/[vendorId]`.
 
 2.  **Onboarding Portal (The Choice):**

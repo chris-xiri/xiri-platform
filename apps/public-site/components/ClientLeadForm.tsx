@@ -30,7 +30,12 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
 
         setLoading(true);
 
-        // Open to all Zips (Nationwide)
+        // Alpha Geo-Fence: Only Great Neck & New Hyde Park zips proceed
+        if (!isValidZip(zip)) {
+            router.push(`/waitlist?zip=${zip}`);
+            return;
+        }
+
         // Valid -> Start Audit Flow
         const params = new URLSearchParams({
             zip,

@@ -48,8 +48,8 @@ async function getTemplate(templateId) {
       return null;
     }
     return doc.data();
-  } catch (error6) {
-    console.error("Error fetching template:", error6);
+  } catch (error8) {
+    console.error("Error fetching template:", error8);
     return null;
   }
 }
@@ -96,8 +96,8 @@ BODY:
       subject: subjectMatch[1].trim(),
       body: bodyMatch[1].trim()
     };
-  } catch (error6) {
-    console.error("Error generating email:", error6);
+  } catch (error8) {
+    console.error("Error generating email:", error8);
     return null;
   }
 }
@@ -165,8 +165,8 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
       });
       resendId = data?.id;
       console.log(`\u2705 Email sent to ${vendor?.companyName}: ${email.subject} (Resend ID: ${data?.id})`);
-    } catch (error6) {
-      console.error("\u274C Resend API error:", error6);
+    } catch (error8) {
+      console.error("\u274C Resend API error:", error8);
       await db2.collection("vendor_activities").add({
         vendorId,
         type: "EMAIL_FAILED",
@@ -176,7 +176,7 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
           templateId,
           subject: email.subject,
           to: vendor?.email || "unknown",
-          error: String(error6)
+          error: String(error8)
         }
       });
       return;
@@ -195,13 +195,13 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
         // NEW: Track Resend email ID
       }
     });
-  } catch (error6) {
-    console.error("Error sending email:", error6);
+  } catch (error8) {
+    console.error("Error sending email:", error8);
   }
 }
 async function sendEmail(to, subject, html, attachments) {
   try {
-    const { data, error: error6 } = await resend.emails.send({
+    const { data, error: error8 } = await resend.emails.send({
       from: "Xiri Facility Solutions <onboarding@xiri.ai>",
       replyTo: "chris@xiri.ai",
       to,
@@ -209,8 +209,8 @@ async function sendEmail(to, subject, html, attachments) {
       html,
       attachments
     });
-    if (error6) {
-      console.error("\u274C Resend API error:", error6);
+    if (error8) {
+      console.error("\u274C Resend API error:", error8);
       return false;
     }
     console.log(`\u2705 Email sent to ${to}: ${subject} (ID: ${data?.id})`);
@@ -310,8 +310,8 @@ if (!admin.apps.length) {
 var db = admin.firestore();
 try {
   db.settings({ ignoreUndefinedProperties: true });
-} catch (error6) {
-  console.log("Firestore settings usage note:", error6);
+} catch (error8) {
+  console.log("Firestore settings usage note:", error8);
 }
 
 // src/agents/recruiter.ts
@@ -523,9 +523,9 @@ var searchVendors = async (query, location) => {
     const filteredVendors = rawVendors.filter((v) => v.rating === void 0 || v.rating >= 3.5);
     console.log(`Filtered ${rawVendors.length} -> ${filteredVendors.length} vendors (Rating >= 3.5 or N/A).`);
     return filteredVendors;
-  } catch (error6) {
-    console.error("Error searching vendors:", error6.message);
-    throw new Error(`Failed to source vendors: ${error6.message}`);
+  } catch (error8) {
+    console.error("Error searching vendors:", error8.message);
+    throw new Error(`Failed to source vendors: ${error8.message}`);
   }
 };
 var getMockVendors = (query, location) => {
@@ -610,8 +610,8 @@ async function scrapeWebsite(url, geminiApiKey) {
       combinedData.phone = formatPhone(combinedData.phone);
     }
     return { success: true, data: combinedData };
-  } catch (error6) {
-    return { success: false, error: error6.message };
+  } catch (error8) {
+    return { success: false, error: error8.message };
   }
 }
 function extractStructuredData($) {
@@ -695,7 +695,7 @@ async function scrapeContactPage(url) {
     const html = await response.text();
     const $ = cheerio.load(html);
     return extractFromPatterns($, html);
-  } catch (error6) {
+  } catch (error8) {
     return {};
   }
 }
@@ -727,8 +727,8 @@ ${text}`;
       };
     }
     return {};
-  } catch (error6) {
-    console.error("AI extraction error:", error6);
+  } catch (error8) {
+    console.error("AI extraction error:", error8);
     return {};
   }
 }
@@ -771,7 +771,7 @@ async function verifyEmail(email) {
     } else {
       return { valid: true, deliverable: false, reason: "No MX records found" };
     }
-  } catch (error6) {
+  } catch (error8) {
     return { valid: true, deliverable: false, reason: "Domain not found" };
   }
 }
@@ -781,7 +781,7 @@ async function resolveMX(domain) {
   const resolveMx = promisify(dns.resolveMx);
   try {
     return await resolveMx(domain);
-  } catch (error6) {
+  } catch (error8) {
     return [];
   }
 }
@@ -995,8 +995,8 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
     }
     logger.info(`Vendor ${vendorId} has no email and no website. Marking NEEDS_CONTACT.`);
     await markNeedsContact(vendorId, "No email or website available");
-  } catch (error6) {
-    logger.error("Error in enrich pipeline:", error6);
+  } catch (error8) {
+    logger.error("Error in enrich pipeline:", error8);
   }
 }
 async function setOutreachPending(vendorId, vendorData) {
@@ -1067,8 +1067,8 @@ var generateOutreachContent = async (vendor, preferredChannel) => {
       email: jsonContent.email,
       generatedAt: /* @__PURE__ */ new Date()
     };
-  } catch (error6) {
-    console.error("Error generating outreach content:", error6);
+  } catch (error8) {
+    console.error("Error generating outreach content:", error8);
     return {
       channel,
       sms: "Error generating SMS.",
@@ -1090,8 +1090,8 @@ var analyzeIncomingMessage = async (vendor, messageContent, previousContext) => 
     text = text.replace(/^```json/gm, "").replace(/^```/gm, "").trim();
     const jsonContent = JSON.parse(text);
     return jsonContent;
-  } catch (error6) {
-    console.error("Error analyzing message:", error6);
+  } catch (error8) {
+    console.error("Error analyzing message:", error8);
     return { intent: "OTHER", reply: "Error analyzing message." };
   }
 };
@@ -1136,8 +1136,8 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
         });
       }
     }
-  } catch (error6) {
-    logger2.error("Fatal error in queue processor:", error6);
+  } catch (error8) {
+    logger2.error("Fatal error in queue processor:", error8);
   }
 });
 async function handleGenerate(task) {
@@ -1401,20 +1401,39 @@ var onIncomingMessage = (0, import_firestore3.onDocumentCreated)("vendor_activit
         inReplyTo: event.params.activityId
       }
     });
-  } catch (error6) {
-    logger3.error("Error processing inbound message:", error6);
+  } catch (error8) {
+    logger3.error("Error processing inbound message:", error8);
   }
 });
 
 // src/triggers/onDocumentUploaded.ts
 var import_firestore4 = require("firebase-functions/v2/firestore");
 var admin9 = __toESM(require("firebase-admin"));
+var logger5 = __toESM(require("firebase-functions/logger"));
 
 // src/agents/documentVerifier.ts
 var import_generative_ai5 = require("@google/generative-ai");
 var admin8 = __toESM(require("firebase-admin"));
+var logger4 = __toESM(require("firebase-functions/logger"));
+var https = __toESM(require("https"));
 var genAI4 = new import_generative_ai5.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 var db7 = admin8.firestore();
+function downloadFileAsBuffer(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return downloadFileAsBuffer(res.headers.location).then(resolve).catch(reject);
+      }
+      if (res.statusCode !== 200) {
+        return reject(new Error(`Download failed with status ${res.statusCode}`));
+      }
+      const chunks = [];
+      res.on("data", (chunk) => chunks.push(chunk));
+      res.on("end", () => resolve(Buffer.concat(chunks)));
+      res.on("error", reject);
+    }).on("error", reject);
+  });
+}
 async function verifyDocument(docType, vendorName, specialty) {
   const model3 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
   let simulatedOcrText = "";
@@ -1430,9 +1449,6 @@ async function verifyDocument(docType, vendorName, specialty) {
             COVERAGES:
             COMMERCIAL GENERAL LIABILITY
             EACH OCCURRENCE: $2,000,000
-            DAMAGE TO RENTED PREMISES: $100,000
-            MED EXP: $5,000
-            PERSONAL & ADV INJURY: $2,000,000
             GENERAL AGGREGATE: $4,000,000
             
             WORKERS COMPENSATION
@@ -1448,7 +1464,6 @@ async function verifyDocument(docType, vendorName, specialty) {
             Name: ${vendorName}
             Business Name: ${vendorName} LLC
             Federal Tax Classification: Limited Liability Company
-            Address: 123 Main St
             TIN: XX-XXX1234
             Signed: JS
             Date: 01/15/2024
@@ -1469,12 +1484,101 @@ async function verifyDocument(docType, vendorName, specialty) {
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON found in response");
     return JSON.parse(jsonMatch[0]);
-  } catch (error6) {
-    console.error("AI Verification Failed:", error6);
+  } catch (error8) {
+    console.error("AI Verification Failed:", error8);
     return {
       valid: false,
-      reasoning: "AI Verification Failed: " + error6,
+      reasoning: "AI Verification Failed: " + error8,
       extracted: {}
+    };
+  }
+}
+async function verifyAcord25(fileUrl, vendorName, attestations) {
+  const model3 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+  try {
+    logger4.info(`Downloading ACORD 25 from: ${fileUrl}`);
+    const buffer = await downloadFileAsBuffer(fileUrl);
+    const isPdf = fileUrl.toLowerCase().includes(".pdf");
+    const isJpg = fileUrl.toLowerCase().includes(".jpg") || fileUrl.toLowerCase().includes(".jpeg");
+    const isPng = fileUrl.toLowerCase().includes(".png");
+    const contentType = isPdf ? "application/pdf" : isJpg ? "image/jpeg" : isPng ? "image/png" : "application/pdf";
+    const base64Data = buffer.toString("base64");
+    const prompt = `You are an insurance compliance verification agent for Xiri Facility Solutions.
+
+Analyze this ACORD 25 Certificate of Liability Insurance and extract the following data in JSON format.
+
+**The vendor's name on file is: "${vendorName}"**
+
+**The vendor attested to having the following coverage:**
+- General Liability: ${attestations.hasGL ? "YES" : "NO"}
+- Workers' Compensation: ${attestations.hasWC ? "YES" : "NO"}
+- Auto Insurance: ${attestations.hasAuto ? "YES" : "NO"}
+- Business Entity (LLC/Corp): ${attestations.hasEntity ? "YES" : "NO"}
+
+**Minimum requirements to PASS:**
+- General Liability: \u2265 $1,000,000 per occurrence AND \u2265 $2,000,000 aggregate
+- Workers' Compensation: Must have active policy if attested
+- Auto Insurance: Must have active policy if attested
+- All policies must NOT be expired (check against today's date: ${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]})
+- Insured name should reasonably match vendor name on file
+
+**Cross-reference the vendor's attestations against the actual document.**
+If the vendor attested to having coverage but the document does NOT show it, flag it.
+If limits are below minimums, flag it.
+If any policy is expired, flag it.
+
+Return ONLY valid JSON in this exact format:
+{
+    "valid": true/false,
+    "reasoning": "Brief explanation of the verification result",
+    "flags": ["list of specific issues found, empty array if none"],
+    "extracted": {
+        "insuredName": "Name as shown on certificate",
+        "glPerOccurrence": 1000000,
+        "glAggregate": 2000000,
+        "wcActive": true/false,
+        "wcPolicyNumber": "policy number or null",
+        "autoActive": true/false,
+        "expirationDates": [
+            { "policy": "General Liability", "expires": "2025-01-15" },
+            { "policy": "Workers Comp", "expires": "2025-06-30" }
+        ],
+        "certificateHolder": "Name if listed, or null"
+    }
+}`;
+    const result = await model3.generateContent({
+      contents: [{
+        role: "user",
+        parts: [
+          {
+            inlineData: {
+              mimeType: contentType,
+              data: base64Data
+            }
+          },
+          { text: prompt }
+        ]
+      }]
+    });
+    const responseText = result.response.text();
+    logger4.info(`Gemini ACORD 25 response length: ${responseText.length}`);
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("No JSON found in Gemini response");
+    }
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!parsed.flags) {
+      parsed.flags = [];
+    }
+    logger4.info(`ACORD 25 verification result: valid=${parsed.valid}, flags=${parsed.flags.length}`);
+    return parsed;
+  } catch (error8) {
+    logger4.error("ACORD 25 verification failed:", error8);
+    return {
+      valid: false,
+      reasoning: `AI verification failed: ${error8}`,
+      extracted: {},
+      flags: ["AI_PROCESSING_ERROR"]
     };
   }
 }
@@ -1483,22 +1587,83 @@ async function verifyDocument(docType, vendorName, specialty) {
 var db8 = admin9.firestore();
 var onDocumentUploaded = (0, import_firestore4.onDocumentUpdated)({
   document: "vendors/{vendorId}",
-  secrets: ["GEMINI_API_KEY"]
+  secrets: ["GEMINI_API_KEY", "RESEND_API_KEY"]
 }, async (event) => {
   const before = event.data?.before.data();
   const after = event.data?.after.data();
   const vendorId = event.params.vendorId;
   if (!before || !after) return;
+  const acord25Before = before.compliance?.acord25?.status;
+  const acord25After = after.compliance?.acord25?.status;
+  if (acord25After === "PENDING" && acord25Before !== "PENDING") {
+    logger5.info(`Processing ACORD 25 for vendor ${vendorId}`);
+    const fileUrl = after.compliance?.acord25?.url;
+    if (!fileUrl) {
+      logger5.error(`No ACORD 25 URL found for vendor ${vendorId}`);
+      return;
+    }
+    const vendorName = after.businessName || after.companyName || "Vendor";
+    const attestations = {
+      hasGL: after.compliance?.generalLiability?.hasInsurance || false,
+      hasWC: after.compliance?.workersComp?.hasInsurance || false,
+      hasAuto: after.compliance?.autoInsurance?.hasInsurance || false,
+      hasEntity: after.compliance?.hasBusinessEntity || false
+    };
+    try {
+      const result = await verifyAcord25(fileUrl, vendorName, attestations);
+      const status = result.valid ? "VERIFIED" : result.flags.length > 0 ? "FLAGGED" : "REJECTED";
+      await db8.doc(`vendors/${vendorId}`).update({
+        "compliance.acord25.status": status,
+        "compliance.acord25.verifiedAt": admin9.firestore.FieldValue.serverTimestamp(),
+        "compliance.acord25.aiAnalysis": {
+          valid: result.valid,
+          reasoning: result.reasoning,
+          extracted: result.extracted
+        },
+        "compliance.acord25.extractedData": result.extracted,
+        updatedAt: admin9.firestore.FieldValue.serverTimestamp()
+      });
+      await db8.collection("vendor_activities").add({
+        vendorId,
+        type: "AI_VERIFICATION",
+        description: `AI ${status === "VERIFIED" ? "Verified" : "Flagged"} ACORD 25: ${result.reasoning}`,
+        createdAt: admin9.firestore.FieldValue.serverTimestamp(),
+        metadata: {
+          docType: "ACORD_25",
+          status,
+          valid: result.valid,
+          flags: result.flags,
+          extracted: result.extracted
+        }
+      });
+      logger5.info(`ACORD 25 verification complete for ${vendorId}: ${status}`);
+      if (status === "FLAGGED") {
+        await sendFlagNotification(vendorId, vendorName, result.flags, result.reasoning);
+      }
+    } catch (error8) {
+      logger5.error(`ACORD 25 verification failed for ${vendorId}:`, error8);
+      await db8.doc(`vendors/${vendorId}`).update({
+        "compliance.acord25.status": "FLAGGED",
+        "compliance.acord25.aiAnalysis": {
+          valid: false,
+          reasoning: `Verification error: ${error8}`,
+          extracted: {}
+        },
+        updatedAt: admin9.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    return;
+  }
   if (after.compliance?.coi?.status === "PENDING" && before.compliance?.coi?.status !== "PENDING") {
-    console.log(`Processing COI for ${vendorId}`);
-    await runVerification(vendorId, "COI", after);
+    logger5.info(`Processing COI for ${vendorId}`);
+    await runLegacyVerification(vendorId, "COI", after);
   }
   if (after.compliance?.w9?.status === "PENDING" && before.compliance?.w9?.status !== "PENDING") {
-    console.log(`Processing W9 for ${vendorId}`);
-    await runVerification(vendorId, "W9", after);
+    logger5.info(`Processing W9 for ${vendorId}`);
+    await runLegacyVerification(vendorId, "W9", after);
   }
 });
-async function runVerification(vendorId, docType, vendorData) {
+async function runLegacyVerification(vendorId, docType, vendorData) {
   try {
     const result = await verifyDocument(docType, vendorData.companyName || "Vendor", vendorData.specialty || "General");
     const fieldPath = docType === "COI" ? "compliance.coi" : "compliance.w9";
@@ -1514,7 +1679,6 @@ async function runVerification(vendorId, docType, vendorData) {
     await db8.collection("vendor_activities").add({
       vendorId,
       type: "AI_VERIFICATION",
-      // New type
       description: `AI ${result.valid ? "Verified" : "Rejected"} ${docType}: ${result.reasoning}`,
       createdAt: admin9.firestore.FieldValue.serverTimestamp(),
       metadata: {
@@ -1529,8 +1693,44 @@ async function runVerification(vendorId, docType, vendorData) {
         documentType: docType === "COI" ? "Certificate of Insurance" : "W-9 Form"
       });
     }
-  } catch (error6) {
-    console.error(`Verification failed for ${docType}:`, error6);
+  } catch (error8) {
+    logger5.error(`Verification failed for ${docType}:`, error8);
+  }
+}
+async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
+  try {
+    const { Resend: Resend3 } = await import("resend");
+    const resend2 = new Resend3(process.env.RESEND_API_KEY);
+    const flagList = flags.map((f) => `<li style="color: #b45309;">${f}</li>`).join("");
+    const dashboardLink = `https://app.xiri.ai/supply/crm/${vendorId}`;
+    await resend2.emails.send({
+      from: "Xiri Compliance <compliance@xiri.ai>",
+      to: "chris@xiri.ai",
+      subject: `\u26A0\uFE0F ACORD 25 Flagged: ${vendorName}`,
+      html: `
+            <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px;">
+                <h2 style="color: #b45309;">\u26A0\uFE0F ACORD 25 Flagged for Review</h2>
+                <p><strong>${vendorName}</strong>'s ACORD 25 has been flagged by AI verification.</p>
+                
+                <h3 style="margin-top: 16px;">Issues Found:</h3>
+                <ul>${flagList}</ul>
+                
+                <p style="margin-top: 16px;"><strong>AI Summary:</strong> ${reasoning}</p>
+                
+                <div style="margin-top: 24px;">
+                    <a href="${dashboardLink}" style="display: inline-block; padding: 12px 24px; background: #b45309; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                        Review in CRM \u2192
+                    </a>
+                </div>
+                
+                <p style="margin-top: 32px; font-size: 12px; color: #94a3b8;">
+                    Vendor ID: ${vendorId}
+                </p>
+            </div>`
+    });
+    logger5.info(`Flag notification sent for vendor ${vendorId}`);
+  } catch (error8) {
+    logger5.error("Failed to send flag notification:", error8);
   }
 }
 
@@ -1785,19 +1985,19 @@ var enrichFromWebsite = (0, import_https.onCall)({
         confidence: scrapedData.confidence
       }
     };
-  } catch (error6) {
-    console.error("Enrichment error:", error6);
-    if (error6 instanceof import_https.HttpsError) {
-      throw error6;
+  } catch (error8) {
+    console.error("Enrichment error:", error8);
+    if (error8 instanceof import_https.HttpsError) {
+      throw error8;
     }
-    throw new import_https.HttpsError("internal", `Enrichment failed: ${error6.message}`);
+    throw new import_https.HttpsError("internal", `Enrichment failed: ${error8.message}`);
   }
 });
 
 // src/triggers/onOnboardingComplete.ts
 var import_firestore7 = require("firebase-functions/v2/firestore");
 var admin11 = __toESM(require("firebase-admin"));
-var logger4 = __toESM(require("firebase-functions/logger"));
+var logger6 = __toESM(require("firebase-functions/logger"));
 var import_resend2 = require("resend");
 if (!admin11.apps.length) {
   admin11.initializeApp();
@@ -1817,7 +2017,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   const phone = after.phone || "N/A";
   const track = after.onboardingTrack || "STANDARD";
   const lang = after.preferredLanguage || "en";
-  logger4.info(`Vendor ${vendorId} (${businessName}) completed onboarding. Sending notification.`);
+  logger6.info(`Vendor ${vendorId} (${businessName}) completed onboarding. Sending notification.`);
   const resend2 = new import_resend2.Resend(process.env.RESEND_API_KEY);
   const compliance = after.compliance || {};
   const complianceLines = [
@@ -1856,19 +2056,19 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
         </p>
     </div>`;
   try {
-    const { data, error: error6 } = await resend2.emails.send({
+    const { data, error: error8 } = await resend2.emails.send({
       from: "Xiri Facility Solutions <onboarding@xiri.ai>",
       to: "chris@xiri.ai",
       subject: `\u{1F3D7}\uFE0F Vendor Onboarded: ${businessName}`,
       html
     });
-    if (error6) {
-      logger4.error("Failed to send onboarding notification:", error6);
+    if (error8) {
+      logger6.error("Failed to send onboarding notification:", error8);
     } else {
-      logger4.info(`Notification sent to chris@xiri.ai (Resend ID: ${data?.id})`);
+      logger6.info(`Notification sent to chris@xiri.ai (Resend ID: ${data?.id})`);
     }
   } catch (err) {
-    logger4.error("Error sending onboarding notification:", err);
+    logger6.error("Error sending onboarding notification:", err);
   }
   if (email && email !== "N/A") {
     const isSpanish = lang === "es";
@@ -1937,12 +2137,12 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
         html: vendorHtml
       });
       if (vendorError) {
-        logger4.error("Failed to send vendor confirmation:", vendorError);
+        logger6.error("Failed to send vendor confirmation:", vendorError);
       } else {
-        logger4.info(`Vendor confirmation sent to ${email}`);
+        logger6.info(`Vendor confirmation sent to ${email}`);
       }
     } catch (err) {
-      logger4.error("Error sending vendor confirmation:", err);
+      logger6.error("Error sending vendor confirmation:", err);
     }
   }
   const db13 = admin11.firestore();
@@ -1954,9 +2154,11 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   const attestationItems = [hasEntity, hasGL, hasWC, hasAuto, hasW9];
   const attestationScore = attestationItems.filter(Boolean).length * 10;
   const uploads = compliance.uploadedDocs || {};
-  const docsCount = [uploads.coi, uploads.llc, uploads.w9].filter(Boolean).length;
-  const docsUploadedScore = docsCount * 10;
-  const docsVerifiedScore = 0;
+  const hasAcord25 = !!compliance.acord25?.url;
+  const legacyDocsCount = [uploads.coi, uploads.llc, uploads.w9].filter(Boolean).length;
+  const docsUploadedScore = hasAcord25 ? 30 : Math.min(legacyDocsCount * 10, 30);
+  const acord25Verified = compliance.acord25?.status === "VERIFIED";
+  const docsVerifiedScore = acord25Verified ? 20 : 0;
   const totalScore = attestationScore + docsUploadedScore + docsVerifiedScore;
   const complianceUpdate = {
     complianceScore: totalScore,
@@ -1971,7 +2173,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
     complianceUpdate.status = "onboarding_scheduled";
   }
   await db13.collection("vendors").doc(vendorId).update(complianceUpdate);
-  logger4.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
+  logger6.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
   await db13.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
@@ -1984,7 +2186,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
 // src/triggers/dripScheduler.ts
 var import_firestore8 = require("firebase-functions/v2/firestore");
 var admin12 = __toESM(require("firebase-admin"));
-var logger5 = __toESM(require("firebase-functions/logger"));
+var logger7 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
 if (!admin12.apps.length) {
   admin12.initializeApp();
@@ -2000,7 +2202,7 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
   if (after.status !== "awaiting_onboarding") return;
   const vendorId = event.params.vendorId;
   const businessName = after.businessName || "Unknown";
-  logger5.info(`Scheduling drip campaign for vendor ${vendorId} (${businessName})`);
+  logger7.info(`Scheduling drip campaign for vendor ${vendorId} (${businessName})`);
   const now = /* @__PURE__ */ new Date();
   const followUps = [
     { dayOffset: 3, sequence: 1, subject: "Quick reminder \u2014 complete your Xiri profile" },
@@ -2031,13 +2233,13 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
     createdAt: /* @__PURE__ */ new Date(),
     metadata: { followUpCount: 3, schedule: "3d/7d/14d" }
   });
-  logger5.info(`Drip campaign scheduled for ${vendorId}: 3 follow-ups at days 3, 7, 14`);
+  logger7.info(`Drip campaign scheduled for ${vendorId}: 3 follow-ups at days 3, 7, 14`);
 });
 
 // src/triggers/handleUnsubscribe.ts
 var import_https2 = require("firebase-functions/v2/https");
 var admin13 = __toESM(require("firebase-admin"));
-var logger6 = __toESM(require("firebase-functions/logger"));
+var logger8 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
 if (!admin13.apps.length) {
   admin13.initializeApp();
@@ -2094,14 +2296,14 @@ var handleUnsubscribe = (0, import_https2.onRequest)({
         cancelledTasks: cancelledCount
       }
     });
-    logger6.info(`Vendor ${vendorId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
+    logger8.info(`Vendor ${vendorId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
     res.status(200).send(renderPage(
       "Unsubscribed Successfully",
       `${businessName} has been removed from our outreach list. You won't receive any more emails from Xiri Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
       true
     ));
   } catch (err) {
-    logger6.error(`Error processing unsubscribe for ${vendorId}:`, err);
+    logger8.error(`Error processing unsubscribe for ${vendorId}:`, err);
     res.status(500).send(renderPage(
       "Something Went Wrong",
       'We encountered an error processing your request. Please try again or contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.',
@@ -2141,7 +2343,7 @@ function renderPage(title, message, success) {
 // src/triggers/sendOnboardingInvite.ts
 var import_firestore9 = require("firebase-functions/v2/firestore");
 var admin14 = __toESM(require("firebase-admin"));
-var logger7 = __toESM(require("firebase-functions/logger"));
+var logger9 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
 var import_date_fns2 = require("date-fns");
 if (!admin14.apps.length) {
@@ -2164,14 +2366,14 @@ var sendOnboardingInvite = (0, import_firestore9.onDocumentUpdated)({
   const contactName = after.contactName || businessName;
   const vendorId = event.params.vendorId;
   if (!callTime) {
-    logger7.warn(`Vendor ${vendorId} moved to onboarding_scheduled but no onboardingCallTime set.`);
+    logger9.warn(`Vendor ${vendorId} moved to onboarding_scheduled but no onboardingCallTime set.`);
     return;
   }
   if (!vendorEmail) {
-    logger7.warn(`Vendor ${vendorId} has no email. Skipping invite.`);
+    logger9.warn(`Vendor ${vendorId} has no email. Skipping invite.`);
     return;
   }
-  logger7.info(`Sending onboarding invite for vendor ${vendorId} (${businessName}) at ${callTime}`);
+  logger9.info(`Sending onboarding invite for vendor ${vendorId} (${businessName}) at ${callTime}`);
   const startTime = new Date(callTime);
   const duration = 30;
   const endTime = (0, import_date_fns2.addMinutes)(startTime, duration);
@@ -2246,7 +2448,7 @@ Power to the Facilities!`,
       emailSent: vendorSent
     }
   });
-  logger7.info(`Onboarding invite sent for vendor ${vendorId}. Vendor: ${vendorSent ? "\u2705" : "\u274C"}`);
+  logger9.info(`Onboarding invite sent for vendor ${vendorId}. Vendor: ${vendorSent ? "\u2705" : "\u274C"}`);
 });
 function generateICS2(event) {
   const formatDate = (date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
@@ -2321,9 +2523,9 @@ var generateLeads = (0, import_https3.onCall)({
       // Include vendor data in response for preview mode
       vendors: previewOnly ? result.vendors : void 0
     };
-  } catch (error6) {
-    console.error("Error in generateLeads:", error6);
-    throw new import_https3.HttpsError("internal", error6.message || "An internal error occurred.");
+  } catch (error8) {
+    console.error("Error in generateLeads:", error8);
+    throw new import_https3.HttpsError("internal", error8.message || "An internal error occurred.");
   }
 });
 var clearPipeline = (0, import_https3.onCall)({
@@ -2355,8 +2557,8 @@ var clearPipeline = (0, import_https3.onCall)({
     chunks.push(currentBatch.commit());
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
-  } catch (error6) {
-    throw new import_https3.HttpsError("internal", error6.message);
+  } catch (error8) {
+    throw new import_https3.HttpsError("internal", error8.message);
   }
 });
 var runRecruiterAgent = (0, import_https3.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
@@ -2387,9 +2589,9 @@ var testSendEmail = (0, import_https3.onCall)({
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
-  } catch (error6) {
-    console.error("Error sending test email:", error6);
-    throw new import_https3.HttpsError("internal", error6.message || "Failed to send email");
+  } catch (error8) {
+    console.error("Error sending test email:", error8);
+    throw new import_https3.HttpsError("internal", error8.message || "Failed to send email");
   }
 });
 // Annotate the CommonJS export names for ESM import in node:
