@@ -57,7 +57,7 @@ export function ContractorHero({
 
     const features = [
         { text: "No Sales Required", icon: <Search className="w-5 h-5 text-sky-400" /> },
-        { text: "Guaranteed Payment", icon: <DollarSign className="w-5 h-5 text-sky-400" /> }
+        { text: "On-Time Payments", icon: <DollarSign className="w-5 h-5 text-sky-400" /> }
     ];
 
     const defaultHeadline = (

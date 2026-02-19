@@ -151,7 +151,7 @@ export function ContractorValueProps() {
             relief: "No more chasing 12 different clients for checks. Submit one invoice to XIRI for all your jobs, and get one consolidated direct deposit.",
             focusTitle: "Zero Headaches",
             contractorFocus: "We handle collections, disputes, and billing questions. You just watch the money hit your account.",
-            badge: "Guaranteed Payout",
+            badge: "On-Time Payouts",
             role: "XIRI Accounting",
             visual: getAdminVisual()
         },
