@@ -12,10 +12,11 @@ import { enrichFromWebsite } from "./triggers/enrichFromWebsite";
 import { onOnboardingComplete } from "./triggers/onOnboardingComplete";
 import { onAwaitingOnboarding } from "./triggers/dripScheduler";
 import { handleUnsubscribe } from "./triggers/handleUnsubscribe";
+import { sendOnboardingInvite } from "./triggers/sendOnboardingInvite";
 
 // Export Bot Functions (Telegram disabled for now)
 // export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };
-export { onVendorApproved, onVendorCreated, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete, onAwaitingOnboarding, handleUnsubscribe };
+export { onVendorApproved, onVendorCreated, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete, onAwaitingOnboarding, handleUnsubscribe, sendOnboardingInvite };
 
 // 1. Lead Sourcing Agent Trigger
 export const generateLeads = onCall({

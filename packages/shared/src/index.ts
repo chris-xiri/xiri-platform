@@ -75,6 +75,7 @@ export interface Vendor {
     // Campaign & Onboarding
     hasActiveContract?: boolean;
     onboardingTrack?: 'FAST_TRACK' | 'STANDARD';
+    onboardingCallTime?: string; // ISO date string for scheduled onboarding call
     campaignId?: string;
 
     // Contact Info

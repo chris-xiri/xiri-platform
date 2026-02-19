@@ -5,8 +5,9 @@ import { useParams, useSearchParams } from "next/navigation";
 import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { Vendor } from "@xiri/shared";
-import { Loader2, CheckCircle, Upload, ChevronRight, ChevronLeft, Globe } from "lucide-react";
+import { Loader2, CheckCircle, Upload, ChevronRight, ChevronLeft, Globe, Calendar, Clock, Phone } from "lucide-react";
 import { translations, t, type Language } from "./translations";
+import { addDays, addHours, startOfHour, format } from "date-fns";
 
 export default function OnboardingPage() {
     const params = useParams();
@@ -16,6 +17,9 @@ export default function OnboardingPage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [completed, setCompleted] = useState(false);
+    const [callBooked, setCallBooked] = useState(false);
+    const [selectedCallSlot, setSelectedCallSlot] = useState<string | null>(null);
+    const [bookingCall, setBookingCall] = useState(false);
 
     // Language Selection
     const [language, setLanguage] = useState<Language>('en');
@@ -192,7 +196,215 @@ export default function OnboardingPage() {
         );
     }
 
+    // Check if vendor qualifies for onboarding call (GL + LLC + WC)
+    const qualifiesForCall = hasGeneralLiability && hasBusinessEntity && hasWorkersComp;
+
+    const handleBookCall = async () => {
+        if (!vendor || !selectedCallSlot) return;
+        setBookingCall(true);
+        try {
+            await updateDoc(doc(db, "vendors", vendor.id!), {
+                onboardingCallTime: selectedCallSlot,
+                status: 'onboarding_scheduled',
+                updatedAt: serverTimestamp()
+            });
+            setCallBooked(true);
+        } catch (error) {
+            console.error("Error booking call:", error);
+        } finally {
+            setBookingCall(false);
+        }
+    };
+
     if (completed) {
+        // ─── Call Booked Confirmation ───
+        if (callBooked && selectedCallSlot) {
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
+                    <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center space-y-4">
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                            <Calendar className="w-8 h-8 text-green-600" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900">You&apos;re Booked!</h2>
+                        <div className="bg-slate-50 rounded-lg p-4">
+                            <p className="text-lg font-semibold text-slate-900">
+                                {format(new Date(selectedCallSlot), "EEEE, MMMM do")}
+                            </p>
+                            <p className="text-slate-600">
+                                {format(new Date(selectedCallSlot), "h:mm a")} • 30 minutes
+                            </p>
+                        </div>
+                        <p className="text-slate-600 text-sm">
+                            A calendar invite has been sent to your email. We look forward to speaking with you!
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        // ─── Scheduling UI (if qualified) ───
+        if (qualifiesForCall && !callBooked) {
+            return (
+                <div className="min-h-screen bg-slate-50 p-4">
+                    <div className="max-w-2xl mx-auto">
+                        {/* Success Banner */}
+                        <div className="bg-white p-6 rounded-xl shadow-lg mb-6 text-center">
+                            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <CheckCircle className="w-6 h-6 text-green-600" />
+                            </div>
+                            <h2 className="text-xl font-bold text-slate-900">Application Submitted!</h2>
+                            <p className="text-slate-600 mt-1">You qualify for an onboarding call. Book a time below.</p>
+                        </div>
+
+                        {/* Scheduling Card */}
+                        <div className="bg-white p-6 rounded-xl shadow-lg">
+                            <div className="mb-6">
+                                <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                    <Phone className="w-5 h-5 text-sky-600" />
+                                    Schedule Your Onboarding Call
+                                </h3>
+                                <p className="text-slate-600 mt-1">30-minute call to review your account and next steps</p>
+                            </div>
+
+                            <div className="grid md:grid-cols-[200px_1fr] gap-6">
+                                {/* Date Selector */}
+                                <div className="space-y-2">
+                                    {(() => {
+                                        const dates: Date[] = [];
+                                        let current = addDays(new Date(), 1);
+                                        let daysAdded = 0;
+                                        while (daysAdded < 5) {
+                                            const dayOfWeek = current.getDay();
+                                            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                                                dates.push(new Date(current));
+                                                daysAdded++;
+                                            }
+                                            current = addDays(current, 1);
+                                        }
+                                        return dates;
+                                    })().map((date, idx) => {
+                                        const isSelected = selectedCallSlot &&
+                                            format(new Date(selectedCallSlot), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+                                        const isTomorrow = format(date, 'yyyy-MM-dd') === format(addDays(new Date(), 1), 'yyyy-MM-dd');
+
+                                        return (
+                                            <button
+                                                key={idx}
+                                                onClick={() => {
+                                                    const baseDate = startOfHour(date);
+                                                    const firstSlot = addHours(baseDate, 9);
+                                                    setSelectedCallSlot(firstSlot.toISOString());
+                                                }}
+                                                className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${isSelected
+                                                        ? 'border-sky-600 bg-sky-50 text-sky-900'
+                                                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                    }`}
+                                            >
+                                                <div className={`text-xs font-medium ${isSelected ? 'text-sky-600' : 'text-gray-500'}`}>
+                                                    {format(date, 'EEE')}
+                                                </div>
+                                                <div className={`text-lg font-semibold ${isSelected ? 'text-sky-900' : 'text-gray-900'}`}>
+                                                    {format(date, 'MMM d')}
+                                                </div>
+                                                {isTomorrow && (
+                                                    <div className="text-xs text-sky-600 font-medium mt-0.5">Tomorrow</div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Time Slots */}
+                                <div>
+                                    {selectedCallSlot ? (
+                                        <div className="space-y-3">
+                                            <div className="text-sm font-medium text-gray-700 mb-3">
+                                                {format(new Date(selectedCallSlot), 'EEEE, MMMM d')}
+                                            </div>
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                {(() => {
+                                                    const selectedDate = new Date(selectedCallSlot);
+                                                    const baseDate = startOfHour(selectedDate);
+                                                    const times = [
+                                                        { label: '9:00am', value: addHours(baseDate, 9) },
+                                                        { label: '9:30am', value: addHours(baseDate, 9.5) },
+                                                        { label: '10:00am', value: addHours(baseDate, 10) },
+                                                        { label: '10:30am', value: addHours(baseDate, 10.5) },
+                                                        { label: '11:00am', value: addHours(baseDate, 11) },
+                                                        { label: '11:30am', value: addHours(baseDate, 11.5) },
+                                                        { label: '12:00pm', value: addHours(baseDate, 12) },
+                                                        { label: '1:00pm', value: addHours(baseDate, 13) },
+                                                        { label: '1:30pm', value: addHours(baseDate, 13.5) },
+                                                        { label: '2:00pm', value: addHours(baseDate, 14) },
+                                                        { label: '2:30pm', value: addHours(baseDate, 14.5) },
+                                                        { label: '3:00pm', value: addHours(baseDate, 15) },
+                                                        { label: '3:30pm', value: addHours(baseDate, 15.5) },
+                                                        { label: '4:00pm', value: addHours(baseDate, 16) },
+                                                        { label: '4:30pm', value: addHours(baseDate, 16.5) },
+                                                    ];
+
+                                                    return times.map((timeSlot, timeIndex) => {
+                                                        const str = timeSlot.value.toISOString();
+                                                        const selected = selectedCallSlot === str;
+                                                        const now = new Date();
+                                                        const isPast = timeSlot.value < now;
+
+                                                        return (
+                                                            <button
+                                                                key={timeIndex}
+                                                                onClick={() => setSelectedCallSlot(str)}
+                                                                disabled={isPast}
+                                                                className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-all ${selected
+                                                                    ? 'bg-sky-600 text-white border-sky-600'
+                                                                    : 'bg-white border-gray-200 hover:border-sky-300 hover:bg-sky-50'
+                                                                    } ${isPast ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                {timeSlot.label}
+                                                            </button>
+                                                        );
+                                                    });
+                                                })()}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full text-gray-500 text-center">
+                                            <div>
+                                                <Clock className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                                                <p>Select a date to see available times</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Book Button */}
+                            <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200">
+                                <p className="text-sm text-gray-600">
+                                    {selectedCallSlot
+                                        ? `Selected: ${format(new Date(selectedCallSlot), 'MMM d, h:mm a')}`
+                                        : 'No time selected'}
+                                </p>
+                                <button
+                                    onClick={handleBookCall}
+                                    disabled={!selectedCallSlot || bookingCall}
+                                    className="px-6 py-2.5 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+                                >
+                                    {bookingCall ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
+                                    Book Onboarding Call
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Skip Option */}
+                        <p className="text-center text-sm text-slate-500 mt-4">
+                            Not ready to schedule? No worries — we&apos;ll reach out to you soon.
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        // ─── Simple Success (doesn't qualify for call) ───
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
                 <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center space-y-4">

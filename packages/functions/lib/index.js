@@ -1967,7 +1967,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
     statusUpdatedAt: /* @__PURE__ */ new Date()
   };
   if (totalScore >= 80) {
-    complianceUpdate.status = "pending_verification";
+    complianceUpdate.status = "onboarding_scheduled";
   }
   await db12.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger4.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
