@@ -7,7 +7,7 @@ import { db } from "../../../lib/firebase";
 import { Vendor } from "@xiri/shared";
 import { Loader2, CheckCircle, Upload, ChevronRight, ChevronLeft, Globe, Calendar, Clock, Phone } from "lucide-react";
 import { translations, t, type Language } from "./translations";
-import { addDays, addHours, startOfHour, format } from "date-fns";
+import { addDays, addHours, addMinutes, startOfDay, format } from "date-fns";
 
 export default function OnboardingPage() {
     const params = useParams();
@@ -20,6 +20,18 @@ export default function OnboardingPage() {
     const [callBooked, setCallBooked] = useState(false);
     const [selectedCallSlot, setSelectedCallSlot] = useState<string | null>(null);
     const [bookingCall, setBookingCall] = useState(false);
+
+    // Timezone
+    const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const [selectedTz, setSelectedTz] = useState(detectedTz);
+    const [showTzDropdown, setShowTzDropdown] = useState(false);
+    const commonTimezones = [
+        { label: 'Eastern Time (ET)', value: 'America/New_York' },
+        { label: 'Central Time (CT)', value: 'America/Chicago' },
+        { label: 'Mountain Time (MT)', value: 'America/Denver' },
+        { label: 'Pacific Time (PT)', value: 'America/Los_Angeles' },
+    ];
+    const tzLabel = commonTimezones.find(tz => tz.value === selectedTz)?.label || selectedTz;
 
     // Language Selection
     const [language, setLanguage] = useState<Language>('en');
@@ -264,6 +276,36 @@ export default function OnboardingPage() {
                                     Schedule Your Onboarding Call
                                 </h3>
                                 <p className="text-slate-600 mt-1">30-minute call to review your account and next steps</p>
+
+                                {/* Timezone Selector */}
+                                <div className="relative mt-3">
+                                    <button
+                                        onClick={() => setShowTzDropdown(!showTzDropdown)}
+                                        className="inline-flex items-center gap-1.5 text-sm text-sky-600 hover:text-sky-700 transition-colors"
+                                    >
+                                        <Globe className="w-3.5 h-3.5" />
+                                        {tzLabel}
+                                        <ChevronLeft className="w-3 h-3 -rotate-90" />
+                                    </button>
+                                    {showTzDropdown && (
+                                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[220px]">
+                                            {commonTimezones.map(tz => (
+                                                <button
+                                                    key={tz.value}
+                                                    onClick={() => {
+                                                        setSelectedTz(tz.value);
+                                                        setShowTzDropdown(false);
+                                                        setSelectedCallSlot(null);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-sky-50 transition-colors ${selectedTz === tz.value ? 'text-sky-600 font-medium bg-sky-50' : 'text-gray-700'
+                                                        }`}
+                                                >
+                                                    {tz.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="grid md:grid-cols-[200px_1fr] gap-6">
@@ -291,13 +333,13 @@ export default function OnboardingPage() {
                                             <button
                                                 key={idx}
                                                 onClick={() => {
-                                                    const baseDate = startOfHour(date);
-                                                    const firstSlot = addHours(baseDate, 9);
+                                                    const baseDate = startOfDay(date);
+                                                    const firstSlot = addHours(baseDate, 8);
                                                     setSelectedCallSlot(firstSlot.toISOString());
                                                 }}
                                                 className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${isSelected
-                                                        ? 'border-sky-600 bg-sky-50 text-sky-900'
-                                                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                    ? 'border-sky-600 bg-sky-50 text-sky-900'
+                                                    : 'border-gray-200 hover:border-gray-300 bg-white'
                                                     }`}
                                             >
                                                 <div className={`text-xs font-medium ${isSelected ? 'text-sky-600' : 'text-gray-500'}`}>
@@ -324,24 +366,17 @@ export default function OnboardingPage() {
                                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                                 {(() => {
                                                     const selectedDate = new Date(selectedCallSlot);
-                                                    const baseDate = startOfHour(selectedDate);
-                                                    const times = [
-                                                        { label: '9:00am', value: addHours(baseDate, 9) },
-                                                        { label: '9:30am', value: addHours(baseDate, 9.5) },
-                                                        { label: '10:00am', value: addHours(baseDate, 10) },
-                                                        { label: '10:30am', value: addHours(baseDate, 10.5) },
-                                                        { label: '11:00am', value: addHours(baseDate, 11) },
-                                                        { label: '11:30am', value: addHours(baseDate, 11.5) },
-                                                        { label: '12:00pm', value: addHours(baseDate, 12) },
-                                                        { label: '1:00pm', value: addHours(baseDate, 13) },
-                                                        { label: '1:30pm', value: addHours(baseDate, 13.5) },
-                                                        { label: '2:00pm', value: addHours(baseDate, 14) },
-                                                        { label: '2:30pm', value: addHours(baseDate, 14.5) },
-                                                        { label: '3:00pm', value: addHours(baseDate, 15) },
-                                                        { label: '3:30pm', value: addHours(baseDate, 15.5) },
-                                                        { label: '4:00pm', value: addHours(baseDate, 16) },
-                                                        { label: '4:30pm', value: addHours(baseDate, 16.5) },
-                                                    ];
+                                                    const baseDate = startOfDay(selectedDate);
+                                                    // 8am to 10pm, 30-min intervals
+                                                    const times: { label: string; value: Date }[] = [];
+                                                    for (let hour = 8; hour <= 21; hour++) {
+                                                        times.push({ label: format(addHours(baseDate, hour), 'h:mm a'), value: addHours(baseDate, hour) });
+                                                        if (hour < 21) {
+                                                            times.push({ label: format(addMinutes(addHours(baseDate, hour), 30), 'h:mm a'), value: addMinutes(addHours(baseDate, hour), 30) });
+                                                        }
+                                                    }
+                                                    // Add 10:00 PM as last slot
+                                                    times.push({ label: format(addHours(baseDate, 22), 'h:mm a'), value: addHours(baseDate, 22) });
 
                                                     return times.map((timeSlot, timeIndex) => {
                                                         const str = timeSlot.value.toISOString();

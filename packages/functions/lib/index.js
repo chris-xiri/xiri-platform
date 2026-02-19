@@ -241,28 +241,28 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db12, task) {
-  return db12.collection(COLLECTION).add({
+async function enqueueTask(db13, task) {
+  return db13.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db12) {
+async function fetchPendingTasks(db13) {
   const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db12.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db13.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function updateTaskStatus(db12, taskId, status, updates = {}) {
-  await db12.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db13, taskId, status, updates = {}) {
+  await db13.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db12, vendorId) {
-  const snapshot = await db12.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db12.batch();
+async function cancelVendorTasks(db13, vendorId) {
+  const snapshot = await db13.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db13.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
@@ -294,6 +294,7 @@ __export(index_exports, {
   processOutreachQueue: () => processOutreachQueue,
   runRecruiterAgent: () => runRecruiterAgent,
   sendBookingConfirmation: () => sendBookingConfirmation,
+  sendOnboardingInvite: () => sendOnboardingInvite,
   testSendEmail: () => testSendEmail
 });
 module.exports = __toCommonJS(index_exports);
@@ -1714,8 +1715,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db12 = (0, import_firestore6.getFirestore)();
-    const docRef = db12.collection(collection).doc(documentId);
+    const db13 = (0, import_firestore6.getFirestore)();
+    const docRef = db13.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -1944,7 +1945,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger4.error("Error sending vendor confirmation:", err);
     }
   }
-  const db12 = admin11.firestore();
+  const db13 = admin11.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -1969,9 +1970,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db12.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db13.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger4.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db12.collection("vendor_activities").add({
+  await db13.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -2137,6 +2138,143 @@ function renderPage(title, message, success) {
 </html>`;
 }
 
+// src/triggers/sendOnboardingInvite.ts
+var import_firestore9 = require("firebase-functions/v2/firestore");
+var admin14 = __toESM(require("firebase-admin"));
+var logger7 = __toESM(require("firebase-functions/logger"));
+init_emailUtils();
+var import_date_fns2 = require("date-fns");
+if (!admin14.apps.length) {
+  admin14.initializeApp();
+}
+var db12 = admin14.firestore();
+var ADMIN_EMAIL = "chris@xiri.ai";
+var sendOnboardingInvite = (0, import_firestore9.onDocumentUpdated)({
+  document: "vendors/{vendorId}",
+  secrets: ["RESEND_API_KEY"]
+}, async (event) => {
+  const before = event.data?.before?.data();
+  const after = event.data?.after?.data();
+  if (!before || !after) return;
+  if (before.status === after.status) return;
+  if (after.status !== "onboarding_scheduled") return;
+  const callTime = after.onboardingCallTime;
+  const vendorEmail = after.email;
+  const businessName = after.businessName || "Vendor";
+  const contactName = after.contactName || businessName;
+  const vendorId = event.params.vendorId;
+  if (!callTime) {
+    logger7.warn(`Vendor ${vendorId} moved to onboarding_scheduled but no onboardingCallTime set.`);
+    return;
+  }
+  if (!vendorEmail) {
+    logger7.warn(`Vendor ${vendorId} has no email. Skipping invite.`);
+    return;
+  }
+  logger7.info(`Sending onboarding invite for vendor ${vendorId} (${businessName}) at ${callTime}`);
+  const startTime = new Date(callTime);
+  const duration = 30;
+  const endTime = (0, import_date_fns2.addMinutes)(startTime, duration);
+  const icsContent = generateICS2({
+    start: startTime,
+    end: endTime,
+    summary: `Xiri Onboarding Call: ${businessName}`,
+    description: `Onboarding call with ${contactName} from ${businessName}.
+
+We'll cover:
+- Service capabilities & coverage areas
+- Insurance & compliance verification
+- Account setup & next steps
+
+Power to the Facilities!`,
+    location: "Phone Call",
+    organizer: { name: "Xiri Facility Solutions", email: "onboarding@xiri.ai" },
+    attendees: [
+      { name: contactName, email: vendorEmail },
+      { name: "Xiri Team", email: ADMIN_EMAIL }
+    ]
+  });
+  const formattedTime = (0, import_date_fns2.format)(startTime, "EEEE, MMMM do 'at' h:mm a");
+  const htmlBody = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #0ea5e9;">Onboarding Call Confirmed!</h1>
+        <p>Hi ${contactName},</p>
+        <p>Your onboarding call with Xiri Facility Solutions has been scheduled:</p>
+        <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0; font-size: 18px; font-weight: bold;">
+                ${formattedTime}
+            </p>
+            <p style="margin: 5px 0 0; color: #6b7280;">Duration: ${duration} minutes \u2022 Phone Call</p>
+        </div>
+        <p><strong>What to expect:</strong></p>
+        <ul>
+            <li>Quick review of your service capabilities</li>
+            <li>Insurance & compliance verification</li>
+            <li>Account setup and next steps</li>
+        </ul>
+        <p>A calendar invitation has been attached to this email.</p>
+        <p>Best,<br/>The Xiri Team</p>
+    </div>
+    `;
+  const subject = `Confirmed: Xiri Onboarding Call \u2014 ${formattedTime}`;
+  const vendorSent = await sendEmail(vendorEmail, subject, htmlBody, [
+    { filename: "onboarding-call.ics", content: icsContent }
+  ]);
+  const adminHtml = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #0ea5e9;">New Onboarding Call Booked</h1>
+        <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0; font-size: 18px; font-weight: bold;">${businessName}</p>
+            <p style="margin: 5px 0 0; color: #6b7280;">${formattedTime} \u2022 ${duration} min</p>
+            <p style="margin: 5px 0 0; color: #6b7280;">Contact: ${contactName} (${vendorEmail})</p>
+        </div>
+        <p><a href="https://app.xiri.ai/supply/crm/${vendorId}" style="color: #0ea5e9;">View in CRM \u2192</a></p>
+    </div>
+    `;
+  await sendEmail(ADMIN_EMAIL, `Onboarding Call: ${businessName} \u2014 ${formattedTime}`, adminHtml, [
+    { filename: "onboarding-call.ics", content: icsContent }
+  ]);
+  await db12.collection("vendor_activities").add({
+    vendorId,
+    type: "ONBOARDING_CALL_SCHEDULED",
+    description: `Onboarding call scheduled for ${formattedTime}`,
+    createdAt: /* @__PURE__ */ new Date(),
+    metadata: {
+      callTime,
+      vendorEmail,
+      adminEmail: ADMIN_EMAIL,
+      emailSent: vendorSent
+    }
+  });
+  logger7.info(`Onboarding invite sent for vendor ${vendorId}. Vendor: ${vendorSent ? "\u2705" : "\u274C"}`);
+});
+function generateICS2(event) {
+  const formatDate = (date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  let attendeeLines = "";
+  if (event.attendees) {
+    attendeeLines = event.attendees.map((a) => `ATTENDEE;CN=${a.name};RSVP=TRUE:mailto:${a.email}`).join("\r\n");
+  }
+  return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Xiri//Facility Solutions//EN
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+UID:onboarding-${Date.now()}@xiri.ai
+DTSTAMP:${formatDate(/* @__PURE__ */ new Date())}
+DTSTART:${formatDate(event.start)}
+DTEND:${formatDate(event.end)}
+SUMMARY:${event.summary}
+DESCRIPTION:${event.description.replace(/\n/g, "\\n")}
+LOCATION:${event.location}
+ORGANIZER;CN=${event.organizer.name}:mailto:${event.organizer.email}
+${attendeeLines}
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+END:VCALENDAR`;
+}
+
 // src/index.ts
 var generateLeads = (0, import_https3.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
@@ -2269,6 +2407,7 @@ var testSendEmail = (0, import_https3.onCall)({
   processOutreachQueue,
   runRecruiterAgent,
   sendBookingConfirmation,
+  sendOnboardingInvite,
   testSendEmail
 });
 //# sourceMappingURL=index.js.map
