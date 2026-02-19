@@ -406,13 +406,86 @@ export interface Job {
     createdAt: any;
 }
 
+// --- INVOICING & ACCOUNTING ---
+
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'void';
+
+export interface InvoiceLineItem {
+    workOrderId: string;
+    locationName: string;
+    serviceType: string;
+    frequency: string;
+    amount: number;
+}
+
+export interface VendorPayout {
+    vendorId: string;
+    vendorName: string;
+    workOrderId: string;
+    serviceType: string;
+    amount: number;
+    status: 'pending' | 'approved' | 'paid';
+}
+
 export interface Invoice {
-    id: string;
-    clientId: string;
-    jobIds: string[];
+    id?: string;
+    leadId: string;
+    clientBusinessName: string;
+    contractId?: string;
+
+    lineItems: InvoiceLineItem[];
+
+    subtotal: number;
+    adjustments?: number;
     totalAmount: number;
-    status: 'draft' | 'sent' | 'paid' | 'overdue';
-    dueDate: Date;
+
+    vendorPayouts: VendorPayout[];
+    totalPayouts: number;
+    grossMargin: number;
+
+    billingPeriod: { start: string; end: string };
+    dueDate: any;
+    paidAt?: any;
+    paymentMethod?: string;
+
+    status: InvoiceStatus;
+    createdBy: string;
+    createdAt: any;
+    updatedAt: any;
+}
+
+// --- NIGHT MANAGER AUDITS ---
+
+export interface CheckInTask {
+    taskId: string;
+    taskName: string;
+    completed: boolean;
+    photoUrl?: string;
+    notes?: string;
+}
+
+export interface CheckIn {
+    id?: string;
+    workOrderId: string;
+    locationName: string;
+    serviceType: string;
+
+    qrScannedAt: any;
+    qrValid: boolean;
+
+    tasksCompleted: CheckInTask[];
+    completionRate: number; // 0-100
+
+    auditScore: number; // 1-5
+    auditNotes?: string;
+    photoUrls?: string[];
+
+    nightManagerId: string;
+    nightManagerName: string;
+    vendorId?: string;
+    vendorName?: string;
+    checkInDate: string; // YYYY-MM-DD
+
     createdAt: any;
 }
 

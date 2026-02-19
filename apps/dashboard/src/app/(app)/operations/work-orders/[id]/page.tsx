@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, orderBy, limit, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { WorkOrder, VendorAssignment } from '@xiri/shared';
+import { WorkOrder, VendorAssignment, CheckIn } from '@xiri/shared';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
     ArrowLeft, MapPin, Clock, DollarSign, User2, CheckCircle2,
-    AlertCircle, Search, Calendar, Shield, QrCode, Truck
+    AlertCircle, Search, Calendar, Shield, QrCode, Truck, Star, Printer
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -54,6 +54,10 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
     const [vendorRate, setVendorRate] = useState<number>(0);
     const [assigning, setAssigning] = useState(false);
 
+    // QR code state
+    const [qrImageUrl, setQrImageUrl] = useState<string>('');
+    const [recentCheckIns, setRecentCheckIns] = useState<(CheckIn & { id: string })[]>([]);
+
     useEffect(() => {
         async function fetchWO() {
             try {
@@ -81,6 +85,32 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
         }
         fetchVendors();
     }, [showAssign]);
+
+    // Generate QR image + fetch check-ins
+    useEffect(() => {
+        if (!wo?.qrCodeSecret) return;
+        async function genQR() {
+            try {
+                const QRCode = (await import('qrcode')).default;
+                const url = await QRCode.toDataURL(wo!.qrCodeSecret!, { width: 200, margin: 2 });
+                setQrImageUrl(url);
+            } catch { /* skip */ }
+        }
+        async function fetchCheckIns() {
+            try {
+                const q = query(
+                    collection(db, 'check_ins'),
+                    where('workOrderId', '==', params.id),
+                    orderBy('createdAt', 'desc'),
+                    limit(5)
+                );
+                const snap = await getDocs(q);
+                setRecentCheckIns(snap.docs.map(d => ({ id: d.id, ...d.data() } as CheckIn & { id: string })));
+            } catch { /* skip */ }
+        }
+        genQR();
+        fetchCheckIns();
+    }, [wo?.qrCodeSecret, params.id]);
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
@@ -373,14 +403,69 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base flex items-center gap-2">
-                                <QrCode className="w-4 h-4 text-muted-foreground" /> Verification
+                                <QrCode className="w-4 h-4 text-muted-foreground" /> Verification QR
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <p className="text-xs text-muted-foreground mb-2">QR Secret for Night Manager check-in:</p>
-                            <code className="text-xs bg-muted px-2 py-1 rounded break-all">{wo.qrCodeSecret}</code>
+                        <CardContent className="text-center space-y-3">
+                            {qrImageUrl ? (
+                                <img
+                                    src={qrImageUrl}
+                                    alt="QR Code"
+                                    className="mx-auto rounded-lg border p-2 bg-white"
+                                    width={160}
+                                    height={160}
+                                />
+                            ) : (
+                                <div className="w-40 h-40 mx-auto bg-muted rounded-lg flex items-center justify-center">
+                                    <QrCode className="w-8 h-8 text-muted-foreground" />
+                                </div>
+                            )}
+                            <p className="text-[10px] font-mono text-muted-foreground break-all">{wo.qrCodeSecret}</p>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full gap-2 text-xs"
+                                onClick={() => {
+                                    const w = window.open('', '_blank');
+                                    if (w) {
+                                        w.document.write(`<html><body style="text-align:center;padding:40px;"><h2>${wo.locationName}</h2><p>${wo.serviceType}</p><img src="${qrImageUrl}" width="300" /><p style="font-family:monospace;font-size:12px;">${wo.qrCodeSecret}</p></body></html>`);
+                                        w.print();
+                                    }
+                                }}
+                            >
+                                <Printer className="w-3.5 h-3.5" /> Print QR Code
+                            </Button>
                         </CardContent>
                     </Card>
+
+                    {/* Recent Check-ins */}
+                    {recentCheckIns.length > 0 && (
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Shield className="w-4 h-4 text-muted-foreground" /> Recent Audits
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                {recentCheckIns.map((ci) => (
+                                    <div key={ci.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 text-sm">
+                                        <div>
+                                            <p className="font-medium text-xs">{ci.nightManagerName}</p>
+                                            <p className="text-[10px] text-muted-foreground">{ci.checkInDate}</p>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            {Array.from({ length: ci.auditScore }).map((_, i) => (
+                                                <Star key={i} className="w-3 h-3 text-amber-400 fill-amber-400" />
+                                            ))}
+                                            <span className="text-[10px] text-muted-foreground ml-1">
+                                                {ci.completionRate}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             </div>
 

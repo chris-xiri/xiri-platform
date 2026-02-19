@@ -6,7 +6,7 @@ import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, serv
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Quote, QuoteLineItem } from '@xiri/shared';
+import { Quote, QuoteLineItem, QuoteRevision } from '@xiri/shared';
 import { SCOPE_TEMPLATES } from '@/data/scopeTemplates';
 
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import {
     ArrowLeft, Check, X, Printer, FileText, MapPin,
     DollarSign, Calendar, Clock, Building2, AlertTriangle,
-    Send, Eye, MessageSquare, Mail, UserRoundCheck
+    Send, Eye, MessageSquare, Mail, UserRoundCheck, RotateCcw, History
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -56,6 +56,9 @@ export default function QuoteDetailPage({ params }: PageProps) {
     // FSM assignment state
     const [fsmUsers, setFsmUsers] = useState<FsmUser[]>([]);
     const [showFsmDropdown, setShowFsmDropdown] = useState(false);
+
+    // Revision state
+    const [revising, setRevising] = useState(false);
 
     useEffect(() => {
         async function fetchQuote() {
@@ -263,6 +266,50 @@ export default function QuoteDetailPage({ params }: PageProps) {
         }
     };
 
+    const handleRevise = async () => {
+        if (!quote || !profile) return;
+        setRevising(true);
+        try {
+            const userId = profile.uid || profile.email || 'unknown';
+            const snapshot: QuoteRevision = {
+                version: quote.version || 1,
+                totalMonthlyRate: quote.totalMonthlyRate,
+                lineItems: [...quote.lineItems],
+                changedBy: userId,
+                changedAt: serverTimestamp(),
+            };
+            const newVersion = (quote.version || 1) + 1;
+            const updatedHistory = [...(quote.revisionHistory || []), snapshot];
+
+            await updateDoc(doc(db, 'quotes', quote.id), {
+                version: newVersion,
+                revisionHistory: updatedHistory,
+                status: 'draft',
+                updatedAt: serverTimestamp(),
+            });
+
+            await addDoc(collection(db, 'activity_logs'), {
+                type: 'QUOTE_REVISED',
+                quoteId: quote.id,
+                fromVersion: quote.version || 1,
+                toVersion: newVersion,
+                revisedBy: userId,
+                createdAt: serverTimestamp(),
+            });
+
+            setQuote({
+                ...quote,
+                version: newVersion,
+                revisionHistory: updatedHistory,
+                status: 'draft',
+            });
+        } catch (err) {
+            console.error('Error revising quote:', err);
+        } finally {
+            setRevising(false);
+        }
+    };
+
     if (loading) return <div className="p-8 flex justify-center">Loading...</div>;
     if (!quote) return <div className="p-8 flex justify-center">Quote not found</div>;
 
@@ -302,9 +349,17 @@ export default function QuoteDetailPage({ params }: PageProps) {
                             <Send className="w-4 h-4" /> Send to Client
                         </Button>
                     )}
+                    {(quote.status === 'sent' || quote.status === 'rejected') && (
+                        <Button variant="outline" size="sm" className="gap-2" onClick={handleRevise} disabled={revising}>
+                            <RotateCcw className="w-4 h-4" /> {revising ? 'Revising...' : 'Revise Quote'}
+                        </Button>
+                    )}
                     <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
                         <Printer className="w-4 h-4" /> Print
                     </Button>
+                    {quote.version > 1 && (
+                        <Badge variant="secondary" className="text-xs">v{quote.version}</Badge>
+                    )}
                 </div>
             </div>
 
@@ -587,6 +642,43 @@ export default function QuoteDetailPage({ params }: PageProps) {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Version History */}
+            {quote.revisionHistory && quote.revisionHistory.length > 0 && (
+                <Card className="print:hidden">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <History className="w-4 h-4 text-muted-foreground" />
+                            Version History
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {/* Current version */}
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                            <Badge variant="default" className="text-xs">v{quote.version}</Badge>
+                            <div className="flex-1">
+                                <p className="text-sm font-medium">Current Version</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {formatCurrency(quote.totalMonthlyRate)}/mo • {quote.lineItems?.length || 0} line items
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Previous versions */}
+                        {[...quote.revisionHistory].reverse().map((rev, i) => (
+                            <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-muted/20 border">
+                                <Badge variant="secondary" className="text-xs">v{rev.version}</Badge>
+                                <div className="flex-1">
+                                    <p className="text-sm">{formatCurrency(rev.totalMonthlyRate)}/mo • {rev.lineItems?.length || 0} line items</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {rev.changedAt?.toDate?.()?.toLocaleDateString() || '—'} by {rev.changedBy}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
             )}
         </div>
     );

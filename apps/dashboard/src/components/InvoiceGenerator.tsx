@@ -1,0 +1,316 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { WorkOrder, InvoiceLineItem, VendorPayout } from '@xiri/shared';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { DollarSign, X, CheckCircle2, Building2 } from 'lucide-react';
+
+interface Props {
+    onClose: () => void;
+    onCreated: (id: string) => void;
+}
+
+interface ClientGroup {
+    leadId: string;
+    businessName: string;
+    contractId?: string;
+    workOrders: (WorkOrder & { id: string })[];
+}
+
+export default function InvoiceGenerator({ onClose, onCreated }: Props) {
+    const { profile } = useAuth();
+    const [clientGroups, setClientGroups] = useState<ClientGroup[]>([]);
+    const [selectedClient, setSelectedClient] = useState<ClientGroup | null>(null);
+    const [billingStart, setBillingStart] = useState(() => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - 1);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+    const [billingEnd, setBillingEnd] = useState(() => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - 1);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+    const [dueDate, setDueDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        return d.toISOString().split('T')[0];
+    });
+    const [loading, setLoading] = useState(true);
+    const [creating, setCreating] = useState(false);
+
+    useEffect(() => {
+        async function fetchActiveWOs() {
+            try {
+                const q = query(collection(db, 'work_orders'), where('status', '==', 'active'));
+                const snap = await getDocs(q);
+                const wos = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkOrder & { id: string }));
+
+                // Group by lead
+                const groups: Record<string, ClientGroup> = {};
+                // Fetch lead names
+                const leadIds = [...new Set(wos.map(wo => wo.leadId))];
+                const leadNames: Record<string, string> = {};
+                for (const lid of leadIds) {
+                    try {
+                        const { getDoc, doc: fbDoc } = await import('firebase/firestore');
+                        const leadSnap = await getDoc(fbDoc(db, 'leads', lid));
+                        if (leadSnap.exists()) {
+                            leadNames[lid] = leadSnap.data().businessName || leadSnap.data().contactName || lid;
+                        }
+                    } catch { /* skip */ }
+                }
+
+                for (const wo of wos) {
+                    if (!groups[wo.leadId]) {
+                        groups[wo.leadId] = {
+                            leadId: wo.leadId,
+                            businessName: leadNames[wo.leadId] || wo.leadId,
+                            contractId: wo.contractId,
+                            workOrders: [],
+                        };
+                    }
+                    groups[wo.leadId].workOrders.push(wo);
+                }
+
+                setClientGroups(Object.values(groups));
+            } catch (err) {
+                console.error('Error:', err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchActiveWOs();
+    }, []);
+
+    const formatCurrency = (amount: number) =>
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
+
+    // Build line items + vendor payouts from selected client
+    const lineItems: InvoiceLineItem[] = selectedClient
+        ? selectedClient.workOrders.map(wo => ({
+            workOrderId: wo.id!,
+            locationName: wo.locationName,
+            serviceType: wo.serviceType,
+            frequency: wo.schedule?.frequency || 'monthly',
+            amount: wo.clientRate,
+        }))
+        : [];
+
+    const vendorPayouts: VendorPayout[] = selectedClient
+        ? selectedClient.workOrders
+            .filter(wo => wo.vendorId && wo.vendorRate)
+            .map(wo => ({
+                vendorId: wo.vendorId!,
+                vendorName: wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || 'Vendor',
+                workOrderId: wo.id!,
+                serviceType: wo.serviceType,
+                amount: wo.vendorRate!,
+                status: 'pending' as const,
+            }))
+        : [];
+
+    const subtotal = lineItems.reduce((sum, li) => sum + li.amount, 0);
+    const totalPayouts = vendorPayouts.reduce((sum, vp) => sum + vp.amount, 0);
+    const grossMargin = subtotal - totalPayouts;
+
+    const handleCreate = async () => {
+        if (!selectedClient || !profile) return;
+        setCreating(true);
+
+        try {
+            const userId = profile.uid || profile.email || 'unknown';
+            const docRef = await addDoc(collection(db, 'invoices'), {
+                leadId: selectedClient.leadId,
+                clientBusinessName: selectedClient.businessName,
+                contractId: selectedClient.contractId || null,
+                lineItems,
+                subtotal,
+                adjustments: 0,
+                totalAmount: subtotal,
+                vendorPayouts,
+                totalPayouts,
+                grossMargin,
+                billingPeriod: { start: billingStart, end: billingEnd },
+                dueDate: new Date(dueDate),
+                status: 'draft',
+                createdBy: userId,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+
+            await addDoc(collection(db, 'activity_logs'), {
+                type: 'INVOICE_CREATED',
+                invoiceId: docRef.id,
+                clientBusinessName: selectedClient.businessName,
+                totalAmount: subtotal,
+                grossMargin,
+                createdBy: userId,
+                createdAt: serverTimestamp(),
+            });
+
+            onCreated(docRef.id);
+        } catch (err) {
+            console.error('Error creating invoice:', err);
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+            <div className="bg-background rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+                <div className="flex items-center justify-between p-6 border-b">
+                    <div>
+                        <h2 className="text-lg font-bold">Generate Invoice</h2>
+                        <p className="text-sm text-muted-foreground">Create a consolidated invoice from active work orders</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
+                </div>
+
+                <div className="p-6 space-y-6 overflow-y-auto flex-1">
+                    {loading ? (
+                        <p className="text-center text-sm text-muted-foreground py-8">Loading active clients...</p>
+                    ) : (
+                        <>
+                            {/* Step 1: Select Client */}
+                            {!selectedClient ? (
+                                <div className="space-y-3">
+                                    <Label className="text-sm font-medium">Select Client</Label>
+                                    {clientGroups.length === 0 ? (
+                                        <p className="text-sm text-muted-foreground text-center py-8">
+                                            No active work orders found. Assign vendors to work orders first.
+                                        </p>
+                                    ) : (
+                                        clientGroups.map(cg => (
+                                            <Card
+                                                key={cg.leadId}
+                                                className="cursor-pointer hover:border-primary/50 transition-all"
+                                                onClick={() => setSelectedClient(cg)}
+                                            >
+                                                <CardContent className="p-4 flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <Building2 className="w-5 h-5 text-muted-foreground" />
+                                                        <div>
+                                                            <p className="font-medium">{cg.businessName}</p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {cg.workOrders.length} active work orders
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-sm font-medium text-primary">
+                                                        {formatCurrency(cg.workOrders.reduce((s, wo) => s + wo.clientRate, 0))}/mo
+                                                    </span>
+                                                </CardContent>
+                                            </Card>
+                                        ))
+                                    )}
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Selected Client */}
+                                    <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="w-4 h-4 text-primary" />
+                                            <span className="text-sm font-medium">{selectedClient.businessName}</span>
+                                        </div>
+                                        <Button variant="ghost" size="sm" onClick={() => setSelectedClient(null)}>
+                                            Change
+                                        </Button>
+                                    </div>
+
+                                    {/* Billing Period */}
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <Label className="text-xs">Billing Start</Label>
+                                            <Input
+                                                type="month"
+                                                value={billingStart}
+                                                onChange={(e) => setBillingStart(e.target.value)}
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs">Billing End</Label>
+                                            <Input
+                                                type="month"
+                                                value={billingEnd}
+                                                onChange={(e) => setBillingEnd(e.target.value)}
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs">Due Date</Label>
+                                            <Input
+                                                type="date"
+                                                value={dueDate}
+                                                onChange={(e) => setDueDate(e.target.value)}
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Line Items Preview */}
+                                    <div>
+                                        <Label className="text-xs mb-2 block">Line Items ({lineItems.length})</Label>
+                                        <div className="border rounded-lg divide-y text-sm">
+                                            {lineItems.map((li, i) => (
+                                                <div key={i} className="px-3 py-2 flex items-center justify-between">
+                                                    <div>
+                                                        <span className="font-medium">{li.serviceType}</span>
+                                                        <span className="text-muted-foreground ml-2 text-xs">{li.locationName}</span>
+                                                    </div>
+                                                    <span className="font-medium">{formatCurrency(li.amount)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Summary */}
+                                    <Card className="bg-muted/30">
+                                        <CardContent className="p-4 space-y-2 text-sm">
+                                            <div className="flex justify-between">
+                                                <span>Client Total</span>
+                                                <span className="font-bold">{formatCurrency(subtotal)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-muted-foreground">
+                                                <span>Vendor Payouts</span>
+                                                <span>−{formatCurrency(totalPayouts)}</span>
+                                            </div>
+                                            <div className="flex justify-between border-t pt-2">
+                                                <span className="font-medium">Gross Margin</span>
+                                                <span className={`font-bold ${grossMargin > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {formatCurrency(grossMargin)}
+                                                </span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </>
+                            )}
+                        </>
+                    )}
+                </div>
+
+                <div className="flex justify-end gap-3 p-6 border-t">
+                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button
+                        onClick={handleCreate}
+                        disabled={!selectedClient || creating}
+                        className="gap-2"
+                    >
+                        {creating ? 'Creating...' : 'Create Invoice'}
+                        <DollarSign className="w-4 h-4" />
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
