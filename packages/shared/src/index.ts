@@ -426,11 +426,25 @@ export interface QuoteLineItem {
     locationId: string;
     locationName: string;
     serviceType: string;
+    serviceCategory?: 'janitorial' | 'specialized' | 'consumables' | 'exterior';
     scopeTemplateId?: string;
     description?: string;
-    frequency: 'nightly' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
+    frequency: 'custom_days' | 'nightly' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
+    daysOfWeek?: boolean[]; // [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
     clientRate: number;
+    isConsumable?: boolean;
+    estimatedCost?: number; // Quoted cost; actualCost set later by FSM
     sqft?: number;
+}
+
+
+export interface QuoteRevision {
+    version: number;
+    totalMonthlyRate: number;
+    lineItems: QuoteLineItem[];
+    changedBy: string;
+    changedAt: any;
+    notes?: string;
 }
 
 export interface Quote {
@@ -443,6 +457,10 @@ export interface Quote {
     contractTenure: number;
     paymentTerms: string;
     exitClause?: string;
+
+    // Versioning
+    version: number;
+    revisionHistory?: QuoteRevision[];
 
     // Email flow
     reviewToken?: string;
@@ -464,6 +482,7 @@ export interface Quote {
     createdAt: any;
     updatedAt: any;
 }
+
 
 // Contracts
 export type ContractStatus = 'draft' | 'sent' | 'active' | 'amended' | 'terminated' | 'expired';

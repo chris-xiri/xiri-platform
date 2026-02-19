@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Lead, QuoteLineItem } from '@xiri/shared';
 import { SCOPE_TEMPLATES } from '@/data/scopeTemplates';
+import { XIRI_SERVICES, SERVICE_CATEGORIES, ServiceCategory } from '@/data/serviceTypes';
+import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -34,6 +36,18 @@ interface Location {
 
 const STEPS = ['Select Client', 'Locations', 'Services & Pricing', 'Terms & Submit'];
 
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function FrequencyDisplay(item: QuoteLineItem): string {
+    if (item.frequency === 'custom_days' && item.daysOfWeek) {
+        const count = item.daysOfWeek.filter(Boolean).length;
+        const days = item.daysOfWeek.map((d, i) => d ? DAY_LABELS[i] : null).filter(Boolean);
+        return `${count}x/week (${days.join(', ')})`;
+    }
+    if (item.frequency === 'nightly') return '7x/week (Nightly)';
+    return item.frequency.charAt(0).toUpperCase() + item.frequency.slice(1);
+}
+
 export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) {
     const { profile } = useAuth();
     const [step, setStep] = useState(0);
@@ -46,7 +60,11 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
 
     // Step 2: Locations
     const [locations, setLocations] = useState<Location[]>([]);
-    const [newLocation, setNewLocation] = useState<Partial<Location>>({});
+    const [newLocationName, setNewLocationName] = useState('');
+    const [newLocationAddress, setNewLocationAddress] = useState<any>(null);
+    const [newLocationCity, setNewLocationCity] = useState('');
+    const [newLocationState, setNewLocationState] = useState('');
+    const [newLocationZip, setNewLocationZip] = useState('');
 
     // Step 3: Line items
     const [lineItems, setLineItems] = useState<QuoteLineItem[]>([]);
@@ -80,7 +98,6 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
                 zip: loc.zip || '',
             })));
         } else if (selectedLead) {
-            // Use lead's own address as first location
             setLocations([{
                 id: 'loc_0',
                 name: selectedLead.businessName || 'Primary Location',
@@ -92,17 +109,54 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
         }
     }, [selectedLead]);
 
+    // Google Maps address selection handler
+    const handleAddressSelect = (selected: any) => {
+        setNewLocationAddress(selected);
+
+        if (selected?.value?.place_id) {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ placeId: selected.value.place_id }, (results, status) => {
+                if (status === 'OK' && results && results[0]) {
+                    const components = results[0].address_components;
+                    components.forEach((component: any) => {
+                        if (component.types.includes('locality')) {
+                            setNewLocationCity(component.long_name);
+                        }
+                        if (component.types.includes('administrative_area_level_1')) {
+                            setNewLocationState(component.short_name);
+                        }
+                        if (component.types.includes('postal_code')) {
+                            setNewLocationZip(component.long_name);
+                        }
+                    });
+
+                    // Auto-populate name from place name if empty
+                    if (!newLocationName && results[0].formatted_address) {
+                        // Just use the first part before the first comma
+                        const namePart = results[0].formatted_address.split(',')[0];
+                        setNewLocationName(namePart);
+                    }
+                }
+            });
+        }
+    };
+
     const addLocation = () => {
-        if (!newLocation.name || !newLocation.address) return;
+        if (!newLocationName || !newLocationAddress) return;
         setLocations(prev => [...prev, {
             id: `loc_${Date.now()}`,
-            name: newLocation.name || '',
-            address: newLocation.address || '',
-            city: newLocation.city || '',
-            state: newLocation.state || '',
-            zip: newLocation.zip || '',
+            name: newLocationName,
+            address: newLocationAddress.label || '',
+            city: newLocationCity,
+            state: newLocationState,
+            zip: newLocationZip,
         }]);
-        setNewLocation({});
+        // Reset
+        setNewLocationName('');
+        setNewLocationAddress(null);
+        setNewLocationCity('');
+        setNewLocationState('');
+        setNewLocationZip('');
     };
 
     const removeLocation = (id: string) => {
@@ -116,7 +170,9 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
             locationId,
             locationName,
             serviceType: '',
-            frequency: 'nightly',
+            serviceCategory: undefined,
+            frequency: 'custom_days',
+            daysOfWeek: [false, true, true, true, true, true, false], // Mon-Fri default
             clientRate: 0,
         }]);
     };
@@ -127,6 +183,26 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
 
     const removeLineItem = (id: string) => {
         setLineItems(prev => prev.filter(li => li.id !== id));
+    };
+
+    const handleServiceSelect = (itemId: string, serviceValue: string) => {
+        const service = XIRI_SERVICES.find(s => s.value === serviceValue);
+        if (!service) return;
+
+        const isConsumable = service.category === 'consumables';
+        updateLineItem(itemId, {
+            serviceType: service.label,
+            serviceCategory: service.category,
+            isConsumable,
+            // Consumables default to weekly
+            ...(isConsumable ? { frequency: 'weekly' as const, daysOfWeek: undefined } : {}),
+        });
+    };
+
+    const toggleDay = (itemId: string, dayIndex: number, currentDays: boolean[]) => {
+        const newDays = [...currentDays];
+        newDays[dayIndex] = !newDays[dayIndex];
+        updateLineItem(itemId, { daysOfWeek: newDays });
     };
 
     const totalMonthly = lineItems.reduce((sum, li) => sum + (li.clientRate || 0), 0);
@@ -145,13 +221,14 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
                 paymentTerms,
                 exitClause,
                 notes,
+                version: 1,
+                revisionHistory: [],
                 status: 'draft',
                 createdBy: profile.uid || profile.email || 'unknown',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
 
-            // Log activity
             await addDoc(collection(db, 'activity_logs'), {
                 type: 'QUOTE_CREATED',
                 quoteId: docRef.id,
@@ -183,6 +260,13 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
         l.businessName?.toLowerCase().includes(leadSearch.toLowerCase()) ||
         l.contactName?.toLowerCase().includes(leadSearch.toLowerCase())
     );
+
+    // Group services by category for the dropdown
+    const servicesByCategory = XIRI_SERVICES.reduce((acc, s) => {
+        if (!acc[s.category]) acc[s.category] = [];
+        acc[s.category].push(s);
+        return acc;
+    }, {} as Record<string, typeof XIRI_SERVICES[number][]>);
 
     return (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
@@ -261,7 +345,7 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
                         </div>
                     )}
 
-                    {/* Step 2: Locations */}
+                    {/* Step 2: Locations (with Google Maps) */}
                     {step === 1 && (
                         <div className="space-y-4">
                             <p className="text-sm text-muted-foreground mb-4">
@@ -296,47 +380,55 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
                                     <CardTitle className="text-sm font-medium">Add Location</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <Label className="text-xs">Location Name</Label>
-                                            <Input
-                                                placeholder="e.g. Main Office"
-                                                value={newLocation.name || ''}
-                                                onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label className="text-xs">Address</Label>
-                                            <Input
-                                                placeholder="123 Main St"
-                                                value={newLocation.address || ''}
-                                                onChange={(e) => setNewLocation({ ...newLocation, address: e.target.value })}
-                                            />
-                                        </div>
+                                    <div>
+                                        <Label className="text-xs">Location Name</Label>
+                                        <Input
+                                            placeholder="e.g. Main Office, Suite 200"
+                                            value={newLocationName}
+                                            onChange={(e) => setNewLocationName(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs">Address</Label>
+                                        <GooglePlacesAutocomplete
+                                            apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                                            autocompletionRequest={{
+                                                componentRestrictions: { country: ['us'] },
+                                            }}
+                                            selectProps={{
+                                                value: newLocationAddress,
+                                                onChange: handleAddressSelect,
+                                                placeholder: "Start typing address...",
+                                                className: "react-select-container",
+                                                classNamePrefix: "react-select",
+                                            }}
+                                        />
                                     </div>
                                     <div className="grid grid-cols-3 gap-3">
                                         <div>
                                             <Label className="text-xs">City</Label>
                                             <Input
                                                 placeholder="City"
-                                                value={newLocation.city || ''}
-                                                onChange={(e) => setNewLocation({ ...newLocation, city: e.target.value })}
+                                                value={newLocationCity}
+                                                onChange={(e) => setNewLocationCity(e.target.value)}
                                             />
                                         </div>
                                         <div>
                                             <Label className="text-xs">State</Label>
                                             <Input
                                                 placeholder="NY"
-                                                value={newLocation.state || ''}
-                                                onChange={(e) => setNewLocation({ ...newLocation, state: e.target.value })}
+                                                value={newLocationState}
+                                                onChange={(e) => setNewLocationState(e.target.value)}
+                                                maxLength={2}
                                             />
                                         </div>
                                         <div>
                                             <Label className="text-xs">Zip</Label>
                                             <Input
                                                 placeholder="11021"
-                                                value={newLocation.zip || ''}
-                                                onChange={(e) => setNewLocation({ ...newLocation, zip: e.target.value })}
+                                                value={newLocationZip}
+                                                onChange={(e) => setNewLocationZip(e.target.value)}
+                                                maxLength={5}
                                             />
                                         </div>
                                     </div>
@@ -344,7 +436,7 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
                                         onClick={addLocation}
                                         variant="outline"
                                         className="gap-2"
-                                        disabled={!newLocation.name || !newLocation.address}
+                                        disabled={!newLocationName || !newLocationAddress}
                                     >
                                         <Plus className="w-4 h-4" /> Add Location
                                     </Button>
@@ -377,53 +469,124 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
                                             </div>
                                             <CardDescription className="text-xs">{loc.address}</CardDescription>
                                         </CardHeader>
-                                        <CardContent className="space-y-3">
+                                        <CardContent className="space-y-4">
                                             {locItems.length === 0 ? (
                                                 <p className="text-sm text-muted-foreground text-center py-4">
                                                     No services yet. Click "Add Service" above.
                                                 </p>
                                             ) : (
                                                 locItems.map((item) => (
-                                                    <div key={item.id} className="grid grid-cols-12 gap-2 items-end border rounded-lg p-3 bg-muted/20">
-                                                        <div className="col-span-4">
-                                                            <Label className="text-xs text-muted-foreground">Service Type</Label>
-                                                            <Input
-                                                                placeholder="Nightly Janitorial"
-                                                                value={item.serviceType}
-                                                                onChange={(e) => updateLineItem(item.id, { serviceType: e.target.value })}
-                                                            />
-                                                        </div>
-                                                        <div className="col-span-3">
-                                                            <Label className="text-xs text-muted-foreground">Frequency</Label>
-                                                            <select
-                                                                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                                                                value={item.frequency}
-                                                                onChange={(e) => updateLineItem(item.id, { frequency: e.target.value as any })}
-                                                            >
-                                                                <option value="nightly">Nightly</option>
-                                                                <option value="weekly">Weekly</option>
-                                                                <option value="biweekly">Bi-Weekly</option>
-                                                                <option value="monthly">Monthly</option>
-                                                                <option value="quarterly">Quarterly</option>
-                                                            </select>
-                                                        </div>
-                                                        <div className="col-span-3">
-                                                            <Label className="text-xs text-muted-foreground">Monthly Rate</Label>
-                                                            <div className="relative">
-                                                                <DollarSign className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
-                                                                <Input
-                                                                    type="number"
-                                                                    placeholder="2500"
-                                                                    className="pl-7"
-                                                                    value={item.clientRate || ''}
-                                                                    onChange={(e) => updateLineItem(item.id, { clientRate: parseFloat(e.target.value) || 0 })}
-                                                                />
+                                                    <div key={item.id} className="border rounded-lg p-4 bg-muted/20 space-y-3">
+                                                        {/* Row 1: Service Type + Rate */}
+                                                        <div className="grid grid-cols-12 gap-3 items-end">
+                                                            <div className="col-span-6">
+                                                                <Label className="text-xs text-muted-foreground">Service Type</Label>
+                                                                <select
+                                                                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                                                                    value={XIRI_SERVICES.find(s => s.label === item.serviceType)?.value || ''}
+                                                                    onChange={(e) => handleServiceSelect(item.id, e.target.value)}
+                                                                >
+                                                                    <option value="">Select a service...</option>
+                                                                    {Object.entries(servicesByCategory).map(([cat, services]) => (
+                                                                        <optgroup key={cat} label={SERVICE_CATEGORIES[cat as ServiceCategory]}>
+                                                                            {services.map(s => (
+                                                                                <option key={s.value} value={s.value}>{s.label}</option>
+                                                                            ))}
+                                                                        </optgroup>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                            <div className="col-span-4">
+                                                                <Label className="text-xs text-muted-foreground">
+                                                                    {item.isConsumable ? 'Est. Monthly Cost' : 'Monthly Rate'}
+                                                                </Label>
+                                                                <div className="relative">
+                                                                    <DollarSign className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+                                                                    <Input
+                                                                        type="number"
+                                                                        placeholder={item.isConsumable ? '500' : '2500'}
+                                                                        className="pl-7"
+                                                                        value={item.clientRate || ''}
+                                                                        onChange={(e) => updateLineItem(item.id, {
+                                                                            clientRate: parseFloat(e.target.value) || 0,
+                                                                            ...(item.isConsumable ? { estimatedCost: parseFloat(e.target.value) || 0 } : {}),
+                                                                        })}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-span-2 flex justify-end">
+                                                                <Button variant="ghost" size="icon" onClick={() => removeLineItem(item.id)}>
+                                                                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                                                                </Button>
                                                             </div>
                                                         </div>
-                                                        <div className="col-span-2 flex justify-end">
-                                                            <Button variant="ghost" size="icon" onClick={() => removeLineItem(item.id)}>
-                                                                <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                                                            </Button>
+
+                                                        {/* Row 2: Frequency + Day Selector */}
+                                                        <div className="space-y-2">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-40">
+                                                                    <Label className="text-xs text-muted-foreground">Frequency</Label>
+                                                                    <select
+                                                                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                                                                        value={item.frequency}
+                                                                        onChange={(e) => {
+                                                                            const freq = e.target.value as QuoteLineItem['frequency'];
+                                                                            const updates: Partial<QuoteLineItem> = { frequency: freq };
+                                                                            if (freq === 'nightly') {
+                                                                                updates.daysOfWeek = [true, true, true, true, true, true, true];
+                                                                            } else if (freq === 'custom_days') {
+                                                                                updates.daysOfWeek = item.daysOfWeek || [false, true, true, true, true, true, false];
+                                                                            } else {
+                                                                                updates.daysOfWeek = undefined;
+                                                                            }
+                                                                            updateLineItem(item.id, updates);
+                                                                        }}
+                                                                    >
+                                                                        <option value="custom_days">Custom Days</option>
+                                                                        <option value="nightly">Nightly (7x)</option>
+                                                                        <option value="weekly">Weekly</option>
+                                                                        <option value="biweekly">Bi-Weekly</option>
+                                                                        <option value="monthly">Monthly</option>
+                                                                        <option value="quarterly">Quarterly</option>
+                                                                    </select>
+                                                                </div>
+
+                                                                {/* Day Picker (shown for custom_days and nightly) */}
+                                                                {(item.frequency === 'custom_days' || item.frequency === 'nightly') && item.daysOfWeek && (
+                                                                    <div className="flex-1">
+                                                                        <Label className="text-xs text-muted-foreground">
+                                                                            Days — {item.daysOfWeek.filter(Boolean).length}x/week
+                                                                        </Label>
+                                                                        <div className="flex gap-1 mt-1">
+                                                                            {DAY_LABELS.map((day, i) => (
+                                                                                <button
+                                                                                    key={day}
+                                                                                    type="button"
+                                                                                    onClick={() => item.frequency === 'custom_days' && toggleDay(item.id, i, item.daysOfWeek!)}
+                                                                                    className={`
+                                                                                        w-10 h-8 rounded-md text-xs font-medium transition-colors
+                                                                                        ${item.daysOfWeek![i]
+                                                                                            ? 'bg-primary text-primary-foreground'
+                                                                                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                                                                        }
+                                                                                        ${item.frequency === 'nightly' ? 'cursor-default opacity-80' : 'cursor-pointer'}
+                                                                                    `}
+                                                                                    disabled={item.frequency === 'nightly'}
+                                                                                >
+                                                                                    {day}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Consumable info */}
+                                                            {item.isConsumable && (
+                                                                <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
+                                                                    ⓘ Estimated cost — actual cost will be updated after procurement with markup.
+                                                                </p>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))
@@ -463,6 +626,14 @@ export default function QuoteBuilder({ onClose, onCreated }: QuoteBuilderProps) 
                                         <span className="text-muted-foreground">Services</span>
                                         <span className="font-medium">{lineItems.length}</span>
                                     </div>
+                                    {/* Line item summary */}
+                                    <Separator />
+                                    {lineItems.map(li => (
+                                        <div key={li.id} className="flex justify-between text-xs text-muted-foreground">
+                                            <span>{li.serviceType} — {li.locationName} ({FrequencyDisplay(li)})</span>
+                                            <span className="font-medium text-foreground">{formatCurrency(li.clientRate)}</span>
+                                        </div>
+                                    ))}
                                     <Separator />
                                     <div className="flex justify-between">
                                         <span className="font-medium">Monthly Rate</span>

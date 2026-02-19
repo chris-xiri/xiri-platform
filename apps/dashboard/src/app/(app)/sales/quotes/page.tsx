@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Quote } from '@xiri/shared';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, DollarSign, Calendar, Building2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, FileText, DollarSign, Calendar, Building2, ChevronRight } from 'lucide-react';
 import QuoteBuilder from '@/components/QuoteBuilder';
 
 const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
@@ -20,6 +20,7 @@ const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destruc
 };
 
 export default function QuotesPage() {
+    const router = useRouter();
     const [quotes, setQuotes] = useState<(Quote & { id: string })[]>([]);
     const [loading, setLoading] = useState(true);
     const [showBuilder, setShowBuilder] = useState(false);
@@ -52,57 +53,49 @@ export default function QuotesPage() {
                 </Button>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-muted-foreground" />
-                            <div>
-                                <p className="text-2xl font-bold">{quotes.length}</p>
-                                <p className="text-xs text-muted-foreground">Total Quotes</p>
-                            </div>
+                    <CardContent className="p-4 flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
+                        <div>
+                            <p className="text-xl font-bold leading-none">{quotes.length}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Total</p>
                         </div>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-2">
-                            <DollarSign className="w-5 h-5 text-green-600" />
-                            <div>
-                                <p className="text-2xl font-bold">
-                                    {formatCurrency(quotes.filter(q => q.status === 'accepted').reduce((sum, q) => sum + q.totalMonthlyRate, 0))}
-                                </p>
-                                <p className="text-xs text-muted-foreground">Won Monthly Revenue</p>
-                            </div>
+                    <CardContent className="p-4 flex items-center gap-3">
+                        <DollarSign className="w-5 h-5 text-green-600 shrink-0" />
+                        <div>
+                            <p className="text-xl font-bold leading-none">
+                                {formatCurrency(quotes.filter(q => q.status === 'accepted').reduce((sum, q) => sum + q.totalMonthlyRate, 0))}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Won MRR</p>
                         </div>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-2">
-                            <Calendar className="w-5 h-5 text-blue-600" />
-                            <div>
-                                <p className="text-2xl font-bold">{quotes.filter(q => q.status === 'sent').length}</p>
-                                <p className="text-xs text-muted-foreground">Pending Response</p>
-                            </div>
+                    <CardContent className="p-4 flex items-center gap-3">
+                        <Calendar className="w-5 h-5 text-blue-600 shrink-0" />
+                        <div>
+                            <p className="text-xl font-bold leading-none">{quotes.filter(q => q.status === 'sent').length}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Pending</p>
                         </div>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-2">
-                            <Building2 className="w-5 h-5 text-yellow-600" />
-                            <div>
-                                <p className="text-2xl font-bold">{quotes.filter(q => q.status === 'draft').length}</p>
-                                <p className="text-xs text-muted-foreground">Drafts</p>
-                            </div>
+                    <CardContent className="p-4 flex items-center gap-3">
+                        <Building2 className="w-5 h-5 text-yellow-600 shrink-0" />
+                        <div>
+                            <p className="text-xl font-bold leading-none">{quotes.filter(q => q.status === 'draft').length}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Drafts</p>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Quote Table */}
+            {/* Quote Table — Clickable Rows */}
             {quotes.length === 0 ? (
                 <Card>
                     <CardContent className="py-16 text-center">
@@ -120,43 +113,49 @@ export default function QuotesPage() {
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b text-left text-xs text-muted-foreground uppercase tracking-wider">
-                                    <th className="px-4 py-3 font-medium">Client</th>
-                                    <th className="px-4 py-3 font-medium">Line Items</th>
-                                    <th className="px-4 py-3 font-medium">Monthly Rate</th>
-                                    <th className="px-4 py-3 font-medium">Tenure</th>
-                                    <th className="px-4 py-3 font-medium">Status</th>
-                                    <th className="px-4 py-3 font-medium">Created</th>
-                                    <th className="px-4 py-3 font-medium"></th>
+                                    <th className="px-4 py-2.5 font-medium">Client</th>
+                                    <th className="px-4 py-2.5 font-medium">Services</th>
+                                    <th className="px-4 py-2.5 font-medium">Monthly</th>
+                                    <th className="px-4 py-2.5 font-medium">Status</th>
+                                    <th className="px-4 py-2.5 font-medium">Ver</th>
+                                    <th className="px-4 py-2.5 font-medium">Date</th>
+                                    <th className="px-4 py-2.5 font-medium w-8"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {quotes.map((quote) => {
                                     const badge = STATUS_BADGE[quote.status] || STATUS_BADGE.draft;
                                     const created = quote.createdAt?.toDate?.()
-                                        ? quote.createdAt.toDate().toLocaleDateString()
+                                        ? quote.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                                         : '—';
                                     return (
-                                        <tr key={quote.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                                            <td className="px-4 py-3">
-                                                <span className="font-medium">{quote.leadBusinessName}</span>
+                                        <tr
+                                            key={quote.id}
+                                            className="border-b last:border-0 hover:bg-muted/40 transition-colors cursor-pointer group"
+                                            onClick={() => router.push(`/sales/quotes/${quote.id}`)}
+                                        >
+                                            <td className="px-4 py-2.5">
+                                                <span className="font-medium text-sm">{quote.leadBusinessName}</span>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-muted-foreground">
-                                                {quote.lineItems?.length || 0} services
+                                            <td className="px-4 py-2.5 text-xs text-muted-foreground">
+                                                {quote.lineItems?.length || 0}
                                             </td>
-                                            <td className="px-4 py-3 font-medium">
+                                            <td className="px-4 py-2.5 text-sm font-medium">
                                                 {formatCurrency(quote.totalMonthlyRate)}
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-muted-foreground">
-                                                {quote.contractTenure} months
+                                            <td className="px-4 py-2.5">
+                                                <Badge variant={badge.variant} className="text-xs px-1.5 py-0">
+                                                    {badge.label}
+                                                </Badge>
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <Badge variant={badge.variant}>{badge.label}</Badge>
+                                            <td className="px-4 py-2.5">
+                                                <span className="text-xs text-muted-foreground">
+                                                    v{quote.version || 1}
+                                                </span>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-muted-foreground">{created}</td>
-                                            <td className="px-4 py-3">
-                                                <Link href={`/sales/quotes/${quote.id}`}>
-                                                    <Button variant="ghost" size="sm">View</Button>
-                                                </Link>
+                                            <td className="px-4 py-2.5 text-xs text-muted-foreground">{created}</td>
+                                            <td className="px-4 py-2.5">
+                                                <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-foreground transition-colors" />
                                             </td>
                                         </tr>
                                     );
@@ -173,7 +172,7 @@ export default function QuotesPage() {
                     onClose={() => setShowBuilder(false)}
                     onCreated={(quoteId) => {
                         setShowBuilder(false);
-                        // Could navigate to the new quote
+                        router.push(`/sales/quotes/${quoteId}`);
                     }}
                 />
             )}
