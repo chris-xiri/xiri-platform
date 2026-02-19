@@ -20,9 +20,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         return {
             title: `${industry.heroTitle} | XIRI Facility Solutions`, // e.g. "Clinical-Grade Facility Management | XIRI"
             description: industry.heroSubtitle,
-            localAlternate: {
+            alternates: {
                 canonical: `https://xiri.ai/${industry.slug}`
-            }
+            },
+            openGraph: {
+                title: `${industry.heroTitle} | XIRI Facility Solutions`,
+                description: industry.heroSubtitle,
+                url: `https://xiri.ai/${industry.slug}`,
+                siteName: 'XIRI Facility Solutions',
+                type: 'website',
+            },
         };
     }
 

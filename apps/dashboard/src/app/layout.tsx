@@ -18,6 +18,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Xiri Platform",
   description: "AI-powered vendor and sales management",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
 };
 
 export const runtime = 'nodejs';

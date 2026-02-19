@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
         rules: {
             userAgent: '*',
             allow: '/',
-            disallow: '/private/',
+            disallow: ['/private/', '/onboarding/', '/test-firebase/', '/waitlist/', '/admin/'],
         },
         sitemap: `${baseUrl}/sitemap.xml`,
     };

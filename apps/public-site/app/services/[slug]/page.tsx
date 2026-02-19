@@ -63,18 +63,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         return {
             title: `${service.heroTitle || service.name} | XIRI`,
             description: service.shortDescription,
-            localAlternate: {
+            alternates: {
                 canonical: `https://xiri.ai/services/${service.slug}`
-            }
+            },
+            openGraph: {
+                title: `${service.heroTitle || service.name} | XIRI`,
+                description: service.shortDescription,
+                url: `https://xiri.ai/services/${service.slug}`,
+                siteName: 'XIRI Facility Solutions',
+                type: 'website',
+            },
         };
     } else if (type === 'LOCATION') {
         const { service, location } = data as any;
         return {
             title: `${service.name} in ${location.name} | XIRI`,
             description: `Professional ${service.name} in ${location.name}. ${service.shortDescription}`,
-            localAlternate: {
+            alternates: {
                 canonical: `https://xiri.ai/services/${slug}`
-            }
+            },
+            openGraph: {
+                title: `${service.name} in ${location.name} | XIRI`,
+                description: `Professional ${service.name} in ${location.name}. ${service.shortDescription}`,
+                url: `https://xiri.ai/services/${slug}`,
+                siteName: 'XIRI Facility Solutions',
+                type: 'website',
+            },
         };
     }
 
@@ -164,7 +178,7 @@ export default async function ServicePage({ params }: Props) {
                 addressRegion: location.state,
             }
         },
-        url: `https://www.xiri.com/services/${slug}`,
+        url: `https://xiri.ai/services/${slug}`,
         department: {
             '@type': 'ProfessionalService',
             name: service.name,

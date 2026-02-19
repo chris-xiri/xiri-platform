@@ -6,12 +6,71 @@ import { Search, DollarSign } from 'lucide-react';
 export const metadata = {
     title: 'Join the XIRI Contractor Network | Consistent Facility Jobs',
     description: 'Get consistent facility management jobs without the sales headaches. Join XIRI\'s vetted contractor network today.',
+    alternates: {
+        canonical: 'https://xiri.ai/contractors',
+    },
+    openGraph: {
+        title: 'Join the XIRI Contractor Network | Consistent Facility Jobs',
+        description: 'Get consistent facility management jobs without the sales headaches. Join XIRI\'s vetted contractor network today.',
+        url: 'https://xiri.ai/contractors',
+        siteName: 'XIRI Facility Solutions',
+        type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image' as const,
+        title: 'Join the XIRI Contractor Network',
+        description: 'Get consistent facility management jobs without the sales headaches.',
+    },
 };
 
 export default function ContractorsPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans">
+            {/* FAQPage Structured Data */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "FAQPage",
+                        "mainEntity": [
+                            {
+                                "@type": "Question",
+                                "name": "How quickly can I start receiving jobs?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "Once your documents are verified (usually 24-48 hours), you are eligible for assignment. Actual job offers depend on client demand in your service area."
+                                }
+                            },
+                            {
+                                "@type": "Question",
+                                "name": "Does XIRI take a commission?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "No. We are not a lead generation service. We are the facility manager. We pay you the agreed-upon rate for the service. Our management fee is charged to the client, not you."
+                                }
+                            },
+                            {
+                                "@type": "Question",
+                                "name": "Can I keep my own clients?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "Absolutely. XIRI is just another customer for your business. You continue to run your business as usual; we just add volume to your schedule."
+                                }
+                            },
+                            {
+                                "@type": "Question",
+                                "name": "How do payments work?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "We provide net-30 payment terms for all verified work. You submit one invoice to XIRI for all jobs completed in the billing cycle, and we issue one consolidated payment."
+                                }
+                            }
+                        ]
+                    })
+                }}
+            />
             {/* HERO SECTION - darker theme for distinction */}
             <div>
                 <ContractorHero />
