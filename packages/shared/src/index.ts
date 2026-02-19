@@ -16,7 +16,7 @@ export type FacilityType =
     | 'fitness_gym'
     | 'other';
 
-export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'walkthrough' | 'proposal' | 'won' | 'lost';
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'walkthrough' | 'proposal' | 'quoted' | 'won' | 'lost' | 'churned';
 
 export interface Lead {
     id?: string;
@@ -41,6 +41,12 @@ export interface Lead {
 
     createdAt: Date;
     status: LeadStatus;
+
+    // Operations linkage
+    locations?: ClientLocation[];
+    assignedFsmId?: string;
+    contractId?: string;
+    wonAt?: any;
 }
 
 export type VendorStatus =
@@ -410,3 +416,149 @@ export interface Invoice {
     createdAt: any;
 }
 
+// --- OPERATIONS BACKBONE ---
+
+// Quotes
+export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
+
+export interface QuoteLineItem {
+    id: string;
+    locationId: string;
+    locationName: string;
+    serviceType: string;
+    scopeTemplateId?: string;
+    description?: string;
+    frequency: 'nightly' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
+    clientRate: number;
+    sqft?: number;
+}
+
+export interface Quote {
+    id?: string;
+    leadId: string;
+    leadBusinessName: string;
+    lineItems: QuoteLineItem[];
+    totalMonthlyRate: number;
+
+    contractTenure: number;
+    paymentTerms: string;
+    exitClause?: string;
+
+    status: QuoteStatus;
+    createdBy: string;
+    sentAt?: any;
+    expiresAt?: any;
+    acceptedAt?: any;
+    notes?: string;
+    createdAt: any;
+    updatedAt: any;
+}
+
+// Contracts
+export type ContractStatus = 'draft' | 'sent' | 'active' | 'amended' | 'terminated' | 'expired';
+
+export interface Contract {
+    id?: string;
+    leadId: string;
+    quoteId: string;
+
+    clientBusinessName: string;
+    clientAddress: string;
+    signerName: string;
+    signerTitle: string;
+
+    totalMonthlyRate: number;
+    contractTenure: number;
+    startDate: any;
+    endDate: any;
+    paymentTerms: string;
+    exitClause: string;
+
+    pdfUrl?: string;
+    signedPdfUrl?: string;
+
+    status: ContractStatus;
+    createdBy: string;
+    signedAt?: any;
+    createdAt: any;
+    updatedAt: any;
+}
+
+// Work Orders
+export type WorkOrderStatus =
+    | 'pending_assignment'
+    | 'active'
+    | 'paused'
+    | 'completed'
+    | 'cancelled';
+
+export interface WorkOrderTask {
+    id: string;
+    name: string;
+    description?: string;
+    required: boolean;
+    verifiedAt?: any;
+    verifiedBy?: string;
+}
+
+export interface VendorAssignment {
+    vendorId: string;
+    vendorName: string;
+    vendorRate: number;
+    assignedAt: any;
+    removedAt?: any;
+    removalReason?: string;
+}
+
+export interface WorkOrder {
+    id?: string;
+
+    leadId: string;
+    contractId: string;
+    quoteLineItemId: string;
+    locationId: string;
+    locationName: string;
+
+    serviceType: string;
+    scopeTemplateId?: string;
+    tasks: WorkOrderTask[];
+
+    vendorId?: string;
+    vendorRate?: number;
+    vendorHistory: VendorAssignment[];
+
+    schedule: {
+        daysOfWeek: boolean[];
+        startTime: string;
+        endTime?: string;
+        frequency: 'nightly' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
+    };
+
+    qrCodeSecret: string;
+
+    clientRate: number;
+    margin?: number;
+
+    status: WorkOrderStatus;
+    assignedBy?: string;
+    notes?: string;
+    createdAt: any;
+    updatedAt: any;
+}
+
+// Scope Templates
+export interface ScopeTemplateTask {
+    name: string;
+    description?: string;
+    required: boolean;
+}
+
+export interface ScopeTemplate {
+    id?: string;
+    name: string;
+    facilityType: FacilityType;
+    tasks: ScopeTemplateTask[];
+    defaultFrequency: 'nightly' | 'weekly' | 'biweekly' | 'monthly';
+    defaultStartTime: string;
+    createdAt: any;
+}

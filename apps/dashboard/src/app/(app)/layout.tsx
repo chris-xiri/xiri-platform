@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Home, Users, User, Settings, LogOut, Package, DollarSign, Sun, Moon, Monitor } from "lucide-react";
+import { Home, Users, User, Settings, LogOut, Package, DollarSign, ClipboardList, FileText, Sun, Moon, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import {
@@ -38,6 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     const showSupplyNav = canAccess('supply/recruitment', profile.roles);
     const showSalesNav = canAccess('sales/dashboard', profile.roles);
+    const showOpsNav = canAccess('operations/work-orders', profile.roles);
     const showAdminNav = canAccess('admin/settings', profile.roles);
 
     return (
@@ -101,7 +102,43 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                         <DropdownMenuItem asChild>
                                             <Link href="/sales/crm" className="flex items-center gap-2 cursor-pointer">
                                                 <Users className="w-4 h-4" />
-                                                Sales CRM
+                                                Leads CRM
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/sales/quotes" className="flex items-center gap-2 cursor-pointer">
+                                                <FileText className="w-4 h-4" />
+                                                Quotes
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+
+                            {/* Operations Dropdown (FSM) */}
+                            {showOpsNav && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="flex items-center gap-1">
+                                            <ClipboardList className="w-4 h-4" />
+                                            Operations
+                                            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/operations/work-orders" className="flex items-center gap-2 cursor-pointer">
+                                                <ClipboardList className="w-4 h-4" />
+                                                Work Orders
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/operations/contracts" className="flex items-center gap-2 cursor-pointer">
+                                                <FileText className="w-4 h-4" />
+                                                Contracts
                                             </Link>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
