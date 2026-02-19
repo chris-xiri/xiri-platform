@@ -136,6 +136,11 @@ export interface Vendor {
             llc?: string;        // Business License/LLC URL
             w9?: string;         // W-9 Form URL
         };
+
+        // ACORD 25 (Single Upload)
+        acord25?: ComplianceDoc & {
+            extractedData?: AcordExtracted;
+        };
     };
 
     // Legacy Fields (Optional)
@@ -214,14 +219,26 @@ export interface PartnerMarket {
 }
 
 export interface ComplianceDoc {
-    status: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'MISSING';
+    status: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'FLAGGED' | 'MISSING';
     url?: string;
     uploadedAt?: any;
+    verifiedAt?: any;
     aiAnalysis?: {
         valid: boolean;
         reasoning: string;
         extracted?: Record<string, any>;
     };
+}
+
+export interface AcordExtracted {
+    insuredName?: string;
+    glPerOccurrence?: number;   // e.g. 1000000
+    glAggregate?: number;       // e.g. 2000000
+    wcActive?: boolean;
+    wcPolicyNumber?: string;
+    autoActive?: boolean;
+    expirationDates?: Array<{ policy: string; expires: string }>;
+    certificateHolder?: string;
 }
 
 export interface OutreachEvent {

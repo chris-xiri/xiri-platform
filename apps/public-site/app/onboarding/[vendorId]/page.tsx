@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { db, storage } from "../../../lib/firebase";
 import { Vendor } from "@xiri/shared";
 import { Loader2, CheckCircle, Upload, ChevronRight, ChevronLeft, Globe, Calendar, Clock, Phone } from "lucide-react";
 import { translations, t, type Language } from "./translations";
@@ -58,10 +59,12 @@ export default function OnboardingPage() {
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
 
-    // Form State - Step 4: File Uploads
-    const [coiUploaded, setCoiUploaded] = useState(false);
-    const [llcUploaded, setLlcUploaded] = useState(false);
-    const [w9Uploaded, setW9Uploaded] = useState(false);
+    // Form State - Step 4: ACORD 25 Upload
+    const [acordFile, setAcordFile] = useState<File | null>(null);
+    const [acordUploaded, setAcordUploaded] = useState(false);
+    const [acordDownloadUrl, setAcordDownloadUrl] = useState<string | null>(null);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploading, setUploading] = useState(false);
 
     // State-based requirements
     const vendorState = vendor?.state || 'NY';
@@ -125,7 +128,44 @@ export default function OnboardingPage() {
     };
     const isStep4Valid = () => {
         if (currentTrack === 'STANDARD') return true; // Skip for Partner Network
-        return coiUploaded && llcUploaded; // W-9 is optional
+        return acordUploaded; // ACORD 25 uploaded
+    };
+
+    const handleAcord25Upload = async (file: File) => {
+        if (!vendor?.id) return;
+        setAcordFile(file);
+        setUploading(true);
+        setUploadProgress(0);
+
+        const storageRef = ref(storage, `acord25/${vendor.id}/${file.name}`);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                setUploadProgress(progress);
+            },
+            (error) => {
+                console.error('Upload error:', error);
+                setUploading(false);
+            },
+            async () => {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                setAcordDownloadUrl(downloadURL);
+                setAcordUploaded(true);
+                setUploading(false);
+
+                // Save to vendor doc and trigger AI verification
+                await updateDoc(doc(db, "vendors", vendor.id!), {
+                    'compliance.acord25': {
+                        status: 'PENDING',
+                        url: downloadURL,
+                        uploadedAt: serverTimestamp()
+                    },
+                    updatedAt: serverTimestamp()
+                });
+            }
+        );
     };
 
     const handleNext = () => {
@@ -162,7 +202,7 @@ export default function OnboardingPage() {
                     hasInsurance: hasAutoInsurance,
                     verified: false
                 },
-                w9Collected: w9Uploaded
+                w9Collected: false
             };
 
             if (requiresPollution) {
@@ -832,97 +872,90 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {/* STEP 4: Documents (Express Only) */}
+                    {/* STEP 4: ACORD 25 Upload (Express Only) */}
                     {currentStep === 4 && currentTrack === 'FAST_TRACK' && (
                         <div className="space-y-6">
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step4.title', language)}</h2>
-                                <p className="text-slate-600">{t('step4.subtitle', language)}</p>
+                                <p className="text-slate-600">
+                                    Upload your ACORD 25 (Certificate of Liability Insurance). Our AI will verify your coverage automatically.
+                                </p>
                             </div>
 
+                            {/* What is ACORD 25? */}
+                            <div className="bg-sky-50 border border-sky-200 rounded-lg p-4">
+                                <h3 className="text-sm font-semibold text-sky-900 mb-2">What is an ACORD 25?</h3>
+                                <p className="text-sm text-sky-800">
+                                    The ACORD 25 is a standard certificate issued by your insurance agent. It shows all your coverage
+                                    (General Liability, Workers&apos; Comp, Auto, etc.) on a single document. Ask your insurance agent
+                                    for a copy if you don&apos;t have one.
+                                </p>
+                            </div>
+
+                            {/* Upload Zone */}
                             <div className="space-y-4">
-                                {/* COI Upload */}
-                                <div className="p-4 bg-sky-50 border-2 border-dashed border-sky-300 rounded-lg">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Upload className="w-5 h-5 text-sky-700" />
-                                        <span className="text-sm font-medium text-sky-900">{t('step4.coi.label', language)}</span>
-                                        <span className="text-xs text-red-600">*{t('common.required', language)}</span>
-                                    </div>
-                                    <input
-                                        type="file"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        onChange={(e) => {
-                                            if (e.target.files?.[0]) {
-                                                setCoiUploaded(true);
-                                                // TODO: Upload to Firebase Storage
-                                            }
-                                        }}
-                                        className="text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-sky-600 file:text-white hover:file:bg-sky-700 file:cursor-pointer"
-                                    />
-                                    {coiUploaded && (
-                                        <div className="flex items-center gap-1 mt-2 text-sm text-green-700">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <span>{t('step4.uploaded', language)}</span>
+                                <div className={`p-6 border-2 border-dashed rounded-lg text-center transition-all ${acordUploaded
+                                        ? 'border-green-400 bg-green-50'
+                                        : uploading
+                                            ? 'border-sky-400 bg-sky-50'
+                                            : 'border-sky-300 bg-sky-50 hover:border-sky-400'
+                                    }`}>
+                                    {acordUploaded ? (
+                                        <div className="space-y-2">
+                                            <CheckCircle className="w-10 h-10 text-green-600 mx-auto" />
+                                            <p className="font-semibold text-green-800">ACORD 25 Uploaded</p>
+                                            <p className="text-sm text-green-700">{acordFile?.name}</p>
+                                            <p className="text-xs text-green-600">AI verification will begin after submission</p>
                                         </div>
-                                    )}
-                                </div>
-
-                                {/* LLC Certificate Upload */}
-                                <div className="p-4 bg-sky-50 border-2 border-dashed border-sky-300 rounded-lg">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Upload className="w-5 h-5 text-sky-700" />
-                                        <span className="text-sm font-medium text-sky-900">{t('step4.llc.label', language)}</span>
-                                        <span className="text-xs text-red-600">*{t('common.required', language)}</span>
-                                    </div>
-                                    <input
-                                        type="file"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        onChange={(e) => {
-                                            if (e.target.files?.[0]) {
-                                                setLlcUploaded(true);
-                                                // TODO: Upload to Firebase Storage
-                                            }
-                                        }}
-                                        className="text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-sky-600 file:text-white hover:file:bg-sky-700 file:cursor-pointer"
-                                    />
-                                    {llcUploaded && (
-                                        <div className="flex items-center gap-1 mt-2 text-sm text-green-700">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <span>{t('step4.uploaded', language)}</span>
+                                    ) : uploading ? (
+                                        <div className="space-y-3">
+                                            <Upload className="w-10 h-10 text-sky-600 mx-auto animate-pulse" />
+                                            <p className="font-medium text-sky-800">Uploading...</p>
+                                            <div className="w-full max-w-xs mx-auto bg-sky-200 rounded-full h-2">
+                                                <div
+                                                    className="bg-sky-600 h-2 rounded-full transition-all duration-300"
+                                                    style={{ width: `${uploadProgress}%` }}
+                                                />
+                                            </div>
+                                            <p className="text-xs text-sky-600">{Math.round(uploadProgress)}%</p>
                                         </div>
-                                    )}
-                                </div>
-
-                                {/* W-9 Upload (Optional) */}
-                                <div className="p-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Upload className="w-5 h-5 text-slate-600" />
-                                        <span className="text-sm font-medium text-slate-900">{t('step4.w9.label', language)}</span>
-                                        <span className="text-xs text-slate-500">{t('common.optional', language)}</span>
-                                    </div>
-                                    <input
-                                        type="file"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        onChange={(e) => {
-                                            if (e.target.files?.[0]) {
-                                                setW9Uploaded(true);
-                                                // TODO: Upload to Firebase Storage
-                                            }
-                                        }}
-                                        className="text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-slate-600 file:text-white hover:file:bg-slate-700 file:cursor-pointer"
-                                    />
-                                    {w9Uploaded && (
-                                        <div className="flex items-center gap-1 mt-2 text-sm text-green-700">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <span>{t('step4.uploaded', language)}</span>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <Upload className="w-10 h-10 text-sky-600 mx-auto" />
+                                            <div>
+                                                <p className="font-semibold text-sky-900">Upload ACORD 25</p>
+                                                <p className="text-xs text-sky-700">Certificate of Liability Insurance</p>
+                                            </div>
+                                            <input
+                                                type="file"
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                onChange={(e) => {
+                                                    if (e.target.files?.[0]) {
+                                                        handleAcord25Upload(e.target.files[0]);
+                                                    }
+                                                }}
+                                                className="text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-sky-600 file:text-white hover:file:bg-sky-700 file:cursor-pointer"
+                                            />
+                                            <p className="text-xs text-slate-500">PDF, JPG, or PNG • Max 10MB</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            {!isStep4Valid() && (
+                            {/* What we verify */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                                <h3 className="text-sm font-semibold text-slate-700 mb-2">What we verify</h3>
+                                <ul className="text-sm text-slate-600 space-y-1">
+                                    <li>✓ Business entity name matches your application</li>
+                                    <li>✓ General Liability ≥ $1M per occurrence / $2M aggregate</li>
+                                    <li>✓ Workers&apos; Compensation active policy</li>
+                                    <li>✓ Policy expiration dates are current</li>
+                                </ul>
+                            </div>
+
+                            {!isStep4Valid() && !uploading && (
                                 <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                    {t('step4.validation.uploadRequired', language)}
+                                    Please upload your ACORD 25 to continue.
                                 </div>
                             )}
                         </div>

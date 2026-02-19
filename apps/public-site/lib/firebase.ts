@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "demo-key",
@@ -15,6 +16,7 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
 // Connect to emulators in development
 if (process.env.NODE_ENV === 'development') {
@@ -23,4 +25,4 @@ if (process.env.NODE_ENV === 'development') {
     connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
 }
 
-export { app, db, auth };
+export { app, db, auth, storage };

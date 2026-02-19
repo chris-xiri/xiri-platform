@@ -186,13 +186,16 @@ export const onOnboardingComplete = onDocumentUpdated({
     const attestationItems = [hasEntity, hasGL, hasWC, hasAuto, hasW9];
     const attestationScore = attestationItems.filter(Boolean).length * 10;
 
-    // Doc uploads: up to 30 points (10 per doc type)
+    // Doc uploads: up to 30 points
     const uploads = compliance.uploadedDocs || {};
-    const docsCount = [uploads.coi, uploads.llc, uploads.w9].filter(Boolean).length;
-    const docsUploadedScore = docsCount * 10;
+    const hasAcord25 = !!compliance.acord25?.url;
+    const legacyDocsCount = [uploads.coi, uploads.llc, uploads.w9].filter(Boolean).length;
+    // ACORD 25 = 30 points (replaces 3 individual docs), legacy = 10 per doc
+    const docsUploadedScore = hasAcord25 ? 30 : Math.min(legacyDocsCount * 10, 30);
 
-    // AI verification: 0 for now (Phase 3)
-    const docsVerifiedScore = 0;
+    // AI verification: up to 20 points
+    const acord25Verified = compliance.acord25?.status === 'VERIFIED';
+    const docsVerifiedScore = acord25Verified ? 20 : 0;
 
     const totalScore = attestationScore + docsUploadedScore + docsVerifiedScore;
 
