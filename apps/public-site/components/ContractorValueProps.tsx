@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { CheckCircle, ArrowRight } from "lucide-react";
 
 interface ContractorValuePropCard {
@@ -19,6 +19,8 @@ interface ContractorValuePropCard {
 
 export function ContractorValueProps() {
     const [activeTab, setActiveTab] = useState("jobs");
+    const touchStartX = useRef<number>(0);
+    const touchEndX = useRef<number>(0);
 
     // Dynamic Visuals (Mockups)
     const getJobsVisual = () => (
@@ -170,11 +172,37 @@ export function ContractorValueProps() {
 
     const activeCard = CARDS.find(c => c.id === activeTab) || CARDS[0];
 
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        touchStartX.current = e.targetTouches[0].clientX;
+    }, []);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        touchEndX.current = e.targetTouches[0].clientX;
+    }, []);
+
+    const handleTouchEnd = useCallback(() => {
+        const diff = touchStartX.current - touchEndX.current;
+        const threshold = 50;
+        if (Math.abs(diff) > threshold) {
+            const currentIdx = CARDS.findIndex(c => c.id === activeTab);
+            if (diff > 0 && currentIdx < CARDS.length - 1) {
+                setActiveTab(CARDS[currentIdx + 1].id);
+            } else if (diff < 0 && currentIdx > 0) {
+                setActiveTab(CARDS[currentIdx - 1].id);
+            }
+        }
+    }, [activeTab]);
+
     return (
-        <section className="py-24 bg-slate-50 relative overflow-hidden">
-            <div className="grid lg:grid-cols-2 gap-16 items-start max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <section className="py-16 md:py-24 bg-slate-50 relative overflow-hidden">
+            <div
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                className="grid lg:grid-cols-2 gap-8 md:gap-16 items-start max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
+            >
                 {/* LEFT COLUMN: Content */}
-                <div>
+                <div className="min-w-0">
                     <div className="mb-10">
                         <h2 className="text-3xl font-heading font-bold text-slate-900 mb-4 tracking-tight">
                             Built for Service Providers
@@ -184,24 +212,25 @@ export function ContractorValueProps() {
                         </p>
                     </div>
 
-                    {/* TABS */}
-                    <div className="flex space-x-4 mb-8 border-b border-slate-200 no-scrollbar overflow-x-auto pb-1">
+                    {/* TABS — scrollable on mobile */}
+                    <div className="flex space-x-2 md:space-x-4 mb-6 md:mb-8 border-b border-slate-200 no-scrollbar overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
                         {CARDS.map((card, index) => (
                             <button
                                 key={card.id}
                                 onClick={() => setActiveTab(card.id)}
                                 className={`
-                                    pb-3 px-2 text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 border-b-2
+                                    pb-3 px-2 text-xs md:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 md:gap-2 border-b-2 flex-shrink-0
                                     ${activeTab === card.id
                                         ? 'text-sky-700 border-sky-600'
                                         : 'text-slate-400 border-transparent hover:text-slate-600'
                                     }
                                 `}
                             >
-                                <span className={`text-xs font-mono rounded-full w-5 h-5 flex items-center justify-center ${activeTab === card.id ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500'}`}>
+                                <span className={`text-[10px] md:text-xs font-mono rounded-full w-5 h-5 flex items-center justify-center ${activeTab === card.id ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500'}`}>
                                     0{index + 1}
                                 </span>
-                                {card.headline}
+                                <span className="hidden sm:inline">{card.headline}</span>
+                                <span className="sm:hidden">{card.headline.split(' ').slice(0, 3).join(' ')}</span>
                             </button>
                         ))}
                     </div>
@@ -248,14 +277,29 @@ export function ContractorValueProps() {
                 </div>
 
                 {/* RIGHT COLUMN: Visual */}
-                <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 p-2 transform rotate-1 hover:rotate-0 transition-transform duration-500 mt-8 lg:mt-0">
-                    <div className="bg-slate-50 rounded-xl overflow-hidden aspect-[4/3] relative flex items-center justify-center p-6">
+                <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 p-2 lg:transform lg:rotate-1 lg:hover:rotate-0 transition-transform duration-500 mt-4 lg:mt-0 min-w-0">
+                    <div className="bg-slate-50 rounded-xl overflow-hidden aspect-[4/3] relative flex items-center justify-center p-4 md:p-6">
                         {/* Abstract Background pattern */}
                         <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #cbd5e1 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
 
-                        <div className="relative w-full max-w-sm">
+                        <div className="relative w-full max-w-sm min-w-0">
                             {activeCard.visual}
                         </div>
+                    </div>
+                </div>
+
+                {/* Swipe indicator (mobile) */}
+                <div className="flex flex-col items-center gap-2 mt-4 lg:hidden col-span-full">
+                    <p className="text-xs text-slate-400 font-medium">Swipe to explore</p>
+                    <div className="flex gap-2">
+                        {CARDS.map((card) => (
+                            <button
+                                key={card.id}
+                                onClick={() => setActiveTab(card.id)}
+                                className={`h-2 rounded-full transition-all ${activeTab === card.id ? 'bg-sky-600 w-8' : 'bg-slate-300 w-2'}`}
+                                aria-label={`Switch to ${card.headline}`}
+                            />
+                        ))}
                     </div>
                 </div>
             </div>

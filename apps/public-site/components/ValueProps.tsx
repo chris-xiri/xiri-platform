@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 
 interface ValuePropCard {
     id: string;
@@ -25,7 +25,7 @@ const CARDS: ValuePropCard[] = [
         reliefTitle: "No More Surprises",
         relief: "Stop worrying about the \"quiet\" leaks or the hidden compliance risks. Your dedicated FSM acts as a professional consultant, identifying facility vulnerabilities before they become operational crises.",
         focusTitle: "We Find It First",
-        singleTenantFocus: "We don't wait for you to report a problem. Our nightly audits and weekly walk-throughs are designed to find the issues you’re too busy to notice.",
+        singleTenantFocus: "We don't wait for you to report a problem. Our nightly audits and weekly walk-throughs are designed to find the issues you're too busy to notice.",
         badge: "Proactive Monitoring",
         role: "Facility Solutions Manager",
         visual: (
@@ -88,7 +88,7 @@ const CARDS: ValuePropCard[] = [
         )
     },
     {
-        id: "audit-ready", // Renamed from surgical-standard
+        id: "audit-ready",
         outcome: "Audit-Ready Confidence",
         angle: "Verified to your standards. Reliably.",
         headline: "To Standard. Every Morning.",
@@ -137,6 +137,9 @@ interface Props {
 export function ValuePropsSection({ title }: Props) {
     const [activeTab, setActiveTab] = useState<string>('blind-spot');
     const [facilityIndex, setFacilityIndex] = useState<number>(0);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const touchStartX = useRef<number>(0);
+    const touchEndX = useRef<number>(0);
 
     const activeCard = CARDS.find(card => card.id === activeTab) || CARDS[0];
     const activeIndex = CARDS.findIndex(card => card.id === activeTab);
@@ -150,6 +153,31 @@ export function ValuePropsSection({ title }: Props) {
 
         return () => clearInterval(interval);
     }, []);
+
+    // Swipe handlers
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        touchStartX.current = e.targetTouches[0].clientX;
+    }, []);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        touchEndX.current = e.targetTouches[0].clientX;
+    }, []);
+
+    const handleTouchEnd = useCallback(() => {
+        const diff = touchStartX.current - touchEndX.current;
+        const threshold = 50;
+
+        if (Math.abs(diff) > threshold) {
+            const currentIdx = CARDS.findIndex(c => c.id === activeTab);
+            if (diff > 0 && currentIdx < CARDS.length - 1) {
+                // Swipe left → next
+                setActiveTab(CARDS[currentIdx + 1].id);
+            } else if (diff < 0 && currentIdx > 0) {
+                // Swipe right → prev
+                setActiveTab(CARDS[currentIdx - 1].id);
+            }
+        }
+    }, [activeTab]);
 
     // Update the visual for Card 1 to use dynamic facility
     const getBlindSpotVisual = () => (
@@ -213,27 +241,27 @@ export function ValuePropsSection({ title }: Props) {
     const activeCardWithVisual = CARDS_WITH_DYNAMIC_VISUAL.find(card => card.id === activeTab) || CARDS_WITH_DYNAMIC_VISUAL[0];
 
     return (
-        <section className="bg-gradient-to-b from-white to-gray-50 py-24">
+        <section className="bg-gradient-to-b from-white to-gray-50 py-16 md:py-24">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
-                <div className="text-center mb-12">
-                    <h2 className="text-4xl md:text-5xl font-heading font-bold text-gray-900 mb-4 tracking-tight">
+                <div className="text-center mb-8 md:mb-12">
+                    <h2 className="text-3xl md:text-5xl font-heading font-bold text-gray-900 mb-4 tracking-tight">
                         {title || 'Why Facilities Trust XIRI'}
                     </h2>
-                    <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
                         We don't just "staff" vendors. We engineer a facility management system that runs without you.
                     </p>
                 </div>
 
-                {/* Tab Navigation */}
-                <div className="flex justify-center mb-10">
-                    <div className="inline-flex bg-white rounded-2xl p-2 shadow-lg border border-gray-200 gap-2">
+                {/* Tab Navigation — scrollable on mobile */}
+                <div className="flex justify-center mb-6 md:mb-10">
+                    <div className="inline-flex bg-white rounded-2xl p-1.5 md:p-2 shadow-lg border border-gray-200 gap-1 md:gap-2 overflow-x-auto max-w-full no-scrollbar">
                         {CARDS_WITH_DYNAMIC_VISUAL.map((card, index) => (
                             <button
                                 key={card.id}
                                 onClick={() => setActiveTab(card.id)}
                                 className={`
-                                    px-8 py-4 rounded-xl font-bold text-base transition-all duration-300 flex items-center gap-3
+                                    px-4 py-3 md:px-8 md:py-4 rounded-xl font-bold text-sm md:text-base transition-all duration-300 flex items-center gap-2 md:gap-3 whitespace-nowrap flex-shrink-0
                                     ${activeTab === card.id
                                         ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20 scale-105'
                                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -249,17 +277,23 @@ export function ValuePropsSection({ title }: Props) {
                     </div>
                 </div>
 
-                {/* Active Tab Content */}
-                <div className="bg-white rounded-[2.5rem] p-8 lg:p-12 shadow-xl border border-gray-100">
-                    <div className="grid lg:grid-cols-2 gap-12 items-center">
+                {/* Active Tab Content — swipeable */}
+                <div
+                    ref={contentRef}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    className="bg-white rounded-2xl md:rounded-[2.5rem] p-5 md:p-8 lg:p-12 shadow-xl border border-gray-100"
+                >
+                    <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
 
                         {/* Content Column */}
-                        <div className="space-y-6">
+                        <div className="space-y-5 md:space-y-6 order-2 lg:order-1">
                             <div>
                                 <span className="inline-block px-3 py-1.5 rounded-lg bg-sky-50 text-sky-700 text-xs font-bold uppercase tracking-wider mb-3">
                                     {activeCardWithVisual.angle}
                                 </span>
-                                <h3 className="text-3xl md:text-4xl font-heading font-bold text-gray-900 mb-4 leading-tight">
+                                <h3 className="text-2xl md:text-4xl font-heading font-bold text-gray-900 mb-4 leading-tight">
                                     {activeCardWithVisual.headline}
                                 </h3>
                                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-teal-50 to-sky-50 border border-teal-100 text-teal-800 text-sm font-bold">
@@ -268,8 +302,8 @@ export function ValuePropsSection({ title }: Props) {
                                 </div>
                             </div>
 
-                            <div className="space-y-6 pt-4">
-                                <div className="relative pl-6 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-gradient-to-b before:from-sky-400 before:to-teal-400 before:rounded-full">
+                            <div className="space-y-5 md:space-y-6 pt-4">
+                                <div className="relative pl-5 md:pl-6 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-gradient-to-b before:from-sky-400 before:to-teal-400 before:rounded-full">
                                     <h4 className="font-bold text-gray-900 mb-2 text-base">
                                         {activeCardWithVisual.reliefTitle}
                                     </h4>
@@ -277,7 +311,7 @@ export function ValuePropsSection({ title }: Props) {
                                         {activeCardWithVisual.relief}
                                     </p>
                                 </div>
-                                <div className="relative pl-6 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-gradient-to-b before:from-sky-400 before:to-teal-400 before:rounded-full">
+                                <div className="relative pl-5 md:pl-6 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-gradient-to-b before:from-sky-400 before:to-teal-400 before:rounded-full">
                                     <h4 className="font-bold text-gray-900 mb-2 text-base">
                                         {activeCardWithVisual.focusTitle}
                                     </h4>
@@ -287,10 +321,10 @@ export function ValuePropsSection({ title }: Props) {
                                 </div>
                             </div>
 
-                            <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
+                            <div className="pt-4 md:pt-6 border-t border-gray-100 flex items-center justify-between">
                                 <div>
                                     <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Managed By</p>
-                                    <p className="text-base font-bold text-gray-900">
+                                    <p className="text-sm md:text-base font-bold text-gray-900">
                                         {activeCardWithVisual.role}
                                     </p>
                                 </div>
@@ -303,9 +337,9 @@ export function ValuePropsSection({ title }: Props) {
                         </div>
 
                         {/* Visual Column */}
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-sky-100 to-teal-50 rounded-[3rem] transform rotate-3 scale-105 -z-10 opacity-50"></div>
-                            <div className="bg-gray-50 border-2 border-gray-100 rounded-[3rem] p-8 min-h-[450px] flex items-center justify-center relative overflow-hidden shadow-2xl">
+                        <div className="relative order-1 lg:order-2">
+                            <div className="absolute inset-0 bg-gradient-to-tr from-sky-100 to-teal-50 rounded-2xl md:rounded-[3rem] transform rotate-3 scale-105 -z-10 opacity-50"></div>
+                            <div className="bg-gray-50 border-2 border-gray-100 rounded-2xl md:rounded-[3rem] p-4 md:p-8 min-h-[280px] md:min-h-[450px] flex items-center justify-center relative overflow-hidden shadow-2xl">
                                 {/* Decorative Grid */}
                                 <div className="absolute inset-0 opacity-[0.02] bg-[radial-gradient(#000_2px,transparent_2px)] [background-size:24px_24px]"></div>
 
@@ -318,17 +352,20 @@ export function ValuePropsSection({ title }: Props) {
                     </div>
                 </div>
 
-                {/* Tab Indicators (Mobile-friendly dots) */}
-                <div className="flex justify-center gap-2 mt-8 lg:hidden">
-                    {CARDS_WITH_DYNAMIC_VISUAL.map((card) => (
-                        <button
-                            key={card.id}
-                            onClick={() => setActiveTab(card.id)}
-                            className={`w-2 h-2 rounded-full transition-all ${activeTab === card.id ? 'bg-sky-600 w-8' : 'bg-gray-300'
-                                }`}
-                            aria-label={`Switch to ${card.headline}`}
-                        />
-                    ))}
+                {/* Swipe indicator dots (mobile) + swipe hint */}
+                <div className="flex flex-col items-center gap-2 mt-6 lg:hidden">
+                    <p className="text-xs text-gray-400 font-medium">Swipe to explore</p>
+                    <div className="flex gap-2">
+                        {CARDS_WITH_DYNAMIC_VISUAL.map((card) => (
+                            <button
+                                key={card.id}
+                                onClick={() => setActiveTab(card.id)}
+                                className={`h-2 rounded-full transition-all ${activeTab === card.id ? 'bg-sky-600 w-8' : 'bg-gray-300 w-2'
+                                    }`}
+                                aria-label={`Switch to ${card.headline}`}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
         </section>
