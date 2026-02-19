@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Home, Users, User, Settings, LogOut, Package, DollarSign, ClipboardList, FileText, Sun, Moon, Monitor, Shield, Receipt } from "lucide-react";
+import { Home, Users, User, Settings, LogOut, Package, DollarSign, ClipboardList, FileText, Sun, Moon, Monitor, Shield, Receipt, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import {
@@ -147,6 +147,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                             <Link href="/operations/audits" className="flex items-center gap-2 cursor-pointer">
                                                 <Shield className="w-4 h-4" />
                                                 Audits
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/operations/site-visits" className="flex items-center gap-2 cursor-pointer">
+                                                <MapPin className="w-4 h-4" />
+                                                Site Visits
                                             </Link>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>

@@ -241,28 +241,28 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db13, task) {
-  return db13.collection(COLLECTION).add({
+async function enqueueTask(db14, task) {
+  return db14.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db13) {
+async function fetchPendingTasks(db14) {
   const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db13.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db14.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function updateTaskStatus(db13, taskId, status, updates = {}) {
-  await db13.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db14, taskId, status, updates = {}) {
+  await db14.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db13, vendorId) {
-  const snapshot = await db13.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db13.batch();
+async function cancelVendorTasks(db14, vendorId) {
+  const snapshot = await db14.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db14.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
@@ -292,13 +292,15 @@ __export(index_exports, {
   onVendorApproved: () => onVendorApproved,
   onVendorCreated: () => onVendorCreated,
   processOutreachQueue: () => processOutreachQueue,
+  respondToQuote: () => respondToQuote,
   runRecruiterAgent: () => runRecruiterAgent,
   sendBookingConfirmation: () => sendBookingConfirmation,
   sendOnboardingInvite: () => sendOnboardingInvite,
+  sendQuoteEmail: () => sendQuoteEmail,
   testSendEmail: () => testSendEmail
 });
 module.exports = __toCommonJS(index_exports);
-var import_https3 = require("firebase-functions/v2/https");
+var import_https4 = require("firebase-functions/v2/https");
 
 // src/utils/firebase.ts
 var admin = __toESM(require("firebase-admin"));
@@ -1915,8 +1917,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db13 = (0, import_firestore6.getFirestore)();
-    const docRef = db13.collection(collection).doc(documentId);
+    const db14 = (0, import_firestore6.getFirestore)();
+    const docRef = db14.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -2145,7 +2147,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger6.error("Error sending vendor confirmation:", err);
     }
   }
-  const db13 = admin11.firestore();
+  const db14 = admin11.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -2172,9 +2174,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db13.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db14.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger6.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db13.collection("vendor_activities").add({
+  await db14.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -2477,8 +2479,325 @@ END:VEVENT
 END:VCALENDAR`;
 }
 
+// src/triggers/sendQuoteEmail.ts
+var import_https3 = require("firebase-functions/v2/https");
+var admin15 = __toESM(require("firebase-admin"));
+init_emailUtils();
+
+// ../../node_modules/uuid/dist/esm/stringify.js
+var byteToHex = [];
+for (let i = 0; i < 256; ++i) {
+  byteToHex.push((i + 256).toString(16).slice(1));
+}
+function unsafeStringify(arr, offset = 0) {
+  return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
+}
+
+// ../../node_modules/uuid/dist/esm/rng.js
+var import_crypto = require("crypto");
+var rnds8Pool = new Uint8Array(256);
+var poolPtr = rnds8Pool.length;
+function rng() {
+  if (poolPtr > rnds8Pool.length - 16) {
+    (0, import_crypto.randomFillSync)(rnds8Pool);
+    poolPtr = 0;
+  }
+  return rnds8Pool.slice(poolPtr, poolPtr += 16);
+}
+
+// ../../node_modules/uuid/dist/esm/native.js
+var import_crypto2 = require("crypto");
+var native_default = { randomUUID: import_crypto2.randomUUID };
+
+// ../../node_modules/uuid/dist/esm/v4.js
+function v4(options, buf, offset) {
+  if (native_default.randomUUID && !buf && !options) {
+    return native_default.randomUUID();
+  }
+  options = options || {};
+  const rnds = options.random ?? options.rng?.() ?? rng();
+  if (rnds.length < 16) {
+    throw new Error("Random bytes length must be >= 16");
+  }
+  rnds[6] = rnds[6] & 15 | 64;
+  rnds[8] = rnds[8] & 63 | 128;
+  if (buf) {
+    offset = offset || 0;
+    if (offset < 0 || offset + 16 > buf.length) {
+      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+    }
+    for (let i = 0; i < 16; ++i) {
+      buf[offset + i] = rnds[i];
+    }
+    return buf;
+  }
+  return unsafeStringify(rnds);
+}
+var v4_default = v4;
+
+// src/triggers/sendQuoteEmail.ts
+var db13 = admin15.firestore();
+var sendQuoteEmail = (0, import_https3.onCall)({
+  secrets: ["RESEND_API_KEY"],
+  cors: [
+    "http://localhost:3001",
+    "http://localhost:3000",
+    "https://xiri.ai",
+    "https://www.xiri.ai",
+    "https://app.xiri.ai",
+    "https://xiri-dashboard.vercel.app",
+    "https://xiri-dashboard-git-develop-xiri-facility-solutions.vercel.app",
+    /https:\/\/xiri-dashboard-.*\.vercel\.app$/,
+    "https://xiri-facility-solutions.web.app",
+    "https://xiri-facility-solutions.firebaseapp.com"
+  ]
+}, async (request) => {
+  if (!request.auth) {
+    throw new import_https3.HttpsError("unauthenticated", "Must be authenticated");
+  }
+  const { quoteId, clientEmail, clientName } = request.data;
+  if (!quoteId || !clientEmail) {
+    throw new import_https3.HttpsError("invalid-argument", "Missing quoteId or clientEmail");
+  }
+  const quoteRef = db13.collection("quotes").doc(quoteId);
+  const quoteSnap = await quoteRef.get();
+  if (!quoteSnap.exists) {
+    throw new import_https3.HttpsError("not-found", "Quote not found");
+  }
+  const quote = quoteSnap.data();
+  const reviewToken = v4_default();
+  await quoteRef.update({
+    reviewToken,
+    clientEmail,
+    status: "sent",
+    sentAt: admin15.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin15.firestore.FieldValue.serverTimestamp()
+  });
+  const reviewUrl = `https://xiri.ai/quote/review/${reviewToken}`;
+  const formatCurrency = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n);
+  const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const formatFrequency = (freq, daysOfWeek) => {
+    if (freq === "custom_days" && daysOfWeek) {
+      const days = daysOfWeek.map((on, i) => on ? DAY_NAMES[i] : null).filter(Boolean);
+      const monFri = [false, true, true, true, true, true, false];
+      if (JSON.stringify(daysOfWeek) === JSON.stringify(monFri)) return "Mon\u2013Fri";
+      return days.join(", ") || "Custom";
+    }
+    const labels = { nightly: "Nightly", weekly: "Weekly", biweekly: "Bi-Weekly", monthly: "Monthly", quarterly: "Quarterly", custom_days: "Custom" };
+    return labels[freq] || freq;
+  };
+  const lineItemRows = (quote.lineItems || []).map(
+    (item) => `<tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.locationName}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.serviceType}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${formatFrequency(item.frequency, item.daysOfWeek)}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${formatCurrency(item.clientRate)}/mo</td>
+        </tr>`
+  ).join("");
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6;">
+        <div style="max-width: 640px; margin: 0 auto; padding: 32px 16px;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%); border-radius: 12px 12px 0 0; padding: 32px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">XIRI</h1>
+                <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">FACILITY SOLUTIONS</p>
+            </div>
+
+            <!-- Body -->
+            <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <h2 style="color: #111827; margin: 0 0 8px; font-size: 22px;">Your Service Proposal</h2>
+                <p style="color: #6b7280; margin: 0 0 24px; font-size: 14px;">
+                    Hi${clientName ? ` ${clientName}` : ""},<br/>
+                    Thank you for considering XIRI Facility Solutions. Below is a summary of the proposed services for <strong>${quote.leadBusinessName}</strong>.
+                </p>
+
+                <!-- Service Table -->
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                    <thead>
+                        <tr style="background: #f9fafb;">
+                            <th style="padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px;">Location</th>
+                            <th style="padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px;">Service</th>
+                            <th style="padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px;">Frequency</th>
+                            <th style="padding: 10px 12px; text-align: right; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.5px;">Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${lineItemRows}
+                    </tbody>
+                </table>
+
+                <!-- Total -->
+                <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; text-align: center; margin-bottom: 32px;">
+                    <p style="color: #6b7280; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total Monthly Investment</p>
+                    <p style="color: #0369a1; margin: 4px 0 0; font-size: 32px; font-weight: 700;">${formatCurrency(quote.totalMonthlyRate)}<span style="font-size: 14px; font-weight: 400; color: #6b7280;">/month</span></p>
+                    <p style="color: #6b7280; margin: 4px 0 0; font-size: 13px;">${quote.contractTenure}-month agreement \u2022 ${quote.paymentTerms}</p>
+                </div>
+
+                <!-- CTA Button -->
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <a href="${reviewUrl}" style="display: inline-block; background: #0369a1; color: white; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">Review & Respond</a>
+                </div>
+                <p style="text-align: center; color: #9ca3af; font-size: 12px; margin: 0;">
+                    Click the button above to accept or request changes to this proposal.
+                </p>
+            </div>
+
+            <!-- Footer -->
+            <div style="text-align: center; padding: 24px 0;">
+                <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                    XIRI Facility Solutions \u2022 Professional Facility Management<br/>
+                    <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>`;
+  const sent = await sendEmail(
+    clientEmail,
+    `Service Proposal for ${quote.leadBusinessName} \u2014 XIRI Facility Solutions`,
+    html
+  );
+  if (!sent) {
+    throw new import_https3.HttpsError("internal", "Failed to send email");
+  }
+  await db13.collection("activity_logs").add({
+    type: "QUOTE_SENT",
+    quoteId,
+    leadId: quote.leadId,
+    clientEmail,
+    sentBy: request.auth.uid,
+    createdAt: admin15.firestore.FieldValue.serverTimestamp()
+  });
+  return { success: true, reviewToken };
+});
+var respondToQuote = (0, import_https3.onCall)({
+  secrets: ["RESEND_API_KEY"],
+  cors: [
+    "http://localhost:3000",
+    "https://xiri.ai",
+    "https://www.xiri.ai"
+  ]
+}, async (request) => {
+  const { reviewToken, action, notes } = request.data;
+  if (!reviewToken || !action) {
+    throw new import_https3.HttpsError("invalid-argument", "Missing reviewToken or action");
+  }
+  if (!["accept", "request_changes"].includes(action)) {
+    throw new import_https3.HttpsError("invalid-argument", "Invalid action");
+  }
+  const quotesSnap = await db13.collection("quotes").where("reviewToken", "==", reviewToken).limit(1).get();
+  if (quotesSnap.empty) {
+    throw new import_https3.HttpsError("not-found", "Invalid or expired quote link");
+  }
+  const quoteDoc = quotesSnap.docs[0];
+  const quote = quoteDoc.data();
+  if (quote.status !== "sent") {
+    throw new import_https3.HttpsError("failed-precondition", `This quote has already been ${quote.status}`);
+  }
+  const now = admin15.firestore.FieldValue.serverTimestamp();
+  if (action === "accept") {
+    const contractRef = await db13.collection("contracts").add({
+      leadId: quote.leadId,
+      quoteId: quoteDoc.id,
+      clientBusinessName: quote.leadBusinessName,
+      clientAddress: "",
+      signerName: "",
+      signerTitle: "",
+      totalMonthlyRate: quote.totalMonthlyRate,
+      contractTenure: quote.contractTenure,
+      startDate: now,
+      endDate: new Date(Date.now() + quote.contractTenure * 30 * 24 * 60 * 60 * 1e3),
+      paymentTerms: quote.paymentTerms,
+      exitClause: quote.exitClause || "30-day written notice",
+      status: "active",
+      createdBy: "client_accepted",
+      createdAt: now,
+      updatedAt: now
+    });
+    for (const item of quote.lineItems || []) {
+      await db13.collection("work_orders").add({
+        leadId: quote.leadId,
+        contractId: contractRef.id,
+        quoteLineItemId: item.id,
+        locationId: item.locationId,
+        locationName: item.locationName,
+        serviceType: item.serviceType,
+        scopeTemplateId: item.scopeTemplateId || null,
+        tasks: [],
+        vendorId: null,
+        vendorRate: null,
+        vendorHistory: [],
+        schedule: {
+          daysOfWeek: [false, true, true, true, true, true, false],
+          startTime: "21:00",
+          frequency: item.frequency
+        },
+        qrCodeSecret: v4_default(),
+        clientRate: item.clientRate,
+        margin: null,
+        status: "pending_assignment",
+        assignedFsmId: quote.assignedFsmId || null,
+        assignedBy: null,
+        notes: "",
+        createdAt: now,
+        updatedAt: now
+      });
+    }
+    await quoteDoc.ref.update({
+      status: "accepted",
+      acceptedAt: now,
+      clientResponseAt: now,
+      clientResponseNotes: notes || null,
+      updatedAt: now
+    });
+    await db13.collection("leads").doc(quote.leadId).update({
+      status: "won",
+      contractId: contractRef.id,
+      wonAt: now
+    });
+    if (quote.clientEmail) {
+      await sendEmail(
+        quote.clientEmail,
+        `Proposal Accepted \u2014 Welcome to XIRI Facility Solutions`,
+        `<div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 32px;">
+                    <h2 style="color: #0369a1;">Thank you!</h2>
+                    <p>Your service agreement for <strong>${quote.leadBusinessName}</strong> has been confirmed.</p>
+                    <p>Your dedicated Facility Solutions Manager will be in touch shortly to coordinate getting started.</p>
+                    <p style="color: #6b7280; font-size: 13px;">\u2014 XIRI Facility Solutions</p>
+                </div>`
+      );
+    }
+    await db13.collection("activity_logs").add({
+      type: "QUOTE_ACCEPTED_BY_CLIENT",
+      quoteId: quoteDoc.id,
+      leadId: quote.leadId,
+      contractId: contractRef.id,
+      clientEmail: quote.clientEmail,
+      createdAt: now
+    });
+    return { success: true, action: "accepted" };
+  } else {
+    await quoteDoc.ref.update({
+      clientResponseAt: now,
+      clientResponseNotes: notes || "Client requested changes",
+      updatedAt: now
+    });
+    await db13.collection("activity_logs").add({
+      type: "QUOTE_CHANGES_REQUESTED",
+      quoteId: quoteDoc.id,
+      leadId: quote.leadId,
+      clientEmail: quote.clientEmail,
+      notes: notes || "",
+      createdAt: now
+    });
+    return { success: true, action: "changes_requested" };
+  }
+});
+
 // src/index.ts
-var generateLeads = (0, import_https3.onCall)({
+var generateLeads = (0, import_https4.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: [
     "http://localhost:3001",
@@ -2509,7 +2828,7 @@ var generateLeads = (0, import_https3.onCall)({
   const hasActiveContract = data.hasActiveContract || false;
   const previewOnly = data.previewOnly || false;
   if (!query || !location) {
-    throw new import_https3.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https4.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`Analyzing leads for query: ${query}, location: ${location}${previewOnly ? " (PREVIEW MODE)" : ""}`);
@@ -2525,10 +2844,10 @@ var generateLeads = (0, import_https3.onCall)({
     };
   } catch (error8) {
     console.error("Error in generateLeads:", error8);
-    throw new import_https3.HttpsError("internal", error8.message || "An internal error occurred.");
+    throw new import_https4.HttpsError("internal", error8.message || "An internal error occurred.");
   }
 });
-var clearPipeline = (0, import_https3.onCall)({
+var clearPipeline = (0, import_https4.onCall)({
   cors: [
     "http://localhost:3001",
     "http://localhost:3000",
@@ -2558,10 +2877,10 @@ var clearPipeline = (0, import_https3.onCall)({
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
   } catch (error8) {
-    throw new import_https3.HttpsError("internal", error8.message);
+    throw new import_https4.HttpsError("internal", error8.message);
   }
 });
-var runRecruiterAgent = (0, import_https3.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
+var runRecruiterAgent = (0, import_https4.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
   const rawVendors = req.body.vendors || [
     { name: "ABC Cleaning", services: "We do medical office cleaning and terminal cleaning." },
     { name: "Joe's Pizza", services: "Best pizza in town" },
@@ -2570,7 +2889,7 @@ var runRecruiterAgent = (0, import_https3.onRequest)({ secrets: ["GEMINI_API_KEY
   const result = await analyzeVendorLeads(rawVendors, "Commercial Cleaning");
   res.json(result);
 });
-var testSendEmail = (0, import_https3.onCall)({
+var testSendEmail = (0, import_https4.onCall)({
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
   cors: [
     "http://localhost:3001",
@@ -2584,14 +2903,14 @@ var testSendEmail = (0, import_https3.onCall)({
   const { sendTemplatedEmail: sendTemplatedEmail2 } = await Promise.resolve().then(() => (init_emailUtils(), emailUtils_exports));
   const { vendorId, templateId } = request.data;
   if (!vendorId || !templateId) {
-    throw new import_https3.HttpsError("invalid-argument", "Missing vendorId or templateId");
+    throw new import_https4.HttpsError("invalid-argument", "Missing vendorId or templateId");
   }
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
   } catch (error8) {
     console.error("Error sending test email:", error8);
-    throw new import_https3.HttpsError("internal", error8.message || "Failed to send email");
+    throw new import_https4.HttpsError("internal", error8.message || "Failed to send email");
   }
 });
 // Annotate the CommonJS export names for ESM import in node:
@@ -2607,9 +2926,11 @@ var testSendEmail = (0, import_https3.onCall)({
   onVendorApproved,
   onVendorCreated,
   processOutreachQueue,
+  respondToQuote,
   runRecruiterAgent,
   sendBookingConfirmation,
   sendOnboardingInvite,
+  sendQuoteEmail,
   testSendEmail
 });
 //# sourceMappingURL=index.js.map

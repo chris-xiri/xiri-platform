@@ -27,6 +27,9 @@ const ACCESS_MAP: Record<string, string[]> = {
     'operations/audits': ['admin', 'fsm', 'night_mgr'],
     'operations/check-ins': ['admin', 'fsm', 'night_mgr'],
 
+    // FSM Site Visits
+    'operations/site-visits': ['admin', 'fsm'],
+
     // Accounting
     'accounting/invoices': ['admin', 'accounting', 'fsm'],
 

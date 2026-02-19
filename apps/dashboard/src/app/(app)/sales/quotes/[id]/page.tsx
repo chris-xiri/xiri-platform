@@ -99,6 +99,22 @@ export default function QuoteDetailPage({ params }: PageProps) {
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
 
+    const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const formatFrequency = (freq: string, daysOfWeek?: boolean[]) => {
+        if (freq === 'custom_days' && daysOfWeek) {
+            const days = daysOfWeek.map((on, i) => on ? DAY_NAMES[i] : null).filter(Boolean);
+            // Check common patterns
+            const monFri = [false, true, true, true, true, true, false];
+            if (JSON.stringify(daysOfWeek) === JSON.stringify(monFri)) return 'Mon–Fri';
+            return days.join(', ') || 'Custom';
+        }
+        const labels: Record<string, string> = {
+            nightly: 'Nightly', weekly: 'Weekly', biweekly: 'Bi-Weekly',
+            monthly: 'Monthly', quarterly: 'Quarterly', custom_days: 'Custom',
+        };
+        return labels[freq] || freq;
+    };
+
     const handleSendToClient = async () => {
         if (!quote || !clientEmail) return;
         setSending(true);
@@ -344,11 +360,6 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                    {(quote.status === 'draft') && (
-                        <Button variant="default" size="sm" className="gap-2" onClick={() => setShowSendModal(true)}>
-                            <Send className="w-4 h-4" /> Send to Client
-                        </Button>
-                    )}
                     {(quote.status === 'sent' || quote.status === 'rejected') && (
                         <Button variant="outline" size="sm" className="gap-2" onClick={handleRevise} disabled={revising}>
                             <RotateCcw className="w-4 h-4" /> {revising ? 'Revising...' : 'Revise Quote'}
@@ -489,7 +500,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                                                 <span className="font-medium">{item.serviceType}</span>
                                                 {item.description && <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>}
                                             </td>
-                                            <td className="py-3 capitalize text-sm">{item.frequency}</td>
+                                            <td className="py-3 text-sm">{formatFrequency(item.frequency, item.daysOfWeek)}</td>
                                             <td className="py-3 text-right font-medium">{formatCurrency(item.clientRate)}</td>
                                         </tr>
                                     ))}
@@ -587,6 +598,28 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     </CardContent>
                 </Card>
             ) : null}
+
+            {/* Send to Client (bottom — preferred action) */}
+            {quote.status === 'draft' && (
+                <Card className="print:hidden border-blue-600/30 bg-blue-50 dark:bg-blue-950/20">
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="font-bold text-lg flex items-center gap-2">
+                                    <Mail className="w-5 h-5 text-blue-600" />
+                                    Send to Client for Review
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Email the proposal — the client can accept or request changes without logging in.
+                                </p>
+                            </div>
+                            <Button className="gap-2" onClick={() => setShowSendModal(true)}>
+                                <Send className="w-4 h-4" /> Send to Client
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Send to Client Modal */}
             {showSendModal && (

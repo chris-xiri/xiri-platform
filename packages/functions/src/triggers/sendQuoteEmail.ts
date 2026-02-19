@@ -67,11 +67,23 @@ export const sendQuoteEmail = onCall({
     const formatCurrency = (n: number) =>
         new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n);
 
+    const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const formatFrequency = (freq: string, daysOfWeek?: boolean[]) => {
+        if (freq === "custom_days" && daysOfWeek) {
+            const days = daysOfWeek.map((on: boolean, i: number) => on ? DAY_NAMES[i] : null).filter(Boolean);
+            const monFri = [false, true, true, true, true, true, false];
+            if (JSON.stringify(daysOfWeek) === JSON.stringify(monFri)) return "Mon–Fri";
+            return days.join(", ") || "Custom";
+        }
+        const labels: Record<string, string> = { nightly: "Nightly", weekly: "Weekly", biweekly: "Bi-Weekly", monthly: "Monthly", quarterly: "Quarterly", custom_days: "Custom" };
+        return labels[freq] || freq;
+    };
+
     const lineItemRows = (quote.lineItems || []).map((item: any) =>
         `<tr>
             <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.locationName}</td>
             <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.serviceType}</td>
-            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-transform: capitalize;">${item.frequency}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${formatFrequency(item.frequency, item.daysOfWeek)}</td>
             <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${formatCurrency(item.clientRate)}/mo</td>
         </tr>`
     ).join("");

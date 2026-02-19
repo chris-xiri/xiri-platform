@@ -666,3 +666,52 @@ export interface ScopeTemplate {
     defaultStartTime: string;
     createdAt: any;
 }
+
+// ─── FSM Site Visit System ─────────────────────────────
+export interface AreaRating {
+    area: string;
+    rating: number; // 1-5
+    notes?: string;
+    photoUrl?: string;
+}
+
+export interface SiteVisitActionItem {
+    id: string;
+    description: string;
+    assignedTo: 'vendor' | 'client' | 'xiri';
+    priority: 'low' | 'medium' | 'high';
+    status: 'open' | 'completed';
+    dueDate?: string;
+}
+
+export interface SiteVisit {
+    id?: string;
+    workOrderId: string;
+    contractId?: string;
+    leadId: string;
+    locationName: string;
+    clientBusinessName: string;
+
+    checkedInAt: any;
+    checkedInMethod: 'qr' | 'gps' | 'manual';
+
+    areaRatings: AreaRating[];
+    overallCondition: number; // 1-5 average
+
+    clientContactMade: boolean;
+    clientContactName?: string;
+    clientSatisfaction?: number; // 1-5
+    clientFeedback?: string;
+
+    upsellOpportunities?: string[];
+
+    actionItems: SiteVisitActionItem[];
+
+    fsmId: string;
+    fsmName: string;
+    visitDate: string; // YYYY-MM-DD
+    isFirstVisit?: boolean;
+    photoUrls?: string[];
+    createdAt: any;
+}
+
