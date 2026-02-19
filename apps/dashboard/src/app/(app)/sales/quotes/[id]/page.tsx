@@ -292,7 +292,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 totalMonthlyRate: quote.totalMonthlyRate,
                 lineItems: [...quote.lineItems],
                 changedBy: userId,
-                changedAt: serverTimestamp(),
+                changedAt: new Date(),
             };
             const newVersion = (quote.version || 1) + 1;
             const updatedHistory = [...(quote.revisionHistory || []), snapshot];
@@ -313,6 +313,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 createdAt: serverTimestamp(),
             });
 
+            // Refresh the page to show updated draft state
             setQuote({
                 ...quote,
                 version: newVersion,
@@ -321,6 +322,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
             });
         } catch (err) {
             console.error('Error revising quote:', err);
+            alert('Failed to revise quote. Check console for details.');
         } finally {
             setRevising(false);
         }
