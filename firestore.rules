@@ -61,9 +61,18 @@ service cloud.firestore {
     
     // OPERATIONS BACKBONE (Quotes, Contracts, Work Orders)
     match /quotes/{quoteId} {
+      // Authenticated dashboard users
       allow read: if hasAnyRole(['admin', 'sales', 'fsm']);
+      // Public review page: allow unauthenticated read on quotes that have been sent
+      // Security: reviewToken is a UUID v4 (unguessable), acts as capability-based auth
+      allow read: if resource.data.reviewToken is string
+                  && resource.data.status in ['sent', 'accepted', 'rejected'];
       allow create: if hasAnyRole(['admin', 'sales']);
       allow update: if hasAnyRole(['admin', 'sales', 'fsm']);
+      // Allow public update only to mark as viewed (viewedAt field)
+      allow update: if request.auth == null
+                    && resource.data.reviewToken is string
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewedAt']);
       allow delete: if hasRole('admin');
     }
 

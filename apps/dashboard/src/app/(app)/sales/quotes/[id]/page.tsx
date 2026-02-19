@@ -353,13 +353,33 @@ export default function QuoteDetailPage({ params }: PageProps) {
                             <Badge variant={badge.variant}>{badge.label}</Badge>
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            ID: {quote.id?.slice(0, 8)} • Created {quote.createdAt?.toDate?.()?.toLocaleDateString() || '—'}
+                            Created {quote.createdAt?.toDate?.()?.toLocaleDateString() || '—'}
                         </p>
                     </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                    {(quote.status === 'draft' || quote.status === 'sent') && (
+                        <>
+                            <Button
+                                variant="outline" size="sm"
+                                className="gap-2 border-destructive/50 text-destructive hover:bg-destructive/10"
+                                onClick={handleReject}
+                            >
+                                <X className="w-4 h-4" /> Reject
+                            </Button>
+                            <Button
+                                variant="outline" size="sm"
+                                className="gap-2 border-green-600/50 text-green-700 hover:bg-green-50"
+                                onClick={handleAccept}
+                                disabled={converting}
+                            >
+                                {converting ? 'Converting...' : <><Check className="w-4 h-4" /> Accept</>}
+                            </Button>
+                            <div className="w-px h-6 bg-border" />
+                        </>
+                    )}
                     {(quote.status === 'sent' || quote.status === 'rejected') && (
                         <Button variant="outline" size="sm" className="gap-2" onClick={handleRevise} disabled={revising}>
                             <RotateCcw className="w-4 h-4" /> {revising ? 'Revising...' : 'Revise Quote'}
@@ -550,42 +570,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
             </div>
 
             {/* Conversion Actions (hidden in print) */}
-            {quote.status === 'draft' || quote.status === 'sent' ? (
-                <Card className="print:hidden border-primary/30 bg-primary/5">
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="font-bold text-lg">Ready to close?</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Accepting will create a Contract and generate Work Orders for the FSM.
-                                </p>
-                            </div>
-                            <div className="flex gap-3">
-                                <Button
-                                    variant="outline"
-                                    className="gap-2 border-destructive/50 text-destructive hover:bg-destructive/10"
-                                    onClick={handleReject}
-                                >
-                                    <X className="w-4 h-4" /> Mark Rejected
-                                </Button>
-                                <Button
-                                    className="gap-2 bg-green-600 hover:bg-green-700"
-                                    onClick={handleAccept}
-                                    disabled={converting}
-                                >
-                                    {converting ? (
-                                        'Converting...'
-                                    ) : (
-                                        <>
-                                            <Check className="w-4 h-4" /> Mark Accepted
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            ) : quote.status === 'accepted' ? (
+            {quote.status === 'accepted' && (
                 <Card className="print:hidden border-green-600/30 bg-green-50 dark:bg-green-950/20">
                     <CardContent className="p-6 flex items-center gap-3">
                         <Check className="w-6 h-6 text-green-600" />
@@ -597,7 +582,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                         </div>
                     </CardContent>
                 </Card>
-            ) : null}
+            )}
 
             {/* Send to Client (bottom — preferred action) */}
             {quote.status === 'draft' && (
