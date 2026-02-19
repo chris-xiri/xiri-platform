@@ -1,11 +1,13 @@
 const admin = require('firebase-admin');
-const { applicationDefault } = require('firebase-admin/app');
+const path = require('path');
 
-// Initialize with application-default credentials (from gcloud auth)
+// Initialize with service account key
+const serviceAccount = require(path.join(__dirname, 'serviceAccountKey.json'));
+
 if (!admin.apps.length) {
     admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
         projectId: 'xiri-facility-solutions',
-        credential: admin.credential.applicationDefault(),
     });
 }
 
