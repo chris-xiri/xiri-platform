@@ -701,10 +701,14 @@ export interface Contract {
     quoteId: string;
     quoteIds?: string[];          // all quotes that contributed services
 
-    clientBusinessName: string;
+    clientBusinessName: string;       // DBA or casual name from the lead
     clientAddress: string;
+    formalEntityName?: string;         // Legal entity name (set before sending)
+    formalEntityAddress?: string;      // Legal entity address
     signerName: string;
     signerTitle: string;
+    signerEmail?: string;
+    signerPhone?: string;
 
     lineItems?: QuoteLineItem[];  // aggregated accepted line items
     totalMonthlyRate: number;

@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FileText, DollarSign, Calendar, MapPin, User, Clock, Building2, Printer, Eye, EyeOff, History, ChevronRight } from 'lucide-react';
+import { ArrowLeft, FileText, DollarSign, Calendar, MapPin, User, Clock, Building2, Printer, Eye, EyeOff, History, ChevronRight, Pencil, Check, X } from 'lucide-react';
 import ContractPreview from '@/components/ContractPreview';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 
 const STATUS_BADGE: Record<string, { variant: any; label: string; color: string }> = {
     draft: { variant: 'secondary', label: 'Draft', color: 'text-gray-500' },
@@ -41,6 +42,14 @@ export default function ContractDetailPage() {
     const [linkedQuotes, setLinkedQuotes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showPreview, setShowPreview] = useState(false);
+    const [editingEntity, setEditingEntity] = useState(false);
+    const [entityName, setEntityName] = useState('');
+    const [entityAddress, setEntityAddress] = useState('');
+    const [signerName, setSignerName] = useState('');
+    const [signerTitle, setSignerTitle] = useState('');
+    const [signerEmail, setSignerEmail] = useState('');
+    const [signerPhone, setSignerPhone] = useState('');
+    const [savingEntity, setSavingEntity] = useState(false);
 
     useEffect(() => {
         if (!contractId) return;
@@ -146,11 +155,16 @@ export default function ContractDetailPage() {
                 <div className="flex-1">
                     <div className="flex items-center gap-3">
                         <h1 className="text-2xl font-bold">
-                            {contract.clientBusinessName || contract.clientName || 'Contract'}
+                            {contract.formalEntityName || contract.clientBusinessName || contract.clientName || 'Contract'}
                         </h1>
                         <Badge variant={badge.variant}>{badge.label}</Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">Contract ID: {contract.id}</p>
+                    <p className="text-sm text-muted-foreground">
+                        {contract.formalEntityName && contract.clientBusinessName && (
+                            <span className="mr-2">DBA: {contract.clientBusinessName}</span>
+                        )}
+                        Contract ID: {contract.id}
+                    </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowPreview(!showPreview)}>
@@ -164,6 +178,148 @@ export default function ContractDetailPage() {
                     )}
                 </div>
             </div>
+
+            {/* Contract Party Details — editable pre-send review */}
+            <Card className="border-amber-200 bg-amber-50/30">
+                <CardContent className="pt-4 pb-4">
+                    {editingEntity ? (
+                        <div className="space-y-3">
+                            <p className="text-xs font-medium text-amber-800 uppercase tracking-wider">Contract Party Details (review before sending)</p>
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <div>
+                                    <label className="text-xs text-muted-foreground mb-1 block">Formal Entity Name</label>
+                                    <Input
+                                        value={entityName}
+                                        onChange={(e) => setEntityName(e.target.value)}
+                                        placeholder="e.g. XYZ Medical Group, LLC"
+                                        className="bg-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-muted-foreground mb-1 block">Entity Address</label>
+                                    <Input
+                                        value={entityAddress}
+                                        onChange={(e) => setEntityAddress(e.target.value)}
+                                        placeholder="123 Main St, Suite 100, Dallas, TX 75001"
+                                        className="bg-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-muted-foreground mb-1 block">Signer Name</label>
+                                    <Input
+                                        value={signerName}
+                                        onChange={(e) => setSignerName(e.target.value)}
+                                        placeholder="John Smith"
+                                        className="bg-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-muted-foreground mb-1 block">Signer Title / Designation</label>
+                                    <Input
+                                        value={signerTitle}
+                                        onChange={(e) => setSignerTitle(e.target.value)}
+                                        placeholder="Office Manager"
+                                        className="bg-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-muted-foreground mb-1 block">Signer Email</label>
+                                    <Input
+                                        value={signerEmail}
+                                        onChange={(e) => setSignerEmail(e.target.value)}
+                                        placeholder="john@example.com"
+                                        className="bg-white"
+                                        type="email"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-muted-foreground mb-1 block">Signer Phone</label>
+                                    <Input
+                                        value={signerPhone}
+                                        onChange={(e) => setSignerPhone(e.target.value)}
+                                        placeholder="(214) 555-1234"
+                                        className="bg-white"
+                                        type="tel"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button
+                                    size="sm"
+                                    className="gap-1.5"
+                                    disabled={savingEntity}
+                                    onClick={async () => {
+                                        setSavingEntity(true);
+                                        try {
+                                            await updateDoc(doc(db, 'contracts', contractId), {
+                                                formalEntityName: entityName.trim() || null,
+                                                formalEntityAddress: entityAddress.trim() || null,
+                                                signerName: signerName.trim(),
+                                                signerTitle: signerTitle.trim(),
+                                                signerEmail: signerEmail.trim() || null,
+                                                signerPhone: signerPhone.trim() || null,
+                                                updatedAt: serverTimestamp(),
+                                            });
+                                            setContract({
+                                                ...contract,
+                                                formalEntityName: entityName.trim() || null,
+                                                formalEntityAddress: entityAddress.trim() || null,
+                                                signerName: signerName.trim(),
+                                                signerTitle: signerTitle.trim(),
+                                                signerEmail: signerEmail.trim() || null,
+                                                signerPhone: signerPhone.trim() || null,
+                                            });
+                                            setEditingEntity(false);
+                                        } catch (err) {
+                                            console.error('Error saving entity:', err);
+                                        } finally {
+                                            setSavingEntity(false);
+                                        }
+                                    }}
+                                >
+                                    <Check className="w-3.5 h-3.5" /> Save
+                                </Button>
+                                <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setEditingEntity(false)}>
+                                    <X className="w-3.5 h-3.5" /> Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <p className="text-xs font-medium text-amber-800 uppercase tracking-wider">Contract Party</p>
+                                {contract.formalEntityName ? (
+                                    <p className="font-semibold text-sm">{contract.formalEntityName}</p>
+                                ) : (
+                                    <p className="text-sm text-amber-700">⚠ Set the legal entity name before sending</p>
+                                )}
+                                {contract.formalEntityAddress && <p className="text-xs text-muted-foreground">{contract.formalEntityAddress}</p>}
+                                <p className="text-xs text-muted-foreground">
+                                    Signer: {contract.signerName || '—'} • {contract.signerTitle || '—'}
+                                    {contract.signerEmail && <span> • {contract.signerEmail}</span>}
+                                    {contract.signerPhone && <span> • {contract.signerPhone}</span>}
+                                </p>
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50"
+                                onClick={() => {
+                                    setEntityName(contract.formalEntityName || contract.clientBusinessName || '');
+                                    setEntityAddress(contract.formalEntityAddress || contract.clientAddress || '');
+                                    setSignerName(contract.signerName || '');
+                                    setSignerTitle(contract.signerTitle || '');
+                                    setSignerEmail(contract.signerEmail || '');
+                                    setSignerPhone(contract.signerPhone || '');
+                                    setEditingEntity(true);
+                                }}
+                            >
+                                <Pencil className="w-3.5 h-3.5" /> Edit
+                            </Button>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
             {/* Contract Summary Cards */}
             <div className="grid gap-4 md:grid-cols-4">
