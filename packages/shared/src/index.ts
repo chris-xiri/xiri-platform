@@ -502,7 +502,7 @@ export interface QuoteLineItem {
     serviceCategory?: 'janitorial' | 'specialized' | 'consumables' | 'exterior';
     scopeTemplateId?: string;
     description?: string;
-    frequency: 'custom_days' | 'nightly' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
+    frequency: 'one_time' | 'custom_days' | 'nightly' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
     daysOfWeek?: boolean[]; // [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
     clientRate: number;
     isConsumable?: boolean;

@@ -51,6 +51,7 @@ const STEPS = ['Select Client', 'Locations', 'Services & Pricing', 'Terms & Subm
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function FrequencyDisplay(item: QuoteLineItem): string {
+    if (item.frequency === 'one_time') return 'One-Time';
     if (item.frequency === 'custom_days' && item.daysOfWeek) {
         const count = item.daysOfWeek.filter(Boolean).length;
         const days = item.daysOfWeek.map((d, i) => d ? DAY_LABELS[i] : null).filter(Boolean);
@@ -596,6 +597,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                                             updateLineItem(item.id, updates);
                                                                         }}
                                                                     >
+                                                                        <option value="one_time">One-Time (Ad-Hoc)</option>
                                                                         <option value="custom_days">Custom Days</option>
                                                                         <option value="nightly">Nightly (7x)</option>
                                                                         <option value="weekly">Weekly</option>
