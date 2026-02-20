@@ -490,6 +490,56 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 createdAt: serverTimestamp(),
             });
 
+            // 6. Create Sales Commission
+            const recurringItems = acceptedItems.filter((li: any) => li.frequency !== 'one_time');
+            const oneTimeItems = acceptedItems.filter((li: any) => li.frequency === 'one_time');
+            const mrr = recurringItems.reduce((s: number, li: any) => s + (li.clientRate || 0), 0);
+            const oneTimeTotal = oneTimeItems.reduce((s: number, li: any) => s + (li.clientRate || 0), 0);
+            const totalRevenue = mrr + oneTimeTotal;
+            if (totalRevenue > 0) {
+                const tenure = quote.contractTenure || 12;
+                const acv = (mrr * tenure) + oneTimeTotal; // recurring × tenure + one-time flat
+                const isUpsell = quote.isUpsell === true;
+                const commissionRate = isUpsell ? 0.05 : 0.10;
+                const totalCommission = Math.round(acv * commissionRate * 100) / 100;
+                const staffId = quote.assignedTo || quote.createdBy || userId;
+
+                // 50/25/25 payout schedule over 3 months
+                const now2 = new Date();
+                const payoutSchedule = [
+                    { month: 0, amount: Math.round(totalCommission * 0.50 * 100) / 100, percentage: 50, status: 'PENDING', scheduledAt: new Date(now2.getFullYear(), now2.getMonth() + 1, 1) },
+                    { month: 1, amount: Math.round(totalCommission * 0.25 * 100) / 100, percentage: 25, status: 'PENDING', scheduledAt: new Date(now2.getFullYear(), now2.getMonth() + 2, 1) },
+                    { month: 2, amount: Math.round(totalCommission * 0.25 * 100) / 100, percentage: 25, status: 'PENDING', scheduledAt: new Date(now2.getFullYear(), now2.getMonth() + 3, 1) },
+                ];
+
+                const commRef = await addDoc(collection(db, 'commissions'), {
+                    staffId,
+                    staffRole: isUpsell ? 'fsm' : 'sales',
+                    quoteId: quote.id,
+                    leadId: quote.leadId,
+                    type: isUpsell ? 'FSM_UPSELL' : 'SALES_NEW',
+                    mrr,
+                    acv,
+                    rate: commissionRate,
+                    totalCommission,
+                    payoutSchedule,
+                    clawbackWindowEnd: new Date(now2.getFullYear(), now2.getMonth() + 6, now2.getDate()),
+                    status: 'ACTIVE',
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                });
+
+                // Ledger entry for audit trail
+                await addDoc(collection(db, 'commission_ledger'), {
+                    commissionId: commRef.id,
+                    type: 'PAYOUT_SCHEDULED',
+                    amount: totalCommission,
+                    staffId,
+                    description: `Commission created for ${quote.leadBusinessName || 'client'} — ${formatCurrency(mrr)}/mo MRR, ${tenure}mo tenure`,
+                    createdAt: serverTimestamp(),
+                });
+            }
+
             setQuote({ ...quote, status: 'accepted', lineItems: updatedLineItems });
         } catch (err) {
             console.error('Error accepting quote:', err);
