@@ -81,7 +81,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
     useEffect(() => {
         if (!showAssign || !wo) return;
         async function fetchVendors() {
-            const q = query(collection(db, 'vendors'), where('status', 'in', ['qualified', 'approved']));
+            const q = query(collection(db, 'vendors'), where('status', 'in', ['qualified', 'approved', 'ready_for_assignment', 'active']));
             const snap = await getDocs(q);
             const woServiceLower = wo!.serviceType?.toLowerCase() || '';
             const woZip = wo!.locationZip || '';

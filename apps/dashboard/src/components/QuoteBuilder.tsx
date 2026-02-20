@@ -348,9 +348,16 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
         updateLineItem(itemId, { daysOfWeek: newDays });
     };
 
+    const recurringItems = lineItems.filter(li => li.frequency !== 'one_time');
+    const oneTimeItems = lineItems.filter(li => li.frequency === 'one_time');
+    const recurringSubtotal = recurringItems.reduce((sum, li) => sum + (li.clientRate || 0), 0);
+    const oneTimeSubtotal = oneTimeItems.reduce((sum, li) => sum + (li.clientRate || 0), 0);
     const subtotalBeforeTax = lineItems.reduce((sum, li) => sum + (li.clientRate || 0), 0);
+    const recurringTax = recurringItems.reduce((sum, li) => sum + (li.taxAmount || 0), 0);
+    const oneTimeTax = oneTimeItems.reduce((sum, li) => sum + (li.taxAmount || 0), 0);
     const totalTax = lineItems.reduce((sum, li) => sum + (li.taxAmount || 0), 0);
-    const totalMonthly = subtotalBeforeTax + totalTax;
+    const totalMonthly = recurringSubtotal + recurringTax;
+    const totalOneTime = oneTimeSubtotal + oneTimeTax;
 
     const handleSubmit = async () => {
         if (lineItems.length === 0 || !profile) return;
@@ -374,6 +381,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                 await updateDoc(doc(db, 'quotes', existingQuote.quoteId), {
                     lineItems: stripUndefined(lineItems),
                     totalMonthlyRate: totalMonthly,
+                    oneTimeCharges: totalOneTime,
                     subtotalBeforeTax,
                     totalTax,
                     contractTenure,
@@ -409,6 +417,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                     leadBusinessName: selectedLead.businessName,
                     lineItems: stripUndefined(lineItems),
                     totalMonthlyRate: totalMonthly,
+                    oneTimeCharges: totalOneTime,
                     subtotalBeforeTax,
                     totalTax,
                     contractTenure,
@@ -796,7 +805,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                                 </div>
                                                                 <div className="col-span-4">
                                                                     <Label className="text-xs text-muted-foreground">
-                                                                        {item.isConsumable ? 'Est. Monthly Cost' : 'Monthly Rate'}
+                                                                        {item.frequency === 'one_time' ? 'Flat Fee' : item.isConsumable ? 'Est. Monthly Cost' : 'Monthly Rate'}
                                                                     </Label>
                                                                     <div className="relative">
                                                                         <DollarSign className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
@@ -1023,22 +1032,25 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
 
                             {/* Running Total */}
                             <div className="p-4 bg-muted/30 rounded-lg border space-y-1">
-                                <div className="flex justify-end items-center gap-4">
-                                    <span className="text-sm text-muted-foreground">Subtotal:</span>
-                                    <span className="text-lg font-medium">{formatCurrency(subtotalBeforeTax)}</span>
-                                    <span className="text-xs text-muted-foreground">/mo</span>
-                                </div>
-                                {totalTax > 0 && (
+                                {recurringItems.length > 0 && (
                                     <div className="flex justify-end items-center gap-4">
-                                        <span className="text-sm text-muted-foreground">Sales Tax:</span>
-                                        <span className="text-lg font-medium">{formatCurrency(totalTax)}</span>
+                                        <span className="text-sm text-muted-foreground">Monthly Recurring:</span>
+                                        <span className="text-lg font-medium">{formatCurrency(recurringSubtotal + recurringTax)}</span>
+                                        <span className="text-xs text-muted-foreground">/mo</span>
                                     </div>
                                 )}
-                                <div className="flex justify-end items-center gap-4 border-t pt-1">
-                                    <span className="text-sm font-medium">Total Monthly Rate:</span>
-                                    <span className="text-2xl font-bold text-primary">{formatCurrency(totalMonthly)}</span>
-                                    <span className="text-xs text-muted-foreground">/mo</span>
-                                </div>
+                                {oneTimeItems.length > 0 && (
+                                    <div className="flex justify-end items-center gap-4">
+                                        <span className="text-sm text-muted-foreground">One-Time Charges:</span>
+                                        <span className="text-lg font-medium">{formatCurrency(oneTimeSubtotal + oneTimeTax)}</span>
+                                        <span className="text-xs text-muted-foreground">one-time</span>
+                                    </div>
+                                )}
+                                {totalTax > 0 && (
+                                    <div className="flex justify-end items-center gap-4 text-xs text-muted-foreground">
+                                        <span>Includes {formatCurrency(totalTax)} in sales tax</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -1065,28 +1077,43 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                         <span className="font-medium">{lineItems.length}</span>
                                     </div>
                                     {/* Line item summary */}
+                                    {/* Recurring Services */}
+                                    {recurringItems.length > 0 && (
+                                        <>
+                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recurring Services</p>
+                                            {recurringItems.map(li => (
+                                                <div key={li.id} className="flex justify-between text-xs text-muted-foreground">
+                                                    <span>{li.serviceType} — {li.locationName} ({FrequencyDisplay(li)})</span>
+                                                    <span className="font-medium text-foreground">{formatCurrency(li.clientRate)}/mo</span>
+                                                </div>
+                                            ))}
+                                        </>
+                                    )}
+                                    {/* One-Time Services */}
+                                    {oneTimeItems.length > 0 && (
+                                        <>
+                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2">One-Time Services</p>
+                                            {oneTimeItems.map(li => (
+                                                <div key={li.id} className="flex justify-between text-xs text-muted-foreground">
+                                                    <span>{li.serviceType} — {li.locationName}</span>
+                                                    <span className="font-medium text-foreground">{formatCurrency(li.clientRate)}</span>
+                                                </div>
+                                            ))}
+                                        </>
+                                    )}
                                     <Separator />
-                                    {lineItems.map(li => (
-                                        <div key={li.id} className="flex justify-between text-xs text-muted-foreground">
-                                            <span>{li.serviceType} — {li.locationName} ({FrequencyDisplay(li)})</span>
-                                            <span className="font-medium text-foreground">{formatCurrency(li.clientRate)}</span>
-                                        </div>
-                                    ))}
-                                    <Separator />
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Subtotal</span>
-                                        <span className="font-medium">{formatCurrency(subtotalBeforeTax)}</span>
-                                    </div>
-                                    {totalTax > 0 && (
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">Sales Tax</span>
-                                            <span className="font-medium">{formatCurrency(totalTax)}</span>
+                                    {recurringItems.length > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="font-medium">Monthly Recurring (incl. tax)</span>
+                                            <span className="text-xl font-bold text-primary">{formatCurrency(totalMonthly)}/mo</span>
                                         </div>
                                     )}
-                                    <div className="flex justify-between">
-                                        <span className="font-medium">Monthly Rate (incl. tax)</span>
-                                        <span className="text-xl font-bold text-primary">{formatCurrency(totalMonthly)}</span>
-                                    </div>
+                                    {oneTimeItems.length > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="font-medium">One-Time Charges (incl. tax)</span>
+                                            <span className="text-xl font-bold text-amber-600">{formatCurrency(totalOneTime)}</span>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
 

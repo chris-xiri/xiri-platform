@@ -19,8 +19,13 @@ const formatDate = (d: any): string => {
 
 export default function ContractPreview({ contract, lead, workOrders }: ContractPreviewProps) {
     const monthlyRate = contract.totalMonthlyRate || contract.monthlyRate || 0;
+    const oneTimeCharges = contract.oneTimeCharges || 0;
     const tenure = contract.contractTenure || contract.tenure || 0;
     const lineItems: QuoteLineItem[] = contract.lineItems || [];
+    const recurringItems = lineItems.filter(li => li.frequency !== 'one_time');
+    const oneTimeItems = lineItems.filter(li => li.frequency === 'one_time');
+    const recurringTotal = recurringItems.reduce((s, li) => s + (li.clientRate || 0), 0);
+    const oneTimeTotal = oneTimeItems.reduce((s, li) => s + (li.clientRate || 0), 0);
     const clientName = contract.clientBusinessName || contract.clientName || '_______________';
     const clientAddress = lead?.address || contract.clientAddress || '_______________';
     const contactName = contract.signerName || lead?.contactName || lead?.name || '_______________';
@@ -122,63 +127,112 @@ export default function ContractPreview({ contract, lead, workOrders }: Contract
                         specified below, subject to the terms and conditions of this Agreement:
                     </p>
 
-                    {Array.from(locationMap.entries()).map(([locName, items]) => (
-                        <div key={locName} className="mb-4">
-                            <div className="bg-gray-100 px-4 py-2 rounded-t-lg border border-b-0">
-                                <p className="text-xs font-bold uppercase tracking-wide text-gray-600">
-                                    📍 {locName}
-                                </p>
-                                {items[0]?.locationAddress && (
-                                    <p className="text-xs text-gray-500">{items[0].locationAddress}</p>
-                                )}
+                    {/* Recurring Services */}
+                    {recurringItems.length > 0 && (
+                        <>
+                            <p className="text-xs font-bold uppercase tracking-wide text-gray-600 mb-2">A. Recurring Services</p>
+                            {Array.from(
+                                recurringItems.reduce((map, li) => {
+                                    const key = li.locationName || 'Primary Location';
+                                    if (!map.has(key)) map.set(key, []);
+                                    map.get(key)!.push(li);
+                                    return map;
+                                }, new Map<string, QuoteLineItem[]>())
+                            ).map(([locName, items]) => (
+                                <div key={locName} className="mb-4">
+                                    <div className="bg-gray-100 px-4 py-2 rounded-t-lg border border-b-0">
+                                        <p className="text-xs font-bold uppercase tracking-wide text-gray-600">
+                                            📍 {locName}
+                                        </p>
+                                        {items[0]?.locationAddress && (
+                                            <p className="text-xs text-gray-500">{items[0].locationAddress}</p>
+                                        )}
+                                    </div>
+                                    <table className="w-full border border-t-0 text-xs">
+                                        <thead>
+                                            <tr className="bg-gray-50 border-b">
+                                                <th className="text-left py-2 px-3 font-semibold text-gray-600">Service</th>
+                                                <th className="text-left py-2 px-3 font-semibold text-gray-600">Frequency</th>
+                                                <th className="text-right py-2 px-3 font-semibold text-gray-600">Monthly Rate</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {items.map((item, idx) => (
+                                                <tr key={item.id || idx} className="border-b last:border-0">
+                                                    <td className="py-2 px-3">
+                                                        {item.serviceType}
+                                                        {item.description && (
+                                                            <span className="text-gray-500 block text-[10px]">{item.description}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-2 px-3 text-gray-600">
+                                                        {formatFrequency(item.frequency, item.daysOfWeek)}
+                                                    </td>
+                                                    <td className="py-2 px-3 text-right font-medium">
+                                                        {formatCurrency(item.clientRate)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ))}
+                            <div className="border-2 border-gray-800 rounded-lg p-4 flex justify-between items-center mb-6">
+                                <span className="font-bold text-gray-900">TOTAL MONTHLY RECURRING</span>
+                                <span className="text-xl font-bold text-gray-900">{formatCurrency(recurringTotal || monthlyRate)}/mo</span>
                             </div>
-                            <table className="w-full border border-t-0 text-xs">
-                                <thead>
-                                    <tr className="bg-gray-50 border-b">
-                                        <th className="text-left py-2 px-3 font-semibold text-gray-600">Service</th>
-                                        <th className="text-left py-2 px-3 font-semibold text-gray-600">Frequency</th>
-                                        <th className="text-left py-2 px-3 font-semibold text-gray-600">Billing</th>
-                                        <th className="text-right py-2 px-3 font-semibold text-gray-600">Monthly Rate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {items.map((item, idx) => (
-                                        <tr key={item.id || idx} className="border-b last:border-0">
-                                            <td className="py-2 px-3">
-                                                {item.serviceType}
-                                                {item.description && (
-                                                    <span className="text-gray-500 block text-[10px]">{item.description}</span>
-                                                )}
-                                            </td>
-                                            <td className="py-2 px-3 text-gray-600">
-                                                {formatFrequency(item.frequency, item.daysOfWeek)}
-                                            </td>
-                                            <td className="py-2 px-3">
-                                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${getBillingType(item.frequency) === 'Recurring' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                                                    {getBillingType(item.frequency)}
-                                                </span>
-                                            </td>
-                                            <td className="py-2 px-3 text-right font-medium">
-                                                {formatCurrency(item.clientRate)}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                                <tfoot>
-                                    <tr className="bg-gray-50 border-t font-medium">
-                                        <td colSpan={3} className="py-2 px-3 text-right text-gray-600">Location Subtotal</td>
-                                        <td className="py-2 px-3 text-right">{formatCurrency(items.reduce((s, i) => s + (i.clientRate || 0), 0))}</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    ))}
+                        </>
+                    )}
 
-                    {/* Total */}
-                    <div className="mt-4 border-2 border-gray-800 rounded-lg p-4 flex justify-between items-center">
-                        <span className="font-bold text-gray-900">TOTAL MONTHLY RATE</span>
-                        <span className="text-xl font-bold text-gray-900">{formatCurrency(monthlyRate)}</span>
-                    </div>
+                    {/* One-Time Services */}
+                    {oneTimeItems.length > 0 && (
+                        <>
+                            <p className="text-xs font-bold uppercase tracking-wide text-gray-600 mb-2">B. One-Time Services</p>
+                            {Array.from(
+                                oneTimeItems.reduce((map, li) => {
+                                    const key = li.locationName || 'Primary Location';
+                                    if (!map.has(key)) map.set(key, []);
+                                    map.get(key)!.push(li);
+                                    return map;
+                                }, new Map<string, QuoteLineItem[]>())
+                            ).map(([locName, items]) => (
+                                <div key={locName} className="mb-4">
+                                    <div className="bg-amber-50 px-4 py-2 rounded-t-lg border border-b-0">
+                                        <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
+                                            📍 {locName}
+                                        </p>
+                                    </div>
+                                    <table className="w-full border border-t-0 text-xs">
+                                        <thead>
+                                            <tr className="bg-gray-50 border-b">
+                                                <th className="text-left py-2 px-3 font-semibold text-gray-600">Service</th>
+                                                <th className="text-right py-2 px-3 font-semibold text-gray-600">Flat Fee</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {items.map((item, idx) => (
+                                                <tr key={item.id || idx} className="border-b last:border-0">
+                                                    <td className="py-2 px-3">
+                                                        {item.serviceType}
+                                                        {item.description && (
+                                                            <span className="text-gray-500 block text-[10px]">{item.description}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-2 px-3 text-right font-medium">
+                                                        {formatCurrency(item.clientRate)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ))}
+                            <div className="border-2 border-amber-600 rounded-lg p-4 flex justify-between items-center mb-6">
+                                <span className="font-bold text-gray-900">TOTAL ONE-TIME CHARGES</span>
+                                <span className="text-xl font-bold text-amber-700">{formatCurrency(oneTimeTotal || oneTimeCharges)}</span>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Term */}
@@ -195,14 +249,21 @@ export default function ContractPreview({ contract, lead, workOrders }: Contract
                 <div className="mb-8">
                     <h3 className="text-sm font-bold uppercase tracking-wide text-gray-700 mb-3">4. Compensation & Payment</h3>
                     <p className="mb-2">
-                        Client agrees to pay Provider the sum of <strong>{formatCurrency(monthlyRate)}</strong> per
-                        month for all services described in Section 2.
+                        Client agrees to compensate Provider for all services described in Section 2 as follows:
                     </p>
                     <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                        {(recurringTotal || monthlyRate) > 0 && (
+                            <li><strong>Monthly Recurring Payment:</strong> {formatCurrency(recurringTotal || monthlyRate)} per month for all recurring services.</li>
+                        )}
+                        {(oneTimeTotal || oneTimeCharges) > 0 && (
+                            <li><strong>One-Time Service Charges:</strong> {formatCurrency(oneTimeTotal || oneTimeCharges)}, to be invoiced upon completion of one-time services.</li>
+                        )}
                         <li>Payment terms: <strong>{paymentTerms}</strong> from date of invoice.</li>
-                        <li>Invoices will be issued on the 1st of each calendar month for the upcoming service period.</li>
+                        <li>Monthly invoices will be issued on the 1st of each calendar month for the upcoming recurring service period.</li>
                         <li>Late payments are subject to a 1.5% monthly service charge after the due date.</li>
-                        <li>Total Annual Contract Value: <strong>{formatCurrency(monthlyRate * 12)}</strong></li>
+                        {(recurringTotal || monthlyRate) > 0 && (
+                            <li>Estimated Annual Recurring Value: <strong>{formatCurrency((recurringTotal || monthlyRate) * 12)}</strong></li>
+                        )}
                     </ul>
                 </div>
 

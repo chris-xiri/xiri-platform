@@ -653,6 +653,7 @@ export interface Quote {
     leadBusinessName: string;
     lineItems: QuoteLineItem[];
     totalMonthlyRate: number;
+    oneTimeCharges?: number;
     subtotalBeforeTax?: number;
     totalTax?: number;
 
@@ -707,6 +708,7 @@ export interface Contract {
 
     lineItems?: QuoteLineItem[];  // aggregated accepted line items
     totalMonthlyRate: number;
+    oneTimeCharges?: number;
     contractTenure: number;
     startDate: any;
     endDate: any;

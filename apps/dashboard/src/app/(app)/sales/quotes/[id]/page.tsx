@@ -361,6 +361,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     signerTitle: '',
                     lineItems: acceptedItems,
                     totalMonthlyRate: quote.totalMonthlyRate,
+                    oneTimeCharges: quote.oneTimeCharges || 0,
                     contractTenure: quote.contractTenure,
                     startDate: serverTimestamp(),
                     endDate: new Date(now.getFullYear(), now.getMonth() + quote.contractTenure, now.getDate()),
