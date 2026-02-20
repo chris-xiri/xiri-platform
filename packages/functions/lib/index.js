@@ -23414,52 +23414,6 @@ var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
     createdAt: admin20.firestore.FieldValue.serverTimestamp()
   });
   logger12.info(`[Commission] Created ${type} commission for staff ${assignedTo}: $${totalCommission} (${(rate * 100).toFixed(0)}% of $${acv} ACV) \u2014 quote ${quoteId}`);
-  try {
-    let clientName = "";
-    let contactEmail = "";
-    let contactPhone = "";
-    if (leadId) {
-      const leadDoc = await db17.collection("leads").doc(leadId).get();
-      if (leadDoc.exists) {
-        const leadData = leadDoc.data();
-        clientName = leadData.businessName || leadData.companyName || leadData.name || "";
-        contactEmail = leadData.email || leadData.contactEmail || "";
-        contactPhone = leadData.phone || leadData.contactPhone || "";
-      }
-    }
-    const contractRef = await db17.collection("contracts").add({
-      leadId: leadId || null,
-      quoteId,
-      clientBusinessName: clientName,
-      contactEmail,
-      contactPhone,
-      locations: after.locations || after.lineItems?.map((li) => li.location).filter(Boolean) || [],
-      lineItems: after.lineItems || [],
-      totalMonthlyRate: mrr,
-      contractTenure: after.contractTenure || after.tenure || 12,
-      totalContractValue: acv,
-      paymentTerms: after.paymentTerms || "Net 30",
-      exitClause: after.exitClause || "30-day written notice",
-      status: "draft",
-      assignedFsmId: after.assignedFsmId || assignedTo || null,
-      createdBy: assignedTo || null,
-      createdAt: admin20.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin20.firestore.FieldValue.serverTimestamp()
-    });
-    await db17.collection("activity_logs").add({
-      type: "CONTRACT_AUTO_GENERATED",
-      contractId: contractRef.id,
-      quoteId,
-      leadId,
-      clientName,
-      totalMonthlyRate: mrr,
-      description: `Draft contract auto-generated from accepted quote (MRR: $${mrr.toLocaleString()})`,
-      createdAt: admin20.firestore.FieldValue.serverTimestamp()
-    });
-    logger12.info(`[Contract] Auto-generated draft contract ${contractRef.id} from quote ${quoteId}`);
-  } catch (contractErr) {
-    logger12.error(`[Contract] Failed to auto-generate contract from quote ${quoteId}:`, contractErr.message);
-  }
 });
 var onInvoicePaid = (0, import_firestore13.onDocumentUpdated)({
   document: "invoices/{invoiceId}"

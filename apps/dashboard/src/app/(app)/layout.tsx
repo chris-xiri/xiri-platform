@@ -186,9 +186,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             icon: <Receipt className="w-3.5 h-3.5" />,
             show: showAccountingNav,
             items: [
-                { label: 'Invoices', href: '/accounting/invoices', icon: <Receipt className="w-4 h-4" /> },
-                { label: 'Commissions', href: '/accounting/commissions', icon: <DollarSign className="w-4 h-4" /> },
-                { label: 'Vendor Remittances', href: '/accounting/vendor-remittances', icon: <DollarSign className="w-4 h-4" /> },
+                ...(canAccess('accounting/invoices', profile.roles) ? [{ label: 'Invoices', href: '/accounting/invoices', icon: <Receipt className="w-4 h-4" /> }] : []),
+                ...(canAccess('accounting/commissions', profile.roles) ? [{ label: 'Commissions', href: '/accounting/commissions', icon: <DollarSign className="w-4 h-4" /> }] : []),
+                ...(canAccess('accounting/vendor-remittances', profile.roles) ? [{ label: 'Vendor Remittances', href: '/accounting/vendor-remittances', icon: <DollarSign className="w-4 h-4" /> }] : []),
             ],
         },
     ];
