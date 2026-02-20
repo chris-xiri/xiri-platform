@@ -81,7 +81,7 @@ export default function AuditsPage() {
         });
 
         return () => { unsub(); unsub2(); };
-    }, []);
+    }, [profile?.uid, profile?.roles]);
 
     // Check which WOs already have a check-in tonight
     const todayStr = new Date().toISOString().split('T')[0];
