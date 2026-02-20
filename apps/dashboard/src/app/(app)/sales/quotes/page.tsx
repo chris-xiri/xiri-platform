@@ -202,14 +202,9 @@ export default function QuotesPage() {
                                     {group.latest.lineItems && group.latest.lineItems.length > 0 && (
                                         <div className="mt-2 pt-2 border-t border-dashed space-y-0.5">
                                             {group.latest.lineItems.map((li: any, idx: number) => (
-                                                <div key={li.id || idx} className="flex items-center justify-between text-xs">
-                                                    <span className="text-muted-foreground truncate mr-3">
-                                                        {li.serviceType}{li.locationName ? ` — ${li.locationName}` : ''}
-                                                    </span>
-                                                    <span className="font-medium text-foreground whitespace-nowrap">
-                                                        {formatCurrency(li.clientRate)}/mo
-                                                    </span>
-                                                </div>
+                                                <p key={li.id || idx} className="text-xs text-muted-foreground">
+                                                    {li.serviceType} — {formatCurrency(li.clientRate)}/mo
+                                                </p>
                                             ))}
                                         </div>
                                     )}

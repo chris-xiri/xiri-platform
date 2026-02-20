@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FileText, DollarSign, Calendar, MapPin, User, Clock, ClipboardList, Building2, Printer, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, FileText, DollarSign, Calendar, MapPin, User, Clock, Building2, Printer, Eye, EyeOff } from 'lucide-react';
 import ContractPreview from '@/components/ContractPreview';
 
 const STATUS_BADGE: Record<string, { variant: any; label: string; color: string }> = {
@@ -257,53 +257,6 @@ export default function ContractDetailPage() {
             {showPreview && (
                 <ContractPreview contract={contract} lead={lead} workOrders={workOrders} />
             )}
-
-            {/* Work Orders */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                        <ClipboardList className="w-4 h-4" /> Work Orders ({workOrders.length})
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {workOrders.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-6">No work orders for this contract yet.</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {workOrders.map(wo => (
-                                <div
-                                    key={wo.id}
-                                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
-                                    onClick={() => router.push(`/operations/work-orders/${wo.id}`)}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div>
-                                            <p className="font-medium text-sm">{wo.serviceType}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {wo.locationName || 'No location'} {wo.locationCity ? `• ${wo.locationCity}, ${wo.locationState}` : ''}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <Badge variant={
-                                            wo.status === 'active' ? 'outline' :
-                                                wo.status === 'pending_assignment' ? 'secondary' :
-                                                    wo.status === 'completed' ? 'default' : 'secondary'
-                                        }>
-                                            {wo.status?.replace(/_/g, ' ')}
-                                        </Badge>
-                                        {wo.clientRate && (
-                                            <span className="text-sm font-mono font-medium">
-                                                {formatCurrency(wo.clientRate)}/mo
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
         </div>
     );
 }
