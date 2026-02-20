@@ -7,8 +7,9 @@ import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FileText, DollarSign, Calendar, MapPin, User, Clock, Building2, Printer, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, FileText, DollarSign, Calendar, MapPin, User, Clock, Building2, Printer, Eye, EyeOff, History, ChevronRight } from 'lucide-react';
 import ContractPreview from '@/components/ContractPreview';
+import { Separator } from '@/components/ui/separator';
 
 const STATUS_BADGE: Record<string, { variant: any; label: string; color: string }> = {
     draft: { variant: 'secondary', label: 'Draft', color: 'text-gray-500' },
@@ -36,6 +37,8 @@ export default function ContractDetailPage() {
     const [contract, setContract] = useState<any>(null);
     const [workOrders, setWorkOrders] = useState<any[]>([]);
     const [lead, setLead] = useState<any>(null);
+    const [activityLogs, setActivityLogs] = useState<any[]>([]);
+    const [linkedQuotes, setLinkedQuotes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showPreview, setShowPreview] = useState(false);
 
@@ -79,6 +82,30 @@ export default function ContractDetailPage() {
                     if (leadDoc.exists()) {
                         setLead({ id: leadDoc.id, ...leadDoc.data() });
                     }
+                }
+
+                // Fetch activity logs for this contract
+                try {
+                    const logsSnap = await getDocs(query(
+                        collection(db, 'activity_logs'),
+                        where('contractId', '==', contractId),
+                        orderBy('createdAt', 'desc'),
+                    ));
+                    setActivityLogs(logsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                } catch { setActivityLogs([]); }
+
+                // Fetch linked quotes (versions)
+                const quoteIds = contractData.quoteIds || (contractData.quoteId ? [contractData.quoteId] : []);
+                if (quoteIds.length > 0) {
+                    const quoteDocs = await Promise.all(
+                        quoteIds.map((qid: string) => getDoc(doc(db, 'quotes', qid)))
+                    );
+                    setLinkedQuotes(
+                        quoteDocs
+                            .filter(d => d.exists())
+                            .map(d => ({ id: d.id, ...d.data() }))
+                            .sort((a: any, b: any) => (b.version || 1) - (a.version || 1))
+                    );
                 }
             } catch (err) {
                 console.error('Error fetching contract:', err);
@@ -257,6 +284,118 @@ export default function ContractDetailPage() {
             {showPreview && (
                 <ContractPreview contract={contract} lead={lead} workOrders={workOrders} />
             )}
+
+            {/* Contract History & Versions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Activity Timeline */}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <History className="w-4 h-4" /> Contract History
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {activityLogs.length === 0 ? (
+                            <div className="space-y-3">
+                                {/* Always show creation event from contract itself */}
+                                <div className="flex gap-3">
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 mt-1.5" />
+                                        <div className="w-0.5 flex-1 bg-border" />
+                                    </div>
+                                    <div className="pb-4">
+                                        <p className="text-sm font-medium">Contract Created</p>
+                                        <p className="text-xs text-muted-foreground">{formatDate(contract.createdAt)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-0">
+                                {activityLogs.map((log, idx) => {
+                                    const isLast = idx === activityLogs.length - 1;
+                                    let icon = '🔵';
+                                    let color = 'bg-blue-500';
+                                    let title = log.type?.replace(/_/g, ' ') || 'Event';
+                                    let detail = '';
+
+                                    if (log.type === 'CONTRACT_AMENDED') {
+                                        icon = '📝'; color = 'bg-blue-500';
+                                        title = 'Contract Amended';
+                                        const parts = [];
+                                        if (log.newServicesCount > 0) parts.push(`+${log.newServicesCount} added`);
+                                        if (log.cancelledServicesCount > 0) parts.push(`${log.cancelledServicesCount} cancelled`);
+                                        if (log.modifiedServicesCount > 0) parts.push(`${log.modifiedServicesCount} modified`);
+                                        detail = parts.join(', ') || 'Services updated';
+                                    } else if (log.type === 'QUOTE_ACCEPTED') {
+                                        icon = '✅'; color = 'bg-green-500';
+                                        title = log.isAmendment ? 'Quote Revision Accepted' : 'Quote Accepted';
+                                        detail = `${log.workOrderCount || 0} work orders created`;
+                                    } else if (log.type === 'CONTRACT_SIGNED') {
+                                        icon = '✍️'; color = 'bg-purple-500';
+                                        title = 'Contract Signed';
+                                    } else if (log.type === 'CONTRACT_TERMINATED') {
+                                        icon = '🚫'; color = 'bg-red-500';
+                                        title = 'Contract Terminated';
+                                    }
+
+                                    return (
+                                        <div key={log.id} className="flex gap-3">
+                                            <div className="flex flex-col items-center">
+                                                <div className={`w-2.5 h-2.5 rounded-full ${color} mt-1.5`} />
+                                                {!isLast && <div className="w-0.5 flex-1 bg-border" />}
+                                            </div>
+                                            <div className={isLast ? '' : 'pb-4'}>
+                                                <p className="text-sm font-medium">{title}</p>
+                                                {detail && <p className="text-xs text-muted-foreground">{detail}</p>}
+                                                <p className="text-[10px] text-muted-foreground/60">{formatDate(log.createdAt)}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Linked Quote Versions */}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <FileText className="w-4 h-4" /> Quote Versions ({linkedQuotes.length})
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {linkedQuotes.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-4">No linked quotes found.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {linkedQuotes.map((q: any) => {
+                                    const qBadge = STATUS_BADGE[q.status] || STATUS_BADGE.draft;
+                                    return (
+                                        <div
+                                            key={q.id}
+                                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
+                                            onClick={() => router.push(`/sales/quotes/${q.id}`)}
+                                        >
+                                            <div>
+                                                <p className="text-sm font-medium">Version {q.version || 1}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {q.lineItems?.length || 0} services — {formatCurrency(q.totalMonthlyRate)}/mo
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant={qBadge.variant} className="text-xs">{qBadge.label}</Badge>
+                                                <span className="text-xs text-muted-foreground">{formatDate(q.createdAt)}</span>
+                                                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
