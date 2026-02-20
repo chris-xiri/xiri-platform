@@ -99,6 +99,7 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
         ? selectedClient.workOrders.map(wo => ({
             workOrderId: wo.id!,
             locationName: wo.locationName,
+            locationAddress: [wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ') || undefined,
             serviceType: wo.serviceType,
             frequency: wo.schedule?.frequency || 'monthly',
             amount: wo.clientRate,
@@ -128,6 +129,8 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
 
         try {
             const userId = profile.uid || profile.email || 'unknown';
+            const paymentToken = crypto.randomUUID();
+
             const docRef = await addDoc(collection(db, 'invoices'), {
                 leadId: selectedClient.leadId,
                 clientBusinessName: selectedClient.businessName,
@@ -141,11 +144,51 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
                 grossMargin,
                 billingPeriod: { start: billingStart, end: billingEnd },
                 dueDate: new Date(dueDate),
+                paymentToken,
                 status: 'draft',
                 createdBy: userId,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
+
+            // Auto-generate Vendor Remittance Statements — one per vendor
+            const vendorGroups: Record<string, { vendorName: string; workOrders: (WorkOrder & { id: string })[] }> = {};
+            for (const wo of selectedClient.workOrders) {
+                if (wo.vendorId && wo.vendorRate) {
+                    if (!vendorGroups[wo.vendorId]) {
+                        vendorGroups[wo.vendorId] = {
+                            vendorName: wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || 'Vendor',
+                            workOrders: [],
+                        };
+                    }
+                    vendorGroups[wo.vendorId].workOrders.push(wo);
+                }
+            }
+
+            for (const [vendorId, group] of Object.entries(vendorGroups)) {
+                const remLineItems = group.workOrders.map(wo => ({
+                    workOrderId: wo.id!,
+                    locationName: wo.locationName,
+                    locationAddress: [wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ') || undefined,
+                    serviceType: wo.serviceType,
+                    frequency: wo.schedule?.frequency || 'monthly',
+                    amount: wo.vendorRate!,
+                }));
+
+                await addDoc(collection(db, 'vendor_remittances'), {
+                    invoiceId: docRef.id,
+                    vendorId,
+                    vendorName: group.vendorName,
+                    lineItems: remLineItems,
+                    totalAmount: remLineItems.reduce((sum, li) => sum + li.amount, 0),
+                    billingPeriod: { start: billingStart, end: billingEnd },
+                    dueDate: new Date(dueDate),
+                    status: 'pending',
+                    createdBy: userId,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                });
+            }
 
             await addDoc(collection(db, 'activity_logs'), {
                 type: 'INVOICE_CREATED',
@@ -153,6 +196,7 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
                 clientBusinessName: selectedClient.businessName,
                 totalAmount: subtotal,
                 grossMargin,
+                vendorRemittancesCreated: Object.keys(vendorGroups).length,
                 createdBy: userId,
                 createdAt: serverTimestamp(),
             });

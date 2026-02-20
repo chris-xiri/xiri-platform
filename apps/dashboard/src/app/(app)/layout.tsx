@@ -178,6 +178,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                                 Invoices
                                             </Link>
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/accounting/vendor-remittances" className="flex items-center gap-2 cursor-pointer">
+                                                <Receipt className="w-4 h-4" />
+                                                Vendor Remittances
+                                            </Link>
+                                        </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             )}

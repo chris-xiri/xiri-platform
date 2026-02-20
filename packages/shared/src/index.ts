@@ -410,9 +410,12 @@ export interface Job {
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'void';
 
+export type PaymentMethod = 'ach' | 'check' | 'zelle' | 'venmo' | 'paypal' | 'wire' | 'credit_card' | 'cash' | 'other';
+
 export interface InvoiceLineItem {
     workOrderId: string;
     locationName: string;
+    locationAddress?: string;
     serviceType: string;
     frequency: string;
     amount: number;
@@ -425,12 +428,15 @@ export interface VendorPayout {
     serviceType: string;
     amount: number;
     status: 'pending' | 'approved' | 'paid';
+    remittanceId?: string; // links to vendor_remittances doc
 }
 
 export interface Invoice {
     id?: string;
     leadId: string;
     clientBusinessName: string;
+    clientEmail?: string;
+    clientContactName?: string;
     contractId?: string;
 
     lineItems: InvoiceLineItem[];
@@ -445,10 +451,51 @@ export interface Invoice {
 
     billingPeriod: { start: string; end: string };
     dueDate: any;
+
+    sentAt?: any;
     paidAt?: any;
-    paymentMethod?: string;
+    paymentMethod?: PaymentMethod;
+    paymentReference?: string; // check #, transaction ID, confirmation #
+    paymentToken?: string;     // for public payment page: /invoice/pay/[token]
 
     status: InvoiceStatus;
+    createdBy: string;
+    createdAt: any;
+    updatedAt: any;
+}
+
+// --- VENDOR REMITTANCE (auto-generated statement for vendors) ---
+
+export type VendorRemittanceStatus = 'pending' | 'sent' | 'paid' | 'void';
+
+export interface VendorRemittanceLineItem {
+    workOrderId: string;
+    locationName: string;
+    locationAddress?: string;
+    serviceType: string;
+    frequency: string;
+    amount: number; // vendorRate
+}
+
+export interface VendorRemittance {
+    id?: string;
+    invoiceId: string;         // parent client invoice
+    vendorId: string;
+    vendorName: string;
+    vendorEmail?: string;
+
+    lineItems: VendorRemittanceLineItem[];
+    totalAmount: number;
+
+    billingPeriod: { start: string; end: string };
+    dueDate: any;
+
+    sentAt?: any;
+    paidAt?: any;
+    paymentMethod?: PaymentMethod;
+    paymentReference?: string;
+
+    status: VendorRemittanceStatus;
     createdBy: string;
     createdAt: any;
     updatedAt: any;
