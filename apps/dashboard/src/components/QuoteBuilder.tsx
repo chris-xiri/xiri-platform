@@ -258,7 +258,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
     };
 
     const addLocation = () => {
-        if (!newLocationName || !newLocationAddress) return;
+        if (!newLocationName || !newLocationAddress || !newLocationZip) return;
         setLocations(prev => [...prev, {
             id: `loc_${Date.now()}`,
             name: newLocationName,
@@ -652,7 +652,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                             />
                                         </div>
                                         <div>
-                                            <Label className="text-xs">Zip</Label>
+                                            <Label className="text-xs">Zip <span className="text-red-500">*</span></Label>
                                             <Input
                                                 placeholder="11021"
                                                 value={newLocationZip}
@@ -665,7 +665,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                         onClick={addLocation}
                                         variant="outline"
                                         className="gap-2"
-                                        disabled={!newLocationName || !newLocationAddress}
+                                        disabled={!newLocationName || !newLocationAddress || !newLocationZip}
                                     >
                                         <Plus className="w-4 h-4" /> Add Location
                                     </Button>
