@@ -30,7 +30,7 @@ function formatFrequency(freq?: string, daysOfWeek?: boolean[]) {
         return days.join(', ') || 'Custom';
     }
     const labels: Record<string, string> = {
-        nightly: 'Nightly', weekly: 'Weekly', biweekly: 'Bi-Weekly',
+        one_time: 'One-Time', nightly: 'Daily', weekly: 'Weekly', biweekly: 'Bi-Weekly',
         monthly: 'Monthly', quarterly: 'Quarterly', custom_days: 'Custom',
     };
     return labels[freq] || freq;

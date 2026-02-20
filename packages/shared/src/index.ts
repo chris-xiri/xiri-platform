@@ -504,6 +504,14 @@ export interface QuoteLineItem {
     description?: string;
     frequency: 'one_time' | 'custom_days' | 'nightly' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
     daysOfWeek?: boolean[]; // [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
+    monthlyPattern?: {
+        type: 'day_of_month';    // e.g. "every 7th"
+        day: number;             // 1-31
+    } | {
+        type: 'nth_weekday';     // e.g. "1st Monday"
+        week: 1 | 2 | 3 | 4;    // which week
+        dayOfWeek: number;       // 0=Sun, 1=Mon, ..., 6=Sat
+    };
     clientRate: number;
     isConsumable?: boolean;
     estimatedCost?: number; // Quoted cost; actualCost set later by FSM

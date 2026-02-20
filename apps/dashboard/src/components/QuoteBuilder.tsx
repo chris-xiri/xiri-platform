@@ -51,14 +51,37 @@ const STEPS = ['Select Client', 'Locations', 'Services & Pricing', 'Terms & Subm
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function FrequencyDisplay(item: QuoteLineItem): string {
+    const WEEK_NAMES = ['1st', '2nd', '3rd', '4th'];
+    const FULL_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
     if (item.frequency === 'one_time') return 'One-Time';
+    if (item.frequency === 'nightly') return 'Daily (Mon–Sun)';
     if (item.frequency === 'custom_days' && item.daysOfWeek) {
+        const isWeekdays = JSON.stringify(item.daysOfWeek) === JSON.stringify([false, true, true, true, true, true, false]);
+        if (isWeekdays) return 'Weekdays (Mon–Fri)';
         const count = item.daysOfWeek.filter(Boolean).length;
         const days = item.daysOfWeek.map((d, i) => d ? DAY_LABELS[i] : null).filter(Boolean);
         return `${count}x/week (${days.join(', ')})`;
     }
-    if (item.frequency === 'nightly') return '7x/week (Nightly)';
-    return item.frequency.charAt(0).toUpperCase() + item.frequency.slice(1);
+    const base = item.frequency.charAt(0).toUpperCase() + item.frequency.slice(1);
+    if ((item.frequency === 'monthly' || item.frequency === 'quarterly') && item.monthlyPattern) {
+        if (item.monthlyPattern.type === 'day_of_month') {
+            return `${base} (on the ${item.monthlyPattern.day}${getOrdinalSuffix(item.monthlyPattern.day)})`;
+        }
+        if (item.monthlyPattern.type === 'nth_weekday') {
+            return `${base} (${WEEK_NAMES[item.monthlyPattern.week - 1]} ${FULL_DAYS[item.monthlyPattern.dayOfWeek]})`;
+        }
+    }
+    return base;
+}
+
+function getOrdinalSuffix(n: number): string {
+    if (n >= 11 && n <= 13) return 'th';
+    const last = n % 10;
+    if (last === 1) return 'st';
+    if (last === 2) return 'nd';
+    if (last === 3) return 'rd';
+    return 'th';
 }
 
 export default function QuoteBuilder({ onClose, onCreated, existingQuote }: QuoteBuilderProps) {
@@ -576,58 +599,73 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                             </div>
                                                         </div>
 
-                                                        {/* Row 2: Frequency + Day Selector */}
+                                                        {/* Row 2: Frequency (Google Calendar-style) */}
                                                         <div className="space-y-2">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-40">
-                                                                    <Label className="text-xs text-muted-foreground">Frequency</Label>
-                                                                    <select
-                                                                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                                                                        value={item.frequency}
-                                                                        onChange={(e) => {
-                                                                            const freq = e.target.value as QuoteLineItem['frequency'];
-                                                                            const updates: Partial<QuoteLineItem> = { frequency: freq };
-                                                                            if (freq === 'nightly') {
-                                                                                updates.daysOfWeek = [true, true, true, true, true, true, true];
-                                                                            } else if (freq === 'custom_days') {
-                                                                                updates.daysOfWeek = item.daysOfWeek || [false, true, true, true, true, true, false];
-                                                                            } else {
-                                                                                updates.daysOfWeek = undefined;
-                                                                            }
-                                                                            updateLineItem(item.id, updates);
-                                                                        }}
-                                                                    >
-                                                                        <option value="one_time">One-Time (Ad-Hoc)</option>
-                                                                        <option value="custom_days">Custom Days</option>
-                                                                        <option value="nightly">Nightly (7x)</option>
-                                                                        <option value="weekly">Weekly</option>
-                                                                        <option value="biweekly">Bi-Weekly</option>
-                                                                        <option value="monthly">Monthly</option>
-                                                                        <option value="quarterly">Quarterly</option>
-                                                                    </select>
-                                                                </div>
+                                                            <div>
+                                                                <Label className="text-xs text-muted-foreground">Frequency</Label>
+                                                                <select
+                                                                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                                                                    value={item.frequency === 'custom_days'
+                                                                        ? (item.daysOfWeek && JSON.stringify(item.daysOfWeek) === JSON.stringify([false, true, true, true, true, true, false])
+                                                                            ? 'weekdays'
+                                                                            : 'custom_days')
+                                                                        : item.frequency}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value;
+                                                                        if (val === 'weekdays') {
+                                                                            updateLineItem(item.id, {
+                                                                                frequency: 'custom_days',
+                                                                                daysOfWeek: [false, true, true, true, true, true, false],
+                                                                            });
+                                                                        } else if (val === 'nightly') {
+                                                                            updateLineItem(item.id, {
+                                                                                frequency: 'nightly',
+                                                                                daysOfWeek: [true, true, true, true, true, true, true],
+                                                                            });
+                                                                        } else if (val === 'custom_days') {
+                                                                            updateLineItem(item.id, {
+                                                                                frequency: 'custom_days',
+                                                                                daysOfWeek: item.daysOfWeek || [false, true, true, true, true, true, false],
+                                                                            });
+                                                                        } else {
+                                                                            updateLineItem(item.id, {
+                                                                                frequency: val as QuoteLineItem['frequency'],
+                                                                                daysOfWeek: undefined,
+                                                                            });
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <option value="one_time">Does not repeat (One-Time)</option>
+                                                                    <option value="nightly">Daily (Mon–Sun)</option>
+                                                                    <option value="weekdays">Every weekday (Mon–Fri)</option>
+                                                                    <option value="weekly">Weekly</option>
+                                                                    <option value="biweekly">Bi-Weekly</option>
+                                                                    <option value="monthly">Monthly</option>
+                                                                    <option value="quarterly">Quarterly</option>
+                                                                    <option value="custom_days">Custom...</option>
+                                                                </select>
+                                                            </div>
 
-                                                                {/* Day Picker (shown for custom_days and nightly) */}
-                                                                {(item.frequency === 'custom_days' || item.frequency === 'nightly') && item.daysOfWeek && (
-                                                                    <div className="flex-1">
+                                                            {/* Day Picker (shown only for Custom) */}
+                                                            {item.frequency === 'custom_days' && item.daysOfWeek &&
+                                                                JSON.stringify(item.daysOfWeek) !== JSON.stringify([false, true, true, true, true, true, false]) && (
+                                                                    <div>
                                                                         <Label className="text-xs text-muted-foreground">
-                                                                            Days — {item.daysOfWeek.filter(Boolean).length}x/week
+                                                                            Select days — {item.daysOfWeek.filter(Boolean).length}x/week
                                                                         </Label>
                                                                         <div className="flex gap-1 mt-1">
                                                                             {DAY_LABELS.map((day, i) => (
                                                                                 <button
                                                                                     key={day}
                                                                                     type="button"
-                                                                                    onClick={() => item.frequency === 'custom_days' && toggleDay(item.id, i, item.daysOfWeek!)}
+                                                                                    onClick={() => toggleDay(item.id, i, item.daysOfWeek!)}
                                                                                     className={`
-                                                                                        w-10 h-8 rounded-md text-xs font-medium transition-colors
-                                                                                        ${item.daysOfWeek![i]
+                                                                                    w-10 h-8 rounded-md text-xs font-medium transition-colors cursor-pointer
+                                                                                    ${item.daysOfWeek![i]
                                                                                             ? 'bg-primary text-primary-foreground'
                                                                                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                                                                         }
-                                                                                        ${item.frequency === 'nightly' ? 'cursor-default opacity-80' : 'cursor-pointer'}
-                                                                                    `}
-                                                                                    disabled={item.frequency === 'nightly'}
+                                                                                `}
                                                                                 >
                                                                                     {day}
                                                                                 </button>
@@ -635,7 +673,89 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                                         </div>
                                                                     </div>
                                                                 )}
-                                                            </div>
+
+                                                            {/* Monthly/Quarterly pattern picker */}
+                                                            {(item.frequency === 'monthly' || item.frequency === 'quarterly') && (
+                                                                <div className="flex items-center gap-2">
+                                                                    <select
+                                                                        className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                                                                        value={item.monthlyPattern?.type || 'none'}
+                                                                        onChange={(e) => {
+                                                                            const patternType = e.target.value;
+                                                                            if (patternType === 'none') {
+                                                                                updateLineItem(item.id, { monthlyPattern: undefined });
+                                                                            } else if (patternType === 'day_of_month') {
+                                                                                updateLineItem(item.id, {
+                                                                                    monthlyPattern: { type: 'day_of_month', day: 1 },
+                                                                                });
+                                                                            } else if (patternType === 'nth_weekday') {
+                                                                                updateLineItem(item.id, {
+                                                                                    monthlyPattern: { type: 'nth_weekday', week: 1, dayOfWeek: 1 },
+                                                                                });
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <option value="none">No specific schedule</option>
+                                                                        <option value="day_of_month">On day of month...</option>
+                                                                        <option value="nth_weekday">On nth weekday...</option>
+                                                                    </select>
+
+                                                                    {item.monthlyPattern?.type === 'day_of_month' && (
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className="text-xs text-muted-foreground">Day</span>
+                                                                            <select
+                                                                                className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs"
+                                                                                value={item.monthlyPattern.day}
+                                                                                onChange={(e) => updateLineItem(item.id, {
+                                                                                    monthlyPattern: { type: 'day_of_month', day: parseInt(e.target.value) },
+                                                                                })}
+                                                                            >
+                                                                                {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                                                                                    <option key={d} value={d}>{d}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                            <span className="text-xs text-muted-foreground">of each {item.frequency === 'quarterly' ? 'quarter' : 'month'}</span>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {item.monthlyPattern?.type === 'nth_weekday' && (
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <select
+                                                                                className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs"
+                                                                                value={item.monthlyPattern.week}
+                                                                                onChange={(e) => updateLineItem(item.id, {
+                                                                                    monthlyPattern: {
+                                                                                        type: 'nth_weekday',
+                                                                                        week: parseInt(e.target.value) as 1 | 2 | 3 | 4,
+                                                                                        dayOfWeek: (item.monthlyPattern as any).dayOfWeek || 1,
+                                                                                    },
+                                                                                })}
+                                                                            >
+                                                                                <option value={1}>1st</option>
+                                                                                <option value={2}>2nd</option>
+                                                                                <option value={3}>3rd</option>
+                                                                                <option value={4}>4th</option>
+                                                                            </select>
+                                                                            <select
+                                                                                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                                                                                value={item.monthlyPattern.dayOfWeek}
+                                                                                onChange={(e) => updateLineItem(item.id, {
+                                                                                    monthlyPattern: {
+                                                                                        type: 'nth_weekday',
+                                                                                        week: (item.monthlyPattern as any).week || 1,
+                                                                                        dayOfWeek: parseInt(e.target.value),
+                                                                                    },
+                                                                                })}
+                                                                            >
+                                                                                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => (
+                                                                                    <option key={d} value={i}>{d}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                            <span className="text-xs text-muted-foreground">of each {item.frequency === 'quarterly' ? 'quarter' : 'month'}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
 
                                                             {/* Consumable info */}
                                                             {item.isConsumable && (
