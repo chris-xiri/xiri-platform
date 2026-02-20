@@ -95,9 +95,33 @@ export default function CRMDetailPage(props: PageProps) {
                                 <LanguageBadge lang={vendor.preferredLanguage} />
                             </div>
                             <div className="flex items-center gap-2 mt-1">
-                                <Badge variant={vendor.status === 'active' ? 'default' : 'secondary'}>
-                                    {vendor.status}
-                                </Badge>
+                                <select
+                                    value={vendor.status}
+                                    onChange={async (e) => {
+                                        const newStatus = e.target.value;
+                                        if (newStatus === vendor.status) return;
+                                        try {
+                                            await updateDoc(doc(db, 'vendors', vendor.id!), {
+                                                status: newStatus,
+                                                updatedAt: new Date(),
+                                            });
+                                        } catch (err) {
+                                            console.error('Failed to update status:', err);
+                                        }
+                                    }}
+                                    className="text-xs font-medium px-2 py-1 rounded-md border bg-card cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+                                >
+                                    <option value="pending_review">Sourced</option>
+                                    <option value="qualified">Qualified</option>
+                                    <option value="awaiting_onboarding">Awaiting Form</option>
+                                    <option value="compliance_review">Compliance Review</option>
+                                    <option value="pending_verification">Verifying Docs</option>
+                                    <option value="onboarding_scheduled">Onboarding Call</option>
+                                    <option value="ready_for_assignment">✅ Ready</option>
+                                    <option value="active">Active</option>
+                                    <option value="suspended">⚠️ Suspended</option>
+                                    <option value="dismissed">🚫 Dismissed</option>
+                                </select>
                                 {vendor.outreachStatus && (
                                     <Badge variant="outline" className={
                                         vendor.outreachStatus === 'NEEDS_CONTACT' ? 'border-amber-400 text-amber-600 dark:text-amber-400' :
