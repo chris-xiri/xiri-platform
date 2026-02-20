@@ -303,7 +303,7 @@ export default function WorkOrdersPage() {
                                                         const config = STATUS_CONFIG[wo.status] || STATUS_CONFIG.pending_assignment;
                                                         const margin = wo.vendorRate ? wo.clientRate - wo.vendorRate : null;
                                                         return (
-                                                            <tr key={wo.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                                                            <tr key={wo.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => window.location.href = `/operations/work-orders/${wo.id}`}>
                                                                 <td className="px-4 py-2.5">
                                                                     <span className="font-medium text-sm">{wo.serviceType}</span>
                                                                     <p className="text-xs text-muted-foreground">{formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)}</p>
