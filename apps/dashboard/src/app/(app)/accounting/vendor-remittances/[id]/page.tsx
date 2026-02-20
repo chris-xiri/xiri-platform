@@ -220,6 +220,15 @@ export default function VendorRemittanceDetailPage({ params }: PageProps) {
                                 </div>
                             )}
                             <div>
+                                <p className="text-xs text-muted-foreground uppercase mb-1">Tax Exemption</p>
+                                {rem.vendorTaxExemptionStatus === 'on_file'
+                                    ? <Badge variant="outline" className="text-green-600 border-green-300">ST-120.1 On File</Badge>
+                                    : rem.vendorTaxExemptionStatus === 'pending'
+                                        ? <Badge variant="secondary">Pending</Badge>
+                                        : <Badge variant="destructive">None</Badge>
+                                }
+                            </div>
+                            <div>
                                 <p className="text-xs text-muted-foreground uppercase mb-1">Linked Invoice</p>
                                 <Link href={`/accounting/invoices/${rem.invoiceId}`} className="text-xs text-primary hover:underline">
                                     View Client Invoice →
@@ -249,7 +258,12 @@ export default function VendorRemittanceDetailPage({ params }: PageProps) {
                                 <tbody>
                                     {(rem.lineItems || []).map((li, i) => (
                                         <tr key={i} className="border-b last:border-0">
-                                            <td className="px-4 py-3 font-medium">{li.serviceType}</td>
+                                            <td className="px-4 py-3 font-medium">
+                                                {li.serviceType}
+                                                {li.taxExempt && (
+                                                    <span className="ml-2 text-xs text-green-600">✓ Exempt</span>
+                                                )}
+                                            </td>
                                             <td className="px-4 py-3">
                                                 <span className="text-muted-foreground">{li.locationName}</span>
                                                 {li.locationAddress && (
@@ -262,9 +276,25 @@ export default function VendorRemittanceDetailPage({ params }: PageProps) {
                                     ))}
                                 </tbody>
                                 <tfoot>
-                                    <tr className="border-t-2 bg-muted/20">
+                                    <tr className="bg-muted/20">
+                                        <td colSpan={3} className="px-4 py-2 text-right font-medium text-sm">Subtotal</td>
+                                        <td className="px-4 py-2 text-right font-medium text-sm">{formatCurrency(rem.totalAmount)}</td>
+                                    </tr>
+                                    {(rem.totalTax ?? 0) > 0 && (
+                                        <tr>
+                                            <td colSpan={3} className="px-4 py-2 text-right text-sm text-muted-foreground">Sales Tax</td>
+                                            <td className="px-4 py-2 text-right text-sm">{formatCurrency(rem.totalTax!)}</td>
+                                        </tr>
+                                    )}
+                                    {(rem.xiriAbsorbedTax ?? 0) > 0 && (
+                                        <tr>
+                                            <td colSpan={3} className="px-4 py-2 text-right text-xs text-amber-600">Xiri Absorbed Tax (no exemption on file)</td>
+                                            <td className="px-4 py-2 text-right text-xs text-amber-600">{formatCurrency(rem.xiriAbsorbedTax!)}</td>
+                                        </tr>
+                                    )}
+                                    <tr className="border-t-2">
                                         <td colSpan={3} className="px-4 py-3 text-right font-bold text-base">Total Owed</td>
-                                        <td className="px-4 py-3 text-right font-bold text-base text-primary">{formatCurrency(rem.totalAmount)}</td>
+                                        <td className="px-4 py-3 text-right font-bold text-base text-primary">{formatCurrency(rem.totalAmount + (rem.totalTax ?? 0))}</td>
                                     </tr>
                                 </tfoot>
                             </table>

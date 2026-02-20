@@ -2,6 +2,7 @@ import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import { db } from "./utils/firebase";
 import { analyzeVendorLeads } from "./agents/recruiter";
 import { searchVendors } from "./agents/sourcer";
+import { searchProperties } from "./agents/propertySourcer";
 // import { telegramWebhook, autoApproveVendor, notifyHumanReview, onVendorCreated } from "./triggers/telegramBot";
 import { onVendorApproved, onVendorCreated } from "./triggers/onVendorApproved";
 import { processOutreachQueue } from "./triggers/outreachWorker";
@@ -15,10 +16,11 @@ import { handleUnsubscribe } from "./triggers/handleUnsubscribe";
 import { sendOnboardingInvite } from "./triggers/sendOnboardingInvite";
 import { sendQuoteEmail, respondToQuote } from "./triggers/sendQuoteEmail";
 import { processMailQueue } from "./triggers/processMailQueue";
+import { onWorkOrderAssigned } from "./triggers/onVendorReady";
 
 // Export Bot Functions (Telegram disabled for now)
 // export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };
-export { onVendorApproved, onVendorCreated, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete, onAwaitingOnboarding, handleUnsubscribe, sendOnboardingInvite, sendQuoteEmail, respondToQuote, processMailQueue };
+export { onVendorApproved, onVendorCreated, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete, onAwaitingOnboarding, handleUnsubscribe, sendOnboardingInvite, sendQuoteEmail, respondToQuote, processMailQueue, onWorkOrderAssigned };
 
 // 1. Lead Sourcing Agent Trigger
 export const generateLeads = onCall({
@@ -162,5 +164,44 @@ export const testSendEmail = onCall({
     } catch (error: any) {
         console.error("Error sending test email:", error);
         throw new HttpsError("internal", error.message || "Failed to send email");
+    }
+});
+
+// ── Property Sourcing Agent ──
+export const sourceProperties = onCall({
+    cors: [
+        "http://localhost:3001",
+        "http://localhost:3000",
+        "https://xiri.ai",
+        "https://www.xiri.ai",
+        "https://app.xiri.ai",
+        "https://xiri-dashboard.vercel.app",
+        /https:\/\/xiri-dashboard-.*\.vercel\.app$/,
+        "https://xiri-facility-solutions.web.app",
+        "https://xiri-facility-solutions.firebaseapp.com"
+    ],
+    timeoutSeconds: 120
+}, async (request) => {
+    const data = request.data || {};
+    const query = data.query;
+    const location = data.location;
+    const providerName = data.provider || 'mock';
+
+    if (!query || !location) {
+        throw new HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    }
+
+    try {
+        console.log(`[sourceProperties] query="${query}", location="${location}", provider=${providerName}`);
+        const properties = await searchProperties(query, location, providerName);
+
+        return {
+            message: 'Property sourcing completed.',
+            sourced: properties.length,
+            properties,
+        };
+    } catch (error: any) {
+        console.error('[sourceProperties] Error:', error);
+        throw new HttpsError('internal', error.message || 'Failed to source properties.');
     }
 });

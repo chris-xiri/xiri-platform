@@ -47,6 +47,20 @@ export interface Lead {
     assignedFsmId?: string;
     contractId?: string;
     wonAt?: any;
+
+    // Property Sourcing Enrichment (populated when attribution.source = 'property_sourcing')
+    propertySourcing?: {
+        sourceProvider: string;     // "attom", "reonomy", "mock"
+        sourcePropertyId?: string;  // Provider's unique ID
+        squareFootage?: number;
+        yearBuilt?: number;
+        ownerName?: string;
+        tenantName?: string;
+        tenantCount?: number;
+        lastSalePrice?: number;
+        lastSaleDate?: string;
+        sourcedAt: Date;
+    };
 }
 
 export type VendorStatus =
@@ -118,6 +132,7 @@ export interface Vendor {
 
         // Onboarding Form Fields (New)
         hasBusinessEntity?: boolean;
+        salesTaxId?: string; // Vendor's Certificate of Authority / sales tax ID — required for ST-120.1
         generalLiability?: {
             hasInsurance: boolean;
             verified: boolean;
@@ -146,6 +161,15 @@ export interface Vendor {
         // ACORD 25 (Single Upload)
         acord25?: ComplianceDoc & {
             extractedData?: AcordExtracted;
+        };
+
+        // ST-120.1 Exempt Purchase Certificate (XIRI holds this)
+        st1201?: {
+            issueDate: string;           // ISO date — when XIRI issued the cert to this vendor
+            expiryDate: string;          // ISO date — 3 years from issueDate
+            pdfUrl?: string;             // Firebase Storage URL of the generated PDF
+            vendorSalesTaxId: string;    // The vendor's Certificate of Authority ID used on the form
+            issuedBy?: string;           // Staff who triggered generation
         };
     };
 
@@ -416,9 +440,13 @@ export interface InvoiceLineItem {
     workOrderId: string;
     locationName: string;
     locationAddress?: string;
+    locationZip?: string;
     serviceType: string;
     frequency: string;
     amount: number;
+    taxRate?: number;
+    taxAmount?: number;
+    taxExempt?: boolean;
 }
 
 export interface VendorPayout {
@@ -442,8 +470,9 @@ export interface Invoice {
     lineItems: InvoiceLineItem[];
 
     subtotal: number;
+    totalTax?: number;
     adjustments?: number;
-    totalAmount: number;
+    totalAmount: number;       // subtotal + totalTax + adjustments
 
     vendorPayouts: VendorPayout[];
     totalPayouts: number;
@@ -472,9 +501,15 @@ export interface VendorRemittanceLineItem {
     workOrderId: string;
     locationName: string;
     locationAddress?: string;
+    locationZip?: string;
     serviceType: string;
+    serviceCategory?: 'janitorial' | 'specialized' | 'consumables' | 'exterior';
     frequency: string;
     amount: number; // vendorRate
+    taxRate?: number;
+    taxAmount?: number;
+    taxExempt?: boolean;
+    taxExemptCertificate?: string; // e.g. "ST-120.1"
 }
 
 export interface VendorRemittance {
@@ -486,6 +521,9 @@ export interface VendorRemittance {
 
     lineItems: VendorRemittanceLineItem[];
     totalAmount: number;
+    totalTax?: number;                 // tax on non-exempt items
+    xiriAbsorbedTax?: number;          // tax Xiri pays when vendor has no exemption
+    vendorTaxExemptionStatus?: 'none' | 'pending' | 'on_file';
 
     billingPeriod: { start: string; end: string };
     dueDate: any;
@@ -564,6 +602,10 @@ export interface QuoteLineItem {
         dayOfWeek: number;       // 0=Sun, 1=Mon, ..., 6=Sat
     };
     clientRate: number;
+    taxRate?: number;           // combined rate from zip lookup
+    taxAmount?: number;         // clientRate * taxRate
+    taxExempt?: boolean;        // manually override if exempt
+    taxExemptReason?: string;   // e.g. "ST-120.1"
     isConsumable?: boolean;
     estimatedCost?: number; // Quoted cost; actualCost set later by FSM
     sqft?: number;
@@ -585,6 +627,8 @@ export interface Quote {
     leadBusinessName: string;
     lineItems: QuoteLineItem[];
     totalMonthlyRate: number;
+    subtotalBeforeTax?: number;
+    totalTax?: number;
 
     contractTenure: number;
     paymentTerms: string;
@@ -777,3 +821,42 @@ export interface SiteVisit {
     createdAt: any;
 }
 
+// --- TAX RATE UTILITIES ---
+export { getTaxRate, calculateTax, isEligibleForST120, type TaxRate } from './taxRates';
+
+// --- TAX CERTIFICATE SERVICE ---
+export { generateST1201, type XiriCorporateData, type VendorCertData, type ProjectData, type CertificateResult } from './TaxCertificateService';
+
+// --- PROPERTY SOURCING ---
+
+/** Provider-agnostic, normalized property record returned by any data provider */
+export interface RawProperty {
+    name: string;              // Building or business name
+    address: string;           // Full street address
+    city: string;
+    state: string;
+    zip: string;
+    propertyType?: string;     // "medical_office", "retail", "auto_dealership", etc.
+    squareFootage?: number;
+    yearBuilt?: number;
+    ownerName?: string;        // Building owner (for outreach)
+    ownerPhone?: string;
+    ownerEmail?: string;
+    tenantName?: string;       // Current occupant (if single-tenant)
+    tenantCount?: number;      // 1 = single-tenant
+    lotSize?: number;          // In sq ft or acres
+    lastSalePrice?: number;
+    lastSaleDate?: string;
+    source: string;            // "attom", "reonomy", "mock", etc.
+    sourceId?: string;         // Provider's unique property ID
+    rawData?: Record<string, any>; // Full provider response for debugging
+}
+
+/** Extended property with UI-specific state for the sourcing campaign table */
+export interface PreviewProperty extends RawProperty {
+    id: string;                // Client-generated unique ID
+    isDismissed?: boolean;
+    fitScore?: number;         // AI-assessed fit (0-100)
+    aiReasoning?: string;      // AI explanation of the fit score
+    facilityType?: string;     // Mapped XIRI facility type
+}

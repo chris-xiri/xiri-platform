@@ -9,7 +9,8 @@ import { VendorRemittance } from '@xiri/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DollarSign, FileText, Send, CheckCircle2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { DollarSign, FileText, Send, CheckCircle2, Search, X } from 'lucide-react';
 
 const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
     pending: { variant: 'secondary', label: 'Pending' },
@@ -23,6 +24,7 @@ export default function VendorRemittancesPage() {
     const [remittances, setRemittances] = useState<(VendorRemittance & { id: string })[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const q = query(collection(db, 'vendor_remittances'), orderBy('createdAt', 'desc'), limit(100));
@@ -36,9 +38,19 @@ export default function VendorRemittancesPage() {
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
 
-    const filtered = filter === 'all'
+    const statusFiltered = filter === 'all'
         ? remittances
         : remittances.filter(r => r.status === filter);
+
+    const filtered = searchQuery.trim()
+        ? statusFiltered.filter(r => {
+            const q = searchQuery.toLowerCase();
+            return (
+                r.vendorName?.toLowerCase().includes(q) ||
+                r.billingPeriod?.start?.toLowerCase().includes(q)
+            );
+        })
+        : statusFiltered;
 
     // Summary cards
     const totalPending = remittances.filter(r => r.status === 'pending' || r.status === 'sent').reduce((s, r) => s + r.totalAmount, 0);
@@ -101,6 +113,27 @@ export default function VendorRemittancesPage() {
                         {f} ({f === 'all' ? remittances.length : remittances.filter(r => r.status === f).length})
                     </Button>
                 ))}
+            </div>
+
+            {/* Search Bar — CRM Style */}
+            <div className="px-3 py-2 border border-border rounded-lg bg-muted/20 flex flex-col md:flex-row gap-2">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search by vendor name or billing period..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 pr-8 h-9 text-sm"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* List */}

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { X } from 'lucide-react';
 import { WorkOrder } from '@xiri/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -103,17 +104,6 @@ export default function WorkOrdersPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* Search */}
-                    <div className="relative">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            placeholder="Search service, location, vendor..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 w-[260px]"
-                        />
-                    </div>
-
                     {/* Filter Toggle */}
                     <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
                         <Button
@@ -186,6 +176,27 @@ export default function WorkOrdersPage() {
                         </div>
                     </CardContent>
                 </Card>
+            </div>
+
+            {/* Search Bar — CRM Style */}
+            <div className="px-3 py-2 border border-border rounded-lg bg-muted/20 flex flex-col md:flex-row gap-2">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search by service, location, or vendor..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 pr-8 h-9 text-sm"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Work Orders Table */}

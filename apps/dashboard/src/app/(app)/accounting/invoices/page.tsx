@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Receipt, DollarSign, AlertTriangle, CheckCircle2,
-    Clock, Plus, ChevronRight, Search
+    Clock, Plus, ChevronRight, Search, FileText, TrendingUp, X
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import InvoiceGenerator from '@/components/InvoiceGenerator';
@@ -79,15 +79,6 @@ export default function InvoicesPage() {
                     <p className="text-sm text-muted-foreground">Consolidated client billing & vendor payouts</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            placeholder="Search client, status..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 w-[220px]"
-                        />
-                    </div>
                     <Button className="gap-2" onClick={() => setShowGenerator(true)}>
                         <Plus className="w-4 h-4" /> Generate Invoice
                     </Button>
@@ -132,6 +123,27 @@ export default function InvoicesPage() {
                         <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalMargin)}</p>
                     </CardContent>
                 </Card>
+            </div>
+
+            {/* Search Bar — CRM Style */}
+            <div className="px-3 py-2 border border-border rounded-lg bg-muted/20 flex flex-col md:flex-row gap-2">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search by client, status, or billing period..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 pr-8 h-9 text-sm"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Invoice Table */}

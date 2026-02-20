@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
     Home, Users, User, Settings, LogOut, Package, DollarSign,
     ClipboardList, FileText, Sun, Moon, Monitor, Shield, Receipt,
-    MapPin, ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, Menu, X
+    MapPin, ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, Menu, X, Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
@@ -149,6 +149,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             items: [
                 { label: 'Dashboard', href: '/sales/dashboard', icon: <Home className="w-4 h-4" /> },
                 { label: 'Leads CRM', href: '/sales/crm', icon: <Users className="w-4 h-4" /> },
+                { label: 'Lead Sourcing', href: '/sales/sourcing', icon: <Building2 className="w-4 h-4" /> },
                 { label: 'Quotes', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> },
             ],
         },

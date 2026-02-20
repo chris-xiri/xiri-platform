@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Lead, QuoteLineItem } from '@xiri/shared';
+import { Lead, QuoteLineItem, getTaxRate, calculateTax } from '@xiri/shared';
 import { SCOPE_TEMPLATES } from '@/data/scopeTemplates';
 import { XIRI_SERVICES, SERVICE_CATEGORIES, ServiceCategory } from '@/data/serviceTypes';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
@@ -231,7 +231,21 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
     };
 
     const updateLineItem = (id: string, updates: Partial<QuoteLineItem>) => {
-        setLineItems(prev => prev.map(li => li.id === id ? { ...li, ...updates } : li));
+        setLineItems(prev => prev.map(li => {
+            if (li.id !== id) return li;
+            const updated = { ...li, ...updates };
+            // Auto-compute tax when clientRate or zip changes
+            if (!updated.taxExempt && updated.locationZip) {
+                const rate = getTaxRate(updated.locationZip);
+                if (rate) {
+                    updated.taxRate = rate.combinedRate;
+                    updated.taxAmount = calculateTax(updated.clientRate || 0, rate.combinedRate);
+                }
+            } else if (updated.taxExempt) {
+                updated.taxAmount = 0;
+            }
+            return updated;
+        }));
     };
 
     const removeLineItem = (id: string) => {
@@ -258,7 +272,9 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
         updateLineItem(itemId, { daysOfWeek: newDays });
     };
 
-    const totalMonthly = lineItems.reduce((sum, li) => sum + (li.clientRate || 0), 0);
+    const subtotalBeforeTax = lineItems.reduce((sum, li) => sum + (li.clientRate || 0), 0);
+    const totalTax = lineItems.reduce((sum, li) => sum + (li.taxAmount || 0), 0);
+    const totalMonthly = subtotalBeforeTax + totalTax;
 
     const handleSubmit = async () => {
         if (lineItems.length === 0 || !profile) return;
@@ -271,6 +287,8 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                 await updateDoc(doc(db, 'quotes', existingQuote.quoteId), {
                     lineItems,
                     totalMonthlyRate: totalMonthly,
+                    subtotalBeforeTax,
+                    totalTax,
                     contractTenure,
                     paymentTerms,
                     exitClause,
@@ -297,6 +315,8 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                     leadBusinessName: selectedLead.businessName,
                     lineItems,
                     totalMonthlyRate: totalMonthly,
+                    subtotalBeforeTax,
+                    totalTax,
                     contractTenure,
                     paymentTerms,
                     exitClause,
@@ -596,6 +616,19 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                                     />
                                                                 </div>
                                                             </div>
+                                                            {/* Tax info */}
+                                                            {item.locationZip && item.taxRate && !item.taxExempt && (
+                                                                <div className="col-span-12">
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        📍 ZIP {item.locationZip} — Tax: {(item.taxRate * 100).toFixed(3)}% = {formatCurrency(item.taxAmount || 0)}/mo
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                            {item.taxExempt && (
+                                                                <div className="col-span-12">
+                                                                    <p className="text-xs text-green-600">✓ Tax exempt{item.taxExemptReason ? ` (${item.taxExemptReason})` : ''}</p>
+                                                                </div>
+                                                            )}
                                                             <div className="col-span-2 flex justify-end">
                                                                 <Button variant="ghost" size="icon" onClick={() => removeLineItem(item.id)}>
                                                                     <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
@@ -777,10 +810,23 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                             })}
 
                             {/* Running Total */}
-                            <div className="flex justify-end items-center gap-4 p-4 bg-muted/30 rounded-lg border">
-                                <span className="text-sm font-medium">Total Monthly Rate:</span>
-                                <span className="text-2xl font-bold text-primary">{formatCurrency(totalMonthly)}</span>
-                                <span className="text-xs text-muted-foreground">/mo</span>
+                            <div className="p-4 bg-muted/30 rounded-lg border space-y-1">
+                                <div className="flex justify-end items-center gap-4">
+                                    <span className="text-sm text-muted-foreground">Subtotal:</span>
+                                    <span className="text-lg font-medium">{formatCurrency(subtotalBeforeTax)}</span>
+                                    <span className="text-xs text-muted-foreground">/mo</span>
+                                </div>
+                                {totalTax > 0 && (
+                                    <div className="flex justify-end items-center gap-4">
+                                        <span className="text-sm text-muted-foreground">Sales Tax:</span>
+                                        <span className="text-lg font-medium">{formatCurrency(totalTax)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-end items-center gap-4 border-t pt-1">
+                                    <span className="text-sm font-medium">Total Monthly Rate:</span>
+                                    <span className="text-2xl font-bold text-primary">{formatCurrency(totalMonthly)}</span>
+                                    <span className="text-xs text-muted-foreground">/mo</span>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -815,8 +861,18 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                         </div>
                                     ))}
                                     <Separator />
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Subtotal</span>
+                                        <span className="font-medium">{formatCurrency(subtotalBeforeTax)}</span>
+                                    </div>
+                                    {totalTax > 0 && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Sales Tax</span>
+                                            <span className="font-medium">{formatCurrency(totalTax)}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between">
-                                        <span className="font-medium">Monthly Rate</span>
+                                        <span className="font-medium">Monthly Rate (incl. tax)</span>
                                         <span className="text-xl font-bold text-primary">{formatCurrency(totalMonthly)}</span>
                                     </div>
                                 </CardContent>

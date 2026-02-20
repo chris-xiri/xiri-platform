@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { WorkOrder, InvoiceLineItem, VendorPayout } from '@xiri/shared';
+import { WorkOrder, InvoiceLineItem, VendorPayout, getTaxRate, calculateTax, isEligibleForST120 } from '@xiri/shared';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,14 +96,23 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
 
     // Build line items + vendor payouts from selected client
     const lineItems: InvoiceLineItem[] = selectedClient
-        ? selectedClient.workOrders.map(wo => ({
-            workOrderId: wo.id!,
-            locationName: wo.locationName,
-            locationAddress: [wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ') || undefined,
-            serviceType: wo.serviceType,
-            frequency: wo.schedule?.frequency || 'monthly',
-            amount: wo.clientRate,
-        }))
+        ? selectedClient.workOrders.map(wo => {
+            const zip = wo.locationZip;
+            const taxInfo = zip ? getTaxRate(zip) : null;
+            const taxRate = taxInfo?.combinedRate || 0;
+            const taxAmount = calculateTax(wo.clientRate, taxRate);
+            return {
+                workOrderId: wo.id!,
+                locationName: wo.locationName,
+                locationAddress: [wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ') || undefined,
+                locationZip: zip,
+                serviceType: wo.serviceType,
+                frequency: wo.schedule?.frequency || 'monthly',
+                amount: wo.clientRate,
+                taxRate: taxRate || undefined,
+                taxAmount: taxAmount || undefined,
+            };
+        })
         : [];
 
     const vendorPayouts: VendorPayout[] = selectedClient
@@ -120,8 +129,9 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
         : [];
 
     const subtotal = lineItems.reduce((sum, li) => sum + li.amount, 0);
+    const totalTax = lineItems.reduce((sum, li) => sum + (li.taxAmount || 0), 0);
     const totalPayouts = vendorPayouts.reduce((sum, vp) => sum + vp.amount, 0);
-    const grossMargin = subtotal - totalPayouts;
+    const grossMargin = subtotal + totalTax - totalPayouts;
 
     const handleCreate = async () => {
         if (!selectedClient || !profile) return;
@@ -137,8 +147,9 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
                 contractId: selectedClient.contractId || null,
                 lineItems,
                 subtotal,
+                totalTax: totalTax || undefined,
                 adjustments: 0,
-                totalAmount: subtotal,
+                totalAmount: subtotal + totalTax,
                 vendorPayouts,
                 totalPayouts,
                 grossMargin,
@@ -166,21 +177,37 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
             }
 
             for (const [vendorId, group] of Object.entries(vendorGroups)) {
-                const remLineItems = group.workOrders.map(wo => ({
-                    workOrderId: wo.id!,
-                    locationName: wo.locationName,
-                    locationAddress: [wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ') || undefined,
-                    serviceType: wo.serviceType,
-                    frequency: wo.schedule?.frequency || 'monthly',
-                    amount: wo.vendorRate!,
-                }));
+                // XIRI holds ST-120.1 — all vendor purchases are tax-exempt
+                const remLineItems = group.workOrders.map(wo => {
+                    const zip = wo.locationZip;
+                    const taxInfo = zip ? getTaxRate(zip) : null;
+                    const taxRate = taxInfo?.combinedRate || 0;
+
+                    return {
+                        workOrderId: wo.id!,
+                        locationName: wo.locationName,
+                        locationAddress: [wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ') || undefined,
+                        locationZip: zip,
+                        serviceType: wo.serviceType,
+                        frequency: wo.schedule?.frequency || 'monthly',
+                        amount: wo.vendorRate!,
+                        taxRate: taxRate || undefined,
+                        taxAmount: 0,               // exempt — XIRI holds ST-120.1
+                        taxExempt: true,
+                        taxExemptCertificate: 'ST-120.1',
+                    };
+                });
+
+                const remTotalAmount = remLineItems.reduce((sum, li) => sum + li.amount, 0);
 
                 await addDoc(collection(db, 'vendor_remittances'), {
                     invoiceId: docRef.id,
                     vendorId,
                     vendorName: group.vendorName,
                     lineItems: remLineItems,
-                    totalAmount: remLineItems.reduce((sum, li) => sum + li.amount, 0),
+                    totalAmount: remTotalAmount,
+                    totalTax: 0,                     // all exempt via ST-120.1
+                    vendorTaxExemptionStatus: 'on_file', // XIRI's certificate
                     billingPeriod: { start: billingStart, end: billingEnd },
                     dueDate: new Date(dueDate),
                     status: 'pending',

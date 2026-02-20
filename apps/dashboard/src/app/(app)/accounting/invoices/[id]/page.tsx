@@ -328,6 +328,12 @@ export default function InvoiceDetailPage({ params }: PageProps) {
                                         <td colSpan={3} className="px-4 py-3 text-right font-medium">Subtotal</td>
                                         <td className="px-4 py-3 text-right font-bold">{formatCurrency(invoice.subtotal)}</td>
                                     </tr>
+                                    {(invoice.totalTax ?? 0) > 0 && (
+                                        <tr>
+                                            <td colSpan={3} className="px-4 py-2 text-right text-sm text-muted-foreground">Sales Tax</td>
+                                            <td className="px-4 py-2 text-right text-sm">{formatCurrency(invoice.totalTax!)}</td>
+                                        </tr>
+                                    )}
                                     {invoice.adjustments !== undefined && invoice.adjustments !== 0 && (
                                         <tr>
                                             <td colSpan={3} className="px-4 py-2 text-right text-sm text-muted-foreground">Adjustments</td>

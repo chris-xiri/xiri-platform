@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileText, Calendar, DollarSign, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { FileText, Calendar, DollarSign, Search, ChevronDown, ChevronRight, X } from 'lucide-react';
 
 const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
     draft: { variant: 'secondary', label: 'Draft' },
@@ -89,15 +89,6 @@ export default function ContractsPage() {
                     <h1 className="text-2xl font-bold">Contracts</h1>
                     <p className="text-sm text-muted-foreground">Active client agreements and their terms</p>
                 </div>
-                <div className="relative">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        placeholder="Search client..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 w-[220px]"
-                    />
-                </div>
             </div>
 
             {/* Stats */}
@@ -139,6 +130,26 @@ export default function ContractsPage() {
                 </Card>
             </div>
 
+            {/* Search Bar — CRM Style */}
+            <div className="px-3 py-2 border border-border rounded-lg bg-muted/20 flex flex-col md:flex-row gap-2">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search by client name..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 pr-8 h-9 text-sm"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
+            </div>
             {/* Grouped Contracts */}
             {groupsByClient.length === 0 ? (
                 <Card>
