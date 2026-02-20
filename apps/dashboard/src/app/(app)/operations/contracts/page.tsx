@@ -121,7 +121,7 @@ export default function ContractsPage() {
                             <DollarSign className="w-5 h-5 text-green-600" />
                             <div>
                                 <p className="text-2xl font-bold">
-                                    {formatCurrency(activeContracts.reduce((s, c) => s + c.totalMonthlyRate, 0))}
+                                    {formatCurrency(activeContracts.reduce((s, c) => s + (c.totalMonthlyRate || (c as any).monthlyRate || 0), 0))}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Monthly Contract Value</p>
                             </div>
@@ -192,9 +192,9 @@ export default function ContractsPage() {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div>
-                                                <p className="font-semibold text-base">{group.clientBusinessName}</p>
+                                                <p className="font-semibold text-base">{group.clientBusinessName || (group.latest as any).clientName || '—'}</p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {formatCurrency(group.latest.totalMonthlyRate)}/mo • {group.latest.contractTenure} months • {group.latest.paymentTerms}
+                                                    {formatCurrency(group.latest.totalMonthlyRate || (group.latest as any).monthlyRate || 0)}/mo • {group.latest.contractTenure || (group.latest as any).tenure || '—'} months • {group.latest.paymentTerms || 'Net 30'}
                                                 </p>
                                             </div>
                                         </div>
@@ -238,7 +238,7 @@ export default function ContractsPage() {
                                                         >
                                                             <div className="pl-4">
                                                                 <p className="text-sm text-muted-foreground">
-                                                                    {formatCurrency(olderContract.totalMonthlyRate)}/mo • {olderContract.contractTenure} months
+                                                                    {formatCurrency(olderContract.totalMonthlyRate || (olderContract as any).monthlyRate || 0)}/mo • {olderContract.contractTenure || (olderContract as any).tenure || '—'} months
                                                                 </p>
                                                             </div>
                                                             <div className="flex items-center gap-3">

@@ -47,16 +47,27 @@ export default function ContractDetailPage() {
                     setLoading(false);
                     return;
                 }
-                const contractData = { id: contractDoc.id, ...contractDoc.data() };
+                const contractData: any = { id: contractDoc.id, ...contractDoc.data() };
                 setContract(contractData);
 
-                // Fetch related work orders
-                const woSnap = await getDocs(query(
+                // Fetch related work orders (try contractId first, then fall back to leadId)
+                let woSnap = await getDocs(query(
                     collection(db, 'work_orders'),
                     where('contractId', '==', contractId),
                     orderBy('createdAt', 'desc'),
                 ));
-                setWorkOrders(woSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                let woData = woSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                // Fall back: match by leadId if no work orders found by contractId
+                if (woData.length === 0 && contractData.leadId) {
+                    const woByLead = await getDocs(query(
+                        collection(db, 'work_orders'),
+                        where('leadId', '==', contractData.leadId),
+                        orderBy('createdAt', 'desc'),
+                    ));
+                    woData = woByLead.docs.map(d => ({ id: d.id, ...d.data() }));
+                }
+                setWorkOrders(woData);
 
                 // Fetch lead info
                 const leadId = contractData.leadId;

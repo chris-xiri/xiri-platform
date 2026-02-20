@@ -129,57 +129,8 @@ export const onQuoteAccepted = onDocumentUpdated({
 
     logger.info(`[Commission] Created ${type} commission for staff ${assignedTo}: $${totalCommission} (${(rate * 100).toFixed(0)}% of $${acv} ACV) — quote ${quoteId}`);
 
-    // ─── Item 7: Auto-generate draft contract ────────────────────────
-    try {
-        // Fetch lead data for client info
-        let clientName = '';
-        let contactEmail = '';
-        let contactPhone = '';
-        if (leadId) {
-            const leadDoc = await db.collection('leads').doc(leadId).get();
-            if (leadDoc.exists) {
-                const leadData = leadDoc.data()!;
-                clientName = leadData.businessName || leadData.companyName || leadData.name || '';
-                contactEmail = leadData.email || leadData.contactEmail || '';
-                contactPhone = leadData.phone || leadData.contactPhone || '';
-            }
-        }
-
-        const contractRef = await db.collection('contracts').add({
-            leadId: leadId || null,
-            quoteId,
-            clientBusinessName: clientName,
-            contactEmail,
-            contactPhone,
-            locations: after.locations || after.lineItems?.map((li: any) => li.location).filter(Boolean) || [],
-            lineItems: after.lineItems || [],
-            totalMonthlyRate: mrr,
-            contractTenure: after.contractTenure || after.tenure || 12,
-            totalContractValue: acv,
-            paymentTerms: after.paymentTerms || 'Net 30',
-            exitClause: after.exitClause || '30-day written notice',
-            status: 'draft',
-            assignedFsmId: after.assignedFsmId || assignedTo || null,
-            createdBy: assignedTo || null,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-
-        await db.collection('activity_logs').add({
-            type: 'CONTRACT_AUTO_GENERATED',
-            contractId: contractRef.id,
-            quoteId,
-            leadId,
-            clientName,
-            totalMonthlyRate: mrr,
-            description: `Draft contract auto-generated from accepted quote (MRR: $${mrr.toLocaleString()})`,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-
-        logger.info(`[Contract] Auto-generated draft contract ${contractRef.id} from quote ${quoteId}`);
-    } catch (contractErr: any) {
-        logger.error(`[Contract] Failed to auto-generate contract from quote ${quoteId}:`, contractErr.message);
-    }
+    // NOTE: Contract creation is handled by handleAccept() in the quote detail page.
+    // Do NOT create a duplicate contract here — work orders reference the inline-created contract ID.
 });
 
 
