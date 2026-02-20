@@ -192,6 +192,43 @@ async function seedUsers() {
     }
 }
 
+// ─── Step 4: Seed a Ready Vendor ────────────────────────────────────────────
+
+async function seedReadyVendor() {
+    console.log('\n🏢 Seeding ready-for-assignment vendor...');
+
+    const vendorData = {
+        businessName: 'Premier Clean Services',
+        contactName: 'Maria Rodriguez',
+        email: 'maria@premierclean.com',
+        phone: '(713) 555-0142',
+        city: 'Houston',
+        state: 'TX',
+        zip: '77001',
+        address: '2847 Westheimer Rd, Houston, TX 77098',
+        capabilities: ['Janitorial', 'Floor Care', 'Deep Cleaning', 'Disinfection', 'Window Cleaning'],
+        serviceTypes: ['Nightly Janitorial', 'Day Porter', 'Floor Care', 'Window Cleaning'],
+        fitScore: 94,
+        status: 'ready_for_assignment',
+        verified: true,
+        insuranceVerified: true,
+        insuranceExpiry: new Date('2027-01-15'),
+        coverageArea: ['Houston', 'Katy', 'Sugar Land', 'The Woodlands', 'Pasadena'],
+        employeeCount: 12,
+        yearsInBusiness: 8,
+        monthlyCapacity: 15,
+        hourlyRate: 28,
+        notes: 'Reliable janitorial team, specializes in medical office cleaning. OSHA certified. Available for nightly shifts.',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    const ref = await db.collection('vendors').add(vendorData);
+    console.log(`   ✅ ${vendorData.businessName} (${ref.id}) — status: ready_for_assignment`);
+    console.log(`      Coverage: ${vendorData.coverageArea.join(', ')}`);
+    console.log(`      Services: ${vendorData.serviceTypes.join(', ')}`);
+}
+
 // ─── Run ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -206,6 +243,7 @@ async function main() {
     await clearFirestore();
     await clearAuth();
     await seedUsers();
+    await seedReadyVendor();
 
     console.log('\n═══════════════════════════════════════════════════');
     console.log('  ✅ Done! Login credentials:');
