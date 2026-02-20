@@ -78,9 +78,19 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
     useEffect(() => {
         if (!showAssign) return;
         async function fetchVendors() {
-            const q = query(collection(db, 'vendors'), where('status', '==', 'qualified'));
+            const q = query(collection(db, 'vendors'), where('status', 'in', ['qualified', 'approved']));
             const snap = await getDocs(q);
-            const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as VendorCandidate));
+            const data = snap.docs.map(d => {
+                const raw = d.data();
+                return {
+                    id: d.id,
+                    companyName: raw.businessName || raw.companyName || 'Unknown',
+                    contactName: raw.contactName || '',
+                    services: raw.capabilities || raw.services || [],
+                    status: raw.status || '',
+                    zipCode: raw.zip || raw.zipCode || '',
+                } as VendorCandidate;
+            });
             setVendors(data);
         }
         fetchVendors();
