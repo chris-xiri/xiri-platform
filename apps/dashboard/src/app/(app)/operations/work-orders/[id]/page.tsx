@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
     ArrowLeft, MapPin, Clock, DollarSign, User2, CheckCircle2,
-    AlertCircle, Search, Calendar, Shield, Truck, Star, Printer, Moon
+    AlertCircle, Search, Calendar, Shield, Truck, Star, Printer, Moon, Pencil
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -66,6 +66,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
     const [showNmDropdown, setShowNmDropdown] = useState(false);
     const [assigningNm, setAssigningNm] = useState(false);
     const nmDropdownRef = useRef<HTMLDivElement>(null);
+    const [quoteId, setQuoteId] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchWO() {
@@ -82,6 +83,22 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
         }
         fetchWO();
     }, [params.id]);
+
+    // Fetch quoteId from the contract
+    useEffect(() => {
+        if (!wo?.contractId) return;
+        async function fetchQuoteId() {
+            try {
+                const contractSnap = await getDoc(doc(db, 'contracts', wo!.contractId));
+                if (contractSnap.exists()) {
+                    setQuoteId((contractSnap.data() as any).quoteId || null);
+                }
+            } catch (err) {
+                console.error('Error fetching contract for quoteId:', err);
+            }
+        }
+        fetchQuoteId();
+    }, [wo?.contractId]);
 
     // Fetch qualified vendors when assignment panel opens
     useEffect(() => {
@@ -323,14 +340,25 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
 
                 {/* Status Actions */}
                 <div className="flex gap-2">
+                    {quoteId && (
+                        <Button variant="outline" size="sm" className="gap-2" onClick={() => router.push(`/sales/quotes/${quoteId}`)}>
+                            <Pencil className="w-3.5 h-3.5" /> Revise Quote
+                        </Button>
+                    )}
                     {wo.status === 'active' && (
-                        <Button variant="outline" size="sm" onClick={() => handleStatusChange('paused')}>Pause</Button>
+                        <Button variant="outline" size="sm" className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50" onClick={() => handleStatusChange('paused')}>
+                            <Clock className="w-3.5 h-3.5" /> Pause
+                        </Button>
                     )}
                     {wo.status === 'paused' && (
-                        <Button variant="outline" size="sm" onClick={() => handleStatusChange('active')}>Resume</Button>
+                        <Button variant="outline" size="sm" className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => handleStatusChange('active')}>
+                            Resume
+                        </Button>
                     )}
                     {(wo.status === 'active' || wo.status === 'paused') && (
-                        <Button variant="outline" size="sm" onClick={() => handleStatusChange('completed')}>Complete</Button>
+                        <Button variant="outline" size="sm" className="gap-2 border-green-300 text-green-700 hover:bg-green-50" onClick={() => handleStatusChange('completed')}>
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Complete
+                        </Button>
                     )}
                 </div>
             </div>
@@ -476,10 +504,10 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="mt-3 w-full"
+                                        className="mt-3 w-full gap-2 border-orange-300 text-orange-700 hover:bg-orange-50"
                                         onClick={() => setShowAssign(true)}
                                     >
-                                        Replace Vendor
+                                        <Truck className="w-3.5 h-3.5" /> Replace Vendor
                                     </Button>
                                 </div>
                             ) : (
