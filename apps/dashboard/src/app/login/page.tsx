@@ -84,8 +84,9 @@ export default function LoginPage() {
                             <p className="font-semibold mb-2">Test Credentials:</p>
                             <div className="space-y-1 text-muted-foreground">
                                 <p><strong>Admin:</strong> admin@xiri.ai / Admin123!</p>
-                                <p><strong>Recruiter:</strong> recruiter@xiri.ai / Recruiter123!</p>
-                                <p><strong>Sales:</strong> sales@xiri.ai / Sales123!</p>
+                                <p><strong>Sales:</strong> sales1@xiri.ai / Sales123!</p>
+                                <p><strong>FSM:</strong> fsm1@xiri.ai / Fsm123!</p>
+                                <p><strong>Night Mgr:</strong> night1@xiri.ai / Night123!</p>
                             </div>
                         </div>
                     </form>

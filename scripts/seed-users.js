@@ -1,95 +1,132 @@
-const admin = require('firebase-admin');
+/**
+ * seed-users.js
+ * 
+ * Seeds 7 test users into PRODUCTION Firebase Auth + Firestore.
+ * Uses the Firebase Client SDK (no service account needed).
+ * 
+ * Note: Custom UIDs cannot be set with the client SDK — UIDs will be auto-generated.
+ * 
+ * Usage: node scripts/seed-users.js
+ */
 
-// Initialize Firebase Admin
-// We rely on FIREBASE_AUTH_EMULATOR_HOST and FIRESTORE_EMULATOR_HOST env vars
-process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8085';
-process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
-process.env.GCLOUD_PROJECT = 'xiri-facility-solutions';
+const { initializeApp } = require('firebase/app');
+const { getAuth, createUserWithEmailAndPassword, updateProfile, signOut } = require('firebase/auth');
+const { getFirestore, doc, setDoc, serverTimestamp } = require('firebase/firestore');
 
-admin.initializeApp({
+const firebaseConfig = {
+    apiKey: 'AIzaSyAuJaxfDonpTwf1iWDvgKIimN_YQWlNdL4',
+    authDomain: 'xiri-facility-solutions.firebaseapp.com',
     projectId: 'xiri-facility-solutions',
-});
+    storageBucket: 'xiri-facility-solutions.firebasestorage.app',
+    messagingSenderId: '289049277463',
+    appId: '1:289049277463:web:2cffd52ba7068adffb1852',
+};
 
-const auth = admin.auth();
-const db = admin.firestore();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 const users = [
     {
-        uid: 'test-user-admin',
         email: 'admin@xiri.ai',
         password: 'Admin123!',
-        displayName: 'Admin User',
+        displayName: 'Chris Leung',
         roles: ['admin'],
     },
     {
-        uid: 'test-user-recruiter',
-        email: 'recruiter@xiri.ai',
-        password: 'Recruiter123!',
-        displayName: 'Recruiter User',
-        roles: ['recruiter'],
-    },
-    {
-        uid: 'test-user-sales',
-        email: 'sales@xiri.ai',
+        email: 'sales1@xiri.ai',
         password: 'Sales123!',
-        displayName: 'Sales User',
+        displayName: 'Alex Rivera',
         roles: ['sales'],
     },
     {
-        uid: 'test-user-fsm',
-        email: 'fsm@xiri.ai',
-        password: 'FsmUser123!',
-        displayName: 'FSM User',
+        email: 'sales2@xiri.ai',
+        password: 'Sales123!',
+        displayName: 'Jordan Kim',
+        roles: ['sales'],
+    },
+    {
+        email: 'fsm1@xiri.ai',
+        password: 'Fsm123!',
+        displayName: 'Marcus Chen',
         roles: ['fsm'],
+    },
+    {
+        email: 'fsm2@xiri.ai',
+        password: 'Fsm123!',
+        displayName: 'Sarah Okonkwo',
+        roles: ['fsm'],
+    },
+    {
+        email: 'night1@xiri.ai',
+        password: 'Night123!',
+        displayName: 'David Torres',
+        roles: ['night_manager'],
+    },
+    {
+        email: 'night2@xiri.ai',
+        password: 'Night123!',
+        displayName: 'Lisa Patel',
+        roles: ['night_manager'],
     },
 ];
 
 async function seedUsers() {
-    console.log('Starting seed process...');
+    console.log('═══════════════════════════════════════════════════');
+    console.log('  XIRI User Seeding (Production)');
+    console.log('═══════════════════════════════════════════════════\n');
 
     for (const user of users) {
         try {
-            let userRecord;
-            try {
-                // Check if user exists
-                const existingUser = await auth.getUserByEmail(user.email);
-                console.log(`User ${user.email} exists with UID ${existingUser.uid}. Deleting to enforce specific UID...`);
-                await auth.deleteUser(existingUser.uid);
-            } catch (error) {
-                if (error.code !== 'auth/user-not-found') {
-                    throw error;
-                }
-                // User doesn't exist, proceed
-            }
+            // Create user in Firebase Auth
+            const cred = await createUserWithEmailAndPassword(auth, user.email, user.password);
 
-            console.log(`Creating user ${user.email} with UID ${user.uid}...`);
-            userRecord = await auth.createUser({
-                uid: user.uid,
-                email: user.email,
-                password: user.password,
-                displayName: user.displayName,
-                emailVerified: true,
-            });
+            // Update display name
+            await updateProfile(cred.user, { displayName: user.displayName });
 
-            // Set Firestore User Profile
-            await db.collection('users').doc(userRecord.uid).set({
-                uid: userRecord.uid,
+            // Write Firestore user profile
+            await setDoc(doc(db, 'users', cred.user.uid), {
+                uid: cred.user.uid,
                 email: user.email,
                 displayName: user.displayName,
                 roles: user.roles,
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
                 lastLogin: null,
-            }, { merge: true });
+            });
 
-            console.log(`Successfully seeded ${user.email} with roles: ${user.roles.join(', ')}`);
+            // Sign out so we can create the next user
+            await signOut(auth);
+
+            const roleLabel = user.roles.join(', ');
+            console.log(`  ✅ ${user.displayName.padEnd(18)} | ${user.email.padEnd(20)} | ${roleLabel}`);
 
         } catch (error) {
-            console.error(`Failed to seed user ${user.email}:`, error);
+            if (error.code === 'auth/email-already-in-use') {
+                console.log(`  ⬜ ${user.email.padEnd(20)} | Already exists — skipped`);
+            } else {
+                console.error(`  ❌ ${user.email.padEnd(20)} | ${error.message}`);
+            }
         }
     }
 
-    console.log('Seed process complete.');
+    console.log('\n═══════════════════════════════════════════════════');
+    console.log('  ✅ Done! Login credentials:');
+    console.log('═══════════════════════════════════════════════════');
+    console.log('');
+    console.log('  Admin:         admin@xiri.ai      / Admin123!');
+    console.log('  Sales #1:      sales1@xiri.ai     / Sales123!');
+    console.log('  Sales #2:      sales2@xiri.ai     / Sales123!');
+    console.log('  FSM #1:        fsm1@xiri.ai       / Fsm123!');
+    console.log('  FSM #2:        fsm2@xiri.ai       / Fsm123!');
+    console.log('  Night Mgr #1:  night1@xiri.ai     / Night123!');
+    console.log('  Night Mgr #2:  night2@xiri.ai     / Night123!');
+    console.log('');
+
+    process.exit(0);
 }
 
-seedUsers();
+seedUsers().catch((err) => {
+    console.error('Fatal error:', err);
+    process.exit(1);
+});

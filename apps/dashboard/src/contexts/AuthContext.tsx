@@ -11,7 +11,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
-export type UserRole = 'admin' | 'recruiter' | 'sales';
+export type UserRole = 'admin' | 'recruiter' | 'sales' | 'sales_exec' | 'sales_mgr' | 'fsm' | 'night_manager' | 'accounting';
 
 export interface UserProfile {
     uid: string;
@@ -45,10 +45,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const redirectByRole = (roles: UserRole[]) => {
         if (roles.includes('admin')) {
             router.push('/'); // Admin sees everything
+        } else if (roles.includes('fsm')) {
+            router.push('/operations/work-orders');
+        } else if (roles.includes('night_manager')) {
+            router.push('/operations/audits');
         } else if (roles.includes('recruiter')) {
             router.push('/supply/recruitment');
-        } else if (roles.includes('sales')) {
+        } else if (roles.includes('sales') || roles.includes('sales_exec') || roles.includes('sales_mgr')) {
             router.push('/sales/dashboard');
+        } else if (roles.includes('accounting')) {
+            router.push('/accounting/invoices');
+        } else {
+            router.push('/');
         }
     };
 

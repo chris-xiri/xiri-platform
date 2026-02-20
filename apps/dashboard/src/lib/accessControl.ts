@@ -10,28 +10,30 @@ export function canAccess(path: string, roles: string[]): boolean {
 
 const ACCESS_MAP: Record<string, string[]> = {
     // Sales
-    'sales/dashboard': ['admin', 'sales_exec', 'sales_mgr'],
-    'sales/crm': ['admin', 'sales_exec', 'sales_mgr'],
-    'sales/quotes': ['admin', 'sales_exec', 'sales_mgr'],
+    'sales/dashboard': ['admin', 'sales', 'sales_exec', 'sales_mgr'],
+    'sales/crm': ['admin', 'sales', 'sales_exec', 'sales_mgr'],
+    'sales/quotes': ['admin', 'sales', 'sales_exec', 'sales_mgr'],
+    'sales/sourcing': ['admin', 'sales', 'sales_exec', 'sales_mgr'],
 
     // Supply
     'supply/recruitment': ['admin', 'recruiter', 'fsm'],
     'supply/crm': ['admin', 'recruiter', 'fsm'],
+    'supply/dashboard': ['admin', 'recruiter', 'fsm'],
 
     // Operations (FSM)
     'operations/work-orders': ['admin', 'fsm'],
-    'operations/contracts': ['admin', 'fsm', 'sales_mgr'],
-    'operations/quotes:read': ['admin', 'fsm', 'sales_exec', 'sales_mgr'],
+    'operations/contracts': ['admin', 'fsm', 'sales', 'sales_mgr'],
+    'operations/quotes:read': ['admin', 'fsm', 'sales', 'sales_exec', 'sales_mgr'],
 
     // Night Manager
-    'operations/audits': ['admin', 'fsm', 'night_mgr'],
-    'operations/check-ins': ['admin', 'fsm', 'night_mgr'],
-
-    // FSM Site Visits
+    'operations/audits': ['admin', 'fsm', 'night_manager', 'night_mgr'],
+    'operations/check-ins': ['admin', 'fsm', 'night_manager', 'night_mgr'],
     'operations/site-visits': ['admin', 'fsm'],
 
     // Accounting
     'accounting/invoices': ['admin', 'accounting', 'fsm'],
+    'accounting/commissions': ['admin', 'accounting'],
+    'accounting/vendor-remittances': ['admin', 'accounting', 'fsm'],
 
     // Admin
     'admin/settings': ['admin'],

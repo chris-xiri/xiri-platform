@@ -143,7 +143,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     const showSupplyNav = canAccess('supply/recruitment', profile.roles);
     const showSalesNav = canAccess('sales/dashboard', profile.roles);
-    const showOpsNav = canAccess('operations/work-orders', profile.roles);
+    const showOpsNav = canAccess('operations/work-orders', profile.roles) || canAccess('operations/audits', profile.roles);
     const showAccountingNav = canAccess('accounting/invoices', profile.roles);
     const showAdminNav = canAccess('admin/settings', profile.roles);
 
