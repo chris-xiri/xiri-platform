@@ -498,6 +498,10 @@ export interface QuoteLineItem {
     id: string;
     locationId: string;
     locationName: string;
+    locationAddress?: string;
+    locationCity?: string;
+    locationState?: string;
+    locationZip?: string;
     serviceType: string;
     serviceCategory?: 'janitorial' | 'specialized' | 'consumables' | 'exterior';
     scopeTemplateId?: string;
@@ -629,6 +633,9 @@ export interface WorkOrder {
     quoteLineItemId: string;
     locationId: string;
     locationName: string;
+    locationAddress?: string;
+    locationCity?: string;
+    locationState?: string;
     locationZip?: string;
 
     serviceType: string;

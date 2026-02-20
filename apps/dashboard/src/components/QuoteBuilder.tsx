@@ -213,11 +213,15 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
         setLineItems(prev => prev.filter(li => li.locationId !== id));
     };
 
-    const addLineItem = (locationId: string, locationName: string) => {
+    const addLineItem = (loc: Location) => {
         setLineItems(prev => [...prev, {
             id: `li_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            locationId,
-            locationName,
+            locationId: loc.id,
+            locationName: loc.name,
+            locationAddress: loc.address,
+            locationCity: loc.city,
+            locationState: loc.state,
+            locationZip: loc.zip,
             serviceType: '',
             serviceCategory: undefined,
             frequency: 'custom_days',
@@ -540,7 +544,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                     variant="outline"
                                                     size="sm"
                                                     className="gap-1 text-xs"
-                                                    onClick={() => addLineItem(loc.id, loc.name)}
+                                                    onClick={() => addLineItem(loc)}
                                                 >
                                                     <Plus className="w-3 h-3" /> Add Service
                                                 </Button>

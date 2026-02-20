@@ -256,6 +256,11 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                         <p className="text-sm text-muted-foreground flex items-center gap-2">
                             <MapPin className="w-3.5 h-3.5" /> {wo.locationName} • ID: {wo.id?.slice(0, 8)}
                         </p>
+                        {(wo.locationAddress || wo.locationCity) && (
+                            <p className="text-xs text-muted-foreground ml-5">
+                                {[wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ')}
+                            </p>
+                        )}
                     </div>
                 </div>
 
