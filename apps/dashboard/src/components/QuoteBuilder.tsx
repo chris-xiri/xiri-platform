@@ -51,6 +51,30 @@ const STEPS = ['Select Client', 'Locations', 'Services & Pricing', 'Terms & Subm
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+// Strip undefined values recursively before Firestore writes
+const stripUndefined = (obj: any): any => {
+    if (Array.isArray(obj)) return obj.map(stripUndefined);
+    if (obj !== null && typeof obj === 'object' && !(obj instanceof Date) && typeof obj.toDate !== 'function') {
+        return Object.fromEntries(
+            Object.entries(obj)
+                .filter(([, v]) => v !== undefined)
+                .map(([k, v]) => [k, stripUndefined(v)])
+        );
+    }
+    return obj;
+};
+
+const SERVICE_COLORS = [
+    'border-l-blue-500',
+    'border-l-emerald-500',
+    'border-l-violet-500',
+    'border-l-amber-500',
+    'border-l-rose-500',
+    'border-l-cyan-500',
+    'border-l-orange-500',
+    'border-l-pink-500',
+];
+
 function FrequencyDisplay(item: QuoteLineItem): string {
     const WEEK_NAMES = ['1st', '2nd', '3rd', '4th'];
     const FULL_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -341,14 +365,14 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                 const revisionSnapshot = {
                     version: existingQuote.version || 1,
                     totalMonthlyRate: existingQuote.lineItems?.reduce((s, li) => s + (li.clientRate || 0), 0) || 0,
-                    lineItems: existingQuote.lineItems || [],
+                    lineItems: stripUndefined(existingQuote.lineItems || []),
                     changedBy: profile.uid || profile.email || 'unknown',
                     changedAt: serverTimestamp(),
-                    notes: notes || undefined,
+                    notes: notes || '',
                 };
 
                 await updateDoc(doc(db, 'quotes', existingQuote.quoteId), {
-                    lineItems,
+                    lineItems: stripUndefined(lineItems),
                     totalMonthlyRate: totalMonthly,
                     subtotalBeforeTax,
                     totalTax,
@@ -383,7 +407,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                 const docRef = await addDoc(collection(db, 'quotes'), {
                     leadId: selectedLead.id,
                     leadBusinessName: selectedLead.businessName,
-                    lineItems,
+                    lineItems: stripUndefined(lineItems),
                     totalMonthlyRate: totalMonthly,
                     subtotalBeforeTax,
                     totalTax,
@@ -671,7 +695,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                     No services yet. Click "Add Service" above.
                                                 </p>
                                             ) : (
-                                                locItems.map((item) => (
+                                                locItems.map((item, itemIdx) => (
                                                     item.lineItemStatus === 'cancelled' ? (
                                                         /* ─── CANCELLED: Strikethrough display ─── */
                                                         <div key={item.id} className="border rounded-lg p-4 bg-red-50/50 border-red-200 flex items-center justify-between">
@@ -745,7 +769,12 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <div key={item.id} className="border rounded-lg p-4 bg-muted/20 space-y-3">
+                                                        <div key={item.id} className={`border rounded-lg p-4 bg-muted/20 space-y-3 border-l-4 ${SERVICE_COLORS[itemIdx % SERVICE_COLORS.length]}`}>
+                                                            {/* Service Number Header */}
+                                                            <div className="flex items-center gap-2 pb-1 mb-1 border-b border-dashed">
+                                                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Service #{itemIdx + 1}</span>
+                                                                {item.serviceType && <span className="text-xs text-muted-foreground">— {item.serviceType}</span>}
+                                                            </div>
                                                             {/* Row 1: Service Type + Rate */}
                                                             <div className="grid grid-cols-12 gap-3 items-end">
                                                                 <div className="col-span-6">
