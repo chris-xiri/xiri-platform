@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import { Quote } from '@xiri/shared';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,21 +31,28 @@ interface QuoteGroup {
 
 export default function QuotesPage() {
     const router = useRouter();
+    const { profile } = useAuth();
     const [quotes, setQuotes] = useState<(Quote & { id: string })[]>([]);
     const [loading, setLoading] = useState(true);
     const [showBuilder, setShowBuilder] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedLeads, setExpandedLeads] = useState<Record<string, boolean>>({});
 
+    const isFsm = profile?.roles?.some((r: string) => r === 'fsm') && !profile?.roles?.some((r: string) => r === 'admin');
+
     useEffect(() => {
         const q = query(collection(db, 'quotes'), orderBy('createdAt', 'desc'));
         const unsub = onSnapshot(q, (snap) => {
-            const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Quote & { id: string }));
+            let data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Quote & { id: string }));
+            // FSMs only see quotes assigned to them
+            if (isFsm && profile?.uid) {
+                data = data.filter(q => q.assignedFsmId === profile.uid);
+            }
             setQuotes(data);
             setLoading(false);
         });
         return () => unsub();
-    }, []);
+    }, [isFsm, profile?.uid]);
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);

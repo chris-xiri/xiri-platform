@@ -12,7 +12,7 @@ const ACCESS_MAP: Record<string, string[]> = {
     // Sales
     'sales/dashboard': ['admin', 'sales', 'sales_exec', 'sales_mgr'],
     'sales/crm': ['admin', 'sales', 'sales_exec', 'sales_mgr'],
-    'sales/quotes': ['admin', 'sales', 'sales_exec', 'sales_mgr'],
+    'sales/quotes': ['admin', 'sales', 'sales_exec', 'sales_mgr', 'fsm'],
     'sales/sourcing': ['admin', 'sales', 'sales_exec', 'sales_mgr'],
 
     // Supply

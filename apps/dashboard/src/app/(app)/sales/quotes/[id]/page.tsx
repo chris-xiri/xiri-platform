@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
-    ArrowLeft, Check, X, Printer, FileText, MapPin,
+    ArrowLeft, Check, X, Printer, FileText, MapPin, Plus,
     DollarSign, Calendar, Clock, Building2, AlertTriangle,
     Send, Eye, MessageSquare, Mail, UserRoundCheck, RotateCcw, History
 } from 'lucide-react';
@@ -62,6 +62,9 @@ export default function QuoteDetailPage({ params }: PageProps) {
     const [revising, setRevising] = useState(false);
     const [showReviseBuilder, setShowReviseBuilder] = useState(false);
 
+    // Work orders state
+    const [workOrders, setWorkOrders] = useState<any[]>([]);
+
     useEffect(() => {
         async function fetchQuote() {
             try {
@@ -77,6 +80,33 @@ export default function QuoteDetailPage({ params }: PageProps) {
         }
         fetchQuote();
     }, [params.id]);
+
+    // Fetch related work orders
+    useEffect(() => {
+        if (!quote?.lineItems?.length) return;
+        async function fetchWorkOrders() {
+            try {
+                const lineItemIds = quote!.lineItems.map(li => li.id);
+                // Firestore 'in' queries limited to 30, chunk if needed
+                const chunks = [];
+                for (let i = 0; i < lineItemIds.length; i += 30) {
+                    chunks.push(lineItemIds.slice(i, i + 30));
+                }
+                const allWos: any[] = [];
+                for (const chunk of chunks) {
+                    const woSnap = await getDocs(query(
+                        collection(db, 'work_orders'),
+                        where('quoteLineItemId', 'in', chunk),
+                    ));
+                    woSnap.docs.forEach(d => allWos.push({ id: d.id, ...d.data() }));
+                }
+                setWorkOrders(allWos);
+            } catch (err) {
+                console.error('Error fetching work orders:', err);
+            }
+        }
+        fetchWorkOrders();
+    }, [quote?.lineItems]);
 
     // Fetch FSM users for dropdown
     useEffect(() => {
@@ -172,29 +202,86 @@ export default function QuoteDetailPage({ params }: PageProps) {
             const userId = profile.uid || profile.email || 'unknown';
             const now = new Date();
 
-            // 1. Create Contract
-            const contractRef = await addDoc(collection(db, 'contracts'), {
-                leadId: quote.leadId,
-                quoteId: quote.id,
-                clientBusinessName: quote.leadBusinessName,
-                clientAddress: '',
-                signerName: '',
-                signerTitle: '',
-                totalMonthlyRate: quote.totalMonthlyRate,
-                contractTenure: quote.contractTenure,
-                startDate: serverTimestamp(),
-                endDate: new Date(now.getFullYear(), now.getMonth() + quote.contractTenure, now.getDate()),
-                paymentTerms: quote.paymentTerms,
-                exitClause: quote.exitClause || '30-day written notice',
-                status: 'active',
-                assignedFsmId: quote.assignedFsmId || null,
-                createdBy: userId,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            });
+            // Only process pending line items (new services not yet accepted)
+            const pendingItems = (quote.lineItems || []).filter(
+                (li: QuoteLineItem) => !li.lineItemStatus || li.lineItemStatus === 'pending'
+            );
 
-            // 2. Create Work Orders (one per line item)
-            for (const item of quote.lineItems) {
+            if (pendingItems.length === 0) {
+                alert('No pending services to accept. All line items have already been accepted.');
+                setConverting(false);
+                return;
+            }
+
+            // Check for existing contract for this lead
+            const contractQuery = await getDocs(query(
+                collection(db, 'contracts'),
+                where('leadId', '==', quote.leadId),
+                where('status', 'in', ['active', 'draft', 'amended'])
+            ));
+
+            let contractId: string;
+            const acceptedItems = pendingItems.map(item => ({
+                ...item,
+                lineItemStatus: 'accepted' as const,
+                acceptedInVersion: quote.version,
+            }));
+
+            if (contractQuery.docs.length > 0) {
+                // ─── AMEND existing contract ────────────────────────────
+                const existingContract = contractQuery.docs[0];
+                contractId = existingContract.id;
+                const existingData = existingContract.data();
+                const existingLineItems = existingData.lineItems || [];
+                const existingQuoteIds = existingData.quoteIds || [existingData.quoteId];
+                const newMonthlyRate = (existingData.totalMonthlyRate || 0) + pendingItems.reduce((s, li) => s + (li.clientRate || 0), 0);
+
+                await updateDoc(doc(db, 'contracts', contractId), {
+                    lineItems: [...existingLineItems, ...acceptedItems],
+                    totalMonthlyRate: newMonthlyRate,
+                    quoteIds: existingQuoteIds.includes(quote.id) ? existingQuoteIds : [...existingQuoteIds, quote.id],
+                    status: 'amended',
+                    updatedAt: serverTimestamp(),
+                });
+
+                await addDoc(collection(db, 'activity_logs'), {
+                    type: 'CONTRACT_AMENDED',
+                    contractId,
+                    quoteId: quote.id,
+                    leadId: quote.leadId,
+                    newServicesCount: pendingItems.length,
+                    newMonthlyRate,
+                    amendedBy: userId,
+                    createdAt: serverTimestamp(),
+                });
+            } else {
+                // ─── CREATE new contract ─────────────────────────────────
+                const contractRef = await addDoc(collection(db, 'contracts'), {
+                    leadId: quote.leadId,
+                    quoteId: quote.id,
+                    quoteIds: [quote.id],
+                    clientBusinessName: quote.leadBusinessName,
+                    clientAddress: '',
+                    signerName: '',
+                    signerTitle: '',
+                    lineItems: acceptedItems,
+                    totalMonthlyRate: quote.totalMonthlyRate,
+                    contractTenure: quote.contractTenure,
+                    startDate: serverTimestamp(),
+                    endDate: new Date(now.getFullYear(), now.getMonth() + quote.contractTenure, now.getDate()),
+                    paymentTerms: quote.paymentTerms,
+                    exitClause: quote.exitClause || '30-day written notice',
+                    status: 'active',
+                    assignedFsmId: quote.assignedFsmId || null,
+                    createdBy: userId,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                });
+                contractId = contractRef.id;
+            }
+
+            // 2. Create Work Orders ONLY for newly accepted (pending) items
+            for (const item of pendingItems) {
                 const template = SCOPE_TEMPLATES.find(t => t.name.toLowerCase().includes(item.serviceType.toLowerCase()));
                 const tasks = template
                     ? template.tasks.map((t, i) => ({ id: `task_${i}`, name: t.name, description: t.description, required: t.required }))
@@ -202,7 +289,8 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
                 await addDoc(collection(db, 'work_orders'), {
                     leadId: quote.leadId,
-                    contractId: contractRef.id,
+                    contractId,
+                    quoteId: quote.id,
                     quoteLineItemId: item.id,
                     locationId: item.locationId,
                     locationName: item.locationName,
@@ -225,15 +313,23 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     margin: null,
                     status: 'pending_assignment',
                     assignedFsmId: quote.assignedFsmId || null,
-                    assignedBy: null,
+                    createdBy: userId,
                     notes: '',
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
                 });
             }
 
-            // 3. Update Quote status
+            // 3. Update quote — mark pending items as accepted
+            const updatedLineItems = (quote.lineItems || []).map((li: QuoteLineItem) => {
+                if (!li.lineItemStatus || li.lineItemStatus === 'pending') {
+                    return { ...li, lineItemStatus: 'accepted' as const, acceptedInVersion: quote.version };
+                }
+                return li;
+            });
+
             await updateDoc(doc(db, 'quotes', quote.id), {
+                lineItems: updatedLineItems,
                 status: 'accepted',
                 acceptedAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
@@ -242,7 +338,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
             // 4. Update Lead status to 'won'
             await updateDoc(doc(db, 'leads', quote.leadId), {
                 status: 'won',
-                contractId: contractRef.id,
+                contractId,
                 wonAt: serverTimestamp(),
             });
 
@@ -251,13 +347,14 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 type: 'QUOTE_ACCEPTED',
                 quoteId: quote.id,
                 leadId: quote.leadId,
-                contractId: contractRef.id,
-                workOrderCount: quote.lineItems.length,
+                contractId,
+                workOrderCount: pendingItems.length,
+                isAmendment: contractQuery.docs.length > 0,
                 createdBy: userId,
                 createdAt: serverTimestamp(),
             });
 
-            setQuote({ ...quote, status: 'accepted' });
+            setQuote({ ...quote, status: 'accepted', lineItems: updatedLineItems });
         } catch (err) {
             console.error('Error accepting quote:', err);
         } finally {
@@ -346,9 +443,11 @@ export default function QuoteDetailPage({ params }: PageProps) {
                             <div className="w-px h-6 bg-border" />
                         </>
                     )}
-                    {(quote.status === 'sent' || quote.status === 'rejected') && (
+                    {(quote.status === 'sent' || quote.status === 'rejected' || quote.status === 'accepted') && (
                         <Button variant="outline" size="sm" className="gap-2" onClick={handleRevise} disabled={revising}>
-                            <RotateCcw className="w-4 h-4" /> {revising ? 'Revising...' : 'Revise Quote'}
+                            {quote.status === 'accepted'
+                                ? <><Plus className="w-4 h-4" /> Add Service</>
+                                : <><RotateCcw className="w-4 h-4" /> {revising ? 'Revising...' : 'Revise Quote'}</>}
                         </Button>
                     )}
                     <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
@@ -476,6 +575,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                                     <tr className="border-b text-xs text-muted-foreground uppercase">
                                         <th className="text-left py-2 font-medium">Service</th>
                                         <th className="text-left py-2 font-medium">Frequency</th>
+                                        <th className="text-left py-2 font-medium">Status</th>
                                         <th className="text-right py-2 font-medium">Monthly Rate</th>
                                     </tr>
                                 </thead>
@@ -485,15 +585,31 @@ export default function QuoteDetailPage({ params }: PageProps) {
                                             <td className="py-3">
                                                 <span className="font-medium">{item.serviceType}</span>
                                                 {item.description && <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>}
+                                                {item.isUpsell && <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Upsell</span>}
                                             </td>
                                             <td className="py-3 text-sm">{formatFrequency(item.frequency, item.daysOfWeek)}</td>
+                                            <td className="py-3 text-sm">
+                                                {item.lineItemStatus === 'accepted' ? (
+                                                    <span className="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-0.5 rounded text-xs font-medium">
+                                                        <Check className="w-3 h-3" /> Accepted
+                                                    </span>
+                                                ) : item.lineItemStatus === 'rejected' ? (
+                                                    <span className="inline-flex items-center gap-1 text-red-700 bg-red-50 px-2 py-0.5 rounded text-xs font-medium">
+                                                        <X className="w-3 h-3" /> Rejected
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-xs font-medium">
+                                                        <Clock className="w-3 h-3" /> Pending
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td className="py-3 text-right font-medium">{formatCurrency(item.clientRate)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                                 <tfoot>
                                     <tr className="border-t">
-                                        <td colSpan={2} className="py-3 font-medium text-sm">Location Subtotal</td>
+                                        <td colSpan={3} className="py-3 font-medium text-sm">Location Subtotal</td>
                                         <td className="py-3 text-right font-bold">
                                             {formatCurrency(items.reduce((s, i) => s + i.clientRate, 0))}
                                         </td>
@@ -626,6 +742,40 @@ export default function QuoteDetailPage({ params }: PageProps) {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Related Work Orders */}
+            {workOrders.length > 0 && (
+                <Card className="print:hidden">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-muted-foreground" />
+                            Work Orders ({workOrders.length})
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2">
+                            {workOrders.map((wo: any) => (
+                                <div key={wo.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors">
+                                    <div>
+                                        <p className="text-sm font-medium">{wo.serviceType}</p>
+                                        <p className="text-xs text-muted-foreground">{wo.locationName}</p>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <Badge variant={wo.status === 'active' ? 'default' : wo.status === 'pending_assignment' ? 'secondary' : 'outline'}>
+                                            {wo.status?.replace(/_/g, ' ')}
+                                        </Badge>
+                                        {wo.vendorId ? (
+                                            <span className="text-xs text-green-700">Assigned</span>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">Unassigned</span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
             )}
 
             {/* Version History */}

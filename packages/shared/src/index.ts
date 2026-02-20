@@ -617,6 +617,15 @@ export interface QuoteLineItem {
     isConsumable?: boolean;
     estimatedCost?: number; // Quoted cost; actualCost set later by FSM
     sqft?: number;
+
+    // Versioning & acceptance tracking
+    lineItemStatus?: 'pending' | 'accepted' | 'rejected';
+    acceptedInVersion?: number;  // which quote version this was accepted in
+
+    // Upsell attribution
+    addedBy?: string;            // staffId who added this item
+    addedByRole?: 'sales' | 'fsm'; // drives commission attribution
+    isUpsell?: boolean;          // true if added after initial acceptance
 }
 
 
@@ -680,12 +689,14 @@ export interface Contract {
     id?: string;
     leadId: string;
     quoteId: string;
+    quoteIds?: string[];          // all quotes that contributed services
 
     clientBusinessName: string;
     clientAddress: string;
     signerName: string;
     signerTitle: string;
 
+    lineItems?: QuoteLineItem[];  // aggregated accepted line items
     totalMonthlyRate: number;
     contractTenure: number;
     startDate: any;
@@ -696,6 +707,7 @@ export interface Contract {
     pdfUrl?: string;
     signedPdfUrl?: string;
 
+    assignedFsmId?: string;
     status: ContractStatus;
     createdBy: string;
     signedAt?: any;
