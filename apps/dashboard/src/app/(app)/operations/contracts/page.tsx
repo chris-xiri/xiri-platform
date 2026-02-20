@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Contract } from '@xiri/shared';
@@ -36,6 +36,7 @@ export default function ContractsPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedClients, setExpandedClients] = useState<Record<string, boolean>>({});
+    const [fsmLeadIds, setFsmLeadIds] = useState<string[]>([]);
 
     useEffect(() => {
         const q = query(collection(db, 'contracts'), orderBy('createdAt', 'desc'));
@@ -47,6 +48,19 @@ export default function ContractsPage() {
         return () => unsub();
     }, []);
 
+    // For FSMs: also fetch leads assigned to them so we can match contracts by leadId
+    useEffect(() => {
+        if (!profile?.uid || !profile?.roles?.some((r: string) => r === 'fsm')) return;
+        const fetchFsmLeads = async () => {
+            const leadsSnap = await getDocs(query(
+                collection(db, 'leads'),
+                where('assignedFsmId', '==', profile.uid)
+            ));
+            setFsmLeadIds(leadsSnap.docs.map(d => d.id));
+        };
+        fetchFsmLeads();
+    }, [profile?.uid, profile?.roles]);
+
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount || 0);
 
@@ -54,9 +68,12 @@ export default function ContractsPage() {
     const isAdmin = profile?.roles?.includes('admin');
     const isSales = profile?.roles?.some((r: string) => ['sales', 'sales_exec', 'sales_mgr'].includes(r));
 
-    // FSMs see only their assigned contracts; sales sees all (they need visibility into their deals); admins see all
+    // FSMs see contracts where they're directly assigned OR the contract's lead is assigned to them
     const roleFiltered = (isFsm && !isAdmin)
-        ? contracts.filter(c => (c as any).assignedFsmId === profile?.uid)
+        ? contracts.filter(c =>
+            (c as any).assignedFsmId === profile?.uid ||
+            fsmLeadIds.includes(c.leadId)
+        )
         : contracts;
 
     // Search

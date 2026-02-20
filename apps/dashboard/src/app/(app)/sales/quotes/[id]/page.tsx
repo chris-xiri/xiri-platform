@@ -598,11 +598,13 @@ export default function QuoteDetailPage({ params }: PageProps) {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="gap-2"
+                                className={`gap-2 ${quote.assignedFsmName ? 'border-green-200 text-green-700 hover:bg-green-50' : ''}`}
                                 onClick={() => setShowFsmDropdown(!showFsmDropdown)}
                             >
                                 <UserRoundCheck className="w-4 h-4" />
-                                {quote.assignedFsmName || 'Assign FSM'}
+                                {quote.assignedFsmName ? (
+                                    <><span>{quote.assignedFsmName}</span><span className="text-xs text-muted-foreground ml-1">✎</span></>
+                                ) : 'Assign FSM'}
                             </Button>
                             {showFsmDropdown && (
                                 <div className="absolute right-0 mt-1 w-56 bg-background border rounded-lg shadow-xl z-50 py-1">

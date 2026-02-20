@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { X } from 'lucide-react';
@@ -71,13 +71,31 @@ export default function WorkOrdersPage() {
         });
         return () => unsub();
     }, []);
+    const [fsmLeadIds, setFsmLeadIds] = useState<string[]>([]);
+
+    // For FSMs: also fetch leads assigned to them so we can match work orders by leadId
+    useEffect(() => {
+        if (!profile?.uid || !profile?.roles?.some((r: string) => r === 'fsm')) return;
+        const fetchFsmLeads = async () => {
+            const leadsSnap = await getDocs(query(
+                collection(db, 'leads'),
+                where('assignedFsmId', '==', profile.uid)
+            ));
+            setFsmLeadIds(leadsSnap.docs.map(d => d.id));
+        };
+        fetchFsmLeads();
+    }, [profile?.uid, profile?.roles]);
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
 
-    // Apply user filter, then search
+    // Apply user filter, then search — also match by lead assignment for FSMs
     const userFiltered = filterMode === 'mine' && profile
-        ? workOrders.filter(wo => wo.assignedFsmId === profile.uid || (wo as any).createdBy === profile.uid)
+        ? workOrders.filter(wo =>
+            wo.assignedFsmId === profile.uid ||
+            (wo as any).createdBy === profile.uid ||
+            fsmLeadIds.includes((wo as any).leadId)
+        )
         : workOrders;
 
     const filteredOrders = searchQuery.trim()
