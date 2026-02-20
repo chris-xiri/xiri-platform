@@ -52,7 +52,9 @@ export default function WorkOrdersPage() {
     useEffect(() => {
         if (profile) {
             const isAdmin = profile.roles?.includes('admin');
-            setFilterMode(isAdmin ? 'all' : 'mine');
+            const isSales = profile.roles?.some((r: string) => ['sales', 'sales_exec', 'sales_mgr'].includes(r));
+            // Admins and sales see all; FSMs default to theirs
+            setFilterMode((isAdmin || isSales) ? 'all' : 'mine');
         }
     }, [profile]);
 
@@ -72,13 +74,13 @@ export default function WorkOrdersPage() {
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
 
-    // Apply FSM filter, then search
-    const fsmFiltered = filterMode === 'mine' && profile
-        ? workOrders.filter(wo => wo.assignedFsmId === profile.uid)
+    // Apply user filter, then search
+    const userFiltered = filterMode === 'mine' && profile
+        ? workOrders.filter(wo => wo.assignedFsmId === profile.uid || (wo as any).createdBy === profile.uid)
         : workOrders;
 
     const filteredOrders = searchQuery.trim()
-        ? fsmFiltered.filter(wo => {
+        ? userFiltered.filter(wo => {
             const q = searchQuery.toLowerCase();
             const vendorName = wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || '';
             return (
@@ -87,11 +89,12 @@ export default function WorkOrdersPage() {
                 vendorName.toLowerCase().includes(q)
             );
         })
-        : fsmFiltered;
+        : userFiltered;
 
     const pending = filteredOrders.filter(wo => wo.status === 'pending_assignment');
     const active = filteredOrders.filter(wo => wo.status === 'active');
     const isAdmin = profile?.roles?.includes('admin');
+    const isSales = profile?.roles?.some((r: string) => ['sales', 'sales_exec', 'sales_mgr'].includes(r));
 
     if (loading) return <div className="p-8 flex justify-center">Loading work orders...</div>;
 
