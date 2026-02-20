@@ -629,6 +629,7 @@ export interface WorkOrder {
     quoteLineItemId: string;
     locationId: string;
     locationName: string;
+    locationZip?: string;
 
     serviceType: string;
     scopeTemplateId?: string;
@@ -642,10 +643,9 @@ export interface WorkOrder {
         daysOfWeek: boolean[];
         startTime: string;
         endTime?: string;
-        frequency: 'nightly' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
+        frequency: 'one_time' | 'custom_days' | 'nightly' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
     };
 
-    qrCodeSecret: string;
 
     clientRate: number;
     margin?: number;

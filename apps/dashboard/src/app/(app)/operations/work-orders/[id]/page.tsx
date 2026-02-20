@@ -40,6 +40,11 @@ interface VendorCandidate {
     services: string[];
     status: string;
     zipCode: string;
+    city?: string;
+    state?: string;
+    coverageAreas?: string[];
+    capabilityMatch: boolean;
+    locationMatch: boolean;
 }
 
 export default function WorkOrderDetailPage({ params }: PageProps) {
@@ -74,25 +79,57 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
 
     // Fetch qualified vendors when assignment panel opens
     useEffect(() => {
-        if (!showAssign) return;
+        if (!showAssign || !wo) return;
         async function fetchVendors() {
             const q = query(collection(db, 'vendors'), where('status', 'in', ['qualified', 'approved']));
             const snap = await getDocs(q);
+            const woServiceLower = wo!.serviceType?.toLowerCase() || '';
+            const woZip = wo!.locationZip || '';
+
             const data = snap.docs.map(d => {
                 const raw = d.data();
+                const services: string[] = raw.capabilities || raw.services || [];
+                const zipCode = raw.zip || raw.zipCode || '';
+                const coverageAreas: string[] = raw.coverageAreas || raw.serviceAreas || [];
+
+                // Capability match: check if any vendor service matches the work order service type
+                const capabilityMatch = services.some(s =>
+                    s.toLowerCase().includes(woServiceLower) ||
+                    woServiceLower.includes(s.toLowerCase())
+                );
+
+                // Location match: exact zip match or zip in coverage areas
+                const locationMatch = (
+                    (woZip && zipCode === woZip) ||
+                    coverageAreas.some(a => a.includes(woZip))
+                );
+
                 return {
                     id: d.id,
                     companyName: raw.businessName || raw.companyName || 'Unknown',
                     contactName: raw.contactName || '',
-                    services: raw.capabilities || raw.services || [],
+                    services,
                     status: raw.status || '',
-                    zipCode: raw.zip || raw.zipCode || '',
+                    zipCode,
+                    city: raw.city || '',
+                    state: raw.state || '',
+                    coverageAreas,
+                    capabilityMatch,
+                    locationMatch,
                 } as VendorCandidate;
             });
+
+            // Sort: both matches > capability only > location only > neither
+            data.sort((a, b) => {
+                const scoreA = (a.capabilityMatch ? 2 : 0) + (a.locationMatch ? 1 : 0);
+                const scoreB = (b.capabilityMatch ? 2 : 0) + (b.locationMatch ? 1 : 0);
+                return scoreB - scoreA;
+            });
+
             setVendors(data);
         }
         fetchVendors();
-    }, [showAssign]);
+    }, [showAssign, wo]);
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
@@ -198,7 +235,9 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
     const margin = wo.vendorRate ? wo.clientRate - wo.vendorRate : null;
     const filteredVendors = vendors.filter(v =>
         v.companyName?.toLowerCase().includes(vendorSearch.toLowerCase()) ||
-        v.contactName?.toLowerCase().includes(vendorSearch.toLowerCase())
+        v.contactName?.toLowerCase().includes(vendorSearch.toLowerCase()) ||
+        v.services?.some(s => s.toLowerCase().includes(vendorSearch.toLowerCase())) ||
+        v.zipCode?.includes(vendorSearch)
     );
 
     return (
@@ -437,13 +476,47 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                                             className={`cursor-pointer transition-all hover:border-primary/50 ${selectedVendor?.id === v.id ? 'border-primary ring-2 ring-primary/20' : ''}`}
                                             onClick={() => setSelectedVendor(v)}
                                         >
-                                            <CardContent className="p-3 flex items-center justify-between">
-                                                <div>
-                                                    <p className="font-medium text-sm">{v.companyName}</p>
-                                                    <p className="text-xs text-muted-foreground">{v.contactName} • {v.zipCode}</p>
+                                            <CardContent className="p-3 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="font-medium text-sm">{v.companyName}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {v.contactName}{v.city ? ` • ${v.city}${v.state ? `, ${v.state}` : ''}` : ''}{v.zipCode ? ` • ${v.zipCode}` : ''}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        {v.capabilityMatch && (
+                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400">
+                                                                <CheckCircle2 className="w-3 h-3" /> Service
+                                                            </span>
+                                                        )}
+                                                        {v.locationMatch && (
+                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
+                                                                <MapPin className="w-3 h-3" /> Area
+                                                            </span>
+                                                        )}
+                                                        {selectedVendor?.id === v.id && (
+                                                            <CheckCircle2 className="w-5 h-5 text-primary" />
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                {selectedVendor?.id === v.id && (
-                                                    <CheckCircle2 className="w-5 h-5 text-primary" />
+                                                {v.services.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {v.services.slice(0, 5).map((s, i) => (
+                                                            <span
+                                                                key={i}
+                                                                className={`px-1.5 py-0.5 rounded text-[10px] ${wo.serviceType?.toLowerCase().includes(s.toLowerCase()) || s.toLowerCase().includes(wo.serviceType?.toLowerCase() || '')
+                                                                    ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800'
+                                                                    : 'bg-muted text-muted-foreground'
+                                                                    }`}
+                                                            >
+                                                                {s}
+                                                            </span>
+                                                        ))}
+                                                        {v.services.length > 5 && (
+                                                            <span className="px-1.5 py-0.5 text-[10px] text-muted-foreground">+{v.services.length - 5} more</span>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </CardContent>
                                         </Card>
