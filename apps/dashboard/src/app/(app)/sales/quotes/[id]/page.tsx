@@ -518,7 +518,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                             <div className="w-px h-6 bg-border" />
                         </>
                     )}
-                    {(quote.status === 'sent' || quote.status === 'rejected' || quote.status === 'accepted') && (
+                    {(quote.status === 'draft' || quote.status === 'sent' || quote.status === 'rejected' || quote.status === 'accepted') && (
                         <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={handleRevise} disabled={revising}>
                             <RotateCcw className="w-4 h-4" /> {revising ? 'Revising...' : 'Revise Quote'}
                         </Button>

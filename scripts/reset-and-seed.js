@@ -8,10 +8,14 @@
  */
 
 const admin = require('firebase-admin');
+const path = require('path');
 
-// ─── PRODUCTION CONFIG (no emulator env vars) ────────────────────────────────
+// ─── PRODUCTION CONFIG (service account auth) ────────────────────────────────
+
+const serviceAccount = require(path.join(__dirname, 'serviceAccountKey.json'));
 
 admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
     projectId: 'xiri-facility-solutions',
 });
 
