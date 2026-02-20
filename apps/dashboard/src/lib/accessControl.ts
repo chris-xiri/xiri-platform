@@ -26,7 +26,7 @@ const ACCESS_MAP: Record<string, string[]> = {
     'operations/quotes:read': ['admin', 'fsm', 'sales', 'sales_exec', 'sales_mgr'],
 
     // Night Manager
-    'operations/audits': ['admin', 'fsm', 'night_manager', 'night_mgr'],
+    'operations/audits': ['admin', 'night_manager', 'night_mgr'],
     'operations/check-ins': ['admin', 'fsm', 'night_manager', 'night_mgr'],
     'operations/site-visits': ['admin', 'fsm'],
 
