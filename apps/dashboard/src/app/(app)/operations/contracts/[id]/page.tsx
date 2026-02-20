@@ -131,9 +131,10 @@ export default function ContractDetailPage() {
 
     const badge = STATUS_BADGE[contract.status] || STATUS_BADGE.draft;
     const monthlyRate = contract.totalMonthlyRate || contract.monthlyRate || 0;
+    const oneTimeCharges = (contract as any).oneTimeCharges || 0;
     const tenure = contract.contractTenure || contract.tenure || 0;
-    const acv = monthlyRate * 12;
-    const tcv = monthlyRate * tenure;
+    const acv = (monthlyRate * 12) + oneTimeCharges;
+    const tcv = (monthlyRate * tenure) + oneTimeCharges;
 
     return (
         <div className="space-y-6">

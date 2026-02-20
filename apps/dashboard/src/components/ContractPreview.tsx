@@ -262,7 +262,7 @@ export default function ContractPreview({ contract, lead, workOrders }: Contract
                         <li>Monthly invoices will be issued on the 1st of each calendar month for the upcoming recurring service period.</li>
                         <li>Late payments are subject to a 1.5% monthly service charge after the due date.</li>
                         {(recurringTotal || monthlyRate) > 0 && (
-                            <li>Estimated Annual Recurring Value: <strong>{formatCurrency((recurringTotal || monthlyRate) * 12)}</strong></li>
+                            <li>Total Contract Value (12 months): <strong>{formatCurrency(((recurringTotal || monthlyRate) * 12) + (oneTimeTotal || oneTimeCharges))}</strong></li>
                         )}
                     </ul>
                 </div>

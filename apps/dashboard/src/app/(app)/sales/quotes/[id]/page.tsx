@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -64,6 +64,20 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
     // Work orders state
     const [workOrders, setWorkOrders] = useState<any[]>([]);
+    const fsmDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Click outside to close FSM dropdown
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (fsmDropdownRef.current && !fsmDropdownRef.current.contains(e.target as Node)) {
+                setShowFsmDropdown(false);
+            }
+        };
+        if (showFsmDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showFsmDropdown]);
 
     useEffect(() => {
         async function fetchQuote() {
@@ -168,6 +182,10 @@ export default function QuoteDetailPage({ params }: PageProps) {
     const handleAssignFsm = async (fsm: FsmUser) => {
         if (!quote) return;
         try {
+            // Optimistic: update UI immediately
+            setQuote({ ...quote, assignedFsmId: fsm.uid, assignedFsmName: fsm.displayName });
+            setShowFsmDropdown(false);
+
             await updateDoc(doc(db, 'quotes', quote.id), {
                 assignedFsmId: fsm.uid,
                 assignedFsmName: fsm.displayName,
@@ -203,8 +221,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 });
             }
 
-            setQuote({ ...quote, assignedFsmId: fsm.uid, assignedFsmName: fsm.displayName });
-            setShowFsmDropdown(false);
+
 
             await addDoc(collection(db, 'activity_logs'), {
                 type: 'FSM_ASSIGNED',
@@ -594,7 +611,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                         </div>
 
                         {/* FSM Assignment */}
-                        <div className="relative">
+                        <div className="relative" ref={fsmDropdownRef}>
                             <Button
                                 variant="outline"
                                 size="sm"
