@@ -150,9 +150,17 @@ export default function ContractsPage() {
                             <DollarSign className="w-5 h-5 text-green-600" />
                             <div>
                                 <p className="text-2xl font-bold">
-                                    {formatCurrency(activeContracts.reduce((s, c) => s + (c.totalMonthlyRate || (c as any).monthlyRate || 0), 0))}
+                                    {formatCurrency(activeContracts.reduce((s, c) => {
+                                        // Use line items if available to exclude one-time services
+                                        if (c.lineItems && c.lineItems.length > 0) {
+                                            return s + c.lineItems
+                                                .filter((li: any) => li.frequency !== 'one_time')
+                                                .reduce((sum: number, li: any) => sum + (li.clientRate || 0), 0);
+                                        }
+                                        return s + (c.totalMonthlyRate || (c as any).monthlyRate || 0);
+                                    }, 0))}
                                 </p>
-                                <p className="text-xs text-muted-foreground">Monthly Contract Value</p>
+                                <p className="text-xs text-muted-foreground">MRR</p>
                             </div>
                         </div>
                     </CardContent>

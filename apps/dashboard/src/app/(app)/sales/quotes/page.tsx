@@ -139,7 +139,14 @@ export default function QuotesPage() {
                         <DollarSign className="w-5 h-5 text-green-600 shrink-0" />
                         <div>
                             <p className="text-xl font-bold leading-none">
-                                {formatCurrency(quotes.filter(q => q.status === 'accepted').reduce((sum, q) => sum + q.totalMonthlyRate, 0))}
+                                {formatCurrency(quotes.filter(q => q.status === 'accepted').reduce((sum, q) => {
+                                    if (q.lineItems && q.lineItems.length > 0) {
+                                        return sum + q.lineItems
+                                            .filter((li: any) => li.frequency !== 'one_time')
+                                            .reduce((s: number, li: any) => s + (li.clientRate || 0), 0);
+                                    }
+                                    return sum + q.totalMonthlyRate;
+                                }, 0))}
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5">Won MRR</p>
                         </div>

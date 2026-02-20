@@ -9,7 +9,7 @@ import { WorkOrder } from '@xiri/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, MapPin, User2, Clock, AlertCircle, CheckCircle2, PauseCircle, Filter, Search, ChevronDown, ChevronRight, Building2 } from 'lucide-react';
+import { ClipboardList, MapPin, User2, Clock, AlertCircle, CheckCircle2, PauseCircle, Filter, Search, ChevronDown, ChevronRight, Building2, DollarSign } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 
@@ -162,7 +162,7 @@ export default function WorkOrdersPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-2">
@@ -188,23 +188,12 @@ export default function WorkOrdersPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-2">
-                            <ClipboardList className="w-5 h-5 text-muted-foreground" />
-                            <div>
-                                <p className="text-2xl font-bold">{filteredOrders.length}</p>
-                                <p className="text-xs text-muted-foreground">Total</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-2">
-                            <Clock className="w-5 h-5 text-blue-500" />
+                            <DollarSign className="w-5 h-5 text-green-600" />
                             <div>
                                 <p className="text-2xl font-bold">
-                                    {formatCurrency(active.reduce((s, wo) => s + (wo.clientRate || 0), 0))}
+                                    {formatCurrency(active.filter(wo => wo.schedule?.frequency !== 'one_time').reduce((s, wo) => s + (wo.clientRate || 0), 0))}
                                 </p>
-                                <p className="text-xs text-muted-foreground">Active Monthly Revenue</p>
+                                <p className="text-xs text-muted-foreground">MRR</p>
                             </div>
                         </div>
                     </CardContent>
