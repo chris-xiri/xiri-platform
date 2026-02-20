@@ -157,7 +157,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 { label: 'Leads Sourcing', href: '/sales/sourcing', icon: <Search className="w-4 h-4" /> },
                 { label: 'Leads CRM', href: '/sales/crm', icon: <Users className="w-4 h-4" /> },
                 { label: 'Leads Quotes', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> },
-                { label: 'My Commissions', href: '/sales/commissions', icon: <DollarSign className="w-4 h-4" /> },
             ],
         },
         {

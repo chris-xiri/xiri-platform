@@ -11,6 +11,7 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Plus, X, Building2, User, Phone, Mail, MapPin, Briefcase } from "lucide-react";
+import ReactGoogleAutocomplete from 'react-google-autocomplete';
 
 interface AddContractorDialogProps {
     open: boolean;
@@ -85,6 +86,39 @@ export function AddContractorDialog({ open, onOpenChange }: AddContractorDialogP
         setNotes("");
     };
 
+    const handlePlaceSelected = (place: any) => {
+        if (!place?.address_components) return;
+
+        let street = '';
+        let placeCity = '';
+        let placeState = '';
+        let placeZip = '';
+
+        for (const component of place.address_components) {
+            const types = component.types;
+            if (types.includes('street_number')) {
+                street = component.long_name + ' ';
+            }
+            if (types.includes('route')) {
+                street += component.long_name;
+            }
+            if (types.includes('locality') || types.includes('sublocality_level_1')) {
+                placeCity = component.long_name;
+            }
+            if (types.includes('administrative_area_level_1')) {
+                placeState = component.short_name;
+            }
+            if (types.includes('postal_code')) {
+                placeZip = component.long_name;
+            }
+        }
+
+        setAddress(street.trim());
+        setCity(placeCity);
+        setState(placeState);
+        setZip(placeZip);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!businessName.trim() || !profile) return;
@@ -95,22 +129,22 @@ export function AddContractorDialog({ open, onOpenChange }: AddContractorDialogP
 
             await addDoc(collection(db, "vendors"), {
                 businessName: businessName.trim(),
-                contactName: contactName.trim() || undefined,
-                phone: phone.trim() || undefined,
-                email: email.trim() || undefined,
+                contactName: contactName.trim() || null,
+                phone: phone.trim() || null,
+                email: email.trim() || null,
                 address: fullAddress,
-                streetAddress: address.trim() || undefined,
-                city: city.trim() || undefined,
-                state: state.trim() || undefined,
-                zip: zip.trim() || undefined,
-                website: website.trim() || undefined,
-                capabilities: ["general"], // Default; services tracked separately
+                streetAddress: address.trim() || null,
+                city: city.trim() || null,
+                state: state.trim() || null,
+                zip: zip.trim() || null,
+                website: website.trim() || null,
+                capabilities: ["general"],
                 services: selectedServices,
                 status: "pending_review",
                 aiScore: 0,
                 fitScore: 0,
                 hasActiveContract: false,
-                notes: notes.trim() || undefined,
+                notes: notes.trim() || null,
                 source: "manual_entry",
                 createdBy: profile.uid || profile.email || "unknown",
                 createdAt: serverTimestamp(),
@@ -221,10 +255,17 @@ export function AddContractorDialog({ open, onOpenChange }: AddContractorDialogP
                         <Label className="flex items-center gap-1.5">
                             <MapPin className="w-3.5 h-3.5" /> Address
                         </Label>
-                        <Input
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                            placeholder="Street address"
+                        <ReactGoogleAutocomplete
+                            apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                            onPlaceSelected={handlePlaceSelected}
+                            options={{
+                                types: ['address'],
+                                componentRestrictions: { country: 'us' }
+                            }}
+                            defaultValue={address}
+                            onChange={(e: any) => setAddress(e.target.value)}
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            placeholder="Start typing an address..."
                         />
                         <div className="grid grid-cols-3 gap-3">
                             <Input
@@ -260,8 +301,8 @@ export function AddContractorDialog({ open, onOpenChange }: AddContractorDialogP
                                     key={svc}
                                     variant={selectedServices.includes(svc) ? "default" : "outline"}
                                     className={`cursor-pointer transition-all text-xs ${selectedServices.includes(svc)
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'hover:bg-muted'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'hover:bg-muted'
                                         }`}
                                     onClick={() => toggleService(svc)}
                                 >
