@@ -113,6 +113,106 @@ async function seedTemplate() {
         });
         console.log("✅ Successfully seeded 'outreach_generation_prompt'.");
 
+        // ─── Sales Lead Outreach (B2B, targeting business owners/property managers) ───
+        const SALES_OUTREACH_PROMPT = `
+You are writing a B2B sales outreach email for XIRI Facility Solutions to a business owner, office manager, or property manager of a single-tenant commercial facility.
+
+**About XIRI:**
+- We are a single-source facility management partner for medical offices, urgent care clinics, surgery centers, dialysis centers, and auto dealerships.
+- We replace the chaos of managing 5-10 separate vendors with ONE point of contact and ONE consolidated monthly invoice.
+- We provide nightly quality audits and weekly site visits — no other FM company does this at our price point.
+- We handle everything from janitorial to HVAC, plumbing, electrical, pest control, and exterior maintenance.
+
+**Target Audience:**
+- Medical practice owners, office managers, property managers
+- Auto dealership GMs, operations managers
+- Responsible for their own building maintenance (Single-Tenant NNN lease)
+- Pain points: too many vendors, inconsistent quality, multiple invoices, compliance headaches (HIPAA/OSHA)
+
+**Tone Guidelines:**
+- Professional and consultative (executive-grade, NOT blue-collar)
+- Empathetic to their pain ("We know how frustrating it is to chase vendors...")
+- Confident but not salesy — position as a peer/partner, not a pitch
+- Use industry-specific language ("medical suite", "patient-facing areas", "compliance-ready")
+
+**Context:**
+Facility Type: {{facilityType}}
+Business Name: {{businessName}}
+Contact Name: {{contactName}}
+Square Footage: {{squareFootage}}
+Address: {{address}}
+
+**Instructions:**
+1. Write a concise, consultative email (max 250 words)
+2. Open with a specific pain point relevant to their facility type
+3. Present XIRI as the solution — emphasize "One Call, One Invoice"
+4. Include 2-3 specific benefits (e.g., nightly audits, HIPAA-compliant cleaning, cost savings)
+5. End with a soft CTA: offer a free facility walkthrough, no pressure
+6. Sign off professionally
+
+**Format:**
+Return ONLY JSON:
+{
+  "email": {
+    "subject": "string (clear, benefit-focused, max 60 chars)",
+    "body": "string (professional, consultative, max 250 words)"
+  }
+}
+
+**Example Subject Lines (DO NOT COPY - use as inspiration):**
+- "One call for all your facility needs"
+- "Stop juggling vendors — there's a better way"
+- "Your medical suite deserves better maintenance"
+`;
+
+        const SALES_FOLLOWUP_PROMPT = `
+You are writing a follow-up email for XIRI Facility Solutions to a business owner or property manager who has not yet responded to our initial outreach.
+
+**About XIRI:** Single-source facility management for medical and commercial facilities. One point of contact, one invoice, nightly audits.
+
+**Context:**
+Business Name: {{businessName}}
+Contact Name: {{contactName}}
+Facility Type: {{facilityType}}
+Follow-up Number: {{sequence}} (1 = first follow-up, 2 = second, 3 = final)
+
+**Tone:**
+- Follow-up 1: Warm, value-adding — share a specific benefit or stat
+- Follow-up 2: Social proof — reference similar facilities that made the switch
+- Follow-up 3: Respectful final check-in — no pressure, leave the door open
+
+**Instructions:**
+1. Do NOT repeat the original email. Add new value each time.
+2. Keep it SHORT (max 150 words for follow-ups)
+3. Reference their specific facility type
+4. End with a soft CTA (walkthrough, quick call, reply)
+
+**Format:**
+Return ONLY JSON:
+{
+  "email": {
+    "subject": "string (max 60 chars)",
+    "body": "string (max 150 words)"
+  }
+}
+`;
+
+        await db.collection('templates').doc('sales_outreach_prompt').set({
+            name: "Sales Lead Outreach (B2B)",
+            content: SALES_OUTREACH_PROMPT,
+            version: "1.0",
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        console.log("✅ Successfully seeded 'sales_outreach_prompt'.");
+
+        await db.collection('templates').doc('sales_followup_prompt').set({
+            name: "Sales Lead Follow-Up (B2B)",
+            content: SALES_FOLLOWUP_PROMPT,
+            version: "1.0",
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        console.log("✅ Successfully seeded 'sales_followup_prompt'.");
+
     } catch (error) {
         console.error("❌ Error seeding templates:", error);
     }

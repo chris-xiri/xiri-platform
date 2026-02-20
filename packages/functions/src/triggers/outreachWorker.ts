@@ -4,6 +4,7 @@ import * as logger from "firebase-functions/logger";
 import { fetchPendingTasks, updateTaskStatus, enqueueTask, QueueItem } from "../utils/queueUtils";
 // import { getNextBusinessSlot } from "../utils/timeUtils"; // TODO: Re-enable for production
 import { generateOutreachContent } from "../agents/outreach";
+import { generateSalesOutreachContent } from "../agents/salesOutreach";
 import { sendEmail } from "../utils/emailUtils";
 
 if (!admin.apps.length) {
@@ -30,12 +31,25 @@ export const processOutreachQueue = onSchedule({
 
         for (const task of tasks) {
             try {
-                if (task.type === 'GENERATE') {
-                    await handleGenerate(task);
-                } else if (task.type === 'SEND') {
-                    await handleSend(task);
-                } else if (task.type === 'FOLLOW_UP') {
-                    await handleFollowUp(task);
+                // Route based on whether task is for a vendor or a lead
+                if (task.leadId) {
+                    // ── Sales Lead Outreach ──
+                    if (task.type === 'GENERATE') {
+                        await handleLeadGenerate(task);
+                    } else if (task.type === 'FOLLOW_UP') {
+                        await handleLeadFollowUp(task);
+                    } else if (task.type === 'SEND') {
+                        await handleLeadSend(task);
+                    }
+                } else {
+                    // ── Vendor Outreach (existing) ──
+                    if (task.type === 'GENERATE') {
+                        await handleGenerate(task);
+                    } else if (task.type === 'SEND') {
+                        await handleSend(task);
+                    } else if (task.type === 'FOLLOW_UP') {
+                        await handleFollowUp(task);
+                    }
                 }
             } catch (err) {
                 logger.error(`Error processing task ${task.id}:`, err);
@@ -115,7 +129,7 @@ async function handleGenerate(task: QueueItem) {
 async function handleSend(task: QueueItem) {
     logger.info(`Executing SEND for task ${task.id}`);
 
-    const vendorDoc = await db.collection("vendors").doc(task.vendorId).get();
+    const vendorDoc = await db.collection("vendors").doc(task.vendorId!).get();
     const vendor = vendorDoc.exists ? vendorDoc.data() : null;
     const vendorEmail = vendor?.email || task.metadata?.email?.to;
 
@@ -159,7 +173,7 @@ async function handleSend(task: QueueItem) {
 
     // Update Vendor Record
     if (sendSuccess) {
-        await db.collection("vendors").doc(task.vendorId).update({
+        await db.collection("vendors").doc(task.vendorId!).update({
             status: 'awaiting_onboarding',
             outreachStatus: 'SENT',
             outreachChannel: task.metadata.channel,
@@ -176,7 +190,7 @@ async function handleSend(task: QueueItem) {
             metadata: { from: 'qualified', to: 'awaiting_onboarding', trigger: 'outreach_sent' }
         });
     } else {
-        await db.collection("vendors").doc(task.vendorId).update({
+        await db.collection("vendors").doc(task.vendorId!).update({
             outreachStatus: 'PENDING',
             outreachChannel: task.metadata.channel,
             outreachTime: new Date()
@@ -187,7 +201,7 @@ async function handleSend(task: QueueItem) {
 async function handleFollowUp(task: QueueItem) {
     logger.info(`Processing FOLLOW_UP task ${task.id} (sequence ${task.metadata?.sequence})`);
 
-    const vendorDoc = await db.collection("vendors").doc(task.vendorId).get();
+    const vendorDoc = await db.collection("vendors").doc(task.vendorId!).get();
     const vendor = vendorDoc.exists ? vendorDoc.data() : null;
 
     if (!vendor) {
@@ -298,3 +312,170 @@ function buildFollowUpEmail(sequence: number, businessName: string, onboardingUr
         </div>
     </div>`;
 }
+
+// ═══════════════════════════════════════════════════════════
+// ── SALES LEAD OUTREACH HANDLERS ──
+// ═══════════════════════════════════════════════════════════
+
+async function handleLeadGenerate(task: QueueItem) {
+    logger.info(`[SalesOutreach] Generating intro email for lead ${task.leadId}`);
+
+    const leadData = task.metadata;
+    const outreachResult = await generateSalesOutreachContent(leadData, 0);
+
+    if (outreachResult.error) {
+        throw new Error("AI Generation Failed for sales outreach");
+    }
+
+    // Log draft
+    await db.collection("lead_activities").add({
+        leadId: task.leadId,
+        type: "OUTREACH_QUEUED",
+        description: `Sales outreach email generated for ${leadData.businessName || 'lead'}.`,
+        createdAt: new Date(),
+        metadata: { email: outreachResult.email },
+    });
+
+    // Enqueue SEND immediately
+    await enqueueTask(db, {
+        leadId: task.leadId,
+        type: 'SEND',
+        scheduledAt: admin.firestore.Timestamp.fromDate(new Date()),
+        metadata: {
+            email: outreachResult.email,
+            toEmail: leadData.email,
+            businessName: leadData.businessName,
+        }
+    });
+
+    await updateTaskStatus(db, task.id!, 'COMPLETED');
+    logger.info(`[SalesOutreach] Lead ${task.leadId} intro email generated, SEND queued.`);
+}
+
+async function handleLeadSend(task: QueueItem) {
+    logger.info(`[SalesOutreach] Sending email for lead ${task.leadId}`);
+
+    const toEmail = task.metadata?.toEmail;
+    if (!toEmail) {
+        logger.warn(`[SalesOutreach] No email for lead ${task.leadId}, skipping.`);
+        await updateTaskStatus(db, task.id!, 'COMPLETED');
+        return;
+    }
+
+    const emailData = task.metadata.email;
+    const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${(emailData?.body || '').replace(/\n/g, '<br/>')}</div>`;
+
+    const sendSuccess = await sendEmail(
+        toEmail,
+        emailData?.subject || 'Xiri Facility Solutions — Simplify Your Facility Management',
+        htmlBody
+    );
+
+    await db.collection("lead_activities").add({
+        leadId: task.leadId,
+        type: sendSuccess ? "OUTREACH_SENT" : "OUTREACH_FAILED",
+        description: sendSuccess
+            ? `Sales email sent to ${toEmail}.`
+            : `Failed to send sales email to ${toEmail}.`,
+        createdAt: new Date(),
+        metadata: { to: toEmail, subject: emailData?.subject },
+    });
+
+    await updateTaskStatus(db, task.id!, sendSuccess ? 'COMPLETED' : 'FAILED');
+
+    if (sendSuccess) {
+        await db.collection("leads").doc(task.leadId!).update({
+            outreachStatus: 'SENT',
+            outreachSentAt: new Date(),
+        });
+    }
+}
+
+async function handleLeadFollowUp(task: QueueItem) {
+    const sequence = task.metadata?.sequence || 1;
+    logger.info(`[SalesOutreach] Processing follow-up #${sequence} for lead ${task.leadId}`);
+
+    // Check if lead is still qualified (hasn't progressed or been lost)
+    const leadDoc = await db.collection("leads").doc(task.leadId!).get();
+    const leadData = leadDoc.exists ? leadDoc.data() : null;
+
+    if (!leadData) {
+        logger.warn(`[SalesOutreach] Lead ${task.leadId} not found, skipping.`);
+        await updateTaskStatus(db, task.id!, 'COMPLETED');
+        return;
+    }
+
+    // Skip if lead has already replied or been lost
+    if (leadData.outreachStatus === 'REPLIED' || leadData.status === 'lost') {
+        logger.info(`[SalesOutreach] Lead ${task.leadId} status is '${leadData.outreachStatus || leadData.status}', skipping follow-up.`);
+        await updateTaskStatus(db, task.id!, 'COMPLETED');
+        return;
+    }
+
+    const toEmail = task.metadata?.email || leadData.email;
+    if (!toEmail) {
+        logger.warn(`[SalesOutreach] No email for lead ${task.leadId}, skipping.`);
+        await updateTaskStatus(db, task.id!, 'COMPLETED');
+        return;
+    }
+
+    // Generate follow-up content via AI
+    const outreachResult = await generateSalesOutreachContent({
+        ...leadData,
+        ...task.metadata,
+    }, sequence);
+
+    if (outreachResult.error) {
+        throw new Error(`AI generation failed for sales follow-up #${sequence}`);
+    }
+
+    const emailData = outreachResult.email;
+    const htmlBody = buildSalesFollowUpEmail(
+        sequence,
+        task.metadata?.businessName || leadData.businessName || 'there',
+        task.metadata?.contactName || leadData.contactName || '',
+        emailData?.body || '',
+    );
+
+    const subject = emailData?.subject || task.metadata?.subject || `Follow-up: ${task.metadata?.businessName || 'Your facility'}`;
+    const sendSuccess = await sendEmail(toEmail, subject, htmlBody);
+
+    if (sendSuccess) {
+        await db.collection("lead_activities").add({
+            leadId: task.leadId,
+            type: "FOLLOW_UP_SENT",
+            description: `Sales follow-up #${sequence} sent to ${toEmail}`,
+            createdAt: new Date(),
+            metadata: { sequence, email: toEmail },
+        });
+        await updateTaskStatus(db, task.id!, 'COMPLETED');
+        logger.info(`[SalesOutreach] Follow-up #${sequence} sent to ${toEmail} for lead ${task.leadId}`);
+    } else {
+        throw new Error(`Failed to send sales follow-up #${sequence} to ${toEmail}`);
+    }
+}
+
+function buildSalesFollowUpEmail(sequence: number, businessName: string, contactName: string, aiBody: string): string {
+    const greeting = contactName ? `Hi ${contactName},` : `Hello,`;
+    const signoff = sequence >= 3 ? 'Best regards' : 'Best';
+
+    return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
+        <div style="background: linear-gradient(135deg, #0c4a6e, #0369a1); padding: 24px 32px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 20px;">Xiri Facility Solutions</h1>
+            <p style="color: #bae6fd; margin: 4px 0 0; font-size: 13px;">Your Single-Source Facility Partner</p>
+        </div>
+        <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+            <p style="font-size: 15px;">${greeting}</p>
+            <div style="font-size: 15px; line-height: 1.7;">${aiBody.replace(/\n/g, '<br/>')}</div>
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="https://xiri.ai/contact?ref=outreach" style="display: inline-block; padding: 14px 32px; background: #0369a1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">
+                    Schedule a Free Walkthrough
+                </a>
+            </div>
+            <p style="font-size: 14px; color: #64748b;">Have questions? Simply reply to this email.</p>
+            <p style="margin-top: 24px; font-size: 14px;">${signoff},<br/><strong>Xiri Facility Solutions</strong></p>
+        </div>
+    </div>`;
+}
+

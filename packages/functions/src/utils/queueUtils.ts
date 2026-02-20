@@ -5,7 +5,8 @@ export type QueueStatus = 'PENDING' | 'RETRY' | 'COMPLETED' | 'FAILED' | 'CANCEL
 
 export interface QueueItem {
     id?: string;
-    vendorId: string;
+    vendorId?: string;    // For vendor outreach
+    leadId?: string;      // For sales lead outreach
     type: QueueTaskType;
     status: QueueStatus;
     scheduledAt: admin.firestore.Timestamp;
@@ -55,6 +56,23 @@ export async function updateTaskStatus(db: admin.firestore.Firestore, taskId: st
 export async function cancelVendorTasks(db: admin.firestore.Firestore, vendorId: string) {
     const snapshot = await db.collection(COLLECTION)
         .where('vendorId', '==', vendorId)
+        .where('status', 'in', ['PENDING', 'RETRY'])
+        .get();
+
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => {
+        batch.update(doc.ref, { status: 'CANCELLED', cancelledAt: new Date() });
+    });
+    await batch.commit();
+    return snapshot.size;
+}
+
+/**
+ * Cancel all pending/retry tasks for a lead (used on lead dismissal/loss).
+ */
+export async function cancelLeadTasks(db: admin.firestore.Firestore, leadId: string) {
+    const snapshot = await db.collection(COLLECTION)
+        .where('leadId', '==', leadId)
         .where('status', 'in', ['PENDING', 'RETRY'])
         .get();
 

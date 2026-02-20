@@ -61,6 +61,10 @@ export interface Lead {
         lastSaleDate?: string;
         sourcedAt: Date;
     };
+
+    // Sales Outreach Sequence
+    outreachStatus?: 'PENDING' | 'SENT' | 'REPLIED' | 'NEEDS_MANUAL';
+    outreachSentAt?: Date;
 }
 
 export type VendorStatus =
