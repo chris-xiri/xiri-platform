@@ -19,6 +19,23 @@ const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destru
     cancelled: { variant: 'secondary', label: 'Cancelled', icon: AlertCircle },
 };
 
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function formatFrequency(freq?: string, daysOfWeek?: boolean[]) {
+    if (!freq) return '—';
+    if (freq === 'custom_days' && daysOfWeek) {
+        const days = daysOfWeek.map((on, i) => on ? DAY_NAMES[i] : null).filter(Boolean);
+        const monFri = [false, true, true, true, true, true, false];
+        if (JSON.stringify(daysOfWeek) === JSON.stringify(monFri)) return 'Mon–Fri';
+        return days.join(', ') || 'Custom';
+    }
+    const labels: Record<string, string> = {
+        nightly: 'Nightly', weekly: 'Weekly', biweekly: 'Bi-Weekly',
+        monthly: 'Monthly', quarterly: 'Quarterly', custom_days: 'Custom',
+    };
+    return labels[freq] || freq;
+}
+
 export default function WorkOrdersPage() {
     const { profile, hasRole } = useAuth();
     const [workOrders, setWorkOrders] = useState<(WorkOrder & { id: string })[]>([]);
@@ -183,7 +200,7 @@ export default function WorkOrdersPage() {
                                         <tr key={wo.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                                             <td className="px-4 py-3">
                                                 <span className="font-medium">{wo.serviceType}</span>
-                                                <p className="text-xs text-muted-foreground capitalize">{wo.schedule?.frequency}</p>
+                                                <p className="text-xs text-muted-foreground">{formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)}</p>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-1.5 text-sm">

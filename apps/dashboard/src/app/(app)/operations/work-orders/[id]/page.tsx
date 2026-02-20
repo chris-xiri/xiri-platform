@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 interface PageProps {
     params: { id: string };
 }
@@ -124,6 +126,21 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
+
+    const formatFrequency = (freq?: string, daysOfWeek?: boolean[]) => {
+        if (!freq) return '—';
+        if (freq === 'custom_days' && daysOfWeek) {
+            const days = daysOfWeek.map((on, i) => on ? DAY_NAMES[i] : null).filter(Boolean);
+            const monFri = [false, true, true, true, true, true, false];
+            if (JSON.stringify(daysOfWeek) === JSON.stringify(monFri)) return 'Mon–Fri';
+            return days.join(', ') || 'Custom';
+        }
+        const labels: Record<string, string> = {
+            nightly: 'Nightly', weekly: 'Weekly', biweekly: 'Bi-Weekly',
+            monthly: 'Monthly', quarterly: 'Quarterly', custom_days: 'Custom',
+        };
+        return labels[freq] || freq;
+    };
 
     const handleAssignVendor = async () => {
         if (!wo || !selectedVendor || !profile || vendorRate <= 0) return;
@@ -288,7 +305,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                         <CardContent className="grid grid-cols-3 gap-4 text-sm">
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase mb-1">Frequency</p>
-                                <p className="font-medium capitalize">{wo.schedule?.frequency}</p>
+                                <p className="font-medium">{formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase mb-1">Start Time</p>
