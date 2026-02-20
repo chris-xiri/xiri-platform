@@ -4,12 +4,14 @@ import { useState, useEffect, useMemo } from "react";
 import VendorList from "@/components/VendorList";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Vendor } from "@xiri/shared";
+import { AddContractorDialog } from "@/components/AddContractorDialog";
 import {
     Users, CheckCircle, ShieldCheck, CalendarCheck,
-    Rocket, Star, Pause, XCircle, Mail, Clock, FileSearch, Ban
+    Rocket, Star, Pause, XCircle, Mail, Clock, FileSearch, Ban, Plus
 } from "lucide-react";
 
 // Status tab definitions — mirrors VendorStatusTimeline pipeline
@@ -30,6 +32,7 @@ const STATUS_TABS = [
 export default function CRMPage() {
     const [activeTab, setActiveTab] = useState<string>('all');
     const [vendors, setVendors] = useState<Vendor[]>([]);
+    const [showAddContractor, setShowAddContractor] = useState(false);
 
     // Live Firestore listener for count badges
     useEffect(() => {
@@ -66,7 +69,13 @@ export default function CRMPage() {
             <main className="w-full px-4 sm:px-6 lg:px-8 py-4 flex flex-col h-[calc(100vh-64px)]">
                 <div className="flex items-center justify-between mb-3 flex-shrink-0">
                     <h1 className="text-2xl font-bold text-foreground">Vendor CRM</h1>
-                    <span className="text-sm text-muted-foreground">{vendors.length} vendors</span>
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground">{vendors.length} vendors</span>
+                        <Button onClick={() => setShowAddContractor(true)} className="gap-2" size="sm">
+                            <Plus className="w-4 h-4" />
+                            Add Contractor
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Status Tabs */}
@@ -112,6 +121,8 @@ export default function CRMPage() {
                     />
                 </div>
             </main>
+
+            <AddContractorDialog open={showAddContractor} onOpenChange={setShowAddContractor} />
         </ProtectedRoute>
     );
 }

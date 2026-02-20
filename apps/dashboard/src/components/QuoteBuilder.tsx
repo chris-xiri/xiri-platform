@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
     X, ArrowLeft, ArrowRight, Check, Building2, MapPin,
-    Plus, Trash2, DollarSign, FileText, ClipboardList
+    Plus, Trash2, DollarSign, FileText, ClipboardList, Users
 } from 'lucide-react';
 
 interface QuoteBuilderProps {
@@ -116,6 +116,10 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
     const [exitClause, setExitClause] = useState(existingQuote?.exitClause || '30-day written notice');
     const [notes, setNotes] = useState(existingQuote?.notes || '');
 
+    // Commission assignment
+    const [assignedTo, setAssignedTo] = useState(profile?.uid || '');
+    const [salesUsers, setSalesUsers] = useState<{ uid: string; displayName: string; email: string }[]>([]);
+
     // Fetch leads
     useEffect(() => {
         async function fetchLeads() {
@@ -131,6 +135,28 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
             }
         }
         fetchLeads();
+    }, []);
+
+    // Fetch sales users for commission assignment
+    useEffect(() => {
+        async function fetchSalesUsers() {
+            try {
+                const usersSnap = await getDocs(collection(db, 'users'));
+                const sales: { uid: string; displayName: string; email: string }[] = [];
+                usersSnap.forEach(d => {
+                    const data = d.data();
+                    if (data.roles?.includes('sales') || data.roles?.includes('sales_manager') || data.roles?.includes('admin')) {
+                        sales.push({ uid: d.id, displayName: data.displayName || data.email, email: data.email });
+                    }
+                });
+                setSalesUsers(sales);
+                // Default assignedTo to current user if not set
+                if (!assignedTo && profile?.uid) setAssignedTo(profile.uid);
+            } catch (err) {
+                console.error('Error fetching sales users:', err);
+            }
+        }
+        fetchSalesUsers();
     }, []);
 
     // When a lead is selected, pre-populate locations
@@ -325,6 +351,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                     revisionHistory: [],
                     status: 'draft',
                     createdBy: profile.uid || profile.email || 'unknown',
+                    assignedTo: assignedTo || profile.uid || profile.email || 'unknown',
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
                 });
@@ -911,6 +938,27 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                     onChange={(e) => setExitClause(e.target.value)}
                                     className="mt-1"
                                 />
+                            </div>
+
+                            {/* Commission Assignment */}
+                            <div>
+                                <Label className="flex items-center gap-1.5">
+                                    <Users className="w-3.5 h-3.5" /> Commission Assigned To
+                                </Label>
+                                <select
+                                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm mt-1"
+                                    value={assignedTo}
+                                    onChange={(e) => setAssignedTo(e.target.value)}
+                                >
+                                    {salesUsers.map(u => (
+                                        <option key={u.uid} value={u.uid}>
+                                            {u.displayName}{u.uid === profile?.uid ? ' (You)' : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                    Sales commission will be calculated when the quote is accepted.
+                                </p>
                             </div>
 
                             <div>

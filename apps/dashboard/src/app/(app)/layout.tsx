@@ -187,6 +187,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             show: showAccountingNav,
             items: [
                 { label: 'Invoices', href: '/accounting/invoices', icon: <Receipt className="w-4 h-4" /> },
+                { label: 'Commissions', href: '/accounting/commissions', icon: <DollarSign className="w-4 h-4" /> },
                 { label: 'Vendor Remittances', href: '/accounting/vendor-remittances', icon: <DollarSign className="w-4 h-4" /> },
             ],
         },

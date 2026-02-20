@@ -65,6 +65,10 @@ export interface Lead {
     // Sales Outreach Sequence
     outreachStatus?: 'PENDING' | 'SENT' | 'REPLIED' | 'NEEDS_MANUAL';
     outreachSentAt?: Date;
+
+    // Sales → FSM Handoff (auto-set on first work order assignment)
+    handedOffToFsm?: string;     // FSM staffId
+    handoffDate?: Date;
 }
 
 export type VendorStatus =
@@ -654,6 +658,11 @@ export interface Quote {
     assignedFsmId?: string;
     assignedFsmName?: string;
 
+    // Assignment & Commission
+    assignedTo?: string;          // staffId who gets commission (defaults to createdBy)
+    isUpsell?: boolean;           // true if created after Sales→FSM handoff
+    originalQuoteId?: string;     // links upsell to original quote
+
     status: QuoteStatus;
     createdBy: string;
     expiresAt?: any;
@@ -866,4 +875,71 @@ export interface PreviewProperty extends RawProperty {
     fitScore?: number;         // AI-assessed fit (0-100)
     aiReasoning?: string;      // AI explanation of the fit score
     facilityType?: string;     // Mapped XIRI facility type
+}
+
+
+// --- COMMISSION & COMPENSATION ---
+
+export type CommissionType = 'SALES_NEW' | 'FSM_UPSELL' | 'FSM_RETENTION';
+export type CommissionStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'PARTIALLY_CANCELLED';
+export type PayoutStatus = 'PENDING' | 'PAID' | 'CANCELLED';
+
+export interface PayoutEntry {
+    month: number;                // 0, 1, 2
+    amount: number;
+    percentage: number;           // 50, 25, 25
+    status: PayoutStatus;
+    scheduledAt: Date;
+    paidAt?: Date;
+}
+
+export interface Commission {
+    id?: string;
+    staffId: string;              // Who earns the commission
+    staffRole: 'sales' | 'fsm';
+    quoteId: string;              // Source quote
+    leadId: string;               // Related lead/client
+    type: CommissionType;
+
+    // Financial
+    mrr: number;                  // Monthly Recurring Revenue (for tier calc)
+    acv: number;                  // Annual Contract Value (mrr × 12 or face value)
+    rate: number;                 // 0.10, 0.15, or 0.05
+    totalCommission: number;      // acv × rate
+
+    // Payout schedule (Sales: 50/25/25 over 3 months)
+    payoutSchedule: PayoutEntry[];
+
+    // Clawback (6-month window — cancel unpaid portions only)
+    clawbackWindowEnd: Date;      // 6 months from quote acceptance
+    status: CommissionStatus;
+
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface CommissionLedgerEntry {
+    id?: string;
+    commissionId: string;
+    type: 'PAYOUT_SCHEDULED' | 'PAYOUT_PAID' | 'PAYOUT_CANCELLED' | 'CLAWBACK';
+    amount: number;
+    staffId: string;
+    description: string;
+    createdAt: Date;
+}
+
+// NRR (Net Revenue Retention) for FSM quarterly bonus
+export interface NrrSnapshot {
+    id?: string;
+    fsmId: string;                // FSM staffId
+    quarter: string;              // e.g. "2026-Q1"
+    startingMrr: number;
+    endingMrr: number;
+    upsells: number;
+    downgrades: number;
+    churn: number;
+    nrr: number;                  // (start + upsells - downgrades - churn) / start
+    bonusRate: number;            // 0, 0.005, 0.01, 0.02
+    bonusAmount: number;
+    calculatedAt: Date;
 }
