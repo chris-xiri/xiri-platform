@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
     ArrowLeft, MapPin, Clock, DollarSign, User2, CheckCircle2,
-    AlertCircle, Search, Calendar, Shield, Truck, Star, Printer
+    AlertCircle, Search, Calendar, Shield, Truck, Star, Printer, Moon
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -60,6 +60,12 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
     const [selectedVendor, setSelectedVendor] = useState<VendorCandidate | null>(null);
     const [vendorRate, setVendorRate] = useState<number>(0);
     const [assigning, setAssigning] = useState(false);
+
+    // Night Manager assignment state
+    const [nmUsers, setNmUsers] = useState<{ uid: string; displayName: string }[]>([]);
+    const [showNmDropdown, setShowNmDropdown] = useState(false);
+    const [assigningNm, setAssigningNm] = useState(false);
+    const nmDropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         async function fetchWO() {
@@ -130,6 +136,28 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
         }
         fetchVendors();
     }, [showAssign, wo]);
+
+    // Fetch Night Manager users
+    useEffect(() => {
+        async function fetchNmUsers() {
+            const snap = await getDocs(query(collection(db, 'users'), where('roles', 'array-contains-any', ['night_manager', 'night_mgr'])));
+            setNmUsers(snap.docs.map(d => ({ uid: d.id, displayName: (d.data() as any).displayName || d.id })));
+        }
+        fetchNmUsers();
+    }, []);
+
+    // Click outside to close NM dropdown
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (nmDropdownRef.current && !nmDropdownRef.current.contains(e.target as Node)) {
+                setShowNmDropdown(false);
+            }
+        };
+        if (showNmDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showNmDropdown]);
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
@@ -204,6 +232,35 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
             console.error('Error assigning vendor:', err);
         } finally {
             setAssigning(false);
+        }
+    };
+
+    const handleAssignNightManager = async (nm: { uid: string; displayName: string }) => {
+        if (!wo || !profile) return;
+        setAssigningNm(true);
+        try {
+            // Optimistic update
+            setWo({ ...wo, assignedNightManagerId: nm.uid, assignedNightManagerName: nm.displayName });
+            setShowNmDropdown(false);
+
+            await updateDoc(doc(db, 'work_orders', wo.id), {
+                assignedNightManagerId: nm.uid,
+                assignedNightManagerName: nm.displayName,
+                updatedAt: serverTimestamp(),
+            });
+
+            await addDoc(collection(db, 'activity_logs'), {
+                type: 'NIGHT_MANAGER_ASSIGNED',
+                workOrderId: wo.id,
+                nightManagerId: nm.uid,
+                nightManagerName: nm.displayName,
+                assignedBy: profile.uid || 'unknown',
+                createdAt: serverTimestamp(),
+            });
+        } catch (err) {
+            console.error('Error assigning night manager:', err);
+        } finally {
+            setAssigningNm(false);
         }
     };
 
@@ -437,6 +494,50 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                                     </Button>
                                 </div>
                             )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Night Manager Assignment */}
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <Moon className="w-4 h-4 text-muted-foreground" /> Night Manager
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="relative" ref={nmDropdownRef}>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className={`w-full gap-2 justify-between ${(wo as any).assignedNightManagerName ? 'border-indigo-200 text-indigo-700 hover:bg-indigo-50' : ''}`}
+                                    onClick={() => setShowNmDropdown(!showNmDropdown)}
+                                    disabled={assigningNm}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Moon className="w-4 h-4" />
+                                        {(wo as any).assignedNightManagerName || 'Assign Night Manager'}
+                                    </span>
+                                    {(wo as any).assignedNightManagerName && <span className="text-xs text-muted-foreground">✎</span>}
+                                </Button>
+                                {showNmDropdown && (
+                                    <div className="absolute left-0 right-0 mt-1 bg-background border rounded-lg shadow-xl z-50 py-1">
+                                        {nmUsers.length === 0 ? (
+                                            <p className="text-xs text-muted-foreground p-3">No Night Manager users found</p>
+                                        ) : (
+                                            nmUsers.map(nm => (
+                                                <button
+                                                    key={nm.uid}
+                                                    className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center justify-between"
+                                                    onClick={() => handleAssignNightManager(nm)}
+                                                >
+                                                    <span>{nm.displayName}</span>
+                                                    {(wo as any).assignedNightManagerId === nm.uid && <CheckCircle2 className="w-4 h-4 text-indigo-600" />}
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                 </div>

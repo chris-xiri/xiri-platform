@@ -39,7 +39,12 @@ export default function AuditsPage() {
         const unsub = onSnapshot(q, (snap) => {
             const allWOs = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkOrder & { id: string }));
             // Filter to tonight's scheduled WOs
-            const tonight = allWOs.filter(wo => wo.schedule?.daysOfWeek?.[today]);
+            let tonight = allWOs.filter(wo => wo.schedule?.daysOfWeek?.[today]);
+            // Night managers only see WOs assigned to them; admins see all
+            const isAdmin = profile?.roles?.includes('admin');
+            if (!isAdmin && profile?.uid) {
+                tonight = tonight.filter(wo => (wo as any).assignedNightManagerId === profile.uid);
+            }
             setTonightsWOs(tonight);
             setLoading(false);
         });

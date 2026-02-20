@@ -106,8 +106,8 @@ export default function ContractsPage() {
         setExpandedClients(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
-    // Stats
-    const activeContracts = contracts.filter(c => c.status === 'active');
+    // Stats — use roleFiltered so FSMs only see their own counts/values
+    const activeContracts = roleFiltered.filter(c => c.status === 'active');
 
     if (loading) return <div className="p-8 flex justify-center">Loading contracts...</div>;
 

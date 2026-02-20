@@ -786,6 +786,8 @@ export interface WorkOrder {
 
     status: WorkOrderStatus;
     assignedFsmId?: string;
+    assignedNightManagerId?: string;
+    assignedNightManagerName?: string;
     assignedBy?: string;
     notes?: string;
     createdAt: any;
