@@ -54,6 +54,10 @@ export default function ContractPreview({ contract, lead, workOrders }: Contract
         return map[freq] || freq?.replace(/_/g, ' ') || '—';
     };
 
+    const getBillingType = (freq: string) => {
+        return ['one_time', 'quarterly'].includes(freq) ? 'One-Time' : 'Recurring';
+    };
+
     return (
         <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
             {/* Print-friendly container */}
@@ -133,6 +137,7 @@ export default function ContractPreview({ contract, lead, workOrders }: Contract
                                     <tr className="bg-gray-50 border-b">
                                         <th className="text-left py-2 px-3 font-semibold text-gray-600">Service</th>
                                         <th className="text-left py-2 px-3 font-semibold text-gray-600">Frequency</th>
+                                        <th className="text-left py-2 px-3 font-semibold text-gray-600">Billing</th>
                                         <th className="text-right py-2 px-3 font-semibold text-gray-600">Monthly Rate</th>
                                     </tr>
                                 </thead>
@@ -148,6 +153,11 @@ export default function ContractPreview({ contract, lead, workOrders }: Contract
                                             <td className="py-2 px-3 text-gray-600">
                                                 {formatFrequency(item.frequency, item.daysOfWeek)}
                                             </td>
+                                            <td className="py-2 px-3">
+                                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${getBillingType(item.frequency) === 'Recurring' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                                                    {getBillingType(item.frequency)}
+                                                </span>
+                                            </td>
                                             <td className="py-2 px-3 text-right font-medium">
                                                 {formatCurrency(item.clientRate)}
                                             </td>
@@ -156,7 +166,7 @@ export default function ContractPreview({ contract, lead, workOrders }: Contract
                                 </tbody>
                                 <tfoot>
                                     <tr className="bg-gray-50 border-t font-medium">
-                                        <td colSpan={2} className="py-2 px-3 text-right text-gray-600">Location Subtotal</td>
+                                        <td colSpan={3} className="py-2 px-3 text-right text-gray-600">Location Subtotal</td>
                                         <td className="py-2 px-3 text-right">{formatCurrency(items.reduce((s, i) => s + (i.clientRate || 0), 0))}</td>
                                     </tr>
                                 </tfoot>

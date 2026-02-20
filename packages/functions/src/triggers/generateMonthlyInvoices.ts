@@ -44,18 +44,21 @@ export const generateMonthlyInvoices = onSchedule({
     let invoicesCreated = 0;
     let invoicesSkipped = 0;
 
+    // Helper: determine if a service frequency is recurring (belongs on every monthly invoice)
+    const isRecurring = (freq: string) => !['one_time', 'quarterly'].includes(freq);
+
     for (const contractDoc of contractsSnap.docs) {
         const contract = contractDoc.data();
         const contractId = contractDoc.id;
         const leadId = contract.leadId;
-        const clientName = contract.clientName || contract.businessName || 'Client';
+        const clientName = contract.clientBusinessName || contract.clientName || contract.businessName || 'Client';
         const clientEmail = contract.contactEmail || contract.clientEmail || '';
+        const contractLineItems: any[] = contract.lineItems || [];
 
-        // Find completed work orders for this contract in the billing period
+        // Fetch completed work orders for this contract in the billing period
         let workOrdersQuery = db.collection('work_orders')
             .where('status', '==', 'completed');
 
-        // Link WOs to contract via leadId or contractId
         if (contract.leadId) {
             workOrdersQuery = workOrdersQuery.where('leadId', '==', contract.leadId);
         }
@@ -71,26 +74,63 @@ export const generateMonthlyInvoices = onSchedule({
             return d >= periodStart && d <= periodEnd;
         });
 
-        if (periodWOs.length === 0) {
+        // Track completed one-time WO line item IDs
+        const completedLineItemIds = new Set(
+            periodWOs.map(doc => doc.data().quoteLineItemId).filter(Boolean)
+        );
+
+        let invoiceLineItems: any[] = [];
+
+        if (contractLineItems.length > 0) {
+            // ─── New billing cadence logic ───
+            // 1. Recurring services → always on invoice
+            const recurringItems = contractLineItems
+                .filter((li: any) => isRecurring(li.frequency))
+                .map((li: any) => ({
+                    lineItemId: li.id,
+                    locationName: li.locationName || 'Service Location',
+                    serviceType: li.serviceType || 'Facility Maintenance',
+                    description: li.description || '',
+                    rate: li.clientRate || 0,
+                    billingType: 'recurring' as const,
+                    frequency: li.frequency,
+                }));
+
+            // 2. One-time / quarterly → only if completed in billing period
+            const oneTimeItems = contractLineItems
+                .filter((li: any) => !isRecurring(li.frequency) && completedLineItemIds.has(li.id))
+                .map((li: any) => ({
+                    lineItemId: li.id,
+                    locationName: li.locationName || 'Service Location',
+                    serviceType: li.serviceType || 'Facility Maintenance',
+                    description: li.description || '',
+                    rate: li.clientRate || 0,
+                    billingType: 'one_time' as const,
+                    frequency: li.frequency,
+                }));
+
+            invoiceLineItems = [...recurringItems, ...oneTimeItems];
+        } else {
+            // Fallback: legacy contracts without lineItems — use work orders
+            invoiceLineItems = periodWOs.map(woDoc => {
+                const wo = woDoc.data();
+                return {
+                    workOrderId: woDoc.id,
+                    locationName: wo.locationName || wo.location || 'Service Location',
+                    serviceType: wo.serviceType || wo.type || 'Facility Maintenance',
+                    description: wo.description || '',
+                    rate: wo.rate || wo.amount || 0,
+                    billingType: 'legacy' as const,
+                };
+            });
+        }
+
+        if (invoiceLineItems.length === 0) {
             invoicesSkipped++;
             continue;
         }
 
-        // Build line items from work orders
-        const lineItems = periodWOs.map(woDoc => {
-            const wo = woDoc.data();
-            return {
-                workOrderId: woDoc.id,
-                locationName: wo.locationName || wo.location || 'Service Location',
-                serviceType: wo.serviceType || wo.type || 'Facility Maintenance',
-                description: wo.description || '',
-                rate: wo.rate || wo.amount || 0,
-            };
-        });
-
-        // Use monthlyRate from contract if available, otherwise sum work orders
-        const totalAmount = contract.monthlyRate || contract.totalMonthlyRate ||
-            lineItems.reduce((sum, li) => sum + li.rate, 0);
+        const totalAmount = invoiceLineItems.reduce((sum, li) => sum + li.rate, 0);
 
         // Create draft invoice
         const dueDate = new Date(now);
@@ -101,7 +141,7 @@ export const generateMonthlyInvoices = onSchedule({
             leadId: leadId || null,
             clientName,
             clientEmail,
-            lineItems,
+            lineItems: invoiceLineItems,
             totalAmount,
             billingPeriod: {
                 start: periodStart.toISOString().split('T')[0],
@@ -109,6 +149,8 @@ export const generateMonthlyInvoices = onSchedule({
                 label: periodLabel,
             },
             workOrderCount: periodWOs.length,
+            recurringItemCount: invoiceLineItems.filter(i => i.billingType === 'recurring').length,
+            oneTimeItemCount: invoiceLineItems.filter(i => i.billingType === 'one_time').length,
             status: 'draft',
             dueDate,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -125,13 +167,13 @@ export const generateMonthlyInvoices = onSchedule({
             totalAmount,
             billingPeriod: periodLabel,
             workOrderCount: periodWOs.length,
-            description: `Auto-generated draft invoice for ${clientName}: $${totalAmount.toLocaleString()} (${periodLabel}, ${periodWOs.length} work orders)`,
+            description: `Auto-generated draft invoice for ${clientName}: $${totalAmount.toLocaleString()} (${periodLabel}, ${invoiceLineItems.length} items)`,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
         invoicesCreated++;
-        logger.info(`[MonthlyInvoices] Created invoice ${invoiceRef.id} for ${clientName}: $${totalAmount} (${periodWOs.length} WOs)`);
+        logger.info(`[MonthlyInvoices] Created invoice ${invoiceRef.id} for ${clientName}: $${totalAmount} (${invoiceLineItems.length} items: ${invoiceLineItems.filter(i => i.billingType === 'recurring').length} recurring, ${invoiceLineItems.filter(i => i.billingType === 'one_time').length} one-time)`);
     }
 
-    logger.info(`[MonthlyInvoices] Complete: ${invoicesCreated} invoices created, ${invoicesSkipped} contracts skipped (no completed WOs)`);
+    logger.info(`[MonthlyInvoices] Complete: ${invoicesCreated} invoices created, ${invoicesSkipped} contracts skipped`);
 });
