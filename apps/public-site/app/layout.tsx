@@ -3,6 +3,7 @@ import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import TrackingProvider from "@/components/TrackingProvider";
 import Navigation from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
 import { GoogleAnalytics } from '@next/third-parties/google';
 
 const inter = Inter({
@@ -89,6 +90,7 @@ export default function RootLayout({
         <TrackingProvider>
           <Navigation />
           {children}
+          <Footer />
         </TrackingProvider>
         {process.env.NEXT_PUBLIC_GA_ID && (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />

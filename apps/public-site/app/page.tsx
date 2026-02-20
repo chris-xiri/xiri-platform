@@ -2,6 +2,7 @@ import { Hero } from '@/components/Hero';
 import { ValuePropsSection } from '@/components/ValueProps';
 import { CTAButton } from '@/components/CTAButton';
 import { ClientLeadForm } from '@/components/ClientLeadForm';
+import { TrustBar } from '@/components/TrustBar';
 import Link from "next/link";
 
 export default function Home() {
@@ -13,6 +14,8 @@ export default function Home() {
         ctaText="Get Your Facility Audit"
         ctaLink="#audit"
       />
+
+      <TrustBar />
 
       <ValuePropsSection />
 

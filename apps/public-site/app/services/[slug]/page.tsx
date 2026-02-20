@@ -344,7 +344,7 @@ export default async function ServicePage({ params }: Props) {
                         Let us handle the dirty work so you can focus on growing your business in {location.state}.
                     </p>
                     <CTAButton
-                        href="/medical-offices#survey"
+                        href="/#audit"
                         text="Get Your Local Quote"
                         location={location.name}
                         className="inline-block bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
