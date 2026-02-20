@@ -41,8 +41,10 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
     });
     const [dueDate, setDueDate] = useState(() => {
         const d = new Date();
-        d.setDate(d.getDate() + 30);
-        return d.toISOString().split('T')[0];
+        d.setMonth(d.getMonth() - 1);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}-25`;
     });
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
@@ -90,6 +92,14 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
         }
         fetchActiveWOs();
     }, []);
+
+    // Auto-update due date to the 25th of the billing month when billing period changes
+    useEffect(() => {
+        if (billingStart) {
+            const [year, month] = billingStart.split('-');
+            setDueDate(`${year}-${month}-25`);
+        }
+    }, [billingStart]);
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
