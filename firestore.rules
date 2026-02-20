@@ -88,7 +88,7 @@ service cloud.firestore {
     match /work_orders/{workOrderId} {
       allow read: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'night_mgr']);
       allow create: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm']);
-      allow update: if hasAnyRole(['admin', 'fsm']);
+      allow update: if hasAnyRole(['admin', 'fsm', 'night_mgr', 'sales_mgr']);
       allow delete: if hasRole('admin');
     }
 
@@ -104,6 +104,20 @@ service cloud.firestore {
       allow create: if hasAnyRole(['admin', 'accounting']);
       allow update: if hasAnyRole(['admin', 'accounting']);
       allow delete: if hasRole('admin');
+    }
+
+    // Commissions & Ledger
+    match /commissions/{commissionId} {
+      allow read: if hasAnyRole(['admin', 'accounting', 'sales', 'sales_mgr', 'fsm']);
+      allow create: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'fsm']);
+      allow update: if hasAnyRole(['admin', 'accounting']);
+      allow delete: if hasRole('admin');
+    }
+
+    match /commission_ledger/{entryId} {
+      allow read: if hasAnyRole(['admin', 'accounting', 'sales', 'sales_mgr', 'fsm']);
+      allow create: if request.auth != null;
+      allow update, delete: if false; // Immutable audit trail
     }
 
     // Activity logs - append-only for all authenticated users
