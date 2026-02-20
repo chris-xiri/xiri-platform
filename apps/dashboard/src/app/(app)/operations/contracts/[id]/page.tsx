@@ -7,7 +7,8 @@ import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FileText, DollarSign, Calendar, MapPin, User, Clock, ClipboardList, Building2 } from 'lucide-react';
+import { ArrowLeft, FileText, DollarSign, Calendar, MapPin, User, Clock, ClipboardList, Building2, Printer, Eye, EyeOff } from 'lucide-react';
+import ContractPreview from '@/components/ContractPreview';
 
 const STATUS_BADGE: Record<string, { variant: any; label: string; color: string }> = {
     draft: { variant: 'secondary', label: 'Draft', color: 'text-gray-500' },
@@ -35,6 +36,7 @@ export default function ContractDetailPage() {
     const [workOrders, setWorkOrders] = useState<any[]>([]);
     const [lead, setLead] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [showPreview, setShowPreview] = useState(false);
 
     useEffect(() => {
         if (!contractId) return;
@@ -120,6 +122,17 @@ export default function ContractDetailPage() {
                         <Badge variant={badge.variant}>{badge.label}</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">Contract ID: {contract.id}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowPreview(!showPreview)}>
+                        {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPreview ? 'Hide Contract' : 'View Contract'}
+                    </Button>
+                    {showPreview && (
+                        <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
+                            <Printer className="w-4 h-4" /> Print
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -238,6 +251,11 @@ export default function ContractDetailPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Contract Preview */}
+            {showPreview && (
+                <ContractPreview contract={contract} lead={lead} workOrders={workOrders} />
+            )}
 
             {/* Work Orders */}
             <Card>

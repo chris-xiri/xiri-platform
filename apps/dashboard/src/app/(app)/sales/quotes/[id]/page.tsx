@@ -789,26 +789,59 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     </CardHeader>
                     <CardContent className="space-y-3">
                         {/* Current version */}
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-                            <Badge variant="default" className="text-xs">v{quote.version}</Badge>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium">Current Version</p>
-                                <p className="text-xs text-muted-foreground">
-                                    {formatCurrency(quote.totalMonthlyRate)}/mo • {quote.lineItems?.length || 0} line items
-                                </p>
+                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                            <div className="flex items-center gap-3 mb-2">
+                                <Badge variant="default" className="text-xs">v{quote.version}</Badge>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium">Current Version</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {formatCurrency(quote.totalMonthlyRate)}/mo • {quote.lineItems?.length || 0} services
+                                    </p>
+                                </div>
+                            </div>
+                            {/* Per-item attribution summary */}
+                            <div className="mt-2 space-y-1.5 pl-10">
+                                {(quote.lineItems || []).map((li: QuoteLineItem) => (
+                                    <div key={li.id} className="flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-muted-foreground">{li.serviceType}</span>
+                                            {li.isUpsell && (
+                                                <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-medium">Upsell</span>
+                                            )}
+                                            {li.addedByRole === 'fsm' && (
+                                                <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-medium">FSM</span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {li.lineItemStatus === 'accepted' ? (
+                                                <span className="text-green-600">✓ v{li.acceptedInVersion || '1'}</span>
+                                            ) : li.lineItemStatus === 'rejected' ? (
+                                                <span className="text-red-500">✗</span>
+                                            ) : (
+                                                <span className="text-amber-600">⏳</span>
+                                            )}
+                                            <span className="font-mono">{formatCurrency(li.clientRate)}</span>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
                         {/* Previous versions */}
-                        {[...quote.revisionHistory].reverse().map((rev, i) => (
-                            <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-muted/20 border">
-                                <Badge variant="secondary" className="text-xs">v{rev.version}</Badge>
-                                <div className="flex-1">
-                                    <p className="text-sm">{formatCurrency(rev.totalMonthlyRate)}/mo • {rev.lineItems?.length || 0} line items</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {rev.changedAt?.toDate?.()?.toLocaleDateString() || '—'} by {rev.changedBy}
-                                    </p>
+                        {[...quote.revisionHistory].reverse().map((rev: any, i: number) => (
+                            <div key={i} className="p-3 rounded-lg bg-muted/20 border">
+                                <div className="flex items-center gap-3 mb-1">
+                                    <Badge variant="secondary" className="text-xs">v{rev.version}</Badge>
+                                    <div className="flex-1">
+                                        <p className="text-sm">{formatCurrency(rev.totalMonthlyRate)}/mo • {rev.lineItems?.length || 0} services</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {rev.changedAt?.toDate?.()?.toLocaleDateString() || '—'} by {rev.changedBy}
+                                        </p>
+                                    </div>
                                 </div>
+                                {rev.notes && (
+                                    <p className="text-xs text-muted-foreground italic pl-10 mt-1">"{rev.notes}"</p>
+                                )}
                             </div>
                         ))}
                     </CardContent>
