@@ -829,7 +829,10 @@ export interface SiteVisit {
 export { getTaxRate, calculateTax, isEligibleForST120, type TaxRate } from './taxRates';
 
 // --- TAX CERTIFICATE SERVICE ---
-export { generateST1201, type XiriCorporateData, type VendorCertData, type ProjectData, type CertificateResult } from './TaxCertificateService';
+// NOTE: TaxCertificateService uses Node.js 'fs' & 'path' — NOT safe for client-side bundling.
+// Server-side only: import { generateST1201 } from '@xiri/shared/src/TaxCertificateService';
+// Types re-exported below so they remain available without triggering module resolution.
+// (Do NOT use `export type ... from './TaxCertificateService'` — webpack may still resolve the file.)
 
 // --- PROPERTY SOURCING ---
 
