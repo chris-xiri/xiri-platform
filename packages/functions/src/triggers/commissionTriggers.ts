@@ -148,16 +148,19 @@ export const onQuoteAccepted = onDocumentUpdated({
         const contractRef = await db.collection('contracts').add({
             leadId: leadId || null,
             quoteId,
-            clientName,
+            clientBusinessName: clientName,
             contactEmail,
             contactPhone,
             locations: after.locations || after.lineItems?.map((li: any) => li.location).filter(Boolean) || [],
             lineItems: after.lineItems || [],
-            monthlyRate: mrr,
-            tenure: after.tenure || 12, // Default 12 months
+            totalMonthlyRate: mrr,
+            contractTenure: after.contractTenure || after.tenure || 12,
             totalContractValue: acv,
+            paymentTerms: after.paymentTerms || 'Net 30',
+            exitClause: after.exitClause || '30-day written notice',
             status: 'draft',
-            assignedTo: assignedTo || null,
+            assignedFsmId: after.assignedFsmId || assignedTo || null,
+            createdBy: assignedTo || null,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
@@ -168,7 +171,7 @@ export const onQuoteAccepted = onDocumentUpdated({
             quoteId,
             leadId,
             clientName,
-            monthlyRate: mrr,
+            totalMonthlyRate: mrr,
             description: `Draft contract auto-generated from accepted quote (MRR: $${mrr.toLocaleString()})`,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });

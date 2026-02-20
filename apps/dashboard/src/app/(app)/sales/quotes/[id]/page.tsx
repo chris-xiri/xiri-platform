@@ -187,6 +187,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 paymentTerms: quote.paymentTerms,
                 exitClause: quote.exitClause || '30-day written notice',
                 status: 'active',
+                assignedFsmId: quote.assignedFsmId || null,
                 createdBy: userId,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import { Contract } from '@xiri/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FileText, Calendar, DollarSign, Search, ChevronDown, ChevronRight, X } from 'lucide-react';
 
-const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
+const STATUS_BADGE: Record<string, { variant: any; label: string }> = {
     draft: { variant: 'secondary', label: 'Draft' },
     sent: { variant: 'default', label: 'Sent' },
     active: { variant: 'outline', label: 'Active' },
@@ -29,6 +30,7 @@ interface ClientGroup {
 
 export default function ContractsPage() {
     const router = useRouter();
+    const { profile } = useAuth();
     const [contracts, setContracts] = useState<(Contract & { id: string })[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -45,12 +47,21 @@ export default function ContractsPage() {
     }, []);
 
     const formatCurrency = (amount: number) =>
-        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount || 0);
+
+    const isFsm = profile?.roles?.some((r: string) => r === 'fsm');
+    const isAdmin = profile?.roles?.includes('admin');
+    const isSales = profile?.roles?.some((r: string) => ['sales', 'sales_exec', 'sales_mgr'].includes(r));
+
+    // FSMs see only their assigned contracts; sales sees all (they need visibility into their deals); admins see all
+    const roleFiltered = (isFsm && !isAdmin)
+        ? contracts.filter(c => (c as any).assignedFsmId === profile?.uid)
+        : contracts;
 
     // Search
     const filtered = searchQuery.trim()
-        ? contracts.filter(c => c.clientBusinessName?.toLowerCase().includes(searchQuery.toLowerCase()))
-        : contracts;
+        ? roleFiltered.filter(c => c.clientBusinessName?.toLowerCase().includes(searchQuery.toLowerCase()))
+        : roleFiltered;
 
     // Group by client (leadId) — 1 contract per client, amendments grouped below
     const groupsByClient: ClientGroup[] = [];
