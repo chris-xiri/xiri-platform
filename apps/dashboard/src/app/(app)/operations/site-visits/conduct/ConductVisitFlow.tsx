@@ -661,7 +661,7 @@ export default function ConductVisitFlow() {
                 ) : (
                     <Button
                         onClick={handleSubmit}
-                        disabled={submitting || ratedAreas.length === 0}
+                        disabled={submitting}
                         className="gap-2 bg-green-600 hover:bg-green-700"
                     >
                         {submitting ? 'Saving...' : 'Submit Visit'}
