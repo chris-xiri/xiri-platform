@@ -20,10 +20,13 @@ import { onWorkOrderAssigned } from "./triggers/onVendorReady";
 import { onLeadQualified } from "./triggers/onLeadQualified";
 import { onQuoteAccepted, onInvoicePaid, onWorkOrderHandoff, onClientCancelled } from "./triggers/commissionTriggers";
 import { processCommissionPayouts, calculateNrr } from "./triggers/commissionScheduled";
+import { onAuditSubmitted } from "./triggers/onAuditSubmitted";
+import { onAuditFailed } from "./triggers/onAuditFailed";
+import { generateMonthlyInvoices } from "./triggers/generateMonthlyInvoices";
 
 // Export Bot Functions (Telegram disabled for now)
 // export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };
-export { onVendorApproved, onVendorCreated, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete, onAwaitingOnboarding, handleUnsubscribe, sendOnboardingInvite, sendQuoteEmail, respondToQuote, processMailQueue, onWorkOrderAssigned, onLeadQualified, onQuoteAccepted, onInvoicePaid, onWorkOrderHandoff, onClientCancelled, processCommissionPayouts, calculateNrr };
+export { onVendorApproved, onVendorCreated, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete, onAwaitingOnboarding, handleUnsubscribe, sendOnboardingInvite, sendQuoteEmail, respondToQuote, processMailQueue, onWorkOrderAssigned, onLeadQualified, onQuoteAccepted, onInvoicePaid, onWorkOrderHandoff, onClientCancelled, processCommissionPayouts, calculateNrr, onAuditSubmitted, onAuditFailed, generateMonthlyInvoices };
 
 // 1. Lead Sourcing Agent Trigger
 export const generateLeads = onCall({

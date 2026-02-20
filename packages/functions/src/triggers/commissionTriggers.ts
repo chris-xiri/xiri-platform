@@ -128,6 +128,55 @@ export const onQuoteAccepted = onDocumentUpdated({
     });
 
     logger.info(`[Commission] Created ${type} commission for staff ${assignedTo}: $${totalCommission} (${(rate * 100).toFixed(0)}% of $${acv} ACV) — quote ${quoteId}`);
+
+    // ─── Item 7: Auto-generate draft contract ────────────────────────
+    try {
+        // Fetch lead data for client info
+        let clientName = '';
+        let contactEmail = '';
+        let contactPhone = '';
+        if (leadId) {
+            const leadDoc = await db.collection('leads').doc(leadId).get();
+            if (leadDoc.exists) {
+                const leadData = leadDoc.data()!;
+                clientName = leadData.businessName || leadData.companyName || leadData.name || '';
+                contactEmail = leadData.email || leadData.contactEmail || '';
+                contactPhone = leadData.phone || leadData.contactPhone || '';
+            }
+        }
+
+        const contractRef = await db.collection('contracts').add({
+            leadId: leadId || null,
+            quoteId,
+            clientName,
+            contactEmail,
+            contactPhone,
+            locations: after.locations || after.lineItems?.map((li: any) => li.location).filter(Boolean) || [],
+            lineItems: after.lineItems || [],
+            monthlyRate: mrr,
+            tenure: after.tenure || 12, // Default 12 months
+            totalContractValue: acv,
+            status: 'draft',
+            assignedTo: assignedTo || null,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        await db.collection('activity_logs').add({
+            type: 'CONTRACT_AUTO_GENERATED',
+            contractId: contractRef.id,
+            quoteId,
+            leadId,
+            clientName,
+            monthlyRate: mrr,
+            description: `Draft contract auto-generated from accepted quote (MRR: $${mrr.toLocaleString()})`,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        logger.info(`[Contract] Auto-generated draft contract ${contractRef.id} from quote ${quoteId}`);
+    } catch (contractErr: any) {
+        logger.error(`[Contract] Failed to auto-generate contract from quote ${quoteId}:`, contractErr.message);
+    }
 });
 
 
@@ -240,6 +289,65 @@ export const onWorkOrderHandoff = onDocumentUpdated({
     });
 
     logger.info(`[Handoff] Lead ${leadId} handed off to FSM ${fsmId} via work order ${event.params.workOrderId}`);
+
+    // ─── Item 8: Email FSM about new client assignment ────────────────
+    try {
+        // Get FSM email
+        const fsmDoc = await db.collection('users').doc(fsmId).get();
+        const fsmEmail = fsmDoc.data()?.email || 'chris@xiri.ai';
+        const fsmName = fsmDoc.data()?.displayName || 'FSM';
+
+        // Get lead/client details  
+        const clientName = leadData?.businessName || leadData?.companyName || leadData?.name || 'New Client';
+        const clientEmail = leadData?.email || leadData?.contactEmail || '';
+        const clientPhone = leadData?.phone || leadData?.contactPhone || '';
+        const clientAddress = leadData?.address || leadData?.location || '';
+        const services = after.serviceType || after.description || 'Facility Maintenance';
+
+        await db.collection('mail_queue').add({
+            to: fsmEmail,
+            subject: `📋 New Client Assigned: ${clientName}`,
+            templateType: 'fsm_handoff',
+            templateData: {
+                html: `
+<!DOCTYPE html>
+<html>
+<body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f6f8;">
+  <div style="max-width: 560px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+    <div style="background: linear-gradient(135deg, #0369a1, #0284c7); padding: 32px 24px; text-align: center;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">XIRI</h1>
+      <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">New Client Assignment</p>
+    </div>
+    <div style="padding: 32px 24px;">
+      <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">Hi ${fsmName},</p>
+      <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">A new client has been assigned to you. Here are the details:</p>
+      <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 24px 0;">
+        <table style="width: 100%; font-size: 14px; color: #374151;">
+          <tr><td style="padding: 6px 0; color: #6b7280; width: 120px;">Business:</td><td style="padding: 6px 0; font-weight: 600;">${clientName}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Contact:</td><td style="padding: 6px 0;">${clientEmail}${clientPhone ? ' • ' + clientPhone : ''}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Address:</td><td style="padding: 6px 0;">${clientAddress || 'See dashboard'}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Services:</td><td style="padding: 6px 0;">${services}</td></tr>
+        </table>
+      </div>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="https://app.xiri.ai/sales/crm/${leadId}" style="display: inline-block; background: #0369a1; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;">View Client Details →</a>
+      </div>
+    </div>
+    <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px; background: #f9fafb;">
+      <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">Xiri Facility Solutions • <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a></p>
+    </div>
+  </div>
+</body>
+</html>`,
+            },
+            status: 'pending',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        logger.info(`[Handoff] FSM notification email queued to ${fsmEmail} for client ${clientName}`);
+    } catch (emailErr: any) {
+        logger.error(`[Handoff] Failed to send FSM email:`, emailErr.message);
+    }
 });
 
 

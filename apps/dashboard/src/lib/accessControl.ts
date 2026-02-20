@@ -21,8 +21,8 @@ const ACCESS_MAP: Record<string, string[]> = {
     'supply/dashboard': ['admin', 'recruiter', 'fsm'],
 
     // Operations (FSM)
-    'operations/work-orders': ['admin', 'fsm'],
-    'operations/contracts': ['admin', 'fsm', 'sales', 'sales_mgr'],
+    'operations/work-orders': ['admin', 'fsm', 'sales', 'sales_exec', 'sales_mgr'],
+    'operations/contracts': ['admin', 'fsm', 'sales', 'sales_exec', 'sales_mgr'],
     'operations/quotes:read': ['admin', 'fsm', 'sales', 'sales_exec', 'sales_mgr'],
 
     // Night Manager
