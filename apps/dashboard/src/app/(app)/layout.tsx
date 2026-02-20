@@ -175,6 +175,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             show: showOpsNav,
             dividerAbove: true,
             items: [
+                { label: 'Dashboard', href: '/operations/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
                 ...(canAccess('operations/work-orders', profile.roles) ? [{ label: 'Client Work Orders', href: '/operations/work-orders', icon: <ClipboardList className="w-4 h-4" /> }] : []),
                 ...(canAccess('operations/contracts', profile.roles) ? [{ label: 'Client Contracts', href: '/operations/contracts', icon: <FileText className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/quotes', profile.roles) ? [{ label: 'Lead Quotes', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> }] : []),

@@ -108,14 +108,14 @@ service cloud.firestore {
 
     // Commissions & Ledger
     match /commissions/{commissionId} {
-      allow read: if hasAnyRole(['admin', 'accounting', 'sales', 'sales_mgr', 'fsm']);
-      allow create: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'fsm']);
+      allow read: if hasAnyRole(['admin', 'accounting', 'sales', 'sales_exec', 'sales_mgr', 'fsm']);
+      allow create: if hasAnyRole(['admin', 'sales', 'sales_exec', 'sales_mgr', 'fsm']);
       allow update: if hasAnyRole(['admin', 'accounting']);
       allow delete: if hasRole('admin');
     }
 
     match /commission_ledger/{entryId} {
-      allow read: if hasAnyRole(['admin', 'accounting', 'sales', 'sales_mgr', 'fsm']);
+      allow read: if hasAnyRole(['admin', 'accounting', 'sales', 'sales_exec', 'sales_mgr', 'fsm']);
       allow create: if request.auth != null;
       allow update, delete: if false; // Immutable audit trail
     }
