@@ -620,8 +620,16 @@ export interface QuoteLineItem {
     serviceDate?: string;  // ISO date — start date (recurring) or service date (one-off)
 
     // Versioning & acceptance tracking
-    lineItemStatus?: 'pending' | 'accepted' | 'rejected';
+    lineItemStatus?: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'modified';
     acceptedInVersion?: number;  // which quote version this was accepted in
+    cancelledInVersion?: number; // which version this was cancelled in
+    modifiedInVersion?: number;  // which version this was modified in
+    previousValues?: {           // snapshot before modification for audit trail
+        frequency?: string;
+        daysOfWeek?: boolean[];
+        clientRate?: number;
+        serviceDate?: string;
+    };
 
     // Upsell attribution
     addedBy?: string;            // staffId who added this item

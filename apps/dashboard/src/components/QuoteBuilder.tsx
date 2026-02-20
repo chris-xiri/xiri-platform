@@ -672,19 +672,77 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                 </p>
                                             ) : (
                                                 locItems.map((item) => (
-                                                    item.lineItemStatus === 'accepted' ? (
-                                                        /* ─── LOCKED: Accepted line item ─── */
-                                                        <div key={item.id} className="border rounded-lg p-4 bg-green-50/50 border-green-200 flex items-center justify-between">
+                                                    item.lineItemStatus === 'cancelled' ? (
+                                                        /* ─── CANCELLED: Strikethrough display ─── */
+                                                        <div key={item.id} className="border rounded-lg p-4 bg-red-50/50 border-red-200 flex items-center justify-between">
                                                             <div className="flex items-center gap-3">
-                                                                <span className="inline-flex items-center gap-1 text-green-700 bg-green-100 px-2 py-0.5 rounded text-xs font-medium">✅ Accepted</span>
-                                                                <span className="font-medium text-sm">{item.serviceType}</span>
-                                                                <span className="text-xs text-muted-foreground">
-                                                                    {item.frequency === 'custom_days' && item.daysOfWeek
-                                                                        ? item.daysOfWeek.map((d, i) => d ? DAY_LABELS[i] : null).filter(Boolean).join(', ')
-                                                                        : item.frequency?.replace(/_/g, ' ')}
+                                                                <span className="inline-flex items-center gap-1 text-red-700 bg-red-100 px-2 py-0.5 rounded text-xs font-medium">🚫 Cancelled</span>
+                                                                <span className="font-medium text-sm line-through text-muted-foreground">{item.serviceType}</span>
+                                                                <span className="text-xs text-muted-foreground line-through">
+                                                                    {formatCurrency(item.clientRate)}/mo
                                                                 </span>
                                                             </div>
-                                                            <span className="font-medium text-sm">{formatCurrency(item.clientRate)}/mo</span>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-xs text-muted-foreground"
+                                                                onClick={() => updateLineItem(item.id, {
+                                                                    lineItemStatus: 'accepted',
+                                                                    cancelledInVersion: undefined,
+                                                                })}
+                                                            >
+                                                                Undo
+                                                            </Button>
+                                                        </div>
+                                                    ) : item.lineItemStatus === 'accepted' ? (
+                                                        /* ─── ACCEPTED: Locked with Cancel/Edit actions ─── */
+                                                        <div key={item.id} className="border rounded-lg p-4 bg-green-50/50 border-green-200">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="inline-flex items-center gap-1 text-green-700 bg-green-100 px-2 py-0.5 rounded text-xs font-medium">✅ Accepted</span>
+                                                                    <span className="font-medium text-sm">{item.serviceType}</span>
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        {item.frequency === 'custom_days' && item.daysOfWeek
+                                                                            ? item.daysOfWeek.map((d, i) => d ? DAY_LABELS[i] : null).filter(Boolean).join(', ')
+                                                                            : item.frequency?.replace(/_/g, ' ')}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-medium text-sm">{formatCurrency(item.clientRate)}/mo</span>
+                                                                    {isEditing && (
+                                                                        <>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                className="text-xs h-7 px-2"
+                                                                                onClick={() => updateLineItem(item.id, {
+                                                                                    lineItemStatus: 'modified',
+                                                                                    modifiedInVersion: existingQuote?.version ? existingQuote.version + 1 : 2,
+                                                                                    previousValues: {
+                                                                                        frequency: item.frequency,
+                                                                                        daysOfWeek: item.daysOfWeek,
+                                                                                        clientRate: item.clientRate,
+                                                                                        serviceDate: item.serviceDate,
+                                                                                    },
+                                                                                })}
+                                                                            >
+                                                                                ✏️ Edit
+                                                                            </Button>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                className="text-xs h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                                onClick={() => updateLineItem(item.id, {
+                                                                                    lineItemStatus: 'cancelled',
+                                                                                    cancelledInVersion: existingQuote?.version ? existingQuote.version + 1 : 2,
+                                                                                })}
+                                                                            >
+                                                                                🚫 Cancel
+                                                                            </Button>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     ) : (
                                                         <div key={item.id} className="border rounded-lg p-4 bg-muted/20 space-y-3">

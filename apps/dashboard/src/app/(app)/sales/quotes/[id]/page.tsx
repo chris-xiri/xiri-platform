@@ -202,13 +202,19 @@ export default function QuoteDetailPage({ params }: PageProps) {
             const userId = profile.uid || profile.email || 'unknown';
             const now = new Date();
 
-            // Only process pending line items (new services not yet accepted)
+            // Categorize line items by status
             const pendingItems = (quote.lineItems || []).filter(
                 (li: QuoteLineItem) => !li.lineItemStatus || li.lineItemStatus === 'pending'
             );
+            const cancelledItems = (quote.lineItems || []).filter(
+                (li: QuoteLineItem) => li.lineItemStatus === 'cancelled'
+            );
+            const modifiedItems = (quote.lineItems || []).filter(
+                (li: QuoteLineItem) => li.lineItemStatus === 'modified'
+            );
 
-            if (pendingItems.length === 0) {
-                alert('No pending services to accept. All line items have already been accepted.');
+            if (pendingItems.length === 0 && cancelledItems.length === 0 && modifiedItems.length === 0) {
+                alert('No changes to process. All line items are unchanged.');
                 setConverting(false);
                 return;
             }
@@ -232,13 +238,72 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 const existingContract = contractQuery.docs[0];
                 contractId = existingContract.id;
                 const existingData = existingContract.data();
-                const existingLineItems = existingData.lineItems || [];
+                let existingLineItems: QuoteLineItem[] = existingData.lineItems || [];
                 const existingQuoteIds = existingData.quoteIds || [existingData.quoteId];
-                const newMonthlyRate = (existingData.totalMonthlyRate || 0) + pendingItems.reduce((s, li) => s + (li.clientRate || 0), 0);
+                let currentRate = existingData.totalMonthlyRate || 0;
+
+                // Process CANCELLED items: remove from contract + terminate work orders
+                for (const cancelled of cancelledItems) {
+                    // Remove from contract line items
+                    existingLineItems = existingLineItems.filter(li => li.id !== cancelled.id);
+                    currentRate -= (cancelled.clientRate || 0);
+
+                    // Find and terminate matching work order
+                    const woQuery = await getDocs(query(
+                        collection(db, 'work_orders'),
+                        where('contractId', '==', contractId),
+                        where('quoteLineItemId', '==', cancelled.id)
+                    ));
+                    for (const woDoc of woQuery.docs) {
+                        await updateDoc(doc(db, 'work_orders', woDoc.id), {
+                            status: 'terminated',
+                            terminatedAt: serverTimestamp(),
+                            terminatedBy: userId,
+                            terminationReason: 'Service cancelled by client via quote revision',
+                            updatedAt: serverTimestamp(),
+                        });
+                    }
+                }
+
+                // Process MODIFIED items: update contract line items + work orders
+                for (const modified of modifiedItems) {
+                    const oldItem = existingLineItems.find(li => li.id === modified.id);
+                    if (oldItem) {
+                        // Adjust rate difference
+                        currentRate = currentRate - (oldItem.clientRate || 0) + (modified.clientRate || 0);
+                        // Replace the old version with the modified one
+                        existingLineItems = existingLineItems.map(li =>
+                            li.id === modified.id
+                                ? { ...modified, lineItemStatus: 'accepted' as const, modifiedInVersion: quote.version }
+                                : li
+                        );
+                    }
+
+                    // Update matching work order
+                    const woQuery = await getDocs(query(
+                        collection(db, 'work_orders'),
+                        where('contractId', '==', contractId),
+                        where('quoteLineItemId', '==', modified.id)
+                    ));
+                    for (const woDoc of woQuery.docs) {
+                        await updateDoc(doc(db, 'work_orders', woDoc.id), {
+                            clientRate: modified.clientRate,
+                            schedule: {
+                                daysOfWeek: modified.daysOfWeek || [false, true, true, true, true, true, false],
+                                frequency: modified.frequency,
+                                startTime: woDoc.data().schedule?.startTime || '21:00',
+                            },
+                            updatedAt: serverTimestamp(),
+                        });
+                    }
+                }
+
+                // Add newly accepted items
+                const newMonthlyRate = currentRate + pendingItems.reduce((s, li) => s + (li.clientRate || 0), 0);
 
                 await updateDoc(doc(db, 'contracts', contractId), {
                     lineItems: [...existingLineItems, ...acceptedItems],
-                    totalMonthlyRate: newMonthlyRate,
+                    totalMonthlyRate: Math.max(newMonthlyRate, 0),
                     quoteIds: existingQuoteIds.includes(quote.id) ? existingQuoteIds : [...existingQuoteIds, quote.id],
                     status: 'amended',
                     updatedAt: serverTimestamp(),
@@ -250,7 +315,9 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     quoteId: quote.id,
                     leadId: quote.leadId,
                     newServicesCount: pendingItems.length,
-                    newMonthlyRate,
+                    cancelledServicesCount: cancelledItems.length,
+                    modifiedServicesCount: modifiedItems.length,
+                    newMonthlyRate: Math.max(newMonthlyRate, 0),
                     amendedBy: userId,
                     createdAt: serverTimestamp(),
                 });
@@ -320,8 +387,14 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 });
             }
 
-            // 3. Update quote — mark pending items as accepted
+            // 3. Update quote — mark items with final statuses
             const updatedLineItems = (quote.lineItems || []).map((li: QuoteLineItem) => {
+                if (li.lineItemStatus === 'cancelled') {
+                    return { ...li }; // keep as cancelled for audit
+                }
+                if (li.lineItemStatus === 'modified') {
+                    return { ...li, lineItemStatus: 'accepted' as const, modifiedInVersion: quote.version };
+                }
                 if (!li.lineItemStatus || li.lineItemStatus === 'pending') {
                     return { ...li, lineItemStatus: 'accepted' as const, acceptedInVersion: quote.version };
                 }
@@ -349,6 +422,8 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 leadId: quote.leadId,
                 contractId,
                 workOrderCount: pendingItems.length,
+                cancelledCount: cancelledItems.length,
+                modifiedCount: modifiedItems.length,
                 isAmendment: contractQuery.docs.length > 0,
                 createdBy: userId,
                 createdAt: serverTimestamp(),
