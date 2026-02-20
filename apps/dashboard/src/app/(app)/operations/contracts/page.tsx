@@ -22,6 +22,17 @@ const STATUS_BADGE: Record<string, { variant: any; label: string }> = {
     expired: { variant: 'secondary', label: 'Expired' },
 };
 
+const CLIENT_COLORS = [
+    { border: '#6366f1', bg: '#eef2ff' },
+    { border: '#0ea5e9', bg: '#f0f9ff' },
+    { border: '#10b981', bg: '#ecfdf5' },
+    { border: '#f59e0b', bg: '#fffbeb' },
+    { border: '#ef4444', bg: '#fef2f2' },
+    { border: '#8b5cf6', bg: '#f5f3ff' },
+    { border: '#ec4899', bg: '#fdf2f8' },
+    { border: '#14b8a6', bg: '#f0fdfa' },
+];
+
 interface ClientGroup {
     clientBusinessName: string;
     leadId: string;
@@ -191,24 +202,32 @@ export default function ContractsPage() {
                     </CardContent>
                 </Card>
             ) : (
-                <div className="space-y-3">
-                    {groupsByClient.map(group => {
+                <div className="space-y-4">
+                    {groupsByClient.map((group, clientIdx) => {
                         const key = group.leadId || group.clientBusinessName;
                         const isExpanded = expandedClients[key] || false;
                         const badge = STATUS_BADGE[group.latest.status] || STATUS_BADGE.draft;
                         const created = group.latest.createdAt?.toDate?.()
                             ? group.latest.createdAt.toDate().toLocaleDateString()
                             : '—';
+                        const color = CLIENT_COLORS[clientIdx % CLIENT_COLORS.length];
 
                         return (
-                            <Card key={key} className="overflow-hidden">
+                            <Card key={key} className="overflow-hidden border-l-4" style={{ borderLeftColor: color.border }}>
                                 {/* Latest Version (always visible, highlighted) */}
                                 <div
                                     className="p-4 hover:bg-muted/30 transition-colors cursor-pointer"
+                                    style={{ backgroundColor: color.bg }}
                                     onClick={() => router.push(`/operations/contracts/${group.latest.id}`)}
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
+                                            <span
+                                                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                                                style={{ backgroundColor: color.border }}
+                                            >
+                                                {clientIdx + 1}
+                                            </span>
                                             <div>
                                                 <p className="font-semibold text-base">{group.clientBusinessName || (group.latest as any).clientName || '—'}</p>
                                                 <p className="text-xs text-muted-foreground">

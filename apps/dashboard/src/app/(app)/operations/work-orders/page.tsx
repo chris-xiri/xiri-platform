@@ -23,6 +23,17 @@ const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destru
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+const CLIENT_COLORS = [
+    { border: '#6366f1', bg: '#eef2ff' },  // indigo
+    { border: '#0ea5e9', bg: '#f0f9ff' },  // sky
+    { border: '#10b981', bg: '#ecfdf5' },  // emerald
+    { border: '#f59e0b', bg: '#fffbeb' },  // amber
+    { border: '#ef4444', bg: '#fef2f2' },  // red
+    { border: '#8b5cf6', bg: '#f5f3ff' },  // violet
+    { border: '#ec4899', bg: '#fdf2f8' },  // pink
+    { border: '#14b8a6', bg: '#f0fdfa' },  // teal
+];
+
 function formatFrequency(freq?: string, daysOfWeek?: boolean[]) {
     if (!freq) return '—';
     if (freq === 'custom_days' && daysOfWeek) {
@@ -246,22 +257,29 @@ export default function WorkOrdersPage() {
                 }, {} as Record<string, { clientName: string; orders: typeof filteredOrders }>);
 
                 return (
-                    <div className="space-y-3">
-                        {Object.entries(grouped).map(([leadId, group]) => {
+                    <div className="space-y-4">
+                        {Object.entries(grouped).map(([leadId, group], clientIdx) => {
                             const isExpanded = expandedClients[leadId] ?? true;
                             const clientRevenue = group.orders.reduce((s, wo) => s + (wo.clientRate || 0), 0);
                             const needsVendor = group.orders.filter(wo => wo.status === 'pending_assignment').length;
+                            const color = CLIENT_COLORS[clientIdx % CLIENT_COLORS.length];
 
                             return (
-                                <Card key={leadId}>
+                                <Card key={leadId} className={`overflow-hidden border-l-4`} style={{ borderLeftColor: color.border }}>
                                     {/* Client Header — clickable */}
                                     <div
                                         className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors border-b"
+                                        style={{ backgroundColor: color.bg }}
                                         onClick={() => setExpandedClients(prev => ({ ...prev, [leadId]: !isExpanded }))}
                                     >
                                         <div className="flex items-center gap-3">
                                             {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-                                            <Building2 className="w-5 h-5 text-primary" />
+                                            <span
+                                                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                                                style={{ backgroundColor: color.border }}
+                                            >
+                                                {clientIdx + 1}
+                                            </span>
                                             <div>
                                                 <p className="font-semibold text-sm">{group.clientName}</p>
                                                 <p className="text-xs text-muted-foreground">
