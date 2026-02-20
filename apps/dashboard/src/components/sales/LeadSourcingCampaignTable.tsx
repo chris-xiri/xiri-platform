@@ -22,8 +22,6 @@ import {
     Building2, MapPin, Ruler, User, Phone, DollarSign, Calendar,
 } from 'lucide-react';
 import { PreviewProperty } from '@xiri/shared';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/lib/firebase';
 import ReactGoogleAutocomplete from 'react-google-autocomplete';
 
 // ── Types ──
@@ -274,29 +272,69 @@ export default function LeadSourcingCampaignTable({
     const allSelected = activeProperties.length > 0 && selectedProperties.size === activeProperties.length;
     const handleTabSwitch = (id: string) => { setSelectedProperties(new Set()); setSearchMessage(''); setSelectedPropertyId(null); onSetActiveCampaign(id); };
 
+    // ── Google Maps Places Text Search ──
     const handleSearch = async () => {
         if (!query.trim() || !location.trim()) { setSearchMessage('Please fill in both fields'); return; }
         setLoading(true); setSearchMessage('');
-        try {
-            const sourceProperties = httpsCallable(functions, 'sourceProperties', { timeout: 60000 });
-            const result = await sourceProperties({ query, location, provider: 'mock' });
-            const data = result.data as any;
-            const rawProperties = data.properties || [];
-            const sourced = data.sourced || 0;
 
-            // Assign unique IDs and map to CampaignPreviewProperty
-            const newProperties: CampaignPreviewProperty[] = rawProperties.map((p: any, i: number) => ({
-                ...p,
-                id: `prop_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
-                isDismissed: false,
-            }));
+        try {
+            // Use Google Maps Places Text Search (loaded via react-google-autocomplete)
+            if (!window.google?.maps?.places) {
+                throw new Error('Google Maps API not loaded. Check your NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.');
+            }
+
+            const service = new window.google.maps.places.PlacesService(
+                document.createElement('div') // headless — no map required
+            );
+
+            const searchText = `${query.trim()} near ${location.trim()}`;
+
+            const results = await new Promise<google.maps.places.PlaceResult[]>((resolve, reject) => {
+                service.textSearch({ query: searchText }, (results, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                        resolve(results);
+                    } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+                        resolve([]);
+                    } else {
+                        reject(new Error(`Google Places API error: ${status}`));
+                    }
+                });
+            });
+
+            // Map Google Places results → CampaignPreviewProperty
+            const newProperties: CampaignPreviewProperty[] = results.map((place, i) => {
+                const addressParts = (place.formatted_address || '').split(',').map(s => s.trim());
+                const street = addressParts[0] || '';
+                const city = addressParts[1] || '';
+                const stateZip = addressParts[2] || '';
+                const [state = '', zip = ''] = stateZip.split(' ').filter(Boolean);
+
+                return {
+                    id: `gmap_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
+                    name: place.name || 'Unknown Business',
+                    address: street,
+                    city,
+                    state,
+                    zip,
+                    propertyType: inferFacilityType(place.types || [], query),
+                    source: 'google_maps',
+                    sourceId: place.place_id || '',
+                    tenantName: place.name || '',
+                    tenantCount: 1, // Google Places returns individual businesses = single tenant
+                    ownerPhone: '', // Not available from Places API basic search
+                    ownerName: '',
+                    isDismissed: false,
+                    // Enrichment fields from Google
+                    facilityType: inferFacilityType(place.types || [], query),
+                };
+            });
 
             // Dedupe against existing properties in campaign (by address)
             const existingAddresses = new Set(activeCampaign.properties.map(p => (p.address || '').toLowerCase().trim()));
             const uniqueNew = newProperties.filter(p => !existingAddresses.has((p.address || '').toLowerCase().trim()));
 
             if (uniqueNew.length > 0) {
-                onSearchResults(activeCampaign.id, uniqueNew, { query, location, sourced });
+                onSearchResults(activeCampaign.id, uniqueNew, { query, location, sourced: results.length });
             }
 
             // Auto-rename campaign from "New Campaign" to query+location
@@ -304,17 +342,44 @@ export default function LeadSourcingCampaignTable({
                 const loc = location.trim();
                 const parts = loc.split(',').map(p => p.trim());
                 const town = parts[0] || loc;
-                const state = parts.length >= 2 ? parts[1].replace(/\s*\d{5}.*/, '').trim() : '';
-                onRenameCampaign(activeCampaign.id, `${query.trim()}\n${town}\n${state}`);
+                const stateVal = parts.length >= 2 ? parts[1].replace(/\s*\d{5}.*/, '').trim() : '';
+                onRenameCampaign(activeCampaign.id, `${query.trim()}\n${town}\n${stateVal}`);
             }
 
-            setSearchMessage(`Found ${sourced} properties · ${uniqueNew.length} new added`);
+            setSearchMessage(`Found ${results.length} places · ${uniqueNew.length} new added`);
             setQuery(''); setLocation('');
         } catch (error: any) {
             console.error('Error:', error);
             setSearchMessage(`Error: ${error.message || 'Failed to search'}`);
         } finally { setLoading(false); }
     };
+
+    // Infer XIRI facility type from Google Places types + search query
+    function inferFacilityType(types: string[], searchQuery: string): string {
+        const q = searchQuery.toLowerCase();
+        const t = types.map(t => t.toLowerCase());
+
+        if (t.includes('doctor') || t.includes('health') || t.includes('hospital') ||
+            q.includes('medical') || q.includes('urgent care') || q.includes('clinic') ||
+            q.includes('doctor') || q.includes('physician')) {
+            return 'medical_urgent_care';
+        }
+        if (q.includes('surgery') || q.includes('surgical') || q.includes('ambulatory')) {
+            return 'medical_surgery';
+        }
+        if (q.includes('dialysis')) return 'medical_dialysis';
+        if (q.includes('dentist') || q.includes('dental') || q.includes('orthodont')) return 'medical_private';
+        if (t.includes('car_dealer') || q.includes('auto dealer') || q.includes('dealership')) {
+            return 'auto_dealer_showroom';
+        }
+        if (t.includes('car_repair') || q.includes('auto service') || q.includes('body shop')) {
+            return 'auto_service_center';
+        }
+        if (t.includes('gym') || q.includes('gym') || q.includes('fitness')) return 'fitness_gym';
+        if (q.includes('daycare') || q.includes('childcare')) return 'edu_daycare';
+        if (q.includes('school') || q.includes('academy')) return 'edu_private_school';
+        return 'office_general';
+    }
 
     return (
         <div className="h-full flex">

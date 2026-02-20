@@ -6,7 +6,8 @@ import Link from "next/link";
 import {
     Home, Users, User, Settings, LogOut, Package, DollarSign,
     ClipboardList, FileText, Sun, Moon, Monitor, Shield, Receipt,
-    MapPin, ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, Menu, X, Building2
+    MapPin, ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, Menu, X,
+    Building2, LayoutDashboard, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
@@ -32,6 +33,7 @@ interface NavSection {
     icon: React.ReactNode;
     items: NavItem[];
     show: boolean;
+    dividerAbove?: boolean;
 }
 
 function SidebarLink({ item, collapsed, pathname }: { item: NavItem; collapsed: boolean; pathname: string }) {
@@ -69,16 +71,20 @@ function SidebarSection({ section, collapsed, pathname, expandedSections, toggle
 
     if (collapsed) {
         return (
-            <div className="space-y-1">
-                {section.items.map(item => (
-                    <SidebarLink key={item.href} item={item} collapsed={collapsed} pathname={pathname} />
-                ))}
-            </div>
+            <>
+                {section.dividerAbove && <hr className="my-2 border-border" />}
+                <div className="space-y-1">
+                    {section.items.map(item => (
+                        <SidebarLink key={item.href} item={item} collapsed={collapsed} pathname={pathname} />
+                    ))}
+                </div>
+            </>
         );
     }
 
     return (
         <div>
+            {section.dividerAbove && <hr className="my-3 border-border" />}
             <button
                 onClick={() => toggleSection(section.label)}
                 className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors
@@ -147,10 +153,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             icon: <DollarSign className="w-3.5 h-3.5" />,
             show: showSalesNav,
             items: [
-                { label: 'Dashboard', href: '/sales/dashboard', icon: <Home className="w-4 h-4" /> },
+                { label: 'Dashboard', href: '/sales/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
+                { label: 'Leads Sourcing', href: '/sales/sourcing', icon: <Search className="w-4 h-4" /> },
                 { label: 'Leads CRM', href: '/sales/crm', icon: <Users className="w-4 h-4" /> },
-                { label: 'Lead Sourcing', href: '/sales/sourcing', icon: <Building2 className="w-4 h-4" /> },
-                { label: 'Quotes', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> },
+                { label: 'Leads Quotes', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> },
             ],
         },
         {
@@ -158,18 +164,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             icon: <Package className="w-3.5 h-3.5" />,
             show: showSupplyNav,
             items: [
-                { label: 'Sourcing', href: '/supply/recruitment', icon: <Package className="w-4 h-4" /> },
-                { label: 'Contractors', href: '/supply/crm', icon: <Users className="w-4 h-4" /> },
+                { label: 'Dashboard', href: '/supply/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
+                { label: 'Contractor Sourcing', href: '/supply/recruitment', icon: <Search className="w-4 h-4" /> },
+                { label: 'Contractors CRM', href: '/supply/crm', icon: <Users className="w-4 h-4" /> },
             ],
         },
         {
             label: 'Operations',
             icon: <ClipboardList className="w-3.5 h-3.5" />,
             show: showOpsNav,
+            dividerAbove: true,
             items: [
-                { label: 'Work Orders', href: '/operations/work-orders', icon: <ClipboardList className="w-4 h-4" /> },
-                { label: 'Contracts', href: '/operations/contracts', icon: <FileText className="w-4 h-4" /> },
-                { label: 'Audits', href: '/operations/audits', icon: <Shield className="w-4 h-4" /> },
+                { label: 'Client Work Orders', href: '/operations/work-orders', icon: <ClipboardList className="w-4 h-4" /> },
+                { label: 'Client Contracts', href: '/operations/contracts', icon: <FileText className="w-4 h-4" /> },
+                { label: 'Client Audits', href: '/operations/audits', icon: <Shield className="w-4 h-4" /> },
                 { label: 'Site Visits', href: '/operations/site-visits', icon: <MapPin className="w-4 h-4" /> },
             ],
         },
