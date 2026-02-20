@@ -123,13 +123,13 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
             return {
                 workOrderId: wo.id!,
                 locationName: wo.locationName,
-                locationAddress: [wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ') || undefined,
+                locationAddress: [wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ') || '',
                 locationZip: zip,
                 serviceType: wo.serviceType,
                 frequency: wo.schedule?.frequency || 'monthly',
                 amount: wo.clientRate,
-                taxRate: taxRate || undefined,
-                taxAmount: taxAmount || undefined,
+                taxRate: taxRate || 0,
+                taxAmount: taxAmount || 0,
             };
         })
         : [];
@@ -166,7 +166,7 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
                 contractId: selectedClient.contractId || null,
                 lineItems,
                 subtotal,
-                totalTax: totalTax || undefined,
+                totalTax: totalTax || 0,
                 adjustments: 0,
                 totalAmount: subtotal + totalTax,
                 vendorPayouts,
@@ -205,12 +205,12 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
                     return {
                         workOrderId: wo.id!,
                         locationName: wo.locationName,
-                        locationAddress: [wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ') || undefined,
+                        locationAddress: [wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ') || '',
                         locationZip: zip,
                         serviceType: wo.serviceType,
                         frequency: wo.schedule?.frequency || 'monthly',
                         amount: wo.vendorRate!,
-                        taxRate: taxRate || undefined,
+                        taxRate: taxRate || 0,
                         taxAmount: 0,               // exempt — XIRI holds ST-120.1
                         taxExempt: true,
                         taxExemptCertificate: 'ST-120.1',
