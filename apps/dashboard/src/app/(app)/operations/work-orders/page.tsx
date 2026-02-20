@@ -9,7 +9,7 @@ import { WorkOrder } from '@xiri/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, MapPin, User2, Clock, AlertCircle, CheckCircle2, PauseCircle, Filter, Search } from 'lucide-react';
+import { ClipboardList, MapPin, User2, Clock, AlertCircle, CheckCircle2, PauseCircle, Filter, Search, ChevronDown, ChevronRight, Building2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 
@@ -43,6 +43,7 @@ export default function WorkOrdersPage() {
     const [workOrders, setWorkOrders] = useState<(WorkOrder & { id: string })[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [expandedClients, setExpandedClients] = useState<Record<string, boolean>>({});
     const [filterMode, setFilterMode] = useState<'mine' | 'all'>(
         // FSMs default to "My Work Orders", admins default to "All"
         'all' // Will be set properly after profile loads
@@ -202,7 +203,7 @@ export default function WorkOrdersPage() {
                 </div>
             </div>
 
-            {/* Work Orders Table */}
+            {/* Work Orders Grouped by Client */}
             {filteredOrders.length === 0 ? (
                 <Card>
                     <CardContent className="py-16 text-center">
@@ -217,72 +218,117 @@ export default function WorkOrdersPage() {
                         </p>
                     </CardContent>
                 </Card>
-            ) : (
-                <Card>
-                    <CardContent className="p-0">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b text-left text-xs text-muted-foreground uppercase tracking-wider">
-                                    <th className="px-4 py-3 font-medium">Service</th>
-                                    <th className="px-4 py-3 font-medium">Location</th>
-                                    <th className="px-4 py-3 font-medium">Vendor</th>
-                                    <th className="px-4 py-3 font-medium">Client Rate</th>
-                                    <th className="px-4 py-3 font-medium">Vendor Rate</th>
-                                    <th className="px-4 py-3 font-medium">Margin</th>
-                                    <th className="px-4 py-3 font-medium">Status</th>
-                                    <th className="px-4 py-3 font-medium"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredOrders.map((wo) => {
-                                    const config = STATUS_CONFIG[wo.status] || STATUS_CONFIG.pending_assignment;
-                                    const margin = wo.vendorRate ? wo.clientRate - wo.vendorRate : null;
-                                    return (
-                                        <tr key={wo.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                                            <td className="px-4 py-3">
-                                                <span className="font-medium">{wo.serviceType}</span>
-                                                <p className="text-xs text-muted-foreground">{formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)}</p>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-1.5 text-sm">
-                                                    <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-                                                    {wo.locationName}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                {wo.vendorId ? (
-                                                    <span className="text-sm">{wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || 'Assigned'}</span>
-                                                ) : (
-                                                    <span className="text-sm text-red-500 font-medium">Unassigned</span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 font-medium text-sm">{formatCurrency(wo.clientRate)}</td>
-                                            <td className="px-4 py-3 text-sm">
-                                                {wo.vendorRate ? formatCurrency(wo.vendorRate) : '—'}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm">
-                                                {margin !== null ? (
-                                                    <span className={margin > 0 ? 'text-green-600 font-medium' : 'text-red-600'}>
-                                                        {formatCurrency(margin)}
-                                                    </span>
-                                                ) : '—'}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <Badge variant={config.variant}>{config.label}</Badge>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <Link href={`/operations/work-orders/${wo.id}`}>
-                                                    <Button variant="ghost" size="sm">View</Button>
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </CardContent>
-                </Card>
-            )}
+            ) : (() => {
+                // Group work orders by client (leadId)
+                const grouped = filteredOrders.reduce((acc, wo) => {
+                    const key = wo.leadId || 'unlinked';
+                    if (!acc[key]) acc[key] = { clientName: (wo as any).clientBusinessName || wo.locationName || 'Unknown Client', orders: [] };
+                    acc[key].orders.push(wo);
+                    return acc;
+                }, {} as Record<string, { clientName: string; orders: typeof filteredOrders }>);
+
+                return (
+                    <div className="space-y-3">
+                        {Object.entries(grouped).map(([leadId, group]) => {
+                            const isExpanded = expandedClients[leadId] ?? true;
+                            const clientRevenue = group.orders.reduce((s, wo) => s + (wo.clientRate || 0), 0);
+                            const needsVendor = group.orders.filter(wo => wo.status === 'pending_assignment').length;
+
+                            return (
+                                <Card key={leadId}>
+                                    {/* Client Header — clickable */}
+                                    <div
+                                        className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors border-b"
+                                        onClick={() => setExpandedClients(prev => ({ ...prev, [leadId]: !isExpanded }))}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                                            <Building2 className="w-5 h-5 text-primary" />
+                                            <div>
+                                                <p className="font-semibold text-sm">{group.clientName}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {group.orders.length} work order{group.orders.length !== 1 ? 's' : ''}
+                                                    {needsVendor > 0 && <span className="text-red-500 ml-2">• {needsVendor} needs vendor</span>}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-semibold text-sm">{formatCurrency(clientRevenue)}<span className="text-xs text-muted-foreground font-normal">/mo</span></p>
+                                        </div>
+                                    </div>
+
+                                    {/* Collapsible Work Orders */}
+                                    {isExpanded && (
+                                        <CardContent className="p-0">
+                                            <table className="w-full">
+                                                <thead>
+                                                    <tr className="border-b text-left text-xs text-muted-foreground uppercase tracking-wider bg-muted/10">
+                                                        <th className="px-4 py-2 font-medium">Service</th>
+                                                        <th className="px-4 py-2 font-medium">Location</th>
+                                                        <th className="px-4 py-2 font-medium">Vendor</th>
+                                                        <th className="px-4 py-2 font-medium">Client Rate</th>
+                                                        <th className="px-4 py-2 font-medium">Vendor Rate</th>
+                                                        <th className="px-4 py-2 font-medium">Margin</th>
+                                                        <th className="px-4 py-2 font-medium">Status</th>
+                                                        <th className="px-4 py-2 font-medium"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {group.orders.map((wo) => {
+                                                        const config = STATUS_CONFIG[wo.status] || STATUS_CONFIG.pending_assignment;
+                                                        const margin = wo.vendorRate ? wo.clientRate - wo.vendorRate : null;
+                                                        return (
+                                                            <tr key={wo.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                                                                <td className="px-4 py-2.5">
+                                                                    <span className="font-medium text-sm">{wo.serviceType}</span>
+                                                                    <p className="text-xs text-muted-foreground">{formatFrequency(wo.schedule?.frequency, wo.schedule?.daysOfWeek)}</p>
+                                                                </td>
+                                                                <td className="px-4 py-2.5">
+                                                                    <div className="flex items-center gap-1.5 text-sm">
+                                                                        <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                        {wo.locationName}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 py-2.5">
+                                                                    {wo.vendorId ? (
+                                                                        <span className="text-sm">{wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || 'Assigned'}</span>
+                                                                    ) : (
+                                                                        <span className="text-sm text-red-500 font-medium">Unassigned</span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-4 py-2.5 font-medium text-sm">{formatCurrency(wo.clientRate)}</td>
+                                                                <td className="px-4 py-2.5 text-sm">
+                                                                    {wo.vendorRate ? formatCurrency(wo.vendorRate) : '—'}
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-sm">
+                                                                    {margin !== null ? (
+                                                                        <span className={margin > 0 ? 'text-green-600 font-medium' : 'text-red-600'}>
+                                                                            {formatCurrency(margin)}
+                                                                        </span>
+                                                                    ) : '—'}
+                                                                </td>
+                                                                <td className="px-4 py-2.5">
+                                                                    <Badge variant={config.variant}>{config.label}</Badge>
+                                                                </td>
+                                                                <td className="px-4 py-2.5">
+                                                                    <Link href={`/operations/work-orders/${wo.id}`}>
+                                                                        <Button variant="ghost" size="sm">View</Button>
+                                                                    </Link>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </CardContent>
+                                    )}
+                                </Card>
+                            );
+                        })}
+                    </div>
+                );
+            })()}
         </div>
     );
 }
+

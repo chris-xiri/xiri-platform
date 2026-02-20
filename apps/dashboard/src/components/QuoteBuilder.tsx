@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs, getDoc, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -85,10 +86,12 @@ function getOrdinalSuffix(n: number): string {
 }
 
 export default function QuoteBuilder({ onClose, onCreated, existingQuote }: QuoteBuilderProps) {
+    const router = useRouter();
     const { profile } = useAuth();
     const isEditing = !!existingQuote;
     const [step, setStep] = useState(isEditing ? 2 : 0); // Skip to Services when editing
     const [submitting, setSubmitting] = useState(false);
+    const [existingQuoteId, setExistingQuoteId] = useState<string | null>(null);
 
     // Step 1: Client selection
     const [leads, setLeads] = useState<(Lead & { id: string })[]>([]);
@@ -112,13 +115,27 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
 
     // Step 4: Terms
     const [contractTenure, setContractTenure] = useState(existingQuote?.contractTenure || 12);
-    const [paymentTerms, setPaymentTerms] = useState(existingQuote?.paymentTerms || 'Net 25');
+    const [paymentTerms, setPaymentTerms] = useState(existingQuote?.paymentTerms || 'Pay on the 25th');
     const [exitClause, setExitClause] = useState(existingQuote?.exitClause || '30-day written notice');
     const [notes, setNotes] = useState(existingQuote?.notes || '');
 
     // Commission assignment
     const [assignedTo, setAssignedTo] = useState(profile?.uid || '');
     const [salesUsers, setSalesUsers] = useState<{ uid: string; displayName: string; email: string }[]>([]);
+
+    // Check for existing quote when lead changes
+    async function checkExistingQuote(leadId: string) {
+        if (isEditing) { setExistingQuoteId(null); return; }
+        try {
+            const snap = await getDocs(
+                query(collection(db, 'quotes'),
+                    where('leadId', '==', leadId),
+                    where('status', 'in', ['draft', 'sent', 'accepted'])
+                )
+            );
+            setExistingQuoteId(!snap.empty ? snap.docs[0].id : null);
+        } catch { setExistingQuoteId(null); }
+    }
 
     // Fetch leads
     useEffect(() => {
@@ -403,7 +420,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
     };
 
     const canAdvance = () => {
-        if (step === 0) return selectedLead !== null || isEditing;
+        if (step === 0) return (selectedLead !== null && !existingQuoteId) || isEditing;
         if (step === 1) return locations.length > 0;
         if (step === 2) return lineItems.length > 0 && lineItems.every(li => li.serviceType && li.clientRate > 0);
         return true;
@@ -473,7 +490,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                 ? 'border-primary ring-2 ring-primary/20'
                                                 : ''
                                                 }`}
-                                            onClick={() => setSelectedLead(lead)}
+                                            onClick={() => { setSelectedLead(lead); checkExistingQuote(lead.id); }}
                                         >
                                             <CardContent className="p-4 flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
@@ -498,6 +515,29 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                     ))
                                 )}
                             </div>
+
+                            {/* Duplicate quote warning */}
+                            {existingQuoteId && selectedLead && (
+                                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                    <p className="text-sm font-medium text-amber-800 mb-2">
+                                        ⚠️ {selectedLead.businessName} already has an active quote.
+                                    </p>
+                                    <p className="text-xs text-amber-600 mb-3">
+                                        To add services or update pricing, revise the existing quote instead of creating a new one.
+                                    </p>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                                        onClick={() => {
+                                            onClose();
+                                            router.push(`/sales/quotes/${existingQuoteId}`);
+                                        }}
+                                    >
+                                        Go to Existing Quote →
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -863,6 +903,21 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                                     </div>
                                                                 )}
 
+                                                                {/* Service Date */}
+                                                                <div>
+                                                                    <Label className="text-xs text-muted-foreground">
+                                                                        {item.frequency === 'one_time' || item.frequency === 'quarterly'
+                                                                            ? 'Service Date'
+                                                                            : 'Start Service Date'}
+                                                                    </Label>
+                                                                    <Input
+                                                                        type="date"
+                                                                        className="mt-1"
+                                                                        value={item.serviceDate || ''}
+                                                                        onChange={(e) => updateLineItem(item.id, { serviceDate: e.target.value })}
+                                                                    />
+                                                                </div>
+
                                                                 {/* Consumable info */}
                                                                 {item.isConsumable && (
                                                                     <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
@@ -965,12 +1020,23 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                     </select>
                                 </div>
                                 <div>
-                                    <Label>Payment Terms</Label>
-                                    <Input
+                                    <Label>Payment Due Day</Label>
+                                    <select
+                                        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm mt-1"
                                         value={paymentTerms}
                                         onChange={(e) => setPaymentTerms(e.target.value)}
-                                        className="mt-1"
-                                    />
+                                    >
+                                        <option value="Pay on the 1st">Pay on the 1st</option>
+                                        <option value="Pay on the 5th">Pay on the 5th</option>
+                                        <option value="Pay on the 10th">Pay on the 10th</option>
+                                        <option value="Pay on the 15th">Pay on the 15th</option>
+                                        <option value="Pay on the 20th">Pay on the 20th</option>
+                                        <option value="Pay on the 25th">Pay on the 25th</option>
+                                        <option value="Pay on the last day">Pay on the last day</option>
+                                    </select>
+                                    <p className="text-[10px] text-muted-foreground mt-1">
+                                        Invoice issued on the 1st of each month, or at service start (pro-rated).
+                                    </p>
                                 </div>
                             </div>
 

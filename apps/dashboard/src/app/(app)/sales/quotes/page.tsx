@@ -197,6 +197,22 @@ export default function QuotesPage() {
                                             <ChevronRight className="w-4 h-4 text-muted-foreground" />
                                         </div>
                                     </div>
+
+                                    {/* Line item breakdown for scanability */}
+                                    {group.latest.lineItems && group.latest.lineItems.length > 0 && (
+                                        <div className="mt-2 pt-2 border-t border-dashed space-y-0.5">
+                                            {group.latest.lineItems.map((li: any, idx: number) => (
+                                                <div key={li.id || idx} className="flex items-center justify-between text-xs">
+                                                    <span className="text-muted-foreground truncate mr-3">
+                                                        {li.serviceType}{li.locationName ? ` — ${li.locationName}` : ''}
+                                                    </span>
+                                                    <span className="font-medium text-foreground whitespace-nowrap">
+                                                        {formatCurrency(li.clientRate)}/mo
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Older Versions Toggle */}

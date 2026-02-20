@@ -617,6 +617,7 @@ export interface QuoteLineItem {
     isConsumable?: boolean;
     estimatedCost?: number; // Quoted cost; actualCost set later by FSM
     sqft?: number;
+    serviceDate?: string;  // ISO date — start date (recurring) or service date (one-off)
 
     // Versioning & acceptance tracking
     lineItemStatus?: 'pending' | 'accepted' | 'rejected';

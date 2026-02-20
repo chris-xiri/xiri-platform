@@ -14,6 +14,7 @@ const STATUS_BADGE: Record<string, { variant: any; label: string; color: string 
     draft: { variant: 'secondary', label: 'Draft', color: 'text-gray-500' },
     active: { variant: 'outline', label: 'Active', color: 'text-green-600' },
     amended: { variant: 'default', label: 'Amended', color: 'text-blue-600' },
+    superseded: { variant: 'secondary', label: 'Superseded', color: 'text-gray-400' },
     terminated: { variant: 'destructive', label: 'Terminated', color: 'text-red-600' },
     expired: { variant: 'secondary', label: 'Expired', color: 'text-gray-500' },
 };
