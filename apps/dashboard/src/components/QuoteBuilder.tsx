@@ -302,7 +302,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
             lineItemStatus: 'pending' as const,
             addedBy: userId,
             addedByRole: (isFsm ? 'fsm' : 'sales') as 'sales' | 'fsm',
-            isUpsell: isFsm || hasAcceptedItems, // upsell if FSM adds it OR if there are already accepted items
+            isUpsell: !!isFsm, // only FSM-added services are upsells; sales revisions are part of initial sale
         }]);
     };
 

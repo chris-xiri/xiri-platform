@@ -177,6 +177,32 @@ export default function QuoteDetailPage({ params }: PageProps) {
             await updateDoc(doc(db, 'leads', quote.leadId), {
                 assignedFsmId: fsm.uid,
             });
+
+            // Cascade to existing contracts for this lead
+            const contractSnap = await getDocs(query(
+                collection(db, 'contracts'),
+                where('leadId', '==', quote.leadId)
+            ));
+            for (const contractDoc of contractSnap.docs) {
+                await updateDoc(doc(db, 'contracts', contractDoc.id), {
+                    assignedFsmId: fsm.uid,
+                    assignedFsmName: fsm.displayName,
+                    updatedAt: serverTimestamp(),
+                });
+            }
+
+            // Cascade to existing work orders for this lead
+            const woSnap = await getDocs(query(
+                collection(db, 'work_orders'),
+                where('leadId', '==', quote.leadId)
+            ));
+            for (const woDoc of woSnap.docs) {
+                await updateDoc(doc(db, 'work_orders', woDoc.id), {
+                    assignedFsmId: fsm.uid,
+                    updatedAt: serverTimestamp(),
+                });
+            }
+
             setQuote({ ...quote, assignedFsmId: fsm.uid, assignedFsmName: fsm.displayName });
             setShowFsmDropdown(false);
 
@@ -306,6 +332,8 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     totalMonthlyRate: Math.max(newMonthlyRate, 0),
                     quoteIds: existingQuoteIds.includes(quote.id) ? existingQuoteIds : [...existingQuoteIds, quote.id],
                     status: 'amended',
+                    // Ensure FSM assignment carries through from quote
+                    ...(quote.assignedFsmId ? { assignedFsmId: quote.assignedFsmId, assignedFsmName: quote.assignedFsmName || '' } : {}),
                     updatedAt: serverTimestamp(),
                 });
 
@@ -340,6 +368,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     exitClause: quote.exitClause || '30-day written notice',
                     status: 'active',
                     assignedFsmId: quote.assignedFsmId || null,
+                    assignedFsmName: quote.assignedFsmName || null,
                     createdBy: userId,
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
