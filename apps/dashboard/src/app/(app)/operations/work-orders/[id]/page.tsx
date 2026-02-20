@@ -326,6 +326,23 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                         <h1 className="text-2xl font-bold flex items-center gap-3">
                             {wo.serviceType}
                             <Badge variant={config.variant}>{config.label}</Badge>
+                            {(() => {
+                                const start = (wo as any).serviceStartDate;
+                                if (!start) return null;
+                                const startDate = typeof start === 'string' ? new Date(start) : (start.toDate?.() || new Date(start));
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                startDate.setHours(0, 0, 0, 0);
+                                const daysUntil = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                if (daysUntil > 0) {
+                                    return (
+                                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                                            Starts in {daysUntil} day{daysUntil !== 1 ? 's' : ''}
+                                        </Badge>
+                                    );
+                                }
+                                return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Service active</Badge>;
+                            })()}
                         </h1>
                         <p className="text-sm text-muted-foreground flex items-center gap-2">
                             <MapPin className="w-3.5 h-3.5" /> {wo.locationName} • ID: {wo.id?.slice(0, 8)}
@@ -335,6 +352,25 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                                 {[wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ')}
                             </p>
                         )}
+                        {/* Vendor sourcing countdown alert */}
+                        {(() => {
+                            const start = (wo as any).serviceStartDate;
+                            if (!start || wo.vendorId) return null;
+                            const startDate = typeof start === 'string' ? new Date(start) : (start.toDate?.() || new Date(start));
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            startDate.setHours(0, 0, 0, 0);
+                            const daysUntil = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                            if (daysUntil > 0) {
+                                return (
+                                    <div className="mt-2 px-3 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        <span><strong>{daysUntil} day{daysUntil !== 1 ? 's' : ''}</strong> to find a vendor before service starts on <strong>{startDate.toLocaleDateString()}</strong></span>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })()}
                     </div>
                 </div>
 

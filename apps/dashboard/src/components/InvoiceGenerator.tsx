@@ -56,6 +56,15 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
                 const snap = await getDocs(q);
                 const wos = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkOrder & { id: string }));
 
+                // Filter out WOs whose service hasn't started by the billing period
+                const billingEndDate = billingEnd + '-31'; // last day of billing month
+                const billableWOs = wos.filter(wo => {
+                    const start = (wo as any).serviceStartDate;
+                    if (!start) return true; // backwards compatible — no start date means already active
+                    const startStr = typeof start === 'string' ? start : (start.toDate?.() || new Date(start)).toISOString().split('T')[0];
+                    return startStr <= billingEndDate;
+                });
+
                 // Group by lead
                 const groups: Record<string, ClientGroup> = {};
                 // Fetch lead names
@@ -71,7 +80,7 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
                     } catch { /* skip */ }
                 }
 
-                for (const wo of wos) {
+                for (const wo of billableWOs) {
                     if (!groups[wo.leadId]) {
                         groups[wo.leadId] = {
                             leadId: wo.leadId,

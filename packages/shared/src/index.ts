@@ -793,6 +793,7 @@ export interface WorkOrder {
     assignedNightManagerId?: string;
     assignedNightManagerName?: string;
     assignedBy?: string;
+    serviceStartDate?: any;        // ISO date — when service begins (from quote → contract)
     notes?: string;
     createdAt: any;
     updatedAt: any;

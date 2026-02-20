@@ -40,6 +40,14 @@ export default function AuditsPage() {
             const allWOs = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkOrder & { id: string }));
             // Filter to tonight's scheduled WOs
             let tonight = allWOs.filter(wo => wo.schedule?.daysOfWeek?.[today]);
+            // Exclude WOs whose service hasn't started yet
+            const todayDate = new Date().toISOString().split('T')[0];
+            tonight = tonight.filter(wo => {
+                const start = (wo as any).serviceStartDate;
+                if (!start) return true; // backwards compatible
+                const startStr = typeof start === 'string' ? start : (start.toDate?.() || new Date(start)).toISOString().split('T')[0];
+                return startStr <= todayDate;
+            });
             // Night managers only see WOs assigned to them; admins see all
             const isAdmin = profile?.roles?.includes('admin');
             if (!isAdmin && profile?.uid) {

@@ -334,6 +334,23 @@ export default function WorkOrdersPage() {
                                                                 </td>
                                                                 <td className="px-4 py-2.5">
                                                                     <Badge variant={config.variant}>{config.label}</Badge>
+                                                                    {(() => {
+                                                                        const start = (wo as any).serviceStartDate;
+                                                                        if (!start) return null;
+                                                                        const startDate = typeof start === 'string' ? new Date(start) : (start.toDate?.() || new Date(start));
+                                                                        const today = new Date();
+                                                                        today.setHours(0, 0, 0, 0);
+                                                                        startDate.setHours(0, 0, 0, 0);
+                                                                        const daysUntil = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                                                        if (daysUntil > 0) {
+                                                                            return (
+                                                                                <Badge variant="outline" className="ml-1.5 text-[10px] bg-amber-50 text-amber-700 border-amber-200">
+                                                                                    {daysUntil}d to start
+                                                                                </Badge>
+                                                                            );
+                                                                        }
+                                                                        return null;
+                                                                    })()}
                                                                 </td>
                                                                 <td className="px-4 py-2.5">
                                                                     <Link href={`/operations/work-orders/${wo.id}`}>

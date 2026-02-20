@@ -380,8 +380,21 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     totalMonthlyRate: quote.totalMonthlyRate,
                     oneTimeCharges: quote.oneTimeCharges || 0,
                     contractTenure: quote.contractTenure,
-                    startDate: serverTimestamp(),
-                    endDate: new Date(now.getFullYear(), now.getMonth() + quote.contractTenure, now.getDate()),
+                    startDate: (() => {
+                        const dates = acceptedItems
+                            .map((li: any) => li.serviceDate)
+                            .filter(Boolean)
+                            .sort();
+                        return dates.length > 0 ? new Date(dates[0]) : serverTimestamp();
+                    })(),
+                    endDate: (() => {
+                        const dates = acceptedItems
+                            .map((li: any) => li.serviceDate)
+                            .filter(Boolean)
+                            .sort();
+                        const start = dates.length > 0 ? new Date(dates[0]) : now;
+                        return new Date(start.getFullYear(), start.getMonth() + quote.contractTenure, start.getDate());
+                    })(),
                     paymentTerms: quote.paymentTerms,
                     exitClause: quote.exitClause || '30-day written notice',
                     status: 'active',
@@ -427,6 +440,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     margin: null,
                     status: 'pending_assignment',
                     assignedFsmId: quote.assignedFsmId || null,
+                    serviceStartDate: item.serviceDate || null,
                     createdBy: userId,
                     notes: '',
                     createdAt: serverTimestamp(),
