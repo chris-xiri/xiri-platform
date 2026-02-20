@@ -367,7 +367,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                     totalMonthlyRate: existingQuote.lineItems?.reduce((s, li) => s + (li.clientRate || 0), 0) || 0,
                     lineItems: stripUndefined(existingQuote.lineItems || []),
                     changedBy: profile.uid || profile.email || 'unknown',
-                    changedAt: serverTimestamp(),
+                    changedAt: new Date(),
                     notes: notes || '',
                 };
 
