@@ -6944,11 +6944,13 @@ var admin15 = __toESM(require("firebase-admin"));
 var logger9 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
 var import_date_fns2 = require("date-fns");
+var import_date_fns_tz = require("date-fns-tz");
 if (!admin15.apps.length) {
   admin15.initializeApp();
 }
 var db13 = admin15.firestore();
 var ADMIN_EMAIL = "chris@xiri.ai";
+var EASTERN_TZ = "America/New_York";
 var sendOnboardingInvite = (0, import_firestore9.onDocumentUpdated)({
   document: "vendors/{vendorId}",
   secrets: ["RESEND_API_KEY"]
@@ -6994,7 +6996,7 @@ Power to the Facilities!`,
       { name: "Xiri Team", email: ADMIN_EMAIL }
     ]
   });
-  const formattedTime = (0, import_date_fns2.format)(startTime, "EEEE, MMMM do 'at' h:mm a");
+  const formattedTime = (0, import_date_fns_tz.formatInTimeZone)(startTime, EASTERN_TZ, "EEEE, MMMM do 'at' h:mm a zzz");
   const htmlBody = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #0ea5e9;">Onboarding Call Confirmed!</h1>

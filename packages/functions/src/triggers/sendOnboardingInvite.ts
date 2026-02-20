@@ -2,7 +2,8 @@ import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import { sendEmail } from "../utils/emailUtils";
-import { addMinutes, format } from "date-fns";
+import { addMinutes } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -10,6 +11,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 const ADMIN_EMAIL = "chris@xiri.ai";
+const EASTERN_TZ = "America/New_York";
 
 /**
  * Sends a calendar invite (.ics) to both the vendor and admin
@@ -65,7 +67,8 @@ export const sendOnboardingInvite = onDocumentUpdated({
         ]
     });
 
-    const formattedTime = format(startTime, "EEEE, MMMM do 'at' h:mm a");
+    // Format in Eastern timezone so the email matches what the user selected
+    const formattedTime = formatInTimeZone(startTime, EASTERN_TZ, "EEEE, MMMM do 'at' h:mm a zzz");
 
     const htmlBody = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
