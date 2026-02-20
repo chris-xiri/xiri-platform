@@ -8,7 +8,8 @@ import { WorkOrder } from '@xiri/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, MapPin, User2, Clock, AlertCircle, CheckCircle2, PauseCircle, Filter } from 'lucide-react';
+import { ClipboardList, MapPin, User2, Clock, AlertCircle, CheckCircle2, PauseCircle, Filter, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 
 const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string; icon: any }> = {
@@ -40,6 +41,7 @@ export default function WorkOrdersPage() {
     const { profile, hasRole } = useAuth();
     const [workOrders, setWorkOrders] = useState<(WorkOrder & { id: string })[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
     const [filterMode, setFilterMode] = useState<'mine' | 'all'>(
         // FSMs default to "My Work Orders", admins default to "All"
         'all' // Will be set properly after profile loads
@@ -69,10 +71,22 @@ export default function WorkOrdersPage() {
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
 
-    // Apply FSM filter
-    const filteredOrders = filterMode === 'mine' && profile
+    // Apply FSM filter, then search
+    const fsmFiltered = filterMode === 'mine' && profile
         ? workOrders.filter(wo => wo.assignedFsmId === profile.uid)
         : workOrders;
+
+    const filteredOrders = searchQuery.trim()
+        ? fsmFiltered.filter(wo => {
+            const q = searchQuery.toLowerCase();
+            const vendorName = wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || '';
+            return (
+                wo.serviceType?.toLowerCase().includes(q) ||
+                wo.locationName?.toLowerCase().includes(q) ||
+                vendorName.toLowerCase().includes(q)
+            );
+        })
+        : fsmFiltered;
 
     const pending = filteredOrders.filter(wo => wo.status === 'pending_assignment');
     const active = filteredOrders.filter(wo => wo.status === 'active');
@@ -88,26 +102,39 @@ export default function WorkOrdersPage() {
                     <p className="text-sm text-muted-foreground">Manage vendor assignments and service fulfillment</p>
                 </div>
 
-                {/* Filter Toggle */}
-                <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
-                    <Button
-                        variant={filterMode === 'mine' ? 'default' : 'ghost'}
-                        size="sm"
-                        className="gap-1.5"
-                        onClick={() => setFilterMode('mine')}
-                    >
-                        <User2 className="w-3.5 h-3.5" /> My Orders
-                    </Button>
-                    {isAdmin && (
+                <div className="flex items-center gap-3">
+                    {/* Search */}
+                    <div className="relative">
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            placeholder="Search service, location, vendor..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-9 w-[260px]"
+                        />
+                    </div>
+
+                    {/* Filter Toggle */}
+                    <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
                         <Button
-                            variant={filterMode === 'all' ? 'default' : 'ghost'}
+                            variant={filterMode === 'mine' ? 'default' : 'ghost'}
                             size="sm"
                             className="gap-1.5"
-                            onClick={() => setFilterMode('all')}
+                            onClick={() => setFilterMode('mine')}
                         >
-                            <Filter className="w-3.5 h-3.5" /> All
+                            <User2 className="w-3.5 h-3.5" /> My Orders
                         </Button>
-                    )}
+                        {isAdmin && (
+                            <Button
+                                variant={filterMode === 'all' ? 'default' : 'ghost'}
+                                size="sm"
+                                className="gap-1.5"
+                                onClick={() => setFilterMode('all')}
+                            >
+                                <Filter className="w-3.5 h-3.5" /> All
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </div>
 

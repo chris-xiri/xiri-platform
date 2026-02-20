@@ -1,12 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Contract } from '@xiri/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Calendar, DollarSign } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { FileText, Calendar, DollarSign, Search, ChevronDown, ChevronRight } from 'lucide-react';
 
 const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
     draft: { variant: 'secondary', label: 'Draft' },
@@ -17,9 +20,19 @@ const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destruc
     expired: { variant: 'secondary', label: 'Expired' },
 };
 
+interface ClientGroup {
+    clientBusinessName: string;
+    leadId: string;
+    latest: Contract & { id: string };
+    older: (Contract & { id: string })[];
+}
+
 export default function ContractsPage() {
+    const router = useRouter();
     const [contracts, setContracts] = useState<(Contract & { id: string })[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [expandedClients, setExpandedClients] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         const q = query(collection(db, 'contracts'), orderBy('createdAt', 'desc'));
@@ -34,13 +47,57 @@ export default function ContractsPage() {
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
 
+    // Search
+    const filtered = searchQuery.trim()
+        ? contracts.filter(c => c.clientBusinessName?.toLowerCase().includes(searchQuery.toLowerCase()))
+        : contracts;
+
+    // Group by client (leadId) — 1 contract per client, amendments grouped below
+    const groupsByClient: ClientGroup[] = [];
+    const groupMap = new Map<string, ClientGroup>();
+
+    filtered.forEach(c => {
+        const key = c.leadId || c.clientBusinessName; // group by leadId, fallback to name
+        if (!groupMap.has(key)) {
+            const group: ClientGroup = {
+                clientBusinessName: c.clientBusinessName,
+                leadId: c.leadId,
+                latest: c,
+                older: [],
+            };
+            groupMap.set(key, group);
+            groupsByClient.push(group);
+        } else {
+            // Already sorted desc, so the first one we encounter is the latest
+            groupMap.get(key)!.older.push(c);
+        }
+    });
+
+    const toggleClient = (key: string) => {
+        setExpandedClients(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    // Stats
+    const activeContracts = contracts.filter(c => c.status === 'active');
+
     if (loading) return <div className="p-8 flex justify-center">Loading contracts...</div>;
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold">Contracts</h1>
-                <p className="text-sm text-muted-foreground">Active client agreements and their terms</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold">Contracts</h1>
+                    <p className="text-sm text-muted-foreground">Active client agreements and their terms</p>
+                </div>
+                <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                        placeholder="Search client..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 w-[220px]"
+                    />
+                </div>
             </div>
 
             {/* Stats */}
@@ -50,7 +107,7 @@ export default function ContractsPage() {
                         <div className="flex items-center gap-2">
                             <FileText className="w-5 h-5 text-muted-foreground" />
                             <div>
-                                <p className="text-2xl font-bold">{contracts.filter(c => c.status === 'active').length}</p>
+                                <p className="text-2xl font-bold">{activeContracts.length}</p>
                                 <p className="text-xs text-muted-foreground">Active Contracts</p>
                             </div>
                         </div>
@@ -62,7 +119,7 @@ export default function ContractsPage() {
                             <DollarSign className="w-5 h-5 text-green-600" />
                             <div>
                                 <p className="text-2xl font-bold">
-                                    {formatCurrency(contracts.filter(c => c.status === 'active').reduce((s, c) => s + c.totalMonthlyRate, 0))}
+                                    {formatCurrency(activeContracts.reduce((s, c) => s + c.totalMonthlyRate, 0))}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Monthly Contract Value</p>
                             </div>
@@ -74,16 +131,16 @@ export default function ContractsPage() {
                         <div className="flex items-center gap-2">
                             <Calendar className="w-5 h-5 text-blue-500" />
                             <div>
-                                <p className="text-2xl font-bold">{contracts.length}</p>
-                                <p className="text-xs text-muted-foreground">Total Contracts</p>
+                                <p className="text-2xl font-bold">{groupsByClient.length}</p>
+                                <p className="text-xs text-muted-foreground">Clients</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Contracts Table */}
-            {contracts.length === 0 ? (
+            {/* Grouped Contracts */}
+            {groupsByClient.length === 0 ? (
                 <Card>
                     <CardContent className="py-16 text-center">
                         <FileText className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
@@ -94,42 +151,89 @@ export default function ContractsPage() {
                     </CardContent>
                 </Card>
             ) : (
-                <Card>
-                    <CardContent className="p-0">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b text-left text-xs text-muted-foreground uppercase tracking-wider">
-                                    <th className="px-4 py-3 font-medium">Client</th>
-                                    <th className="px-4 py-3 font-medium">Monthly Rate</th>
-                                    <th className="px-4 py-3 font-medium">Tenure</th>
-                                    <th className="px-4 py-3 font-medium">Payment Terms</th>
-                                    <th className="px-4 py-3 font-medium">Status</th>
-                                    <th className="px-4 py-3 font-medium">Created</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {contracts.map((contract) => {
-                                    const badge = STATUS_BADGE[contract.status] || STATUS_BADGE.draft;
-                                    const created = contract.createdAt?.toDate?.()
-                                        ? contract.createdAt.toDate().toLocaleDateString()
-                                        : '—';
-                                    return (
-                                        <tr key={contract.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                                            <td className="px-4 py-3 font-medium">{contract.clientBusinessName}</td>
-                                            <td className="px-4 py-3 font-medium">{formatCurrency(contract.totalMonthlyRate)}</td>
-                                            <td className="px-4 py-3 text-sm text-muted-foreground">{contract.contractTenure} months</td>
-                                            <td className="px-4 py-3 text-sm text-muted-foreground">{contract.paymentTerms}</td>
-                                            <td className="px-4 py-3">
-                                                <Badge variant={badge.variant}>{badge.label}</Badge>
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-muted-foreground">{created}</td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </CardContent>
-                </Card>
+                <div className="space-y-3">
+                    {groupsByClient.map(group => {
+                        const key = group.leadId || group.clientBusinessName;
+                        const isExpanded = expandedClients[key] || false;
+                        const badge = STATUS_BADGE[group.latest.status] || STATUS_BADGE.draft;
+                        const created = group.latest.createdAt?.toDate?.()
+                            ? group.latest.createdAt.toDate().toLocaleDateString()
+                            : '—';
+
+                        return (
+                            <Card key={key} className="overflow-hidden">
+                                {/* Latest Version (always visible, highlighted) */}
+                                <div
+                                    className="p-4 hover:bg-muted/30 transition-colors cursor-pointer"
+                                    onClick={() => router.push(`/operations/contracts/${group.latest.id}`)}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div>
+                                                <p className="font-semibold text-base">{group.clientBusinessName}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {formatCurrency(group.latest.totalMonthlyRate)}/mo • {group.latest.contractTenure} months • {group.latest.paymentTerms}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Badge variant={badge.variant}>{badge.label}</Badge>
+                                            <span className="text-xs text-muted-foreground">{created}</span>
+                                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Amendments Toggle */}
+                                {group.older.length > 0 && (
+                                    <>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleClient(key);
+                                            }}
+                                            className="w-full px-4 py-2 border-t bg-muted/20 flex items-center gap-2 text-xs text-muted-foreground hover:bg-muted/40 transition-colors"
+                                        >
+                                            {isExpanded
+                                                ? <ChevronDown className="w-3 h-3" />
+                                                : <ChevronRight className="w-3 h-3" />
+                                            }
+                                            {group.older.length} previous version{group.older.length > 1 ? 's' : ''}
+                                        </button>
+
+                                        {isExpanded && (
+                                            <div className="border-t">
+                                                {group.older.map(olderContract => {
+                                                    const olderBadge = STATUS_BADGE[olderContract.status] || STATUS_BADGE.draft;
+                                                    const olderCreated = olderContract.createdAt?.toDate?.()
+                                                        ? olderContract.createdAt.toDate().toLocaleDateString()
+                                                        : '—';
+                                                    return (
+                                                        <div
+                                                            key={olderContract.id}
+                                                            className="px-4 py-3 border-b last:border-0 bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer flex items-center justify-between"
+                                                            onClick={() => router.push(`/operations/contracts/${olderContract.id}`)}
+                                                        >
+                                                            <div className="pl-4">
+                                                                <p className="text-sm text-muted-foreground">
+                                                                    {formatCurrency(olderContract.totalMonthlyRate)}/mo • {olderContract.contractTenure} months
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex items-center gap-3">
+                                                                <Badge variant={olderBadge.variant} className="text-xs">{olderBadge.label}</Badge>
+                                                                <span className="text-xs text-muted-foreground">{olderCreated}</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </Card>
+                        );
+                    })}
+                </div>
             )}
         </div>
     );

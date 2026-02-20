@@ -11,8 +11,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Receipt, DollarSign, AlertTriangle, CheckCircle2,
-    Clock, Plus, ChevronRight
+    Clock, Plus, ChevronRight, Search
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import InvoiceGenerator from '@/components/InvoiceGenerator';
 
 const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
@@ -28,6 +29,7 @@ export default function InvoicesPage() {
     const [invoices, setInvoices] = useState<(Invoice & { id: string })[]>([]);
     const [loading, setLoading] = useState(true);
     const [showGenerator, setShowGenerator] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const q = query(collection(db, 'invoices'), orderBy('createdAt', 'desc'), limit(50));
@@ -42,15 +44,27 @@ export default function InvoicesPage() {
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
 
-    // Stats
-    const totalOutstanding = invoices
+    // Search filter
+    const filtered = searchQuery.trim()
+        ? invoices.filter(i => {
+            const q = searchQuery.toLowerCase();
+            return (
+                i.clientBusinessName?.toLowerCase().includes(q) ||
+                i.billingPeriod?.start?.toLowerCase().includes(q) ||
+                i.status?.toLowerCase().includes(q)
+            );
+        })
+        : invoices;
+
+    // Stats (computed on filtered)
+    const totalOutstanding = filtered
         .filter(i => i.status === 'sent' || i.status === 'overdue')
         .reduce((sum, i) => sum + i.totalAmount, 0);
-    const totalPaid = invoices
+    const totalPaid = filtered
         .filter(i => i.status === 'paid')
         .reduce((sum, i) => sum + i.totalAmount, 0);
-    const overdueCount = invoices.filter(i => i.status === 'overdue').length;
-    const totalMargin = invoices
+    const overdueCount = filtered.filter(i => i.status === 'overdue').length;
+    const totalMargin = filtered
         .filter(i => i.status === 'paid')
         .reduce((sum, i) => sum + (i.grossMargin || 0), 0);
 
@@ -64,9 +78,20 @@ export default function InvoicesPage() {
                     <h1 className="text-2xl font-bold">Invoices</h1>
                     <p className="text-sm text-muted-foreground">Consolidated client billing & vendor payouts</p>
                 </div>
-                <Button className="gap-2" onClick={() => setShowGenerator(true)}>
-                    <Plus className="w-4 h-4" /> Generate Invoice
-                </Button>
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            placeholder="Search client, status..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-9 w-[220px]"
+                        />
+                    </div>
+                    <Button className="gap-2" onClick={() => setShowGenerator(true)}>
+                        <Plus className="w-4 h-4" /> Generate Invoice
+                    </Button>
+                </div>
             </div>
 
             {/* Stats */}
@@ -112,10 +137,10 @@ export default function InvoicesPage() {
             {/* Invoice Table */}
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-medium">{invoices.length} Invoices</CardTitle>
+                    <CardTitle className="text-base font-medium">{filtered.length} Invoices</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                    {invoices.length === 0 ? (
+                    {filtered.length === 0 ? (
                         <div className="py-16 text-center">
                             <Receipt className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
                             <h3 className="text-lg font-medium mb-1">No invoices yet</h3>
@@ -140,7 +165,7 @@ export default function InvoicesPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {invoices.map((inv) => {
+                                    {filtered.map((inv) => {
                                         const config = STATUS_CONFIG[inv.status] || STATUS_CONFIG.draft;
                                         return (
                                             <tr
