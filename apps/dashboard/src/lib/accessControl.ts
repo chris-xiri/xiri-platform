@@ -14,6 +14,7 @@ const ACCESS_MAP: Record<string, string[]> = {
     'sales/crm': ['admin', 'sales', 'sales_exec', 'sales_mgr'],
     'sales/quotes': ['admin', 'sales', 'sales_exec', 'sales_mgr'],
     'sales/sourcing': ['admin', 'sales', 'sales_exec', 'sales_mgr'],
+    'sales/commissions': ['admin', 'sales', 'sales_exec', 'sales_mgr'],
 
     // Supply
     'supply/recruitment': ['admin', 'recruiter', 'fsm'],
