@@ -255,26 +255,28 @@ export default function CampaignResultsTable({
     const getScoreColor = (score?: number) => { if (!score) return 'text-muted-foreground'; if (score >= 80) return 'text-green-600'; if (score >= 50) return 'text-yellow-600'; return 'text-red-500'; };
     const handleTabSwitch = (id: string) => { setSelectedVendors(new Set()); setSearchMessage(''); setSelectedVendorId(null); onSetActiveCampaign(id); };
 
-    const handleSearch = async () => {
-        if (!query.trim() || !location.trim()) { setSearchMessage('Please fill in both fields'); return; }
+    const handleSearch = async (overrideQuery?: string, overrideLocation?: string) => {
+        const q = overrideQuery || query;
+        const loc = overrideLocation || location;
+        if (!q.trim() || !loc.trim()) { setSearchMessage('Please fill in both fields'); return; }
         setLoading(true); setSearchMessage('');
         try {
             const generateLeads = httpsCallable(functions, 'generateLeads', { timeout: 60000 });
-            const result = await generateLeads({ query, location, hasActiveContract: false, previewOnly: true });
+            const result = await generateLeads({ query: q, location: loc, hasActiveContract: false, previewOnly: true });
             const data = result.data as any;
             const newVendors: PreviewVendor[] = data.vendors || [];
             const sourced = data.sourced || 0;
             const qualified = data.analysis?.qualified || 0;
             const existingNames = new Set(activeCampaign.vendors.map(v => (v.businessName || '').toLowerCase().trim()));
             const uniqueNew = newVendors.filter(v => !existingNames.has((v.businessName || '').toLowerCase().trim()));
-            if (uniqueNew.length > 0) { onSearchResults(activeCampaign.id, uniqueNew, { query, location, sourced, qualified }); }
-            if (activeCampaign.label === 'New Campaign' && query.trim()) {
+            if (uniqueNew.length > 0) { onSearchResults(activeCampaign.id, uniqueNew, { query: q, location: loc, sourced, qualified }); }
+            if (activeCampaign.label === 'New Campaign' && q.trim()) {
                 // Structured label: Trade\nTown\nState (rendered as 3 lines)
-                const loc = location.trim();
-                const parts = loc.split(',').map(p => p.trim());
-                const town = parts[0] || loc;
+                const locStr = loc.trim();
+                const parts = locStr.split(',').map(p => p.trim());
+                const town = parts[0] || locStr;
                 const state = parts.length >= 2 ? parts[1].replace(/\s*\d{5}.*/, '').trim() : '';
-                const tradeLabel = query.trim();
+                const tradeLabel = q.trim();
                 onRenameCampaign(activeCampaign.id, `${tradeLabel}\n${town}\n${state}`);
             }
             setSearchMessage(`Found ${sourced} vendors · ${qualified} qualified · ${uniqueNew.length} new added`);
@@ -348,11 +350,29 @@ export default function CampaignResultsTable({
                                     className="flex h-7 w-full rounded-md border border-input bg-white dark:bg-card px-2 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 flex-1"
                                     onChange={(e: any) => setLocation(e.target.value)} value={location} disabled={loading}
                                 />
-                                <Button onClick={handleSearch} disabled={loading} size="sm" className="h-7 text-xs px-3 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white">
+                                <Button onClick={() => handleSearch()} disabled={loading} size="sm" className="h-7 text-xs px-3 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white">
                                     {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Rocket className="mr-1 h-3 w-3" /> Search</>}
                                 </Button>
                             </div>
-                            {searchMessage && <p className={`text-[10px] mt-1 ${searchMessage.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>{searchMessage}</p>}
+                            {searchMessage && (
+                                <div className="flex items-center gap-2 mt-1">
+                                    <p className={`text-[10px] ${searchMessage.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>{searchMessage}</p>
+                                    {!searchMessage.includes('Error') && activeCampaign.searches.length > 0 && (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-5 text-[10px] px-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            onClick={() => {
+                                                const lastSearch = activeCampaign.searches[activeCampaign.searches.length - 1];
+                                                handleSearch(lastSearch.query, lastSearch.location);
+                                            }}
+                                            disabled={loading}
+                                        >
+                                            <RotateCcw className="w-3 h-3 mr-0.5" /> Search Again
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Bulk Bar */}

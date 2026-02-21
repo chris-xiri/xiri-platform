@@ -6,6 +6,7 @@ interface ScrapedData {
     phone?: string;
     address?: string;
     businessName?: string;
+    contactFormUrl?: string;
     socialMedia?: {
         linkedin?: string;
         facebook?: string;
@@ -62,6 +63,7 @@ export async function scrapeWebsite(url: string, geminiApiKey: string): Promise<
             phone: structuredData.phone || patternData.phone || contactPageData.phone,
             address: structuredData.address || patternData.address || contactPageData.address,
             businessName: structuredData.businessName || patternData.businessName,
+            contactFormUrl: contactPageData.contactFormUrl,
             socialMedia: {
                 linkedin: patternData.socialMedia?.linkedin,
                 facebook: patternData.socialMedia?.facebook,
@@ -199,6 +201,7 @@ function findContactPage($: cheerio.CheerioAPI, baseUrl: string): string | null 
             contactUrl = new URL(href, baseUrl).href;
             return false; // break
         }
+        return; // continue
     });
 
     return contactUrl;
@@ -221,7 +224,15 @@ async function scrapeContactPage(url: string): Promise<Partial<ScrapedData>> {
         const html = await response.text();
         const $ = cheerio.load(html);
 
-        return extractFromPatterns($, html);
+        const data = extractFromPatterns($, html);
+
+        // Detect contact form on the page
+        const hasForm = $('form').length > 0;
+        if (hasForm) {
+            data.contactFormUrl = url;
+        }
+
+        return data;
     } catch (error) {
         return {};
     }

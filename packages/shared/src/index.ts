@@ -202,6 +202,8 @@ export interface Vendor {
     };
     description?: string; // Legacy or scraped description
     notes?: string;       // Internal Notes
+    contactFormUrl?: string; // URL to vendor's contact form (when no email found)
+    enrichmentStartedAt?: any; // Timestamp when enrichment started (detect stale ENRICHING)
 
     // Pipeline Scoring
     complianceScore?: number;  // 0-100
@@ -294,9 +296,31 @@ export interface VendorActivityMetadata {
     to?: string;
     resendId?: string; // Resend email tracking ID
     error?: string; // For failed emails
+    deliveryStatus?: 'delivered' | 'opened' | 'clicked' | 'bounced' | 'spam'; // From Resend webhook
+    deliveryUpdatedAt?: any;
 }
 
+// --- SCHEDULED ACTIVITIES (Follow-Up Queue) ---
 
+export type ScheduledActivityType = 'CALL' | 'EMAIL' | 'SITE_VISIT' | 'FOLLOW_UP' | 'REVIEW' | 'OTHER';
+export type ScheduledActivityStatus = 'PENDING' | 'COMPLETED' | 'SKIPPED' | 'OVERDUE';
+
+export interface ScheduledActivity {
+    id?: string;
+    vendorId?: string;
+    leadId?: string;
+    type: ScheduledActivityType;
+    status: ScheduledActivityStatus;
+    title: string;
+    description?: string;
+    dueDate: any; // Firestore Timestamp
+    assignedTo: string; // staffId (uid)
+    assignedToName?: string; // display name
+    completedAt?: any;
+    createdAt: any;
+    createdBy: string; // staffId who created
+    metadata?: Record<string, any>;
+}
 export interface OnboardingAnalytics {
     vendorId: string;
     track: 'STANDARD' | 'FAST_TRACK';

@@ -24,6 +24,8 @@ import VendorFinancials from '@/components/vendor/VendorFinancials';
 import VendorCompliance from '@/components/vendor/VendorCompliance';
 import EditVendorDialog from '@/components/vendor/EditVendorDialog';
 import VendorStatusTimeline from '@/components/vendor/VendorStatusTimeline';
+import VendorActivityFeed from '@/components/vendor/VendorActivityFeed';
+import ScheduleFollowUpDialog from '@/components/vendor/ScheduleFollowUpDialog';
 
 const LanguageBadge = ({ lang }: { lang?: 'en' | 'es' }) => {
     if (lang === 'es') {
@@ -143,36 +145,148 @@ export default function CRMDetailPage(props: PageProps) {
                             </div>
                         </div>
                     </div>
-                    <div className="flex gap-2 items-center">
-                        {/* Copy Onboarding Link */}
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                                const link = `${ONBOARDING_BASE_URL}/onboarding/${vendor.id}`;
-                                navigator.clipboard.writeText(link);
-                                setCopied(true);
-                                setTimeout(() => setCopied(false), 2000);
-                            }}
-                            className="h-8 text-xs"
-                        >
-                            {copied ? <><Check className="w-3 h-3 mr-1 text-green-600" /> Copied!</> : <><Copy className="w-3 h-3 mr-1" /> Onboarding Link</>}
-                        </Button>
+                    <div className="flex gap-2 items-center flex-wrap">
+                        {/* ─── Status-Based Context Actions ─── */}
 
-                        {/* Start Sequence — for NEEDS_CONTACT vendors */}
+                        {/* pending_review: Qualify + Dismiss */}
+                        {vendor.status === 'pending_review' && (
+                            <>
+                                <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700"
+                                    onClick={async () => {
+                                        await updateDoc(doc(db, 'vendors', vendor.id!), { status: 'qualified', updatedAt: new Date() });
+                                    }}>
+                                    <Check className="w-3 h-3 mr-1" /> Qualify
+                                </Button>
+                                <Button size="sm" variant="outline" className="h-8 text-xs border-red-300 text-red-600 hover:bg-red-50"
+                                    onClick={async () => {
+                                        await updateDoc(doc(db, 'vendors', vendor.id!), { status: 'dismissed', updatedAt: new Date() });
+                                    }}>
+                                    Dismiss
+                                </Button>
+                            </>
+                        )}
+
+                        {/* qualified: Send Outreach + Dismiss */}
+                        {vendor.status === 'qualified' && (
+                            <>
+                                {vendor.email ? (
+                                    <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700"
+                                        disabled={startingSequence}
+                                        onClick={async () => {
+                                            setStartingSequence(true);
+                                            try {
+                                                const vendorRef = doc(db, 'vendors', vendor.id!);
+                                                await updateDoc(vendorRef, { status: 'pending_review', outreachStatus: null });
+                                                setTimeout(async () => {
+                                                    await updateDoc(vendorRef, { status: 'qualified' });
+                                                    setStartingSequence(false);
+                                                }, 500);
+                                            } catch (err) {
+                                                console.error('Failed to start sequence:', err);
+                                                setStartingSequence(false);
+                                            }
+                                        }}>
+                                        <Rocket className="w-3 h-3 mr-1" /> {startingSequence ? 'Starting...' : 'Send Outreach'}
+                                    </Button>
+                                ) : (
+                                    <Button size="sm" variant="outline" disabled className="h-8 text-xs border-amber-300 text-amber-600">
+                                        <AlertTriangle className="w-3 h-3 mr-1" /> Add email first
+                                    </Button>
+                                )}
+                                <Button size="sm" variant="outline" className="h-8 text-xs border-red-300 text-red-600 hover:bg-red-50"
+                                    onClick={async () => {
+                                        await updateDoc(doc(db, 'vendors', vendor.id!), { status: 'dismissed', updatedAt: new Date() });
+                                    }}>
+                                    Dismiss
+                                </Button>
+                            </>
+                        )}
+
+                        {/* awaiting_onboarding: Resend Outreach + Copy Onboarding Link */}
+                        {vendor.status === 'awaiting_onboarding' && (
+                            <>
+                                {vendor.email && (
+                                    <Button size="sm" className="h-8 text-xs bg-blue-600 hover:bg-blue-700"
+                                        disabled={startingSequence}
+                                        onClick={async () => {
+                                            setStartingSequence(true);
+                                            try {
+                                                await updateDoc(doc(db, 'vendors', vendor.id!), {
+                                                    outreachStatus: 'PENDING',
+                                                    updatedAt: new Date(),
+                                                });
+                                                // Enqueue a new GENERATE task
+                                                const { addDoc, collection, Timestamp } = await import('firebase/firestore');
+                                                await addDoc(collection(db, 'outreach_queue'), {
+                                                    vendorId: vendor.id,
+                                                    type: 'GENERATE',
+                                                    status: 'PENDING',
+                                                    scheduledAt: new Date(),
+                                                    createdAt: new Date(),
+                                                    retryCount: 0,
+                                                });
+                                                // Log activity
+                                                await addDoc(collection(db, 'vendor_activities'), {
+                                                    vendorId: vendor.id,
+                                                    type: 'OUTREACH_RESENT',
+                                                    description: 'Outreach email manually re-queued by staff.',
+                                                    createdAt: new Date(),
+                                                });
+                                                setStartingSequence(false);
+                                            } catch (err) {
+                                                console.error('Failed to resend outreach:', err);
+                                                setStartingSequence(false);
+                                            }
+                                        }}>
+                                        <Mail className="w-3 h-3 mr-1" /> {startingSequence ? 'Resending...' : 'Resend Outreach'}
+                                    </Button>
+                                )}
+                                <Button variant="outline" size="sm" className="h-8 text-xs"
+                                    onClick={() => {
+                                        const link = `${ONBOARDING_BASE_URL}/onboarding/${vendor.id}`;
+                                        navigator.clipboard.writeText(link);
+                                        setCopied(true);
+                                        setTimeout(() => setCopied(false), 2000);
+                                    }}>
+                                    {copied ? <><Check className="w-3 h-3 mr-1 text-green-600" /> Copied!</> : <><Copy className="w-3 h-3 mr-1" /> Onboarding Link</>}
+                                </Button>
+                            </>
+                        )}
+
+                        {/* Enrichment: Skip / Retry when stuck */}
+                        {vendor.outreachStatus === 'ENRICHING' && (
+                            <>
+                                <Button size="sm" variant="outline" className="h-8 text-xs border-amber-300 text-amber-600"
+                                    onClick={async () => {
+                                        await updateDoc(doc(db, 'vendors', vendor.id!), {
+                                            outreachStatus: 'NEEDS_CONTACT',
+                                            updatedAt: new Date(),
+                                        });
+                                    }}>
+                                    Skip Enrichment
+                                </Button>
+                                <Button size="sm" variant="outline" className="h-8 text-xs border-blue-300 text-blue-600"
+                                    onClick={async () => {
+                                        const vendorRef = doc(db, 'vendors', vendor.id!);
+                                        await updateDoc(vendorRef, { outreachStatus: null, updatedAt: new Date() });
+                                        setTimeout(async () => {
+                                            await updateDoc(vendorRef, { status: 'qualified' });
+                                        }, 500);
+                                    }}>
+                                    Retry Enrichment
+                                </Button>
+                            </>
+                        )}
+
+                        {/* NEEDS_CONTACT: Start Sequence (if email added) */}
                         {vendor.outreachStatus === 'NEEDS_CONTACT' && vendor.email && (
-                            <Button
-                                variant="default"
-                                size="sm"
+                            <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700"
                                 disabled={startingSequence}
                                 onClick={async () => {
                                     setStartingSequence(true);
                                     try {
-                                        // Re-trigger the pipeline by resetting status
                                         const vendorRef = doc(db, 'vendors', vendor.id!);
-                                        // Temporarily set to a non-qualified status, then back to qualified
                                         await updateDoc(vendorRef, { status: 'pending_review', outreachStatus: null });
-                                        // Small delay to ensure Firestore processes
                                         setTimeout(async () => {
                                             await updateDoc(vendorRef, { status: 'qualified' });
                                             setStartingSequence(false);
@@ -181,25 +295,34 @@ export default function CRMDetailPage(props: PageProps) {
                                         console.error('Failed to start sequence:', err);
                                         setStartingSequence(false);
                                     }
-                                }}
-                                className="h-8 text-xs bg-green-600 hover:bg-green-700"
-                            >
+                                }}>
                                 <Rocket className="w-3 h-3 mr-1" /> {startingSequence ? 'Starting...' : 'Start Sequence'}
                             </Button>
                         )}
-                        {vendor.outreachStatus === 'NEEDS_CONTACT' && !vendor.email && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled
-                                className="h-8 text-xs border-amber-300 text-amber-600"
-                            >
-                                <AlertTriangle className="w-3 h-3 mr-1" /> Add email first
+
+                        {/* active: Suspend */}
+                        {vendor.status === 'active' && (
+                            <Button size="sm" variant="outline" className="h-8 text-xs border-amber-300 text-amber-600"
+                                onClick={async () => {
+                                    await updateDoc(doc(db, 'vendors', vendor.id!), { status: 'suspended', updatedAt: new Date() });
+                                }}>
+                                Suspend
                             </Button>
                         )}
 
+                        {/* suspended: Reactivate */}
+                        {vendor.status === 'suspended' && (
+                            <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700"
+                                onClick={async () => {
+                                    await updateDoc(doc(db, 'vendors', vendor.id!), { status: 'active', updatedAt: new Date() });
+                                }}>
+                                Reactivate
+                            </Button>
+                        )}
+
+                        {/* ─── Always Visible ─── */}
                         <EditVendorDialog vendor={vendor} />
-                        <Button variant="default">Log Activity</Button>
+                        <ScheduleFollowUpDialog vendorId={vendor.id} entityName={vendor.businessName} />
                         <Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>
                     </div>
                 </div>
@@ -315,11 +438,7 @@ export default function CRMDetailPage(props: PageProps) {
                         <VendorCompliance vendor={vendor} />
                     </TabsContent>
                     <TabsContent value="activity">
-                        <div className="p-8 text-center bg-muted/20 rounded-lg border border-dashed">
-                            <Activity className="w-12 h-12 mx-auto text-muted-foreground/30 mb-2" />
-                            <h3 className="font-medium">Activity Log</h3>
-                            <p className="text-sm text-muted-foreground">Event timeline coming soon.</p>
-                        </div>
+                        <VendorActivityFeed vendorId={vendor.id!} />
                     </TabsContent>
                 </Tabs>
             </div>

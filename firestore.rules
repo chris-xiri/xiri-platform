@@ -32,11 +32,15 @@ service cloud.firestore {
     }
     
     match /vendor_activities/{activityId} {
-      allow read, write: if hasAnyRole(['admin', 'recruiter']);
+      allow read, write: if hasAnyRole(['admin', 'recruiter', 'fsm']);
     }
     
     match /outreach_queue/{queueId} {
-      allow read, write: if hasAnyRole(['admin', 'recruiter']);
+      allow read, write: if hasAnyRole(['admin', 'recruiter', 'fsm']);
+    }
+
+    match /scheduled_activities/{activityId} {
+      allow read, write: if hasAnyRole(['admin', 'recruiter', 'fsm']);
     }
     
     // SALES SIDE (Leads, Clients)

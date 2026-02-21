@@ -136,7 +136,7 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
         analyzed = analysis.length;
 
         for (const item of analysis) {
-            if (item.isQualified) {
+            if (item.isQualified || threshold === 0) {
                 qualified++;
                 // Ensure index matches the filtered list
                 const originalVendor = vendorsToAnalyze[item.index];

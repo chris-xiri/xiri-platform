@@ -86,6 +86,7 @@ async function runEnrichPipeline(vendorId: string, vendorData: any, previousStat
 
             await db.collection("vendors").doc(vendorId).update({
                 outreachStatus: 'ENRICHING',
+                enrichmentStartedAt: new Date(),
                 statusUpdatedAt: new Date(),
             });
 
@@ -149,6 +150,12 @@ async function runEnrichPipeline(vendorId: string, vendorData: any, previousStat
                     if (Object.keys(sm).length > 0) updateData.socialMedia = sm;
                 }
 
+                // Save contact form URL if detected
+                if (scrapedData.contactFormUrl) {
+                    updateData.contactFormUrl = scrapedData.contactFormUrl;
+                    enrichedFields.push('contactFormUrl');
+                }
+
                 // Enrichment metadata
                 updateData.enrichment = {
                     lastEnriched: admin.firestore.FieldValue.serverTimestamp(),
@@ -178,6 +185,33 @@ async function runEnrichPipeline(vendorId: string, vendorData: any, previousStat
                     logger.info(`Found email ${foundEmail} for vendor ${vendorId}. Proceeding to outreach.`);
                     const updatedDoc = await db.collection("vendors").doc(vendorId).get();
                     await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
+                } else if (scrapedData.contactFormUrl) {
+                    // No email, but has a contact form — flag for manual outreach
+                    logger.info(`No email but found contact form for vendor ${vendorId}: ${scrapedData.contactFormUrl}`);
+                    await db.collection("vendors").doc(vendorId).update({
+                        outreachStatus: 'NEEDS_MANUAL_OUTREACH',
+                        statusUpdatedAt: new Date(),
+                    });
+                    await db.collection("vendor_activities").add({
+                        vendorId,
+                        type: "NEEDS_MANUAL_OUTREACH",
+                        description: `No email found. Contact form detected: ${scrapedData.contactFormUrl}`,
+                        createdAt: new Date(),
+                        metadata: { contactFormUrl: scrapedData.contactFormUrl },
+                    });
+                    // Create a scheduled task for manual outreach
+                    await db.collection("scheduled_activities").add({
+                        vendorId,
+                        type: 'OTHER',
+                        status: 'PENDING',
+                        title: `Manual outreach: ${vendorData.businessName || 'Unknown vendor'}`,
+                        description: `Fill out their contact form at ${scrapedData.contactFormUrl}`,
+                        dueDate: new Date(),
+                        assignedTo: '', // Will be picked up by any recruiter
+                        createdAt: new Date(),
+                        createdBy: 'system',
+                        metadata: { contactFormUrl: scrapedData.contactFormUrl },
+                    });
                 } else {
                     await markNeedsContact(vendorId, "No email found after enrichment");
                 }
