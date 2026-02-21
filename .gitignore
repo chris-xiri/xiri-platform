@@ -32,3 +32,5 @@ firestore-debug.log
 **/.secret.local
 .turbo/
 scripts/serviceAccountKey.json
+.vercel
+.env*.local

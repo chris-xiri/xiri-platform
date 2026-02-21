@@ -100,11 +100,11 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
         fetchQuoteId();
     }, [wo?.contractId]);
 
-    // Fetch qualified vendors when assignment panel opens
+    // Fetch assignment-ready vendors when assignment panel opens
     useEffect(() => {
         if (!showAssign || !wo) return;
         async function fetchVendors() {
-            const q = query(collection(db, 'vendors'), where('status', 'in', ['qualified', 'approved', 'ready_for_assignment', 'active']));
+            const q = query(collection(db, 'vendors'), where('status', 'in', ['approved', 'ready_for_assignment', 'active', 'onboarding']));
             const snap = await getDocs(q);
             const woServiceLower = wo!.serviceType?.toLowerCase() || '';
             const woZip = wo!.locationZip || '';
@@ -637,7 +637,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                             <div className="space-y-2 max-h-[300px] overflow-y-auto">
                                 {filteredVendors.length === 0 ? (
                                     <p className="text-sm text-muted-foreground text-center py-8">
-                                        No qualified vendors found. Add vendors in the Supply CRM first.
+                                        No approved vendors found. Vendors must be approved or onboarded before assignment.
                                     </p>
                                 ) : (
                                     filteredVendors.map((v) => (
