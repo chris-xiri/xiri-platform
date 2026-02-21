@@ -1263,7 +1263,6 @@ var generateOutreachContent = async (vendor, preferredChannel) => {
     console.error("Error generating outreach content:", error10);
     return {
       channel,
-      sms: "Error generating SMS.",
       email: { subject: "Error", body: "Error generating content. Please draft manually." },
       error: true
     };
@@ -1387,18 +1386,16 @@ async function handleGenerate(task) {
   const vendorData = task.metadata;
   const outreachResult = await generateOutreachContent(vendorData, "EMAIL");
   if (outreachResult.error) {
-    throw new Error("AI Generation Failed: " + (outreachResult.sms || "Unknown Error"));
+    throw new Error("AI Generation Failed: " + (outreachResult.email?.body || "Unknown Error"));
   }
   await db6.collection("vendor_activities").add({
     vendorId: task.vendorId,
     type: "OUTREACH_QUEUED",
-    // Using same type for UI compatibility
-    description: `Outreach drafts generated (waiting to send).`,
+    description: `Outreach email draft generated (waiting to send).`,
     createdAt: /* @__PURE__ */ new Date(),
     metadata: {
-      sms: outreachResult.sms,
       email: outreachResult.email,
-      preferredChannel: outreachResult.channel,
+      preferredChannel: "EMAIL",
       campaignUrgency: vendorData.hasActiveContract ? "URGENT" : "SUPPLY"
     }
   });
@@ -1408,10 +1405,8 @@ async function handleGenerate(task) {
     type: "SEND",
     scheduledAt: admin7.firestore.Timestamp.fromDate(scheduledTime),
     metadata: {
-      // Pass the generated content along
-      sms: outreachResult.sms,
       email: outreachResult.email,
-      channel: outreachResult.channel
+      channel: "EMAIL"
     }
   });
   await updateTaskStatus(db6, task.id, "COMPLETED");

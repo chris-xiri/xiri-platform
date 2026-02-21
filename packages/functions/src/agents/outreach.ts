@@ -46,7 +46,6 @@ export const generateOutreachContent = async (vendor: any, preferredChannel: 'SM
         console.error("Error generating outreach content:", error);
         return {
             channel,
-            sms: "Error generating SMS.",
             email: { subject: "Error", body: "Error generating content. Please draft manually." },
             error: true
         };
