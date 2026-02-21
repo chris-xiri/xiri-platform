@@ -197,11 +197,17 @@ export default function VendorActivityFeed({ vendorId }: { vendorId: string }) {
                                             </button>
                                             {expandedId === activity.id && (
                                                 <div className="mt-2 rounded-md border bg-muted/30 p-3 space-y-2">
-                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Subject</div>
-                                                    <p className="text-xs font-medium">{activity.metadata.subject}</p>
-                                                    {activity.metadata.to && (
-                                                        <div className="text-[10px] text-muted-foreground">To: {activity.metadata.to}</div>
+                                                    {activity.metadata.from && (
+                                                        <div className="text-[10px] text-muted-foreground">From: <span className="text-foreground">{activity.metadata.from}</span></div>
                                                     )}
+                                                    {activity.metadata.to && (
+                                                        <div className="text-[10px] text-muted-foreground">To: <span className="text-foreground">{activity.metadata.to}</span></div>
+                                                    )}
+                                                    {activity.metadata.replyTo && (
+                                                        <div className="text-[10px] text-muted-foreground">Reply-To: <span className="text-foreground">{activity.metadata.replyTo}</span></div>
+                                                    )}
+                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider pt-1 border-t">Subject</div>
+                                                    <p className="text-xs font-medium">{activity.metadata.subject}</p>
                                                     <div className="border-t pt-2 mt-2">
                                                         <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Body</div>
                                                         <div className="text-xs whitespace-pre-wrap leading-relaxed max-h-64 overflow-auto">

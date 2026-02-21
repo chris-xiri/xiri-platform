@@ -233,6 +233,8 @@ export async function sendTemplatedEmail(
                 subject: email.subject,
                 body: email.body,
                 to: vendor?.email || "unknown",
+                from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+                replyTo: 'chris@xiri.ai',
                 resendId // NEW: Track Resend email ID
             }
         });
