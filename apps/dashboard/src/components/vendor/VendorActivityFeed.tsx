@@ -126,6 +126,103 @@ export default function VendorActivityFeed({ vendorId }: { vendorId: string }) {
         );
     }
 
+    // Split into scheduled (future) vs past
+    const scheduled = activities.filter((a: any) => {
+        if (!a.scheduledFor) return false;
+        const d = a.scheduledFor instanceof Timestamp ? a.scheduledFor.toDate() : new Date(a.scheduledFor?.seconds ? a.scheduledFor.seconds * 1000 : a.scheduledFor);
+        return d > new Date();
+    });
+    const past = activities.filter(a => !scheduled.includes(a));
+
+    const renderActivity = (activity: VendorActivity, isScheduled = false) => {
+        const config = ACTIVITY_CONFIG[activity.type] || DEFAULT_CONFIG;
+        const Icon = config.icon;
+
+        return (
+            <div key={activity.id} className="flex items-start gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+                <div className={`mt-0.5 p-1.5 rounded-full bg-muted/50 ${config.color}`}>
+                    <Icon className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 font-medium">
+                            {config.label}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                            {isScheduled && (activity as any).scheduledFor
+                                ? `Scheduled for ${formatTimestamp((activity as any).scheduledFor).absolute}`
+                                : `${formatTimestamp(activity.createdAt).relative} · ${formatTimestamp(activity.createdAt).absolute}`}
+                        </span>
+                    </div>
+                    <p className="text-xs text-foreground mt-0.5 leading-relaxed">
+                        {activity.description}
+                    </p>
+                    {/* Email delivery status badges */}
+                    {activity.metadata?.deliveryStatus && (
+                        <div className="flex gap-1 mt-1">
+                            {activity.metadata.deliveryStatus === 'delivered' && (
+                                <Badge className="text-[8px] bg-green-100 text-green-700 border-green-200">✅ Delivered</Badge>
+                            )}
+                            {activity.metadata.deliveryStatus === 'opened' && (
+                                <Badge className="text-[8px] bg-blue-100 text-blue-700 border-blue-200">👁️ Opened</Badge>
+                            )}
+                            {activity.metadata.deliveryStatus === 'clicked' && (
+                                <Badge className="text-[8px] bg-purple-100 text-purple-700 border-purple-200">🔗 Clicked</Badge>
+                            )}
+                            {activity.metadata.deliveryStatus === 'bounced' && (
+                                <Badge className="text-[8px] bg-red-100 text-red-700 border-red-200">❌ Bounced</Badge>
+                            )}
+                        </div>
+                    )}
+                    {/* Enriched fields */}
+                    {activity.metadata?.enrichedFields?.length > 0 && (
+                        <div className="flex gap-1 mt-1">
+                            {activity.metadata.enrichedFields.map((f: string) => (
+                                <Badge key={f} variant="secondary" className="text-[8px] px-1">{f}</Badge>
+                            ))}
+                        </div>
+                    )}
+                    {/* Expandable email content */}
+                    {activity.metadata?.subject && (
+                        <div className="mt-1.5">
+                            <button
+                                onClick={() => setExpandedId(expandedId === activity.id ? null : activity.id)}
+                                className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
+                            >
+                                <Mail className="w-3 h-3" />
+                                {expandedId === activity.id ? 'Hide email' : 'View email'}
+                                {expandedId === activity.id
+                                    ? <ChevronUp className="w-3 h-3" />
+                                    : <ChevronDown className="w-3 h-3" />}
+                            </button>
+                            {expandedId === activity.id && (
+                                <div className="mt-2 rounded-md border bg-muted/30 p-3 space-y-2">
+                                    {activity.metadata.from && (
+                                        <div className="text-[10px] text-muted-foreground">From: <span className="text-foreground">{activity.metadata.from}</span></div>
+                                    )}
+                                    {activity.metadata.to && (
+                                        <div className="text-[10px] text-muted-foreground">To: <span className="text-foreground">{activity.metadata.to}</span></div>
+                                    )}
+                                    {activity.metadata.replyTo && (
+                                        <div className="text-[10px] text-muted-foreground">Reply-To: <span className="text-foreground">{activity.metadata.replyTo}</span></div>
+                                    )}
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider pt-1 border-t">Subject</div>
+                                    <p className="text-xs font-medium">{activity.metadata.subject}</p>
+                                    <div className="border-t pt-2 mt-2">
+                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Body</div>
+                                        <div className="text-xs whitespace-pre-wrap leading-relaxed max-h-64 overflow-auto">
+                                            {activity.metadata.body}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <Card>
             <CardHeader className="pb-2">
@@ -135,95 +232,34 @@ export default function VendorActivityFeed({ vendorId }: { vendorId: string }) {
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="divide-y divide-border">
-                    {activities.map((activity) => {
-                        const config = ACTIVITY_CONFIG[activity.type] || DEFAULT_CONFIG;
-                        const Icon = config.icon;
-
-                        return (
-                            <div key={activity.id} className="flex items-start gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
-                                <div className={`mt-0.5 p-1.5 rounded-full bg-muted/50 ${config.color}`}>
-                                    <Icon className="w-3.5 h-3.5" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 font-medium">
-                                            {config.label}
-                                        </Badge>
-                                        <span className="text-[10px] text-muted-foreground">
-                                            {formatTimestamp(activity.createdAt).relative} · {formatTimestamp(activity.createdAt).absolute}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-foreground mt-0.5 leading-relaxed">
-                                        {activity.description}
-                                    </p>
-                                    {/* Email delivery status badges */}
-                                    {activity.metadata?.deliveryStatus && (
-                                        <div className="flex gap-1 mt-1">
-                                            {activity.metadata.deliveryStatus === 'delivered' && (
-                                                <Badge className="text-[8px] bg-green-100 text-green-700 border-green-200">✅ Delivered</Badge>
-                                            )}
-                                            {activity.metadata.deliveryStatus === 'opened' && (
-                                                <Badge className="text-[8px] bg-blue-100 text-blue-700 border-blue-200">👁️ Opened</Badge>
-                                            )}
-                                            {activity.metadata.deliveryStatus === 'clicked' && (
-                                                <Badge className="text-[8px] bg-purple-100 text-purple-700 border-purple-200">🔗 Clicked</Badge>
-                                            )}
-                                            {activity.metadata.deliveryStatus === 'bounced' && (
-                                                <Badge className="text-[8px] bg-red-100 text-red-700 border-red-200">❌ Bounced</Badge>
-                                            )}
-                                        </div>
-                                    )}
-                                    {/* Enriched fields */}
-                                    {activity.metadata?.enrichedFields?.length > 0 && (
-                                        <div className="flex gap-1 mt-1">
-                                            {activity.metadata.enrichedFields.map((f: string) => (
-                                                <Badge key={f} variant="secondary" className="text-[8px] px-1">{f}</Badge>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {/* Expandable email content */}
-                                    {activity.metadata?.subject && (
-                                        <div className="mt-1.5">
-                                            <button
-                                                onClick={() => setExpandedId(expandedId === activity.id ? null : activity.id)}
-                                                className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
-                                            >
-                                                <Mail className="w-3 h-3" />
-                                                {expandedId === activity.id ? 'Hide email' : 'View email'}
-                                                {expandedId === activity.id
-                                                    ? <ChevronUp className="w-3 h-3" />
-                                                    : <ChevronDown className="w-3 h-3" />}
-                                            </button>
-                                            {expandedId === activity.id && (
-                                                <div className="mt-2 rounded-md border bg-muted/30 p-3 space-y-2">
-                                                    {activity.metadata.from && (
-                                                        <div className="text-[10px] text-muted-foreground">From: <span className="text-foreground">{activity.metadata.from}</span></div>
-                                                    )}
-                                                    {activity.metadata.to && (
-                                                        <div className="text-[10px] text-muted-foreground">To: <span className="text-foreground">{activity.metadata.to}</span></div>
-                                                    )}
-                                                    {activity.metadata.replyTo && (
-                                                        <div className="text-[10px] text-muted-foreground">Reply-To: <span className="text-foreground">{activity.metadata.replyTo}</span></div>
-                                                    )}
-                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider pt-1 border-t">Subject</div>
-                                                    <p className="text-xs font-medium">{activity.metadata.subject}</p>
-                                                    <div className="border-t pt-2 mt-2">
-                                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Body</div>
-                                                        <div className="text-xs whitespace-pre-wrap leading-relaxed max-h-64 overflow-auto">
-                                                            {activity.metadata.body}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                {/* Scheduled / Future Section */}
+                {scheduled.length > 0 && (
+                    <>
+                        <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/30 border-b flex items-center gap-2">
+                            <Clock className="w-3.5 h-3.5 text-amber-600" />
+                            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Scheduled ({scheduled.length})</span>
+                        </div>
+                        <div className="divide-y divide-border border-b-2 border-amber-200 dark:border-amber-800">
+                            {scheduled.map(a => renderActivity(a, true))}
+                        </div>
+                    </>
+                )}
+                {/* Past Section */}
+                {past.length > 0 && (
+                    <>
+                        {scheduled.length > 0 && (
+                            <div className="px-4 py-2 bg-muted/30 border-b flex items-center gap-2">
+                                <Check className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span className="text-xs font-semibold text-muted-foreground">Past Activity</span>
                             </div>
-                        );
-                    })}
-                </div>
+                        )}
+                        <div className="divide-y divide-border">
+                            {past.map(a => renderActivity(a))}
+                        </div>
+                    </>
+                )}
             </CardContent>
         </Card>
     );
 }
+

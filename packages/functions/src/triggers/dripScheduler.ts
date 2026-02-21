@@ -63,14 +63,21 @@ export const onAwaitingOnboarding = onDocumentUpdated({
         });
     }
 
-    // Log activity
-    await db.collection("vendor_activities").add({
-        vendorId,
-        type: "DRIP_SCHEDULED",
-        description: `Drip campaign scheduled: 3 follow-ups over 14 days for ${businessName}.`,
-        createdAt: new Date(),
-        metadata: { followUpCount: 3, schedule: '3d/7d/14d' }
-    });
+    // Log each follow-up as a separate activity for timeline visibility
+    for (const fu of followUps) {
+        const scheduledDate = new Date(now);
+        scheduledDate.setDate(scheduledDate.getDate() + fu.dayOffset);
+        scheduledDate.setHours(15, 0, 0, 0);
+
+        await db.collection("vendor_activities").add({
+            vendorId,
+            type: "DRIP_SCHEDULED",
+            description: `Follow-up #${fu.sequence} scheduled: "${fu.subject}"`,
+            createdAt: new Date(),
+            scheduledFor: scheduledDate,
+            metadata: { sequence: fu.sequence, dayOffset: fu.dayOffset, subject: fu.subject }
+        });
+    }
 
     logger.info(`Drip campaign scheduled for ${vendorId}: 3 follow-ups at days 3, 7, 14`);
 });
