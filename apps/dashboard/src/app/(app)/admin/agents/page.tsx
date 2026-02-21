@@ -5,118 +5,93 @@ import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Bot, Save, X, ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
+import { Loader2, Bot, Save, X, ChevronDown, ChevronUp, Check, AlertTriangle } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-
-interface AgentConfig {
-    id: string;
-    name: string;
-    description: string;
-    promptTemplateId: string;
-    model: string;
-    apiKey?: string;
-    enabled: boolean;
-}
 
 interface Template {
     id: string;
+    name: string;
+    description?: string;
+    category?: string;
     content: string;
-    variables: string[];
+    version?: string;
+    updatedAt?: any;
 }
 
-const AVAILABLE_MODELS = [
-    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", provider: "Google" },
-    { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", provider: "Google" },
-    { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI" },
-    { id: "gpt-4-turbo", name: "GPT-4 Turbo", provider: "OpenAI" },
-    { id: "claude-3-opus-20240229", name: "Claude 3 Opus", provider: "Anthropic" },
-    { id: "claude-3-sonnet-20240229", name: "Claude 3 Sonnet", provider: "Anthropic" }
-];
+// Auto-detect variables in prompt content (e.g., {{vendorName}})
+function extractVariables(content: string): string[] {
+    const matches = content.match(/\{\{(\w+)\}\}/g);
+    if (!matches) return [];
+    return [...new Set(matches.map(m => m.replace(/[{}]/g, '')))];
+}
 
-export default function AgentsPage() {
-    const [agents, setAgents] = useState<AgentConfig[]>([]);
-    const [templates, setTemplates] = useState<Record<string, Template>>({});
+// Category display config
+const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
+    vendor: { label: "Supply (Vendor Outreach)", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30" },
+    sales: { label: "Demand (Sales Outreach)", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" },
+};
+
+export default function AIAgentsPage() {
+    const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
-    const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState<Partial<AgentConfig & { promptContent: string }>>({});
-    const [showApiKey, setShowApiKey] = useState(false);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [editContent, setEditContent] = useState("");
+    const [saving, setSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchData();
+        fetchTemplates();
     }, []);
 
-    const fetchData = async () => {
+    const fetchTemplates = async () => {
         try {
-            // Fetch agents
-            const agentsSnap = await getDocs(collection(db, "agent_configs"));
-            const agentsData = agentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as AgentConfig));
-            setAgents(agentsData);
-
-            // Fetch templates
-            const templatesSnap = await getDocs(collection(db, "templates"));
-            const templatesData: Record<string, Template> = {};
-            templatesSnap.docs.forEach(d => {
-                templatesData[d.id] = { id: d.id, ...d.data() } as Template;
+            const snap = await getDocs(collection(db, "templates"));
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Template));
+            // Sort: vendor first, then sales, then alphabetical
+            data.sort((a, b) => {
+                const catOrder = (c?: string) => c === 'vendor' ? 0 : c === 'sales' ? 1 : 2;
+                return catOrder(a.category) - catOrder(b.category) || a.name.localeCompare(b.name);
             });
-            setTemplates(templatesData);
+            setTemplates(data);
         } catch (error) {
-            console.error("Error fetching data:", error);
+            console.error("Error fetching templates:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleExpand = (agentId: string) => {
-        if (expandedAgent === agentId) {
-            setExpandedAgent(null);
-            setEditForm({});
+    const handleExpand = (template: Template) => {
+        if (expandedId === template.id) {
+            setExpandedId(null);
+            setEditContent("");
         } else {
-            const agent = agents.find(a => a.id === agentId);
-            if (agent) {
-                const template = templates[agent.promptTemplateId];
-                setExpandedAgent(agentId);
-                setEditForm({
-                    ...agent,
-                    promptContent: template?.content || ""
-                });
-            }
+            setExpandedId(template.id);
+            setEditContent(template.content);
         }
     };
 
-    const handleSave = async () => {
-        if (!expandedAgent || !editForm) return;
+    const handleSave = async (templateId: string) => {
+        setSaving(true);
         try {
-            // Update agent config
-            await updateDoc(doc(db, "agent_configs", expandedAgent), {
-                model: editForm.model,
-                apiKey: editForm.apiKey || null,
-                enabled: editForm.enabled,
+            await updateDoc(doc(db, "templates", templateId), {
+                content: editContent,
                 updatedAt: new Date()
             });
-
-            // Update prompt template
-            if (editForm.promptContent && editForm.promptTemplateId) {
-                await updateDoc(doc(db, "templates", editForm.promptTemplateId), {
-                    content: editForm.promptContent,
-                    updatedAt: new Date()
-                });
-            }
-
-            await fetchData();
-            setExpandedAgent(null);
-            setEditForm({});
+            await fetchTemplates();
+            setSaveSuccess(templateId);
+            setTimeout(() => setSaveSuccess(null), 2000);
         } catch (error) {
-            console.error("Error saving agent:", error);
+            console.error("Error saving template:", error);
+        } finally {
+            setSaving(false);
         }
     };
 
     const handleCancel = () => {
-        setExpandedAgent(null);
-        setEditForm({});
+        setExpandedId(null);
+        setEditContent("");
     };
 
     if (loading) {
@@ -127,148 +102,161 @@ export default function AgentsPage() {
         );
     }
 
+    // Group templates by category
+    const grouped = templates.reduce((acc, t) => {
+        const cat = t.category || 'other';
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(t);
+        return acc;
+    }, {} as Record<string, Template[]>);
+
     return (
         <ProtectedRoute resource="admin/agents">
-            <div className="space-y-6">
+            <div className="space-y-8">
                 <div>
-                    <h2 className="text-2xl font-bold mb-2">Agent Manager</h2>
-                    <p className="text-muted-foreground">Configure AI agents, models, and system prompts</p>
+                    <h2 className="text-2xl font-bold mb-1">AI Agents</h2>
+                    <p className="text-muted-foreground">
+                        Manage the system prompts that power your AI agents. Changes take effect immediately.
+                    </p>
                 </div>
 
-                <div className="grid gap-4">
-                    {agents.map((agent) => {
-                        const isExpanded = expandedAgent === agent.id;
-                        const template = templates[agent.promptTemplateId];
+                {Object.entries(grouped).map(([category, items]) => {
+                    const config = CATEGORY_CONFIG[category] || { label: category, color: "bg-muted text-muted-foreground border-border" };
 
-                        return (
-                            <Card key={agent.id} className={isExpanded ? "border-primary" : ""}>
-                                <CardHeader>
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <CardTitle className="flex items-center gap-2">
-                                                <Bot className="w-5 h-5" />
-                                                {agent.name}
-                                                <Badge variant={agent.enabled ? "default" : "secondary"}>
-                                                    {agent.enabled ? "Enabled" : "Disabled"}
-                                                </Badge>
-                                            </CardTitle>
-                                            <CardDescription className="mt-1">
-                                                {agent.description}
-                                            </CardDescription>
-                                            {!isExpanded && (
-                                                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                                                    <span>Model: <strong>{AVAILABLE_MODELS.find(m => m.id === agent.model)?.name || agent.model}</strong></span>
-                                                    {agent.apiKey && <Badge variant="outline" className="text-xs">Custom API Key</Badge>}
+                    return (
+                        <div key={category} className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <Badge variant="outline" className={config.color}>
+                                    {config.label}
+                                </Badge>
+                                <div className="h-px flex-1 bg-border" />
+                            </div>
+
+                            <div className="grid gap-4">
+                                {items.map((template) => {
+                                    const isExpanded = expandedId === template.id;
+                                    const variables = extractVariables(template.content);
+                                    const isSaved = saveSuccess === template.id;
+
+                                    return (
+                                        <Card key={template.id} className={isExpanded ? "border-primary" : ""}>
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <CardTitle className="flex items-center gap-2 text-base">
+                                                            <Bot className="w-4 h-4 text-muted-foreground" />
+                                                            {template.name}
+                                                            {isSaved && (
+                                                                <Badge className="bg-green-500/10 text-green-600 border-green-500/30 gap-1">
+                                                                    <Check className="w-3 h-3" /> Saved
+                                                                </Badge>
+                                                            )}
+                                                        </CardTitle>
+                                                        {template.description && (
+                                                            <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+                                                                {template.description}
+                                                            </p>
+                                                        )}
+                                                        <CardDescription className="mt-1 font-mono text-xs">
+                                                            {template.id}
+                                                            {template.version && <span className="ml-2">v{template.version}</span>}
+                                                        </CardDescription>
+                                                    </div>
+                                                    <Button
+                                                        onClick={() => handleExpand(template)}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="gap-1.5 text-xs"
+                                                    >
+                                                        {isExpanded ? (
+                                                            <><ChevronUp className="w-3.5 h-3.5" /> Collapse</>
+                                                        ) : (
+                                                            <><ChevronDown className="w-3.5 h-3.5" /> Edit</>
+                                                        )}
+                                                    </Button>
                                                 </div>
+                                            </CardHeader>
+
+                                            {isExpanded && (
+                                                <CardContent className="space-y-4 border-t pt-4">
+                                                    {/* Prompt Editor */}
+                                                    <div>
+                                                        <label className="text-sm font-medium mb-2 block">System Prompt</label>
+                                                        <Textarea
+                                                            value={editContent}
+                                                            onChange={(e) => setEditContent(e.target.value)}
+                                                            rows={18}
+                                                            className="font-mono text-sm leading-relaxed"
+                                                        />
+                                                    </div>
+
+                                                    {/* Variables */}
+                                                    {variables.length > 0 && (
+                                                        <div>
+                                                            <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                                                                Detected Variables
+                                                            </label>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {variables.map((v) => (
+                                                                    <Badge key={v} variant="secondary" className="font-mono text-xs">
+                                                                        {`{{${v}}}`}
+                                                                    </Badge>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Warning */}
+                                                    <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                                                        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                                                        <span>
+                                                            Changes are saved directly to production. The next AI generation will use the updated prompt.
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Actions */}
+                                                    <div className="flex gap-2 pt-1">
+                                                        <Button
+                                                            onClick={() => handleSave(template.id)}
+                                                            disabled={saving}
+                                                            className="gap-2"
+                                                        >
+                                                            {saving ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : (
+                                                                <Save className="w-4 h-4" />
+                                                            )}
+                                                            Save Changes
+                                                        </Button>
+                                                        <Button onClick={handleCancel} variant="outline" className="gap-2">
+                                                            <X className="w-4 h-4" />
+                                                            Cancel
+                                                        </Button>
+                                                    </div>
+                                                </CardContent>
                                             )}
-                                        </div>
-                                        <Button
-                                            onClick={() => handleExpand(agent.id)}
-                                            variant="ghost"
-                                            size="sm"
-                                            className="gap-2"
-                                        >
-                                            {isExpanded ? (
-                                                <>
-                                                    <ChevronUp className="w-4 h-4" />
-                                                    Collapse
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <ChevronDown className="w-4 h-4" />
-                                                    Configure
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
-                                </CardHeader>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                })}
 
-                                {isExpanded && (
-                                    <CardContent className="space-y-4 border-t pt-4">
-                                        {/* Model Selection */}
-                                        <div>
-                                            <label className="text-sm font-medium mb-2 block">LLM Model</label>
-                                            <Select
-                                                value={editForm.model}
-                                                onValueChange={(value: string) => setEditForm({ ...editForm, model: value })}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {AVAILABLE_MODELS.map((model) => (
-                                                        <SelectItem key={model.id} value={model.id}>
-                                                            {model.name} <span className="text-muted-foreground">({model.provider})</span>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        {/* API Key */}
-                                        <div>
-                                            <label className="text-sm font-medium mb-2 block">
-                                                API Key <span className="text-muted-foreground font-normal">(Optional override)</span>
-                                            </label>
-                                            <div className="flex gap-2">
-                                                <Input
-                                                    type={showApiKey ? "text" : "password"}
-                                                    value={editForm.apiKey || ""}
-                                                    onChange={(e) => setEditForm({ ...editForm, apiKey: e.target.value })}
-                                                    placeholder="Leave empty to use default"
-                                                />
-                                                <Button
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={() => setShowApiKey(!showApiKey)}
-                                                >
-                                                    {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        {/* System Prompt */}
-                                        <div>
-                                            <label className="text-sm font-medium mb-2 block">System Prompt</label>
-                                            <Textarea
-                                                value={editForm.promptContent || ""}
-                                                onChange={(e) => setEditForm({ ...editForm, promptContent: e.target.value })}
-                                                rows={12}
-                                                className="font-mono text-sm"
-                                            />
-                                        </div>
-
-                                        {/* Variables */}
-                                        {template?.variables && (
-                                            <div>
-                                                <label className="text-sm font-medium mb-2 block">Available Variables</label>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {template.variables.map((v) => (
-                                                        <Badge key={v} variant="secondary" className="font-mono">
-                                                            {`{{${v}}}`}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Actions */}
-                                        <div className="flex gap-2 pt-2">
-                                            <Button onClick={handleSave} className="gap-2">
-                                                <Save className="w-4 h-4" />
-                                                Save Changes
-                                            </Button>
-                                            <Button onClick={handleCancel} variant="outline" className="gap-2">
-                                                <X className="w-4 h-4" />
-                                                Cancel
-                                            </Button>
-                                        </div>
-                                    </CardContent>
-                                )}
-                            </Card>
-                        );
-                    })}
-                </div>
+                {templates.length === 0 && (
+                    <Card>
+                        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                            <Bot className="w-12 h-12 text-muted-foreground mb-4" />
+                            <h3 className="text-lg font-semibold mb-2">No AI Agents Configured</h3>
+                            <p className="text-muted-foreground max-w-md">
+                                Run the seed script to populate your AI prompts:
+                                <code className="block mt-2 bg-muted p-2 rounded text-sm font-mono">
+                                    node scripts/seed-templates-prod.js
+                                </code>
+                            </p>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </ProtectedRoute>
     );

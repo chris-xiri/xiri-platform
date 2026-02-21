@@ -169,6 +169,85 @@ Return ONLY JSON:
 - "Your medical suite deserves better maintenance"
 `;
 
+const MESSAGE_ANALYSIS_PROMPT = `
+Role: You are an Incoming Message Analyst for Xiri Facility Solutions.
+
+Task: Analyze an incoming message from a vendor and determine the intent, then generate an appropriate response.
+
+**Vendor:**
+Name: {{vendorName}}
+Vendor ID: {{vendorId}}
+
+**Incoming Message:**
+{{messageContent}}
+
+**Previous Conversation Context:**
+{{previousContext}}
+
+**Possible Intents:**
+- INTERESTED: Vendor is interested in partnering (positive response)
+- NOT_INTERESTED: Vendor declines or is not interested
+- QUESTION: Vendor has questions about the partnership
+- SCHEDULING: Vendor wants to schedule a call or meeting
+- PRICING: Vendor asking about rates or compensation
+- ALREADY_BOOKED: Vendor says they are at capacity
+- UNSUBSCRIBE: Vendor wants to stop receiving messages
+- OTHER: Doesn't fit above categories
+
+**Instructions:**
+1. Classify the intent
+2. Generate a professional, helpful reply that matches the intent
+3. If INTERESTED, guide them toward the onboarding form
+4. If QUESTION, answer based on Xiri's value proposition
+5. If NOT_INTERESTED or UNSUBSCRIBE, be gracious and professional
+
+**Format:**
+Return ONLY JSON:
+{
+  "intent": "string (one of the intents above)",
+  "confidence": 0.95,
+  "reply": "string (professional response, max 150 words)",
+  "suggestedAction": "string (e.g., 'Mark as interested', 'Schedule follow-up', 'Remove from outreach')"
+}
+`;
+
+const DOCUMENT_VERIFIER_PROMPT = `
+Role: You are a Compliance Document Verification Agent for Xiri Facility Solutions.
+
+Task: Analyze the OCR text of a {{documentType}} document submitted by a vendor and determine if it meets our requirements.
+
+**Vendor:** {{vendorName}}
+**Specialty:** {{specialty}}
+
+**Requirements:**
+{{requirements}}
+
+**Extracted OCR Text:**
+{{ocrText}}
+
+**Instructions:**
+1. Check if the document meets ALL the stated requirements
+2. Extract key data points from the document
+3. Flag any concerns (expired dates, insufficient coverage, missing signatures)
+4. For COI: verify General Liability coverage >= $1,000,000, Workers Comp present, and dates are valid
+5. For W9: verify it is signed and contains a TIN/EIN
+
+**Format:**
+Return ONLY JSON:
+{
+  "valid": true/false,
+  "reasoning": "string (brief explanation of pass/fail)",
+  "extracted": {
+    "expirationDate": "string or null",
+    "coverageAmount": "string or null",
+    "entityName": "string or null",
+    "tin": "string or null (last 4 digits only)",
+    "signed": true/false
+  },
+  "flags": ["string (any concerns or warnings)"]
+}
+`;
+
 const SALES_FOLLOWUP_PROMPT = `
 You are writing a follow-up email for XIRI Facility Solutions to a business owner or property manager who has not yet responded to our initial outreach.
 
@@ -205,18 +284,57 @@ async function seedTemplates() {
   console.log("Seeding templates to PRODUCTION Firestore...\n");
 
   const templates = [
-    { id: 'recruiter_analysis_prompt', name: 'Recruiter Analysis Agent', content: RECRUITER_PROMPT },
-    { id: 'outreach_generation_prompt', name: 'Vendor Outreach (Contractor Recruitment)', content: OUTREACH_PROMPT_CONTENT },
-    { id: 'sales_outreach_prompt', name: 'Sales Lead Outreach (B2B)', content: SALES_OUTREACH_PROMPT },
-    { id: 'sales_followup_prompt', name: 'Sales Lead Follow-Up (B2B)', content: SALES_FOLLOWUP_PROMPT },
+    {
+      id: 'recruiter_analysis_prompt',
+      name: 'Recruiter Analysis Agent',
+      description: 'Triggered when sourcing contractors via Google Maps. Analyzes each business result, assigns a fit score, extracts services, specialty, contact info, and structured address. Powers the "Run Recruiter" function.',
+      content: RECRUITER_PROMPT,
+      category: 'vendor',
+    },
+    {
+      id: 'outreach_generation_prompt',
+      name: 'Vendor Outreach (Contractor Recruitment)',
+      description: 'Generates the initial cold outreach email sent to newly approved vendors. Uses a peer-to-peer contractor recruitment tone. The [ONBOARDING_LINK] placeholder is auto-replaced with the vendor\'s onboarding URL before sending.',
+      content: OUTREACH_PROMPT_CONTENT,
+      category: 'vendor',
+    },
+    {
+      id: 'message_analysis_prompt',
+      name: 'Message Intent Analyzer',
+      description: 'Analyzes incoming messages/replies from vendors to classify intent (interested, not interested, question, scheduling, etc.) and generates an appropriate auto-response. Used by the inbound message handler.',
+      content: MESSAGE_ANALYSIS_PROMPT,
+      category: 'vendor',
+    },
+    {
+      id: 'document_verifier_prompt',
+      name: 'Document Verification Agent',
+      description: 'Verifies uploaded compliance documents (COI, W9) during vendor onboarding. Checks insurance coverage amounts, expiration dates, signatures, and TIN presence. Flags any compliance concerns.',
+      content: DOCUMENT_VERIFIER_PROMPT,
+      category: 'vendor',
+    },
+    {
+      id: 'sales_outreach_prompt',
+      name: 'Sales Lead Outreach (B2B)',
+      description: 'Generates the initial B2B sales email to prospective clients (medical offices, auto dealerships). Tailored to facility type with consultative tone. Triggered when a qualified lead enters the pipeline.',
+      content: SALES_OUTREACH_PROMPT,
+      category: 'sales',
+    },
+    {
+      id: 'sales_followup_prompt',
+      name: 'Sales Lead Follow-Up (B2B)',
+      description: 'Generates follow-up emails for leads that haven\'t responded. Supports 3 sequences: value-add, social proof, and respectful final check-in. Each follow-up adds new value instead of repeating the original pitch.',
+      content: SALES_FOLLOWUP_PROMPT,
+      category: 'sales',
+    },
   ];
 
   for (const t of templates) {
     await db.collection('templates').doc(t.id).set({
       name: t.name,
+      description: t.description,
       content: t.content,
       version: '1.0',
-      category: t.id.includes('sales') ? 'sales' : 'vendor',
+      category: t.category || 'vendor',
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
