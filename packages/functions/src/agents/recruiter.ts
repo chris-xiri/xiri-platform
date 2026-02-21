@@ -154,7 +154,9 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
                 const newVendor: Vendor = {
                     id: vendorRef.id,
                     businessName: bName,
-                    capabilities: item.specialty ? [item.specialty] : [],
+                    capabilities: item.services || (item.primarySpecialty ? [item.primarySpecialty] : (item.specialty ? [item.specialty] : [])),
+                    specialty: item.primarySpecialty || item.specialty || item.services?.[0] || undefined,
+                    contactName: item.contactName || undefined,
                     address: rawAddr,
                     streetAddress: parsed.streetAddress || undefined,
                     city: item.city || parsed.city || undefined,
@@ -165,6 +167,7 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
                     email: originalVendor.email || item.email || undefined,
                     website: originalVendor.website || item.website || undefined,
                     fitScore: item.fitScore,
+                    aiReasoning: item.reasoning || undefined,
                     hasActiveContract: hasActiveContract,
                     onboardingTrack: hasActiveContract ? 'FAST_TRACK' : 'STANDARD',
                     status: 'pending_review',

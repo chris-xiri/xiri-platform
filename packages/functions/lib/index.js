@@ -438,7 +438,9 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
         const newVendor = {
           id: vendorRef.id,
           businessName: bName,
-          capabilities: item.specialty ? [item.specialty] : [],
+          capabilities: item.services || (item.primarySpecialty ? [item.primarySpecialty] : item.specialty ? [item.specialty] : []),
+          specialty: item.primarySpecialty || item.specialty || item.services?.[0] || void 0,
+          contactName: item.contactName || void 0,
           address: rawAddr,
           streetAddress: parsed.streetAddress || void 0,
           city: item.city || parsed.city || void 0,
@@ -449,6 +451,7 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
           email: originalVendor.email || item.email || void 0,
           website: originalVendor.website || item.website || void 0,
           fitScore: item.fitScore,
+          aiReasoning: item.reasoning || void 0,
           hasActiveContract,
           onboardingTrack: hasActiveContract ? "FAST_TRACK" : "STANDARD",
           status: "pending_review",
@@ -1263,7 +1266,6 @@ var generateOutreachContent = async (vendor, preferredChannel) => {
     console.error("Error generating outreach content:", error10);
     return {
       channel,
-      sms: "Error generating SMS.",
       email: { subject: "Error", body: "Error generating content. Please draft manually." },
       error: true
     };
@@ -1387,18 +1389,16 @@ async function handleGenerate(task) {
   const vendorData = task.metadata;
   const outreachResult = await generateOutreachContent(vendorData, "EMAIL");
   if (outreachResult.error) {
-    throw new Error("AI Generation Failed: " + (outreachResult.sms || "Unknown Error"));
+    throw new Error("AI Generation Failed: " + (outreachResult.email?.body || "Unknown Error"));
   }
   await db6.collection("vendor_activities").add({
     vendorId: task.vendorId,
     type: "OUTREACH_QUEUED",
-    // Using same type for UI compatibility
-    description: `Outreach drafts generated (waiting to send).`,
+    description: `Outreach email draft generated (waiting to send).`,
     createdAt: /* @__PURE__ */ new Date(),
     metadata: {
-      sms: outreachResult.sms,
       email: outreachResult.email,
-      preferredChannel: outreachResult.channel,
+      preferredChannel: "EMAIL",
       campaignUrgency: vendorData.hasActiveContract ? "URGENT" : "SUPPLY"
     }
   });
@@ -1408,10 +1408,8 @@ async function handleGenerate(task) {
     type: "SEND",
     scheduledAt: admin7.firestore.Timestamp.fromDate(scheduledTime),
     metadata: {
-      // Pass the generated content along
-      sms: outreachResult.sms,
       email: outreachResult.email,
-      channel: outreachResult.channel
+      channel: "EMAIL"
     }
   });
   await updateTaskStatus(db6, task.id, "COMPLETED");
