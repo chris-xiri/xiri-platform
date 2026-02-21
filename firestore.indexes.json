@@ -1,6 +1,7 @@
 {
     "indexes": [
         {
+            "__comment": "Outreach Worker: fetches due tasks — fetchPendingTasks() in queueUtils.ts",
             "collectionGroup": "outreach_queue",
             "queryScope": "COLLECTION",
             "fields": [
@@ -15,6 +16,7 @@
             ]
         },
         {
+            "__comment": "Cancel Vendor Tasks: cancels pending outreach on dismiss/unsubscribe — cancelVendorTasks() in queueUtils.ts",
             "collectionGroup": "outreach_queue",
             "queryScope": "COLLECTION",
             "fields": [
@@ -29,6 +31,7 @@
             ]
         },
         {
+            "__comment": "Vendor Activity Feed: loads timeline for a vendor — VendorActivityFeed.tsx",
             "collectionGroup": "vendor_activities",
             "queryScope": "COLLECTION",
             "fields": [
