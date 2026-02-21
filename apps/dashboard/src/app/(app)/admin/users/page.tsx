@@ -83,7 +83,7 @@ function UserForm({
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="user@xiri.ai"
-                            disabled={!!initialData?.uid}
+                            disabled={false}
                         />
                     </div>
                 </div>
@@ -160,6 +160,7 @@ export default function UserManagerPage() {
             if (editingUser) {
                 await updateDoc(doc(db, "users", editingUser.uid), {
                     displayName: data.displayName,
+                    email: data.email,
                     roles: data.roles,
                     updatedAt: serverTimestamp(),
                 });
@@ -250,7 +251,7 @@ export default function UserManagerPage() {
                 )}
 
                 {/* Role-Based Columns */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {activeRoles.map(role => {
                         const RoleIcon = role.icon;
                         const variants = ALL_ROLES.filter(r => r.label === role.label).map(r => r.value);
@@ -282,8 +283,8 @@ export default function UserManagerPage() {
                                                     </span>
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="text-sm font-medium truncate">{user.displayName}</p>
-                                                    <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+                                                    <p className="text-sm font-medium">{user.displayName}</p>
+                                                    <p className="text-[10px] text-muted-foreground">{user.email}</p>
                                                 </div>
                                             </div>
                                             <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
