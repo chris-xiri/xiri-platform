@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import VendorList from "@/components/VendorList";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
@@ -30,9 +31,23 @@ const STATUS_TABS = [
 ] as const;
 
 export default function CRMPage() {
-    const [activeTab, setActiveTab] = useState<string>('all');
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || 'all');
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [showAddContractor, setShowAddContractor] = useState(false);
+
+    // Sync tab to URL
+    const handleTabChange = (tab: string) => {
+        setActiveTab(tab);
+        const params = new URLSearchParams(searchParams.toString());
+        if (tab === 'all') {
+            params.delete('tab');
+        } else {
+            params.set('tab', tab);
+        }
+        router.replace(`?${params.toString()}`, { scroll: false });
+    };
 
     // Live Firestore listener for count badges
     useEffect(() => {
@@ -91,7 +106,7 @@ export default function CRMPage() {
                         return (
                             <button
                                 key={tab.key}
-                                onClick={() => setActiveTab(tab.key)}
+                                onClick={() => handleTabChange(tab.key)}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap
                                     ${isActive
                                         ? 'bg-primary text-primary-foreground shadow-sm'

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Vendor } from '@xiri/shared';
@@ -43,10 +43,22 @@ interface PageProps {
 export default function CRMDetailPage(props: PageProps) {
     const params = React.use(props.params);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [vendor, setVendor] = useState<Vendor | null>(null);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
     const [startingSequence, setStartingSequence] = useState(false);
+    const activeDetailTab = searchParams.get('tab') || 'overview';
+
+    const handleDetailTabChange = (tab: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (tab === 'overview') {
+            params.delete('tab');
+        } else {
+            params.set('tab', tab);
+        }
+        router.replace(`?${params.toString()}`, { scroll: false });
+    };
 
     const ONBOARDING_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://xiri.ai';
 
@@ -331,7 +343,7 @@ export default function CRMDetailPage(props: PageProps) {
             {/* Scrollable Content */}
             <div className="flex-1 overflow-auto p-6">
                 <VendorStatusTimeline status={vendor.status} />
-                <Tabs defaultValue="overview" className="space-y-4">
+                <Tabs value={activeDetailTab} onValueChange={handleDetailTabChange} className="space-y-4">
                     <TabsList>
                         <TabsTrigger value="overview" className="gap-2"><LayoutDashboard className="w-4 h-4" /> Overview</TabsTrigger>
                         <TabsTrigger value="contacts" className="gap-2"><Users className="w-4 h-4" /> Contacts</TabsTrigger>
