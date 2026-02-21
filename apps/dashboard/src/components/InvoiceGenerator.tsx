@@ -116,20 +116,20 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
     // Build line items + vendor payouts from selected client
     const lineItems: InvoiceLineItem[] = selectedClient
         ? selectedClient.workOrders.map(wo => {
-            const zip = wo.locationZip;
+            const zip = wo.locationZip || '';
             const taxInfo = zip ? getTaxRate(zip) : null;
             const taxRate = taxInfo?.combinedRate || 0;
-            const taxAmount = calculateTax(wo.clientRate, taxRate);
+            const taxAmount = calculateTax(wo.clientRate || 0, taxRate);
             return {
-                workOrderId: wo.id!,
-                locationName: wo.locationName,
+                workOrderId: wo.id || '',
+                locationName: wo.locationName || '',
                 locationAddress: [wo.locationAddress, wo.locationCity, wo.locationState, wo.locationZip].filter(Boolean).join(', ') || '',
                 locationZip: zip,
-                serviceType: wo.serviceType,
+                serviceType: wo.serviceType || '',
                 frequency: wo.schedule?.frequency || 'monthly',
-                amount: wo.clientRate,
-                taxRate: taxRate || 0,
-                taxAmount: taxAmount || 0,
+                amount: wo.clientRate || 0,
+                taxRate: taxRate,
+                taxAmount: taxAmount,
             };
         })
         : [];
@@ -138,11 +138,11 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
         ? selectedClient.workOrders
             .filter(wo => wo.vendorId && wo.vendorRate)
             .map(wo => ({
-                vendorId: wo.vendorId!,
+                vendorId: wo.vendorId || '',
                 vendorName: wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || 'Vendor',
-                workOrderId: wo.id!,
-                serviceType: wo.serviceType,
-                amount: wo.vendorRate!,
+                workOrderId: wo.id || '',
+                serviceType: wo.serviceType || '',
+                amount: wo.vendorRate || 0,
                 status: 'pending' as const,
             }))
         : [];
