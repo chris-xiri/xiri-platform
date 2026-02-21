@@ -13,7 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
     LayoutDashboard, Users, Briefcase, DollarSign,
     ShieldCheck, Activity, ArrowLeft, MoreHorizontal,
-    Phone, Mail, MapPin, Globe, Copy, Check, Rocket, AlertTriangle
+    Phone, Mail, MapPin, Globe, Copy, Check, Rocket, AlertTriangle,
+    Pencil, X, Plus
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -32,6 +33,67 @@ const LanguageBadge = ({ lang }: { lang?: 'en' | 'es' }) => {
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">🇪🇸 ES</Badge>;
     }
     return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">🇺🇸 EN</Badge>;
+};
+
+/**
+ * Inline click-to-edit field — click value to edit, Enter/blur to save
+ */
+const InlineEditField = ({
+    vendorId, field, value, icon: Icon, type = 'text', prefix, linkHref,
+}: {
+    vendorId: string; field: string; value?: string; icon: React.ElementType;
+    type?: 'text' | 'email' | 'tel' | 'url'; prefix?: string; linkHref?: string;
+}) => {
+    const [editing, setEditing] = useState(false);
+    const [val, setVal] = useState(value || '');
+    const [saving, setSaving] = useState(false);
+
+    const save = async () => {
+        if (val === (value || '')) { setEditing(false); return; }
+        setSaving(true);
+        try {
+            await updateDoc(doc(db, 'vendors', vendorId), { [field]: val || null, updatedAt: new Date() });
+        } catch (e) { console.error('Save failed:', e); }
+        setSaving(false);
+        setEditing(false);
+    };
+
+    if (editing) {
+        return (
+            <div className="flex items-center gap-2">
+                <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
+                <input
+                    autoFocus
+                    type={type}
+                    value={val}
+                    onChange={(e) => setVal(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setVal(value || ''); setEditing(false); } }}
+                    onBlur={save}
+                    disabled={saving}
+                    className="flex-1 text-sm px-2 py-0.5 border rounded-md bg-card focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder={`Enter ${field}...`}
+                />
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setEditing(true)}>
+            <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
+            {value ? (
+                linkHref ? (
+                    <a href={linkHref} onClick={(e) => e.stopPropagation()} target={type === 'url' ? '_blank' : undefined} rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate max-w-[250px]">
+                        {prefix}{value}
+                    </a>
+                ) : (
+                    <span className="text-sm">{prefix}{value}</span>
+                )
+            ) : (
+                <span className="text-sm text-muted-foreground italic">Add {field}...</span>
+            )}
+            <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+    );
 };
 
 interface PageProps {
@@ -364,35 +426,19 @@ export default function CRMDetailPage(props: PageProps) {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1">
                                                 <div className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">Address</div>
-                                                <div className="flex items-start gap-2">
-                                                    <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
-                                                    <div className="text-sm">
-                                                        {vendor.streetAddress || vendor.address}<br />
-                                                        {[vendor.city, vendor.state].filter(Boolean).join(', ')} {vendor.zip}
-                                                    </div>
+                                                <InlineEditField vendorId={vendor.id!} field="streetAddress" value={vendor.streetAddress || vendor.address} icon={MapPin} />
+                                                <div className="flex gap-2 ml-6">
+                                                    <InlineEditField vendorId={vendor.id!} field="city" value={vendor.city} icon={() => <span className="text-[10px] text-muted-foreground w-4 text-center">City</span>} />
+                                                    <InlineEditField vendorId={vendor.id!} field="state" value={vendor.state} icon={() => <span className="text-[10px] text-muted-foreground w-4 text-center">ST</span>} />
+                                                    <InlineEditField vendorId={vendor.id!} field="zip" value={vendor.zip} icon={() => <span className="text-[10px] text-muted-foreground w-4 text-center">Zip</span>} />
                                                 </div>
                                             </div>
                                             <div className="space-y-1">
                                                 <div className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">Contact</div>
-                                                <div className="space-y-1 text-sm">
-                                                    <div className="flex items-center gap-2">
-                                                        <Phone className="w-4 h-4 text-muted-foreground" />
-                                                        {vendor.phone ? (
-                                                            <a href={`tel:${vendor.phone}`} className="text-primary hover:underline">{vendor.phone}</a>
-                                                        ) : <span className="text-muted-foreground">-</span>}
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Mail className="w-4 h-4 text-muted-foreground" />
-                                                        {vendor.email ? (
-                                                            <a href={`mailto:${vendor.email}`} className="text-primary hover:underline">{vendor.email}</a>
-                                                        ) : <span className="text-muted-foreground">-</span>}
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Globe className="w-4 h-4 text-muted-foreground" />
-                                                        {vendor.website ? (
-                                                            <a href={vendor.website.startsWith('http') ? vendor.website : `https://${vendor.website}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate max-w-[200px]">{vendor.website}</a>
-                                                        ) : <span className="text-muted-foreground">-</span>}
-                                                    </div>
+                                                <div className="space-y-2">
+                                                    <InlineEditField vendorId={vendor.id!} field="phone" value={vendor.phone} icon={Phone} type="tel" linkHref={vendor.phone ? `tel:${vendor.phone}` : undefined} />
+                                                    <InlineEditField vendorId={vendor.id!} field="email" value={vendor.email} icon={Mail} type="email" linkHref={vendor.email ? `mailto:${vendor.email}` : undefined} />
+                                                    <InlineEditField vendorId={vendor.id!} field="website" value={vendor.website} icon={Globe} type="url" linkHref={vendor.website ? (vendor.website.startsWith('http') ? vendor.website : `https://${vendor.website}`) : undefined} />
                                                 </div>
                                             </div>
                                         </div>
@@ -400,12 +446,37 @@ export default function CRMDetailPage(props: PageProps) {
                                 </Card>
 
                                 <Card>
-                                    <CardHeader><CardTitle>Capabilities</CardTitle></CardHeader>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center justify-between">
+                                            Capabilities
+                                            <Button size="sm" variant="ghost" className="h-6 text-xs gap-1"
+                                                onClick={() => {
+                                                    const cap = prompt('Add capability:');
+                                                    if (cap?.trim()) {
+                                                        const updated = [...(vendor.capabilities || []), cap.trim()];
+                                                        updateDoc(doc(db, 'vendors', vendor.id!), { capabilities: updated, updatedAt: new Date() });
+                                                    }
+                                                }}>
+                                                <Plus className="w-3 h-3" /> Add
+                                            </Button>
+                                        </CardTitle>
+                                    </CardHeader>
                                     <CardContent>
                                         <div className="flex flex-wrap gap-2">
                                             {vendor.capabilities?.map((cap, i) => (
-                                                <Badge key={i} variant="secondary">{cap}</Badge>
+                                                <Badge key={i} variant="secondary" className="group cursor-pointer" onClick={() => {
+                                                    if (confirm(`Remove "${cap}"?`)) {
+                                                        const updated = vendor.capabilities!.filter((_, idx) => idx !== i);
+                                                        updateDoc(doc(db, 'vendors', vendor.id!), { capabilities: updated, updatedAt: new Date() });
+                                                    }
+                                                }}>
+                                                    {cap}
+                                                    <X className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                                                </Badge>
                                             ))}
+                                            {(!vendor.capabilities || vendor.capabilities.length === 0) && (
+                                                <span className="text-sm text-muted-foreground italic">No capabilities — click Add to start</span>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>

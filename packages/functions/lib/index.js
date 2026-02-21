@@ -191,6 +191,8 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
         subject: email.subject,
         body: email.body,
         to: vendor?.email || "unknown",
+        from: "Xiri Facility Solutions <onboarding@xiri.ai>",
+        replyTo: "chris@xiri.ai",
         resendId
         // NEW: Track Resend email ID
       }
@@ -242,37 +244,37 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db22, task) {
-  return db22.collection(COLLECTION).add({
+async function enqueueTask(db23, task) {
+  return db23.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db22) {
+async function fetchPendingTasks(db23) {
   const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db22.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db23.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function updateTaskStatus(db22, taskId, status, updates = {}) {
-  await db22.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db23, taskId, status, updates = {}) {
+  await db23.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db22, vendorId) {
-  const snapshot = await db22.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db22.batch();
+async function cancelVendorTasks(db23, vendorId) {
+  const snapshot = await db23.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db23.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadTasks(db22, leadId) {
-  const snapshot = await db22.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db22.batch();
+async function cancelLeadTasks(db23, leadId) {
+  const snapshot = await db23.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db23.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
@@ -314,6 +316,7 @@ __export(index_exports, {
   processCommissionPayouts: () => processCommissionPayouts,
   processMailQueue: () => processMailQueue,
   processOutreachQueue: () => processOutreachQueue,
+  resendWebhook: () => resendWebhook,
   respondToQuote: () => respondToQuote,
   runRecruiterAgent: () => runRecruiterAgent,
   sendBookingConfirmation: () => sendBookingConfirmation,
@@ -323,7 +326,7 @@ __export(index_exports, {
   testSendEmail: () => testSendEmail
 });
 module.exports = __toCommonJS(index_exports);
-var import_https4 = require("firebase-functions/v2/https");
+var import_https5 = require("firebase-functions/v2/https");
 
 // src/utils/firebase.ts
 var admin = __toESM(require("firebase-admin"));
@@ -424,7 +427,7 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
     const analysis = JSON.parse(jsonStr);
     analyzed = analysis.length;
     for (const item of analysis) {
-      if (item.isQualified) {
+      if (item.isQualified || threshold === 0) {
         qualified++;
         const originalVendor = vendorsToAnalyze[item.index];
         if (!originalVendor) {
@@ -756,47 +759,75 @@ var logger = __toESM(require("firebase-functions/logger"));
 // src/utils/websiteScraper.ts
 var cheerio = __toESM(require("cheerio"));
 var import_generative_ai3 = require("@google/generative-ai");
-async function scrapeWebsite(url, geminiApiKey) {
+var TIMEOUT_MS = 15e3;
+var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+async function fetchPage(url) {
   try {
     const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; XiriBot/1.0; +https://xiri.ai/bot)"
-      },
-      signal: AbortSignal.timeout(1e4)
-      // 10 second timeout
+      headers: { "User-Agent": USER_AGENT },
+      signal: AbortSignal.timeout(TIMEOUT_MS)
     });
-    if (!response.ok) {
-      return { success: false, error: `HTTP ${response.status}: ${response.statusText}` };
-    }
+    if (!response.ok) return null;
     const html = await response.text();
-    const $ = cheerio.load(html);
-    const structuredData = extractStructuredData($);
-    const patternData = extractFromPatterns($, html);
-    let contactPageData = {};
-    if (!structuredData.email || !structuredData.phone) {
-      const contactUrl = findContactPage($, url);
-      if (contactUrl) {
-        contactPageData = await scrapeContactPage(contactUrl);
-      }
+    return { html, $: cheerio.load(html) };
+  } catch {
+    return null;
+  }
+}
+async function scrapeWebsite(url, geminiApiKey) {
+  try {
+    const homepage = await fetchPage(url);
+    if (!homepage) {
+      return { success: false, error: `Could not fetch ${url}` };
     }
+    const structuredData = extractStructuredData(homepage.$);
+    const patternData = extractFromPatterns(homepage.$, homepage.html);
+    const linkData = extractMailtoAndTel(homepage.$);
+    const additionalPages = findAdditionalPages(homepage.$, url);
+    const contactPageResults = [];
+    let allAdditionalHtml = "";
+    for (const pageUrl of additionalPages.slice(0, 3)) {
+      const page = await fetchPage(pageUrl);
+      if (!page) continue;
+      const pagePatterns = extractFromPatterns(page.$, page.html);
+      const pageLinks = extractMailtoAndTel(page.$);
+      const hasForm = page.$("form").length > 0;
+      if (hasForm) pagePatterns.contactFormUrl = pageUrl;
+      contactPageResults.push({
+        ...pagePatterns,
+        email: pageLinks.email || pagePatterns.email,
+        phone: pageLinks.phone || pagePatterns.phone
+      });
+      allAdditionalHtml += page.html + "\n";
+    }
+    const mergedContact = mergeContactPages(contactPageResults);
     const combinedData = {
-      email: structuredData.email || patternData.email || contactPageData.email,
-      phone: structuredData.phone || patternData.phone || contactPageData.phone,
-      address: structuredData.address || patternData.address || contactPageData.address,
+      email: structuredData.email || linkData.email || mergedContact.email || patternData.email,
+      phone: structuredData.phone || linkData.phone || mergedContact.phone || patternData.phone,
+      address: structuredData.address || mergedContact.address || patternData.address,
       businessName: structuredData.businessName || patternData.businessName,
+      contactFormUrl: mergedContact.contactFormUrl,
       socialMedia: {
-        linkedin: patternData.socialMedia?.linkedin,
-        facebook: patternData.socialMedia?.facebook,
-        twitter: patternData.socialMedia?.twitter
+        linkedin: patternData.socialMedia?.linkedin || mergedContact.socialMedia?.linkedin,
+        facebook: patternData.socialMedia?.facebook || mergedContact.socialMedia?.facebook,
+        twitter: patternData.socialMedia?.twitter || mergedContact.socialMedia?.twitter
       },
-      confidence: determineConfidence(structuredData, patternData, contactPageData),
+      confidence: "low",
       source: "web-scraper"
     };
+    if (!combinedData.email) {
+      const genericEmail = findGenericEmail(homepage.html, allAdditionalHtml);
+      if (genericEmail) {
+        combinedData.email = genericEmail;
+      }
+    }
     if (!combinedData.email || !combinedData.phone) {
-      const aiData = await extractWithAI(html, geminiApiKey);
+      const aiHtml = allAdditionalHtml.length > 500 ? allAdditionalHtml : homepage.html;
+      const aiData = await extractWithAI(aiHtml, geminiApiKey);
       combinedData.email = combinedData.email || aiData.email;
       combinedData.phone = combinedData.phone || aiData.phone;
       combinedData.address = combinedData.address || aiData.address;
+      combinedData.businessName = combinedData.businessName || aiData.businessName;
     }
     if (combinedData.email) {
       combinedData.email = validateEmail(combinedData.email);
@@ -804,10 +835,33 @@ async function scrapeWebsite(url, geminiApiKey) {
     if (combinedData.phone) {
       combinedData.phone = formatPhone(combinedData.phone);
     }
+    combinedData.confidence = determineConfidence(structuredData, patternData, mergedContact, linkData);
     return { success: true, data: combinedData };
   } catch (error10) {
     return { success: false, error: error10.message };
   }
+}
+function extractMailtoAndTel($) {
+  let email;
+  let phone;
+  $('a[href^="mailto:"]').each((_, elem) => {
+    if (email) return;
+    const href = $(elem).attr("href");
+    if (href) {
+      const addr = href.replace("mailto:", "").split("?")[0].trim().toLowerCase();
+      if (!addr.match(/^(noreply|no-reply|support|webmaster)@/i)) {
+        email = addr;
+      }
+    }
+  });
+  $('a[href^="tel:"]').each((_, elem) => {
+    if (phone) return;
+    const href = $(elem).attr("href");
+    if (href) {
+      phone = href.replace("tel:", "").replace(/[^\d+]/g, "").trim();
+    }
+  });
+  return { email, phone };
 }
 function extractStructuredData($) {
   const data = {};
@@ -815,93 +869,137 @@ function extractStructuredData($) {
   data.phone = $('meta[property="og:phone_number"]').attr("content") || $('meta[name="contact:phone"]').attr("content");
   $('script[type="application/ld+json"]').each((_, elem) => {
     try {
-      const json = JSON.parse($(elem).html() || "{}");
-      if (json["@type"] === "Organization" || json["@type"] === "LocalBusiness") {
-        data.email = data.email || json.email;
-        data.phone = data.phone || json.telephone;
-        data.businessName = data.businessName || json.name;
-        if (json.address) {
-          data.address = typeof json.address === "string" ? json.address : `${json.address.streetAddress}, ${json.address.addressLocality}, ${json.address.addressRegion} ${json.address.postalCode}`;
+      let jsonItems = JSON.parse($(elem).html() || "{}");
+      if (jsonItems["@graph"]) jsonItems = jsonItems["@graph"];
+      if (!Array.isArray(jsonItems)) jsonItems = [jsonItems];
+      for (const json of jsonItems) {
+        const type = json["@type"];
+        if (type === "Organization" || type === "LocalBusiness" || type === "CleaningService" || type === "ProfessionalService" || type === "HomeAndConstructionBusiness") {
+          data.email = data.email || json.email;
+          data.phone = data.phone || json.telephone;
+          data.businessName = data.businessName || json.name;
+          if (json.address) {
+            data.address = typeof json.address === "string" ? json.address : [
+              json.address.streetAddress,
+              json.address.addressLocality,
+              json.address.addressRegion,
+              json.address.postalCode
+            ].filter(Boolean).join(", ");
+          }
         }
       }
-    } catch (e) {
+    } catch {
     }
   });
-  data.businessName = data.businessName || $('meta[property="og:site_name"]').attr("content") || $("title").text().split("|")[0].trim() || $("h1").first().text().trim();
+  data.businessName = data.businessName || $('meta[property="og:site_name"]').attr("content") || $("title").text().split("|")[0].split("-")[0].split("\u2013")[0].trim() || $("h1").first().text().trim();
   return data;
 }
 function extractFromPatterns($, html) {
-  const data = {
-    socialMedia: {}
-  };
+  const data = { socialMedia: {} };
   const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
   const emails = html.match(emailRegex) || [];
-  const validEmails = emails.filter(
-    (email) => !email.match(/^(info|admin|noreply|no-reply|support|hello|contact)@/i) && !email.includes("example.com") && !email.includes("domain.com")
+  const personalEmails = emails.filter(
+    (email) => !email.match(/^(info|admin|noreply|no-reply|support|hello|contact|webmaster|sales|marketing)@/i) && !email.includes("example.com") && !email.includes("domain.com") && !email.includes("sentry.io") && !email.includes("wixpress.com") && !email.includes("wordpress.") && !email.includes("@e.")
+    // tracking pixels
   );
-  data.email = validEmails[0];
-  const phoneRegex = /(\+1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
+  data.email = personalEmails[0];
+  const phoneRegex = /(\+1[-.\\s]?)?\(?\d{3}\)?[-.\\s]?\d{3}[-.\\s]?\d{4}/g;
   const phones = html.match(phoneRegex) || [];
   data.phone = phones[0];
+  const footerText = $('footer, [class*="footer"], [class*="contact"], [class*="address"], [itemtype*="PostalAddress"]').text();
+  const addressRegex = /\d{1,5}\s[\w\s.]+(?:St|Street|Ave|Avenue|Blvd|Boulevard|Dr|Drive|Rd|Road|Ln|Lane|Way|Ct|Court|Pl|Place|Pkwy|Parkway)[.,]?\s[\w\s]+,\s*[A-Z]{2}\s*\d{5}/gi;
+  const addresses = footerText.match(addressRegex) || html.match(addressRegex) || [];
+  data.address = data.address || addresses[0]?.trim();
   $('a[href*="linkedin.com"]').each((_, elem) => {
     const href = $(elem).attr("href");
-    if (href && href.includes("/company/")) {
+    if (href && (href.includes("/company/") || href.includes("/in/"))) {
       data.socialMedia.linkedin = href;
     }
   });
   $('a[href*="facebook.com"]').each((_, elem) => {
     const href = $(elem).attr("href");
-    if (href) {
+    if (href && !href.includes("sharer") && !href.includes("share.php")) {
       data.socialMedia.facebook = href;
     }
   });
   $('a[href*="twitter.com"], a[href*="x.com"]').each((_, elem) => {
     const href = $(elem).attr("href");
-    if (href) {
+    if (href && !href.includes("intent/tweet")) {
       data.socialMedia.twitter = href;
     }
   });
   return data;
 }
-function findContactPage($, baseUrl) {
-  const contactKeywords = ["contact", "about", "location", "reach-us", "get-in-touch"];
-  let contactUrl = null;
+function findAdditionalPages($, baseUrl) {
+  const keywords = [
+    "contact",
+    "about",
+    "about-us",
+    "our-team",
+    "team",
+    "location",
+    "locations",
+    "reach-us",
+    "get-in-touch",
+    "connect",
+    "find-us",
+    "staff",
+    "leadership"
+  ];
+  const found = /* @__PURE__ */ new Set();
   $("a").each((_, elem) => {
     const href = $(elem).attr("href");
-    const text = $(elem).text().toLowerCase();
-    if (href && contactKeywords.some(
-      (keyword) => href.toLowerCase().includes(keyword) || text.includes(keyword)
-    )) {
-      contactUrl = new URL(href, baseUrl).href;
-      return false;
+    const text = $(elem).text().toLowerCase().trim();
+    if (!href) return;
+    if (href.startsWith("#") || href.startsWith("tel:") || href.startsWith("mailto:")) return;
+    const lowerHref = href.toLowerCase();
+    const isMatch = keywords.some((kw) => lowerHref.includes(kw) || text.includes(kw));
+    if (!isMatch) return;
+    try {
+      const fullUrl = new URL(href, baseUrl).href;
+      if (new URL(fullUrl).hostname === new URL(baseUrl).hostname) {
+        found.add(fullUrl);
+      }
+    } catch {
     }
   });
-  return contactUrl;
+  return Array.from(found);
 }
-async function scrapeContactPage(url) {
-  try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; XiriBot/1.0; +https://xiri.ai/bot)"
-      },
-      signal: AbortSignal.timeout(1e4)
-    });
-    if (!response.ok) return {};
-    const html = await response.text();
-    const $ = cheerio.load(html);
-    return extractFromPatterns($, html);
-  } catch (error10) {
-    return {};
+function findGenericEmail(...htmlSources) {
+  const combined = htmlSources.join(" ");
+  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  const allEmails = combined.match(emailRegex) || [];
+  const genericEmails = allEmails.filter(
+    (email) => email.match(/^(info|contact|hello|office|service|services|team|admin)@/i) && !email.includes("example.com") && !email.includes("domain.com") && !email.includes("wixpress.com")
+  );
+  return genericEmails[0]?.toLowerCase();
+}
+function mergeContactPages(pages) {
+  const merged = { socialMedia: {} };
+  for (const p of pages) {
+    merged.email = merged.email || p.email;
+    merged.phone = merged.phone || p.phone;
+    merged.address = merged.address || p.address;
+    merged.contactFormUrl = merged.contactFormUrl || p.contactFormUrl;
+    if (p.socialMedia) {
+      merged.socialMedia.linkedin = merged.socialMedia.linkedin || p.socialMedia.linkedin;
+      merged.socialMedia.facebook = merged.socialMedia.facebook || p.socialMedia.facebook;
+      merged.socialMedia.twitter = merged.socialMedia.twitter || p.socialMedia.twitter;
+    }
   }
+  return merged;
 }
 async function extractWithAI(html, geminiApiKey) {
   try {
     const genAI6 = new import_generative_ai3.GoogleGenerativeAI(geminiApiKey);
     const model4 = genAI6.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 1e4);
-    const prompt = `Extract business contact information from this website content. Return ONLY a JSON object with these fields (use null if not found):
+    const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 15e3);
+    const prompt = `Extract business contact information from this website content. 
+This is a commercial cleaning or janitorial company. Find the owner/manager's direct contact info if possible.
+
+Return ONLY a JSON object with these fields (use null if not found):
 {
-  "email": "primary business email (not info@, admin@, noreply@)",
+  "email": "email address (prefer personal/owner email over generic info@)",
   "phone": "primary phone number in format (xxx) xxx-xxxx",
   "address": "full physical address if available",
   "businessName": "official business name"
@@ -915,10 +1013,10 @@ ${text}`;
     if (jsonMatch) {
       const data = JSON.parse(jsonMatch[0]);
       return {
-        email: data.email !== "null" ? data.email : void 0,
-        phone: data.phone !== "null" ? data.phone : void 0,
-        address: data.address !== "null" ? data.address : void 0,
-        businessName: data.businessName !== "null" ? data.businessName : void 0
+        email: data.email && data.email !== "null" && data.email !== null ? data.email : void 0,
+        phone: data.phone && data.phone !== "null" && data.phone !== null ? data.phone : void 0,
+        address: data.address && data.address !== "null" && data.address !== null ? data.address : void 0,
+        businessName: data.businessName && data.businessName !== "null" && data.businessName !== null ? data.businessName : void 0
       };
     }
     return {};
@@ -927,8 +1025,9 @@ ${text}`;
     return {};
   }
 }
-function determineConfidence(structured, pattern, contact) {
+function determineConfidence(structured, pattern, contact, links) {
   if (structured.email || structured.phone) return "high";
+  if (links.email || links.phone) return "high";
   if (contact.email || contact.phone) return "medium";
   if (pattern.email || pattern.phone) return "low";
   return "low";
@@ -936,7 +1035,7 @@ function determineConfidence(structured, pattern, contact) {
 function validateEmail(email) {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(email)) return void 0;
-  if (email.match(/^(info|admin|noreply|no-reply|support|hello|contact|webmaster)@/i)) {
+  if (email.match(/^(noreply|no-reply|donotreply|bounce|mailer-daemon|postmaster)@/i)) {
     return void 0;
   }
   return email.toLowerCase();
@@ -1102,6 +1201,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
       logger.info(`Vendor ${vendorId} has no email but has website. Enriching...`);
       await db3.collection("vendors").doc(vendorId).update({
         outreachStatus: "ENRICHING",
+        enrichmentStartedAt: /* @__PURE__ */ new Date(),
         statusUpdatedAt: /* @__PURE__ */ new Date()
       });
       await db3.collection("vendor_activities").add({
@@ -1158,6 +1258,10 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           }
           if (Object.keys(sm).length > 0) updateData.socialMedia = sm;
         }
+        if (scrapedData.contactFormUrl) {
+          updateData.contactFormUrl = scrapedData.contactFormUrl;
+          enrichedFields.push("contactFormUrl");
+        }
         updateData.enrichment = {
           lastEnriched: admin4.firestore.FieldValue.serverTimestamp(),
           enrichedFields,
@@ -1179,6 +1283,32 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           logger.info(`Found email ${foundEmail} for vendor ${vendorId}. Proceeding to outreach.`);
           const updatedDoc = await db3.collection("vendors").doc(vendorId).get();
           await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
+        } else if (scrapedData.contactFormUrl) {
+          logger.info(`No email but found contact form for vendor ${vendorId}: ${scrapedData.contactFormUrl}`);
+          await db3.collection("vendors").doc(vendorId).update({
+            outreachStatus: "NEEDS_MANUAL_OUTREACH",
+            statusUpdatedAt: /* @__PURE__ */ new Date()
+          });
+          await db3.collection("vendor_activities").add({
+            vendorId,
+            type: "NEEDS_MANUAL_OUTREACH",
+            description: `No email found. Contact form detected: ${scrapedData.contactFormUrl}`,
+            createdAt: /* @__PURE__ */ new Date(),
+            metadata: { contactFormUrl: scrapedData.contactFormUrl }
+          });
+          await db3.collection("scheduled_activities").add({
+            vendorId,
+            type: "OTHER",
+            status: "PENDING",
+            title: `Manual outreach: ${vendorData.businessName || "Unknown vendor"}`,
+            description: `Fill out their contact form at ${scrapedData.contactFormUrl}`,
+            dueDate: /* @__PURE__ */ new Date(),
+            assignedTo: "",
+            // Will be picked up by any recruiter
+            createdAt: /* @__PURE__ */ new Date(),
+            createdBy: "system",
+            metadata: { contactFormUrl: scrapedData.contactFormUrl }
+          });
         } else {
           await markNeedsContact(vendorId, "No email found after enrichment");
         }
@@ -2332,8 +2462,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db22 = (0, import_firestore6.getFirestore)();
-    const docRef = db22.collection(collection).doc(documentId);
+    const db23 = (0, import_firestore6.getFirestore)();
+    const docRef = db23.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -2562,7 +2692,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger6.error("Error sending vendor confirmation:", err);
     }
   }
-  const db22 = admin12.firestore();
+  const db23 = admin12.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -2589,9 +2719,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db22.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db23.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger6.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db22.collection("vendor_activities").add({
+  await db23.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -2643,13 +2773,19 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
       }
     });
   }
-  await db11.collection("vendor_activities").add({
-    vendorId,
-    type: "DRIP_SCHEDULED",
-    description: `Drip campaign scheduled: 3 follow-ups over 14 days for ${businessName}.`,
-    createdAt: /* @__PURE__ */ new Date(),
-    metadata: { followUpCount: 3, schedule: "3d/7d/14d" }
-  });
+  for (const fu of followUps) {
+    const scheduledDate = new Date(now);
+    scheduledDate.setDate(scheduledDate.getDate() + fu.dayOffset);
+    scheduledDate.setHours(15, 0, 0, 0);
+    await db11.collection("vendor_activities").add({
+      vendorId,
+      type: "DRIP_SCHEDULED",
+      description: `Follow-up #${fu.sequence} scheduled: "${fu.subject}"`,
+      createdAt: /* @__PURE__ */ new Date(),
+      scheduledFor: scheduledDate,
+      metadata: { sequence: fu.sequence, dayOffset: fu.dayOffset, subject: fu.subject }
+    });
+  }
   logger7.info(`Drip campaign scheduled for ${vendorId}: 3 follow-ups at days 3, 7, 14`);
 });
 
@@ -3511,10 +3647,10 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
   logger10.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
-  const db22 = admin18.firestore();
+  const db23 = admin18.firestore();
   let vendorData;
   try {
-    const vendorSnap = await db22.collection("vendors").doc(newVendorId).get();
+    const vendorSnap = await db23.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
       logger10.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
@@ -3527,7 +3663,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const salesTaxId = vendorData.compliance?.salesTaxId?.trim();
   if (!salesTaxId) {
     logger10.info(`[ST-120.1] Vendor ${newVendorId} has no salesTaxId \u2014 skipping certificate.`);
-    await db22.collection("vendor_activities").add({
+    await db23.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_SKIPPED",
       description: `ST-120.1 not generated for WO ${workOrderId} \u2014 vendor has no Sales Tax ID on file.`,
@@ -3539,7 +3675,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   let leadData = {};
   if (after.leadId) {
     try {
-      const leadSnap = await db22.collection("leads").doc(after.leadId).get();
+      const leadSnap = await db23.collection("leads").doc(after.leadId).get();
       if (leadSnap.exists) {
         leadData = leadSnap.data();
       }
@@ -3549,7 +3685,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   }
   let xiriData;
   try {
-    const settingsSnap = await db22.collection("settings").doc("corporate").get();
+    const settingsSnap = await db23.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
       logger10.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
@@ -3595,7 +3731,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const result = await generateST1201(vendorCertData, xiriData, projectDataInput);
   if (!result.success || !result.pdfBytes) {
     logger10.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
-    await db22.collection("vendor_activities").add({
+    await db23.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
       description: `ST-120.1 generation failed for WO ${workOrderId}: ${result.error}`,
@@ -3629,7 +3765,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     logger10.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err);
     return;
   }
-  await db22.collection("work_orders").doc(workOrderId).update({
+  await db23.collection("work_orders").doc(workOrderId).update({
     st1201CertificateUrl: pdfUrl,
     st1201IssueDate: result.issueDate,
     st1201ExpiryDate: result.expiryDate,
@@ -3638,7 +3774,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (vendorCertData.email) {
     const vendorName = vendorCertData.businessName;
     const projectName = projectDataInput.projectName;
-    await db22.collection("mail_queue").add({
+    await db23.collection("mail_queue").add({
       to: vendorCertData.email,
       subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${projectName}`,
       templateType: "st_120_1_certificate",
@@ -3658,7 +3794,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
       createdAt: admin18.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db22.collection("vendor_activities").add({
+  await db23.collection("vendor_activities").add({
     vendorId: newVendorId,
     type: "TAX_CERTIFICATE_ISSUED",
     description: `ST-120.1 generated for project "${projectDataInput.projectName}" (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
@@ -4655,8 +4791,108 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
   logger16.info(`[MonthlyInvoices] Complete: ${invoicesCreated} invoices created, ${invoicesSkipped} contracts skipped`);
 });
 
+// src/triggers/resendWebhook.ts
+var import_https4 = require("firebase-functions/v2/https");
+var admin25 = __toESM(require("firebase-admin"));
+var import_v2 = require("firebase-functions/v2");
+var db22 = admin25.firestore();
+var resendWebhook = (0, import_https4.onRequest)({
+  cors: true,
+  timeoutSeconds: 30,
+  memory: "256MiB"
+}, async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).send("Method Not Allowed");
+    return;
+  }
+  try {
+    const event = req.body;
+    const eventType = event?.type;
+    const emailId = event?.data?.email_id;
+    if (!eventType || !emailId) {
+      import_v2.logger.warn("Resend webhook: missing type or email_id", { body: JSON.stringify(event).substring(0, 500) });
+      res.status(400).json({ error: "Missing type or email_id" });
+      return;
+    }
+    import_v2.logger.info(`Resend webhook: ${eventType} for email ${emailId}`);
+    const statusMap = {
+      "email.delivered": {
+        deliveryStatus: "delivered",
+        activityType: "EMAIL_DELIVERED",
+        description: "Email successfully delivered to inbox."
+      },
+      "email.opened": {
+        deliveryStatus: "opened",
+        activityType: "EMAIL_OPENED",
+        description: "Recipient opened the email."
+      },
+      "email.clicked": {
+        deliveryStatus: "clicked",
+        activityType: "EMAIL_CLICKED",
+        description: "Recipient clicked a link in the email."
+      },
+      "email.bounced": {
+        deliveryStatus: "bounced",
+        activityType: "EMAIL_BOUNCED",
+        description: `Email bounced: ${event?.data?.bounce_type || "unknown"} \u2014 ${event?.data?.error_message || "no details"}.`
+      },
+      "email.complained": {
+        deliveryStatus: "spam",
+        activityType: "EMAIL_COMPLAINED",
+        description: "Recipient marked email as spam."
+      }
+    };
+    const mapping = statusMap[eventType];
+    if (!mapping) {
+      import_v2.logger.info(`Resend webhook: unhandled event type ${eventType}`);
+      res.status(200).json({ ok: true, skipped: true });
+      return;
+    }
+    const activitiesSnapshot = await db22.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
+    if (activitiesSnapshot.empty) {
+      import_v2.logger.warn(`Resend webhook: no activity found for resendId ${emailId}`);
+      res.status(200).json({ ok: true, notFound: true });
+      return;
+    }
+    const activityDoc = activitiesSnapshot.docs[0];
+    const activityData = activityDoc.data();
+    const vendorId = activityData.vendorId;
+    await activityDoc.ref.update({
+      "metadata.deliveryStatus": mapping.deliveryStatus,
+      "metadata.deliveryUpdatedAt": /* @__PURE__ */ new Date()
+    });
+    await db22.collection("vendor_activities").add({
+      vendorId,
+      type: mapping.activityType,
+      description: mapping.description,
+      createdAt: /* @__PURE__ */ new Date(),
+      metadata: {
+        resendId: emailId,
+        deliveryStatus: mapping.deliveryStatus,
+        rawEvent: eventType,
+        to: event?.data?.to?.[0] || void 0
+      }
+    });
+    if (eventType === "email.bounced" && vendorId) {
+      await db22.collection("vendors").doc(vendorId).update({
+        outreachStatus: "FAILED",
+        "outreachMeta.bounced": true,
+        "outreachMeta.bounceType": event?.data?.bounce_type || "unknown",
+        "outreachMeta.bounceError": event?.data?.error_message || "Email bounced",
+        updatedAt: /* @__PURE__ */ new Date()
+      });
+      import_v2.logger.info(`Vendor ${vendorId}: email bounced, set outreachStatus to FAILED`);
+    }
+    import_v2.logger.info(`Resend webhook: processed ${eventType} for vendor ${vendorId}`);
+    res.status(200).json({ ok: true, processed: eventType });
+  } catch (error10) {
+    import_v2.logger.error("Resend webhook error:", error10);
+    res.status(500).json({ error: "Internal error" });
+  }
+});
+
 // src/index.ts
-var generateLeads = (0, import_https4.onCall)({
+var generateLeads = (0, import_https5.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: [
     "http://localhost:3001",
@@ -4687,7 +4923,7 @@ var generateLeads = (0, import_https4.onCall)({
   const hasActiveContract = data.hasActiveContract || false;
   const previewOnly = data.previewOnly || false;
   if (!query || !location) {
-    throw new import_https4.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https5.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`Analyzing leads for query: ${query}, location: ${location}${previewOnly ? " (PREVIEW MODE)" : ""}`);
@@ -4703,10 +4939,10 @@ var generateLeads = (0, import_https4.onCall)({
     };
   } catch (error10) {
     console.error("Error in generateLeads:", error10);
-    throw new import_https4.HttpsError("internal", error10.message || "An internal error occurred.");
+    throw new import_https5.HttpsError("internal", error10.message || "An internal error occurred.");
   }
 });
-var clearPipeline = (0, import_https4.onCall)({
+var clearPipeline = (0, import_https5.onCall)({
   cors: [
     "http://localhost:3001",
     "http://localhost:3000",
@@ -4736,10 +4972,10 @@ var clearPipeline = (0, import_https4.onCall)({
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
   } catch (error10) {
-    throw new import_https4.HttpsError("internal", error10.message);
+    throw new import_https5.HttpsError("internal", error10.message);
   }
 });
-var runRecruiterAgent = (0, import_https4.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
+var runRecruiterAgent = (0, import_https5.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
   const rawVendors = req.body.vendors || [
     { name: "ABC Cleaning", services: "We do medical office cleaning and terminal cleaning." },
     { name: "Joe's Pizza", services: "Best pizza in town" },
@@ -4748,7 +4984,7 @@ var runRecruiterAgent = (0, import_https4.onRequest)({ secrets: ["GEMINI_API_KEY
   const result = await analyzeVendorLeads(rawVendors, "Commercial Cleaning");
   res.json(result);
 });
-var testSendEmail = (0, import_https4.onCall)({
+var testSendEmail = (0, import_https5.onCall)({
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
   cors: [
     "http://localhost:3001",
@@ -4762,17 +4998,17 @@ var testSendEmail = (0, import_https4.onCall)({
   const { sendTemplatedEmail: sendTemplatedEmail2 } = await Promise.resolve().then(() => (init_emailUtils(), emailUtils_exports));
   const { vendorId, templateId } = request.data;
   if (!vendorId || !templateId) {
-    throw new import_https4.HttpsError("invalid-argument", "Missing vendorId or templateId");
+    throw new import_https5.HttpsError("invalid-argument", "Missing vendorId or templateId");
   }
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
   } catch (error10) {
     console.error("Error sending test email:", error10);
-    throw new import_https4.HttpsError("internal", error10.message || "Failed to send email");
+    throw new import_https5.HttpsError("internal", error10.message || "Failed to send email");
   }
 });
-var sourceProperties = (0, import_https4.onCall)({
+var sourceProperties = (0, import_https5.onCall)({
   cors: [
     "http://localhost:3001",
     "http://localhost:3000",
@@ -4791,7 +5027,7 @@ var sourceProperties = (0, import_https4.onCall)({
   const location = data.location;
   const providerName = data.provider || "mock";
   if (!query || !location) {
-    throw new import_https4.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https5.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`[sourceProperties] query="${query}", location="${location}", provider=${providerName}`);
@@ -4803,7 +5039,7 @@ var sourceProperties = (0, import_https4.onCall)({
     };
   } catch (error10) {
     console.error("[sourceProperties] Error:", error10);
-    throw new import_https4.HttpsError("internal", error10.message || "Failed to source properties.");
+    throw new import_https5.HttpsError("internal", error10.message || "Failed to source properties.");
   }
 });
 // Annotate the CommonJS export names for ESM import in node:
@@ -4831,6 +5067,7 @@ var sourceProperties = (0, import_https4.onCall)({
   processCommissionPayouts,
   processMailQueue,
   processOutreachQueue,
+  resendWebhook,
   respondToQuote,
   runRecruiterAgent,
   sendBookingConfirmation,
