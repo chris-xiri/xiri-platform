@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Mail, Phone, FileText, Shield, RefreshCw, AlertTriangle, Check,
-    Eye, Link as LinkIcon, XCircle, Clock, ArrowRight, Zap, Globe
+    Eye, Link as LinkIcon, XCircle, Clock, ArrowRight, Zap, Globe,
+    ChevronDown, ChevronUp
 } from 'lucide-react';
 
 interface VendorActivity {
@@ -60,6 +61,7 @@ function formatTimestamp(ts: any): string {
 export default function VendorActivityFeed({ vendorId }: { vendorId: string }) {
     const [activities, setActivities] = useState<VendorActivity[]>([]);
     const [loading, setLoading] = useState(true);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
 
     useEffect(() => {
         const q = query(
@@ -73,7 +75,8 @@ export default function VendorActivityFeed({ vendorId }: { vendorId: string }) {
                 id: doc.id,
                 ...doc.data()
             })) as VendorActivity[];
-            setActivities(items);
+            // Hide noisy system events (enrichment) from the feed
+            setActivities(items.filter(a => a.type !== 'ENRICHMENT'));
             setLoading(false);
         }, (error) => {
             console.error('Error loading activities:', error);
@@ -169,6 +172,36 @@ export default function VendorActivityFeed({ vendorId }: { vendorId: string }) {
                                             {activity.metadata.enrichedFields.map((f: string) => (
                                                 <Badge key={f} variant="secondary" className="text-[8px] px-1">{f}</Badge>
                                             ))}
+                                        </div>
+                                    )}
+                                    {/* Expandable email content */}
+                                    {activity.metadata?.subject && (
+                                        <div className="mt-1.5">
+                                            <button
+                                                onClick={() => setExpandedId(expandedId === activity.id ? null : activity.id)}
+                                                className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
+                                            >
+                                                <Mail className="w-3 h-3" />
+                                                {expandedId === activity.id ? 'Hide email' : 'View email'}
+                                                {expandedId === activity.id
+                                                    ? <ChevronUp className="w-3 h-3" />
+                                                    : <ChevronDown className="w-3 h-3" />}
+                                            </button>
+                                            {expandedId === activity.id && (
+                                                <div className="mt-2 rounded-md border bg-muted/30 p-3 space-y-2">
+                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Subject</div>
+                                                    <p className="text-xs font-medium">{activity.metadata.subject}</p>
+                                                    {activity.metadata.to && (
+                                                        <div className="text-[10px] text-muted-foreground">To: {activity.metadata.to}</div>
+                                                    )}
+                                                    <div className="border-t pt-2 mt-2">
+                                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Body</div>
+                                                        <div className="text-xs whitespace-pre-wrap leading-relaxed max-h-64 overflow-auto">
+                                                            {activity.metadata.body}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
