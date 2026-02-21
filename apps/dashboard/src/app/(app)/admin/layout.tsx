@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Settings, Users, Bot } from "lucide-react";
+import { Settings, Users, Bot, Scale } from "lucide-react";
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -10,6 +10,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     const navItems = [
         { href: "/admin/users", label: "User Manager", icon: Users },
         { href: "/admin/agents", label: "AI Agents", icon: Bot },
+        { href: "/admin/legal", label: "Legal Templates", icon: Scale },
     ];
 
     return (
