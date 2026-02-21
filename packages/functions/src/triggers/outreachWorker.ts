@@ -89,6 +89,12 @@ async function handleGenerate(task: QueueItem) {
         throw new Error("AI Generation Failed: " + (outreachResult.email?.body || "Unknown Error"));
     }
 
+    // Replace [ONBOARDING_LINK] placeholder with actual vendor onboarding URL
+    const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
+    if (outreachResult.email?.body) {
+        outreachResult.email.body = outreachResult.email.body.replace(/\[ONBOARDING_LINK\]/g, onboardingUrl);
+    }
+
     // 1. Log the drafts (Visible to User)
     await db.collection("vendor_activities").add({
         vendorId: task.vendorId,

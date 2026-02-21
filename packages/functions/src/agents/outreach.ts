@@ -7,7 +7,6 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 const db = admin.firestore();
 
 export const generateOutreachContent = async (vendor: any, preferredChannel: 'SMS' | 'EMAIL') => {
-    const isUrgent = vendor.hasActiveContract;
     const channel = preferredChannel;
 
     try {
@@ -18,15 +17,27 @@ export const generateOutreachContent = async (vendor: any, preferredChannel: 'SM
         }
 
         const template = templateDoc.data();
-        const campaignContext = isUrgent
-            ? "URGENT JOB OPPORTUNITY (We have a contract ready)"
-            : "Building Supply Network (Partnership Opportunity)";
 
-        // Replace variables
+        // Build location string from available data
+        const locationParts = [vendor.city, vendor.state].filter(Boolean);
+        const location = locationParts.length > 0 ? locationParts.join(', ') : 'your area';
+
+        // Build services string from capabilities array
+        const services = Array.isArray(vendor.capabilities) && vendor.capabilities.length > 0
+            ? vendor.capabilities.join(', ')
+            : vendor.specialty || 'Facility Services';
+
+        // Replace template variables
         const prompt = template?.content
-            .replace(/\{\{vendorName\}\}/g, vendor.companyName)
-            .replace(/\{\{specialty\}\}/g, vendor.specialty || "Services")
-            .replace(/\{\{campaignContext\}\}/g, campaignContext);
+            .replace(/\{\{vendorName\}\}/g, vendor.companyName || vendor.businessName || 'your company')
+            .replace(/\{\{specialty\}\}/g, vendor.specialty || vendor.capabilities?.[0] || 'Services')
+            .replace(/\{\{services\}\}/g, services)
+            .replace(/\{\{contactName\}\}/g, vendor.contactName || 'not available')
+            .replace(/\{\{location\}\}/g, location)
+            // Legacy variable fallback (in case old prompt is still in Firestore)
+            .replace(/\{\{campaignContext\}\}/g, vendor.hasActiveContract
+                ? "URGENT JOB OPPORTUNITY (We have a contract ready)"
+                : "Building Supply Network (Partnership Opportunity)");
 
         const result = await model.generateContent(prompt);
         let text = result.response.text();
@@ -38,7 +49,6 @@ export const generateOutreachContent = async (vendor: any, preferredChannel: 'SM
 
         return {
             channel,
-            sms: jsonContent.sms,
             email: jsonContent.email,
             generatedAt: new Date()
         };

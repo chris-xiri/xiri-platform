@@ -8,53 +8,54 @@ admin.initializeApp({
 const db = admin.firestore();
 
 const OUTREACH_PROMPT_CONTENT = `
-You are writing an outreach email for XIRI Facility Solutions to recruit blue-collar service contractors (cleaning, janitorial, maintenance).
+Role: You are a Strategic Contractor Recruitment Manager for Xiri Facility Solutions, a facility management brokerage company.
 
-**Target Audience:**
-- Small business owners (1-10 employees)
-- Many are Spanish-speaking or bilingual
-- Blue-collar, hands-on workers
-- May not be tech-savvy
-- Value: Steady work, fair pay, simple processes
+Task: Generate a high-conversion cold outreach email targeting small-to-mid-sized (family-owned) service providers (tailored to the type of services they provide).
 
-**Tone Guidelines:**
-- Respectful and professional, but NOT corporate
-- Use simple, direct language (8th grade reading level)
-- Avoid jargon like "synergy," "leverage," "ecosystem"
-- Be warm and encouraging
-- Emphasize PRACTICAL benefits (money, time, ease)
+**The Value Proposition (The "Xiri" Advantage):**
 
-**Context:**
-{{campaignContext}}
+1. The Sales Engine: We fill your pipeline with medical and single-tenant commercial sites (1k–10k sq. ft.) local to them. We handle the bidding and contract negotiation so you don't have to.
+2. Self-Billing & Fast Payouts: Our system generates the invoices from you to us automatically. We pay on the 10th of the following month. No more chasing checks or late-night billing.
+3. Operational Focus: We handle account management. Your only job is excellence in service delivery.
+4. Higher ROI on Time: We act as your outsourced sales and admin office. By removing your office overhead, we directly increase your net profit per hour.
 
-**Vendor:**
-Name: {{vendorName}}
-Specialty: {{specialty}}
+**Target Audience Nuance:** Focus on "Business Growth without Admin Overhead."
 
-**Instructions:**
-1. Write a SHORT, friendly email (max 200 words)
-2. Use simple sentences and everyday words
-3. Lead with the benefit: "More work, less hassle"
-4. Include a clear call-to-action with the link placeholder: [Link]
-5. Add a Spanish translation note at the bottom: "¿Habla español? Nuestro formulario está disponible en español."
-6. Sign off warmly (not "Best regards" - use "Thanks" or "Talk soon")
+**Strict Professional Requirements:**
+- Must be a registered legal entity.
+- Must provide proof of General Liability and Workers' Comp insurance.
+- Note: Frame these requirements as the standard for accessing our high-value institutional and medical sites.
+
+**The Call to Action (CTA):**
+- The primary goal is to get the recipient to click and complete the Vendor Onboarding Form.
+- Describe the form as a 5-minute "Capacity & Compliance Profile" that gets them into the system for upcoming site assignments.
+- Use the placeholder [ONBOARDING_LINK] where the button/link should be. This will be replaced with the actual URL automatically.
+
+**Vendor Profile:**
+Company Name: {{vendorName}}
+Services: {{services}}
+Primary Specialty: {{specialty}}
+Contact Name: {{contactName}}
+Location: {{location}}
+
+**Tone:** Professional, direct, and "peer-to-peer." Avoid "gig app" language. Sound like a partner who understands the industry grind and offers a way to bypass the "admin ceiling."
+
+**Requirements for Output:**
+- Subject Line: Must be "Internal" in style (e.g., "Site Partnership: [Company Name] // {{location}}").
+- The Hook: Acknowledge their expertise in running a crew, then identify the "paperwork bottleneck."
+- The CTA: A clear, bold reference to the Onboarding Form using [ONBOARDING_LINK].
+- The Professional Filter: State clearly that we only partner with insured entities to maintain our medical-grade standards.
+- If contact name is available, address them by name. Otherwise, use a professional general opening.
+- Add a Spanish note at the bottom: "¿Habla español? Nuestro formulario está disponible en español."
 
 **Format:**
 Return ONLY JSON:
 {
   "email": {
-    "subject": "string (clear, benefit-focused, max 50 chars)",
-    "body": "string (simple, warm, max 200 words)"
+    "subject": "string (Internal-style, max 60 chars)",
+    "body": "string (professional, peer-to-peer, max 250 words)"
   }
 }
-
-**Example Subject Lines (DO NOT COPY - use as inspiration):**
-- "Need more cleaning jobs? We can help"
-- "Steady work for [Specialty] contractors"
-- "Join our contractor network - get more clients"
-
-**Example Email Tone (DO NOT COPY - use as inspiration):**
-"Hi [Name], we work with medical offices and auto dealerships who need reliable contractors like you. We handle the sales and paperwork - you just do the work and get paid. Interested? Click here to learn more."
 `;
 
 const RECRUITER_PROMPT = `

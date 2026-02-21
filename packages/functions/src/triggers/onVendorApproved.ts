@@ -200,24 +200,69 @@ async function runEnrichPipeline(vendorId: string, vendorData: any, previousStat
 }
 
 
+// ─── Helper: check profile completeness before outreach ───
+async function checkProfileCompleteness(vendorId: string, vendorData: any): Promise<string[]> {
+    const missing: string[] = [];
+
+    if (!vendorData.businessName) missing.push('businessName');
+
+    const hasCapabilities = Array.isArray(vendorData.capabilities) && vendorData.capabilities.length > 0;
+    const hasSpecialty = !!vendorData.specialty;
+    if (!hasCapabilities && !hasSpecialty) missing.push('services/capabilities');
+
+    // email is already gated by the enrichment pipeline — this is a safety check
+    if (!vendorData.email) missing.push('email');
+
+    return missing;
+}
+
+
 // ─── Helper: set outreach pending and enqueue GENERATE task ───
 async function setOutreachPending(vendorId: string, vendorData: any) {
+    // Profile completeness gate
+    const missingFields = await checkProfileCompleteness(vendorId, vendorData);
+
+    if (missingFields.length > 0) {
+        logger.warn(`Vendor ${vendorId} profile incomplete. Missing: ${missingFields.join(', ')}. Blocking outreach.`);
+
+        await db.collection("vendors").doc(vendorId).update({
+            outreachStatus: 'PROFILE_INCOMPLETE',
+            statusUpdatedAt: new Date(),
+        });
+
+        await db.collection("vendor_activities").add({
+            vendorId,
+            type: "PROFILE_INCOMPLETE",
+            description: `Outreach blocked — missing: ${missingFields.join(', ')}. Complete the vendor profile to enable outreach.`,
+            createdAt: new Date(),
+            metadata: { missingFields },
+        });
+
+        return;
+    }
+
     await db.collection("vendors").doc(vendorId).update({
         outreachStatus: 'PENDING',
         statusUpdatedAt: new Date(),
     });
 
+    // Pass full vendor profile for AI personalization
     const { enqueueTask } = await import("../utils/queueUtils");
     await enqueueTask(db, {
         vendorId,
         type: 'GENERATE',
         scheduledAt: new Date() as any,
         metadata: {
-            status: vendorData.status,
-            hasActiveContract: vendorData.hasActiveContract,
-            phone: vendorData.phone,
             companyName: vendorData.businessName,
-            specialty: vendorData.specialty || vendorData.capabilities?.[0],
+            specialty: vendorData.specialty || vendorData.capabilities?.[0] || null,
+            capabilities: vendorData.capabilities || [],
+            contactName: vendorData.contactName || null,
+            city: vendorData.city || null,
+            state: vendorData.state || null,
+            zip: vendorData.zip || null,
+            phone: vendorData.phone || null,
+            hasActiveContract: vendorData.hasActiveContract || false,
+            status: vendorData.status,
         }
     });
 

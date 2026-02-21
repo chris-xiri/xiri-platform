@@ -1194,7 +1194,32 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
     logger.error("Error in enrich pipeline:", error10);
   }
 }
+async function checkProfileCompleteness(vendorId, vendorData) {
+  const missing = [];
+  if (!vendorData.businessName) missing.push("businessName");
+  const hasCapabilities = Array.isArray(vendorData.capabilities) && vendorData.capabilities.length > 0;
+  const hasSpecialty = !!vendorData.specialty;
+  if (!hasCapabilities && !hasSpecialty) missing.push("services/capabilities");
+  if (!vendorData.email) missing.push("email");
+  return missing;
+}
 async function setOutreachPending(vendorId, vendorData) {
+  const missingFields = await checkProfileCompleteness(vendorId, vendorData);
+  if (missingFields.length > 0) {
+    logger.warn(`Vendor ${vendorId} profile incomplete. Missing: ${missingFields.join(", ")}. Blocking outreach.`);
+    await db3.collection("vendors").doc(vendorId).update({
+      outreachStatus: "PROFILE_INCOMPLETE",
+      statusUpdatedAt: /* @__PURE__ */ new Date()
+    });
+    await db3.collection("vendor_activities").add({
+      vendorId,
+      type: "PROFILE_INCOMPLETE",
+      description: `Outreach blocked \u2014 missing: ${missingFields.join(", ")}. Complete the vendor profile to enable outreach.`,
+      createdAt: /* @__PURE__ */ new Date(),
+      metadata: { missingFields }
+    });
+    return;
+  }
   await db3.collection("vendors").doc(vendorId).update({
     outreachStatus: "PENDING",
     statusUpdatedAt: /* @__PURE__ */ new Date()
@@ -1205,11 +1230,16 @@ async function setOutreachPending(vendorId, vendorData) {
     type: "GENERATE",
     scheduledAt: /* @__PURE__ */ new Date(),
     metadata: {
-      status: vendorData.status,
-      hasActiveContract: vendorData.hasActiveContract,
-      phone: vendorData.phone,
       companyName: vendorData.businessName,
-      specialty: vendorData.specialty || vendorData.capabilities?.[0]
+      specialty: vendorData.specialty || vendorData.capabilities?.[0] || null,
+      capabilities: vendorData.capabilities || [],
+      contactName: vendorData.contactName || null,
+      city: vendorData.city || null,
+      state: vendorData.state || null,
+      zip: vendorData.zip || null,
+      phone: vendorData.phone || null,
+      hasActiveContract: vendorData.hasActiveContract || false,
+      status: vendorData.status
     }
   });
   logger.info(`Outreach GENERATE task enqueued for vendor ${vendorId}`);
@@ -1242,7 +1272,6 @@ var genAI3 = new import_generative_ai4.GoogleGenerativeAI(API_KEY2);
 var model2 = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
 var db4 = admin5.firestore();
 var generateOutreachContent = async (vendor, preferredChannel) => {
-  const isUrgent = vendor.hasActiveContract;
   const channel = preferredChannel;
   try {
     const templateDoc = await db4.collection("templates").doc("outreach_generation_prompt").get();
@@ -1250,15 +1279,16 @@ var generateOutreachContent = async (vendor, preferredChannel) => {
       throw new Error("Outreach generation prompt not found in database");
     }
     const template = templateDoc.data();
-    const campaignContext = isUrgent ? "URGENT JOB OPPORTUNITY (We have a contract ready)" : "Building Supply Network (Partnership Opportunity)";
-    const prompt = template?.content.replace(/\{\{vendorName\}\}/g, vendor.companyName).replace(/\{\{specialty\}\}/g, vendor.specialty || "Services").replace(/\{\{campaignContext\}\}/g, campaignContext);
+    const locationParts = [vendor.city, vendor.state].filter(Boolean);
+    const location = locationParts.length > 0 ? locationParts.join(", ") : "your area";
+    const services = Array.isArray(vendor.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.join(", ") : vendor.specialty || "Facility Services";
+    const prompt = template?.content.replace(/\{\{vendorName\}\}/g, vendor.companyName || vendor.businessName || "your company").replace(/\{\{specialty\}\}/g, vendor.specialty || vendor.capabilities?.[0] || "Services").replace(/\{\{services\}\}/g, services).replace(/\{\{contactName\}\}/g, vendor.contactName || "not available").replace(/\{\{location\}\}/g, location).replace(/\{\{campaignContext\}\}/g, vendor.hasActiveContract ? "URGENT JOB OPPORTUNITY (We have a contract ready)" : "Building Supply Network (Partnership Opportunity)");
     const result = await model2.generateContent(prompt);
     let text = result.response.text();
     text = text.replace(/^```json/gm, "").replace(/^```/gm, "").trim();
     const jsonContent = JSON.parse(text);
     return {
       channel,
-      sms: jsonContent.sms,
       email: jsonContent.email,
       generatedAt: /* @__PURE__ */ new Date()
     };
@@ -1390,6 +1420,10 @@ async function handleGenerate(task) {
   const outreachResult = await generateOutreachContent(vendorData, "EMAIL");
   if (outreachResult.error) {
     throw new Error("AI Generation Failed: " + (outreachResult.email?.body || "Unknown Error"));
+  }
+  const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
+  if (outreachResult.email?.body) {
+    outreachResult.email.body = outreachResult.email.body.replace(/\[ONBOARDING_LINK\]/g, onboardingUrl);
   }
   await db6.collection("vendor_activities").add({
     vendorId: task.vendorId,
