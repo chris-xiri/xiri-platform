@@ -3,7 +3,6 @@ node_modules
 .next/cache
 packages/functions
 packages/shared/src/templates
-apps/public-site
 scripts
 *.pack
 *.node

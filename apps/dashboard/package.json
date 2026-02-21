@@ -27,6 +27,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-google-autocomplete": "^2.7.5",
+    "react-google-places-autocomplete": "^4.1.0",
+    "date-fns": "^4.1.0",
     "tailwind-merge": "^2.6.1"
   },
   "devDependencies": {
