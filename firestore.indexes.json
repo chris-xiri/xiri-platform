@@ -27,6 +27,20 @@
                     "order": "ASCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "vendor_activities",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "vendorId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []
