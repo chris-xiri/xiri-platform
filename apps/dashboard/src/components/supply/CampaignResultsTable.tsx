@@ -233,7 +233,7 @@ export default function CampaignResultsTable({
 
     const activeCampaign = campaigns.find(c => c.id === activeCampaignId) || campaigns[0];
     const vendors = activeCampaign?.vendors || [];
-    const activeVendors = vendors.filter(v => !v.isDismissed);
+    const activeVendors = vendors.filter(v => !v.isDismissed).sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0));
     const dismissedCount = vendors.filter(v => v.isDismissed).length;
     const selectedPreviewVendor = selectedVendorId ? vendors.find(v => v.id === selectedVendorId) : null;
 
