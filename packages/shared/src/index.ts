@@ -97,7 +97,7 @@ export interface Vendor {
     aiScore?: number;
     fitScore?: number;
     aiReasoning?: string;
-    outreachStatus?: 'PENDING' | 'SENT' | 'NONE' | 'ENRICHING' | 'NEEDS_CONTACT' | 'PROFILE_INCOMPLETE';
+    outreachStatus?: 'PENDING' | 'SENT' | 'NONE' | 'ENRICHING' | 'NEEDS_CONTACT' | 'PROFILE_INCOMPLETE' | 'FAILED';
     preferredLanguage?: 'en' | 'es'; // 'en' (default) or 'es'
 
     // Campaign & Onboarding

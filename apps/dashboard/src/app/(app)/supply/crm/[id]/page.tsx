@@ -127,12 +127,16 @@ export default function CRMDetailPage(props: PageProps) {
                                         vendor.outreachStatus === 'NEEDS_CONTACT' ? 'border-amber-400 text-amber-600 dark:text-amber-400' :
                                             vendor.outreachStatus === 'ENRICHING' ? 'border-blue-400 text-blue-600 dark:text-blue-400' :
                                                 vendor.outreachStatus === 'PENDING' ? 'border-purple-400 text-purple-600 dark:text-purple-400' :
-                                                    vendor.outreachStatus === 'SENT' ? 'border-green-400 text-green-600 dark:text-green-400' : ''
+                                                    vendor.outreachStatus === 'SENT' ? 'border-green-400 text-green-600 dark:text-green-400' :
+                                                        vendor.outreachStatus === 'FAILED' ? 'border-red-500 text-red-600 dark:text-red-400' :
+                                                            vendor.outreachStatus === 'PROFILE_INCOMPLETE' ? 'border-amber-500 text-amber-600 dark:text-amber-400' : ''
                                     }>
                                         {vendor.outreachStatus === 'NEEDS_CONTACT' && <><AlertTriangle className="w-3 h-3 mr-1" /> Needs Contact</>}
                                         {vendor.outreachStatus === 'ENRICHING' && 'Enriching...'}
                                         {vendor.outreachStatus === 'PENDING' && 'Outreach Queued'}
                                         {vendor.outreachStatus === 'SENT' && 'Outreach Sent'}
+                                        {vendor.outreachStatus === 'FAILED' && <><AlertTriangle className="w-3 h-3 mr-1" /> Outreach Failed</>}
+                                        {vendor.outreachStatus === 'PROFILE_INCOMPLETE' && <><AlertTriangle className="w-3 h-3 mr-1" /> Incomplete Profile</>}
                                     </Badge>
                                 )}
                                 <span className="text-sm text-muted-foreground border-l pl-2 ml-2 font-mono select-all">ID: {vendor.id}</span>

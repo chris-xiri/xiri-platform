@@ -27,6 +27,8 @@ export const getStatusColor = (status: Vendor['status'], outreachStatus?: string
             if (outreachStatus === 'SENT') return "bg-indigo-600 text-white dark:bg-indigo-500/20 dark:text-indigo-300 border-indigo-600 dark:border-indigo-700";
             if (outreachStatus === 'NEEDS_CONTACT') return "bg-rose-600 text-white dark:bg-rose-500/20 dark:text-rose-400 border-rose-600 dark:border-rose-700";
             if (outreachStatus === 'ENRICHING') return "bg-cyan-600 text-white dark:bg-cyan-500/20 dark:text-cyan-400 border-cyan-600 dark:border-cyan-700";
+            if (outreachStatus === 'FAILED') return "bg-red-700 text-white dark:bg-red-600/20 dark:text-red-400 border-red-700 dark:border-red-800";
+            if (outreachStatus === 'PROFILE_INCOMPLETE') return "bg-amber-600 text-white dark:bg-amber-500/20 dark:text-amber-400 border-amber-600 dark:border-amber-700";
             return "bg-slate-500 text-white dark:bg-slate-500/20 dark:text-slate-400 border-slate-500 dark:border-slate-700";
     }
 };
@@ -44,6 +46,8 @@ export const getStatusLabel = (status: string, outreachStatus?: string) => {
             if (outreachStatus === 'NEEDS_CONTACT') return 'Needs Contact';
             if (outreachStatus === 'ENRICHING') return 'Enriching';
             if (outreachStatus === 'SENT') return 'Outreach Sent';
+            if (outreachStatus === 'FAILED') return '⚠ Outreach Failed';
+            if (outreachStatus === 'PROFILE_INCOMPLETE') return '⚠ Incomplete Profile';
             return 'Review';
         case 'qualified': return 'Qualified';
         case 'outreach_sent': return 'Outreach Sent';

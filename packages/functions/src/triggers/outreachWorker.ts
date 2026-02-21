@@ -67,6 +67,21 @@ export const processOutreachQueue = onSchedule({
                     scheduledAt: admin.firestore.Timestamp.fromDate(nextAttempt),
                     error: String(err)
                 });
+
+                // When max retries exhausted, update vendor outreachStatus to FAILED
+                if (status === 'FAILED' && task.vendorId) {
+                    await db.collection("vendors").doc(task.vendorId).update({
+                        outreachStatus: 'FAILED',
+                        statusUpdatedAt: new Date(),
+                    });
+                    await db.collection("vendor_activities").add({
+                        vendorId: task.vendorId,
+                        type: "OUTREACH_FAILED",
+                        description: `Outreach failed after ${newRetryCount} attempts: ${String(err).slice(0, 200)}`,
+                        createdAt: new Date(),
+                        metadata: { error: String(err).slice(0, 500), retryCount: newRetryCount, taskType: task.type },
+                    });
+                }
             }
         }
     } catch (error) {

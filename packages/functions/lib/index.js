@@ -1408,6 +1408,19 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
           scheduledAt: admin7.firestore.Timestamp.fromDate(nextAttempt),
           error: String(err)
         });
+        if (status === "FAILED" && task.vendorId) {
+          await db6.collection("vendors").doc(task.vendorId).update({
+            outreachStatus: "FAILED",
+            statusUpdatedAt: /* @__PURE__ */ new Date()
+          });
+          await db6.collection("vendor_activities").add({
+            vendorId: task.vendorId,
+            type: "OUTREACH_FAILED",
+            description: `Outreach failed after ${newRetryCount} attempts: ${String(err).slice(0, 200)}`,
+            createdAt: /* @__PURE__ */ new Date(),
+            metadata: { error: String(err).slice(0, 500), retryCount: newRetryCount, taskType: task.type }
+          });
+        }
       }
     }
   } catch (error10) {
