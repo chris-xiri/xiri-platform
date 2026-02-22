@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 import * as logger from "firebase-functions/logger";
 import { fetchPendingTasks, updateTaskStatus, enqueueTask, QueueItem } from "../utils/queueUtils";
 // import { getNextBusinessSlot } from "../utils/timeUtils"; // TODO: Re-enable for production
-import { generateOutreachContent } from "../agents/outreach";
+// NOTE: generateOutreachContent is kept as a fallback but no longer used for vendor outreach (templates are used instead)
 import { generateSalesOutreachContent } from "../agents/salesOutreach";
 import { sendEmail } from "../utils/emailUtils";
 
@@ -92,40 +92,66 @@ export const processOutreachQueue = onSchedule({
 async function handleGenerate(task: QueueItem) {
     logger.info(`Generating content for task ${task.id}`);
 
-    // Reconstruct vendor object from metadata
-    // In production, might be better to fetch fresh vendor data
-    const vendorData = task.metadata;
+    // Fetch fresh vendor data
+    const vendorDoc = await db.collection("vendors").doc(task.vendorId!).get();
+    const vendor = vendorDoc.exists ? vendorDoc.data() : task.metadata;
 
-    // TODO: Re-enable SMS channel when Twilio is integrated
-    // const preferredChannel = vendorData.phone ? 'SMS' : 'EMAIL';
-    const outreachResult = await generateOutreachContent(vendorData, 'EMAIL');
+    const sequence = task.metadata?.sequence || 1;
+    const templateId = `vendor_outreach_${sequence}`;
 
-    if (outreachResult.error) {
-        throw new Error("AI Generation Failed: " + (outreachResult.email?.body || "Unknown Error"));
+    // Fetch the email template from Firestore
+    const templateDoc = await db.collection("templates").doc(templateId).get();
+    if (!templateDoc.exists) {
+        throw new Error(`Email template ${templateId} not found in Firestore. Run seed-email-templates.js to create them.`);
     }
 
-    // Replace [ONBOARDING_LINK] placeholder with actual vendor onboarding URL
+    const template = templateDoc.data()!;
     const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
-    if (outreachResult.email?.body) {
-        outreachResult.email.body = outreachResult.email.body.replace(/\[ONBOARDING_LINK\]/g, onboardingUrl);
-    }
 
-    // 1. Log the drafts (Visible to User)
+    // Build merge variables from vendor data
+    const services = Array.isArray(vendor?.capabilities) && vendor.capabilities.length > 0
+        ? vendor.capabilities.join(', ')
+        : vendor?.specialty || 'Facility Services';
+    const contactName = vendor?.contactName || vendor?.businessName || 'there';
+
+    const mergeVars: Record<string, string> = {
+        vendorName: vendor?.companyName || vendor?.businessName || 'your company',
+        contactName,
+        city: vendor?.city || 'your area',
+        state: vendor?.state || '',
+        services,
+        specialty: vendor?.specialty || vendor?.capabilities?.[0] || 'Services',
+        onboardingUrl,
+    };
+
+    // Merge template fields
+    let subject = template.subject || '';
+    let body = template.body || '';
+    for (const [key, value] of Object.entries(mergeVars)) {
+        const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+        subject = subject.replace(regex, value);
+        body = body.replace(regex, value);
+    }
+    // Legacy placeholder
+    body = body.replace(/\[ONBOARDING_LINK\]/g, onboardingUrl);
+
+    const emailResult = { subject, body };
+
+    // 1. Log the draft (Visible in Activity Feed)
     await db.collection("vendor_activities").add({
         vendorId: task.vendorId,
         type: "OUTREACH_QUEUED",
-        description: `Outreach email draft generated (waiting to send).`,
+        description: `Outreach email draft generated from template (sequence ${sequence}).`,
         createdAt: new Date(),
         metadata: {
-            email: outreachResult.email,
+            email: emailResult,
             preferredChannel: 'EMAIL',
-            campaignUrgency: vendorData.hasActiveContract ? "URGENT" : "SUPPLY"
+            templateId,
+            sequence,
         }
     });
 
     // 2. Schedule SEND immediately (next queue cycle ~1 min)
-    // TODO: Re-enable business-hours scheduling when in production
-    // const scheduledTime = getNextBusinessSlot(vendorData.hasActiveContract ? "URGENT" : "SUPPLY");
     const scheduledTime = new Date();
 
     // 3. Enqueue SEND Task
@@ -134,14 +160,15 @@ async function handleGenerate(task: QueueItem) {
         type: 'SEND',
         scheduledAt: admin.firestore.Timestamp.fromDate(scheduledTime),
         metadata: {
-            email: outreachResult.email,
-            channel: 'EMAIL'
+            email: emailResult,
+            channel: 'EMAIL',
+            sequence,
         }
     });
 
     // 4. Mark GENERATE task complete
     await updateTaskStatus(db, task.id!, 'COMPLETED');
-    logger.info(`Task ${task.id} completed. Send scheduled for ${scheduledTime.toISOString()}`);
+    logger.info(`Task ${task.id} completed (template: ${templateId}). Send scheduled.`);
 }
 
 async function handleSend(task: QueueItem) {
@@ -153,11 +180,12 @@ async function handleSend(task: QueueItem) {
 
     let sendSuccess = false;
     let resendId: string | undefined;
+    let htmlBody = '';
 
     if (vendorEmail) {
         // ─── Always send via Email until Twilio SMS is integrated ───
         const emailData = task.metadata.email;
-        const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${(emailData?.body || '').replace(/\n/g, '<br/>')}</div>`;
+        htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${(emailData?.body || '').replace(/\n/g, '<br/>')}</div>`;
 
         const result = await sendEmail(
             vendorEmail,
@@ -255,93 +283,83 @@ async function handleFollowUp(task: QueueItem) {
     }
 
     const sequence = task.metadata?.sequence || 1;
-    const businessName = task.metadata?.businessName || vendor.businessName || 'there';
-    const isSpanish = (task.metadata?.preferredLanguage || vendor.preferredLanguage) === 'es';
+    const templateId = `vendor_outreach_${sequence + 1}`; // Follow-ups use templates 2, 3, 4
 
-    const unsubscribeUrl = `https://us-central1-xiri-facility-solutions.cloudfunctions.net/handleUnsubscribe?vendorId=${task.vendorId}`;
     const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
 
-    const subject = task.metadata?.subject || `Follow-up: Complete your Xiri profile`;
-    const html = buildFollowUpEmail(sequence, businessName, onboardingUrl, unsubscribeUrl, isSpanish);
+    // Fetch template from Firestore
+    const templateDoc = await db.collection("templates").doc(templateId).get();
+    if (!templateDoc.exists) {
+        // No more templates in the sequence — we're done
+        logger.info(`No template ${templateId} found. Follow-up sequence complete for vendor ${task.vendorId}.`);
+        await updateTaskStatus(db, task.id!, 'COMPLETED');
+        return;
+    }
 
-    const sendSuccess = await sendEmail(vendorEmail, subject, html);
+    const template = templateDoc.data()!;
+
+    // Merge vendor data
+    const services = Array.isArray(vendor.capabilities) && vendor.capabilities.length > 0
+        ? vendor.capabilities.join(', ')
+        : vendor.specialty || 'Facility Services';
+    const contactName = vendor.contactName || vendor.businessName || 'there';
+
+    const mergeVars: Record<string, string> = {
+        vendorName: vendor.companyName || vendor.businessName || 'your company',
+        contactName,
+        city: vendor.city || 'your area',
+        state: vendor.state || '',
+        services,
+        specialty: vendor.specialty || vendor.capabilities?.[0] || 'Services',
+        onboardingUrl,
+    };
+
+    let subject = template.subject || '';
+    let body = template.body || '';
+    for (const [key, value] of Object.entries(mergeVars)) {
+        const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+        subject = subject.replace(regex, value);
+        body = body.replace(regex, value);
+    }
+    body = body.replace(/\[ONBOARDING_LINK\]/g, onboardingUrl);
+
+    const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${body.replace(/\n/g, '<br/>')}</div>`;
+
+    const { success: sendSuccess, resendId } = await sendEmail(
+        vendorEmail, subject, htmlBody,
+        undefined, undefined, task.vendorId ?? undefined
+    );
+
+    await db.collection("vendor_activities").add({
+        vendorId: task.vendorId,
+        type: sendSuccess ? "FOLLOW_UP_SENT" : "OUTREACH_FAILED",
+        description: sendSuccess
+            ? `Follow-up #${sequence} sent to ${vendorEmail}`
+            : `Failed to send follow-up #${sequence} to ${vendorEmail}`,
+        createdAt: new Date(),
+        metadata: {
+            sequence,
+            channel: 'EMAIL',
+            to: vendorEmail,
+            from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+            subject,
+            body,
+            html: htmlBody,
+            templateId,
+            resendId: resendId || null,
+        }
+    });
 
     if (sendSuccess) {
-        await db.collection("vendor_activities").add({
-            vendorId: task.vendorId,
-            type: "FOLLOW_UP_SENT",
-            description: `Follow-up #${sequence} sent to ${vendorEmail}`,
-            createdAt: new Date(),
-            metadata: { sequence, email: vendorEmail, channel: 'EMAIL' }
-        });
         await updateTaskStatus(db, task.id!, 'COMPLETED');
-        logger.info(`Follow-up #${sequence} sent to ${vendorEmail} for vendor ${task.vendorId}`);
+        logger.info(`Follow-up #${sequence} sent to ${vendorEmail} (template: ${templateId})`);
     } else {
         throw new Error(`Failed to send follow-up #${sequence} to ${vendorEmail}`);
     }
 }
 
-function buildFollowUpEmail(sequence: number, businessName: string, onboardingUrl: string, unsubscribeUrl: string, isSpanish: boolean): string {
-    const msgs: Record<number, { en: { body: string; cta: string }; es: { body: string; cta: string } }> = {
-        1: {
-            en: {
-                body: `We noticed you haven't completed your Xiri profile yet. Completing your profile is the first step to receiving work opportunities from our network of medical and commercial facilities.`,
-                cta: 'Complete My Profile'
-            },
-            es: {
-                body: `Notamos que aún no ha completado su perfil de Xiri. Completar su perfil es el primer paso para recibir oportunidades de trabajo de nuestra red de instalaciones médicas y comerciales.`,
-                cta: 'Completar Mi Perfil'
-            }
-        },
-        2: {
-            en: {
-                body: `Just checking in — we'd love to have you on board. Our contractor network is growing and there are active opportunities in your area. It only takes a few minutes to complete your profile.`,
-                cta: 'Finish My Application'
-            },
-            es: {
-                body: `Solo queríamos saber cómo está — nos encantaría contar con usted. Nuestra red de contratistas está creciendo y hay oportunidades activas en su área.`,
-                cta: 'Finalizar Mi Solicitud'
-            }
-        },
-        3: {
-            en: {
-                body: `This is our final follow-up. We don't want you to miss out on work opportunities with Xiri. If you're still interested, please complete your profile. Otherwise, we'll remove you from our outreach list.`,
-                cta: 'Complete Profile Now'
-            },
-            es: {
-                body: `Este es nuestro último seguimiento. No queremos que pierda las oportunidades de trabajo con Xiri. Si aún está interesado, complete su perfil.`,
-                cta: 'Completar Perfil Ahora'
-            }
-        }
-    };
 
-    const msg = msgs[sequence]?.[isSpanish ? 'es' : 'en'] || msgs[1].en;
-    const greeting = isSpanish ? `Hola ${businessName},` : `Hi ${businessName},`;
-    const reply = isSpanish ? '¿Preguntas? Simplemente responda a este correo.' : 'Questions? Just reply to this email.';
-    const unsub = isSpanish ? 'Cancelar suscripción' : 'Unsubscribe from future emails';
-    const signoff = isSpanish ? 'Saludos cordiales' : 'Best regards';
 
-    return `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
-        <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 20px;">Xiri Facility Solutions</h1>
-        </div>
-        <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
-            <p style="font-size: 15px;">${greeting}</p>
-            <p style="font-size: 15px; line-height: 1.7;">${msg.body}</p>
-            <div style="text-align: center; margin: 32px 0;">
-                <a href="${onboardingUrl}" style="display: inline-block; padding: 14px 32px; background: #0369a1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">
-                    ${msg.cta}
-                </a>
-            </div>
-            <p style="font-size: 14px; color: #64748b;">${reply}</p>
-            <p style="margin-top: 24px; font-size: 14px;">${signoff},<br/><strong>Xiri Facility Solutions Team</strong></p>
-        </div>
-        <div style="text-align: center; margin-top: 16px;">
-            <a href="${unsubscribeUrl}" style="font-size: 11px; color: #94a3b8; text-decoration: underline;">${unsub}</a>
-        </div>
-    </div>`;
-}
 
 // ═══════════════════════════════════════════════════════════
 // ── SALES LEAD OUTREACH HANDLERS ──

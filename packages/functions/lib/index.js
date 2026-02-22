@@ -1423,77 +1423,21 @@ async function markNeedsContact(vendorId, reason) {
 
 // src/triggers/outreachWorker.ts
 var import_scheduler = require("firebase-functions/v2/scheduler");
-var admin7 = __toESM(require("firebase-admin"));
+var admin6 = __toESM(require("firebase-admin"));
 var logger2 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
 
-// src/agents/outreach.ts
+// src/agents/salesOutreach.ts
 var import_generative_ai4 = require("@google/generative-ai");
 var admin5 = __toESM(require("firebase-admin"));
 var API_KEY2 = process.env.GEMINI_API_KEY || "";
 var genAI3 = new import_generative_ai4.GoogleGenerativeAI(API_KEY2);
 var model2 = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
 var db4 = admin5.firestore();
-var generateOutreachContent = async (vendor, preferredChannel) => {
-  const channel = preferredChannel;
-  try {
-    const templateDoc = await db4.collection("templates").doc("outreach_generation_prompt").get();
-    if (!templateDoc.exists) {
-      throw new Error("Outreach generation prompt not found in database");
-    }
-    const template = templateDoc.data();
-    const locationParts = [vendor.city, vendor.state].filter(Boolean);
-    const location = locationParts.length > 0 ? locationParts.join(", ") : "your area";
-    const services = Array.isArray(vendor.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.join(", ") : vendor.specialty || "Facility Services";
-    const prompt = template?.content.replace(/\{\{vendorName\}\}/g, vendor.companyName || vendor.businessName || "your company").replace(/\{\{specialty\}\}/g, vendor.specialty || vendor.capabilities?.[0] || "Services").replace(/\{\{services\}\}/g, services).replace(/\{\{contactName\}\}/g, vendor.contactName || "not available").replace(/\{\{location\}\}/g, location).replace(/\{\{campaignContext\}\}/g, vendor.hasActiveContract ? "URGENT JOB OPPORTUNITY (We have a contract ready)" : "Building Supply Network (Partnership Opportunity)");
-    const result = await model2.generateContent(prompt);
-    let text = result.response.text();
-    text = text.replace(/^```json/gm, "").replace(/^```/gm, "").trim();
-    const jsonContent = JSON.parse(text);
-    return {
-      channel,
-      email: jsonContent.email,
-      generatedAt: /* @__PURE__ */ new Date()
-    };
-  } catch (error10) {
-    console.error("Error generating outreach content:", error10);
-    return {
-      channel,
-      email: { subject: "Error", body: "Error generating content. Please draft manually." },
-      error: true
-    };
-  }
-};
-var analyzeIncomingMessage = async (vendor, messageContent, previousContext) => {
-  try {
-    const templateDoc = await db4.collection("templates").doc("message_analysis_prompt").get();
-    if (!templateDoc.exists) {
-      throw new Error("Message analysis prompt not found in database");
-    }
-    const template = templateDoc.data();
-    const prompt = template?.content.replace(/\{\{vendorName\}\}/g, vendor.companyName).replace(/\{\{messageContent\}\}/g, messageContent).replace(/\{\{previousContext\}\}/g, previousContext).replace(/\{\{vendorId\}\}/g, vendor.id);
-    const result = await model2.generateContent(prompt);
-    let text = result.response.text();
-    text = text.replace(/^```json/gm, "").replace(/^```/gm, "").trim();
-    const jsonContent = JSON.parse(text);
-    return jsonContent;
-  } catch (error10) {
-    console.error("Error analyzing message:", error10);
-    return { intent: "OTHER", reply: "Error analyzing message." };
-  }
-};
-
-// src/agents/salesOutreach.ts
-var import_generative_ai5 = require("@google/generative-ai");
-var admin6 = __toESM(require("firebase-admin"));
-var API_KEY3 = process.env.GEMINI_API_KEY || "";
-var genAI4 = new import_generative_ai5.GoogleGenerativeAI(API_KEY3);
-var model3 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
-var db5 = admin6.firestore();
 var generateSalesOutreachContent = async (lead, sequence = 0) => {
   try {
     const templateId = sequence === 0 ? "sales_outreach_prompt" : "sales_followup_prompt";
-    const templateDoc = await db5.collection("templates").doc(templateId).get();
+    const templateDoc = await db4.collection("templates").doc(templateId).get();
     if (!templateDoc.exists) {
       throw new Error(`Template '${templateId}' not found in database`);
     }
@@ -1503,7 +1447,7 @@ var generateSalesOutreachContent = async (lead, sequence = 0) => {
     const sqft = lead.propertySourcing?.squareFootage;
     const sqftStr = sqft ? `${sqft.toLocaleString()} sq ft` : "N/A";
     const prompt = template?.content.replace(/\{\{businessName\}\}/g, lead.businessName || "your practice").replace(/\{\{contactName\}\}/g, lead.contactName || "there").replace(/\{\{facilityType\}\}/g, prettyFacilityType).replace(/\{\{squareFootage\}\}/g, sqftStr).replace(/\{\{address\}\}/g, lead.address || "").replace(/\{\{sequence\}\}/g, String(sequence)).replace(/\{\{tenantName\}\}/g, lead.propertySourcing?.tenantName || lead.businessName || "").replace(/\{\{ownerName\}\}/g, lead.propertySourcing?.ownerName || "");
-    const result = await model3.generateContent(prompt);
+    const result = await model2.generateContent(prompt);
     let text = result.response.text();
     text = text.replace(/^```json/gm, "").replace(/^```/gm, "").trim();
     const jsonContent = JSON.parse(text);
@@ -1525,17 +1469,17 @@ var generateSalesOutreachContent = async (lead, sequence = 0) => {
 
 // src/triggers/outreachWorker.ts
 init_emailUtils();
-if (!admin7.apps.length) {
-  admin7.initializeApp();
+if (!admin6.apps.length) {
+  admin6.initializeApp();
 }
-var db6 = admin7.firestore();
+var db5 = admin6.firestore();
 var processOutreachQueue = (0, import_scheduler.onSchedule)({
   schedule: "every 1 minutes",
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"]
 }, async (event) => {
   logger2.info("Processing outreach queue...");
   try {
-    const tasks = await fetchPendingTasks(db6);
+    const tasks = await fetchPendingTasks(db5);
     if (tasks.length === 0) {
       logger2.info("No pending tasks found.");
       return;
@@ -1566,17 +1510,17 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
         const status = newRetryCount > 5 ? "FAILED" : "RETRY";
         const nextAttempt = /* @__PURE__ */ new Date();
         nextAttempt.setMinutes(nextAttempt.getMinutes() + Math.pow(2, newRetryCount));
-        await updateTaskStatus(db6, task.id, status, {
+        await updateTaskStatus(db5, task.id, status, {
           retryCount: newRetryCount,
-          scheduledAt: admin7.firestore.Timestamp.fromDate(nextAttempt),
+          scheduledAt: admin6.firestore.Timestamp.fromDate(nextAttempt),
           error: String(err)
         });
         if (status === "FAILED" && task.vendorId) {
-          await db6.collection("vendors").doc(task.vendorId).update({
+          await db5.collection("vendors").doc(task.vendorId).update({
             outreachStatus: "FAILED",
             statusUpdatedAt: /* @__PURE__ */ new Date()
           });
-          await db6.collection("vendor_activities").add({
+          await db5.collection("vendor_activities").add({
             vendorId: task.vendorId,
             type: "OUTREACH_FAILED",
             description: `Outreach failed after ${newRetryCount} attempts: ${String(err).slice(0, 200)}`,
@@ -1592,53 +1536,77 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
 });
 async function handleGenerate(task) {
   logger2.info(`Generating content for task ${task.id}`);
-  const vendorData = task.metadata;
-  const outreachResult = await generateOutreachContent(vendorData, "EMAIL");
-  if (outreachResult.error) {
-    throw new Error("AI Generation Failed: " + (outreachResult.email?.body || "Unknown Error"));
+  const vendorDoc = await db5.collection("vendors").doc(task.vendorId).get();
+  const vendor = vendorDoc.exists ? vendorDoc.data() : task.metadata;
+  const sequence = task.metadata?.sequence || 1;
+  const templateId = `vendor_outreach_${sequence}`;
+  const templateDoc = await db5.collection("templates").doc(templateId).get();
+  if (!templateDoc.exists) {
+    throw new Error(`Email template ${templateId} not found in Firestore. Run seed-email-templates.js to create them.`);
   }
+  const template = templateDoc.data();
   const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
-  if (outreachResult.email?.body) {
-    outreachResult.email.body = outreachResult.email.body.replace(/\[ONBOARDING_LINK\]/g, onboardingUrl);
+  const services = Array.isArray(vendor?.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.join(", ") : vendor?.specialty || "Facility Services";
+  const contactName = vendor?.contactName || vendor?.businessName || "there";
+  const mergeVars = {
+    vendorName: vendor?.companyName || vendor?.businessName || "your company",
+    contactName,
+    city: vendor?.city || "your area",
+    state: vendor?.state || "",
+    services,
+    specialty: vendor?.specialty || vendor?.capabilities?.[0] || "Services",
+    onboardingUrl
+  };
+  let subject = template.subject || "";
+  let body = template.body || "";
+  for (const [key, value] of Object.entries(mergeVars)) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g");
+    subject = subject.replace(regex, value);
+    body = body.replace(regex, value);
   }
-  await db6.collection("vendor_activities").add({
+  body = body.replace(/\[ONBOARDING_LINK\]/g, onboardingUrl);
+  const emailResult = { subject, body };
+  await db5.collection("vendor_activities").add({
     vendorId: task.vendorId,
     type: "OUTREACH_QUEUED",
-    description: `Outreach email draft generated (waiting to send).`,
+    description: `Outreach email draft generated from template (sequence ${sequence}).`,
     createdAt: /* @__PURE__ */ new Date(),
     metadata: {
-      email: outreachResult.email,
+      email: emailResult,
       preferredChannel: "EMAIL",
-      campaignUrgency: vendorData.hasActiveContract ? "URGENT" : "SUPPLY"
+      templateId,
+      sequence
     }
   });
   const scheduledTime = /* @__PURE__ */ new Date();
-  await enqueueTask(db6, {
+  await enqueueTask(db5, {
     vendorId: task.vendorId,
     type: "SEND",
-    scheduledAt: admin7.firestore.Timestamp.fromDate(scheduledTime),
+    scheduledAt: admin6.firestore.Timestamp.fromDate(scheduledTime),
     metadata: {
-      email: outreachResult.email,
-      channel: "EMAIL"
+      email: emailResult,
+      channel: "EMAIL",
+      sequence
     }
   });
-  await updateTaskStatus(db6, task.id, "COMPLETED");
-  logger2.info(`Task ${task.id} completed. Send scheduled for ${scheduledTime.toISOString()}`);
+  await updateTaskStatus(db5, task.id, "COMPLETED");
+  logger2.info(`Task ${task.id} completed (template: ${templateId}). Send scheduled.`);
 }
 async function handleSend(task) {
   logger2.info(`Executing SEND for task ${task.id}`);
-  const vendorDoc = await db6.collection("vendors").doc(task.vendorId).get();
+  const vendorDoc = await db5.collection("vendors").doc(task.vendorId).get();
   const vendor = vendorDoc.exists ? vendorDoc.data() : null;
   const vendorEmail = vendor?.email || task.metadata?.email?.to;
   let sendSuccess = false;
   let resendId;
+  let htmlBody = "";
   if (vendorEmail) {
     const emailData = task.metadata.email;
-    const htmlBody2 = `<div style="font-family: sans-serif; line-height: 1.6;">${(emailData?.body || "").replace(/\n/g, "<br/>")}</div>`;
+    htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${(emailData?.body || "").replace(/\n/g, "<br/>")}</div>`;
     const result = await sendEmail(
       vendorEmail,
       emailData?.subject || "Xiri Facility Solutions \u2014 Partnership Opportunity",
-      htmlBody2,
+      htmlBody,
       void 0,
       // no attachments
       void 0,
@@ -1656,7 +1624,7 @@ async function handleSend(task) {
     logger2.warn(`No email for task ${task.id}. Channel: ${task.metadata.channel}`);
     sendSuccess = false;
   }
-  await db6.collection("vendor_activities").add({
+  await db5.collection("vendor_activities").add({
     vendorId: task.vendorId,
     type: sendSuccess ? "OUTREACH_SENT" : "OUTREACH_FAILED",
     description: sendSuccess ? `Automated ${task.metadata.channel} sent to ${vendorEmail || "vendor"}.` : `Failed to send ${task.metadata.channel} to vendor.`,
@@ -1673,16 +1641,16 @@ async function handleSend(task) {
       resendId: resendId || null
     }
   });
-  await updateTaskStatus(db6, task.id, sendSuccess ? "COMPLETED" : "FAILED");
+  await updateTaskStatus(db5, task.id, sendSuccess ? "COMPLETED" : "FAILED");
   if (sendSuccess) {
-    await db6.collection("vendors").doc(task.vendorId).update({
+    await db5.collection("vendors").doc(task.vendorId).update({
       status: "awaiting_onboarding",
       outreachStatus: "SENT",
       outreachChannel: task.metadata.channel,
       outreachSentAt: /* @__PURE__ */ new Date(),
       statusUpdatedAt: /* @__PURE__ */ new Date()
     });
-    await db6.collection("vendor_activities").add({
+    await db5.collection("vendor_activities").add({
       vendorId: task.vendorId,
       type: "STATUS_CHANGE",
       description: `Pipeline advanced: qualified \u2192 awaiting_onboarding (outreach ${task.metadata.channel} delivered)`,
@@ -1690,7 +1658,7 @@ async function handleSend(task) {
       metadata: { from: "qualified", to: "awaiting_onboarding", trigger: "outreach_sent" }
     });
   } else {
-    await db6.collection("vendors").doc(task.vendorId).update({
+    await db5.collection("vendors").doc(task.vendorId).update({
       outreachStatus: "PENDING",
       outreachChannel: task.metadata.channel,
       outreachTime: /* @__PURE__ */ new Date()
@@ -1699,104 +1667,85 @@ async function handleSend(task) {
 }
 async function handleFollowUp(task) {
   logger2.info(`Processing FOLLOW_UP task ${task.id} (sequence ${task.metadata?.sequence})`);
-  const vendorDoc = await db6.collection("vendors").doc(task.vendorId).get();
+  const vendorDoc = await db5.collection("vendors").doc(task.vendorId).get();
   const vendor = vendorDoc.exists ? vendorDoc.data() : null;
   if (!vendor) {
     logger2.warn(`Vendor ${task.vendorId} not found, marking task completed.`);
-    await updateTaskStatus(db6, task.id, "COMPLETED");
+    await updateTaskStatus(db5, task.id, "COMPLETED");
     return;
   }
   if (vendor.status !== "awaiting_onboarding") {
     logger2.info(`Vendor ${task.vendorId} is now '${vendor.status}', skipping follow-up.`);
-    await updateTaskStatus(db6, task.id, "COMPLETED");
+    await updateTaskStatus(db5, task.id, "COMPLETED");
     return;
   }
   const vendorEmail = vendor.email || task.metadata?.email;
   if (!vendorEmail) {
     logger2.warn(`No email for vendor ${task.vendorId}, skipping follow-up.`);
-    await updateTaskStatus(db6, task.id, "COMPLETED");
+    await updateTaskStatus(db5, task.id, "COMPLETED");
     return;
   }
   const sequence = task.metadata?.sequence || 1;
-  const businessName = task.metadata?.businessName || vendor.businessName || "there";
-  const isSpanish = (task.metadata?.preferredLanguage || vendor.preferredLanguage) === "es";
-  const unsubscribeUrl = `https://us-central1-xiri-facility-solutions.cloudfunctions.net/handleUnsubscribe?vendorId=${task.vendorId}`;
+  const templateId = `vendor_outreach_${sequence + 1}`;
   const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
-  const subject = task.metadata?.subject || `Follow-up: Complete your Xiri profile`;
-  const html = buildFollowUpEmail(sequence, businessName, onboardingUrl, unsubscribeUrl, isSpanish);
-  const sendSuccess = await sendEmail(vendorEmail, subject, html);
+  const templateDoc = await db5.collection("templates").doc(templateId).get();
+  if (!templateDoc.exists) {
+    logger2.info(`No template ${templateId} found. Follow-up sequence complete for vendor ${task.vendorId}.`);
+    await updateTaskStatus(db5, task.id, "COMPLETED");
+    return;
+  }
+  const template = templateDoc.data();
+  const services = Array.isArray(vendor.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.join(", ") : vendor.specialty || "Facility Services";
+  const contactName = vendor.contactName || vendor.businessName || "there";
+  const mergeVars = {
+    vendorName: vendor.companyName || vendor.businessName || "your company",
+    contactName,
+    city: vendor.city || "your area",
+    state: vendor.state || "",
+    services,
+    specialty: vendor.specialty || vendor.capabilities?.[0] || "Services",
+    onboardingUrl
+  };
+  let subject = template.subject || "";
+  let body = template.body || "";
+  for (const [key, value] of Object.entries(mergeVars)) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g");
+    subject = subject.replace(regex, value);
+    body = body.replace(regex, value);
+  }
+  body = body.replace(/\[ONBOARDING_LINK\]/g, onboardingUrl);
+  const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${body.replace(/\n/g, "<br/>")}</div>`;
+  const { success: sendSuccess, resendId } = await sendEmail(
+    vendorEmail,
+    subject,
+    htmlBody,
+    void 0,
+    void 0,
+    task.vendorId ?? void 0
+  );
+  await db5.collection("vendor_activities").add({
+    vendorId: task.vendorId,
+    type: sendSuccess ? "FOLLOW_UP_SENT" : "OUTREACH_FAILED",
+    description: sendSuccess ? `Follow-up #${sequence} sent to ${vendorEmail}` : `Failed to send follow-up #${sequence} to ${vendorEmail}`,
+    createdAt: /* @__PURE__ */ new Date(),
+    metadata: {
+      sequence,
+      channel: "EMAIL",
+      to: vendorEmail,
+      from: "Xiri Facility Solutions <onboarding@xiri.ai>",
+      subject,
+      body,
+      html: htmlBody,
+      templateId,
+      resendId: resendId || null
+    }
+  });
   if (sendSuccess) {
-    await db6.collection("vendor_activities").add({
-      vendorId: task.vendorId,
-      type: "FOLLOW_UP_SENT",
-      description: `Follow-up #${sequence} sent to ${vendorEmail}`,
-      createdAt: /* @__PURE__ */ new Date(),
-      metadata: { sequence, email: vendorEmail, channel: "EMAIL" }
-    });
-    await updateTaskStatus(db6, task.id, "COMPLETED");
-    logger2.info(`Follow-up #${sequence} sent to ${vendorEmail} for vendor ${task.vendorId}`);
+    await updateTaskStatus(db5, task.id, "COMPLETED");
+    logger2.info(`Follow-up #${sequence} sent to ${vendorEmail} (template: ${templateId})`);
   } else {
     throw new Error(`Failed to send follow-up #${sequence} to ${vendorEmail}`);
   }
-}
-function buildFollowUpEmail(sequence, businessName, onboardingUrl, unsubscribeUrl, isSpanish) {
-  const msgs = {
-    1: {
-      en: {
-        body: `We noticed you haven't completed your Xiri profile yet. Completing your profile is the first step to receiving work opportunities from our network of medical and commercial facilities.`,
-        cta: "Complete My Profile"
-      },
-      es: {
-        body: `Notamos que a\xFAn no ha completado su perfil de Xiri. Completar su perfil es el primer paso para recibir oportunidades de trabajo de nuestra red de instalaciones m\xE9dicas y comerciales.`,
-        cta: "Completar Mi Perfil"
-      }
-    },
-    2: {
-      en: {
-        body: `Just checking in \u2014 we'd love to have you on board. Our contractor network is growing and there are active opportunities in your area. It only takes a few minutes to complete your profile.`,
-        cta: "Finish My Application"
-      },
-      es: {
-        body: `Solo quer\xEDamos saber c\xF3mo est\xE1 \u2014 nos encantar\xEDa contar con usted. Nuestra red de contratistas est\xE1 creciendo y hay oportunidades activas en su \xE1rea.`,
-        cta: "Finalizar Mi Solicitud"
-      }
-    },
-    3: {
-      en: {
-        body: `This is our final follow-up. We don't want you to miss out on work opportunities with Xiri. If you're still interested, please complete your profile. Otherwise, we'll remove you from our outreach list.`,
-        cta: "Complete Profile Now"
-      },
-      es: {
-        body: `Este es nuestro \xFAltimo seguimiento. No queremos que pierda las oportunidades de trabajo con Xiri. Si a\xFAn est\xE1 interesado, complete su perfil.`,
-        cta: "Completar Perfil Ahora"
-      }
-    }
-  };
-  const msg = msgs[sequence]?.[isSpanish ? "es" : "en"] || msgs[1].en;
-  const greeting = isSpanish ? `Hola ${businessName},` : `Hi ${businessName},`;
-  const reply = isSpanish ? "\xBFPreguntas? Simplemente responda a este correo." : "Questions? Just reply to this email.";
-  const unsub = isSpanish ? "Cancelar suscripci\xF3n" : "Unsubscribe from future emails";
-  const signoff = isSpanish ? "Saludos cordiales" : "Best regards";
-  return `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
-        <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 20px;">Xiri Facility Solutions</h1>
-        </div>
-        <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
-            <p style="font-size: 15px;">${greeting}</p>
-            <p style="font-size: 15px; line-height: 1.7;">${msg.body}</p>
-            <div style="text-align: center; margin: 32px 0;">
-                <a href="${onboardingUrl}" style="display: inline-block; padding: 14px 32px; background: #0369a1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">
-                    ${msg.cta}
-                </a>
-            </div>
-            <p style="font-size: 14px; color: #64748b;">${reply}</p>
-            <p style="margin-top: 24px; font-size: 14px;">${signoff},<br/><strong>Xiri Facility Solutions Team</strong></p>
-        </div>
-        <div style="text-align: center; margin-top: 16px;">
-            <a href="${unsubscribeUrl}" style="font-size: 11px; color: #94a3b8; text-decoration: underline;">${unsub}</a>
-        </div>
-    </div>`;
 }
 async function handleLeadGenerate(task) {
   logger2.info(`[SalesOutreach] Generating intro email for lead ${task.leadId}`);
@@ -1805,24 +1754,24 @@ async function handleLeadGenerate(task) {
   if (outreachResult.error) {
     throw new Error("AI Generation Failed for sales outreach");
   }
-  await db6.collection("lead_activities").add({
+  await db5.collection("lead_activities").add({
     leadId: task.leadId,
     type: "OUTREACH_QUEUED",
     description: `Sales outreach email generated for ${leadData.businessName || "lead"}.`,
     createdAt: /* @__PURE__ */ new Date(),
     metadata: { email: outreachResult.email }
   });
-  await enqueueTask(db6, {
+  await enqueueTask(db5, {
     leadId: task.leadId,
     type: "SEND",
-    scheduledAt: admin7.firestore.Timestamp.fromDate(/* @__PURE__ */ new Date()),
+    scheduledAt: admin6.firestore.Timestamp.fromDate(/* @__PURE__ */ new Date()),
     metadata: {
       email: outreachResult.email,
       toEmail: leadData.email,
       businessName: leadData.businessName
     }
   });
-  await updateTaskStatus(db6, task.id, "COMPLETED");
+  await updateTaskStatus(db5, task.id, "COMPLETED");
   logger2.info(`[SalesOutreach] Lead ${task.leadId} intro email generated, SEND queued.`);
 }
 async function handleLeadSend(task) {
@@ -1830,26 +1779,26 @@ async function handleLeadSend(task) {
   const toEmail = task.metadata?.toEmail;
   if (!toEmail) {
     logger2.warn(`[SalesOutreach] No email for lead ${task.leadId}, skipping.`);
-    await updateTaskStatus(db6, task.id, "COMPLETED");
+    await updateTaskStatus(db5, task.id, "COMPLETED");
     return;
   }
   const emailData = task.metadata.email;
-  const htmlBody2 = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${(emailData?.body || "").replace(/\n/g, "<br/>")}</div>`;
+  const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${(emailData?.body || "").replace(/\n/g, "<br/>")}</div>`;
   const sendSuccess = await sendEmail(
     toEmail,
     emailData?.subject || "Xiri Facility Solutions \u2014 Simplify Your Facility Management",
-    htmlBody2
+    htmlBody
   );
-  await db6.collection("lead_activities").add({
+  await db5.collection("lead_activities").add({
     leadId: task.leadId,
     type: sendSuccess ? "OUTREACH_SENT" : "OUTREACH_FAILED",
     description: sendSuccess ? `Sales email sent to ${toEmail}.` : `Failed to send sales email to ${toEmail}.`,
     createdAt: /* @__PURE__ */ new Date(),
     metadata: { to: toEmail, subject: emailData?.subject }
   });
-  await updateTaskStatus(db6, task.id, sendSuccess ? "COMPLETED" : "FAILED");
+  await updateTaskStatus(db5, task.id, sendSuccess ? "COMPLETED" : "FAILED");
   if (sendSuccess) {
-    await db6.collection("leads").doc(task.leadId).update({
+    await db5.collection("leads").doc(task.leadId).update({
       outreachStatus: "SENT",
       outreachSentAt: /* @__PURE__ */ new Date()
     });
@@ -1858,22 +1807,22 @@ async function handleLeadSend(task) {
 async function handleLeadFollowUp(task) {
   const sequence = task.metadata?.sequence || 1;
   logger2.info(`[SalesOutreach] Processing follow-up #${sequence} for lead ${task.leadId}`);
-  const leadDoc = await db6.collection("leads").doc(task.leadId).get();
+  const leadDoc = await db5.collection("leads").doc(task.leadId).get();
   const leadData = leadDoc.exists ? leadDoc.data() : null;
   if (!leadData) {
     logger2.warn(`[SalesOutreach] Lead ${task.leadId} not found, skipping.`);
-    await updateTaskStatus(db6, task.id, "COMPLETED");
+    await updateTaskStatus(db5, task.id, "COMPLETED");
     return;
   }
   if (leadData.outreachStatus === "REPLIED" || leadData.status === "lost") {
     logger2.info(`[SalesOutreach] Lead ${task.leadId} status is '${leadData.outreachStatus || leadData.status}', skipping follow-up.`);
-    await updateTaskStatus(db6, task.id, "COMPLETED");
+    await updateTaskStatus(db5, task.id, "COMPLETED");
     return;
   }
   const toEmail = task.metadata?.email || leadData.email;
   if (!toEmail) {
     logger2.warn(`[SalesOutreach] No email for lead ${task.leadId}, skipping.`);
-    await updateTaskStatus(db6, task.id, "COMPLETED");
+    await updateTaskStatus(db5, task.id, "COMPLETED");
     return;
   }
   const outreachResult = await generateSalesOutreachContent({
@@ -1884,23 +1833,23 @@ async function handleLeadFollowUp(task) {
     throw new Error(`AI generation failed for sales follow-up #${sequence}`);
   }
   const emailData = outreachResult.email;
-  const htmlBody2 = buildSalesFollowUpEmail(
+  const htmlBody = buildSalesFollowUpEmail(
     sequence,
     task.metadata?.businessName || leadData.businessName || "there",
     task.metadata?.contactName || leadData.contactName || "",
     emailData?.body || ""
   );
   const subject = emailData?.subject || task.metadata?.subject || `Follow-up: ${task.metadata?.businessName || "Your facility"}`;
-  const sendSuccess = await sendEmail(toEmail, subject, htmlBody2);
+  const sendSuccess = await sendEmail(toEmail, subject, htmlBody);
   if (sendSuccess) {
-    await db6.collection("lead_activities").add({
+    await db5.collection("lead_activities").add({
       leadId: task.leadId,
       type: "FOLLOW_UP_SENT",
       description: `Sales follow-up #${sequence} sent to ${toEmail}`,
       createdAt: /* @__PURE__ */ new Date(),
       metadata: { sequence, email: toEmail }
     });
-    await updateTaskStatus(db6, task.id, "COMPLETED");
+    await updateTaskStatus(db5, task.id, "COMPLETED");
     logger2.info(`[SalesOutreach] Follow-up #${sequence} sent to ${toEmail} for lead ${task.leadId}`);
   } else {
     throw new Error(`Failed to send sales follow-up #${sequence} to ${toEmail}`);
@@ -1933,6 +1882,34 @@ function buildSalesFollowUpEmail(sequence, businessName, contactName, aiBody) {
 var import_firestore3 = require("firebase-functions/v2/firestore");
 var admin8 = __toESM(require("firebase-admin"));
 var logger3 = __toESM(require("firebase-functions/logger"));
+
+// src/agents/outreach.ts
+var import_generative_ai5 = require("@google/generative-ai");
+var admin7 = __toESM(require("firebase-admin"));
+var API_KEY3 = process.env.GEMINI_API_KEY || "";
+var genAI4 = new import_generative_ai5.GoogleGenerativeAI(API_KEY3);
+var model3 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+var db6 = admin7.firestore();
+var analyzeIncomingMessage = async (vendor, messageContent, previousContext) => {
+  try {
+    const templateDoc = await db6.collection("templates").doc("message_analysis_prompt").get();
+    if (!templateDoc.exists) {
+      throw new Error("Message analysis prompt not found in database");
+    }
+    const template = templateDoc.data();
+    const prompt = template?.content.replace(/\{\{vendorName\}\}/g, vendor.companyName).replace(/\{\{messageContent\}\}/g, messageContent).replace(/\{\{previousContext\}\}/g, previousContext).replace(/\{\{vendorId\}\}/g, vendor.id);
+    const result = await model3.generateContent(prompt);
+    let text = result.response.text();
+    text = text.replace(/^```json/gm, "").replace(/^```/gm, "").trim();
+    const jsonContent = JSON.parse(text);
+    return jsonContent;
+  } catch (error10) {
+    console.error("Error analyzing message:", error10);
+    return { intent: "OTHER", reply: "Error analyzing message." };
+  }
+};
+
+// src/triggers/onIncomingMessage.ts
 if (!admin8.apps.length) {
   admin8.initializeApp();
 }
@@ -2372,7 +2349,7 @@ Power to the Facilities!`,
     organizer: { name: "Xiri Facility Solutions", email: "onboarding@xiri.ai" }
   });
   const subject = `Confirmed: Your Xini ${type}`;
-  const htmlBody2 = `
+  const htmlBody = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
             <h1 style="color: #0ea5e9;">You're booked!</h1>
             <p>Hi ${contactName || "there"},</p>
@@ -2387,7 +2364,7 @@ Power to the Facilities!`,
             <p>Best,<br/>The Xiri Team</p>
         </div>
     `;
-  const sendSuccess = await sendEmail(email, subject, htmlBody2, [
+  const sendSuccess = await sendEmail(email, subject, htmlBody, [
     {
       filename: "invite.ics",
       content: icsContent
@@ -3000,7 +2977,7 @@ Power to the Facilities!`,
     ]
   });
   const formattedTime = (0, import_date_fns_tz.formatInTimeZone)(startTime, EASTERN_TZ, "EEEE, MMMM do 'at' h:mm a zzz");
-  const htmlBody2 = `
+  const htmlBody = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #0ea5e9;">Onboarding Call Confirmed!</h1>
         <p>Hi ${contactName},</p>
@@ -3022,7 +2999,7 @@ Power to the Facilities!`,
     </div>
     `;
   const subject = `Confirmed: Xiri Onboarding Call \u2014 ${formattedTime}`;
-  const vendorSent = await sendEmail(vendorEmail, subject, htmlBody2, [
+  const vendorSent = await sendEmail(vendorEmail, subject, htmlBody, [
     { filename: "onboarding-call.ics", content: icsContent }
   ]);
   const adminHtml = `
