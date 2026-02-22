@@ -19,6 +19,7 @@ interface LeadRowProps {
     index: number;
     isSelected?: boolean;
     onSelect?: (checked: boolean) => void;
+    onRowClick?: (id: string) => void;
 }
 
 const STATUS_COLORS: Record<LeadStatus, string> = {
@@ -27,8 +28,10 @@ const STATUS_COLORS: Record<LeadStatus, string> = {
     'qualified': 'bg-green-100 text-green-800 border-green-200',
     'walkthrough': 'bg-purple-100 text-purple-800 border-purple-200',
     'proposal': 'bg-orange-100 text-orange-800 border-orange-200',
+    'quoted': 'bg-sky-100 text-sky-800 border-sky-200',
     'won': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    'lost': 'bg-gray-100 text-gray-800 border-gray-200'
+    'lost': 'bg-gray-100 text-gray-800 border-gray-200',
+    'churned': 'bg-red-100 text-red-800 border-red-200',
 };
 
 const FACILITY_TYPE_LABELS: Record<string, string> = {
@@ -57,11 +60,15 @@ function toDate(value: any): Date | null {
     }
 }
 
-export function LeadRow({ lead, index, isSelected, onSelect }: LeadRowProps) {
+export function LeadRow({ lead, index, isSelected, onSelect, onRowClick }: LeadRowProps) {
     const router = useRouter();
 
     const handleClick = () => {
-        router.push(`/sales/crm/${lead.id}`);
+        if (onRowClick && lead.id) {
+            onRowClick(lead.id);
+        } else {
+            router.push(`/sales/crm/${lead.id}`);
+        }
     };
 
     const firstAuditTime = lead.preferredAuditTimes && lead.preferredAuditTimes.length > 0

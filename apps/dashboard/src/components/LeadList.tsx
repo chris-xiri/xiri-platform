@@ -35,11 +35,13 @@ import { LeadCard } from "./LeadList/LeadCard";
 interface LeadListProps {
     statusFilters?: LeadStatus[];
     title?: string;
+    onRowClick?: (id: string) => void;
 }
 
 export default function LeadList({
     statusFilters,
-    title = "Sales Pipeline"
+    title = "Sales Pipeline",
+    onRowClick
 }: LeadListProps) {
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
@@ -309,6 +311,7 @@ export default function LeadList({
                                             index={index}
                                             isSelected={selectedLeads.has(lead.id!)}
                                             onSelect={(checked) => handleSelectLead(lead.id!, checked)}
+                                            onRowClick={onRowClick}
                                         />
                                     ))}
                                 </TableBody>

@@ -153,9 +153,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             icon: <DollarSign className="w-3.5 h-3.5" />,
             show: showSalesNav,
             items: [
-                { label: 'Dashboard', href: '/sales/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
+                { label: 'Pipeline', href: '/sales/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
                 { label: 'Leads Sourcing', href: '/sales/sourcing', icon: <Search className="w-4 h-4" /> },
-                { label: 'Leads CRM', href: '/sales/crm', icon: <Users className="w-4 h-4" /> },
                 { label: 'Leads Quotes', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> },
             ],
         },
@@ -164,9 +163,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             icon: <Package className="w-3.5 h-3.5" />,
             show: showSupplyNav,
             items: [
-                { label: 'Dashboard', href: '/supply/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
+                { label: 'Pipeline', href: '/supply/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
                 { label: 'Contractor Sourcing', href: '/supply/recruitment', icon: <Search className="w-4 h-4" /> },
-                { label: 'Contractors CRM', href: '/supply/crm', icon: <Users className="w-4 h-4" /> },
             ],
         },
         {

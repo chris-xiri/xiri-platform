@@ -4,10 +4,14 @@ import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, TrendingUp, Users, Target, Clock, CheckCircle, AlertTriangle, Calendar, ArrowRight, Zap, Mail, Eye, MousePointerClick, MessageSquare, XCircle, Phone, MapPin } from 'lucide-react';
+import { DollarSign, TrendingUp, Users, Target, Clock, CheckCircle, AlertTriangle, Calendar, ArrowRight, Zap, Mail, Eye, MousePointerClick, MessageSquare, XCircle, Phone, MapPin, Plus } from 'lucide-react';
 import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import LeadList from '@/components/LeadList';
+import LeadDetailDrawer from '@/components/lead/LeadDetailDrawer';
+import { AddLeadDialog } from '@/components/AddLeadDialog';
+import { Button } from '@/components/ui/button';
 
 const formatCurrency = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
@@ -77,6 +81,8 @@ export default function SalesDashboardPage() {
     const [commRecords, setCommRecords] = useState<CommissionRecord[]>([]);
     const [leadNames, setLeadNames] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
+    const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+    const [showAddLead, setShowAddLead] = useState(false);
 
     useEffect(() => {
         if (!profile?.uid) return;
@@ -675,6 +681,30 @@ export default function SalesDashboardPage() {
                         </CardContent>
                     </Card>
                 )}
+
+                {/* ─── CRM Table (merged from /sales/crm) ──────────── */}
+                <div className="mt-6">
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-xl font-bold">Sales CRM</h2>
+                        <Button onClick={() => setShowAddLead(true)} size="sm" className="gap-2">
+                            <Plus className="w-4 h-4" /> Add Lead
+                        </Button>
+                    </div>
+                    <div className="h-[500px]">
+                        <LeadList
+                            title="Pipeline"
+                            onRowClick={(id) => setSelectedLeadId(id)}
+                        />
+                    </div>
+                </div>
+
+                <LeadDetailDrawer
+                    leadId={selectedLeadId}
+                    open={!!selectedLeadId}
+                    onClose={() => setSelectedLeadId(null)}
+                />
+
+                <AddLeadDialog open={showAddLead} onOpenChange={setShowAddLead} />
             </div>
         </ProtectedRoute>
     );

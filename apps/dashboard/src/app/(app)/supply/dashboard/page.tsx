@@ -1,39 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { useEffect, useState, useMemo } from 'react';
+import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import VendorList from '@/components/VendorList';
+import VendorDetailDrawer from '@/components/vendor/VendorDetailDrawer';
+import { AddContractorDialog } from '@/components/AddContractorDialog';
+import { Vendor } from '@xiri/shared';
 import {
     Users, CheckCircle, Mail, Eye, MousePointerClick, ArrowRight,
-    Loader2, TrendingUp, AlertTriangle, UserCheck, Clock, XCircle
+    Loader2, TrendingUp, AlertTriangle, UserCheck, Clock, XCircle,
+    Plus, ShieldCheck, CalendarCheck, Rocket, Star, Pause, Ban, FileSearch,
+    ChevronUp, ChevronDown,
 } from 'lucide-react';
 
-interface FunnelData {
-    total: number;
-    sourced: number;       // qualified, not yet outreached
-    sent: number;          // outreachStatus = SENT
-    delivered: number;     // emailEngagement.lastEvent = delivered | opened | clicked
-    opened: number;        // emailEngagement.lastEvent = opened | clicked
-    clicked: number;       // emailEngagement.lastEvent = clicked
-    onboarded: number;     // status = onboarded | active
-    bounced: number;       // emailEngagement.lastEvent = bounced
-    failed: number;        // outreachStatus = FAILED
-    awaitingOnboarding: number;
-    needsManual: number;   // outreachStatus = NEEDS_MANUAL
-}
+/* ───────── Funnel / Pipeline Helpers ─────────────────────────────────── */
 
-interface PipelineBreakdown {
-    new_lead: number;
-    qualified: number;
-    awaiting_onboarding: number;
-    onboarding_started: number;
-    onboarded: number;
-    active: number;
-    rejected: number;
-    blacklisted: number;
+interface FunnelData {
+    total: number; sourced: number; sent: number; delivered: number;
+    opened: number; clicked: number; onboarded: number;
+    bounced: number; failed: number; awaitingOnboarding: number; needsManual: number;
 }
 
 function computeFunnel(vendors: any[]): FunnelData {
@@ -42,114 +32,79 @@ function computeFunnel(vendors: any[]): FunnelData {
         sourced: 0, sent: 0, delivered: 0, opened: 0, clicked: 0,
         onboarded: 0, bounced: 0, failed: 0, awaitingOnboarding: 0, needsManual: 0,
     };
-
     for (const v of vendors) {
         const status = v.status || 'new_lead';
         const outreach = v.outreachStatus;
         const engagement = v.emailEngagement?.lastEvent;
-
-        // Pipeline counts
         if (status === 'onboarded' || status === 'active') data.onboarded++;
         if (status === 'qualified' && !outreach) data.sourced++;
         if (status === 'awaiting_onboarding') data.awaitingOnboarding++;
-
-        // Outreach counts
         if (outreach === 'SENT') data.sent++;
         if (outreach === 'FAILED') data.failed++;
         if (outreach === 'NEEDS_MANUAL' || outreach === 'NEEDS_MANUAL_OUTREACH') data.needsManual++;
-
-        // Engagement counts (cumulative — clicked implies opened implies delivered)
         if (engagement === 'delivered' || engagement === 'opened' || engagement === 'clicked') data.delivered++;
         if (engagement === 'opened' || engagement === 'clicked') data.opened++;
         if (engagement === 'clicked') data.clicked++;
         if (engagement === 'bounced') data.bounced++;
     }
-
     return data;
 }
 
-function computePipeline(vendors: any[]): PipelineBreakdown {
-    const p: PipelineBreakdown = {
-        new_lead: 0, qualified: 0, awaiting_onboarding: 0,
-        onboarding_started: 0, onboarded: 0, active: 0, rejected: 0, blacklisted: 0,
-    };
-    for (const v of vendors) {
-        const s = v.status as keyof PipelineBreakdown;
-        if (s in p) p[s]++;
-    }
-    return p;
-}
+function pct(n: number, d: number): string { return d === 0 ? '—' : `${Math.round((n / d) * 100)}%`; }
 
-function pct(numerator: number, denominator: number): string {
-    if (denominator === 0) return '—';
-    return `${Math.round((numerator / denominator) * 100)}%`;
-}
+/* ───────── Status Tabs ───────────────────────────────────────────────── */
 
-function FunnelStep({ label, count, total, icon: Icon, color, isLast }: {
-    label: string; count: number; total: number; icon: React.ElementType; color: string; isLast?: boolean;
-}) {
-    const rate = total > 0 ? Math.round((count / total) * 100) : 0;
-    const barWidth = total > 0 ? Math.max(8, (count / total) * 100) : 8;
+const STATUS_TABS = [
+    { key: 'all', label: 'All', icon: Users, color: '' },
+    { key: 'pending_review', label: 'Sourced', icon: Users, color: 'text-sky-600' },
+    { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-blue-600' },
+    { key: 'awaiting_onboarding', label: 'Awaiting Form', icon: Mail, color: 'text-indigo-600' },
+    { key: 'compliance_review', label: 'Compliance', icon: ShieldCheck, color: 'text-amber-600' },
+    { key: 'pending_verification', label: 'Verifying Docs', icon: FileSearch, color: 'text-orange-600' },
+    { key: 'onboarding_scheduled', label: 'Onboarding Call', icon: CalendarCheck, color: 'text-violet-600' },
+    { key: 'ready_for_assignment', label: 'Ready', icon: Rocket, color: 'text-teal-600' },
+    { key: 'active', label: 'Active', icon: Star, color: 'text-emerald-600' },
+    { key: 'suspended', label: 'Suspended', icon: Pause, color: 'text-orange-600' },
+    { key: 'dismissed', label: 'Dismissed', icon: Ban, color: 'text-red-600' },
+] as const;
 
-    return (
-        <div className="flex items-center gap-3">
-            <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1.5">
-                        <Icon className={`w-3.5 h-3.5 ${color}`} />
-                        <span className="text-xs font-medium">{label}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold tabular-nums">{count}</span>
-                        <Badge variant="outline" className="text-[9px] px-1 h-4 tabular-nums">{pct(count, total)}</Badge>
-                    </div>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                        className={`h-full rounded-full transition-all duration-700 ${color.replace('text-', 'bg-')}`}
-                        style={{ width: `${barWidth}%` }}
-                    />
-                </div>
-            </div>
-            {!isLast && <ArrowRight className="w-3 h-3 text-muted-foreground/40 flex-shrink-0 mt-3" />}
-        </div>
-    );
-}
-
-function StatCard({ title, value, subtitle, icon: Icon, trend }: {
-    title: string; value: string | number; subtitle: string; icon: React.ElementType; trend?: 'up' | 'down' | 'neutral';
-}) {
-    return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{title}</CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{value}</div>
-                <p className="text-xs text-muted-foreground">{subtitle}</p>
-            </CardContent>
-        </Card>
-    );
-}
+/* ───────── Component ─────────────────────────────────────────────────── */
 
 export default function SupplyDashboardPage() {
-    const [vendors, setVendors] = useState<any[]>([]);
+    const [vendors, setVendors] = useState<Vendor[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('all');
+    const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+    const [showAddContractor, setShowAddContractor] = useState(false);
+    const [funnelCollapsed, setFunnelCollapsed] = useState(false);
 
+    // Live Firestore listener
     useEffect(() => {
-        async function load() {
-            try {
-                const snap = await getDocs(collection(db, 'vendors'));
-                setVendors(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-            } catch (err) {
-                console.error('Error loading vendors:', err);
-            } finally {
-                setLoading(false);
-            }
-        }
-        load();
+        const q = query(collection(db, 'vendors'), orderBy('createdAt', 'desc'), limit(500));
+        const unsub = onSnapshot(q, (snap) => {
+            setVendors(snap.docs.map(d => ({ id: d.id, ...d.data() } as Vendor)));
+            setLoading(false);
+        });
+        return () => unsub();
     }, []);
+
+    // Counts per status
+    const counts = useMemo(() => {
+        const map: Record<string, number> = { all: vendors.length };
+        for (const v of vendors) {
+            const s = (v.status || 'pending_review').toLowerCase();
+            map[s] = (map[s] || 0) + 1;
+        }
+        return map;
+    }, [vendors]);
+
+    // Status filter for VendorList
+    const statusFilters = useMemo(() => {
+        if (activeTab === 'all') return undefined;
+        return [activeTab, activeTab.toUpperCase()];
+    }, [activeTab]);
+
+    const funnel = useMemo(() => computeFunnel(vendors), [vendors]);
 
     if (loading) {
         return (
@@ -161,141 +116,157 @@ export default function SupplyDashboardPage() {
         );
     }
 
-    const funnel = computeFunnel(vendors);
-    const pipeline = computePipeline(vendors);
-
     return (
         <ProtectedRoute resource="supply/recruitment">
-            <div className="space-y-6">
-                <div>
-                    <h1 className="text-3xl font-bold">Supply Dashboard</h1>
-                    <p className="text-muted-foreground">Contractor network, outreach funnel, and pipeline health</p>
+            <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+                {/* ─── Header ────────────────────────────────────────────── */}
+                <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b bg-card">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold">Supply Pipeline</h1>
+                            <p className="text-sm text-muted-foreground">{vendors.length} contractors • Outreach funnel + CRM</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" className="h-8 text-xs gap-1"
+                                onClick={() => setFunnelCollapsed(prev => !prev)}>
+                                {funnelCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+                                {funnelCollapsed ? 'Show Funnel' : 'Hide Funnel'}
+                            </Button>
+                            <Button onClick={() => setShowAddContractor(true)} className="gap-2" size="sm">
+                                <Plus className="w-4 h-4" /> Add Contractor
+                            </Button>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Top-level stats */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <StatCard
-                        title="Total Contractors"
-                        value={funnel.total}
-                        subtitle="In your network"
-                        icon={Users}
-                    />
-                    <StatCard
-                        title="Onboarded"
-                        value={funnel.onboarded}
-                        subtitle={`${pct(funnel.onboarded, funnel.total)} of network`}
-                        icon={CheckCircle}
-                    />
-                    <StatCard
-                        title="Awaiting Response"
-                        value={funnel.awaitingOnboarding}
-                        subtitle="Outreach sent, waiting"
-                        icon={Clock}
-                    />
-                    <StatCard
-                        title="Email → Onboard Rate"
-                        value={pct(funnel.onboarded, funnel.sent || 1)}
-                        subtitle={`${funnel.onboarded} of ${funnel.sent} emailed`}
-                        icon={TrendingUp}
-                    />
-                </div>
+                {/* ─── Collapsible Funnel Stats ──────────────────────────── */}
+                {!funnelCollapsed && (
+                    <div className="flex-shrink-0 px-4 sm:px-6 py-4 space-y-4 border-b bg-muted/20">
+                        {/* Stat Cards */}
+                        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                            <Card className="shadow-none border">
+                                <CardContent className="py-3 px-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Total Contractors</p>
+                                            <p className="text-xl font-bold">{funnel.total}</p>
+                                        </div>
+                                        <Users className="w-5 h-5 text-muted-foreground" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="shadow-none border">
+                                <CardContent className="py-3 px-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Onboarded</p>
+                                            <p className="text-xl font-bold">{funnel.onboarded}</p>
+                                        </div>
+                                        <CheckCircle className="w-5 h-5 text-green-500" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="shadow-none border">
+                                <CardContent className="py-3 px-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Awaiting Response</p>
+                                            <p className="text-xl font-bold">{funnel.awaitingOnboarding}</p>
+                                        </div>
+                                        <Clock className="w-5 h-5 text-amber-500" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="shadow-none border">
+                                <CardContent className="py-3 px-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Email → Onboard</p>
+                                            <p className="text-xl font-bold">{pct(funnel.onboarded, funnel.sent || 1)}</p>
+                                        </div>
+                                        <TrendingUp className="w-5 h-5 text-sky-500" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Outreach Funnel */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <Mail className="w-4 h-4" />
-                                Email Outreach Funnel
-                            </CardTitle>
-                            <CardDescription className="text-xs">
-                                Conversion at each stage — from sent to onboarded
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <FunnelStep label="Emails Sent" count={funnel.sent} total={funnel.sent || 1} icon={Mail} color="text-sky-500" />
-                            <FunnelStep label="Delivered" count={funnel.delivered} total={funnel.sent || 1} icon={CheckCircle} color="text-green-500" />
-                            <FunnelStep label="Opened" count={funnel.opened} total={funnel.sent || 1} icon={Eye} color="text-blue-500" />
-                            <FunnelStep label="Clicked" count={funnel.clicked} total={funnel.sent || 1} icon={MousePointerClick} color="text-purple-500" />
-                            <FunnelStep label="Onboarded" count={funnel.onboarded} total={funnel.sent || 1} icon={UserCheck} color="text-emerald-500" isLast />
-
-                            {/* Problem indicators */}
-                            {(funnel.bounced > 0 || funnel.failed > 0 || funnel.needsManual > 0) && (
-                                <div className="pt-3 border-t space-y-2">
-                                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Issues</p>
-                                    {funnel.bounced > 0 && (
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="flex items-center gap-1.5 text-red-500"><XCircle className="w-3 h-3" /> Bounced</span>
-                                            <Badge variant="destructive" className="text-[10px]">{funnel.bounced}</Badge>
-                                        </div>
-                                    )}
-                                    {funnel.failed > 0 && (
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="flex items-center gap-1.5 text-orange-500"><AlertTriangle className="w-3 h-3" /> Failed</span>
-                                            <Badge className="text-[10px] bg-orange-100 text-orange-700 border-orange-200">{funnel.failed}</Badge>
-                                        </div>
-                                    )}
-                                    {funnel.needsManual > 0 && (
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="flex items-center gap-1.5 text-amber-500"><AlertTriangle className="w-3 h-3" /> Needs Manual Outreach</span>
-                                            <Badge className="text-[10px] bg-amber-100 text-amber-700 border-amber-200">{funnel.needsManual}</Badge>
-                                        </div>
-                                    )}
+                        {/* Funnel Mini Bar */}
+                        <div className="flex items-center gap-2 text-xs">
+                            {[
+                                { label: 'Sent', count: funnel.sent, color: 'bg-sky-500' },
+                                { label: 'Delivered', count: funnel.delivered, color: 'bg-green-500' },
+                                { label: 'Opened', count: funnel.opened, color: 'bg-blue-500' },
+                                { label: 'Clicked', count: funnel.clicked, color: 'bg-purple-500' },
+                                { label: 'Onboarded', count: funnel.onboarded, color: 'bg-emerald-600' },
+                            ].map((step, i, arr) => (
+                                <div key={step.label} className="flex items-center gap-1.5">
+                                    <div className={`w-2.5 h-2.5 rounded-full ${step.color}`} />
+                                    <span className="text-muted-foreground">{step.label}</span>
+                                    <span className="font-bold tabular-nums">{step.count}</span>
+                                    {i < arr.length - 1 && <ArrowRight className="w-3 h-3 text-muted-foreground/30 ml-1" />}
+                                </div>
+                            ))}
+                            {funnel.bounced > 0 && (
+                                <div className="flex items-center gap-1 ml-2 text-red-500">
+                                    <XCircle className="w-3 h-3" /> {funnel.bounced} bounced
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Pipeline Breakdown */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <Users className="w-4 h-4" />
-                                Pipeline Breakdown
-                            </CardTitle>
-                            <CardDescription className="text-xs">
-                                Where your contractors are in the onboarding pipeline
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-3">
-                                {[
-                                    { label: 'New Lead', count: pipeline.new_lead, color: 'bg-slate-400' },
-                                    { label: 'Qualified', count: pipeline.qualified, color: 'bg-blue-500' },
-                                    { label: 'Awaiting Onboarding', count: pipeline.awaiting_onboarding, color: 'bg-amber-500' },
-                                    { label: 'Onboarding Started', count: pipeline.onboarding_started, color: 'bg-sky-500' },
-                                    { label: 'Onboarded', count: pipeline.onboarded, color: 'bg-green-500' },
-                                    { label: 'Active', count: pipeline.active, color: 'bg-emerald-600' },
-                                    { label: 'Rejected', count: pipeline.rejected, color: 'bg-red-400', hidden: pipeline.rejected === 0 },
-                                    { label: 'Blacklisted', count: pipeline.blacklisted, color: 'bg-red-600', hidden: pipeline.blacklisted === 0 },
-                                ].filter(s => !s.hidden).map(stage => (
-                                    <div key={stage.label} className="flex items-center gap-3">
-                                        <div className="w-24 text-xs text-muted-foreground truncate">{stage.label}</div>
-                                        <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden relative">
-                                            <div
-                                                className={`h-full rounded-full ${stage.color} transition-all duration-700`}
-                                                style={{ width: `${funnel.total > 0 ? Math.max(2, (stage.count / funnel.total) * 100) : 0}%` }}
-                                            />
-                                        </div>
-                                        <div className="w-10 text-right text-sm font-bold tabular-nums">{stage.count}</div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Conversion summary */}
-                            <div className="mt-6 pt-4 border-t grid grid-cols-2 gap-3">
-                                <div className="text-center p-3 rounded-lg bg-muted/50">
-                                    <div className="text-lg font-bold">{pct(funnel.onboarded, funnel.total)}</div>
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Overall Conversion</div>
+                            {funnel.failed > 0 && (
+                                <div className="flex items-center gap-1 ml-2 text-orange-500">
+                                    <AlertTriangle className="w-3 h-3" /> {funnel.failed} failed
                                 </div>
-                                <div className="text-center p-3 rounded-lg bg-muted/50">
-                                    <div className="text-lg font-bold">{pct(funnel.opened, funnel.sent || 1)}</div>
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Open Rate</div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ─── Status Tabs ────────────────────────────────────────── */}
+                <div className="flex-shrink-0 flex items-center gap-1 overflow-x-auto px-4 sm:px-6 py-2 border-b bg-card">
+                    {STATUS_TABS.map((tab) => {
+                        const count = counts[tab.key] || 0;
+                        const isActive = activeTab === tab.key;
+                        const Icon = tab.icon;
+                        if (tab.key !== 'all' && count === 0) return null;
+                        return (
+                            <button
+                                key={tab.key}
+                                onClick={() => setActiveTab(tab.key)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap
+                                    ${isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                            >
+                                <Icon className={`w-3.5 h-3.5 ${isActive ? '' : tab.color}`} />
+                                {tab.label}
+                                {count > 0 && (
+                                    <Badge
+                                        variant={isActive ? 'outline' : 'secondary'}
+                                        className={`text-[10px] px-1 py-0 h-4 ml-0.5 ${isActive ? 'border-primary-foreground/30 text-primary-foreground' : ''}`}
+                                    >
+                                        {count}
+                                    </Badge>
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
+
+                {/* ─── CRM Table ──────────────────────────────────────────── */}
+                <div className="flex-1 overflow-hidden px-4 sm:px-6 py-2">
+                    <VendorList
+                        title="Vendor Pipeline"
+                        statusFilters={statusFilters}
+                        onSelectVendor={(id) => setSelectedVendorId(id)}
+                        selectedVendorId={selectedVendorId}
+                    />
+                </div>
+
+                {/* ─── Detail Drawer ──────────────────────────────────────── */}
+                <VendorDetailDrawer
+                    vendorId={selectedVendorId}
+                    open={!!selectedVendorId}
+                    onClose={() => setSelectedVendorId(null)}
+                />
+
+                <AddContractorDialog open={showAddContractor} onOpenChange={setShowAddContractor} />
             </div>
         </ProtectedRoute>
     );
