@@ -35,6 +35,17 @@ export const onQuoteAccepted = onDocumentUpdated({
     if (after.status !== 'accepted') return;
 
     const quoteId = event.params.quoteId;
+
+    // ─── Idempotency Guard: prevent duplicate commissions ───
+    const existingComm = await db.collection('commissions')
+        .where('quoteId', '==', quoteId)
+        .limit(1)
+        .get();
+    if (!existingComm.empty) {
+        logger.info(`[Commission] Commission already exists for quote ${quoteId} — skipping duplicate`);
+        return;
+    }
+
     const leadId = after.leadId;
     const assignedTo = after.assignedTo || after.createdBy;
     const isUpsell = after.isUpsell === true;
@@ -164,37 +175,53 @@ export const onInvoicePaid = onDocumentUpdated({
     const now = new Date();
 
     for (const commDoc of commSnap.docs) {
-        const commission = commDoc.data();
-        const schedule = [...commission.payoutSchedule];
+        // ─── Transaction Lock: prevent double-activation ───
+        // If two invoices are paid simultaneously, only one will activate the commission.
+        try {
+            await db.runTransaction(async (txn) => {
+                const freshDoc = await txn.get(commDoc.ref);
+                const freshData = freshDoc.data();
+                if (!freshData || freshData.status !== 'PENDING') {
+                    logger.info(`[Commission] Commission ${commDoc.id} already activated (status: ${freshData?.status}) — skipping`);
+                    return;
+                }
 
-        // Set payout dates: Month 0 = now, Month 1 = +30 days, Month 2 = +60 days
-        schedule.forEach((entry: any, i: number) => {
-            const payDate = new Date(now);
-            payDate.setDate(payDate.getDate() + (i * 30));
-            entry.scheduledAt = payDate;
-        });
+                const schedule = [...freshData.payoutSchedule];
 
-        // Mark Payout 0 as PAID immediately
-        schedule[0].status = 'PAID';
-        schedule[0].paidAt = now;
+                // Set payout dates: Month 0 = now, Month 1 = +30 days, Month 2 = +60 days
+                schedule.forEach((entry: any, i: number) => {
+                    const payDate = new Date(now);
+                    payDate.setDate(payDate.getDate() + (i * 30));
+                    entry.scheduledAt = payDate;
+                });
 
-        await commDoc.ref.update({
-            status: 'ACTIVE',
-            payoutSchedule: schedule,
-            updatedAt: now,
-        });
+                // Mark Payout 0 as PAID immediately
+                schedule[0].status = 'PAID';
+                schedule[0].paidAt = now;
 
-        // Log payout
-        await db.collection('commission_ledger').add({
-            commissionId: commDoc.id,
-            type: 'PAYOUT_PAID',
-            amount: schedule[0].amount,
-            staffId: commission.staffId,
-            description: `Payout 1 of ${schedule.length}: $${schedule[0].amount.toFixed(2)} (${schedule[0].percentage}%) — triggered by invoice payment`,
-            createdAt: now,
-        });
+                txn.update(commDoc.ref, {
+                    status: 'ACTIVE',
+                    payoutSchedule: schedule,
+                    updatedAt: now,
+                });
+            });
 
-        logger.info(`[Commission] Activated commission ${commDoc.id}: Payout 1 of $${schedule[0].amount} paid`);
+            // Log payout outside transaction (ledger is append-only, safe)
+            const commission = commDoc.data();
+            const schedule = commission.payoutSchedule;
+            await db.collection('commission_ledger').add({
+                commissionId: commDoc.id,
+                type: 'PAYOUT_PAID',
+                amount: schedule[0].amount,
+                staffId: commission.staffId,
+                description: `Payout 1 of ${schedule.length}: $${schedule[0].amount.toFixed(2)} (${schedule[0].percentage}%) — triggered by invoice payment`,
+                createdAt: now,
+            });
+
+            logger.info(`[Commission] Activated commission ${commDoc.id}: Payout 1 of $${schedule[0].amount} paid`);
+        } catch (txnErr: any) {
+            logger.error(`[Commission] Transaction failed for commission ${commDoc.id}:`, txnErr.message);
+        }
     }
 });
 

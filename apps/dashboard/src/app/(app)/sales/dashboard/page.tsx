@@ -1,51 +1,71 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, TrendingUp, Users, Target, Clock, CheckCircle, AlertTriangle, Calendar, ArrowRight, Zap, Mail, Eye, MousePointerClick, MessageSquare, XCircle, Phone, MapPin, Plus } from 'lucide-react';
-import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
+import { Button } from '@/components/ui/button';
+import {
+    DollarSign, TrendingUp, Users, Target, Clock, CheckCircle,
+    Mail, ArrowRight, Plus, XCircle, AlertTriangle,
+    ChevronUp, ChevronDown, Loader2, Eye, MousePointerClick
+} from 'lucide-react';
+import { collection, query, where, getDocs, onSnapshot, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import LeadList from '@/components/LeadList';
 import LeadDetailDrawer from '@/components/lead/LeadDetailDrawer';
 import { AddLeadDialog } from '@/components/AddLeadDialog';
-import { Button } from '@/components/ui/button';
 
-const formatCurrency = (n: number) =>
+/* ─── Helpers ─────────────────────────────────────────────────────── */
+
+const fmt = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
 
-const formatDate = (d: any): string => {
-    if (!d) return 'TBD';
+const fmtDate = (d: any): string => {
+    if (!d) return '—';
     const date = d.toDate?.() || new Date(d);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const monthLabel = (d: any): string => {
-    if (!d) return 'TBD';
-    const date = d.toDate?.() || new Date(d);
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+function pct(n: number, d: number): string {
+    return d === 0 ? '—' : `${Math.round((n / d) * 100)}%`;
+}
+
+/* ─── Commission Status Colors ────────────────────────────────────── */
+
+const COMM_STATUS: Record<string, string> = {
+    PENDING: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+    ACTIVE: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+    COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+    PARTIALLY_CANCELLED: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
+    PAID: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+    CANCELLED: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
 };
 
-function estimatePayoutDate(createdAt: any, payoutIndex: number): Date | null {
-    if (!createdAt) return null;
-    const base = createdAt.toDate?.() || new Date(createdAt);
-    const estimated = new Date(base);
-    estimated.setDate(estimated.getDate() + 60 + (payoutIndex * 30));
-    return estimated;
-}
+const PAYOUT_ICON: Record<string, React.ReactNode> = {
+    PAID: <CheckCircle className="w-3.5 h-3.5 text-green-500" />,
+    PENDING: <Clock className="w-3.5 h-3.5 text-amber-500" />,
+    CANCELLED: <XCircle className="w-3.5 h-3.5 text-red-500" />,
+};
 
-interface PayoutEntry {
-    month: number;
-    amount: number;
-    percentage: number;
-    status: string;
-    scheduledAt: any;
-    paidAt: any;
-}
+/* ─── Status Tabs ─────────────────────────────────────────────────── */
 
-interface CommissionRecord {
+const STATUS_TABS = [
+    { key: 'all', label: 'All', icon: Users, color: '' },
+    { key: 'new', label: 'New', icon: Users, color: 'text-blue-600' },
+    { key: 'contacted', label: 'Contacted', icon: Mail, color: 'text-yellow-600' },
+    { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-green-600' },
+    { key: 'walkthrough', label: 'Walkthrough', icon: Eye, color: 'text-purple-600' },
+    { key: 'proposal', label: 'Proposal', icon: Target, color: 'text-orange-600' },
+    { key: 'quoted', label: 'Quoted', icon: DollarSign, color: 'text-sky-600' },
+    { key: 'won', label: 'Won', icon: CheckCircle, color: 'text-emerald-600' },
+    { key: 'lost', label: 'Lost', icon: XCircle, color: 'text-gray-500' },
+] as const;
+
+/* ─── Commission Interface ────────────────────────────────────────── */
+
+interface CommRow {
     id: string;
     staffId: string;
     quoteId: string;
@@ -56,113 +76,52 @@ interface CommissionRecord {
     rate: number;
     totalCommission: number;
     status: string;
-    payoutSchedule: PayoutEntry[];
+    payoutSchedule: { month: number; amount: number; percentage: number; status: string; scheduledAt: any; paidAt: any }[];
     createdAt: any;
 }
 
+/* ─── Component ───────────────────────────────────────────────────── */
+
 export default function SalesDashboardPage() {
     const { profile } = useAuth();
-    const [stats, setStats] = useState({
-        totalLeads: 0,
-        qualifiedLeads: 0,
-        wonDeals: 0,
-        totalAcv: 0,
-    });
-    const [outreach, setOutreach] = useState({
-        sent: 0, opened: 0, clicked: 0, replied: 0, bounced: 0, noEmail: 0,
-    });
-    const [pipeline, setPipeline] = useState<Record<string, number>>({});
-    const [commissions, setCommissions] = useState({
-        totalEarned: 0,
-        totalPending: 0,
-        nextPayout: null as { amount: number; date: Date } | null,
-        recentPayouts: [] as { amount: number; date: Date; description: string }[],
-    });
-    const [commRecords, setCommRecords] = useState<CommissionRecord[]>([]);
-    const [leadNames, setLeadNames] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
+    const [leads, setLeads] = useState<any[]>([]);
+    const [commRecords, setCommRecords] = useState<CommRow[]>([]);
+    const [leadNames, setLeadNames] = useState<Record<string, string>>({});
+    const [activeTab, setActiveTab] = useState('all');
     const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
     const [showAddLead, setShowAddLead] = useState(false);
+    const [statsCollapsed, setStatsCollapsed] = useState(false);
+    const [expandedCommId, setExpandedCommId] = useState<string | null>(null);
 
+    // Fetch all data
     useEffect(() => {
         if (!profile?.uid) return;
-        async function fetchData() {
+
+        // Live listener on leads
+        const leadsUnsub = onSnapshot(
+            query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(500)),
+            (snap) => {
+                setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            }
+        );
+
+        // Fetch commissions for current user
+        async function fetchCommissions() {
             try {
-                // Fetch leads
-                const leadsSnap = await getDocs(collection(db, 'leads'));
-                const leads = leadsSnap.docs.map(d => d.data());
-                const qualified = leads.filter(l => ['qualified', 'walkthrough', 'proposal', 'quoted', 'won'].includes(l.status));
-                const won = leads.filter(l => l.status === 'won');
-
-                // Fetch quotes for ACV
-                const quotesSnap = await getDocs(query(collection(db, 'quotes'), where('status', '==', 'accepted')));
-                const totalAcv = quotesSnap.docs.reduce((sum, d) => sum + ((d.data().totalMonthlyRate || 0) * 12), 0);
-
-                setStats({
-                    totalLeads: leads.length,
-                    qualifiedLeads: qualified.length,
-                    wonDeals: won.length,
-                    totalAcv,
-                });
-
-                // Compute outreach funnel
-                let sent = 0, opened = 0, clicked = 0, replied = 0, bounced = 0, noEmail = 0;
-                const pipelineCounts: Record<string, number> = {};
-                for (const l of leads) {
-                    // Pipeline
-                    const s = l.status || 'new';
-                    pipelineCounts[s] = (pipelineCounts[s] || 0) + 1;
-                    // Outreach
-                    if (!l.email) { noEmail++; continue; }
-                    const os = l.outreachStatus;
-                    if (os === 'SENT' || os === 'REPLIED') sent++;
-                    if (os === 'REPLIED') replied++;
-                    // Email engagement from emailEngagement field (if present)
-                    const eng = l.emailEngagement?.lastEvent;
-                    if (eng === 'opened' || eng === 'clicked') opened++;
-                    if (eng === 'clicked') clicked++;
-                    if (eng === 'bounced') bounced++;
-                }
-                setOutreach({ sent, opened, clicked, replied, bounced, noEmail });
-                setPipeline(pipelineCounts);
-
-                // Fetch commissions for current user
                 const commSnap = await getDocs(query(
                     collection(db, 'commissions'),
                     where('staffId', '==', profile!.uid),
                 ));
-
-                let totalEarned = 0;
-                let totalPending = 0;
-                let nextPayout: { amount: number; date: Date } | null = null;
-                const rows: CommissionRecord[] = [];
-
-                for (const d of commSnap.docs) {
-                    const data = d.data();
-                    rows.push({ id: d.id, ...data } as CommissionRecord);
-                    for (const entry of data.payoutSchedule || []) {
-                        if (entry.status === 'PAID') {
-                            totalEarned += entry.amount;
-                        } else if (entry.status === 'PENDING') {
-                            totalPending += entry.amount;
-                            const schedDate = entry.scheduledAt
-                                ? (entry.scheduledAt.toDate?.() || new Date(entry.scheduledAt))
-                                : estimatePayoutDate(data.createdAt, entry.month);
-                            if (schedDate && (!nextPayout || schedDate < nextPayout.date)) {
-                                nextPayout = { amount: entry.amount, date: schedDate };
-                            }
-                        }
-                    }
-                }
-
+                const rows: CommRow[] = commSnap.docs.map(d => ({ id: d.id, ...d.data() } as CommRow));
                 rows.sort((a, b) => {
-                    const aDate = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
-                    const bDate = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
-                    return bDate.getTime() - aDate.getTime();
+                    const aD = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+                    const bD = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+                    return bD.getTime() - aD.getTime();
                 });
                 setCommRecords(rows);
 
-                // Fetch lead names for timeline
+                // Fetch lead names
                 const leadIds = [...new Set(rows.map(r => r.leadId).filter(Boolean))];
                 const names: Record<string, string> = {};
                 for (const lid of leadIds) {
@@ -175,535 +134,332 @@ export default function SalesDashboardPage() {
                     } catch { /* ignore */ }
                 }
                 setLeadNames(names);
-
-                // Fetch recent ledger entries
-                const ledgerSnap = await getDocs(query(
-                    collection(db, 'commission_ledger'),
-                    where('staffId', '==', profile!.uid),
-                    where('type', '==', 'PAYOUT_PAID'),
-                    orderBy('createdAt', 'desc'),
-                    limit(5)
-                ));
-                const recentPayouts = ledgerSnap.docs.map(d => ({
-                    amount: d.data().amount,
-                    date: d.data().createdAt?.toDate?.() || new Date(d.data().createdAt),
-                    description: d.data().description,
-                }));
-
-                setCommissions({ totalEarned, totalPending, nextPayout, recentPayouts });
             } catch (err) {
-                console.error('Error fetching dashboard data:', err);
+                console.error('Error fetching commissions:', err);
             } finally {
                 setLoading(false);
             }
         }
-        fetchData();
+        fetchCommissions();
+
+        return () => leadsUnsub();
     }, [profile?.uid]);
 
-    // ─── Build Upcoming Payouts Timeline ─────────────────────────────────
-    const upcomingPayouts: {
-        commission: CommissionRecord;
-        payout: PayoutEntry;
-        payoutIndex: number;
-        clientName: string;
-    }[] = [];
+    // Pipeline counts
+    const counts = useMemo(() => {
+        const map: Record<string, number> = { all: leads.length };
+        for (const l of leads) {
+            const s = (l.status || 'new').toLowerCase();
+            map[s] = (map[s] || 0) + 1;
+        }
+        return map;
+    }, [leads]);
 
-    commRecords.forEach(c => {
-        c.payoutSchedule.forEach((p, i) => {
-            if (p.status === 'PENDING') {
-                upcomingPayouts.push({
-                    commission: c,
-                    payout: p,
-                    payoutIndex: i,
-                    clientName: leadNames[c.leadId] || 'Client',
-                });
+    // Outreach stats
+    const outreach = useMemo(() => {
+        let sent = 0, opened = 0, clicked = 0, bounced = 0;
+        for (const l of leads) {
+            const os = l.outreachStatus;
+            if (os === 'SENT' || os === 'REPLIED') sent++;
+            const eng = l.emailEngagement?.lastEvent;
+            if (eng === 'opened' || eng === 'clicked') opened++;
+            if (eng === 'clicked') clicked++;
+            if (eng === 'bounced') bounced++;
+        }
+        return { sent, opened, clicked, bounced };
+    }, [leads]);
+
+    // Commission totals
+    const commTotals = useMemo(() => {
+        let earned = 0, pending = 0;
+        for (const c of commRecords) {
+            for (const p of c.payoutSchedule || []) {
+                if (p.status === 'PAID') earned += p.amount;
+                else if (p.status === 'PENDING') pending += p.amount;
             }
-        });
-    });
+        }
+        return { earned, pending };
+    }, [commRecords]);
 
-    upcomingPayouts.sort((a, b) => {
-        const aDate = a.payout.scheduledAt
-            ? (a.payout.scheduledAt.toDate?.() || new Date(a.payout.scheduledAt)).getTime()
-            : (estimatePayoutDate(a.commission.createdAt, a.payoutIndex)?.getTime() || Infinity);
-        const bDate = b.payout.scheduledAt
-            ? (b.payout.scheduledAt.toDate?.() || new Date(b.payout.scheduledAt)).getTime()
-            : (estimatePayoutDate(b.commission.createdAt, b.payoutIndex)?.getTime() || Infinity);
-        return aDate - bDate;
-    });
+    // Quotes ACV
+    const [totalAcv, setTotalAcv] = useState(0);
+    useEffect(() => {
+        getDocs(query(collection(db, 'quotes'), where('status', '==', 'accepted')))
+            .then(snap => setTotalAcv(snap.docs.reduce((s, d) => s + ((d.data().totalMonthlyRate || 0) * 12), 0)))
+            .catch(() => { });
+    }, []);
 
-    const payoutsByMonth: Record<string, typeof upcomingPayouts> = {};
-    upcomingPayouts.forEach(item => {
-        const actualDate = item.payout.scheduledAt;
-        const estDate = estimatePayoutDate(item.commission.createdAt, item.payoutIndex);
-        const dateToUse = actualDate || estDate;
-        const key = dateToUse ? monthLabel(dateToUse) : 'TBD';
-        if (!payoutsByMonth[key]) payoutsByMonth[key] = [];
-        payoutsByMonth[key].push(item);
-    });
+    const wonCount = counts['won'] || 0;
+    const convRate = leads.length > 0 ? Math.round((wonCount / leads.length) * 100) : 0;
 
-    const conversionRate = stats.totalLeads > 0
-        ? Math.round((stats.wonDeals / stats.totalLeads) * 100)
-        : 0;
+    // Status filter for LeadList
+    const statusFilters = useMemo(() => {
+        if (activeTab === 'all') return undefined;
+        return [activeTab];
+    }, [activeTab]);
+
+    const typeLabel = (t: string) => {
+        switch (t) {
+            case 'SALES_NEW': return 'New Sale';
+            case 'FSM_UPSELL': return 'Upsell';
+            case 'FSM_RETENTION': return 'NRR Bonus';
+            default: return t;
+        }
+    };
+
+    if (loading) {
+        return (
+            <ProtectedRoute resource="sales/dashboard">
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+            </ProtectedRoute>
+        );
+    }
 
     return (
         <ProtectedRoute resource="sales/dashboard">
-            <div className="space-y-6">
-                <div>
-                    <h1 className="text-3xl font-bold">Sales Dashboard</h1>
-                    <p className="text-muted-foreground">Pipeline performance and commission tracking</p>
+            <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+                {/* ─── Header ──────────────────────────────────────── */}
+                <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b bg-card">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold">Sales Pipeline</h1>
+                            <p className="text-sm text-muted-foreground">
+                                {leads.length} leads • {wonCount} won • {fmt(totalAcv)} ACV
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" className="h-8 text-xs gap-1"
+                                onClick={() => setStatsCollapsed(prev => !prev)}>
+                                {statsCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+                                {statsCollapsed ? 'Show Stats' : 'Hide Stats'}
+                            </Button>
+                            <Button onClick={() => setShowAddLead(true)} className="gap-2" size="sm">
+                                <Plus className="w-4 h-4" /> Add Lead
+                            </Button>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Pipeline KPIs */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{loading ? '...' : stats.totalLeads}</div>
-                            <p className="text-xs text-muted-foreground">All time</p>
-                        </CardContent>
-                    </Card>
+                {/* ─── Collapsible Stats ─────────────────────────── */}
+                {!statsCollapsed && (
+                    <div className="flex-shrink-0 px-4 sm:px-6 py-4 space-y-4 border-b bg-muted/20">
+                        {/* KPI Cards */}
+                        <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
+                            <Card className="shadow-none border">
+                                <CardContent className="py-3 px-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Total Leads</p>
+                                            <p className="text-xl font-bold">{leads.length}</p>
+                                        </div>
+                                        <Users className="w-5 h-5 text-muted-foreground" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="shadow-none border">
+                                <CardContent className="py-3 px-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Win Rate</p>
+                                            <p className="text-xl font-bold">{convRate}%</p>
+                                        </div>
+                                        <TrendingUp className="w-5 h-5 text-sky-500" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="shadow-none border">
+                                <CardContent className="py-3 px-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Total ACV</p>
+                                            <p className="text-xl font-bold">{fmt(totalAcv)}</p>
+                                        </div>
+                                        <DollarSign className="w-5 h-5 text-green-500" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="shadow-none border border-green-200 dark:border-green-900">
+                                <CardContent className="py-3 px-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Earned</p>
+                                            <p className="text-xl font-bold text-green-600">{fmt(commTotals.earned)}</p>
+                                        </div>
+                                        <CheckCircle className="w-5 h-5 text-green-500" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="shadow-none border border-amber-200 dark:border-amber-900">
+                                <CardContent className="py-3 px-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Pending</p>
+                                            <p className="text-xl font-bold text-amber-600">{fmt(commTotals.pending)}</p>
+                                        </div>
+                                        <Clock className="w-5 h-5 text-amber-500" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Qualified</CardTitle>
-                            <Target className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{loading ? '...' : stats.qualifiedLeads}</div>
-                            <p className="text-xs text-muted-foreground">In active pipeline</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{loading ? '...' : `${conversionRate}%`}</div>
-                            <p className="text-xs text-muted-foreground">{stats.wonDeals} deals won</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total ACV</CardTitle>
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{loading ? '...' : formatCurrency(stats.totalAcv)}</div>
-                            <p className="text-xs text-muted-foreground">Accepted quotes</p>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Outreach Funnel + Pipeline */}
-                <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Email Outreach Funnel */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <Mail className="w-4 h-4" />
-                                Sales Outreach Funnel
-                            </CardTitle>
-                            <CardDescription className="text-xs">
-                                Email outreach performance — from sent to won
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
+                        {/* Inline Outreach Funnel Bar */}
+                        <div className="flex items-center gap-2 text-xs">
                             {[
-                                { label: 'Emails Sent', count: outreach.sent, icon: Mail, color: 'text-sky-500' },
-                                { label: 'Opened', count: outreach.opened, icon: Eye, color: 'text-blue-500' },
-                                { label: 'Clicked', count: outreach.clicked, icon: MousePointerClick, color: 'text-purple-500' },
-                                { label: 'Replied', count: outreach.replied, icon: MessageSquare, color: 'text-green-500' },
-                                { label: 'Won', count: stats.wonDeals, icon: CheckCircle, color: 'text-emerald-600' },
-                            ].map((step, i, arr) => {
-                                const total = outreach.sent || 1;
-                                const rate = total > 0 ? Math.round((step.count / total) * 100) : 0;
-                                const barWidth = Math.max(8, (step.count / total) * 100);
-                                return (
-                                    <div key={step.label} className="flex items-center gap-3">
-                                        <div className="flex-1">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <div className="flex items-center gap-1.5">
-                                                    <step.icon className={`w-3.5 h-3.5 ${step.color}`} />
-                                                    <span className="text-xs font-medium">{step.label}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-bold tabular-nums">{step.count}</span>
-                                                    <Badge variant="outline" className="text-[9px] px-1 h-4 tabular-nums">{rate}%</Badge>
-                                                </div>
-                                            </div>
-                                            <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full rounded-full transition-all duration-700 ${step.color.replace('text-', 'bg-')}`}
-                                                    style={{ width: `${barWidth}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                        {i < arr.length - 1 && <ArrowRight className="w-3 h-3 text-muted-foreground/40 flex-shrink-0 mt-3" />}
-                                    </div>
-                                );
-                            })}
-
-                            {/* Issues */}
-                            {(outreach.bounced > 0 || outreach.noEmail > 0) && (
-                                <div className="pt-3 border-t space-y-2">
-                                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Issues</p>
-                                    {outreach.bounced > 0 && (
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="flex items-center gap-1.5 text-red-500"><XCircle className="w-3 h-3" /> Bounced</span>
-                                            <Badge variant="destructive" className="text-[10px]">{outreach.bounced}</Badge>
-                                        </div>
-                                    )}
-                                    {outreach.noEmail > 0 && (
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="flex items-center gap-1.5 text-amber-500"><AlertTriangle className="w-3 h-3" /> No Email on File</span>
-                                            <Badge className="text-[10px] bg-amber-100 text-amber-700 border-amber-200">{outreach.noEmail}</Badge>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Channel Mix hint */}
-                            <div className="pt-3 border-t">
-                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Outreach Channels</p>
-                                <div className="flex gap-3">
-                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                        <Mail className="w-3 h-3 text-sky-500" /> Email
-                                        <Badge variant="secondary" className="text-[9px] ml-1">Active</Badge>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
-                                        <Phone className="w-3 h-3" /> Cold Call
-                                        <Badge variant="outline" className="text-[9px] ml-1">Coming Soon</Badge>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
-                                        <MapPin className="w-3 h-3" /> Site Visit
-                                        <Badge variant="outline" className="text-[9px] ml-1">Coming Soon</Badge>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Lead Pipeline Breakdown */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <Target className="w-4 h-4" />
-                                Lead Pipeline
-                            </CardTitle>
-                            <CardDescription className="text-xs">
-                                Where your leads are in the sales process
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-3">
-                                {[
-                                    { label: 'New', key: 'new', color: 'bg-slate-400' },
-                                    { label: 'Sourced', key: 'sourced', color: 'bg-blue-400' },
-                                    { label: 'Qualified', key: 'qualified', color: 'bg-sky-500' },
-                                    { label: 'Walkthrough', key: 'walkthrough', color: 'bg-violet-500' },
-                                    { label: 'Proposal', key: 'proposal', color: 'bg-amber-500' },
-                                    { label: 'Quoted', key: 'quoted', color: 'bg-orange-500' },
-                                    { label: 'Won', key: 'won', color: 'bg-green-500' },
-                                    { label: 'Lost', key: 'lost', color: 'bg-red-400', hidden: !pipeline['lost'] },
-                                ].filter(s => !s.hidden).map(stage => (
-                                    <div key={stage.key} className="flex items-center gap-3">
-                                        <div className="w-24 text-xs text-muted-foreground truncate">{stage.label}</div>
-                                        <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden">
-                                            <div
-                                                className={`h-full rounded-full ${stage.color} transition-all duration-700`}
-                                                style={{ width: `${stats.totalLeads > 0 ? Math.max(2, ((pipeline[stage.key] || 0) / stats.totalLeads) * 100) : 0}%` }}
-                                            />
-                                        </div>
-                                        <div className="w-10 text-right text-sm font-bold tabular-nums">{pipeline[stage.key] || 0}</div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Conversion summary */}
-                            <div className="mt-6 pt-4 border-t grid grid-cols-3 gap-3">
-                                <div className="text-center p-3 rounded-lg bg-muted/50">
-                                    <div className="text-lg font-bold">{stats.totalLeads > 0 ? Math.round((stats.wonDeals / stats.totalLeads) * 100) : 0}%</div>
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Win Rate</div>
-                                </div>
-                                <div className="text-center p-3 rounded-lg bg-muted/50">
-                                    <div className="text-lg font-bold">{outreach.sent > 0 ? Math.round((outreach.opened / outreach.sent) * 100) : 0}%</div>
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Open Rate</div>
-                                </div>
-                                <div className="text-center p-3 rounded-lg bg-muted/50">
-                                    <div className="text-lg font-bold">{outreach.sent > 0 ? Math.round((outreach.replied / outreach.sent) * 100) : 0}%</div>
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Reply Rate</div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Commission KPIs */}
-                <h2 className="text-xl font-semibold mt-2">My Commissions</h2>
-                <div className="grid gap-4 md:grid-cols-3">
-                    <Card className="border-green-200 dark:border-green-900">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Earned (Paid)</CardTitle>
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                                {loading ? '...' : formatCurrency(commissions.totalEarned)}
-                            </div>
-                            <p className="text-xs text-muted-foreground">Commission payouts received</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-amber-200 dark:border-amber-900">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                            <Clock className="h-4 w-4 text-amber-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                                {loading ? '...' : formatCurrency(commissions.totalPending)}
-                            </div>
-                            <p className="text-xs text-muted-foreground">Scheduled payouts remaining</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Next Payout</CardTitle>
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            {commissions.nextPayout ? (
-                                <>
-                                    <div className="text-2xl font-bold">{formatCurrency(commissions.nextPayout.amount)}</div>
-                                    <p className="text-xs text-muted-foreground">
-                                        {commissions.nextPayout.date.toLocaleDateString()}
-                                    </p>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="text-2xl font-bold text-muted-foreground">—</div>
-                                    <p className="text-xs text-muted-foreground">No payouts scheduled</p>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Recent payouts */}
-                {commissions.recentPayouts.length > 0 && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Recent Payouts</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {commissions.recentPayouts.map((p, i) => (
-                                <div key={i} className="flex items-center justify-between text-sm">
-                                    <div>
-                                        <p className="font-medium">{p.description}</p>
-                                        <p className="text-xs text-muted-foreground">{p.date.toLocaleDateString()}</p>
-                                    </div>
-                                    <Badge variant="outline" className="text-green-600 border-green-300">
-                                        +{formatCurrency(p.amount)}
-                                    </Badge>
+                                { label: 'Sent', count: outreach.sent, color: 'bg-sky-500' },
+                                { label: 'Opened', count: outreach.opened, color: 'bg-blue-500' },
+                                { label: 'Clicked', count: outreach.clicked, color: 'bg-purple-500' },
+                                { label: 'Won', count: wonCount, color: 'bg-emerald-600' },
+                            ].map((step, i, arr) => (
+                                <div key={step.label} className="flex items-center gap-1.5">
+                                    <div className={`w-2.5 h-2.5 rounded-full ${step.color}`} />
+                                    <span className="text-muted-foreground">{step.label}</span>
+                                    <span className="font-bold tabular-nums">{step.count}</span>
+                                    <span className="text-muted-foreground/50 text-[10px]">{pct(step.count, outreach.sent || 1)}</span>
+                                    {i < arr.length - 1 && <ArrowRight className="w-3 h-3 text-muted-foreground/30 ml-1" />}
                                 </div>
                             ))}
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* ─── Payout Timeline ─────────────────────────────────────── */}
-                {Object.keys(payoutsByMonth).length > 0 && (
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <div className="flex items-center gap-2">
-                                <Calendar className="h-5 w-5 text-blue-500" />
-                                <CardTitle>Payout Timeline</CardTitle>
-                            </div>
-                            <p className="text-sm text-muted-foreground">When you'll get paid — month by month</p>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-6">
-                                {Object.entries(payoutsByMonth).map(([month, items], monthIdx) => {
-                                    const monthTotal = items.reduce((sum, i) => sum + i.payout.amount, 0);
-                                    return (
-                                        <div key={month} className="relative">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                                                        <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-lg">{month}</p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {items.length} payout{items.length !== 1 ? 's' : ''} {items.some(i => !i.payout.scheduledAt) ? '(estimated)' : ''}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                                    {formatCurrency(monthTotal)}
-                                                </p>
-                                            </div>
-                                            <div className="ml-5 border-l-2 border-blue-200 dark:border-blue-800 pl-6 space-y-3">
-                                                {items.map((item) => (
-                                                    <div
-                                                        key={`${item.commission.id}-${item.payoutIndex}`}
-                                                        className="relative bg-card border rounded-lg p-4 hover:shadow-sm transition-shadow"
-                                                    >
-                                                        <div className="absolute -left-[31px] top-5 w-3 h-3 rounded-full bg-blue-400 dark:bg-blue-500 border-2 border-background" />
-                                                        <div className="flex items-center justify-between">
-                                                            <div>
-                                                                <p className="font-medium">{item.clientName}</p>
-                                                                <div className="flex items-center gap-2 mt-1">
-                                                                    <Badge variant="outline" className="text-xs">
-                                                                        Payout {item.payoutIndex + 1} of {item.commission.payoutSchedule.length}
-                                                                    </Badge>
-                                                                    <span className="text-xs text-muted-foreground">
-                                                                        {item.payout.percentage}% of {formatCurrency(item.commission.totalCommission)}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-xs text-muted-foreground mt-1">
-                                                                    {item.payout.scheduledAt
-                                                                        ? `Scheduled: ${formatDate(item.payout.scheduledAt)}`
-                                                                        : `Est. ${formatDate(estimatePayoutDate(item.commission.createdAt, item.payoutIndex))}`
-                                                                    }
-                                                                </p>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <p className="text-xl font-bold font-mono">
-                                                                    {formatCurrency(item.payout.amount)}
-                                                                </p>
-                                                                <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 hover:bg-amber-100 text-xs mt-1">
-                                                                    <Clock className="w-3 h-3 mr-1" />
-                                                                    Pending
-                                                                </Badge>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            {monthIdx < Object.keys(payoutsByMonth).length - 1 && (
-                                                <div className="flex items-center justify-center my-4">
-                                                    <ArrowRight className="h-4 w-4 text-muted-foreground/40" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* ─── Deal Breakdown ──────────────────────────────────────── */}
-                {commRecords.length > 0 && (
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <div className="flex items-center gap-2">
-                                <DollarSign className="h-5 w-5 text-green-500" />
-                                <CardTitle>Your Deals</CardTitle>
-                            </div>
-                            <p className="text-sm text-muted-foreground">Commission breakdown per deal</p>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <div className="divide-y">
-                                {commRecords.map(c => {
-                                    const paidCount = c.payoutSchedule.filter(p => p.status === 'PAID').length;
-                                    const totalPayouts = c.payoutSchedule.length;
-                                    const paidAmount = c.payoutSchedule.filter(p => p.status === 'PAID').reduce((s, p) => s + p.amount, 0);
-                                    const progress = totalPayouts > 0 ? (paidCount / totalPayouts) * 100 : 0;
-
-                                    return (
-                                        <div key={c.id} className="p-4 hover:bg-muted/20 transition-colors">
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div>
-                                                    <p className="font-semibold text-base">{leadNames[c.leadId] || 'Client'}</p>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {c.type === 'SALES_NEW' ? 'New Sale' : c.type === 'FSM_UPSELL' ? 'Upsell' : c.type}
-                                                        </Badge>
-                                                        <span className="text-xs text-muted-foreground">
-                                                            {(c.rate * 100).toFixed(0)}% of {formatCurrency(c.acv)} ACV
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-lg font-bold font-mono">{formatCurrency(c.totalCommission)}</p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {formatCurrency(paidAmount)} earned
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between text-xs text-muted-foreground">
-                                                    <span>{paidCount} of {totalPayouts} payouts received</span>
-                                                    <span>{Math.round(progress)}%</span>
-                                                </div>
-                                                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-500"
-                                                        style={{ width: `${progress}%` }}
-                                                    />
-                                                </div>
-                                                <div className="flex justify-between mt-2">
-                                                    {c.payoutSchedule.map((p, i) => (
-                                                        <div key={i} className="flex flex-col items-center text-center flex-1">
-                                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold mb-1 ${p.status === 'PAID'
-                                                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                                                                : p.status === 'CANCELLED'
-                                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 line-through'
-                                                                    : 'bg-muted text-muted-foreground'
-                                                                }`}>
-                                                                {p.status === 'PAID' ? '✓' : p.status === 'CANCELLED' ? '✕' : i + 1}
-                                                            </div>
-                                                            <p className="text-xs font-mono font-medium">{formatCurrency(p.amount)}</p>
-                                                            <p className="text-[10px] text-muted-foreground">
-                                                                {p.status === 'PAID'
-                                                                    ? formatDate(p.paidAt)
-                                                                    : p.scheduledAt
-                                                                        ? formatDate(p.scheduledAt)
-                                                                        : `~${formatDate(estimatePayoutDate(c.createdAt, i))}`}
-                                                            </p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* ─── CRM Table (merged from /sales/crm) ──────────── */}
-                <div className="mt-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <h2 className="text-xl font-bold">Sales CRM</h2>
-                        <Button onClick={() => setShowAddLead(true)} size="sm" className="gap-2">
-                            <Plus className="w-4 h-4" /> Add Lead
-                        </Button>
+                            {outreach.bounced > 0 && (
+                                <div className="flex items-center gap-1 ml-2 text-red-500">
+                                    <AlertTriangle className="w-3 h-3" /> {outreach.bounced} bounced
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    <div className="h-[500px]">
-                        <LeadList
-                            title="Pipeline"
-                            onRowClick={(id) => setSelectedLeadId(id)}
-                        />
-                    </div>
+                )}
+
+                {/* ─── Status Tabs ─────────────────────────────────── */}
+                <div className="flex-shrink-0 flex items-center gap-1 overflow-x-auto px-4 sm:px-6 py-2 border-b bg-card">
+                    {STATUS_TABS.map((tab) => {
+                        const count = counts[tab.key] || 0;
+                        const isActive = activeTab === tab.key;
+                        const Icon = tab.icon;
+                        if (tab.key !== 'all' && count === 0) return null;
+                        return (
+                            <button
+                                key={tab.key}
+                                onClick={() => setActiveTab(tab.key)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap
+                                    ${isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                            >
+                                <Icon className={`w-3.5 h-3.5 ${isActive ? '' : tab.color}`} />
+                                {tab.label}
+                                {count > 0 && (
+                                    <Badge
+                                        variant={isActive ? 'outline' : 'secondary'}
+                                        className={`text-[10px] px-1 py-0 h-4 ml-0.5 ${isActive ? 'border-primary-foreground/30 text-primary-foreground' : ''}`}
+                                    >
+                                        {count}
+                                    </Badge>
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
 
+                {/* ─── CRM Table ───────────────────────────────────── */}
+                <div className="flex-1 overflow-hidden px-4 sm:px-6 py-2">
+                    <LeadList
+                        title="Sales Pipeline"
+                        statusFilters={statusFilters}
+                        onRowClick={(id) => setSelectedLeadId(id)}
+                    />
+                </div>
+
+                {/* ─── Commission Table (Accounting-style) ─────────── */}
+                {commRecords.length > 0 && (
+                    <div className="flex-shrink-0 border-t">
+                        <div className="px-4 sm:px-6 py-2 bg-muted/20 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <DollarSign className="w-4 h-4 text-green-500" />
+                                <span className="text-sm font-semibold">My Commissions</span>
+                                <Badge variant="secondary" className="text-[10px]">{commRecords.length}</Badge>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs">
+                                <span className="text-green-600 font-medium">{fmt(commTotals.earned)} earned</span>
+                                <span className="text-amber-600 font-medium">{fmt(commTotals.pending)} pending</span>
+                            </div>
+                        </div>
+                        <div className="max-h-[250px] overflow-y-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b bg-muted/40 text-xs">
+                                        <th className="text-left p-2 pl-4 sm:pl-6 font-medium">Client</th>
+                                        <th className="text-left p-2 font-medium">Type</th>
+                                        <th className="text-right p-2 font-medium">ACV</th>
+                                        <th className="text-right p-2 font-medium">Rate</th>
+                                        <th className="text-right p-2 font-medium">Commission</th>
+                                        <th className="text-center p-2 font-medium">Status</th>
+                                        <th className="p-2 pr-4 sm:pr-6"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {commRecords.map(c => (
+                                        <>
+                                            <tr
+                                                key={c.id}
+                                                className="border-b hover:bg-muted/20 cursor-pointer transition-colors"
+                                                onClick={() => setExpandedCommId(expandedCommId === c.id ? null : c.id)}
+                                            >
+                                                <td className="p-2 pl-4 sm:pl-6 font-medium">{leadNames[c.leadId] || c.leadId || '—'}</td>
+                                                <td className="p-2">
+                                                    <Badge variant="outline" className="text-[10px]">{typeLabel(c.type)}</Badge>
+                                                </td>
+                                                <td className="p-2 text-right font-mono text-xs">{fmt(c.acv)}</td>
+                                                <td className="p-2 text-right text-xs">{(c.rate * 100).toFixed(0)}%</td>
+                                                <td className="p-2 text-right font-mono font-semibold">{fmt(c.totalCommission)}</td>
+                                                <td className="p-2 text-center">
+                                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${COMM_STATUS[c.status] || ''}`}>
+                                                        {c.status.replace('_', ' ')}
+                                                    </span>
+                                                </td>
+                                                <td className="p-2 pr-4 sm:pr-6">
+                                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedCommId === c.id ? 'rotate-180' : ''}`} />
+                                                </td>
+                                            </tr>
+                                            {expandedCommId === c.id && (
+                                                <tr key={`${c.id}-detail`}>
+                                                    <td colSpan={7} className="bg-muted/10 p-3 pl-4 sm:pl-6">
+                                                        <p className="text-[10px] font-medium text-muted-foreground mb-2 uppercase tracking-wider">Payout Schedule</p>
+                                                        <div className="grid grid-cols-4 gap-2 text-[10px] font-medium text-muted-foreground pb-1 border-b">
+                                                            <span>Payout</span>
+                                                            <span className="text-right">Amount</span>
+                                                            <span className="text-center">Scheduled</span>
+                                                            <span className="text-center">Status</span>
+                                                        </div>
+                                                        {c.payoutSchedule.map((p, i) => (
+                                                            <div key={i} className="grid grid-cols-4 gap-2 text-xs items-center py-1.5">
+                                                                <span>Payout {i + 1} ({p.percentage}%)</span>
+                                                                <span className="text-right font-mono">{fmt(p.amount)}</span>
+                                                                <span className="text-center text-muted-foreground text-[10px]">
+                                                                    {p.paidAt ? fmtDate(p.paidAt) : p.scheduledAt ? fmtDate(p.scheduledAt) : 'Awaiting invoice'}
+                                                                </span>
+                                                                <span className="flex items-center justify-center gap-1">
+                                                                    {PAYOUT_ICON[p.status]}
+                                                                    <span className={`text-[10px] ${COMM_STATUS[p.status] || ''} px-1 py-0.5 rounded`}>
+                                                                        {p.status}
+                                                                    </span>
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* ─── Drawers / Dialogs ───────────────────────────── */}
                 <LeadDetailDrawer
                     leadId={selectedLeadId}
                     open={!!selectedLeadId}
                     onClose={() => setSelectedLeadId(null)}
                 />
-
                 <AddLeadDialog open={showAddLead} onOpenChange={setShowAddLead} />
             </div>
         </ProtectedRoute>
