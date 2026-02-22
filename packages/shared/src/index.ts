@@ -213,6 +213,14 @@ export interface Vendor {
         docsUploaded: number;  // 0-30
         docsVerified: number;  // 0-20
     };
+
+    // Email Engagement Cache (populated by Resend webhook)
+    emailEngagement?: {
+        lastEvent: 'delivered' | 'opened' | 'clicked' | 'bounced' | 'spam';
+        lastEventAt: any;    // Firestore Timestamp
+        openCount: number;
+        clickCount: number;
+    };
 }
 
 // --- pSEO: PARTNER MARKETS ---

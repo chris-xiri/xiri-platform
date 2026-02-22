@@ -114,16 +114,31 @@ export const resendWebhook = onRequest({
             }
         });
 
-        // If bounced, update vendor outreach status
-        if (eventType === 'email.bounced' && vendorId) {
-            await db.collection('vendors').doc(vendorId).update({
-                outreachStatus: 'FAILED',
-                'outreachMeta.bounced': true,
-                'outreachMeta.bounceType': event?.data?.bounce_type || 'unknown',
-                'outreachMeta.bounceError': event?.data?.error_message || 'Email bounced',
-                updatedAt: new Date(),
-            });
-            logger.info(`Vendor ${vendorId}: email bounced, set outreachStatus to FAILED`);
+        // ─── Update vendor doc engagement cache ───
+        if (vendorId) {
+            const engagementUpdate: Record<string, any> = {
+                'emailEngagement.lastEvent': mapping.deliveryStatus,
+                'emailEngagement.lastEventAt': new Date(),
+            };
+
+            if (eventType === 'email.opened') {
+                engagementUpdate['emailEngagement.openCount'] = admin.firestore.FieldValue.increment(1);
+            } else if (eventType === 'email.clicked') {
+                engagementUpdate['emailEngagement.clickCount'] = admin.firestore.FieldValue.increment(1);
+            }
+
+            // If bounced, also update outreach status
+            if (eventType === 'email.bounced') {
+                engagementUpdate['outreachStatus'] = 'FAILED';
+                engagementUpdate['outreachMeta.bounced'] = true;
+                engagementUpdate['outreachMeta.bounceType'] = event?.data?.bounce_type || 'unknown';
+                engagementUpdate['outreachMeta.bounceError'] = event?.data?.error_message || 'Email bounced';
+            }
+
+            engagementUpdate['updatedAt'] = new Date();
+
+            await db.collection('vendors').doc(vendorId).update(engagementUpdate);
+            logger.info(`Vendor ${vendorId}: emailEngagement updated (${mapping.deliveryStatus})`);
         }
 
         logger.info(`Resend webhook: processed ${eventType} for vendor ${vendorId}`);

@@ -70,6 +70,28 @@ export default function VendorList({
     // Use pendingVendors as the primary display list in recruitment mode
     const displayVendors = isRecruitmentMode ? pendingVendors : filteredVendors;
 
+    // Heat-sort: when showing awaiting_onboarding, sort by engagement signal (clicked > opened > delivered > none > bounced)
+    const sortedDisplayVendors = (() => {
+        // Check if we're filtering to awaiting_onboarding
+        const isAwaitingFilter = statusFilters?.some(f => f.toLowerCase() === 'awaiting_onboarding');
+        if (!isAwaitingFilter) return displayVendors;
+
+        const heatScore = (v: Vendor): number => {
+            const event = v.emailEngagement?.lastEvent;
+            if (!event) return 0; // no data — neutral
+            switch (event) {
+                case 'clicked': return 3;
+                case 'opened': return 2;
+                case 'delivered': return 1;
+                case 'bounced': return -1;
+                case 'spam': return -2;
+                default: return 0;
+            }
+        };
+
+        return [...displayVendors].sort((a, b) => heatScore(b) - heatScore(a));
+    })();
+
     // Log unique status values for debugging
     const uniqueStatuses = [...new Set(vendors.map(v => v.status))];
 
@@ -314,26 +336,22 @@ export default function VendorList({
                             <table className="w-full caption-bottom text-sm text-foreground">
                                 <TableHeader className="bg-muted/50 shadow-sm">
                                     <TableRow className="border-b border-border hover:bg-muted/50">
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 w-10 shadow-sm text-center">
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 w-8 shadow-sm text-center">
                                             <Checkbox
                                                 checked={allSelected}
                                                 onCheckedChange={handleSelectAll}
                                                 aria-label="Select all vendors"
                                             />
                                         </TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 w-10 shadow-sm text-center text-xs">#</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Vendor</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">City</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">State</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Zip</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Capabilities</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">AI Score</TableHead>
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-xs">Vendor</TableHead>
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Location</TableHead>
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs w-16">Score</TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Status</TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {displayVendors.map((vendor, index) => (
+                                    {sortedDisplayVendors.map((vendor, index) => (
                                         <VendorRow
                                             key={vendor.id}
                                             vendor={vendor}
@@ -357,7 +375,7 @@ export default function VendorList({
                                                 className="bg-muted/50 hover:bg-muted/60 cursor-pointer border-y border-border"
                                                 onClick={() => setProcessedOpen(!processedOpen)}
                                             >
-                                                <TableCell colSpan={9} className="py-2 text-center text-xs font-medium text-muted-foreground">
+                                                <TableCell colSpan={6} className="py-2 text-center text-xs font-medium text-muted-foreground">
                                                     {processedOpen ? "Hide" : "Show"} {processedVendors.length} Processed Vendors
                                                 </TableCell>
                                             </TableRow>
@@ -384,7 +402,7 @@ export default function VendorList({
 
                         {/* Mobile Card View */}
                         <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-3 bg-muted/50">
-                            {displayVendors.map((vendor, index) => (
+                            {sortedDisplayVendors.map((vendor, index) => (
                                 <VendorCard
                                     key={vendor.id}
                                     vendor={vendor}

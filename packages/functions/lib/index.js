@@ -4904,15 +4904,25 @@ var resendWebhook = (0, import_https4.onRequest)({
         to: event?.data?.to?.[0] || void 0
       }
     });
-    if (eventType === "email.bounced" && vendorId) {
-      await db22.collection("vendors").doc(vendorId).update({
-        outreachStatus: "FAILED",
-        "outreachMeta.bounced": true,
-        "outreachMeta.bounceType": event?.data?.bounce_type || "unknown",
-        "outreachMeta.bounceError": event?.data?.error_message || "Email bounced",
-        updatedAt: /* @__PURE__ */ new Date()
-      });
-      import_v2.logger.info(`Vendor ${vendorId}: email bounced, set outreachStatus to FAILED`);
+    if (vendorId) {
+      const engagementUpdate = {
+        "emailEngagement.lastEvent": mapping.deliveryStatus,
+        "emailEngagement.lastEventAt": /* @__PURE__ */ new Date()
+      };
+      if (eventType === "email.opened") {
+        engagementUpdate["emailEngagement.openCount"] = admin25.firestore.FieldValue.increment(1);
+      } else if (eventType === "email.clicked") {
+        engagementUpdate["emailEngagement.clickCount"] = admin25.firestore.FieldValue.increment(1);
+      }
+      if (eventType === "email.bounced") {
+        engagementUpdate["outreachStatus"] = "FAILED";
+        engagementUpdate["outreachMeta.bounced"] = true;
+        engagementUpdate["outreachMeta.bounceType"] = event?.data?.bounce_type || "unknown";
+        engagementUpdate["outreachMeta.bounceError"] = event?.data?.error_message || "Email bounced";
+      }
+      engagementUpdate["updatedAt"] = /* @__PURE__ */ new Date();
+      await db22.collection("vendors").doc(vendorId).update(engagementUpdate);
+      import_v2.logger.info(`Vendor ${vendorId}: emailEngagement updated (${mapping.deliveryStatus})`);
     }
     import_v2.logger.info(`Resend webhook: processed ${eventType} for vendor ${vendorId}`);
     res.status(200).json({ ok: true, processed: eventType });

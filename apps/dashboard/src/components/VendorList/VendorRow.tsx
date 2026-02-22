@@ -6,7 +6,7 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, X, Eye, Briefcase, Zap, Send, Phone, Mail } from "lucide-react";
+import { Check, X, Eye, Briefcase, Zap, Send, Phone, Mail, MousePointerClick, MailOpen, MailCheck, AlertTriangle, Ban } from "lucide-react";
 import Link from "next/link";
 import { getStatusColor, getScoreColor, getStatusLabel } from "./utils";
 import { useState } from "react";
@@ -25,6 +25,41 @@ interface VendorRowProps {
     onUpdateContact?: (id: string, data: { email?: string; phone?: string }) => void;
 }
 
+// ─── Engagement signal helpers ───
+function getEngagementSignal(vendor: Vendor) {
+    const eng = vendor.emailEngagement;
+    if (!eng) return null;
+
+    switch (eng.lastEvent) {
+        case 'clicked':
+            return { icon: MousePointerClick, label: 'Clicked', color: 'text-emerald-600 bg-emerald-50 border-emerald-200', heat: 3 };
+        case 'opened':
+            return { icon: MailOpen, label: `Opened${eng.openCount > 1 ? ` ×${eng.openCount}` : ''}`, color: 'text-blue-600 bg-blue-50 border-blue-200', heat: 2 };
+        case 'delivered':
+            return { icon: MailCheck, label: 'Delivered', color: 'text-gray-500 bg-gray-50 border-gray-200', heat: 1 };
+        case 'bounced':
+            return { icon: AlertTriangle, label: 'Bounced', color: 'text-red-600 bg-red-50 border-red-200', heat: -1 };
+        case 'spam':
+            return { icon: Ban, label: 'Spam', color: 'text-red-700 bg-red-50 border-red-200', heat: -2 };
+        default:
+            return null;
+    }
+}
+
+function timeAgo(timestamp: any): string {
+    if (!timestamp) return '';
+    const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+}
+
 export function VendorRow({ vendor, index, showActions, isRecruitmentMode = false, onUpdateStatus, onSelect, isActive, isSelected, onSelectChange, onAddEmailAndRetrigger, onUpdateContact }: VendorRowProps) {
     const isGrayedOut = isRecruitmentMode && (vendor.status || 'pending_review').toLowerCase() !== 'pending_review';
     const [emailInput, setEmailInput] = useState('');
@@ -32,42 +67,16 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
     const [showContactInputs, setShowContactInputs] = useState(false);
     const isNeedsContact = vendor.outreachStatus === 'NEEDS_CONTACT' && (vendor.status === 'qualified' || vendor.status === 'QUALIFIED');
 
-    // Helper to parse legacy address strings
-    const parseLegacyAddress = (addr: string | undefined) => {
-        if (!addr) return { city: '-', state: '-', zip: '-' };
+    // Parse location — merge city/state/zip into single string
+    const locationParts = [
+        vendor.city,
+        vendor.state,
+        vendor.zip
+    ].filter(Boolean);
 
-        const stateZipRegex = /([A-Za-z\s]+)[,]\s+([A-Z]{2})\s+(\d{5})/;
-        const match = addr.match(stateZipRegex);
-
-        if (match) {
-            return {
-                city: match[1].trim(),
-                state: match[2],
-                zip: match[3]
-            };
-        }
-
-        const parts = addr.split(',');
-        if (parts.length >= 2) {
-            const lastPart = parts[parts.length - 1].trim();
-            const stateZipMatch = lastPart.match(/([A-Z]{2})\s+(\d{5})/);
-            if (stateZipMatch) {
-                return {
-                    city: parts[parts.length - 2].trim(),
-                    state: stateZipMatch[1],
-                    zip: stateZipMatch[2]
-                };
-            }
-        }
-
-        return { city: addr, state: '-', zip: '-' };
-    };
-
-    const location = {
-        city: vendor.city || parseLegacyAddress(vendor.address).city,
-        state: vendor.state || parseLegacyAddress(vendor.address).state,
-        zip: vendor.zip || parseLegacyAddress(vendor.address).zip
-    };
+    const locationStr = locationParts.length > 0
+        ? `${vendor.city || ''}${vendor.city && vendor.state ? ', ' : ''}${vendor.state || ''} ${vendor.zip || ''}`.trim()
+        : (vendor.address || 'Unknown');
 
     const detailLink = isRecruitmentMode
         ? `/supply/recruitment/${vendor.id}`
@@ -87,10 +96,8 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
         if (phoneInput.trim()) data.phone = phoneInput.trim();
 
         if (data.email || data.phone) {
-            // If email provided and is NEEDS_CONTACT, use the retrigger handler
             if (data.email && isNeedsContact && onAddEmailAndRetrigger) {
                 onAddEmailAndRetrigger(vendor.id!, data.email);
-                // Also save phone if present
                 if (data.phone && onUpdateContact) {
                     onUpdateContact(vendor.id!, { phone: data.phone });
                 }
@@ -104,6 +111,8 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
         setPhoneInput('');
     };
 
+    const engagement = getEngagementSignal(vendor);
+
     return (
         <TableRow
             className={`transition-colors border-b border-border text-foreground 
@@ -112,7 +121,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
             `}
         >
             {onSelectChange && (
-                <TableCell className="text-center py-2" onClick={(e) => e.stopPropagation()}>
+                <TableCell className="text-center py-2 w-8" onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                         checked={isSelected}
                         onCheckedChange={onSelectChange}
@@ -120,66 +129,71 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                     />
                 </TableCell>
             )}
-            <TableCell className="font-medium py-2">{index + 1}</TableCell>
-            <TableCell className="py-2">
+            {/* Vendor Name + Contact + Capabilities */}
+            <TableCell className="py-2 min-w-[200px]">
                 <Link href={detailLink} onClick={handleRowClick} className="block group cursor-pointer">
-                    <div className="flex flex-col">
+                    <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-1.5">
                             {!isRecruitmentMode && vendor.preferredLanguage === 'es' ? (
                                 <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 px-1 py-0 h-4 text-[9px]">ES</Badge>
                             ) : null}
-                            <span className="text-sm text-foreground group-hover:text-primary transition-colors">{vendor.businessName}</span>
+                            <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{vendor.businessName}</span>
                         </div>
-                        <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                        <span className="text-xs text-muted-foreground truncate max-w-[220px]">
                             {vendor.contactName || vendor.email || "No contact info"}
                         </span>
+                        {/* Inline capabilities */}
+                        {vendor.capabilities?.length > 0 && (
+                            <div className="flex flex-wrap gap-0.5 mt-0.5">
+                                {vendor.capabilities.slice(0, 3).map((cap, i) => (
+                                    <span key={i} className="text-[9px] text-muted-foreground bg-muted px-1 py-0 rounded">
+                                        {cap}
+                                    </span>
+                                ))}
+                                {vendor.capabilities.length > 3 && (
+                                    <span className="text-[9px] text-muted-foreground">+{vendor.capabilities.length - 3}</span>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </Link>
             </TableCell>
-            <TableCell className="text-center">
-                <span className="text-sm font-medium">
-                    {location.city}
-                </span>
+            {/* Location (merged City, State, Zip) */}
+            <TableCell className="py-2 text-center min-w-[120px]">
+                <span className="text-sm">{locationStr}</span>
             </TableCell>
-            <TableCell className="text-center">
-                <span className="text-sm font-medium">
-                    {location.state}
-                </span>
+            {/* AI Score */}
+            <TableCell className="py-2 text-center w-16">
+                <div className={`${getScoreColor(vendor.fitScore)} text-xs font-medium`}>
+                    {vendor.fitScore ? `${vendor.fitScore}` : "—"}
+                </div>
             </TableCell>
-            <TableCell className="text-center">
-                <span className="text-xs text-muted-foreground font-mono">
-                    {location.zip}
-                </span>
-            </TableCell>
-            <TableCell className="py-2 text-center">
-                <div className="flex flex-wrap justify-center gap-1">
-                    {vendor.capabilities?.slice(0, 2).map((cap, i) => (
-                        <Badge key={i} variant="outline" className="text-[10px] px-1 py-0 h-4">
-                            {cap}
-                        </Badge>
-                    ))}
-                    {vendor.capabilities?.length > 2 && (
-                        <span className="text-[10px] text-muted-foreground">+{vendor.capabilities.length - 2}</span>
+            {/* Status + Engagement Signal */}
+            <TableCell className="py-2 text-center min-w-[140px]">
+                <div className="flex flex-col items-center gap-1">
+                    <Badge className={`${getStatusColor(vendor.status, vendor.outreachStatus)} shadow-none text-[10px] px-1.5 py-0 h-5`}>
+                        {getStatusLabel(vendor.status, vendor.outreachStatus)}
+                    </Badge>
+                    {/* Engagement signal badge */}
+                    {engagement && (
+                        <div className={`inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full border ${engagement.color}`}>
+                            <engagement.icon className="w-3 h-3" />
+                            {engagement.label}
+                            {vendor.emailEngagement?.lastEventAt && (
+                                <span className="opacity-70">{timeAgo(vendor.emailEngagement.lastEventAt)}</span>
+                            )}
+                        </div>
                     )}
                 </div>
             </TableCell>
-            <TableCell className="py-2 text-center">
-                <div className={`${getScoreColor(vendor.fitScore)} text-xs`}>
-                    {vendor.fitScore ? `${vendor.fitScore}/100` : "N/A"}
-                </div>
-            </TableCell>
-            <TableCell className="py-2 text-center">
-                <Badge className={`${getStatusColor(vendor.status, vendor.outreachStatus)} shadow-none text-[10px] px-1.5 py-0 h-5`}>
-                    {getStatusLabel(vendor.status, vendor.outreachStatus)}
-                </Badge>
-            </TableCell>
-            <TableCell className="text-right py-2">
+            {/* Actions */}
+            <TableCell className="text-right py-2 min-w-[100px]">
                 {isGrayedOut ? (
                     <Badge variant="outline" className="text-[10px] text-muted-foreground border-slate-300">
                         Already in CRM
                     </Badge>
                 ) : showActions && (
-                    <div className="flex justify-center gap-1.5">
+                    <div className="flex justify-end gap-1.5">
                         {(vendor.status || 'pending_review').toLowerCase() === 'pending_review' ? (
                             <>
                                 <Button
