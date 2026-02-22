@@ -76,7 +76,7 @@ export default function SupplyDashboardPage() {
     const [activeTab, setActiveTab] = useState('all');
     const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
     const [showAddContractor, setShowAddContractor] = useState(false);
-    const [funnelCollapsed, setFunnelCollapsed] = useState(false);
+    const [funnelCollapsed, setFunnelCollapsed] = useState(true);
 
     // Live Firestore listener
     useEffect(() => {

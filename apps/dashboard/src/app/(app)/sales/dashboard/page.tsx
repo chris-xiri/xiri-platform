@@ -91,7 +91,7 @@ export default function SalesDashboardPage() {
     const [activeTab, setActiveTab] = useState('all');
     const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
     const [showAddLead, setShowAddLead] = useState(false);
-    const [statsCollapsed, setStatsCollapsed] = useState(false);
+    const [statsCollapsed, setStatsCollapsed] = useState(true);
     const [expandedCommId, setExpandedCommId] = useState<string | null>(null);
 
     // Fetch all data
