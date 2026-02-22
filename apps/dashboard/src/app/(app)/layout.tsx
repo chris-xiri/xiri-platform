@@ -7,7 +7,7 @@ import {
     Home, Users, User, Settings, LogOut, Package, DollarSign,
     ClipboardList, FileText, Sun, Moon, Monitor, Shield, Receipt,
     MapPin, ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, Menu, X,
-    Building2, LayoutDashboard, Search,
+    Building2, LayoutDashboard, Search, HardHat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
@@ -141,54 +141,52 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         return null;
     }
 
-    const showSupplyNav = canAccess('supply/recruitment', profile.roles);
-    const showSalesNav = canAccess('sales/dashboard', profile.roles);
-    const showOpsNav = canAccess('operations/work-orders', profile.roles) || canAccess('operations/audits', profile.roles);
-    const showAccountingNav = canAccess('accounting/invoices', profile.roles);
+    const showClientsNav = canAccess('sales/dashboard', profile.roles) || canAccess('operations/contracts', profile.roles);
+    const showContractorsNav = canAccess('supply/recruitment', profile.roles);
+    const showFieldOpsNav = canAccess('operations/audits', profile.roles) || canAccess('operations/site-visits', profile.roles);
+    const showFinanceNav = canAccess('accounting/invoices', profile.roles);
     const showAdminNav = canAccess('admin/settings', profile.roles);
 
     const sections: NavSection[] = [
         {
-            label: 'Sales',
-            icon: <DollarSign className="w-3.5 h-3.5" />,
-            show: showSalesNav,
+            label: 'Clients',
+            icon: <Building2 className="w-3.5 h-3.5" />,
+            show: showClientsNav,
             items: [
-                { label: 'Pipeline', href: '/sales/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-                { label: 'Leads Sourcing', href: '/sales/sourcing', icon: <Search className="w-4 h-4" /> },
-                { label: 'Leads Quotes', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> },
+                ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Pipeline', href: '/sales/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> }] : []),
+                ...(canAccess('sales/sourcing', profile.roles) ? [{ label: 'Lead Sourcing', href: '/sales/sourcing', icon: <Search className="w-4 h-4" /> }] : []),
+                ...(canAccess('sales/quotes', profile.roles) ? [{ label: 'Quotes', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> }] : []),
+                ...(canAccess('operations/contracts', profile.roles) ? [{ label: 'Contracts', href: '/operations/contracts', icon: <FileText className="w-4 h-4" /> }] : []),
+                ...(canAccess('operations/work-orders', profile.roles) ? [{ label: 'Work Orders', href: '/operations/work-orders', icon: <ClipboardList className="w-4 h-4" /> }] : []),
             ],
         },
         {
-            label: 'Supply',
-            icon: <Package className="w-3.5 h-3.5" />,
-            show: showSupplyNav,
+            label: 'Contractors',
+            icon: <HardHat className="w-3.5 h-3.5" />,
+            show: showContractorsNav,
             items: [
                 { label: 'Pipeline', href: '/supply/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-                { label: 'Contractor Sourcing', href: '/supply/recruitment', icon: <Search className="w-4 h-4" /> },
+                { label: 'Sourcing', href: '/supply/recruitment', icon: <Search className="w-4 h-4" /> },
+                ...(canAccess('accounting/vendor-remittances', profile.roles) ? [{ label: 'Remittances', href: '/accounting/vendor-remittances', icon: <DollarSign className="w-4 h-4" /> }] : []),
             ],
         },
         {
-            label: 'Operations',
-            icon: <ClipboardList className="w-3.5 h-3.5" />,
-            show: showOpsNav,
+            label: 'Field Ops',
+            icon: <Shield className="w-3.5 h-3.5" />,
+            show: showFieldOpsNav,
             dividerAbove: true,
             items: [
-                { label: 'Dashboard', href: '/operations/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-                ...(canAccess('operations/work-orders', profile.roles) ? [{ label: 'Client Work Orders', href: '/operations/work-orders', icon: <ClipboardList className="w-4 h-4" /> }] : []),
-                ...(canAccess('operations/contracts', profile.roles) ? [{ label: 'Client Contracts', href: '/operations/contracts', icon: <FileText className="w-4 h-4" /> }] : []),
-                ...(canAccess('sales/quotes', profile.roles) ? [{ label: 'Lead Quotes', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> }] : []),
-                ...(canAccess('operations/audits', profile.roles) ? [{ label: 'Client Audits', href: '/operations/audits', icon: <Shield className="w-4 h-4" /> }] : []),
+                ...(canAccess('operations/audits', profile.roles) ? [{ label: 'Audits', href: '/operations/audits', icon: <Shield className="w-4 h-4" /> }] : []),
                 ...(canAccess('operations/site-visits', profile.roles) ? [{ label: 'Site Visits', href: '/operations/site-visits', icon: <MapPin className="w-4 h-4" /> }] : []),
             ],
         },
         {
-            label: 'Accounting',
+            label: 'Finance',
             icon: <Receipt className="w-3.5 h-3.5" />,
-            show: showAccountingNav,
+            show: showFinanceNav,
             items: [
                 ...(canAccess('accounting/invoices', profile.roles) ? [{ label: 'Invoices', href: '/accounting/invoices', icon: <Receipt className="w-4 h-4" /> }] : []),
                 ...(canAccess('accounting/commissions', profile.roles) ? [{ label: 'Commissions', href: '/accounting/commissions', icon: <DollarSign className="w-4 h-4" /> }] : []),
-                ...(canAccess('accounting/vendor-remittances', profile.roles) ? [{ label: 'Vendor Remittances', href: '/accounting/vendor-remittances', icon: <DollarSign className="w-4 h-4" /> }] : []),
             ],
         },
     ];
