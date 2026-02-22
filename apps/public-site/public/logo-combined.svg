@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <!-- XIRI — Inline Logo with Tagline (Single Line) -->
+  <defs>
+    <linearGradient id="icon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+  </defs>
+  <!-- Icon badge -->
+  <rect x="0" y="8" width="44" height="44" rx="9" fill="url(#icon-grad)"/>
+  <text x="22" y="39" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="27" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="-1">X</text>
+  <!-- Wordmark -->
+  <text x="54" y="36" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="32" font-weight="800" fill="#0369a1" letter-spacing="-0.5">XIRI</text>
+  <!-- Tagline -->
+  <text x="54" y="52" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="9" font-weight="500" fill="#6b7280" letter-spacing="2.5">FACILITY SOLUTIONS</text>
+</svg>

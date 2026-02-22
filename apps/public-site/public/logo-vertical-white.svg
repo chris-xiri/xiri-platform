@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" width="160" height="120">
+  <!-- XIRI — Vertical Stacked Logo (White on Dark) -->
+  <text x="80" y="60" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="-1">XIRI</text>
+  <line x1="30" y1="72" x2="130" y2="72" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+  <text x="80" y="90" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgba(255,255,255,0.65)" text-anchor="middle" letter-spacing="3.5">FACILITY</text>
+  <text x="80" y="106" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="rgba(255,255,255,0.65)" text-anchor="middle" letter-spacing="3.5">SOLUTIONS</text>
+</svg>

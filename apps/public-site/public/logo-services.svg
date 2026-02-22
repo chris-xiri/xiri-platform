@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 320" width="560" height="320">
+  <!--
+    XIRI Facility Solutions — Services Showcase Card
+    6 top services + "12+ more" hook
+    Ideal for LinkedIn posts, pitch decks, email signatures
+  -->
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c4a6e"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+    <linearGradient id="card-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.10)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.04)"/>
+    </linearGradient>
+    <linearGradient id="pill-hot" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <filter id="soft-shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="rgba(0,0,0,0.25)"/>
+    </filter>
+    <!-- Grid texture -->
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.7" fill="rgba(255,255,255,0.06)"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="560" height="320" rx="20" fill="url(#bg-grad)"/>
+  <rect width="560" height="320" rx="20" fill="url(#dots)"/>
+
+  <!-- Subtle glow -->
+  <ellipse cx="450" cy="60" rx="200" ry="100" fill="rgba(56,189,248,0.1)"/>
+
+  <!-- Top header -->
+  <text x="30" y="46" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="800" fill="#ffffff" letter-spacing="-0.5">XIRI</text>
+  <text x="94" y="46" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="400" fill="rgba(255,255,255,0.5)" letter-spacing="2.5">FACILITY SOLUTIONS</text>
+
+  <!-- Divider -->
+  <line x1="30" y1="58" x2="530" y2="58" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+
+  <!-- Section label -->
+  <text x="30" y="86" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="700" fill="rgba(56,189,248,0.9)" letter-spacing="3">TOP REQUESTED SERVICES</text>
+
+  <!-- ── Service Cards Row 1 ── -->
+
+  <!-- Card 1: Nightly Janitorial -->
+  <rect x="30" y="100" width="158" height="80" rx="12" fill="url(#card-grad)" stroke="rgba(255,255,255,0.12)" stroke-width="1" filter="url(#soft-shadow)"/>
+  <text x="48" y="126" font-size="22" font-family="sans-serif">🧹</text>
+  <text x="48" y="150" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Nightly Janitorial</text>
+  <text x="48" y="168" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" fill="rgba(255,255,255,0.5)">Recurring · Daily</text>
+
+  <!-- Card 2: Medical-Grade Cleaning -->
+  <rect x="201" y="100" width="158" height="80" rx="12" fill="url(#card-grad)" stroke="rgba(56,189,248,0.3)" stroke-width="1" filter="url(#soft-shadow)"/>
+  <!-- "HOT" badge -->
+  <rect x="307" y="104" width="44" height="16" rx="8" fill="url(#pill-hot)"/>
+  <text x="329" y="115" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="8" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">🔥 HOT</text>
+  <text x="219" y="126" font-size="22" font-family="sans-serif">🏥</text>
+  <text x="219" y="150" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Medical-Grade</text>
+  <text x="219" y="165" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Cleaning</text>
+  <text x="219" y="175" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" fill="rgba(255,255,255,0.5)">HIPAA Compliant</text>
+
+  <!-- Card 3: Floor Care -->
+  <rect x="372" y="100" width="158" height="80" rx="12" fill="url(#card-grad)" stroke="rgba(255,255,255,0.12)" stroke-width="1" filter="url(#soft-shadow)"/>
+  <text x="390" y="126" font-size="22" font-family="sans-serif">✨</text>
+  <text x="390" y="150" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Floor Care</text>
+  <text x="390" y="168" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" fill="rgba(255,255,255,0.5)">Strip · Wax · Polish</text>
+
+  <!-- ── Service Cards Row 2 ── -->
+
+  <!-- Card 4: HVAC Filter Service -->
+  <rect x="30" y="196" width="158" height="80" rx="12" fill="url(#card-grad)" stroke="rgba(255,255,255,0.12)" stroke-width="1" filter="url(#soft-shadow)"/>
+  <text x="48" y="222" font-size="22" font-family="sans-serif">❄️</text>
+  <text x="48" y="246" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff">HVAC Filter</text>
+  <text x="48" y="264" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" fill="rgba(255,255,255,0.5)">Replacement · IAQ</text>
+
+  <!-- Card 5: Pressure Washing -->
+  <rect x="201" y="196" width="158" height="80" rx="12" fill="url(#card-grad)" stroke="rgba(255,255,255,0.12)" stroke-width="1" filter="url(#soft-shadow)"/>
+  <text x="219" y="222" font-size="22" font-family="sans-serif">💧</text>
+  <text x="219" y="246" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Pressure Washing</text>
+  <text x="219" y="264" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" fill="rgba(255,255,255,0.5)">Exterior · Lots · Docks</text>
+
+  <!-- Card 6: Snow & Ice Removal -->
+  <rect x="372" y="196" width="158" height="80" rx="12" fill="url(#card-grad)" stroke="rgba(255,255,255,0.12)" stroke-width="1" filter="url(#soft-shadow)"/>
+  <text x="390" y="222" font-size="22" font-family="sans-serif">🌨️</text>
+  <text x="390" y="246" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Snow &amp; Ice Removal</text>
+  <text x="390" y="264" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="400" fill="rgba(255,255,255,0.5)">24/7 On-Call Response</text>
+
+  <!-- ── "12+ more" hook ── -->
+  <rect x="30" y="291" width="500" height="22" rx="11" fill="rgba(255,255,255,0.07)"/>
+  <text x="280" y="306" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.7)" text-anchor="middle" letter-spacing="0.5">+ 12 more services available  ·  One invoice  ·  One point of contact</text>
+</svg>
