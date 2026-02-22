@@ -44,6 +44,21 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "__comment": "Email Templates Admin: filters vendor_email templates sorted by sequence",
+            "collectionGroup": "templates",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "category",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "sequence",
+                    "order": "ASCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []
