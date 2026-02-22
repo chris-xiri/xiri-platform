@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { collection, query, where, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,11 +69,12 @@ export default function EmailTemplatesPage() {
         try {
             const q = query(
                 collection(db, "templates"),
-                where("category", "==", "vendor_email"),
-                orderBy("sequence", "asc")
+                where("category", "==", "vendor_email")
             );
             const snap = await getDocs(q);
-            setTemplates(snap.docs.map(d => ({ id: d.id, ...d.data() } as EmailTemplate)));
+            const results = snap.docs.map(d => ({ id: d.id, ...d.data() } as EmailTemplate));
+            results.sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+            setTemplates(results);
         } catch (error) {
             console.error("Error fetching templates:", error);
         } finally {
