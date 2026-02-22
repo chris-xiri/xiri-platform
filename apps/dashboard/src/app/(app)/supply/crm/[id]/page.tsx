@@ -422,23 +422,29 @@ export default function CRMDetailPage(props: PageProps) {
                             <div className="md:col-span-2 space-y-6">
                                 <Card>
                                     <CardHeader><CardTitle>Business Details</CardTitle></CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1">
-                                                <div className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">Address</div>
-                                                <InlineEditField vendorId={vendor.id!} field="streetAddress" value={vendor.streetAddress || vendor.address} icon={MapPin} />
-                                                <div className="flex gap-2 ml-6">
-                                                    <InlineEditField vendorId={vendor.id!} field="city" value={vendor.city} icon={() => <span className="text-[10px] text-muted-foreground w-4 text-center">City</span>} />
-                                                    <InlineEditField vendorId={vendor.id!} field="state" value={vendor.state} icon={() => <span className="text-[10px] text-muted-foreground w-4 text-center">ST</span>} />
-                                                    <InlineEditField vendorId={vendor.id!} field="zip" value={vendor.zip} icon={() => <span className="text-[10px] text-muted-foreground w-4 text-center">Zip</span>} />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1">
+                                    <CardContent>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            {/* Contact */}
+                                            <div className="space-y-3">
                                                 <div className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">Contact</div>
-                                                <div className="space-y-2">
+                                                <div className="space-y-3 pl-1">
                                                     <InlineEditField vendorId={vendor.id!} field="phone" value={vendor.phone} icon={Phone} type="tel" linkHref={vendor.phone ? `tel:${vendor.phone}` : undefined} />
                                                     <InlineEditField vendorId={vendor.id!} field="email" value={vendor.email} icon={Mail} type="email" linkHref={vendor.email ? `mailto:${vendor.email}` : undefined} />
                                                     <InlineEditField vendorId={vendor.id!} field="website" value={vendor.website} icon={Globe} type="url" linkHref={vendor.website ? (vendor.website.startsWith('http') ? vendor.website : `https://${vendor.website}`) : undefined} />
+                                                </div>
+                                            </div>
+
+                                            {/* Address — stacked like a mailing label */}
+                                            <div className="space-y-3">
+                                                <div className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">Address</div>
+                                                <div className="space-y-2 pl-1">
+                                                    <InlineEditField vendorId={vendor.id!} field="streetAddress" value={vendor.streetAddress || vendor.address} icon={MapPin} />
+                                                    <div className="flex items-center gap-1 pl-6">
+                                                        <InlineEditField vendorId={vendor.id!} field="city" value={vendor.city} icon={() => null} />
+                                                        <span className="text-muted-foreground">,</span>
+                                                        <InlineEditField vendorId={vendor.id!} field="state" value={vendor.state} icon={() => null} />
+                                                        <InlineEditField vendorId={vendor.id!} field="zip" value={vendor.zip} icon={() => null} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
