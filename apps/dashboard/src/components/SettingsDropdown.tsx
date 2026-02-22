@@ -23,7 +23,7 @@ export function SettingsDropdown() {
 
     return (
         <div className="relative" ref={dropdownRef}>
-            <button 
+            <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
             >
@@ -36,7 +36,7 @@ export function SettingsDropdown() {
                         <div className="px-4 py-2 text-sm text-foreground font-semibold border-b border-border mb-1">
                             Appearance
                         </div>
-                        
+
                         <div className="p-2 space-y-1">
                             <button
                                 onClick={() => setTheme("light")}

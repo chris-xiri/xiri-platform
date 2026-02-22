@@ -35,10 +35,14 @@ function loadCampaigns(): { campaigns: Campaign[]; activeCampaignId: string | nu
 // ─── Firestore helpers ───
 const dismissVendorInFirestore = async (vendor: PreviewVendor) => {
     try {
-        await addDoc(collection(db, "dismissed_vendors"), {
+        const dismissData: Record<string, any> = {
             businessName: vendor.businessName,
             dismissedAt: serverTimestamp(),
-        });
+        };
+        // Store phone/website for robust blacklist matching across searches
+        if (vendor.phone) dismissData.phone = vendor.phone;
+        if (vendor.website) dismissData.website = vendor.website;
+        await addDoc(collection(db, "dismissed_vendors"), dismissData);
     } catch (err) { console.error(`Failed to persist dismissal for "${vendor.businessName}":`, err); }
 };
 

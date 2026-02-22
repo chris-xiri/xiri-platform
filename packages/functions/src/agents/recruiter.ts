@@ -3,13 +3,19 @@ import { admin, db } from "../utils/firebase";
 import { Vendor, RecruitmentAnalysisResult } from "../utils/types";
 import { parseAddress } from "../utils/emailUtils";
 
+// Normalize URL for comparison (strip protocol, www, trailing slash)
+function normalizeUrl(url: string): string {
+    if (!url) return '';
+    return url.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '').trim();
+}
+
 // Initialize Gemini
 const API_KEY = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, hasActiveContract: boolean = false, previewOnly: boolean = false): Promise<RecruitmentAnalysisResult> => {
-    console.log("!!! RECRUITER AGENT UPDATED - V3 (Deduplication) !!!");
+    console.log("!!! RECRUITER AGENT UPDATED - V4 (Robust Dedup + Blacklist) !!!");
     let analyzed = 0;
     let qualified = 0;
     const errors: string[] = [];
@@ -41,44 +47,78 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
     let prompt = "";
 
     try {
-        // Build dismissed vendor name set (for tagging, not filtering)
+        // Build dismissed vendor identifiers (name, phone, website) for robust blacklist matching
         let dismissedNames = new Set<string>();
+        let dismissedPhones = new Set<string>();
+        let dismissedWebsites = new Set<string>();
         try {
             const dismissedSnapshot = await db.collection('dismissed_vendors').get();
             if (!dismissedSnapshot.empty) {
-                dismissedNames = new Set(
-                    dismissedSnapshot.docs.map(doc => (doc.data().businessName || '').toLowerCase().trim())
-                );
-                console.log(`Loaded ${dismissedNames.size} dismissed vendor names for tagging.`);
+                for (const doc of dismissedSnapshot.docs) {
+                    const d = doc.data();
+                    if (d.businessName) dismissedNames.add(d.businessName.toLowerCase().trim());
+                    if (d.phone) dismissedPhones.add(d.phone.replace(/\D/g, '')); // digits only
+                    if (d.website) dismissedWebsites.add(normalizeUrl(d.website));
+                }
+                console.log(`Loaded ${dismissedNames.size} dismissed vendor names, ${dismissedPhones.size} phones, ${dismissedWebsites.size} websites.`);
             }
         } catch (dismissErr: any) {
             console.warn("Could not check dismissed_vendors:", dismissErr.message);
         }
 
-        // Pre-process for duplicates (against existing vendors collection)
+        // ─── Pre-process: Dedup against existing vendors + Blacklist ─────────────
+        // We check by: (1) case-insensitive name, (2) phone number, (3) website
         const vendorsToProcess: any[] = [];
         const duplicateUpdates: Promise<any>[] = [];
 
-        console.log(`Checking ${rawVendors.length} vendors for duplicates...`);
+        // Pre-load ALL existing vendor identifiers for fast matching
+        let existingByNameLower = new Map<string, string>(); // normalized name -> docId
+        let existingByPhone = new Map<string, string>();     // digits-only phone -> docId
+        let existingByWebsite = new Map<string, string>();   // normalized url -> docId
+        try {
+            const existingSnap = await db.collection('vendors').select('businessName', 'businessNameLower', 'phone', 'website').get();
+            for (const doc of existingSnap.docs) {
+                const data = doc.data();
+                const nameLower = (data.businessNameLower || data.businessName || '').toLowerCase().trim();
+                if (nameLower) existingByNameLower.set(nameLower, doc.id);
+                if (data.phone) existingByPhone.set(data.phone.replace(/\D/g, ''), doc.id);
+                if (data.website) existingByWebsite.set(normalizeUrl(data.website), doc.id);
+            }
+            console.log(`Loaded ${existingByNameLower.size} existing vendors for dedup (names: ${existingByNameLower.size}, phones: ${existingByPhone.size}, websites: ${existingByWebsite.size}).`);
+        } catch (err: any) {
+            console.warn("Could not pre-load vendors for dedup:", err.message);
+        }
+
+        console.log(`Checking ${rawVendors.length} vendors for duplicates and blacklist...`);
 
         for (const vendor of rawVendors) {
-            const bName = vendor.name || vendor.companyName || vendor.title;
-            if (!bName) {
-                vendorsToProcess.push(vendor);
-                continue;
+            const bName = vendor.name || vendor.companyName || vendor.title || '';
+            const bNameLower = bName.toLowerCase().trim();
+            const bPhone = (vendor.phone || '').replace(/\D/g, '');
+            const bWebsite = normalizeUrl(vendor.website || '');
+
+            // ── Blacklist check (name, phone, or website) ──
+            const isBlacklisted =
+                (bNameLower && dismissedNames.has(bNameLower)) ||
+                (bPhone && bPhone.length >= 7 && dismissedPhones.has(bPhone)) ||
+                (bWebsite && dismissedWebsites.has(bWebsite));
+
+            if (isBlacklisted) {
+                console.log(`⛔ Blacklisted vendor skipped: ${bName}`);
+                continue; // Completely skip blacklisted vendors
             }
 
-            // Check if exists
-            const existingSnapshot = await db.collection('vendors')
-                .where('businessName', '==', bName)
-                .limit(1)
-                .get();
+            // ── Dedup check (case-insensitive name, phone, or website) ──
+            const existingDocId =
+                (bNameLower && existingByNameLower.get(bNameLower)) ||
+                (bPhone && bPhone.length >= 7 && existingByPhone.get(bPhone)) ||
+                (bWebsite && existingByWebsite.get(bWebsite)) ||
+                null;
 
-            if (!existingSnapshot.empty) {
-                const docId = existingSnapshot.docs[0].id;
-                console.log(`Found existing vendor: ${bName} (${docId}). Updating timestamp.`);
+            if (existingDocId) {
+                console.log(`🔁 Duplicate vendor skipped: ${bName} (matches ${existingDocId})`);
                 duplicateUpdates.push(
-                    db.collection('vendors').doc(docId).update({
+                    db.collection('vendors').doc(existingDocId).update({
                         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                     })
                 );
@@ -94,7 +134,7 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
         }
 
         if (vendorsToProcess.length === 0) {
-            console.log("All vendors were duplicates or dismissed. Sourcing complete.");
+            console.log("All vendors were duplicates or blacklisted. Sourcing complete.");
             return { analyzed, qualified, errors };
         }
 
@@ -154,6 +194,7 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
                 const newVendor: Vendor = {
                     id: vendorRef.id,
                     businessName: bName,
+                    businessNameLower: bName.toLowerCase().trim(),
                     capabilities: item.services || (item.primarySpecialty ? [item.primarySpecialty] : (item.specialty ? [item.specialty] : [])),
                     specialty: item.primarySpecialty || item.specialty || item.services?.[0] || undefined,
                     contactName: item.contactName || undefined,

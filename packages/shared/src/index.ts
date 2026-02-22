@@ -90,6 +90,7 @@ export type VendorStatus =
 export interface Vendor {
     id?: string;
     businessName: string;
+    businessNameLower?: string; // Lowercase normalized name for case-insensitive dedup
     status: VendorStatus;
     capabilities: IndustryVertical[];
 

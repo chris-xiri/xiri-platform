@@ -293,7 +293,9 @@ var init_queueUtils = __esm({
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
+  adminUpdateAuthUser: () => adminUpdateAuthUser,
   calculateNrr: () => calculateNrr,
+  changeMyPassword: () => changeMyPassword,
   clearPipeline: () => clearPipeline,
   enrichFromWebsite: () => enrichFromWebsite,
   generateLeads: () => generateLeads,
@@ -345,11 +347,15 @@ try {
 // src/agents/recruiter.ts
 var import_generative_ai2 = require("@google/generative-ai");
 init_emailUtils();
+function normalizeUrl(url) {
+  if (!url) return "";
+  return url.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "").trim();
+}
 var API_KEY = process.env.GEMINI_API_KEY || "";
 var genAI2 = new import_generative_ai2.GoogleGenerativeAI(API_KEY);
 var model = genAI2.getGenerativeModel({ model: "gemini-2.0-flash" });
 var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false, previewOnly = false) => {
-  console.log("!!! RECRUITER AGENT UPDATED - V3 (Deduplication) !!!");
+  console.log("!!! RECRUITER AGENT UPDATED - V4 (Robust Dedup + Blacklist) !!!");
   let analyzed = 0;
   let qualified = 0;
   const errors = [];
@@ -362,32 +368,56 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
   let prompt = "";
   try {
     let dismissedNames = /* @__PURE__ */ new Set();
+    let dismissedPhones = /* @__PURE__ */ new Set();
+    let dismissedWebsites = /* @__PURE__ */ new Set();
     try {
       const dismissedSnapshot = await db.collection("dismissed_vendors").get();
       if (!dismissedSnapshot.empty) {
-        dismissedNames = new Set(
-          dismissedSnapshot.docs.map((doc) => (doc.data().businessName || "").toLowerCase().trim())
-        );
-        console.log(`Loaded ${dismissedNames.size} dismissed vendor names for tagging.`);
+        for (const doc of dismissedSnapshot.docs) {
+          const d = doc.data();
+          if (d.businessName) dismissedNames.add(d.businessName.toLowerCase().trim());
+          if (d.phone) dismissedPhones.add(d.phone.replace(/\D/g, ""));
+          if (d.website) dismissedWebsites.add(normalizeUrl(d.website));
+        }
+        console.log(`Loaded ${dismissedNames.size} dismissed vendor names, ${dismissedPhones.size} phones, ${dismissedWebsites.size} websites.`);
       }
     } catch (dismissErr) {
       console.warn("Could not check dismissed_vendors:", dismissErr.message);
     }
     const vendorsToProcess = [];
     const duplicateUpdates = [];
-    console.log(`Checking ${rawVendors.length} vendors for duplicates...`);
+    let existingByNameLower = /* @__PURE__ */ new Map();
+    let existingByPhone = /* @__PURE__ */ new Map();
+    let existingByWebsite = /* @__PURE__ */ new Map();
+    try {
+      const existingSnap = await db.collection("vendors").select("businessName", "businessNameLower", "phone", "website").get();
+      for (const doc of existingSnap.docs) {
+        const data = doc.data();
+        const nameLower = (data.businessNameLower || data.businessName || "").toLowerCase().trim();
+        if (nameLower) existingByNameLower.set(nameLower, doc.id);
+        if (data.phone) existingByPhone.set(data.phone.replace(/\D/g, ""), doc.id);
+        if (data.website) existingByWebsite.set(normalizeUrl(data.website), doc.id);
+      }
+      console.log(`Loaded ${existingByNameLower.size} existing vendors for dedup (names: ${existingByNameLower.size}, phones: ${existingByPhone.size}, websites: ${existingByWebsite.size}).`);
+    } catch (err) {
+      console.warn("Could not pre-load vendors for dedup:", err.message);
+    }
+    console.log(`Checking ${rawVendors.length} vendors for duplicates and blacklist...`);
     for (const vendor of rawVendors) {
-      const bName = vendor.name || vendor.companyName || vendor.title;
-      if (!bName) {
-        vendorsToProcess.push(vendor);
+      const bName = vendor.name || vendor.companyName || vendor.title || "";
+      const bNameLower = bName.toLowerCase().trim();
+      const bPhone = (vendor.phone || "").replace(/\D/g, "");
+      const bWebsite = normalizeUrl(vendor.website || "");
+      const isBlacklisted = bNameLower && dismissedNames.has(bNameLower) || bPhone && bPhone.length >= 7 && dismissedPhones.has(bPhone) || bWebsite && dismissedWebsites.has(bWebsite);
+      if (isBlacklisted) {
+        console.log(`\u26D4 Blacklisted vendor skipped: ${bName}`);
         continue;
       }
-      const existingSnapshot = await db.collection("vendors").where("businessName", "==", bName).limit(1).get();
-      if (!existingSnapshot.empty) {
-        const docId = existingSnapshot.docs[0].id;
-        console.log(`Found existing vendor: ${bName} (${docId}). Updating timestamp.`);
+      const existingDocId = bNameLower && existingByNameLower.get(bNameLower) || bPhone && bPhone.length >= 7 && existingByPhone.get(bPhone) || bWebsite && existingByWebsite.get(bWebsite) || null;
+      if (existingDocId) {
+        console.log(`\u{1F501} Duplicate vendor skipped: ${bName} (matches ${existingDocId})`);
         duplicateUpdates.push(
-          db.collection("vendors").doc(docId).update({
+          db.collection("vendors").doc(existingDocId).update({
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
           })
         );
@@ -400,7 +430,7 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
       console.log(`Updated ${duplicateUpdates.length} existing vendors.`);
     }
     if (vendorsToProcess.length === 0) {
-      console.log("All vendors were duplicates or dismissed. Sourcing complete.");
+      console.log("All vendors were duplicates or blacklisted. Sourcing complete.");
       return { analyzed, qualified, errors };
     }
     vendorsToAnalyze = vendorsToProcess;
@@ -441,6 +471,7 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
         const newVendor = {
           id: vendorRef.id,
           businessName: bName,
+          businessNameLower: bName.toLowerCase().trim(),
           capabilities: item.services || (item.primarySpecialty ? [item.primarySpecialty] : item.specialty ? [item.specialty] : []),
           specialty: item.primarySpecialty || item.specialty || item.services?.[0] || void 0,
           contactName: item.contactName || void 0,
@@ -4892,6 +4923,59 @@ var resendWebhook = (0, import_https4.onRequest)({
 });
 
 // src/index.ts
+var import_auth = require("firebase-admin/auth");
+var DASHBOARD_CORS = [
+  "http://localhost:3001",
+  "http://localhost:3000",
+  "https://xiri.ai",
+  "https://www.xiri.ai",
+  "https://app.xiri.ai",
+  "https://xiri-dashboard.vercel.app",
+  "https://xiri-dashboard-git-develop-xiri-facility-solutions.vercel.app",
+  /https:\/\/xiri-dashboard-.*\.vercel\.app$/,
+  "https://xiri-facility-solutions.web.app",
+  "https://xiri-facility-solutions.firebaseapp.com"
+];
+var adminUpdateAuthUser = (0, import_https5.onCall)({
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  if (!request.auth) throw new import_https5.HttpsError("unauthenticated", "Must be logged in");
+  const callerDoc = await db.collection("users").doc(request.auth.uid).get();
+  const callerRoles = callerDoc.data()?.roles || [];
+  if (!callerRoles.includes("admin")) throw new import_https5.HttpsError("permission-denied", "Admin only");
+  const { uid, email, password, displayName } = request.data;
+  if (!uid) throw new import_https5.HttpsError("invalid-argument", "uid is required");
+  const updatePayload = {};
+  if (email) updatePayload.email = email;
+  if (password) updatePayload.password = password;
+  if (displayName) updatePayload.displayName = displayName;
+  if (Object.keys(updatePayload).length === 0) {
+    throw new import_https5.HttpsError("invalid-argument", "Nothing to update");
+  }
+  try {
+    await (0, import_auth.getAuth)().updateUser(uid, updatePayload);
+    return { success: true, message: `Auth updated for ${uid}` };
+  } catch (error10) {
+    console.error("adminUpdateAuthUser error:", error10);
+    throw new import_https5.HttpsError("internal", error10.message || "Failed to update Auth user");
+  }
+});
+var changeMyPassword = (0, import_https5.onCall)({
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  if (!request.auth) throw new import_https5.HttpsError("unauthenticated", "Must be logged in");
+  const { newPassword } = request.data;
+  if (!newPassword || newPassword.length < 6) {
+    throw new import_https5.HttpsError("invalid-argument", "Password must be at least 6 characters");
+  }
+  try {
+    await (0, import_auth.getAuth)().updateUser(request.auth.uid, { password: newPassword });
+    return { success: true, message: "Password updated" };
+  } catch (error10) {
+    console.error("changeMyPassword error:", error10);
+    throw new import_https5.HttpsError("internal", error10.message || "Failed to change password");
+  }
+});
 var generateLeads = (0, import_https5.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: [
@@ -5044,7 +5128,9 @@ var sourceProperties = (0, import_https5.onCall)({
 });
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  adminUpdateAuthUser,
   calculateNrr,
+  changeMyPassword,
   clearPipeline,
   enrichFromWebsite,
   generateLeads,

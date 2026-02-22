@@ -259,6 +259,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                            <Link href="/admin/profile" className="flex items-center gap-2 cursor-pointer">
+                                <User className="w-4 h-4" /> My Profile
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuLabel className="text-xs text-muted-foreground">Theme</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => setTheme('light')} className={`flex items-center gap-2 cursor-pointer ${theme === 'light' ? 'bg-muted' : ''}`}>
                             <Sun className="w-4 h-4" /> Light
@@ -273,18 +279,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         {showAdminNav && (
                             <>
                                 <DropdownMenuItem asChild>
-                                    <Link href="/admin/templates" className="flex items-center gap-2 cursor-pointer">
-                                        <Settings className="w-4 h-4" /> Email Templates
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                    <Link href="/admin/agents" className="flex items-center gap-2 cursor-pointer">
-                                        <Settings className="w-4 h-4" /> AI Agents
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
                                     <Link href="/admin/users" className="flex items-center gap-2 cursor-pointer">
-                                        <Users className="w-4 h-4" /> User Management
+                                        <Settings className="w-4 h-4" /> Admin Settings
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />

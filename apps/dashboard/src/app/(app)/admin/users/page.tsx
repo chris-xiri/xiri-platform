@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -158,12 +159,28 @@ export default function UserManagerPage() {
         setSaving(true);
         try {
             if (editingUser) {
+                // Update Firestore
                 await updateDoc(doc(db, "users", editingUser.uid), {
                     displayName: data.displayName,
                     email: data.email,
                     roles: data.roles,
                     updatedAt: serverTimestamp(),
                 });
+
+                // Sync email/displayName to Firebase Auth (if changed)
+                const authUpdate: Record<string, string> = { uid: editingUser.uid };
+                if (data.email !== editingUser.email) authUpdate.email = data.email;
+                if (data.displayName !== editingUser.displayName) authUpdate.displayName = data.displayName;
+
+                if (authUpdate.email || authUpdate.displayName) {
+                    try {
+                        const syncAuth = httpsCallable(functions, 'adminUpdateAuthUser');
+                        await syncAuth(authUpdate);
+                    } catch (authErr) {
+                        console.error('Auth sync failed (Firestore updated):', authErr);
+                        alert('⚠️ Firestore updated but Auth email sync failed. The user may still need the old email to log in.');
+                    }
+                }
             } else {
                 const newUid = `manual-${Date.now()}`;
                 await setDoc(doc(db, "users", newUid), {

@@ -40,6 +40,7 @@ const ACCESS_MAP: Record<string, string[]> = {
     'admin/users': ['admin'],
     'admin/templates': ['admin'],
     'admin/agents': ['admin'],
+    'admin/profile': ['admin', 'sales', 'sales_exec', 'sales_mgr', 'fsm', 'night_manager', 'night_mgr', 'recruiter', 'accounting'],
 };
 
 export type Resource = string;

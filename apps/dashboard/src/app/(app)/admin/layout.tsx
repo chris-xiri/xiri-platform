@@ -2,16 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Settings, Users, Bot, Scale } from "lucide-react";
+import { Settings, Users, Bot, Scale, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-
-    const navItems = [
-        { href: "/admin/users", label: "User Manager", icon: Users },
-        { href: "/admin/agents", label: "AI Agents", icon: Bot },
-        { href: "/admin/legal", label: "Legal Templates", icon: Scale },
-    ];
+    const { profile } = useAuth();
+    const isAdmin = profile?.roles.includes("admin");
 
     return (
         <div className="min-h-screen bg-background">
@@ -25,23 +22,20 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                     {/* Sidebar */}
                     <div className="col-span-3">
                         <nav className="space-y-1">
-                            {navItems.map((item) => {
-                                const Icon = item.icon;
-                                const isActive = pathname === item.href;
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
-                                            ? "bg-primary text-primary-foreground"
-                                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                                            }`}
-                                    >
-                                        <Icon className="w-5 h-5" />
-                                        <span className="font-medium">{item.label}</span>
-                                    </Link>
-                                );
-                            })}
+                            {/* Profile — visible to all */}
+                            <NavLink href="/admin/profile" label="My Profile" icon={User} pathname={pathname} />
+
+                            {/* Admin-only section */}
+                            {isAdmin && (
+                                <>
+                                    <div className="pt-4 pb-1">
+                                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-4 font-semibold">Administration</p>
+                                    </div>
+                                    <NavLink href="/admin/users" label="User Manager" icon={Users} pathname={pathname} />
+                                    <NavLink href="/admin/agents" label="AI Agents" icon={Bot} pathname={pathname} />
+                                    <NavLink href="/admin/legal" label="Legal Templates" icon={Scale} pathname={pathname} />
+                                </>
+                            )}
                         </nav>
                     </div>
 
@@ -52,5 +46,21 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                 </div>
             </div>
         </div>
+    );
+}
+
+function NavLink({ href, label, icon: Icon, pathname }: { href: string; label: string; icon: React.ElementType; pathname: string }) {
+    const isActive = pathname === href;
+    return (
+        <Link
+            href={href}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+        >
+            <Icon className="w-5 h-5" />
+            <span className="font-medium">{label}</span>
+        </Link>
     );
 }
