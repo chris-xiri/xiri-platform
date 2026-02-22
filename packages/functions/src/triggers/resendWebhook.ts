@@ -77,28 +77,34 @@ export const resendWebhook = onRequest({
             return;
         }
 
-        // Find the vendor_activities record that has this resendId
-        const activitiesSnapshot = await db.collection('vendor_activities')
-            .where('metadata.resendId', '==', emailId)
-            .limit(1)
-            .get();
+        // ─── Resolve vendorId ───────────────────────────────────────────
+        // Path 1: Resend tag (preferred) — emails sent after the fix include tags[{name:'vendorId'}]
+        let vendorId: string | null = null;
+        const vendorTag = (event?.data?.tags as Array<{ name: string, value: string }> | undefined)
+            ?.find(t => t.name === 'vendorId');
+        if (vendorTag?.value) {
+            vendorId = vendorTag.value;
+            logger.info(`Resend webhook: resolved vendorId=${vendorId} from tag`);
+        }
 
-        if (activitiesSnapshot.empty) {
-            logger.warn(`Resend webhook: no activity found for resendId ${emailId}`);
-            // Still return 200 so Resend doesn't retry
+        // Path 2: Activity lookup fallback — for emails that predate the tagging fix
+        if (!vendorId) {
+            const activitiesSnapshot = await db.collection('vendor_activities')
+                .where('metadata.resendId', '==', emailId)
+                .limit(1)
+                .get();
+
+            if (!activitiesSnapshot.empty) {
+                vendorId = activitiesSnapshot.docs[0].data().vendorId;
+                logger.info(`Resend webhook: resolved vendorId=${vendorId} from activity lookup`);
+            }
+        }
+
+        if (!vendorId) {
+            logger.warn(`Resend webhook: could not resolve vendorId for emailId ${emailId}`);
             res.status(200).json({ ok: true, notFound: true });
             return;
         }
-
-        const activityDoc = activitiesSnapshot.docs[0];
-        const activityData = activityDoc.data();
-        const vendorId = activityData.vendorId;
-
-        // Update the existing activity with delivery status
-        await activityDoc.ref.update({
-            'metadata.deliveryStatus': mapping.deliveryStatus,
-            'metadata.deliveryUpdatedAt': new Date(),
-        });
 
         // Create a new activity entry for this event (so it shows in timeline)
         await db.collection('vendor_activities').add({

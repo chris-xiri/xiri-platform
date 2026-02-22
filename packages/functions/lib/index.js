@@ -201,7 +201,7 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
     console.error("Error sending email:", error10);
   }
 }
-async function sendEmail(to, subject, html, attachments, from) {
+async function sendEmail(to, subject, html, attachments, from, vendorId) {
   try {
     const { data, error: error10 } = await resend.emails.send({
       from: from || "Xiri Facility Solutions <onboarding@xiri.ai>",
@@ -209,17 +209,19 @@ async function sendEmail(to, subject, html, attachments, from) {
       to,
       subject,
       html,
-      attachments
+      attachments,
+      // Tag with vendorId so the webhook can directly identify the vendor
+      ...vendorId ? { tags: [{ name: "vendorId", value: vendorId }] } : {}
     });
     if (error10) {
       console.error("\u274C Resend API error:", error10);
-      return false;
+      return { success: false };
     }
     console.log(`\u2705 Email sent to ${to}: ${subject} (ID: ${data?.id})`);
-    return true;
+    return { success: true, resendId: data?.id };
   } catch (err) {
     console.error("Error sending raw email:", err);
-    return false;
+    return { success: false };
   }
 }
 var admin2, import_generative_ai, import_resend, db2, genAI, resend;
@@ -1629,14 +1631,23 @@ async function handleSend(task) {
   const vendor = vendorDoc.exists ? vendorDoc.data() : null;
   const vendorEmail = vendor?.email || task.metadata?.email?.to;
   let sendSuccess = false;
+  let resendId;
   if (vendorEmail) {
     const emailData = task.metadata.email;
     const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${(emailData?.body || "").replace(/\n/g, "<br/>")}</div>`;
-    sendSuccess = await sendEmail(
+    const result = await sendEmail(
       vendorEmail,
       emailData?.subject || "Xiri Facility Solutions \u2014 Partnership Opportunity",
-      htmlBody
+      htmlBody,
+      void 0,
+      // no attachments
+      void 0,
+      // default from
+      task.vendorId ?? void 0
+      // tag email with vendorId for webhook tracking
     );
+    sendSuccess = result.success;
+    resendId = result.resendId;
     if (!sendSuccess) {
       logger2.error(`Failed to send email to ${vendorEmail} for task ${task.id}`);
       throw new Error(`Resend email failed for vendor ${task.vendorId}`);
@@ -1653,7 +1664,9 @@ async function handleSend(task) {
     metadata: {
       channel: task.metadata.channel,
       to: vendorEmail || "unknown",
-      content: task.metadata.channel === "SMS" ? task.metadata.sms : task.metadata.email?.subject
+      content: task.metadata.channel === "SMS" ? task.metadata.sms : task.metadata.email?.subject,
+      resendId: resendId || null
+      // stored for webhook matching
     }
   });
   await updateTaskStatus(db6, task.id, sendSuccess ? "COMPLETED" : "FAILED");
@@ -4879,19 +4892,24 @@ var resendWebhook = (0, import_https4.onRequest)({
       res.status(200).json({ ok: true, skipped: true });
       return;
     }
-    const activitiesSnapshot = await db22.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
-    if (activitiesSnapshot.empty) {
-      import_v2.logger.warn(`Resend webhook: no activity found for resendId ${emailId}`);
+    let vendorId = null;
+    const vendorTag = event?.data?.tags?.find((t) => t.name === "vendorId");
+    if (vendorTag?.value) {
+      vendorId = vendorTag.value;
+      import_v2.logger.info(`Resend webhook: resolved vendorId=${vendorId} from tag`);
+    }
+    if (!vendorId) {
+      const activitiesSnapshot = await db22.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
+      if (!activitiesSnapshot.empty) {
+        vendorId = activitiesSnapshot.docs[0].data().vendorId;
+        import_v2.logger.info(`Resend webhook: resolved vendorId=${vendorId} from activity lookup`);
+      }
+    }
+    if (!vendorId) {
+      import_v2.logger.warn(`Resend webhook: could not resolve vendorId for emailId ${emailId}`);
       res.status(200).json({ ok: true, notFound: true });
       return;
     }
-    const activityDoc = activitiesSnapshot.docs[0];
-    const activityData = activityDoc.data();
-    const vendorId = activityData.vendorId;
-    await activityDoc.ref.update({
-      "metadata.deliveryStatus": mapping.deliveryStatus,
-      "metadata.deliveryUpdatedAt": /* @__PURE__ */ new Date()
-    });
     await db22.collection("vendor_activities").add({
       vendorId,
       type: mapping.activityType,

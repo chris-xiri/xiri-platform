@@ -152,17 +152,23 @@ async function handleSend(task: QueueItem) {
     const vendorEmail = vendor?.email || task.metadata?.email?.to;
 
     let sendSuccess = false;
+    let resendId: string | undefined;
 
     if (vendorEmail) {
         // ─── Always send via Email until Twilio SMS is integrated ───
         const emailData = task.metadata.email;
         const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${(emailData?.body || '').replace(/\n/g, '<br/>')}</div>`;
 
-        sendSuccess = await sendEmail(
+        const result = await sendEmail(
             vendorEmail,
             emailData?.subject || 'Xiri Facility Solutions — Partnership Opportunity',
-            htmlBody
+            htmlBody,
+            undefined,   // no attachments
+            undefined,   // default from
+            task.vendorId ?? undefined  // tag email with vendorId for webhook tracking
         );
+        sendSuccess = result.success;
+        resendId = result.resendId;
 
         if (!sendSuccess) {
             logger.error(`Failed to send email to ${vendorEmail} for task ${task.id}`);
@@ -183,7 +189,8 @@ async function handleSend(task: QueueItem) {
         metadata: {
             channel: task.metadata.channel,
             to: vendorEmail || 'unknown',
-            content: task.metadata.channel === 'SMS' ? task.metadata.sms : task.metadata.email?.subject
+            content: task.metadata.channel === 'SMS' ? task.metadata.sms : task.metadata.email?.subject,
+            resendId: resendId || null,  // stored for webhook matching
         }
     });
 

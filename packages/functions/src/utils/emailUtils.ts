@@ -245,14 +245,16 @@ export async function sendTemplatedEmail(
 
 /**
  * Send a raw email with optional attachments
+ * Returns { success, resendId } so callers can store the ID for webhook tracking.
  */
 export async function sendEmail(
     to: string,
     subject: string,
     html: string,
     attachments?: any[],
-    from?: string
-): Promise<boolean> {
+    from?: string,
+    vendorId?: string
+): Promise<{ success: boolean; resendId?: string }> {
     try {
         const { data, error } = await resend.emails.send({
             from: from || 'Xiri Facility Solutions <onboarding@xiri.ai>',
@@ -260,18 +262,20 @@ export async function sendEmail(
             to,
             subject,
             html,
-            attachments
+            attachments,
+            // Tag with vendorId so the webhook can directly identify the vendor
+            ...(vendorId ? { tags: [{ name: 'vendorId', value: vendorId }] } : {}),
         });
 
         if (error) {
             console.error('❌ Resend API error:', error);
-            return false;
+            return { success: false };
         }
 
         console.log(`✅ Email sent to ${to}: ${subject} (ID: ${data?.id})`);
-        return true;
+        return { success: true, resendId: data?.id };
     } catch (err) {
         console.error('Error sending raw email:', err);
-        return false;
+        return { success: false };
     }
 }

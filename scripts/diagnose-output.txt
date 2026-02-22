@@ -1,0 +1,34 @@
+
+=== vendor_activities: unique type values ===
+(node:25244) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé (index)               Γöé Values Γöé
+Γö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöñ
+Γöé OUTREACH_QUEUED       Γöé 28     Γöé
+Γöé STATUS_CHANGE         Γöé 73     Γöé
+Γöé DRIP_SCHEDULED        Γöé 84     Γöé
+Γöé OUTREACH_SENT         Γöé 28     Γöé
+Γöé ENRICHMENT            Γöé 53     Γöé
+Γöé NEEDS_MANUAL_OUTREACH Γöé 2      Γöé
+Γöé NEEDS_CONTACT         Γöé 13     Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+
+=== vendors: outreachStatus distribution ===
+ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé (index) Γöé Values Γöé
+Γö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöñ
+Γöé SENT    Γöé 28     Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+
+Vendors with emailEngagement field: 0
+
+=== Sample EMAIL_* activities (first 10) ===
+  ΓÜá∩╕Å  No EMAIL_* activities found
+
+=== Sample vendor outreachMeta (first 5 with outreachStatus) ===
+  id=1EYQGIRWEgNZDBTWw0mY name="Top American Cleaning Services Inc" outreachStatus=SENT emailEngagement=undefined
+  id=6cPVLhz9fCJ14kQCyRPS name="CleanCru - Commercial Cleaning Services" outreachStatus=SENT emailEngagement=undefined
+  id=774otUmDRKNWBAHqGqxG name="Blue Moon Professional Services" outreachStatus=SENT emailEngagement=undefined
+  id=C50FVHkPb2qUVFwnbL7D name="VMV Cleaning Solutions" outreachStatus=SENT emailEngagement=undefined
+  id=G7wDHHSYt8vxgoZHFKVF name="Above N' Beyond Office Cleaning, LLC" outreachStatus=SENT emailEngagement=undefined
