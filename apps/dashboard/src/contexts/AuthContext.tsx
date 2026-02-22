@@ -41,22 +41,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    // Smart redirect based on role
+    // Smart redirect — land each role on their highest-use page
     const redirectByRole = (roles: UserRole[]) => {
         if (roles.includes('admin')) {
-            router.push('/'); // Admin sees everything
-        } else if (roles.includes('fsm')) {
-            router.push('/operations/work-orders');
-        } else if (roles.includes('night_manager')) {
-            router.push('/operations/audits');
-        } else if (roles.includes('recruiter')) {
-            router.push('/supply/recruitment');
+            router.push('/sales/dashboard'); // Clients > Pipeline (full visibility)
         } else if (roles.includes('sales') || roles.includes('sales_exec') || roles.includes('sales_mgr')) {
-            router.push('/sales/dashboard');
+            router.push('/sales/dashboard'); // Clients > Pipeline
+        } else if (roles.includes('fsm')) {
+            router.push('/sales/dashboard'); // Clients > Pipeline (account management)
+        } else if (roles.includes('recruiter')) {
+            router.push('/supply/dashboard'); // Contractors > Pipeline
+        } else if (roles.includes('night_manager')) {
+            router.push('/operations/audits'); // Field Ops > Audits
         } else if (roles.includes('accounting')) {
-            router.push('/accounting/invoices');
+            router.push('/accounting/invoices'); // Finance > Invoices
         } else {
-            router.push('/');
+            router.push('/sales/dashboard');
         }
     };
 
