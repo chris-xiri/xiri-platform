@@ -182,8 +182,8 @@ export default function VendorActivityFeed({ vendorId }: { vendorId: string }) {
                             ))}
                         </div>
                     )}
-                    {/* Expandable email content */}
-                    {activity.metadata?.subject && (
+                    {/* Expandable email content — trigger on subject, html, body, or legacy 'content' */}
+                    {(activity.metadata?.subject || activity.metadata?.html || activity.metadata?.body || activity.metadata?.content) && (
                         <div className="mt-1.5">
                             <button
                                 onClick={() => setExpandedId(expandedId === activity.id ? null : activity.id)}
@@ -196,24 +196,37 @@ export default function VendorActivityFeed({ vendorId }: { vendorId: string }) {
                                     : <ChevronDown className="w-3 h-3" />}
                             </button>
                             {expandedId === activity.id && (
-                                <div className="mt-2 rounded-md border bg-muted/30 p-3 space-y-2">
-                                    {activity.metadata.from && (
-                                        <div className="text-[10px] text-muted-foreground">From: <span className="text-foreground">{activity.metadata.from}</span></div>
-                                    )}
-                                    {activity.metadata.to && (
-                                        <div className="text-[10px] text-muted-foreground">To: <span className="text-foreground">{activity.metadata.to}</span></div>
-                                    )}
-                                    {activity.metadata.replyTo && (
-                                        <div className="text-[10px] text-muted-foreground">Reply-To: <span className="text-foreground">{activity.metadata.replyTo}</span></div>
-                                    )}
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider pt-1 border-t">Subject</div>
-                                    <p className="text-xs font-medium">{activity.metadata.subject}</p>
-                                    <div className="border-t pt-2 mt-2">
-                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Body</div>
-                                        <div className="text-xs whitespace-pre-wrap leading-relaxed max-h-64 overflow-auto">
-                                            {activity.metadata.body}
-                                        </div>
+                                <div className="mt-2 rounded-md border bg-card overflow-hidden">
+                                    {/* Header */}
+                                    <div className="px-3 py-2 bg-muted/40 border-b space-y-0.5 text-[10px] text-muted-foreground">
+                                        {activity.metadata.from && (
+                                            <div>From: <span className="text-foreground font-medium">{activity.metadata.from}</span></div>
+                                        )}
+                                        {activity.metadata.to && (
+                                            <div>To: <span className="text-foreground font-medium">{activity.metadata.to}</span></div>
+                                        )}
+                                        {(activity.metadata.subject || activity.metadata.content) && (
+                                            <div className="pt-1 border-t mt-1">
+                                                Subject: <span className="text-foreground font-semibold text-xs">
+                                                    {activity.metadata.subject || activity.metadata.content}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
+                                    {/* Body — HTML iframe or plain text */}
+                                    {activity.metadata.html ? (
+                                        <iframe
+                                            srcDoc={activity.metadata.html}
+                                            sandbox="allow-same-origin"
+                                            className="w-full border-0"
+                                            style={{ height: '320px' }}
+                                            title="Email preview"
+                                        />
+                                    ) : (activity.metadata.body || activity.metadata.content) ? (
+                                        <div className="px-3 py-2 text-xs whitespace-pre-wrap leading-relaxed max-h-64 overflow-auto text-foreground">
+                                            {activity.metadata.body || activity.metadata.content}
+                                        </div>
+                                    ) : null}
                                 </div>
                             )}
                         </div>

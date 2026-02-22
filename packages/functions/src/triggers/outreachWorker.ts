@@ -189,8 +189,13 @@ async function handleSend(task: QueueItem) {
         metadata: {
             channel: task.metadata.channel,
             to: vendorEmail || 'unknown',
-            content: task.metadata.channel === 'SMS' ? task.metadata.sms : task.metadata.email?.subject,
-            resendId: resendId || null,  // stored for webhook matching
+            from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+            replyTo: 'chris@xiri.ai',
+            // Full email fields for activity feed preview
+            subject: task.metadata.channel === 'SMS' ? null : task.metadata.email?.subject,
+            body: task.metadata.channel === 'SMS' ? task.metadata.sms : task.metadata.email?.body,
+            html: task.metadata.channel === 'SMS' ? null : htmlBody,
+            resendId: resendId || null,
         }
     });
 

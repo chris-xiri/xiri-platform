@@ -1634,11 +1634,11 @@ async function handleSend(task) {
   let resendId;
   if (vendorEmail) {
     const emailData = task.metadata.email;
-    const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${(emailData?.body || "").replace(/\n/g, "<br/>")}</div>`;
+    const htmlBody2 = `<div style="font-family: sans-serif; line-height: 1.6;">${(emailData?.body || "").replace(/\n/g, "<br/>")}</div>`;
     const result = await sendEmail(
       vendorEmail,
       emailData?.subject || "Xiri Facility Solutions \u2014 Partnership Opportunity",
-      htmlBody,
+      htmlBody2,
       void 0,
       // no attachments
       void 0,
@@ -1664,9 +1664,13 @@ async function handleSend(task) {
     metadata: {
       channel: task.metadata.channel,
       to: vendorEmail || "unknown",
-      content: task.metadata.channel === "SMS" ? task.metadata.sms : task.metadata.email?.subject,
+      from: "Xiri Facility Solutions <onboarding@xiri.ai>",
+      replyTo: "chris@xiri.ai",
+      // Full email fields for activity feed preview
+      subject: task.metadata.channel === "SMS" ? null : task.metadata.email?.subject,
+      body: task.metadata.channel === "SMS" ? task.metadata.sms : task.metadata.email?.body,
+      html: task.metadata.channel === "SMS" ? null : htmlBody,
       resendId: resendId || null
-      // stored for webhook matching
     }
   });
   await updateTaskStatus(db6, task.id, sendSuccess ? "COMPLETED" : "FAILED");
@@ -1830,11 +1834,11 @@ async function handleLeadSend(task) {
     return;
   }
   const emailData = task.metadata.email;
-  const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${(emailData?.body || "").replace(/\n/g, "<br/>")}</div>`;
+  const htmlBody2 = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${(emailData?.body || "").replace(/\n/g, "<br/>")}</div>`;
   const sendSuccess = await sendEmail(
     toEmail,
     emailData?.subject || "Xiri Facility Solutions \u2014 Simplify Your Facility Management",
-    htmlBody
+    htmlBody2
   );
   await db6.collection("lead_activities").add({
     leadId: task.leadId,
@@ -1880,14 +1884,14 @@ async function handleLeadFollowUp(task) {
     throw new Error(`AI generation failed for sales follow-up #${sequence}`);
   }
   const emailData = outreachResult.email;
-  const htmlBody = buildSalesFollowUpEmail(
+  const htmlBody2 = buildSalesFollowUpEmail(
     sequence,
     task.metadata?.businessName || leadData.businessName || "there",
     task.metadata?.contactName || leadData.contactName || "",
     emailData?.body || ""
   );
   const subject = emailData?.subject || task.metadata?.subject || `Follow-up: ${task.metadata?.businessName || "Your facility"}`;
-  const sendSuccess = await sendEmail(toEmail, subject, htmlBody);
+  const sendSuccess = await sendEmail(toEmail, subject, htmlBody2);
   if (sendSuccess) {
     await db6.collection("lead_activities").add({
       leadId: task.leadId,
@@ -2368,7 +2372,7 @@ Power to the Facilities!`,
     organizer: { name: "Xiri Facility Solutions", email: "onboarding@xiri.ai" }
   });
   const subject = `Confirmed: Your Xini ${type}`;
-  const htmlBody = `
+  const htmlBody2 = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
             <h1 style="color: #0ea5e9;">You're booked!</h1>
             <p>Hi ${contactName || "there"},</p>
@@ -2383,7 +2387,7 @@ Power to the Facilities!`,
             <p>Best,<br/>The Xiri Team</p>
         </div>
     `;
-  const sendSuccess = await sendEmail(email, subject, htmlBody, [
+  const sendSuccess = await sendEmail(email, subject, htmlBody2, [
     {
       filename: "invite.ics",
       content: icsContent
@@ -2996,7 +3000,7 @@ Power to the Facilities!`,
     ]
   });
   const formattedTime = (0, import_date_fns_tz.formatInTimeZone)(startTime, EASTERN_TZ, "EEEE, MMMM do 'at' h:mm a zzz");
-  const htmlBody = `
+  const htmlBody2 = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #0ea5e9;">Onboarding Call Confirmed!</h1>
         <p>Hi ${contactName},</p>
@@ -3018,7 +3022,7 @@ Power to the Facilities!`,
     </div>
     `;
   const subject = `Confirmed: Xiri Onboarding Call \u2014 ${formattedTime}`;
-  const vendorSent = await sendEmail(vendorEmail, subject, htmlBody, [
+  const vendorSent = await sendEmail(vendorEmail, subject, htmlBody2, [
     { filename: "onboarding-call.ics", content: icsContent }
   ]);
   const adminHtml = `
