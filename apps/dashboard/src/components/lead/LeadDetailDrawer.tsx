@@ -80,6 +80,7 @@ function EditableField({
     onSave,
     type = 'text',
     linkPrefix,
+    renderDisplay,
 }: {
     label: string;
     value: string;
@@ -87,6 +88,7 @@ function EditableField({
     onSave: (val: string) => Promise<void>;
     type?: string;
     linkPrefix?: string;
+    renderDisplay?: (val: string) => React.ReactNode;
 }) {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(value);
@@ -132,7 +134,7 @@ function EditableField({
     return (
         <div className="flex items-center gap-2 text-sm group cursor-pointer" onClick={() => setEditing(true)}>
             <Icon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-            {linkPrefix && value ? (
+            {renderDisplay ? renderDisplay(value) : linkPrefix && value ? (
                 <a href={`${linkPrefix}${value}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{value}</a>
             ) : (
                 <span className={value ? '' : 'text-muted-foreground italic'}>{value || `Add ${label.toLowerCase()}`}</span>
@@ -217,7 +219,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
 
     return (
         <Sheet open={open} onOpenChange={(o: boolean) => { if (!o) onClose(); }}>
-            <SheetContent className="w-full sm:max-w-[600px] overflow-y-auto p-0" side="right">
+            <SheetContent className="w-full sm:max-w-[680px] overflow-y-auto p-0" side="right">
                 {loading ? (
                     <div className="p-6 space-y-4">
                         <Skeleton className="h-10 w-2/3" />
@@ -227,41 +229,44 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                     <div className="p-6 text-muted-foreground">Lead not found</div>
                 ) : (
                     <>
-                        {/* ─── Header ──────────────────────────── */}
+                        {/* ─── Header (matches VendorDetailDrawer) ──── */}
                         <div className="sticky top-0 bg-card border-b px-5 py-4 z-10">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                    <SheetTitle className="text-lg">{lead.businessName}</SheetTitle>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
-                                        <span className="text-xs text-muted-foreground">
-                                            {FACILITY_TYPE_LABELS[lead.facilityType] || lead.facilityType}
-                                        </span>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
+                                    {lead.businessName?.charAt(0) || '?'}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <EditableField
+                                        label="Business name"
+                                        value={lead.businessName || ''}
+                                        icon={() => null}
+                                        onSave={(v) => updateField('businessName', v)}
+                                        renderDisplay={(val) => (
+                                            <SheetTitle className="text-lg truncate group-[]:cursor-pointer">{val || 'Unnamed Lead'}</SheetTitle>
+                                        )}
+                                    />
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <select
+                                            value={lead.status}
+                                            onChange={(e) => handleStatusChange(e.target.value)}
+                                            disabled={statusUpdating}
+                                            className="text-xs font-medium px-2 py-0.5 rounded border bg-card cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+                                        >
+                                            {STATUS_ORDER.map((s) => (
+                                                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            value={lead.facilityType || ''}
+                                            onChange={(e) => updateField('facilityType', e.target.value)}
+                                            className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground"
+                                        >
+                                            {Object.entries(FACILITY_TYPE_LABELS).map(([key, label]) => (
+                                                <option key={key} value={key}>{label}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
-                                <Badge variant="outline" className={`text-xs ${STATUS_COLORS[lead.status]}`}>
-                                    {lead.status}
-                                </Badge>
-                            </div>
-
-                            {/* Status Quick Actions */}
-                            <div className="flex flex-wrap gap-1.5 mt-3">
-                                {STATUS_ORDER.map((s) => (
-                                    <button
-                                        key={s}
-                                        onClick={() => handleStatusChange(s)}
-                                        disabled={statusUpdating || s === lead.status}
-                                        className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all
-                                            ${s === lead.status
-                                                ? STATUS_COLORS[s] + ' ring-1 ring-offset-1'
-                                                : 'bg-muted/30 text-muted-foreground hover:bg-muted border-transparent hover:border-border'
-                                            }
-                                            ${statusUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                                        `}
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
                             </div>
                         </div>
 
