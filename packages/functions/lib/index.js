@@ -311,10 +311,12 @@ __export(index_exports, {
   onIncomingMessage: () => onIncomingMessage,
   onInvoicePaid: () => onInvoicePaid,
   onLeadQualified: () => onLeadQualified,
+  onLeadUpdated: () => onLeadUpdated,
   onOnboardingComplete: () => onOnboardingComplete,
   onQuoteAccepted: () => onQuoteAccepted,
   onVendorApproved: () => onVendorApproved,
   onVendorCreated: () => onVendorCreated,
+  onVendorUpdated: () => onVendorUpdated,
   onWorkOrderAssigned: () => onWorkOrderAssigned,
   onWorkOrderHandoff: () => onWorkOrderHandoff,
   processCommissionPayouts: () => processCommissionPayouts,
@@ -3935,6 +3937,11 @@ var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
   if (before.status === after.status) return;
   if (after.status !== "accepted") return;
   const quoteId = event.params.quoteId;
+  const existingComm = await db17.collection("commissions").where("quoteId", "==", quoteId).limit(1).get();
+  if (!existingComm.empty) {
+    logger12.info(`[Commission] Commission already exists for quote ${quoteId} \u2014 skipping duplicate`);
+    return;
+  }
   const leadId = after.leadId;
   const assignedTo = after.assignedTo || after.createdBy;
   const isUpsell = after.isUpsell === true;
@@ -4024,29 +4031,42 @@ var onInvoicePaid = (0, import_firestore13.onDocumentUpdated)({
   if (commSnap.empty) return;
   const now = /* @__PURE__ */ new Date();
   for (const commDoc of commSnap.docs) {
-    const commission = commDoc.data();
-    const schedule = [...commission.payoutSchedule];
-    schedule.forEach((entry, i) => {
-      const payDate = new Date(now);
-      payDate.setDate(payDate.getDate() + i * 30);
-      entry.scheduledAt = payDate;
-    });
-    schedule[0].status = "PAID";
-    schedule[0].paidAt = now;
-    await commDoc.ref.update({
-      status: "ACTIVE",
-      payoutSchedule: schedule,
-      updatedAt: now
-    });
-    await db17.collection("commission_ledger").add({
-      commissionId: commDoc.id,
-      type: "PAYOUT_PAID",
-      amount: schedule[0].amount,
-      staffId: commission.staffId,
-      description: `Payout 1 of ${schedule.length}: $${schedule[0].amount.toFixed(2)} (${schedule[0].percentage}%) \u2014 triggered by invoice payment`,
-      createdAt: now
-    });
-    logger12.info(`[Commission] Activated commission ${commDoc.id}: Payout 1 of $${schedule[0].amount} paid`);
+    try {
+      await db17.runTransaction(async (txn) => {
+        const freshDoc = await txn.get(commDoc.ref);
+        const freshData = freshDoc.data();
+        if (!freshData || freshData.status !== "PENDING") {
+          logger12.info(`[Commission] Commission ${commDoc.id} already activated (status: ${freshData?.status}) \u2014 skipping`);
+          return;
+        }
+        const schedule2 = [...freshData.payoutSchedule];
+        schedule2.forEach((entry, i) => {
+          const payDate = new Date(now);
+          payDate.setDate(payDate.getDate() + i * 30);
+          entry.scheduledAt = payDate;
+        });
+        schedule2[0].status = "PAID";
+        schedule2[0].paidAt = now;
+        txn.update(commDoc.ref, {
+          status: "ACTIVE",
+          payoutSchedule: schedule2,
+          updatedAt: now
+        });
+      });
+      const commission = commDoc.data();
+      const schedule = commission.payoutSchedule;
+      await db17.collection("commission_ledger").add({
+        commissionId: commDoc.id,
+        type: "PAYOUT_PAID",
+        amount: schedule[0].amount,
+        staffId: commission.staffId,
+        description: `Payout 1 of ${schedule.length}: $${schedule[0].amount.toFixed(2)} (${schedule[0].percentage}%) \u2014 triggered by invoice payment`,
+        createdAt: now
+      });
+      logger12.info(`[Commission] Activated commission ${commDoc.id}: Payout 1 of $${schedule[0].amount} paid`);
+    } catch (txnErr) {
+      logger12.error(`[Commission] Transaction failed for commission ${commDoc.id}:`, txnErr.message);
+    }
   }
 });
 var onWorkOrderHandoff = (0, import_firestore13.onDocumentUpdated)({
@@ -4931,6 +4951,78 @@ var resendWebhook = (0, import_https4.onRequest)({
   }
 });
 
+// src/triggers/onLeadUpdated.ts
+var import_firestore16 = require("firebase-functions/v2/firestore");
+var import_v22 = require("firebase-functions/v2");
+var onLeadUpdated = (0, import_firestore16.onDocumentUpdated)("leads/{leadId}", async (event) => {
+  const before = event.data?.before?.data();
+  const after = event.data?.after?.data();
+  if (!before || !after) return;
+  const leadId = event.params.leadId;
+  const oldName = before.businessName;
+  const newName = after.businessName;
+  if (!newName || oldName === newName) return;
+  import_v22.logger.info(`[Cascade] Lead ${leadId} businessName: "${oldName}" \u2192 "${newName}"`);
+  const batch = db.batch();
+  let count = 0;
+  const quotesSnap = await db.collection("quotes").where("leadId", "==", leadId).get();
+  for (const d of quotesSnap.docs) {
+    batch.update(d.ref, { leadBusinessName: newName });
+    count++;
+  }
+  const contractsSnap = await db.collection("contracts").where("leadId", "==", leadId).get();
+  for (const d of contractsSnap.docs) {
+    batch.update(d.ref, { clientName: newName });
+    count++;
+  }
+  const woSnap = await db.collection("work_orders").where("leadId", "==", leadId).get();
+  for (const d of woSnap.docs) {
+    batch.update(d.ref, { businessName: newName, companyName: newName });
+    count++;
+  }
+  const invSnap = await db.collection("invoices").where("leadId", "==", leadId).get();
+  for (const d of invSnap.docs) {
+    batch.update(d.ref, { clientName: newName });
+    count++;
+  }
+  if (count > 0) {
+    await batch.commit();
+    import_v22.logger.info(`[Cascade] Updated ${count} docs for lead "${newName}"`);
+  }
+});
+var onVendorUpdated = (0, import_firestore16.onDocumentUpdated)("vendors/{vendorId}", async (event) => {
+  const before = event.data?.before?.data();
+  const after = event.data?.after?.data();
+  if (!before || !after) return;
+  const vendorId = event.params.vendorId;
+  const oldName = before.businessName;
+  const newName = after.businessName;
+  if (!newName || oldName === newName) return;
+  import_v22.logger.info(`[Cascade] Vendor ${vendorId} businessName: "${oldName}" \u2192 "${newName}"`);
+  const batch = db.batch();
+  let count = 0;
+  const remSnap = await db.collection("vendor_remittances").where("vendorId", "==", vendorId).get();
+  for (const d of remSnap.docs) {
+    batch.update(d.ref, { vendorName: newName });
+    count++;
+  }
+  const woSnap = await db.collection("work_orders").where("assignedVendorId", "==", vendorId).get();
+  for (const d of woSnap.docs) {
+    const data = d.data();
+    if (data.vendorHistory && Array.isArray(data.vendorHistory)) {
+      const updated = data.vendorHistory.map(
+        (entry) => entry.vendorId === vendorId ? { ...entry, vendorName: newName } : entry
+      );
+      batch.update(d.ref, { vendorHistory: updated });
+      count++;
+    }
+  }
+  if (count > 0) {
+    await batch.commit();
+    import_v22.logger.info(`[Cascade] Updated ${count} docs for vendor "${newName}"`);
+  }
+});
+
 // src/index.ts
 var import_auth = require("firebase-admin/auth");
 var DASHBOARD_CORS = [
@@ -5153,10 +5245,12 @@ var sourceProperties = (0, import_https5.onCall)({
   onIncomingMessage,
   onInvoicePaid,
   onLeadQualified,
+  onLeadUpdated,
   onOnboardingComplete,
   onQuoteAccepted,
   onVendorApproved,
   onVendorCreated,
+  onVendorUpdated,
   onWorkOrderAssigned,
   onWorkOrderHandoff,
   processCommissionPayouts,
