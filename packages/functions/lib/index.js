@@ -314,6 +314,7 @@ __export(index_exports, {
   onLeadUpdated: () => onLeadUpdated,
   onOnboardingComplete: () => onOnboardingComplete,
   onQuoteAccepted: () => onQuoteAccepted,
+  onStaffUpdated: () => onStaffUpdated,
   onVendorApproved: () => onVendorApproved,
   onVendorCreated: () => onVendorCreated,
   onVendorUpdated: () => onVendorUpdated,
@@ -4227,7 +4228,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
   for (const commDoc of commSnap.docs) {
     const commission = commDoc.data();
     const schedule = [...commission.payoutSchedule];
-    let changed = false;
+    let changed2 = false;
     for (const entry of schedule) {
       if (entry.status !== "PENDING") continue;
       const scheduledAt = entry.scheduledAt?.toDate?.() || new Date(entry.scheduledAt);
@@ -4236,13 +4237,13 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
       const leadData = leadDoc.data();
       if (leadData?.status === "churned" || leadData?.status === "lost") {
         entry.status = "CANCELLED";
-        changed = true;
+        changed2 = true;
         logger13.info(`[CommissionPayouts] Skipping payout \u2014 client ${commission.leadId} is ${leadData?.status}`);
         continue;
       }
       entry.status = "PAID";
       entry.paidAt = now;
-      changed = true;
+      changed2 = true;
       paid++;
       await db18.collection("commission_ledger").add({
         commissionId: commDoc.id,
@@ -4254,7 +4255,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
       });
       logger13.info(`[CommissionPayouts] Paid $${entry.amount} to ${commission.staffId} (commission ${commDoc.id})`);
     }
-    if (changed) {
+    if (changed2) {
       const allDone = schedule.every((e) => e.status === "PAID" || e.status === "CANCELLED");
       const anyPaidExist = schedule.some((e) => e.status === "PAID");
       const anyCancelled = schedule.some((e) => e.status === "CANCELLED");
@@ -4954,40 +4955,63 @@ var resendWebhook = (0, import_https4.onRequest)({
 // src/triggers/onLeadUpdated.ts
 var import_firestore16 = require("firebase-functions/v2/firestore");
 var import_v22 = require("firebase-functions/v2");
+var changed = (before, after, field) => after[field] && before[field] !== after[field];
 var onLeadUpdated = (0, import_firestore16.onDocumentUpdated)("leads/{leadId}", async (event) => {
   const before = event.data?.before?.data();
   const after = event.data?.after?.data();
   if (!before || !after) return;
   const leadId = event.params.leadId;
-  const oldName = before.businessName;
-  const newName = after.businessName;
-  if (!newName || oldName === newName) return;
-  import_v22.logger.info(`[Cascade] Lead ${leadId} businessName: "${oldName}" \u2192 "${newName}"`);
+  const nameChanged = changed(before, after, "businessName");
+  const emailChanged = changed(before, after, "email");
+  const contactChanged = changed(before, after, "contactName");
+  if (!nameChanged && !emailChanged && !contactChanged) return;
+  import_v22.logger.info(`[Cascade:Lead] ${leadId} \u2014 name:${nameChanged} email:${emailChanged} contact:${contactChanged}`);
   const batch = db.batch();
   let count = 0;
-  const quotesSnap = await db.collection("quotes").where("leadId", "==", leadId).get();
-  for (const d of quotesSnap.docs) {
-    batch.update(d.ref, { leadBusinessName: newName });
-    count++;
+  if (nameChanged) {
+    const snap = await db.collection("quotes").where("leadId", "==", leadId).get();
+    for (const d of snap.docs) {
+      batch.update(d.ref, { leadBusinessName: after.businessName });
+      count++;
+    }
   }
-  const contractsSnap = await db.collection("contracts").where("leadId", "==", leadId).get();
-  for (const d of contractsSnap.docs) {
-    batch.update(d.ref, { clientName: newName });
-    count++;
+  if (nameChanged) {
+    const snap = await db.collection("contracts").where("leadId", "==", leadId).get();
+    for (const d of snap.docs) {
+      batch.update(d.ref, { clientBusinessName: after.businessName });
+      count++;
+    }
   }
-  const woSnap = await db.collection("work_orders").where("leadId", "==", leadId).get();
-  for (const d of woSnap.docs) {
-    batch.update(d.ref, { businessName: newName, companyName: newName });
-    count++;
+  if (nameChanged) {
+    const snap = await db.collection("work_orders").where("leadId", "==", leadId).get();
+    for (const d of snap.docs) {
+      batch.update(d.ref, { businessName: after.businessName, companyName: after.businessName });
+      count++;
+    }
   }
-  const invSnap = await db.collection("invoices").where("leadId", "==", leadId).get();
-  for (const d of invSnap.docs) {
-    batch.update(d.ref, { clientName: newName });
-    count++;
+  {
+    const patch = {};
+    if (nameChanged) patch.clientBusinessName = after.businessName;
+    if (emailChanged) patch.clientEmail = after.email;
+    if (contactChanged) patch.clientContactName = after.contactName;
+    if (Object.keys(patch).length > 0) {
+      const snap = await db.collection("invoices").where("leadId", "==", leadId).get();
+      for (const d of snap.docs) {
+        batch.update(d.ref, patch);
+        count++;
+      }
+    }
+  }
+  if (nameChanged) {
+    const snap = await db.collection("site_visits").where("leadId", "==", leadId).get();
+    for (const d of snap.docs) {
+      batch.update(d.ref, { clientBusinessName: after.businessName });
+      count++;
+    }
   }
   if (count > 0) {
     await batch.commit();
-    import_v22.logger.info(`[Cascade] Updated ${count} docs for lead "${newName}"`);
+    import_v22.logger.info(`[Cascade:Lead] Updated ${count} docs for "${after.businessName}"`);
   }
 });
 var onVendorUpdated = (0, import_firestore16.onDocumentUpdated)("vendors/{vendorId}", async (event) => {
@@ -4995,31 +5019,88 @@ var onVendorUpdated = (0, import_firestore16.onDocumentUpdated)("vendors/{vendor
   const after = event.data?.after?.data();
   if (!before || !after) return;
   const vendorId = event.params.vendorId;
-  const oldName = before.businessName;
-  const newName = after.businessName;
-  if (!newName || oldName === newName) return;
-  import_v22.logger.info(`[Cascade] Vendor ${vendorId} businessName: "${oldName}" \u2192 "${newName}"`);
+  const nameChanged = changed(before, after, "businessName");
+  const emailChanged = changed(before, after, "email");
+  if (!nameChanged && !emailChanged) return;
+  import_v22.logger.info(`[Cascade:Vendor] ${vendorId} \u2014 name:${nameChanged} email:${emailChanged}`);
   const batch = db.batch();
   let count = 0;
-  const remSnap = await db.collection("vendor_remittances").where("vendorId", "==", vendorId).get();
-  for (const d of remSnap.docs) {
-    batch.update(d.ref, { vendorName: newName });
-    count++;
+  {
+    const patch = {};
+    if (nameChanged) patch.vendorName = after.businessName;
+    if (emailChanged) patch.vendorEmail = after.email;
+    if (Object.keys(patch).length > 0) {
+      const snap = await db.collection("vendor_remittances").where("vendorId", "==", vendorId).get();
+      for (const d of snap.docs) {
+        batch.update(d.ref, patch);
+        count++;
+      }
+    }
   }
-  const woSnap = await db.collection("work_orders").where("assignedVendorId", "==", vendorId).get();
-  for (const d of woSnap.docs) {
-    const data = d.data();
-    if (data.vendorHistory && Array.isArray(data.vendorHistory)) {
-      const updated = data.vendorHistory.map(
-        (entry) => entry.vendorId === vendorId ? { ...entry, vendorName: newName } : entry
-      );
-      batch.update(d.ref, { vendorHistory: updated });
+  if (nameChanged) {
+    const snap = await db.collection("work_orders").where("assignedVendorId", "==", vendorId).get();
+    for (const d of snap.docs) {
+      const data = d.data();
+      if (data.vendorHistory && Array.isArray(data.vendorHistory)) {
+        const updated = data.vendorHistory.map(
+          (entry) => entry.vendorId === vendorId ? { ...entry, vendorName: after.businessName } : entry
+        );
+        batch.update(d.ref, { vendorHistory: updated });
+        count++;
+      }
+    }
+  }
+  if (nameChanged) {
+    const snap = await db.collection("check_ins").where("vendorId", "==", vendorId).get();
+    for (const d of snap.docs) {
+      batch.update(d.ref, { vendorName: after.businessName });
       count++;
     }
   }
   if (count > 0) {
     await batch.commit();
-    import_v22.logger.info(`[Cascade] Updated ${count} docs for vendor "${newName}"`);
+    import_v22.logger.info(`[Cascade:Vendor] Updated ${count} docs for "${after.businessName}"`);
+  }
+});
+var onStaffUpdated = (0, import_firestore16.onDocumentUpdated)("users/{userId}", async (event) => {
+  const before = event.data?.before?.data();
+  const after = event.data?.after?.data();
+  if (!before || !after) return;
+  const userId = event.params.userId;
+  const nameChanged = changed(before, after, "displayName");
+  if (!nameChanged) return;
+  const newName = after.displayName;
+  const roles = after.roles || [];
+  import_v22.logger.info(`[Cascade:Staff] ${userId} displayName \u2192 "${newName}" (roles: ${roles.join(",")})`);
+  const batch = db.batch();
+  let count = 0;
+  if (roles.includes("fsm") || roles.includes("admin")) {
+    const quotesSnap = await db.collection("quotes").where("assignedFsmId", "==", userId).get();
+    for (const d of quotesSnap.docs) {
+      batch.update(d.ref, { assignedFsmName: newName });
+      count++;
+    }
+    const svSnap = await db.collection("site_visits").where("fsmId", "==", userId).get();
+    for (const d of svSnap.docs) {
+      batch.update(d.ref, { fsmName: newName });
+      count++;
+    }
+  }
+  if (roles.includes("night_manager") || roles.includes("night_mgr") || roles.includes("admin")) {
+    const ciSnap = await db.collection("check_ins").where("nightManagerId", "==", userId).get();
+    for (const d of ciSnap.docs) {
+      batch.update(d.ref, { nightManagerName: newName });
+      count++;
+    }
+    const woSnap = await db.collection("work_orders").where("assignedNightManagerId", "==", userId).get();
+    for (const d of woSnap.docs) {
+      batch.update(d.ref, { assignedNightManagerName: newName });
+      count++;
+    }
+  }
+  if (count > 0) {
+    await batch.commit();
+    import_v22.logger.info(`[Cascade:Staff] Updated ${count} docs for "${newName}"`);
   }
 });
 
@@ -5248,6 +5329,7 @@ var sourceProperties = (0, import_https5.onCall)({
   onLeadUpdated,
   onOnboardingComplete,
   onQuoteAccepted,
+  onStaffUpdated,
   onVendorApproved,
   onVendorCreated,
   onVendorUpdated,
