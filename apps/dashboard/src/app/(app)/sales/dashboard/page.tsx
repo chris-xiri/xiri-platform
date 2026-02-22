@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, TrendingUp, Users, Target, Clock, CheckCircle, AlertTriangle, Calendar, ArrowRight, Zap } from 'lucide-react';
+import { DollarSign, TrendingUp, Users, Target, Clock, CheckCircle, AlertTriangle, Calendar, ArrowRight, Zap, Mail, Eye, MousePointerClick, MessageSquare, XCircle, Phone, MapPin } from 'lucide-react';
 import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,6 +64,10 @@ export default function SalesDashboardPage() {
         wonDeals: 0,
         totalAcv: 0,
     });
+    const [outreach, setOutreach] = useState({
+        sent: 0, opened: 0, clicked: 0, replied: 0, bounced: 0, noEmail: 0,
+    });
+    const [pipeline, setPipeline] = useState<Record<string, number>>({});
     const [commissions, setCommissions] = useState({
         totalEarned: 0,
         totalPending: 0,
@@ -94,6 +98,27 @@ export default function SalesDashboardPage() {
                     wonDeals: won.length,
                     totalAcv,
                 });
+
+                // Compute outreach funnel
+                let sent = 0, opened = 0, clicked = 0, replied = 0, bounced = 0, noEmail = 0;
+                const pipelineCounts: Record<string, number> = {};
+                for (const l of leads) {
+                    // Pipeline
+                    const s = l.status || 'new';
+                    pipelineCounts[s] = (pipelineCounts[s] || 0) + 1;
+                    // Outreach
+                    if (!l.email) { noEmail++; continue; }
+                    const os = l.outreachStatus;
+                    if (os === 'SENT' || os === 'REPLIED') sent++;
+                    if (os === 'REPLIED') replied++;
+                    // Email engagement from emailEngagement field (if present)
+                    const eng = l.emailEngagement?.lastEvent;
+                    if (eng === 'opened' || eng === 'clicked') opened++;
+                    if (eng === 'clicked') clicked++;
+                    if (eng === 'bounced') bounced++;
+                }
+                setOutreach({ sent, opened, clicked, replied, bounced, noEmail });
+                setPipeline(pipelineCounts);
 
                 // Fetch commissions for current user
                 const commSnap = await getDocs(query(
@@ -265,6 +290,150 @@ export default function SalesDashboardPage() {
                         <CardContent>
                             <div className="text-2xl font-bold">{loading ? '...' : formatCurrency(stats.totalAcv)}</div>
                             <p className="text-xs text-muted-foreground">Accepted quotes</p>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Outreach Funnel + Pipeline */}
+                <div className="grid gap-6 lg:grid-cols-2">
+                    {/* Email Outreach Funnel */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <Mail className="w-4 h-4" />
+                                Sales Outreach Funnel
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                                Email outreach performance — from sent to won
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {[
+                                { label: 'Emails Sent', count: outreach.sent, icon: Mail, color: 'text-sky-500' },
+                                { label: 'Opened', count: outreach.opened, icon: Eye, color: 'text-blue-500' },
+                                { label: 'Clicked', count: outreach.clicked, icon: MousePointerClick, color: 'text-purple-500' },
+                                { label: 'Replied', count: outreach.replied, icon: MessageSquare, color: 'text-green-500' },
+                                { label: 'Won', count: stats.wonDeals, icon: CheckCircle, color: 'text-emerald-600' },
+                            ].map((step, i, arr) => {
+                                const total = outreach.sent || 1;
+                                const rate = total > 0 ? Math.round((step.count / total) * 100) : 0;
+                                const barWidth = Math.max(8, (step.count / total) * 100);
+                                return (
+                                    <div key={step.label} className="flex items-center gap-3">
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <step.icon className={`w-3.5 h-3.5 ${step.color}`} />
+                                                    <span className="text-xs font-medium">{step.label}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold tabular-nums">{step.count}</span>
+                                                    <Badge variant="outline" className="text-[9px] px-1 h-4 tabular-nums">{rate}%</Badge>
+                                                </div>
+                                            </div>
+                                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full transition-all duration-700 ${step.color.replace('text-', 'bg-')}`}
+                                                    style={{ width: `${barWidth}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                        {i < arr.length - 1 && <ArrowRight className="w-3 h-3 text-muted-foreground/40 flex-shrink-0 mt-3" />}
+                                    </div>
+                                );
+                            })}
+
+                            {/* Issues */}
+                            {(outreach.bounced > 0 || outreach.noEmail > 0) && (
+                                <div className="pt-3 border-t space-y-2">
+                                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Issues</p>
+                                    {outreach.bounced > 0 && (
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="flex items-center gap-1.5 text-red-500"><XCircle className="w-3 h-3" /> Bounced</span>
+                                            <Badge variant="destructive" className="text-[10px]">{outreach.bounced}</Badge>
+                                        </div>
+                                    )}
+                                    {outreach.noEmail > 0 && (
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="flex items-center gap-1.5 text-amber-500"><AlertTriangle className="w-3 h-3" /> No Email on File</span>
+                                            <Badge className="text-[10px] bg-amber-100 text-amber-700 border-amber-200">{outreach.noEmail}</Badge>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Channel Mix hint */}
+                            <div className="pt-3 border-t">
+                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Outreach Channels</p>
+                                <div className="flex gap-3">
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                        <Mail className="w-3 h-3 text-sky-500" /> Email
+                                        <Badge variant="secondary" className="text-[9px] ml-1">Active</Badge>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
+                                        <Phone className="w-3 h-3" /> Cold Call
+                                        <Badge variant="outline" className="text-[9px] ml-1">Coming Soon</Badge>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
+                                        <MapPin className="w-3 h-3" /> Site Visit
+                                        <Badge variant="outline" className="text-[9px] ml-1">Coming Soon</Badge>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Lead Pipeline Breakdown */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <Target className="w-4 h-4" />
+                                Lead Pipeline
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                                Where your leads are in the sales process
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {[
+                                    { label: 'New', key: 'new', color: 'bg-slate-400' },
+                                    { label: 'Sourced', key: 'sourced', color: 'bg-blue-400' },
+                                    { label: 'Qualified', key: 'qualified', color: 'bg-sky-500' },
+                                    { label: 'Walkthrough', key: 'walkthrough', color: 'bg-violet-500' },
+                                    { label: 'Proposal', key: 'proposal', color: 'bg-amber-500' },
+                                    { label: 'Quoted', key: 'quoted', color: 'bg-orange-500' },
+                                    { label: 'Won', key: 'won', color: 'bg-green-500' },
+                                    { label: 'Lost', key: 'lost', color: 'bg-red-400', hidden: !pipeline['lost'] },
+                                ].filter(s => !s.hidden).map(stage => (
+                                    <div key={stage.key} className="flex items-center gap-3">
+                                        <div className="w-24 text-xs text-muted-foreground truncate">{stage.label}</div>
+                                        <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full ${stage.color} transition-all duration-700`}
+                                                style={{ width: `${stats.totalLeads > 0 ? Math.max(2, ((pipeline[stage.key] || 0) / stats.totalLeads) * 100) : 0}%` }}
+                                            />
+                                        </div>
+                                        <div className="w-10 text-right text-sm font-bold tabular-nums">{pipeline[stage.key] || 0}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Conversion summary */}
+                            <div className="mt-6 pt-4 border-t grid grid-cols-3 gap-3">
+                                <div className="text-center p-3 rounded-lg bg-muted/50">
+                                    <div className="text-lg font-bold">{stats.totalLeads > 0 ? Math.round((stats.wonDeals / stats.totalLeads) * 100) : 0}%</div>
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Win Rate</div>
+                                </div>
+                                <div className="text-center p-3 rounded-lg bg-muted/50">
+                                    <div className="text-lg font-bold">{outreach.sent > 0 ? Math.round((outreach.opened / outreach.sent) * 100) : 0}%</div>
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Open Rate</div>
+                                </div>
+                                <div className="text-center p-3 rounded-lg bg-muted/50">
+                                    <div className="text-lg font-bold">{outreach.sent > 0 ? Math.round((outreach.replied / outreach.sent) * 100) : 0}%</div>
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Reply Rate</div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
