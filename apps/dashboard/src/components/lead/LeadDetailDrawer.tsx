@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Lead } from '@xiri/shared';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
@@ -12,7 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
     Building2, User, Mail, Phone, MapPin, Calendar, Clock,
-    Briefcase, TrendingUp, Pencil, Check, X, Save, Loader2
+    Briefcase, TrendingUp, Pencil, Check, X, Save, Loader2,
+    FileText, ExternalLink, Plus, ChevronRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -56,6 +58,18 @@ interface LeadDetailDrawerProps {
     open: boolean;
     onClose: () => void;
 }
+
+const QUOTE_BADGE: Record<string, { color: string; label: string }> = {
+    draft: { color: 'bg-gray-100 text-gray-700', label: 'Draft' },
+    sent: { color: 'bg-blue-100 text-blue-700', label: 'Sent' },
+    accepted: { color: 'bg-green-100 text-green-700', label: 'Accepted' },
+    rejected: { color: 'bg-red-100 text-red-700', label: 'Rejected' },
+    expired: { color: 'bg-gray-100 text-gray-500', label: 'Expired' },
+    changes_requested: { color: 'bg-amber-100 text-amber-700', label: 'Changes' },
+};
+
+const fmt = (n: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
 
 /* ─── Inline Editable Field ───────────────────────────────────────── */
 
@@ -131,12 +145,15 @@ function EditableField({
 /* ─── Main Drawer ──────────────────────────────────────────────────── */
 
 export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDrawerProps) {
+    const router = useRouter();
     const [lead, setLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
     const [statusUpdating, setStatusUpdating] = useState(false);
     const [notesEditing, setNotesEditing] = useState(false);
     const [notesDraft, setNotesDraft] = useState('');
     const [notesSaving, setNotesSaving] = useState(false);
+    const [quotes, setQuotes] = useState<any[]>([]);
+    const [quotesLoading, setQuotesLoading] = useState(false);
 
     useEffect(() => {
         if (!leadId || !open) { setLead(null); setLoading(true); return; }
@@ -156,6 +173,19 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
             setLoading(false);
         }, () => setLoading(false));
         return () => unsub();
+    }, [leadId, open]);
+
+    // Fetch quotes for this lead
+    useEffect(() => {
+        if (!leadId || !open) { setQuotes([]); return; }
+        setQuotesLoading(true);
+        getDocs(query(
+            collection(db, 'quotes'),
+            where('leadId', '==', leadId),
+            orderBy('createdAt', 'desc')
+        )).then(snap => {
+            setQuotes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        }).catch(() => { }).finally(() => setQuotesLoading(false));
     }, [leadId, open]);
 
     const updateField = useCallback(async (field: string, value: any) => {
@@ -355,6 +385,63 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                         <p className={`text-sm ${lead.notes ? '' : 'text-muted-foreground italic'}`}>
                                             {lead.notes || 'No notes yet — click Edit to add'}
                                         </p>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Quotes — Linked Records */}
+                            <Card>
+                                <CardHeader className="py-3 flex flex-row items-center justify-between">
+                                    <CardTitle className="text-sm flex items-center gap-2">
+                                        <FileText className="w-4 h-4" /> Quotes
+                                        {quotes.length > 0 && (
+                                            <Badge variant="secondary" className="text-[10px] ml-1">{quotes.length}</Badge>
+                                        )}
+                                    </CardTitle>
+                                    <Button variant="outline" size="sm" className="h-6 text-xs gap-1"
+                                        onClick={() => router.push('/sales/quotes')}>
+                                        <Plus className="w-3 h-3" /> Create Quote
+                                    </Button>
+                                </CardHeader>
+                                <CardContent>
+                                    {quotesLoading ? (
+                                        <Skeleton className="h-10 w-full" />
+                                    ) : quotes.length === 0 ? (
+                                        <p className="text-xs text-muted-foreground italic">No quotes yet for this lead</p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {quotes.map((q) => {
+                                                const badge = QUOTE_BADGE[q.status] || QUOTE_BADGE.draft;
+                                                const created = q.createdAt?.toDate?.()
+                                                    ? q.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                                    : '—';
+                                                return (
+                                                    <div
+                                                        key={q.id}
+                                                        className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/30 cursor-pointer transition-colors group"
+                                                        onClick={() => router.push(`/sales/quotes/${q.id}`)}
+                                                    >
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                            <div className="min-w-0">
+                                                                <p className="text-sm font-medium truncate">
+                                                                    v{q.version || 1} — {fmt(q.totalMonthlyRate || 0)}/mo
+                                                                </p>
+                                                                <p className="text-[10px] text-muted-foreground">
+                                                                    {q.lineItems?.length || 0} services • {created}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${badge.color}`}>
+                                                                {badge.label}
+                                                            </span>
+                                                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/0 group-hover:text-muted-foreground transition-opacity" />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     )}
                                 </CardContent>
                             </Card>
