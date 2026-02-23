@@ -69,6 +69,11 @@ export interface Lead {
     // Sales → FSM Handoff (auto-set on first work order assignment)
     handedOffToFsm?: string;     // FSM staffId
     handoffDate?: Date;
+
+    // External Integrations (Xero / Mercury)
+    externalIds?: {
+        xeroContactId?: string;
+    };
 }
 
 export type VendorStatus =
@@ -220,6 +225,20 @@ export interface Vendor {
         lastEventAt: any;    // Firestore Timestamp
         openCount: number;
         clickCount: number;
+    };
+
+    // External Integrations (Xero / Mercury)
+    externalIds?: {
+        xeroContactId?: string;
+    };
+
+    // Bank Details (for Mercury ACH payouts)
+    bankAccount?: {
+        bankName?: string;
+        routingNumber?: string;
+        accountNumber?: string;    // last 4 displayed, full stored encrypted
+        accountType?: 'checking' | 'savings';
+        verified?: boolean;
     };
 }
 
@@ -532,6 +551,16 @@ export interface Invoice {
     createdBy: string;
     createdAt: any;
     updatedAt: any;
+
+    // External Integrations (Xero / Mercury)
+    externalIds?: {
+        xeroInvoiceId?: string;
+        xeroInvoiceNumber?: string;
+        mercuryPaymentId?: string;
+        syncStatus?: 'pending' | 'synced' | 'error';
+        syncedAt?: any;
+        syncError?: string;
+    };
 }
 
 // --- VENDOR REMITTANCE (auto-generated statement for vendors) ---
@@ -578,6 +607,16 @@ export interface VendorRemittance {
     createdBy: string;
     createdAt: any;
     updatedAt: any;
+
+    // External Integrations (Mercury)
+    externalIds?: {
+        mercuryPaymentId?: string;
+        mercuryTransferId?: string;
+        xeroBillId?: string;
+        syncStatus?: 'pending' | 'synced' | 'error';
+        syncedAt?: any;
+        syncError?: string;
+    };
 }
 
 // --- NIGHT MANAGER AUDITS ---
