@@ -12,7 +12,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
         '',
         '/contractors',
         '/contact',
-        '/medical-offices',
     ];
 
     staticPages.forEach((route) => {
@@ -46,21 +45,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
         });
     });
 
-    // 4. Client Location Pages (/services/[state]/[county]/[town])
-    // Pattern: [service]/[state]/[county]/[town]
+    // 4. Client Location Pages (/services/[service]-in-[town]-[county]-[state])
+    // Must match: services/[slug]/page.tsx generateStaticParams
     const toSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     services.forEach((service) => {
         (seoData.locations || []).forEach((location) => {
-            const stateParam = location.state.toLowerCase();
-            const countyParam = toSlug(location.region.replace(' County', ''));
-            const townParam = toSlug(location.name.split(',')[0]);
+            const countySlug = toSlug(location.region);
+            const townSlug = toSlug(location.name.split(',')[0]);
+            const stateSlug = location.state.toLowerCase();
 
-            // New Hierarchical URL
-            const url = `${BASE_URL}/${service.slug}/${stateParam}/${countyParam}/${townParam}`;
+            // Match actual route: /services/{service}-in-{town}-{county}-{state}
+            const flatSlug = `${service.slug}-in-${townSlug}-${countySlug}-${stateSlug}`;
 
             sitemapEntries.push({
-                url,
+                url: `${BASE_URL}/services/${flatSlug}`,
                 lastModified: new Date(),
                 changeFrequency: 'monthly',
                 priority: 0.9,
@@ -68,37 +67,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
         });
     });
 
-    // 5. Partner Pages (/partners/[trade]/[state]/[county]/[town])
+    // 5. Partner Pages (/partners/[market.slug])
+    // Must match: partners/[slug]/page.tsx generateStaticParams
     PARTNER_MARKETS.forEach((market) => {
-        const tradeSlug = market.trade;
-        const stateSlug = market.geography.state;
-        const countySlug = market.geography.county;
-        const townSlug = toSlug(market.geography.town);
-
-        const urlPath = `partners/${tradeSlug}/${stateSlug}/${countySlug}/${townSlug}`;
-
-        // English
+        // English — uses market.slug directly (e.g., "janitorial-in-freeport-nassau-ny")
         sitemapEntries.push({
-            url: `${BASE_URL}/${urlPath}`,
+            url: `${BASE_URL}/partners/${market.slug}`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.8,
             alternates: {
                 languages: {
-                    es: `${BASE_URL}/es/${urlPath}`,
+                    es: `${BASE_URL}/es/partners/${market.slug}`,
                 },
             },
         });
 
         // Spanish
         sitemapEntries.push({
-            url: `${BASE_URL}/es/${urlPath}`,
+            url: `${BASE_URL}/es/partners/${market.slug}`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.8,
             alternates: {
                 languages: {
-                    en: `${BASE_URL}/${urlPath}`,
+                    en: `${BASE_URL}/partners/${market.slug}`,
                 },
             },
         });

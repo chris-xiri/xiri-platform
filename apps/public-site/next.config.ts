@@ -7,6 +7,17 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  async redirects() {
+    return [
+      // www → non-www (SEO canonical)
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.xiri.ai' }],
+        destination: 'https://xiri.ai/:path*',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

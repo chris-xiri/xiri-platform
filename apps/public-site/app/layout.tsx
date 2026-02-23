@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     description: 'Medical-grade facility management. One partner. Zero headaches.',
   },
   alternates: {
-    canonical: 'https://xiri.ai',
+    canonical: '/',
   },
 };
 
