@@ -723,3 +723,102 @@ export function matchIntentToProperty(
     return undefined;
 }
 
+// ── Fit Score Calculation ──
+
+/** Scoring criteria — each returns 0-100 contribution, weighted */
+export interface FitScoreBreakdown {
+    total: number;               // 0-100 composite score
+    verticalAlignment: number;   // Medical/Auto/Daycare = XIRI core verticals
+    singleTenant: number;        // NNN single-tenant = ideal target
+    enrichmentMatch: number;     // DOH/DMV/OCFS verified = high confidence
+    intentSignal: number;        // Recent permit = active buyer
+    buildingSize: number;        // Sweet spot: 2K-15K sq ft
+    propertyValue: number;       // Higher market value = more service budget
+}
+
+// High-priority XIRI verticals from business-context
+const VERTICAL_PRIORITY: Record<string, number> = {
+    // Medical — primary vertical
+    medical_private: 100, medical_urgent_care: 100, medical_surgery: 95,
+    medical_dialysis: 90, medical_office: 90,
+    // Auto — secondary vertical
+    auto_dealer_showroom: 80, auto_service_center: 75,
+    // Education — tertiary vertical
+    edu_daycare: 70, edu_private_school: 65,
+    // General commercial
+    office_general: 40, fitness_gym: 35,
+};
+
+const WEIGHTS = {
+    verticalAlignment: 0.30,   // Most important: right industry
+    singleTenant: 0.20,        // NNN single-tenant
+    enrichmentMatch: 0.20,     // Verified business at address
+    intentSignal: 0.15,        // Active buyer signals
+    buildingSize: 0.10,        // Right-sized building
+    propertyValue: 0.05,       // Market value indicator
+};
+
+export function calculateFitScore(
+    property: PreviewProperty,
+    enrichMatch?: EnrichmentMatch,
+    intentMatch?: IntentSignal,
+): FitScoreBreakdown {
+    // Vertical alignment (0-100)
+    const facilityType = property.facilityType || '';
+    const verticalAlignment = VERTICAL_PRIORITY[facilityType] || 30;
+
+    // Single-tenant NNN (0 or 100)
+    const singleTenant = property.tenantCount === 1 ? 100 : (property.tenantCount === undefined ? 50 : 20);
+
+    // Enrichment match (0-100)
+    let enrichmentMatch = 0;
+    if (enrichMatch) {
+        enrichmentMatch = 80; // Base: verified match
+        if (enrichMatch.phone) enrichmentMatch = 100; // Has contact info
+        if (enrichMatch.source === 'doh') enrichmentMatch = Math.max(enrichmentMatch, 90); // Medical = premium
+    }
+
+    // Intent signal (0-100)
+    const intentSignal = intentMatch ? 100 : 0;
+
+    // Building size sweet spot (2K-15K sq ft ideal for commercial cleaning)
+    let buildingSize = 50; // default when unknown
+    const sqft = property.squareFootage || 0;
+    if (sqft > 0) {
+        if (sqft >= 2000 && sqft <= 15000) buildingSize = 100; // Sweet spot
+        else if (sqft >= 1000 && sqft <= 25000) buildingSize = 70; // Acceptable
+        else if (sqft > 25000) buildingSize = 50; // Large — more complex
+        else buildingSize = 30; // Small — low revenue
+    }
+
+    // Property value (normalized to 0-100)
+    let propertyValue = 50;
+    const value = property.lastSalePrice || 0;
+    if (value > 0) {
+        if (value >= 1000000) propertyValue = 100;
+        else if (value >= 500000) propertyValue = 80;
+        else if (value >= 200000) propertyValue = 60;
+        else propertyValue = 40;
+    }
+
+    // Weighted total
+    const total = Math.round(
+        verticalAlignment * WEIGHTS.verticalAlignment +
+        singleTenant * WEIGHTS.singleTenant +
+        enrichmentMatch * WEIGHTS.enrichmentMatch +
+        intentSignal * WEIGHTS.intentSignal +
+        buildingSize * WEIGHTS.buildingSize +
+        propertyValue * WEIGHTS.propertyValue
+    );
+
+    return {
+        total,
+        verticalAlignment,
+        singleTenant,
+        enrichmentMatch,
+        intentSignal,
+        buildingSize,
+        propertyValue,
+    };
+}
+

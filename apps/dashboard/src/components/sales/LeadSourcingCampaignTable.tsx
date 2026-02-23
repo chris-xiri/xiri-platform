@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,11 +20,11 @@ import {
     CheckCircle2, XCircle, ChevronDown, ChevronUp,
     X, RotateCcw, Plus, Rocket, Loader2, Search,
     Building2, MapPin, Ruler, User, Phone, DollarSign, Calendar,
-    Database, Globe, ChevronLeft, ChevronRight,
+    Database, Globe, ChevronLeft, ChevronRight, Check,
 } from 'lucide-react';
 import { PreviewProperty } from '@xiri/shared';
 import ReactGoogleAutocomplete from 'react-google-autocomplete';
-import { searchOpenData, AVAILABLE_COUNTIES, PROPERTY_CLASS_OPTIONS, PLUTO_BLDG_CLASS_OPTIONS, RECOMMENDED_CODES, RECOMMENDED_PLUTO_CODES, type OpenDataSearchParams, ENRICHMENT_SOURCES, searchDOHFacilities, searchDMVDealers, searchOCFSChildcare, searchDOBPermits, matchEnrichmentToProperty, matchIntentToProperty, type EnrichmentMatch, type IntentSignal, type EnrichmentSource } from '@/lib/openDataSearch';
+import { searchOpenData, AVAILABLE_COUNTIES, PROPERTY_CLASS_OPTIONS, PLUTO_BLDG_CLASS_OPTIONS, RECOMMENDED_CODES, RECOMMENDED_PLUTO_CODES, type OpenDataSearchParams, ENRICHMENT_SOURCES, searchDOHFacilities, searchDMVDealers, searchOCFSChildcare, searchDOBPermits, matchEnrichmentToProperty, matchIntentToProperty, type EnrichmentMatch, type IntentSignal, type EnrichmentSource, calculateFitScore, type FitScoreBreakdown } from '@/lib/openDataSearch';
 
 // ── Types ──
 
@@ -37,6 +37,96 @@ export interface PropertyCampaign {
     label: string;
     properties: CampaignPreviewProperty[];
     searches: { query: string; location: string; sourced: number; timestamp: Date }[];
+}
+
+// ── Utilities ──
+
+function toTitleCase(str: string): string {
+    if (!str) return str;
+    return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ── MultiSelectDropdown ──
+
+function MultiSelectDropdown({ label, options, selected, onChange, placeholder, color, disabled, quickFill }: {
+    label: string;
+    options: { value: string; label: string }[];
+    selected: string[];
+    onChange: (values: string[]) => void;
+    placeholder: string;
+    color: 'emerald' | 'blue' | 'purple';
+    disabled?: boolean;
+    quickFill?: { label: string; values: string[] };
+}) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const toggle = (value: string) => {
+        onChange(selected.includes(value) ? selected.filter(v => v !== value) : [...selected, value]);
+    };
+
+    const colorClasses = {
+        emerald: { ring: 'ring-emerald-500', badge: 'bg-emerald-600', hover: 'hover:bg-emerald-50 dark:hover:bg-emerald-950' },
+        blue: { ring: 'ring-blue-500', badge: 'bg-blue-600', hover: 'hover:bg-blue-50 dark:hover:bg-blue-950' },
+        purple: { ring: 'ring-purple-500', badge: 'bg-purple-600', hover: 'hover:bg-purple-50 dark:hover:bg-purple-950' },
+    }[color];
+
+    return (
+        <div ref={ref} className="relative">
+            <button
+                onClick={() => !disabled && setOpen(!open)}
+                className={`flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[11px] font-medium transition-all min-w-[120px] max-w-[220px] bg-white dark:bg-card ${open ? `border-${color}-500 ring-1 ${colorClasses.ring}` : 'border-border hover:border-muted-foreground/50'
+                    } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+                <span className="text-muted-foreground flex-shrink-0 text-[10px]">{label}:</span>
+                {selected.length === 0 ? (
+                    <span className="text-muted-foreground/60 truncate">{placeholder}</span>
+                ) : (
+                    <Badge variant="default" className={`text-[9px] px-1 py-0 h-4 ${colorClasses.badge}`}>
+                        {selected.length} selected
+                    </Badge>
+                )}
+                <ChevronDown className={`w-3 h-3 ml-auto flex-shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {open && (
+                <div className="absolute z-50 top-full mt-1 left-0 min-w-[240px] max-w-[320px] bg-white dark:bg-card border border-border rounded-md shadow-lg">
+                    {/* Quick actions */}
+                    <div className="flex items-center justify-between px-2 py-1.5 border-b border-border">
+                        <button onClick={() => onChange(options.map(o => o.value))} className="text-[10px] text-blue-600 hover:underline">All</button>
+                        <button onClick={() => onChange([])} className="text-[10px] text-red-600 hover:underline">None</button>
+                        {quickFill && (
+                            <button onClick={() => onChange(quickFill.values)} className="text-[10px] text-amber-600 hover:underline">{quickFill.label}</button>
+                        )}
+                    </div>
+                    {/* Options */}
+                    <div className="max-h-[200px] overflow-y-auto py-1">
+                        {options.map(opt => (
+                            <button
+                                key={opt.value}
+                                onClick={() => toggle(opt.value)}
+                                className={`flex items-center gap-2 w-full px-2.5 py-1 text-[11px] text-left ${colorClasses.hover} transition-colors`}
+                            >
+                                <div className={`w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center ${selected.includes(opt.value) ? `${colorClasses.badge} border-transparent` : 'border-border'
+                                    }`}>
+                                    {selected.includes(opt.value) && <Check className="w-2.5 h-2.5 text-white" />}
+                                </div>
+                                <span className="truncate">{opt.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 interface LeadSourcingCampaignTableProps {
@@ -55,13 +145,15 @@ interface LeadSourcingCampaignTableProps {
 }
 
 /* ─── Property Detail Panel (right-side preview) ─── */
-function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive, campaignId }: {
+function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive, campaignId, enrichMatch, intentMatch }: {
     property: CampaignPreviewProperty;
     onClose: () => void;
     onApprove: (campaignId: string, propertyId: string) => void;
     onDismiss: (campaignId: string, propertyId: string) => void;
     onRevive: (campaignId: string, propertyId: string) => void;
     campaignId: string;
+    enrichMatch?: EnrichmentMatch;
+    intentMatch?: IntentSignal;
 }) {
     const dismissed = property.isDismissed;
 
@@ -71,7 +163,7 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
             <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30 flex-shrink-0">
                 <div className="min-w-0 flex-1">
                     <h3 className={`font-semibold text-sm truncate ${dismissed ? 'line-through text-muted-foreground' : ''}`}>
-                        {property.name}
+                        {enrichMatch ? toTitleCase(enrichMatch.facilityName) : toTitleCase(property.name || '')}
                     </h3>
                     <p className="text-xs text-muted-foreground truncate">
                         {property.city && property.state ? `${property.city}, ${property.state}` : property.address || 'N/A'}
@@ -155,12 +247,83 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
                             {property.ownerName && (
                                 <div className="flex items-center gap-1.5 text-xs">
                                     <User className="w-3 h-3 text-muted-foreground" />
-                                    <span className="font-medium">{property.ownerName}</span>
+                                    <span className="font-medium">{toTitleCase(property.ownerName)}</span>
                                 </div>
                             )}
                             {property.ownerPhone && (
                                 <a href={`tel:${property.ownerPhone}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
                                     <Phone className="w-3 h-3" /> {property.ownerPhone}
+                                </a>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Enrichment Card — from DOH/DMV/OCFS */}
+                {enrichMatch && (
+                    <Card className="bg-card border-emerald-200 dark:border-emerald-800 shadow-sm">
+                        <CardHeader className="py-2 px-3 pb-1">
+                            <CardTitle className="text-xs font-medium flex justify-between items-center">
+                                <span className="flex items-center gap-1.5">
+                                    <Database className="w-3.5 h-3.5 text-emerald-500" /> Licensing Data
+                                </span>
+                                <Badge variant="default" className={`text-[9px] px-1.5 h-4 ${enrichMatch.source === 'doh' ? 'bg-emerald-600' :
+                                    enrichMatch.source === 'dmv' ? 'bg-orange-600' :
+                                        enrichMatch.source === 'ocfs' ? 'bg-purple-600' : 'bg-blue-600'
+                                    }`}>
+                                    {enrichMatch.source.toUpperCase()} Verified
+                                </Badge>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-3 pb-2 pt-0 space-y-1.5">
+                            <div className="flex items-center gap-1.5 text-xs">
+                                <Building2 className="w-3 h-3 text-emerald-500" />
+                                <span className="font-medium">{toTitleCase(enrichMatch.facilityName)}</span>
+                            </div>
+                            {enrichMatch.description && (
+                                <div className="text-[10px] text-muted-foreground pl-[18px]">
+                                    {enrichMatch.description}
+                                </div>
+                            )}
+                            {enrichMatch.operatorName && (
+                                <div className="flex items-center gap-1.5 text-xs">
+                                    <User className="w-3 h-3 text-muted-foreground" />
+                                    <span>{toTitleCase(enrichMatch.operatorName)}</span>
+                                </div>
+                            )}
+                            {enrichMatch.phone && (
+                                <a href={`tel:${enrichMatch.phone}`} className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
+                                    <Phone className="w-3 h-3" /> {enrichMatch.phone}
+                                </a>
+                            )}
+                            {enrichMatch.licenseId && (
+                                <div className="text-[10px] text-muted-foreground pl-[18px]">
+                                    License: {enrichMatch.licenseId}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Intent Signal Card */}
+                {intentMatch && (
+                    <Card className="bg-card border-amber-200 dark:border-amber-800 shadow-sm">
+                        <CardHeader className="py-2 px-3 pb-1">
+                            <CardTitle className="text-xs font-medium flex items-center gap-1.5">
+                                <Rocket className="w-3.5 h-3.5 text-amber-500" /> 🔥 Buyer Intent
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-3 pb-2 pt-0 space-y-1.5">
+                            <div className="text-xs font-medium">{intentMatch.label}</div>
+                            <div className="text-[10px] text-muted-foreground">{intentMatch.details}</div>
+                            {intentMatch.ownerBusinessName && intentMatch.ownerBusinessName !== 'N/A' && (
+                                <div className="flex items-center gap-1.5 text-xs">
+                                    <Building2 className="w-3 h-3" /> {toTitleCase(intentMatch.ownerBusinessName)}
+                                </div>
+                            )}
+                            {intentMatch.ownerPhone && (
+                                <a href={`tel:${intentMatch.ownerPhone}`} className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
+                                    <Phone className="w-3 h-3" /> {intentMatch.ownerPhone}
                                 </a>
                             )}
                         </CardContent>
@@ -238,9 +401,9 @@ export default function LeadSourcingCampaignTable({
     const [searchSource, setSearchSource] = useState<'google' | 'opendata'>('opendata');
 
     // Open Data search state
-    const [odCounties, setOdCounties] = useState<string[]>(['Nassau']);
-    const [odClasses, setOdClasses] = useState<string[]>([...RECOMMENDED_CODES]);
-    const [odPlutoClasses, setOdPlutoClasses] = useState<string[]>([...RECOMMENDED_PLUTO_CODES]);
+    const [odCounties, setOdCounties] = useState<string[]>([]);
+    const [odClasses, setOdClasses] = useState<string[]>([]);
+    const [odPlutoClasses, setOdPlutoClasses] = useState<string[]>([]);
     const [odMinSqFt, setOdMinSqFt] = useState('');
     const [odMaxSqFt, setOdMaxSqFt] = useState('');
     const [odMunicipality, setOdMunicipality] = useState('');
@@ -254,6 +417,12 @@ export default function LeadSourcingCampaignTable({
     const [enrichments, setEnrichments] = useState<EnrichmentMatch[]>([]);
     const [intentSignals, setIntentSignals] = useState<IntentSignal[]>([]);
     const [enrichmentLoading, setEnrichmentLoading] = useState(false);
+
+    // Sort & filter state
+    type SortField = 'score' | 'name' | 'default';
+    type FilterMode = 'all' | 'enriched' | 'intent' | 'nnn';
+    const [sortBy, setSortBy] = useState<SortField>('score');
+    const [filterMode, setFilterMode] = useState<FilterMode>('all');
 
     if (campaigns.length === 0) {
         return (
@@ -273,10 +442,35 @@ export default function LeadSourcingCampaignTable({
     }
 
     const activeCampaign = campaigns.find(c => c.id === activeCampaignId) || campaigns[0];
-    const properties = activeCampaign?.properties || [];
+    const rawProperties = activeCampaign?.properties || [];
+
+    // Calculate fit scores and sort/filter
+    const scoredProperties = rawProperties.map(p => {
+        const em = matchEnrichmentToProperty(p, enrichments);
+        const im = matchIntentToProperty(p, intentSignals);
+        return { property: p, score: calculateFitScore(p, em, im), enrichMatch: em, intentMatch: im };
+    });
+
+    // Filter
+    const filteredScored = scoredProperties.filter(({ property, enrichMatch, intentMatch }) => {
+        if (filterMode === 'enriched') return !!enrichMatch;
+        if (filterMode === 'intent') return !!intentMatch;
+        if (filterMode === 'nnn') return property.tenantCount === 1;
+        return true;
+    });
+
+    // Sort
+    const sortedScored = [...filteredScored].sort((a, b) => {
+        if (sortBy === 'score') return b.score.total - a.score.total;
+        if (sortBy === 'name') return (a.property.name || '').localeCompare(b.property.name || '');
+        return 0;
+    });
+
+    const properties = sortedScored.map(s => s.property);
+    const scoreMap = new Map(sortedScored.map(s => [s.property.id, s.score]));
     const activeProperties = properties.filter(p => !p.isDismissed);
     const dismissedCount = properties.filter(p => p.isDismissed).length;
-    const selectedPreviewProperty = selectedPropertyId ? properties.find(p => p.id === selectedPropertyId) : null;
+    const selectedPreviewProperty = selectedPropertyId ? rawProperties.find(p => p.id === selectedPropertyId) : null;
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) { setSelectedProperties(new Set(activeProperties.map(p => p.id!))); }
@@ -596,66 +790,55 @@ export default function LeadSourcingCampaignTable({
                             {/* Open Data Search */}
                             {searchSource === 'opendata' && (
                                 <div className="space-y-2">
-                                    {/* Row 1: Counties + Municipality */}
+                                    {/* Row 1: County + Property Class dropdowns */}
                                     <div className="flex gap-2 items-center flex-wrap">
-                                        <span className="text-[10px] text-muted-foreground font-medium w-12 flex-shrink-0">County</span>
-                                        {AVAILABLE_COUNTIES.map(c => (
-                                            <button key={c.value} onClick={() => toggleOdCounty(c.value)}
-                                                className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all ${odCounties.includes(c.value)
-                                                    ? 'bg-emerald-600 text-white border-emerald-600'
-                                                    : 'border-border text-muted-foreground hover:border-emerald-400'
-                                                    }`}>
-                                                {c.label}
-                                            </button>
-                                        ))}
+                                        {/* County Multi-Select */}
+                                        <MultiSelectDropdown
+                                            label="County / Borough"
+                                            options={AVAILABLE_COUNTIES.map(c => ({ value: c.value, label: c.label }))}
+                                            selected={odCounties}
+                                            onChange={setOdCounties}
+                                            placeholder="Select counties..."
+                                            color="emerald"
+                                            disabled={loading}
+                                        />
+
+                                        {/* LI Property Class Multi-Select */}
+                                        {hasNYStateCounty && (
+                                            <MultiSelectDropdown
+                                                label="LI Property Class"
+                                                options={PROPERTY_CLASS_OPTIONS.map(pc => ({ value: pc.code, label: `${pc.code} — ${pc.label}` }))}
+                                                selected={odClasses}
+                                                onChange={setOdClasses}
+                                                placeholder="Select classes..."
+                                                color="blue"
+                                                disabled={loading}
+                                                quickFill={{ label: '↺ Recommended', values: [...RECOMMENDED_CODES] }}
+                                            />
+                                        )}
+
+                                        {/* NYC Building Class Multi-Select */}
+                                        {hasPlutoBorough && (
+                                            <MultiSelectDropdown
+                                                label="NYC Building Class"
+                                                options={PLUTO_BLDG_CLASS_OPTIONS.map(pc => ({ value: pc.code, label: `${pc.code} — ${pc.label}` }))}
+                                                selected={odPlutoClasses}
+                                                onChange={setOdPlutoClasses}
+                                                placeholder="Select classes..."
+                                                color="purple"
+                                                disabled={loading}
+                                                quickFill={{ label: '↺ Recommended', values: [...RECOMMENDED_PLUTO_CODES] }}
+                                            />
+                                        )}
+
                                         <Input
                                             type="text" placeholder="Town (optional)..."
                                             value={odMunicipality} onChange={(e) => setOdMunicipality(e.target.value)}
-                                            className="h-6 text-[10px] bg-white dark:bg-card w-36"
+                                            className="h-7 text-[10px] bg-white dark:bg-card w-32"
                                             disabled={loading}
                                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                         />
                                     </div>
-
-                                    {/* Row 2: NY State Property Classes (show when LI counties selected) */}
-                                    {hasNYStateCounty && (
-                                        <div className="flex gap-1 items-center flex-wrap">
-                                            <span className="text-[10px] text-muted-foreground font-medium w-12 flex-shrink-0">LI Class</span>
-                                            {PROPERTY_CLASS_OPTIONS.map(pc => (
-                                                <button key={pc.code} onClick={() => toggleOdClass(pc.code)}
-                                                    className={`px-1.5 py-0.5 rounded text-[10px] border transition-all ${odClasses.includes(pc.code)
-                                                        ? 'bg-blue-600 text-white border-blue-600'
-                                                        : 'border-border text-muted-foreground hover:border-blue-400'
-                                                        }`}>
-                                                    <span className="font-semibold">{pc.code}</span>{' '}{pc.label}
-                                                </button>
-                                            ))}
-                                            <button onClick={() => setOdClasses([...RECOMMENDED_CODES])}
-                                                className="px-1.5 py-0.5 rounded text-[10px] border border-amber-400 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 transition-all ml-1">
-                                                ↺ Recommended
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {/* Row 2b: PLUTO Building Classes (show when NYC boroughs selected) */}
-                                    {hasPlutoBorough && (
-                                        <div className="flex gap-1 items-center flex-wrap">
-                                            <span className="text-[10px] text-muted-foreground font-medium w-12 flex-shrink-0">NYC Class</span>
-                                            {PLUTO_BLDG_CLASS_OPTIONS.map(pc => (
-                                                <button key={pc.code} onClick={() => toggleOdPlutoClass(pc.code)}
-                                                    className={`px-1.5 py-0.5 rounded text-[10px] border transition-all ${odPlutoClasses.includes(pc.code)
-                                                        ? 'bg-purple-600 text-white border-purple-600'
-                                                        : 'border-border text-muted-foreground hover:border-purple-400'
-                                                        }`}>
-                                                    <span className="font-semibold">{pc.code}</span>{' '}{pc.label}
-                                                </button>
-                                            ))}
-                                            <button onClick={() => setOdPlutoClasses([...RECOMMENDED_PLUTO_CODES])}
-                                                className="px-1.5 py-0.5 rounded text-[10px] border border-amber-400 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 transition-all ml-1">
-                                                ↺ Recommended
-                                            </button>
-                                        </div>
-                                    )}
 
                                     {/* Row 3: Lot Size + Search */}
                                     <div className="flex gap-2 items-center">
@@ -698,32 +881,58 @@ export default function LeadSourcingCampaignTable({
                         {/* Bulk Bar */}
                         {properties.length > 0 && (
                             <div className="px-3 py-1.5 border-b border-border bg-muted/30 flex items-center justify-between flex-shrink-0">
-                                <span className="text-[11px] text-muted-foreground">
-                                    {selectedProperties.size > 0
-                                        ? <span className="font-medium text-primary">{selectedProperties.size} selected</span>
-                                        : <>{activeProperties.length} active{dismissedCount > 0 && ` · ${dismissedCount} dismissed`}</>
-                                    }
-                                </span>
+                                {/* Filter buttons */}
                                 <div className="flex items-center gap-1">
-                                    {selectedProperties.size > 0 ? (
-                                        <>
-                                            <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white px-2" onClick={() => setShowBulkApproveDialog(true)}>
-                                                <CheckCircle2 className="w-3 h-3 mr-0.5" /> Approve ({selectedProperties.size})
-                                            </Button>
-                                            <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 px-2" onClick={() => setShowBulkDismissDialog(true)}>
-                                                <XCircle className="w-3 h-3 mr-0.5" /> ✕
-                                            </Button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white px-2" onClick={() => onApproveAll(activeCampaign.id)}>
-                                                <CheckCircle2 className="w-3 h-3 mr-0.5" /> Approve All
-                                            </Button>
-                                            <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 px-2" onClick={() => onDismissAll(activeCampaign.id)}>
-                                                <XCircle className="w-3 h-3 mr-0.5" /> Dismiss All
-                                            </Button>
-                                        </>
-                                    )}
+                                    {[
+                                        { key: 'all' as FilterMode, label: 'All', count: rawProperties.length },
+                                        { key: 'enriched' as FilterMode, label: '📋 Enriched', count: scoredProperties.filter(s => s.enrichMatch).length },
+                                        { key: 'intent' as FilterMode, label: '🔥 Intent', count: scoredProperties.filter(s => s.intentMatch).length },
+                                        { key: 'nnn' as FilterMode, label: 'NNN', count: scoredProperties.filter(s => s.property.tenantCount === 1).length },
+                                    ].map(f => (
+                                        <button key={f.key} onClick={() => setFilterMode(f.key)}
+                                            className={`text-[10px] px-1.5 py-0.5 rounded font-medium border transition-all ${filterMode === f.key
+                                                ? 'bg-primary text-primary-foreground border-primary'
+                                                : 'border-border text-muted-foreground hover:border-primary/50'
+                                                }`}>
+                                            {f.label}{f.count > 0 && f.key !== 'all' ? ` (${f.count})` : ''}
+                                        </button>
+                                    ))}
+                                </div>
+                                {/* Sort + bulk info */}
+                                <div className="flex items-center gap-2">
+                                    <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortField)}
+                                        className="text-[10px] h-5 border border-border rounded bg-transparent px-1 text-muted-foreground">
+                                        <option value="score">★ Best Fit</option>
+                                        <option value="name">A–Z Name</option>
+                                        <option value="default">Default</option>
+                                    </select>
+                                    <span className="text-[10px] text-muted-foreground">
+                                        {selectedProperties.size > 0
+                                            ? <span className="font-medium text-primary">{selectedProperties.size} selected</span>
+                                            : <>{activeProperties.length} active{dismissedCount > 0 && ` · ${dismissedCount} dismissed`}</>
+                                        }
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                        {selectedProperties.size > 0 ? (
+                                            <>
+                                                <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white px-2" onClick={() => setShowBulkApproveDialog(true)}>
+                                                    <CheckCircle2 className="w-3 h-3 mr-0.5" /> Approve ({selectedProperties.size})
+                                                </Button>
+                                                <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 px-2" onClick={() => setShowBulkDismissDialog(true)}>
+                                                    <XCircle className="w-3 h-3 mr-0.5" /> ✕
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white px-2" onClick={() => onApproveAll(activeCampaign.id)}>
+                                                    <CheckCircle2 className="w-3 h-3 mr-0.5" /> Approve All
+                                                </Button>
+                                                <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 px-2" onClick={() => onDismissAll(activeCampaign.id)}>
+                                                    <XCircle className="w-3 h-3 mr-0.5" /> Dismiss All
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -736,6 +945,7 @@ export default function LeadSourcingCampaignTable({
                                     const isSelected = property.id === selectedPropertyId;
                                     const enrichMatch = matchEnrichmentToProperty(property, enrichments);
                                     const intentMatch = matchIntentToProperty(property, intentSignals);
+                                    const score = scoreMap.get(property.id!);
                                     return (
                                         <div
                                             key={property.id || index}
@@ -752,19 +962,27 @@ export default function LeadSourcingCampaignTable({
                                                 {!dismissed && <Checkbox checked={selectedProperties.has(property.id!)} onCheckedChange={(checked: boolean) => handleSelectProperty(property.id!, checked)} className="h-3.5 w-3.5" />}
                                             </div>
 
-                                            {/* Index */}
-                                            <span className="text-muted-foreground w-4 text-center flex-shrink-0">{index + 1}</span>
+                                            {/* Score Badge */}
+                                            {score && !dismissed && (
+                                                <span className={`text-[9px] font-bold w-6 text-center flex-shrink-0 rounded px-0.5 py-0.5 ${score.total >= 70 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' :
+                                                    score.total >= 45 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' :
+                                                        'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                                                    }`}>
+                                                    {score.total}
+                                                </span>
+                                            )}
+                                            {dismissed && <span className="w-6 flex-shrink-0" />}
 
                                             {/* Name + Location + Enrichment */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-1">
                                                     <span className={`font-medium truncate ${dismissed ? 'line-through text-muted-foreground' : ''}`}>
-                                                        {enrichMatch ? enrichMatch.facilityName : property.name}
+                                                        {enrichMatch ? toTitleCase(enrichMatch.facilityName) : toTitleCase(property.name || '')}
                                                     </span>
                                                     {enrichMatch && (
                                                         <Badge variant="default" className={`text-[8px] px-1 py-0 h-3.5 flex-shrink-0 ${enrichMatch.source === 'doh' ? 'bg-emerald-600' :
-                                                                enrichMatch.source === 'dmv' ? 'bg-orange-600' :
-                                                                    enrichMatch.source === 'ocfs' ? 'bg-purple-600' : 'bg-blue-600'
+                                                            enrichMatch.source === 'dmv' ? 'bg-orange-600' :
+                                                                enrichMatch.source === 'ocfs' ? 'bg-purple-600' : 'bg-blue-600'
                                                             }`}>
                                                             {enrichMatch.source === 'doh' ? '📋 DOH' :
                                                                 enrichMatch.source === 'dmv' ? '🚘 DMV' :
@@ -858,6 +1076,8 @@ export default function LeadSourcingCampaignTable({
                         onApprove={onApprove}
                         onDismiss={onDismiss}
                         onRevive={onRevive}
+                        enrichMatch={matchEnrichmentToProperty(selectedPreviewProperty, enrichments)}
+                        intentMatch={matchIntentToProperty(selectedPreviewProperty, intentSignals)}
                     />
                 </div>
             )}
