@@ -609,32 +609,117 @@ export async function searchDOBPermits(boroughs: string[]): Promise<IntentSignal
     }));
 }
 
-// ── Address Matching Utility ──
+// ── Address Normalization ──
+
+const STREET_ABBREVS: Record<string, string> = {
+    HIGHWAY: 'HWY', HIGHWY: 'HWY',
+    STREET: 'ST', AVENUE: 'AVE', BOULEVARD: 'BLVD',
+    DRIVE: 'DR', COURT: 'CT', PLACE: 'PL', ROAD: 'RD',
+    LANE: 'LN', CIRCLE: 'CIR', TERRACE: 'TER', PARKWAY: 'PKWY',
+    TURNPIKE: 'TPKE', EXPRESSWAY: 'EXPY', NORTH: 'N', SOUTH: 'S',
+    EAST: 'E', WEST: 'W', NORTHEAST: 'NE', NORTHWEST: 'NW',
+    SOUTHEAST: 'SE', SOUTHWEST: 'SW', EXTENSION: 'EXT',
+};
+
+function normalizeAddress(addr: string): string {
+    let normalized = addr.toUpperCase().trim();
+    // Replace full words with abbreviations
+    for (const [full, abbrev] of Object.entries(STREET_ABBREVS)) {
+        normalized = normalized.replace(new RegExp(`\\b${full}\\b`, 'g'), abbrev);
+    }
+    // Strip all non-alphanumeric
+    return normalized.replace(/[^A-Z0-9]/g, '');
+}
+
+/** Extract just the street number for loose matching */
+function extractStreetNumber(addr: string): string {
+    const match = addr.match(/^(\d+[-]?\d*)/);
+    return match ? match[1] : '';
+}
+
+/** Haversine distance in meters between two lat/lng points */
+function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ── Address Matching ──
+
+const PROXIMITY_THRESHOLD_M = 150; // 150 meters
 
 export function matchEnrichmentToProperty(
     property: PreviewProperty,
     enrichments: EnrichmentMatch[],
 ): EnrichmentMatch | undefined {
-    const propAddr = (property.address || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const propCity = (property.city || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!property.address) return undefined;
 
-    // Try exact address + city match first
-    return enrichments.find((e: any) => {
-        const eAddr = (e._address || '').replace(/[^A-Z0-9]/g, '');
-        const eCity = (e._city || '').replace(/[^A-Z0-9]/g, '');
-        return eAddr && propAddr && eAddr === propAddr && eCity === propCity;
+    const propNorm = normalizeAddress(property.address);
+    const propCity = (property.city || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const propNum = extractStreetNumber(property.address);
+    const propLat = (property as any).rawData?.latitude || 0;
+    const propLng = (property as any).rawData?.longitude || 0;
+
+    // Tier 1: Exact normalized address + city
+    const exactMatch = enrichments.find((e: any) => {
+        const eNorm = normalizeAddress(e._address || '');
+        const eCity = (e._city || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        return eNorm && propNorm && eNorm === propNorm && eCity === propCity;
     });
+    if (exactMatch) return exactMatch;
+
+    // Tier 2: Same street number + same city (catches HWY vs HIGHWAY etc.)
+    if (propNum) {
+        const numMatch = enrichments.find((e: any) => {
+            const eNum = extractStreetNumber(e._address || '');
+            const eCity = (e._city || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            return eNum === propNum && eCity === propCity && eNum.length > 0;
+        });
+        if (numMatch) return numMatch;
+    }
+
+    // Tier 3: Lat/lng proximity (within 150m)
+    if (propLat && propLng) {
+        let closest: { match: EnrichmentMatch; dist: number } | null = null;
+        for (const e of enrichments as any[]) {
+            if (!e._lat || !e._lng) continue;
+            const dist = distanceMeters(propLat, propLng, e._lat, e._lng);
+            if (dist < PROXIMITY_THRESHOLD_M && (!closest || dist < closest.dist)) {
+                closest = { match: e, dist };
+            }
+        }
+        if (closest) return closest.match;
+    }
+
+    return undefined;
 }
 
 export function matchIntentToProperty(
     property: PreviewProperty,
     intents: IntentSignal[],
 ): IntentSignal | undefined {
-    const propAddr = (property.address || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!property.address) return undefined;
 
-    return intents.find((i: any) => {
-        const iAddr = (i._address || '').replace(/[^A-Z0-9]/g, '');
-        return iAddr && propAddr && iAddr === propAddr;
+    const propNorm = normalizeAddress(property.address);
+    const propNum = extractStreetNumber(property.address);
+
+    // Exact match
+    const exact = intents.find((i: any) => {
+        return normalizeAddress(i._address || '') === propNorm;
     });
+    if (exact) return exact;
+
+    // Street number match
+    if (propNum) {
+        return intents.find((i: any) => {
+            return extractStreetNumber(i._address || '') === propNum;
+        });
+    }
+
+    return undefined;
 }
 
