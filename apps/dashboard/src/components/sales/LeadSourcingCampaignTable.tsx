@@ -879,7 +879,7 @@ export default function LeadSourcingCampaignTable({
                         </div>
 
                         {/* Bulk Bar */}
-                        {properties.length > 0 && (
+                        {rawProperties.length > 0 && (
                             <div className="px-3 py-1.5 border-b border-border bg-muted/30 flex items-center justify-between flex-shrink-0">
                                 {/* Filter buttons */}
                                 <div className="flex items-center gap-1">
@@ -938,7 +938,7 @@ export default function LeadSourcingCampaignTable({
                         )}
 
                         {/* Property List — compact rows */}
-                        {properties.length > 0 && (
+                        {rawProperties.length > 0 && properties.length > 0 && (
                             <div className="flex-1 overflow-y-auto">
                                 {properties.map((property, index) => {
                                     const dismissed = property.isDismissed;
@@ -1054,8 +1054,17 @@ export default function LeadSourcingCampaignTable({
                             </div>
                         )}
 
-                        {/* Empty state */}
-                        {properties.length === 0 && !loading && (
+                        {/* No filter matches */}
+                        {rawProperties.length > 0 && properties.length === 0 && (
+                            <div className="flex-1 flex flex-col items-center justify-center py-8">
+                                <Search className="w-6 h-6 text-muted-foreground/40 mb-2" />
+                                <p className="text-xs text-muted-foreground">No properties match the <strong>{filterMode}</strong> filter</p>
+                                <button onClick={() => setFilterMode('all')} className="text-[10px] text-blue-600 hover:underline mt-1">Show all</button>
+                            </div>
+                        )}
+
+                        {/* Empty state — no search results */}
+                        {rawProperties.length === 0 && !loading && (
                             <div className="flex-1 flex flex-col items-center justify-center py-12">
                                 <Search className="w-8 h-8 text-muted-foreground/40 mb-3" />
                                 <p className="text-sm text-muted-foreground">Search for commercial properties</p>
