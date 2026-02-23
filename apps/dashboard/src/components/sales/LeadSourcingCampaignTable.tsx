@@ -20,11 +20,12 @@ import {
     CheckCircle2, XCircle, ChevronDown, ChevronUp,
     X, RotateCcw, Plus, Rocket, Loader2, Search,
     Building2, MapPin, Ruler, User, Phone, DollarSign, Calendar,
-    Database, Globe, ChevronLeft, ChevronRight, Check,
+    Database, Globe, ChevronLeft, ChevronRight, Check, Star,
 } from 'lucide-react';
 import { PreviewProperty } from '@xiri/shared';
 import ReactGoogleAutocomplete from 'react-google-autocomplete';
 import { searchOpenData, AVAILABLE_COUNTIES, PROPERTY_CLASS_OPTIONS, PLUTO_BLDG_CLASS_OPTIONS, RECOMMENDED_CODES, RECOMMENDED_PLUTO_CODES, type OpenDataSearchParams, ENRICHMENT_SOURCES, searchDOHFacilities, searchDMVDealers, searchOCFSChildcare, searchDOBPermits, matchEnrichmentToProperty, matchIntentToProperty, type EnrichmentMatch, type IntentSignal, type EnrichmentSource, calculateFitScore, type FitScoreBreakdown } from '@/lib/openDataSearch';
+import { enrichWithGooglePlaces, type PlacesEnrichment } from '@/lib/googlePlaces';
 
 // ── Types ──
 
@@ -157,6 +158,21 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
     fitScore?: FitScoreBreakdown;
 }) {
     const dismissed = property.isDismissed;
+
+    // Lazy-load Google Places enrichment
+    const [placesData, setPlacesData] = useState<PlacesEnrichment | null>(null);
+    const [placesLoading, setPlacesLoading] = useState(false);
+
+    useEffect(() => {
+        if (!property.address) return;
+        setPlacesLoading(true);
+        setPlacesData(null);
+        const businessName = enrichMatch?.facilityName || property.name || '';
+        enrichWithGooglePlaces(property.address, property.city, property.state, businessName)
+            .then(data => setPlacesData(data))
+            .catch(() => setPlacesData(null))
+            .finally(() => setPlacesLoading(false));
+    }, [property.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div className="flex flex-col h-full bg-background border-l border-border overflow-hidden animate-in slide-in-from-right-5 duration-200">
@@ -384,6 +400,97 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
                                 <a href={`tel:${intentMatch.ownerPhone}`} className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
                                     <Phone className="w-3 h-3" /> {intentMatch.ownerPhone}
                                 </a>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Google Business Card */}
+                {placesLoading && (
+                    <Card className="bg-card border-secondary/20 shadow-sm">
+                        <CardContent className="px-3 py-3 space-y-2">
+                            <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+                            <div className="h-2 w-48 bg-muted rounded animate-pulse" />
+                            <div className="h-2 w-24 bg-muted rounded animate-pulse" />
+                        </CardContent>
+                    </Card>
+                )}
+                {placesData && (
+                    <Card className="bg-card border-blue-200 dark:border-blue-800 shadow-sm">
+                        <CardHeader className="py-2 px-3 pb-1">
+                            <CardTitle className="text-xs font-medium flex justify-between items-center">
+                                <span className="flex items-center gap-1.5">
+                                    <Globe className="w-3.5 h-3.5 text-blue-500" /> Google Business
+                                </span>
+                                {placesData.openNow !== undefined && (
+                                    <Badge variant="default" className={`text-[9px] px-1.5 h-4 ${placesData.openNow ? 'bg-emerald-600' : 'bg-red-600'}`}>
+                                        {placesData.openNow ? 'Open Now' : 'Closed'}
+                                    </Badge>
+                                )}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-3 pb-2 pt-0 space-y-1.5">
+                            {/* Rating */}
+                            {placesData.rating && (
+                                <div className="flex items-center gap-1.5 text-xs">
+                                    <div className="flex items-center gap-0.5">
+                                        {[1, 2, 3, 4, 5].map(star => (
+                                            <Star key={star} className={`w-3 h-3 ${star <= Math.round(placesData.rating!) ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground/30'}`} />
+                                        ))}
+                                    </div>
+                                    <span className="font-medium">{placesData.rating}</span>
+                                    {placesData.ratingCount && (
+                                        <span className="text-muted-foreground">({placesData.ratingCount.toLocaleString()} reviews)</span>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Website */}
+                            {placesData.website && (
+                                <a href={placesData.website} target="_blank" rel="noopener noreferrer"
+                                    className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline truncate">
+                                    <Globe className="w-3 h-3 flex-shrink-0" />
+                                    {placesData.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                                </a>
+                            )}
+
+                            {/* Phone */}
+                            {placesData.phone && (
+                                <a href={`tel:${placesData.phone}`} className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
+                                    <Phone className="w-3 h-3 flex-shrink-0" /> {placesData.phone}
+                                </a>
+                            )}
+
+                            {/* Hours */}
+                            {placesData.weekdayHours && placesData.weekdayHours.length > 0 && (
+                                <details className="text-[10px] text-muted-foreground">
+                                    <summary className="cursor-pointer hover:text-foreground font-medium">Hours</summary>
+                                    <div className="mt-1 space-y-0.5 pl-2">
+                                        {placesData.weekdayHours.map((h, i) => (
+                                            <div key={i}>{h}</div>
+                                        ))}
+                                    </div>
+                                </details>
+                            )}
+
+                            {/* Google Maps link */}
+                            {placesData.googleMapsUrl && (
+                                <a href={placesData.googleMapsUrl} target="_blank" rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground">
+                                    <MapPin className="w-2.5 h-2.5" /> View on Google Maps →
+                                </a>
+                            )}
+
+                            {/* Google Photos */}
+                            {placesData.photoUrls.length > 0 && (
+                                <div className="flex gap-1.5 overflow-x-auto pt-1 -mx-1 px-1">
+                                    {placesData.photoUrls.map((url, i) => (
+                                        <img key={i} src={url} alt={`Business photo ${i + 1}`}
+                                            className="h-16 w-24 rounded-md object-cover border border-border flex-shrink-0"
+                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                        />
+                                    ))}
+                                </div>
                             )}
                         </CardContent>
                     </Card>
