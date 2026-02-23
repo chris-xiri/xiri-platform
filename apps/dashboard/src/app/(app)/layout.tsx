@@ -64,10 +64,10 @@ function SidebarSection({ section, collapsed, pathname, expandedSections, toggle
     toggleSection: (key: string) => void;
 }) {
     if (!section.show) return null;
-    const isExpanded = expandedSections[section.label] !== false; // default open
     const hasActiveChild = section.items.some(item =>
         pathname === item.href || pathname.startsWith(item.href + '/')
     );
+    const isExpanded = expandedSections[section.label] === true || hasActiveChild; // default collapsed, auto-expand active
 
     if (collapsed) {
         return (
@@ -114,7 +114,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const { setTheme, theme } = useTheme();
-    const [collapsed, setCollapsed] = useState(true);
+    const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
