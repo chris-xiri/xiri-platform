@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { PreviewProperty } from '@xiri/shared';
 import ReactGoogleAutocomplete from 'react-google-autocomplete';
-import { searchOpenData, AVAILABLE_COUNTIES, PROPERTY_CLASS_OPTIONS, PLUTO_BLDG_CLASS_OPTIONS, RECOMMENDED_CODES, RECOMMENDED_PLUTO_CODES, type OpenDataSearchParams } from '@/lib/openDataSearch';
+import { searchOpenData, AVAILABLE_COUNTIES, PROPERTY_CLASS_OPTIONS, PLUTO_BLDG_CLASS_OPTIONS, RECOMMENDED_CODES, RECOMMENDED_PLUTO_CODES, type OpenDataSearchParams, ENRICHMENT_SOURCES, searchDOHFacilities, searchDMVDealers, searchOCFSChildcare, searchDOBPermits, matchEnrichmentToProperty, matchIntentToProperty, type EnrichmentMatch, type IntentSignal, type EnrichmentSource } from '@/lib/openDataSearch';
 
 // ── Types ──
 
@@ -249,6 +249,12 @@ export default function LeadSourcingCampaignTable({
     const [odHasMore, setOdHasMore] = useState(false);
     const OD_PAGE_SIZE = 200;
 
+    // Enrichment state
+    const [enrichmentSources, setEnrichmentSources] = useState<EnrichmentSource[]>([]);
+    const [enrichments, setEnrichments] = useState<EnrichmentMatch[]>([]);
+    const [intentSignals, setIntentSignals] = useState<IntentSignal[]>([]);
+    const [enrichmentLoading, setEnrichmentLoading] = useState(false);
+
     if (campaigns.length === 0) {
         return (
             <Card className="border-2 border-dashed border-border shadow-sm h-full">
@@ -380,7 +386,36 @@ export default function LeadSourcingCampaignTable({
                 offset: newOffset,
             };
 
-            const result = await searchOpenData(params);
+            // Determine which enrichment sources to auto-enable
+            const autoSources: EnrichmentSource[] = [];
+            for (const src of ENRICHMENT_SOURCES) {
+                const hasMatchingClass = src.autoEnableClasses.some(c => odClasses.includes(c));
+                const hasMatchingPluto = src.autoEnablePlutoClasses.some(c => odPlutoClasses.includes(c));
+                if (hasMatchingClass || hasMatchingPluto) autoSources.push(src.id);
+            }
+            // Always include manually toggled sources
+            const activeSources = [...new Set([...autoSources, ...enrichmentSources])];
+
+            // Fetch property data + enrichment in parallel
+            const [result, ...enrichResults] = await Promise.all([
+                searchOpenData(params),
+                activeSources.includes('doh') ? searchDOHFacilities(odCounties) : Promise.resolve([]),
+                activeSources.includes('dmv') ? searchDMVDealers(odCounties) : Promise.resolve([]),
+                activeSources.includes('ocfs') ? searchOCFSChildcare(odCounties) : Promise.resolve([]),
+            ]);
+
+            // Fetch DOB intent signals for NYC boroughs
+            const plutoBoroughs = odCounties.filter(c => AVAILABLE_COUNTIES.find(ac => ac.value === c && ac.source === 'pluto'));
+            let dobIntents: IntentSignal[] = [];
+            if (activeSources.includes('dob_permits') && plutoBoroughs.length > 0) {
+                dobIntents = await searchDOBPermits(plutoBoroughs);
+            }
+
+            // Merge all enrichment matches
+            const allEnrichments = [...enrichResults[0], ...enrichResults[1], ...enrichResults[2]] as EnrichmentMatch[];
+            setEnrichments(allEnrichments);
+            setIntentSignals(dobIntents);
+
             setOdOffset(newOffset);
             setOdTotalCount(result.totalCount);
             setOdHasMore(result.hasMore);
@@ -405,7 +440,9 @@ export default function LeadSourcingCampaignTable({
 
             const page = Math.floor(newOffset / OD_PAGE_SIZE) + 1;
             const totalPages = Math.ceil(result.totalCount / OD_PAGE_SIZE);
-            setSearchMessage(`${result.totalCount.toLocaleString()} total · Page ${page}/${totalPages} · ${uniqueNew.length} new added`);
+            const enrichCount = allEnrichments.length;
+            const intentCount = dobIntents.length;
+            setSearchMessage(`${result.totalCount.toLocaleString()} total · Page ${page}/${totalPages} · ${uniqueNew.length} new · ${enrichCount} licensing matches · ${intentCount} intent signals`);
         } catch (error: any) {
             console.error('Open Data error:', error);
             setSearchMessage(`Error: ${error.message || 'Failed to fetch'}`);
@@ -697,6 +734,8 @@ export default function LeadSourcingCampaignTable({
                                 {properties.map((property, index) => {
                                     const dismissed = property.isDismissed;
                                     const isSelected = property.id === selectedPropertyId;
+                                    const enrichMatch = matchEnrichmentToProperty(property, enrichments);
+                                    const intentMatch = matchIntentToProperty(property, intentSignals);
                                     return (
                                         <div
                                             key={property.id || index}
@@ -716,17 +755,45 @@ export default function LeadSourcingCampaignTable({
                                             {/* Index */}
                                             <span className="text-muted-foreground w-4 text-center flex-shrink-0">{index + 1}</span>
 
-                                            {/* Name + Location */}
+                                            {/* Name + Location + Enrichment */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-1">
                                                     <span className={`font-medium truncate ${dismissed ? 'line-through text-muted-foreground' : ''}`}>
-                                                        {property.name}
+                                                        {enrichMatch ? enrichMatch.facilityName : property.name}
                                                     </span>
+                                                    {enrichMatch && (
+                                                        <Badge variant="default" className={`text-[8px] px-1 py-0 h-3.5 flex-shrink-0 ${enrichMatch.source === 'doh' ? 'bg-emerald-600' :
+                                                                enrichMatch.source === 'dmv' ? 'bg-orange-600' :
+                                                                    enrichMatch.source === 'ocfs' ? 'bg-purple-600' : 'bg-blue-600'
+                                                            }`}>
+                                                            {enrichMatch.source === 'doh' ? '📋 DOH' :
+                                                                enrichMatch.source === 'dmv' ? '🚘 DMV' :
+                                                                    enrichMatch.source === 'ocfs' ? '🧒 OCFS' : '✓'}
+                                                        </Badge>
+                                                    )}
+                                                    {intentMatch && (
+                                                        <Badge variant="default" className="text-[8px] px-1 py-0 h-3.5 bg-amber-600 flex-shrink-0">
+                                                            🔥 Permit
+                                                        </Badge>
+                                                    )}
                                                     {dismissed && <Badge variant="outline" className="text-[8px] px-0.5 py-0 border-amber-300 text-amber-500 flex-shrink-0 leading-tight">Dismissed</Badge>}
                                                     {property.tenantCount === 1 && !dismissed && (
                                                         <Badge variant="default" className="text-[8px] px-1 py-0 h-3.5 bg-emerald-600 flex-shrink-0">NNN</Badge>
                                                     )}
                                                 </div>
+                                                {/* Owner (from assessment) + enrichment details */}
+                                                {enrichMatch && enrichMatch.operatorName && (
+                                                    <div className="text-[10px] text-blue-600 dark:text-blue-400 truncate">
+                                                        <User className="w-2.5 h-2.5 inline mr-0.5" />
+                                                        {enrichMatch.operatorName}
+                                                        {enrichMatch.phone && (
+                                                            <span className="ml-1.5 text-muted-foreground">
+                                                                <Phone className="w-2 h-2 inline mr-0.5" />
+                                                                {enrichMatch.phone}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 <div className="flex items-center gap-2 text-muted-foreground">
                                                     <span className="flex items-center gap-0.5 truncate">
                                                         <MapPin className="w-2.5 h-2.5 flex-shrink-0" />

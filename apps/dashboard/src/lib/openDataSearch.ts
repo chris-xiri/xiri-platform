@@ -361,3 +361,280 @@ export async function searchOpenData(params: OpenDataSearchParams): Promise<Open
         hasMore: offset + limit < totalCount,
     };
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// ENRICHMENT LAYER — Industry Licensing Databases + Buyer Intent
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── Data Source Config (auto-enable rules) ──
+
+export type EnrichmentSource = 'doh' | 'dmv' | 'ocfs' | 'dob_permits';
+
+export interface EnrichmentSourceConfig {
+    id: EnrichmentSource;
+    label: string;
+    description: string;
+    autoEnableClasses: string[];          // NY State property codes that auto-enable
+    autoEnablePlutoClasses: string[];     // PLUTO building codes that auto-enable
+    availableFor: ('nystate' | 'pluto')[]; // Which county types this source works for
+}
+
+export const ENRICHMENT_SOURCES: EnrichmentSourceConfig[] = [
+    {
+        id: 'doh',
+        label: 'Health Facilities (DOH)',
+        description: 'Licensed medical facilities — clinic names, operators',
+        autoEnableClasses: ['464', '465', '642'],
+        autoEnablePlutoClasses: ['I1', 'I4', 'I5', 'I7', 'I9', 'K4'],
+        availableFor: ['nystate'],
+    },
+    {
+        id: 'dmv',
+        label: 'Auto Dealers (DMV)',
+        description: 'Licensed auto facilities — business names, owners',
+        autoEnableClasses: ['431', '432', '433'],
+        autoEnablePlutoClasses: ['G', 'G1', 'G2', 'G3', 'G5'],
+        availableFor: ['nystate'],
+    },
+    {
+        id: 'ocfs',
+        label: 'Daycares (OCFS)',
+        description: 'Licensed childcare — provider names, phone numbers',
+        autoEnableClasses: ['612'],
+        autoEnablePlutoClasses: ['W1', 'W3'],
+        availableFor: ['nystate'],
+    },
+    {
+        id: 'dob_permits',
+        label: 'Building Permits (DOB)',
+        description: 'Recent commercial permits — buyer intent signals',
+        autoEnableClasses: [],
+        autoEnablePlutoClasses: [],
+        availableFor: ['pluto'],
+    },
+];
+
+// ── Enrichment Result ──
+
+export interface EnrichmentMatch {
+    source: EnrichmentSource;
+    facilityName: string;
+    operatorName?: string;
+    phone?: string;
+    description?: string;
+    licenseId?: string;
+    matchType: 'address' | 'proximity';
+    rawData: Record<string, any>;
+}
+
+export interface IntentSignal {
+    type: 'permit_filed' | 'permit_issued' | 'new_co';
+    label: string;
+    date: string;
+    details: string;
+    ownerPhone?: string;
+    ownerBusinessName?: string;
+}
+
+// ── DOH Health Facilities ──
+
+const DOH_URL = 'https://health.data.ny.gov/resource/vn5v-hh5r.json';
+
+export async function searchDOHFacilities(counties: string[]): Promise<EnrichmentMatch[]> {
+    const nyCounties = counties.filter(c =>
+        AVAILABLE_COUNTIES.find(ac => ac.value === c && ac.source === 'nystate')
+    );
+    if (nyCounties.length === 0) return [];
+
+    const countyFilter = nyCounties.length === 1
+        ? `county='${nyCounties[0]}'`
+        : `county in(${nyCounties.map(c => `'${c}'`).join(',')})`;
+
+    const url = `${DOH_URL}?$limit=5000&$where=${encodeURIComponent(countyFilter)}&$order=facility_name`;
+
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+
+    return data.map((r: any) => ({
+        source: 'doh' as const,
+        facilityName: r.facility_name || '',
+        operatorName: r.operator_name || '',
+        description: r.description || r.fac_desc_short || '',
+        licenseId: r.opcert_num || r.fac_id || '',
+        matchType: 'address' as const,
+        // Normalize address for matching
+        _address: (r.address1 || '').toUpperCase().trim(),
+        _city: (r.city || '').toUpperCase().trim(),
+        _lat: parseFloat(r.latitude) || 0,
+        _lng: parseFloat(r.longitude) || 0,
+        rawData: {
+            facilityType: r.fac_desc_short,
+            openDate: r.fac_opn_dat,
+            ownershipType: r.ownership_type,
+            operatorAddress: [r.operator_address1, r.operator_city, r.operator_state, r.operator_zip].filter(Boolean).join(', '),
+        },
+    }));
+}
+
+// ── DMV Licensed Facilities ──
+
+const DMV_URL = 'https://data.ny.gov/resource/nhjr-rpi2.json';
+
+export async function searchDMVDealers(counties: string[]): Promise<EnrichmentMatch[]> {
+    // DMV uses abbreviated county codes
+    const dmvCountyMap: Record<string, string> = {
+        Nassau: 'NASS', Suffolk: 'SUFF',
+        QN: 'QUEE', BK: 'KING', MN: 'NEWY', BX: 'BRON', SI: 'RICH',
+    };
+
+    const dmvCounties = counties.map(c => dmvCountyMap[c]).filter(Boolean);
+    if (dmvCounties.length === 0) return [];
+
+    const countyFilter = dmvCounties.length === 1
+        ? `facility_county='${dmvCounties[0]}'`
+        : `facility_county in(${dmvCounties.map(c => `'${c}'`).join(',')})`;
+
+    const url = `${DMV_URL}?$limit=5000&$where=${encodeURIComponent(countyFilter)}&$order=facility_name`;
+
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+
+    return data.map((r: any) => ({
+        source: 'dmv' as const,
+        facilityName: [r.facility_name, r.facility_name_overflow].filter(Boolean).join(' ').trim(),
+        operatorName: r.owner_name || '',
+        description: `DMV ${r.business_type || 'Licensed Facility'}`,
+        licenseId: r.facility || '',
+        matchType: 'address' as const,
+        _address: (r.facility_street || '').toUpperCase().trim(),
+        _city: (r.facility_city || '').toUpperCase().trim(),
+        _lat: r.georeference?.coordinates?.[1] || 0,
+        _lng: r.georeference?.coordinates?.[0] || 0,
+        rawData: {
+            businessType: r.business_type,
+            issuanceDate: r.origional_issuance_date,
+            expirationDate: r.expiration_date,
+            lastRenewal: r.last_renewal_date,
+        },
+    }));
+}
+
+// ── OCFS Childcare Programs ──
+
+const OCFS_URL = 'https://data.ny.gov/resource/ktam-ytxy.json';
+
+export async function searchOCFSChildcare(counties: string[]): Promise<EnrichmentMatch[]> {
+    const nyCounties = counties.filter(c =>
+        AVAILABLE_COUNTIES.find(ac => ac.value === c && ac.source === 'nystate')
+    );
+    if (nyCounties.length === 0) return [];
+
+    const countyFilter = nyCounties.length === 1
+        ? `county='${nyCounties[0]}'`
+        : `county in(${nyCounties.map(c => `'${c}'`).join(',')})`;
+
+    const url = `${OCFS_URL}?$limit=5000&$where=${encodeURIComponent(countyFilter)}&$order=facility_name`;
+
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+
+    return data.map((r: any) => ({
+        source: 'ocfs' as const,
+        facilityName: r.facility_name || '',
+        operatorName: r.provider_name || '',
+        phone: r.phone_number || '',
+        description: `${r.program_type || 'Childcare'} — ${r.capacity_description || `Capacity: ${r.total_capacity || '?'}`}`,
+        licenseId: r.facility_id || '',
+        matchType: 'address' as const,
+        _address: [r.street_number, r.street_name].filter(Boolean).join(' ').toUpperCase().trim(),
+        _city: (r.city || '').toUpperCase().trim(),
+        _lat: parseFloat(r.latitude) || 0,
+        _lng: parseFloat(r.longitude) || 0,
+        rawData: {
+            programType: r.program_type,
+            facilityStatus: r.facility_status,
+            schoolDistrict: r.school_district_name,
+            totalCapacity: r.total_capacity,
+            infantCapacity: r.infant_capacity,
+            toddlerCapacity: r.toddler_capacity,
+            preschoolCapacity: r.preschool_capacity,
+        },
+    }));
+}
+
+// ── NYC DOB Building Permits (Buyer Intent) ──
+
+const DOB_URL = 'https://data.cityofnewyork.us/resource/ipu4-2q9a.json';
+
+export async function searchDOBPermits(boroughs: string[]): Promise<IntentSignal[]> {
+    const boroughMap: Record<string, string> = {
+        QN: 'QUEENS', BK: 'BROOKLYN', MN: 'MANHATTAN', BX: 'BRONX', SI: 'STATEN ISLAND',
+    };
+
+    const dobBoroughs = boroughs.map(b => boroughMap[b]).filter(Boolean);
+    if (dobBoroughs.length === 0) return [];
+
+    // Look for commercial A2 (alteration) permits filed in last 90 days
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const dateStr = `${(ninetyDaysAgo.getMonth() + 1).toString().padStart(2, '0')}/${ninetyDaysAgo.getDate().toString().padStart(2, '0')}/${ninetyDaysAgo.getFullYear()}`;
+
+    const boroughFilter = dobBoroughs.length === 1
+        ? `borough='${dobBoroughs[0]}'`
+        : `borough in(${dobBoroughs.map(b => `'${b}'`).join(',')})`;
+
+    const where = `${boroughFilter} AND job_type='A2' AND filing_date>='${dateStr}'`;
+    const url = `${DOB_URL}?$limit=500&$where=${encodeURIComponent(where)}&$order=filing_date DESC`;
+
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+
+    return data.map((r: any) => ({
+        type: 'permit_filed' as const,
+        label: `🔥 Permit Filed ${r.filing_date || ''}`,
+        date: r.filing_date || '',
+        details: `${r.job_type} ${r.work_type || ''} — ${r.permit_status || ''}`,
+        ownerPhone: r.owner_s_phone__ || '',
+        ownerBusinessName: r.owner_s_business_name || '',
+        _address: `${r.house__ || ''} ${r.street_name || ''}`.toUpperCase().trim(),
+        _borough: r.borough || '',
+        _block: r.block || '',
+        _lot: r.lot || '',
+        _lat: parseFloat(r.gis_latitude) || 0,
+        _lng: parseFloat(r.gis_longitude) || 0,
+    }));
+}
+
+// ── Address Matching Utility ──
+
+export function matchEnrichmentToProperty(
+    property: PreviewProperty,
+    enrichments: EnrichmentMatch[],
+): EnrichmentMatch | undefined {
+    const propAddr = (property.address || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const propCity = (property.city || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+    // Try exact address + city match first
+    return enrichments.find((e: any) => {
+        const eAddr = (e._address || '').replace(/[^A-Z0-9]/g, '');
+        const eCity = (e._city || '').replace(/[^A-Z0-9]/g, '');
+        return eAddr && propAddr && eAddr === propAddr && eCity === propCity;
+    });
+}
+
+export function matchIntentToProperty(
+    property: PreviewProperty,
+    intents: IntentSignal[],
+): IntentSignal | undefined {
+    const propAddr = (property.address || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+    return intents.find((i: any) => {
+        const iAddr = (i._address || '').replace(/[^A-Z0-9]/g, '');
+        return iAddr && propAddr && iAddr === propAddr;
+    });
+}
+
