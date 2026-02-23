@@ -20,9 +20,11 @@ import {
     CheckCircle2, XCircle, ChevronDown, ChevronUp,
     X, RotateCcw, Plus, Rocket, Loader2, Search,
     Building2, MapPin, Ruler, User, Phone, DollarSign, Calendar,
+    Database, Globe, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { PreviewProperty } from '@xiri/shared';
 import ReactGoogleAutocomplete from 'react-google-autocomplete';
+import { searchOpenData, AVAILABLE_COUNTIES, PROPERTY_CLASS_OPTIONS, type OpenDataSearchParams } from '@/lib/openDataSearch';
 
 // ── Types ──
 
@@ -232,6 +234,20 @@ export default function LeadSourcingCampaignTable({
     const [loading, setLoading] = useState(false);
     const [searchMessage, setSearchMessage] = useState('');
 
+    // Source toggle: 'google' | 'opendata'
+    const [searchSource, setSearchSource] = useState<'google' | 'opendata'>('opendata');
+
+    // Open Data search state
+    const [odCounties, setOdCounties] = useState<string[]>(['Nassau']);
+    const [odClasses, setOdClasses] = useState<string[]>(['465', '484', '483', '461', '471', '472']);
+    const [odMinSqFt, setOdMinSqFt] = useState('500');
+    const [odMaxSqFt, setOdMaxSqFt] = useState('12000');
+    const [odMunicipality, setOdMunicipality] = useState('');
+    const [odOffset, setOdOffset] = useState(0);
+    const [odTotalCount, setOdTotalCount] = useState<number | null>(null);
+    const [odHasMore, setOdHasMore] = useState(false);
+    const OD_PAGE_SIZE = 50;
+
     if (campaigns.length === 0) {
         return (
             <Card className="border-2 border-dashed border-border shadow-sm h-full">
@@ -273,18 +289,17 @@ export default function LeadSourcingCampaignTable({
     const handleTabSwitch = (id: string) => { setSelectedProperties(new Set()); setSearchMessage(''); setSelectedPropertyId(null); onSetActiveCampaign(id); };
 
     // ── Google Maps Places Text Search ──
-    const handleSearch = async () => {
+    const handleGoogleSearch = async () => {
         if (!query.trim() || !location.trim()) { setSearchMessage('Please fill in both fields'); return; }
         setLoading(true); setSearchMessage('');
 
         try {
-            // Use Google Maps Places Text Search (loaded via react-google-autocomplete)
             if (!window.google?.maps?.places) {
                 throw new Error('Google Maps API not loaded. Check your NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.');
             }
 
             const service = new window.google.maps.places.PlacesService(
-                document.createElement('div') // headless — no map required
+                document.createElement('div')
             );
 
             const searchText = `${query.trim()} near ${location.trim()}`;
@@ -301,7 +316,6 @@ export default function LeadSourcingCampaignTable({
                 });
             });
 
-            // Map Google Places results → CampaignPreviewProperty
             const newProperties: CampaignPreviewProperty[] = results.map((place, i) => {
                 const addressParts = (place.formatted_address || '').split(',').map(s => s.trim());
                 const street = addressParts[0] || '';
@@ -312,24 +326,18 @@ export default function LeadSourcingCampaignTable({
                 return {
                     id: `gmap_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
                     name: place.name || 'Unknown Business',
-                    address: street,
-                    city,
-                    state,
-                    zip,
+                    address: street, city, state, zip,
                     propertyType: inferFacilityType(place.types || [], query),
                     source: 'google_maps',
                     sourceId: place.place_id || '',
                     tenantName: place.name || '',
-                    tenantCount: 1, // Google Places returns individual businesses = single tenant
-                    ownerPhone: '', // Not available from Places API basic search
-                    ownerName: '',
+                    tenantCount: 1,
+                    ownerPhone: '', ownerName: '',
                     isDismissed: false,
-                    // Enrichment fields from Google
                     facilityType: inferFacilityType(place.types || [], query),
                 };
             });
 
-            // Dedupe against existing properties in campaign (by address)
             const existingAddresses = new Set(activeCampaign.properties.map(p => (p.address || '').toLowerCase().trim()));
             const uniqueNew = newProperties.filter(p => !existingAddresses.has((p.address || '').toLowerCase().trim()));
 
@@ -337,7 +345,6 @@ export default function LeadSourcingCampaignTable({
                 onSearchResults(activeCampaign.id, uniqueNew, { query, location, sourced: results.length });
             }
 
-            // Auto-rename campaign from "New Campaign" to query+location
             if (activeCampaign.label === 'New Campaign' && query.trim()) {
                 const loc = location.trim();
                 const parts = loc.split(',').map(p => p.trim());
@@ -352,6 +359,69 @@ export default function LeadSourcingCampaignTable({
             console.error('Error:', error);
             setSearchMessage(`Error: ${error.message || 'Failed to search'}`);
         } finally { setLoading(false); }
+    };
+
+    // ── Open Data SODA API Search ──
+    const handleOpenDataSearch = async (newOffset: number = 0) => {
+        if (odCounties.length === 0) { setSearchMessage('Select at least one county'); return; }
+        if (odClasses.length === 0) { setSearchMessage('Select at least one property class'); return; }
+        setLoading(true); setSearchMessage('');
+
+        try {
+            const params: OpenDataSearchParams = {
+                counties: odCounties,
+                propertyClasses: odClasses,
+                minLotSqFt: odMinSqFt ? parseInt(odMinSqFt) : undefined,
+                maxLotSqFt: odMaxSqFt ? parseInt(odMaxSqFt) : undefined,
+                municipality: odMunicipality || undefined,
+                limit: OD_PAGE_SIZE,
+                offset: newOffset,
+            };
+
+            const result = await searchOpenData(params);
+            setOdOffset(newOffset);
+            setOdTotalCount(result.totalCount);
+            setOdHasMore(result.hasMore);
+
+            // Dedupe
+            const existingIds = new Set(activeCampaign.properties.map(p => p.sourceId));
+            const uniqueNew = result.properties.filter(p => !existingIds.has(p.sourceId));
+
+            if (uniqueNew.length > 0) {
+                onSearchResults(activeCampaign.id, uniqueNew, {
+                    query: `Open Data: ${odCounties.join(', ')}`,
+                    location: odMunicipality || odCounties.join(', '),
+                    sourced: result.totalCount,
+                });
+            }
+
+            if (activeCampaign.label === 'New Campaign') {
+                onRenameCampaign(activeCampaign.id, `Open Data\n${odCounties.join(', ')}\nNY`);
+            }
+
+            const page = Math.floor(newOffset / OD_PAGE_SIZE) + 1;
+            const totalPages = Math.ceil(result.totalCount / OD_PAGE_SIZE);
+            setSearchMessage(`${result.totalCount.toLocaleString()} total · Page ${page}/${totalPages} · ${uniqueNew.length} new added`);
+        } catch (error: any) {
+            console.error('Open Data error:', error);
+            setSearchMessage(`Error: ${error.message || 'Failed to fetch'}`);
+        } finally { setLoading(false); }
+    };
+
+    // Unified search dispatcher
+    const handleSearch = () => {
+        if (searchSource === 'opendata') handleOpenDataSearch(0);
+        else handleGoogleSearch();
+    };
+
+    // Toggle an Open Data county
+    const toggleOdCounty = (county: string) => {
+        setOdCounties(prev => prev.includes(county) ? prev.filter(c => c !== county) : [...prev, county]);
+    };
+
+    // Toggle an Open Data property class
+    const toggleOdClass = (code: string) => {
+        setOdClasses(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
     };
 
     // Infer XIRI facility type from Google Places types + search query
@@ -431,23 +501,122 @@ export default function LeadSourcingCampaignTable({
 
                 {expanded && (
                     <div className="flex-1 flex flex-col min-h-0">
-                        {/* Search Bar */}
+                        {/* Search Bar — dual source */}
                         <div className="px-3 py-2 border-b border-border bg-muted/30 relative flex-shrink-0">
                             {loading && (<div className="absolute top-0 left-0 w-full h-0.5 bg-muted overflow-hidden"><div className="h-full bg-blue-600 animate-progress-indeterminate"></div></div>)}
-                            <div className="flex gap-2 items-center">
-                                <Input type="text" placeholder="Property type (e.g. urgent care, auto dealer)..." value={query} onChange={(e) => setQuery(e.target.value)} className="h-7 text-xs bg-white dark:bg-card flex-1" disabled={loading} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
-                                <ReactGoogleAutocomplete
-                                    apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-                                    onPlaceSelected={(place) => { if (place && (place.formatted_address || place.name)) { setLocation(place.formatted_address || place.name || ''); } }}
-                                    options={{ types: ['geocode'], componentRestrictions: { country: 'us' } }}
-                                    placeholder="Location..."
-                                    className="flex h-7 w-full rounded-md border border-input bg-white dark:bg-card px-2 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 flex-1"
-                                    onChange={(e: any) => setLocation(e.target.value)} value={location} disabled={loading}
-                                />
-                                <Button onClick={handleSearch} disabled={loading} size="sm" className="h-7 text-xs px-3 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white">
-                                    {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Rocket className="mr-1 h-3 w-3" /> Search</>}
-                                </Button>
+
+                            {/* Source Toggle */}
+                            <div className="flex items-center gap-1 mb-2">
+                                <button
+                                    onClick={() => setSearchSource('opendata')}
+                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${searchSource === 'opendata'
+                                            ? 'bg-emerald-600 text-white shadow-sm'
+                                            : 'text-muted-foreground hover:bg-muted'
+                                        }`}>
+                                    <Database className="w-3 h-3" /> NY Open Data
+                                </button>
+                                <button
+                                    onClick={() => setSearchSource('google')}
+                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${searchSource === 'google'
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'text-muted-foreground hover:bg-muted'
+                                        }`}>
+                                    <Globe className="w-3 h-3" /> Google Maps
+                                </button>
                             </div>
+
+                            {/* Google Maps Search */}
+                            {searchSource === 'google' && (
+                                <div className="flex gap-2 items-center">
+                                    <Input type="text" placeholder="Property type (e.g. urgent care)..." value={query} onChange={(e) => setQuery(e.target.value)} className="h-7 text-xs bg-white dark:bg-card flex-1" disabled={loading} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
+                                    <ReactGoogleAutocomplete
+                                        apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                                        onPlaceSelected={(place) => { if (place && (place.formatted_address || place.name)) { setLocation(place.formatted_address || place.name || ''); } }}
+                                        options={{ types: ['geocode'], componentRestrictions: { country: 'us' } }}
+                                        placeholder="Location..."
+                                        className="flex h-7 w-full rounded-md border border-input bg-white dark:bg-card px-2 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 flex-1"
+                                        onChange={(e: any) => setLocation(e.target.value)} value={location} disabled={loading}
+                                    />
+                                    <Button onClick={handleSearch} disabled={loading} size="sm" className="h-7 text-xs px-3 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white">
+                                        {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Rocket className="mr-1 h-3 w-3" /> Search</>}
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Open Data Search */}
+                            {searchSource === 'opendata' && (
+                                <div className="space-y-2">
+                                    {/* Row 1: Counties + Municipality */}
+                                    <div className="flex gap-2 items-center flex-wrap">
+                                        <span className="text-[10px] text-muted-foreground font-medium w-12 flex-shrink-0">County</span>
+                                        {AVAILABLE_COUNTIES.map(c => (
+                                            <button key={c.value} onClick={() => toggleOdCounty(c.value)}
+                                                className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all ${odCounties.includes(c.value)
+                                                        ? 'bg-emerald-600 text-white border-emerald-600'
+                                                        : 'border-border text-muted-foreground hover:border-emerald-400'
+                                                    }`}>
+                                                {c.label}
+                                            </button>
+                                        ))}
+                                        <Input
+                                            type="text" placeholder="Town (optional)..."
+                                            value={odMunicipality} onChange={(e) => setOdMunicipality(e.target.value)}
+                                            className="h-6 text-[10px] bg-white dark:bg-card w-36"
+                                            disabled={loading}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                        />
+                                    </div>
+
+                                    {/* Row 2: Property Classes */}
+                                    <div className="flex gap-1 items-center flex-wrap">
+                                        <span className="text-[10px] text-muted-foreground font-medium w-12 flex-shrink-0">Class</span>
+                                        {PROPERTY_CLASS_OPTIONS.map(pc => (
+                                            <button key={pc.code} onClick={() => toggleOdClass(pc.code)}
+                                                className={`px-1.5 py-0.5 rounded text-[10px] border transition-all ${odClasses.includes(pc.code)
+                                                        ? 'bg-blue-600 text-white border-blue-600'
+                                                        : 'border-border text-muted-foreground hover:border-blue-400'
+                                                    }`}
+                                                title={pc.label}>
+                                                {pc.code}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Row 3: Lot Size + Search */}
+                                    <div className="flex gap-2 items-center">
+                                        <span className="text-[10px] text-muted-foreground font-medium w-12 flex-shrink-0">Lot ft²</span>
+                                        <Input type="number" placeholder="Min" value={odMinSqFt} onChange={(e) => setOdMinSqFt(e.target.value)}
+                                            className="h-6 text-[10px] bg-white dark:bg-card w-20" disabled={loading} />
+                                        <span className="text-[10px] text-muted-foreground">–</span>
+                                        <Input type="number" placeholder="Max" value={odMaxSqFt} onChange={(e) => setOdMaxSqFt(e.target.value)}
+                                            className="h-6 text-[10px] bg-white dark:bg-card w-20" disabled={loading} />
+                                        <div className="flex-1" />
+                                        <Button onClick={handleSearch} disabled={loading} size="sm" className="h-7 text-xs px-3 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white">
+                                            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Database className="mr-1 h-3 w-3" /> Search Open Data</>}
+                                        </Button>
+                                    </div>
+
+                                    {/* Pagination */}
+                                    {odTotalCount !== null && (
+                                        <div className="flex items-center justify-between pt-1">
+                                            <span className="text-[10px] text-muted-foreground">
+                                                {odTotalCount.toLocaleString()} properties · Showing {odOffset + 1}–{Math.min(odOffset + OD_PAGE_SIZE, odTotalCount)}
+                                            </span>
+                                            <div className="flex gap-1">
+                                                <Button size="sm" variant="outline" className="h-5 text-[10px] px-1.5" disabled={odOffset === 0 || loading}
+                                                    onClick={() => handleOpenDataSearch(Math.max(0, odOffset - OD_PAGE_SIZE))}>
+                                                    <ChevronLeft className="w-3 h-3" /> Prev
+                                                </Button>
+                                                <Button size="sm" variant="outline" className="h-5 text-[10px] px-1.5" disabled={!odHasMore || loading}
+                                                    onClick={() => handleOpenDataSearch(odOffset + OD_PAGE_SIZE)}>
+                                                    Next <ChevronRight className="w-3 h-3" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             {searchMessage && <p className={`text-[10px] mt-1 ${searchMessage.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>{searchMessage}</p>}
                         </div>
 
