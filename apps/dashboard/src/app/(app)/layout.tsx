@@ -67,7 +67,7 @@ function SidebarSection({ section, collapsed, pathname, expandedSections, toggle
     const hasActiveChild = section.items.some(item =>
         pathname === item.href || pathname.startsWith(item.href + '/')
     );
-    const isExpanded = expandedSections[section.label] === true || hasActiveChild; // default collapsed, auto-expand active
+    const isExpanded = expandedSections[section.label] === true; // only expands on click
 
     if (collapsed) {
         return (
