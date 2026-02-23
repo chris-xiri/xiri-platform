@@ -455,3 +455,177 @@ function formatPhone(phone: string): string | undefined {
 
     return undefined;
 }
+
+// ═══════════════════════════════════════════════════════
+// DEEP MAILTO SCAN
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Deep-crawl a website looking for mailto: links across all internal pages.
+ * This catches emails that are only on sub-pages (e.g., /staff, /team, /careers)
+ * and are the most reliable email source for small business sites.
+ */
+export async function deepMailtoScan(baseUrl: string): Promise<{ email?: string; phone?: string; pagesScanned: number }> {
+    const visited = new Set<string>();
+    let foundEmail: string | undefined;
+    let foundPhone: string | undefined;
+
+    try {
+        // Fetch homepage first
+        const homepage = await fetchPage(baseUrl);
+        if (!homepage) return { pagesScanned: 0 };
+
+        // Collect ALL internal links from homepage
+        const internalLinks = new Set<string>();
+        homepage.$('a').each((_, elem) => {
+            const href = homepage.$(elem).attr('href');
+            if (!href || href.startsWith('#') || href.startsWith('tel:') || href.startsWith('mailto:')) return;
+            try {
+                const fullUrl = new URL(href, baseUrl).href;
+                if (new URL(fullUrl).hostname === new URL(baseUrl).hostname) {
+                    internalLinks.add(fullUrl);
+                }
+            } catch {
+                // Invalid URL
+            }
+        });
+
+        // Check homepage for mailto/tel first
+        const homeResult = extractMailtoAndTel(homepage.$);
+        if (homeResult.email) foundEmail = homeResult.email;
+        if (homeResult.phone) foundPhone = homeResult.phone;
+        visited.add(baseUrl);
+
+        if (foundEmail) return { email: foundEmail, phone: foundPhone, pagesScanned: 1 };
+
+        // Crawl up to 5 additional internal pages looking for mailto
+        const pagesToCheck = Array.from(internalLinks).slice(0, 5);
+        for (const pageUrl of pagesToCheck) {
+            if (visited.has(pageUrl)) continue;
+            visited.add(pageUrl);
+
+            const page = await fetchPage(pageUrl);
+            if (!page) continue;
+
+            const pageResult = extractMailtoAndTel(page.$);
+            if (pageResult.email && !foundEmail) foundEmail = pageResult.email;
+            if (pageResult.phone && !foundPhone) foundPhone = pageResult.phone;
+
+            // Also check raw HTML for emails in href attributes (obfuscated mailto)
+            const obfuscatedEmails = page.html.match(/href\s*=\s*["']mailto:([^"'?]+)/gi) || [];
+            for (const match of obfuscatedEmails) {
+                const email = match.replace(/href\s*=\s*["']mailto:/i, '').trim().toLowerCase();
+                if (email && !email.match(/^(noreply|no-reply|support|webmaster)@/i)) {
+                    foundEmail = foundEmail || email;
+                }
+            }
+
+            if (foundEmail) break;
+        }
+
+        return { email: foundEmail, phone: foundPhone, pagesScanned: visited.size };
+    } catch (error) {
+        console.error('Deep mailto scan error:', error);
+        return { pagesScanned: visited.size };
+    }
+}
+
+// ═══════════════════════════════════════════════════════
+// SERPER WEB EMAIL SEARCH
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Search the web for a business's email using Serper.dev.
+ * This is the last-resort fallback when website scraping + deep mailto fails.
+ * 
+ * Strategies:
+ * 1. Search `"businessName" "location" email` 
+ * 2. Search `site:domain.com email` (if domain available)
+ * 3. Extract emails from search result snippets and linked pages
+ */
+export async function searchWebForEmail(
+    businessName: string,
+    location: string,
+    domain?: string,
+    serperApiKey?: string
+): Promise<{ email?: string; phone?: string; source: string }> {
+    const apiKey = serperApiKey || process.env.SERPER_API_KEY;
+    if (!apiKey) {
+        console.warn('No SERPER_API_KEY available for web email search.');
+        return { source: 'serper_skipped' };
+    }
+
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const phoneRegex = /(\+1[-.\\s]?)?\(?\d{3}\)?[-.\\s]?\d{3}[-.\\s]?\d{4}/g;
+
+    const queries: string[] = [];
+
+    // Strategy 1: site-specific search (most targeted)
+    if (domain) {
+        queries.push(`site:${domain} email OR contact`);
+    }
+
+    // Strategy 2: business name + location search
+    queries.push(`"${businessName}" ${location} email contact`);
+
+    for (const query of queries) {
+        try {
+            const response = await fetch('https://google.serper.dev/search', {
+                method: 'POST',
+                headers: {
+                    'X-API-KEY': apiKey.trim(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ q: query, num: 5 }),
+                signal: AbortSignal.timeout(10000),
+            });
+
+            if (!response.ok) continue;
+
+            const data = await response.json() as any;
+            const organic = data.organic || [];
+
+            // Extract emails from snippets
+            for (const result of organic) {
+                const text = `${result.snippet || ''} ${result.title || ''}`;
+                const emails = text.match(emailRegex) || [];
+                const phones = text.match(phoneRegex) || [];
+
+                // Filter junk emails
+                const validEmails = emails.filter((e: string) =>
+                    !e.includes('example.com') &&
+                    !e.includes('domain.com') &&
+                    !e.includes('sentry.io') &&
+                    !e.includes('wixpress.com') &&
+                    !e.includes('wordpress.') &&
+                    !e.match(/^(noreply|no-reply|bounce|mailer-daemon)@/i)
+                );
+
+                if (validEmails.length > 0) {
+                    return {
+                        email: validEmails[0].toLowerCase(),
+                        phone: phones[0],
+                        source: 'serper_web_search'
+                    };
+                }
+            }
+
+            // Check knowledge graph if present
+            if (data.knowledgeGraph) {
+                const kg = data.knowledgeGraph;
+                if (kg.email) {
+                    return { email: kg.email.toLowerCase(), phone: kg.phone, source: 'serper_knowledge_graph' };
+                }
+                if (kg.phone && !data.organic?.length) {
+                    return { phone: kg.phone, source: 'serper_knowledge_graph' };
+                }
+            }
+
+        } catch (error) {
+            console.error(`Serper search error for query "${query}":`, error);
+        }
+    }
+
+    return { source: 'serper_exhausted' };
+}
+

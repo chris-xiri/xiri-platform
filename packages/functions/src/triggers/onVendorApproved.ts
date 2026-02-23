@@ -3,22 +3,24 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { scrapeWebsite } from "../utils/websiteScraper";
+import { db } from "../utils/firebase";
+import { scrapeWebsite, deepMailtoScan, searchWebForEmail } from "../utils/websiteScraper";
 import { verifyEmail, isDisposableEmail, isRoleBasedEmail } from "../utils/emailVerification";
 import { validatePhone } from "../utils/phoneValidation";
+import { enqueueTask } from "../utils/queueUtils";
 
 if (!admin.apps.length) {
     admin.initializeApp();
 }
-const db = admin.firestore();
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+const SERPER_API_KEY = defineSecret("SERPER_API_KEY");
 
-console.log("Loading onVendorApproved trigger...");
+console.log("Loading vendor enrichment triggers...");
 
-// ─── Trigger 1: Existing vendor updated TO 'qualified' ───
+// ─── Trigger 1: Vendor status changes to 'qualified' ───
 export const onVendorApproved = onDocumentUpdated({
     document: "vendors/{vendorId}",
-    secrets: [GEMINI_API_KEY],
+    secrets: [GEMINI_API_KEY, SERPER_API_KEY],
 }, async (event) => {
     if (!event.data) return;
 
@@ -36,7 +38,7 @@ export const onVendorApproved = onDocumentUpdated({
 // ─── Trigger 2: New vendor created WITH status 'qualified' ───
 export const onVendorCreated = onDocumentCreated({
     document: "vendors/{vendorId}",
-    secrets: [GEMINI_API_KEY],
+    secrets: [GEMINI_API_KEY, SERPER_API_KEY],
 }, async (event) => {
     if (!event.data) return;
 
@@ -180,40 +182,95 @@ async function runEnrichPipeline(vendorId: string, vendorData: any, previousStat
                     metadata: { enrichedFields, confidence: scrapedData.confidence },
                 });
 
-                // Did we find an email?
+                // Did we find an email from website scrape?
                 if (foundEmail) {
-                    logger.info(`Found email ${foundEmail} for vendor ${vendorId}. Proceeding to outreach.`);
+                    logger.info(`Found email ${foundEmail} for vendor ${vendorId} via website scrape. Proceeding to outreach.`);
                     const updatedDoc = await db.collection("vendors").doc(vendorId).get();
                     await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
-                } else if (scrapedData.contactFormUrl) {
-                    // No email, but has a contact form — flag for manual outreach
-                    logger.info(`No email but found contact form for vendor ${vendorId}: ${scrapedData.contactFormUrl}`);
+                    return;
+                }
+
+                // ─── FALLBACK LAYER 2: Deep mailto scan ───
+                logger.info(`No email from scrape for ${vendorId}. Trying deep mailto scan...`);
+                const mailtoResult = await deepMailtoScan(vendorWebsite);
+
+                if (mailtoResult.email) {
+                    const mailtoVerification = await verifyEmail(mailtoResult.email);
+                    if (mailtoVerification.valid && mailtoVerification.deliverable) {
+                        await db.collection("vendors").doc(vendorId).update({
+                            email: mailtoResult.email,
+                            'enrichment.enrichedFields': admin.firestore.FieldValue.arrayUnion('email'),
+                            'enrichment.enrichmentSource': 'deep_mailto_scan',
+                            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        });
+                        await db.collection("vendor_activities").add({
+                            vendorId,
+                            type: "ENRICHMENT",
+                            description: `Deep mailto scan found email (scanned ${mailtoResult.pagesScanned} pages)`,
+                            createdAt: new Date(),
+                            metadata: { email: mailtoResult.email, pagesScanned: mailtoResult.pagesScanned },
+                        });
+                        logger.info(`Found email ${mailtoResult.email} via deep mailto for ${vendorId}.`);
+                        const updatedDoc = await db.collection("vendors").doc(vendorId).get();
+                        await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
+                        return;
+                    }
+                }
+
+                // ─── FALLBACK LAYER 3: Serper web search ───
+                const vendorName = vendorData.businessName || vendorData.name || '';
+                const vendorLocation = vendorData.address || vendorData.location || '';
+                let domain: string | undefined;
+                try { domain = new URL(vendorWebsite).hostname; } catch { /* ignore */ }
+
+                logger.info(`No email from mailto scan for ${vendorId}. Trying Serper web search...`);
+                const webResult = await searchWebForEmail(vendorName, vendorLocation, domain, SERPER_API_KEY.value());
+
+                if (webResult.email) {
+                    const webVerification = await verifyEmail(webResult.email);
+                    if (webVerification.valid && webVerification.deliverable) {
+                        await db.collection("vendors").doc(vendorId).update({
+                            email: webResult.email,
+                            'enrichment.enrichedFields': admin.firestore.FieldValue.arrayUnion('email'),
+                            'enrichment.enrichmentSource': webResult.source,
+                            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        });
+                        await db.collection("vendor_activities").add({
+                            vendorId,
+                            type: "ENRICHMENT",
+                            description: `Serper web search found email via ${webResult.source}`,
+                            createdAt: new Date(),
+                            metadata: { email: webResult.email, source: webResult.source },
+                        });
+                        logger.info(`Found email ${webResult.email} via ${webResult.source} for ${vendorId}.`);
+                        const updatedDoc = await db.collection("vendors").doc(vendorId).get();
+                        await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
+                        return;
+                    }
+                }
+
+                // ─── ALL SOURCES EXHAUSTED ───
+                if (scrapedData.contactFormUrl) {
+                    logger.info(`All enrichment failed for ${vendorId}, but found contact form: ${scrapedData.contactFormUrl}`);
                     await db.collection("vendors").doc(vendorId).update({
                         outreachStatus: 'NEEDS_MANUAL_OUTREACH',
                         statusUpdatedAt: new Date(),
+                        'enrichment.exhausted': true,
+                        'enrichment.sourcesAttempted': ['website_scrape', 'deep_mailto', 'serper_web_search'],
                     });
                     await db.collection("vendor_activities").add({
                         vendorId,
                         type: "NEEDS_MANUAL_OUTREACH",
-                        description: `No email found. Contact form detected: ${scrapedData.contactFormUrl}`,
+                        description: `No email found after 3-layer enrichment. Contact form: ${scrapedData.contactFormUrl}`,
                         createdAt: new Date(),
-                        metadata: { contactFormUrl: scrapedData.contactFormUrl },
-                    });
-                    // Create a scheduled task for manual outreach
-                    await db.collection("scheduled_activities").add({
-                        vendorId,
-                        type: 'OTHER',
-                        status: 'PENDING',
-                        title: `Manual outreach: ${vendorData.businessName || 'Unknown vendor'}`,
-                        description: `Fill out their contact form at ${scrapedData.contactFormUrl}`,
-                        dueDate: new Date(),
-                        assignedTo: '', // Will be picked up by any recruiter
-                        createdAt: new Date(),
-                        createdBy: 'system',
-                        metadata: { contactFormUrl: scrapedData.contactFormUrl },
+                        metadata: { contactFormUrl: scrapedData.contactFormUrl, sourcesAttempted: 3 },
                     });
                 } else {
-                    await markNeedsContact(vendorId, "No email found after enrichment");
+                    await db.collection("vendors").doc(vendorId).update({
+                        'enrichment.exhausted': true,
+                        'enrichment.sourcesAttempted': ['website_scrape', 'deep_mailto', 'serper_web_search'],
+                    });
+                    await markNeedsContact(vendorId, "No email found after 3-layer enrichment (scrape → mailto → web search)");
                 }
 
             } catch (enrichError: any) {
@@ -224,9 +281,51 @@ async function runEnrichPipeline(vendorId: string, vendorData: any, previousStat
             return;
         }
 
-        // ─── BRANCH 3: No email AND no website → needs manual contact ───
-        logger.info(`Vendor ${vendorId} has no email and no website. Marking NEEDS_CONTACT.`);
-        await markNeedsContact(vendorId, "No email or website available");
+        // ─── BRANCH 3: No email AND no website → try Serper web search before giving up ───
+        logger.info(`Vendor ${vendorId} has no email and no website. Trying Serper web search...`);
+
+        const vendorName = vendorData.businessName || vendorData.name || '';
+        const vendorLocation = vendorData.address || vendorData.location || '';
+
+        if (vendorName) {
+            const webResult = await searchWebForEmail(vendorName, vendorLocation, undefined, SERPER_API_KEY.value());
+
+            if (webResult.email) {
+                const webVerification = await verifyEmail(webResult.email);
+                if (webVerification.valid && webVerification.deliverable) {
+                    await db.collection("vendors").doc(vendorId).update({
+                        email: webResult.email,
+                        enrichment: {
+                            lastEnriched: admin.firestore.FieldValue.serverTimestamp(),
+                            enrichedFields: ['email'],
+                            enrichmentSource: webResult.source,
+                        },
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    });
+                    await db.collection("vendor_activities").add({
+                        vendorId,
+                        type: "ENRICHMENT",
+                        description: `Serper web search found email via ${webResult.source} (no website on file)`,
+                        createdAt: new Date(),
+                        metadata: { email: webResult.email, source: webResult.source },
+                    });
+                    logger.info(`Found email ${webResult.email} via web search for ${vendorId} (no website).`);
+                    const updatedDoc = await db.collection("vendors").doc(vendorId).get();
+                    await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
+                    return;
+                }
+            }
+        }
+
+        // Truly exhausted — no website, no web results
+        await db.collection("vendors").doc(vendorId).update({
+            'enrichment.exhausted': true,
+            'enrichment.sourcesAttempted': vendorName ? ['serper_web_search'] : ['none_available'],
+        });
+        await markNeedsContact(vendorId, vendorName
+            ? "No email found — web search exhausted, no website on file"
+            : "No email, no website, no business name — cannot enrich"
+        );
 
     } catch (error) {
         logger.error("Error in enrich pipeline:", error);
