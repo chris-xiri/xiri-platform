@@ -145,7 +145,7 @@ interface LeadSourcingCampaignTableProps {
 }
 
 /* ─── Property Detail Panel (right-side preview) ─── */
-function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive, campaignId, enrichMatch, intentMatch }: {
+function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive, campaignId, enrichMatch, intentMatch, fitScore }: {
     property: CampaignPreviewProperty;
     onClose: () => void;
     onApprove: (campaignId: string, propertyId: string) => void;
@@ -154,6 +154,7 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
     campaignId: string;
     enrichMatch?: EnrichmentMatch;
     intentMatch?: IntentSignal;
+    fitScore?: FitScoreBreakdown;
 }) {
     const dismissed = property.isDismissed;
 
@@ -176,6 +177,64 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
 
             {/* Property Details */}
             <div className="p-3 space-y-3 border-b border-border flex-shrink-0 bg-muted/5 overflow-y-auto flex-1">
+
+                {/* Street View + Map */}
+                {property.address && (
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-md overflow-hidden border border-border bg-muted/30 aspect-video">
+                            <img
+                                src={`https://maps.googleapis.com/maps/api/streetview?size=400x200&location=${encodeURIComponent(`${property.address}, ${property.city || ''}, ${property.state || ''}`)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
+                                alt="Street View"
+                                className="w-full h-full object-cover"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                        </div>
+                        <div className="rounded-md overflow-hidden border border-border bg-muted/30 aspect-video">
+                            <img
+                                src={`https://maps.googleapis.com/maps/api/staticmap?size=400x200&zoom=16&markers=color:red%7C${encodeURIComponent(`${property.address}, ${property.city || ''}, ${property.state || ''}`)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
+                                alt="Map"
+                                className="w-full h-full object-cover"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Fit Score Breakdown */}
+                {fitScore && (
+                    <Card className="bg-card border-secondary/20 shadow-sm">
+                        <CardHeader className="py-2 px-3 pb-1">
+                            <CardTitle className="text-xs font-medium flex justify-between items-center">
+                                <span className="flex items-center gap-1.5">
+                                    <Rocket className="w-3.5 h-3.5 text-yellow-500 fill-current" /> Fit Score
+                                </span>
+                                <span className={`font-bold text-sm ${fitScore.total >= 70 ? 'text-emerald-600' : fitScore.total >= 45 ? 'text-amber-600' : 'text-red-600'}`}>
+                                    {fitScore.total}/100
+                                </span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-3 pb-2 pt-0 space-y-1">
+                            {[
+                                { label: 'Vertical', value: fitScore.verticalAlignment, weight: '30%', color: 'bg-blue-500' },
+                                { label: 'Single Tenant (NNN)', value: fitScore.singleTenant, weight: '20%', color: 'bg-emerald-500' },
+                                { label: 'Enrichment', value: fitScore.enrichmentMatch, weight: '20%', color: 'bg-purple-500' },
+                                { label: 'Intent Signal', value: fitScore.intentSignal, weight: '15%', color: 'bg-amber-500' },
+                                { label: 'Building Size', value: fitScore.buildingSize, weight: '10%', color: 'bg-cyan-500' },
+                                { label: 'Property Value', value: fitScore.propertyValue, weight: '5%', color: 'bg-gray-500' },
+                            ].map(criterion => (
+                                <div key={criterion.label} className="flex items-center gap-1.5 text-[10px]">
+                                    <span className="w-[85px] text-muted-foreground truncate flex-shrink-0">{criterion.label}</span>
+                                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                        <div className={`h-full rounded-full ${criterion.color} transition-all`} style={{ width: `${criterion.value}%` }} />
+                                    </div>
+                                    <span className="w-6 text-right font-medium">{criterion.value}</span>
+                                    <span className="w-6 text-muted-foreground/60 text-[9px]">{criterion.weight}</span>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Property Info Card */}
                 <Card className="bg-card border-secondary/20 shadow-sm">
                     <CardHeader className="py-2 px-3 pb-1">
@@ -1087,6 +1146,7 @@ export default function LeadSourcingCampaignTable({
                         onRevive={onRevive}
                         enrichMatch={matchEnrichmentToProperty(selectedPreviewProperty, enrichments)}
                         intentMatch={matchIntentToProperty(selectedPreviewProperty, intentSignals)}
+                        fitScore={scoreMap.get(selectedPreviewProperty.id!)}
                     />
                 </div>
             )}
