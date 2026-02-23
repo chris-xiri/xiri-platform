@@ -125,8 +125,8 @@
           "answer": "Yes. We only deploy contractors with specific training in AORN standards and terminal cleaning protocols for operating rooms."
         },
         {
-          "question": "How do you verify sterilization?",
-          "answer": "Our Night Managers utilize ATP testing and visual inspections to audit the performance of our cleaning contractors every night."
+          "question": "How do you verify high-level disinfection?",
+          "answer": "Our Night Managers verify that vendors followed CDC Guidelines for Healthcare Facilities and OSHA's Bloodborne Pathogen Standard (29 CFR 1910.1030) using ATP testing, visual inspections, and protocol checklists — every night, with digital proof by morning."
         }
       ]
     },

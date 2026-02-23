@@ -7,7 +7,7 @@ export const XIRI_SERVICES = [
     { value: 'nightly_janitorial', label: 'Nightly Janitorial', category: 'janitorial' as const },
     { value: 'day_porter', label: 'Day Porter', category: 'janitorial' as const },
     { value: 'restroom_sanitation', label: 'Restroom Sanitation', category: 'janitorial' as const },
-    { value: 'medical_cleaning', label: 'Medical-Grade Cleaning', category: 'janitorial' as const },
+    { value: 'medical_cleaning', label: 'High-Level Disinfection', category: 'janitorial' as const },
 
     // ── Specialized Maintenance ─────────────────────────────────────
     { value: 'floor_care', label: 'Floor Care (Strip & Wax)', category: 'specialized' as const },

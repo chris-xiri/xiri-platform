@@ -35,7 +35,7 @@ export default function Home() {
                 <div className="relative z-10">
                   <div className="w-16 h-16 bg-white rounded-xl shadow-sm flex items-center justify-center text-4xl mb-6">🏥</div>
                   <h3 className="text-2xl font-bold font-heading text-gray-900 mb-2 group-hover:text-sky-600 transition-colors">Medical Facilities</h3>
-                  <p className="text-gray-600 mb-6">Urgent Care, Surgery Centers, & Private Practice. Focused on Infection Control & JCAHO Compliance.</p>
+                  <p className="text-gray-600 mb-6">Urgent Care, Surgery Centers, & Private Practice. Focused on High-Level Disinfection, Infection Control & JCAHO Compliance.</p>
                   <span className="text-sky-700 font-bold flex items-center gap-2">View Medical Solutions <span className="group-hover:translate-x-1 transition-transform">→</span></span>
                 </div>
               </div>
@@ -102,8 +102,8 @@ export default function Home() {
                     🌙
                   </div>
                   <div>
-                    <h4 className="font-bold text-lg">Nightly Audits</h4>
-                    <p className="text-sky-200/80">We physically verify the work every night so you don't have to.</p>
+                    <h4 className="font-bold text-lg">Nightly Verified. Protocol-Driven.</h4>
+                    <p className="text-sky-200/80">We verify your vendor followed CDC Guidelines for Healthcare Facilities and OSHA&apos;s Bloodborne Pathogen Standard (29 CFR 1910.1030) — every night.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">

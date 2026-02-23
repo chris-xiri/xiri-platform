@@ -90,12 +90,12 @@ const CARDS: ValuePropCard[] = [
     {
         id: "audit-ready",
         outcome: "Audit-Ready Confidence",
-        angle: "Verified to your standards. Reliably.",
-        headline: "To Standard. Every Morning.",
-        reliefTitle: "Consistent Excellence",
-        relief: "We deliver the \"Executive-Grade\" environment your patients and customers expect. We manage the supply chain to your specific standards, providing digital proof of service every single morning.",
-        focusTitle: "Verified Every Night",
-        singleTenantFocus: "Stop doing \"spot-checks.\" Our automated nightly audit system ensures your facility is 100% compliant and ready for business before you arrive.",
+        angle: "Protocol governance, not just cleaning.",
+        headline: "Verified Protocols. Every Morning.",
+        reliefTitle: "Compliance You Can Prove",
+        relief: "Your dashboard shows that your vendor followed CDC Guidelines for Healthcare Facilities and OSHA's Bloodborne Pathogen Standard (29 CFR 1910.1030). We verify and document the protocols so you have proof — not promises.",
+        focusTitle: "Governed, Not Just Cleaned",
+        singleTenantFocus: "Stop doing \"spot-checks.\" Our Quality Management System verifies high-level disinfection protocols, supply restocking, and scope compliance — every single night, with digital proof by morning.",
         badge: "Nightly Verification",
         role: "Night Auditor",
         visual: (
@@ -106,7 +106,7 @@ const CARDS: ValuePropCard[] = [
                 </div>
                 <div className="p-4 grid grid-cols-2 gap-2 text-center">
                     <div className="bg-gray-50 rounded p-2">
-                        <p className="text-[10px] text-gray-500">Deep Clean</p>
+                        <p className="text-[10px] text-gray-500">High-Level Disinfection</p>
                         <p className="text-xs font-bold text-teal-600">VERIFIED</p>
                     </div>
                     <div className="bg-gray-50 rounded p-2">

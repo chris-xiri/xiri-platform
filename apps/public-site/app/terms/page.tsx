@@ -74,12 +74,20 @@ export default function TermsOfServicePage() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900">6. Independent Contractors</h2>
+                        <h2 className="text-xl font-bold text-gray-900">6. Independent Contractors & Quality Management</h2>
                         <p>
                             Service providers in the XIRI network are independent contractors, not employees of XIRI.
-                            While we vet all contractors for insurance, licensing, and quality standards, XIRI is not
-                            liable for the acts or omissions of individual contractors beyond our quality assurance
-                            protocols.
+                            While we vet all contractors for insurance, licensing, and quality standards, each contractor
+                            remains the Licensed Operator responsible for the execution of services and compliance with
+                            applicable trade regulations.
+                        </p>
+                        <p className="mt-3">
+                            XIRI provides the <strong>Quality Management System (QMS)</strong> — a governance framework
+                            that includes nightly verification audits, protocol checklists aligned with CDC Guidelines for
+                            Healthcare Facilities and OSHA&apos;s Bloodborne Pathogen Standard (29 CFR 1910.1030), and digital
+                            proof-of-service documentation. The QMS establishes the standard of care; the Vendor delivers
+                            the service. XIRI is not liable for the acts or omissions of individual contractors beyond the
+                            scope of our Quality Management System.
                         </p>
                     </section>
 
