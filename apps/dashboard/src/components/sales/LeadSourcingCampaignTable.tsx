@@ -60,11 +60,12 @@ function MultiSelectDropdown({ label, options, selected, onChange, placeholder, 
     quickFill?: { label: string; values: string[] };
 }) {
     const [open, setOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+            if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setSearchTerm(''); }
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
@@ -108,9 +109,20 @@ function MultiSelectDropdown({ label, options, selected, onChange, placeholder, 
                             <button onClick={() => onChange(quickFill.values)} className="text-[10px] text-amber-600 hover:underline">{quickFill.label}</button>
                         )}
                     </div>
+                    {/* Search */}
+                    <div className="px-2 py-1 border-b border-border">
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            className="w-full text-[11px] px-1.5 py-1 rounded border border-border bg-transparent focus:outline-none focus:ring-1 focus:ring-primary/50"
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            value={searchTerm}
+                            autoFocus
+                        />
+                    </div>
                     {/* Options */}
                     <div className="max-h-[200px] overflow-y-auto py-1">
-                        {options.map(opt => (
+                        {options.filter(o => o.label.toLowerCase().includes(searchTerm.toLowerCase())).map(opt => (
                             <button
                                 key={opt.value}
                                 onClick={() => toggle(opt.value)}
@@ -180,7 +192,7 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
             <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30 flex-shrink-0">
                 <div className="min-w-0 flex-1">
                     <h3 className={`font-semibold text-sm truncate ${dismissed ? 'line-through text-muted-foreground' : ''}`}>
-                        {enrichMatch ? toTitleCase(enrichMatch.facilityName) : toTitleCase(property.name || '')}
+                        {placesData?.name || enrichMatch?.facilityName ? toTitleCase(placesData?.name || enrichMatch?.facilityName || '') : toTitleCase(property.name || '')}
                     </h3>
                     <p className="text-xs text-muted-foreground truncate">
                         {property.city && property.state ? `${property.city}, ${property.state}` : property.address || 'N/A'}
@@ -202,7 +214,7 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
                                 src={`https://maps.googleapis.com/maps/api/streetview?size=400x200&location=${encodeURIComponent(`${property.address}, ${property.city || ''}, ${property.state || ''}`)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
                                 alt="Street View"
                                 className="w-full h-full object-cover"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
                             />
                         </div>
                         <div className="rounded-md overflow-hidden border border-border bg-muted/30 aspect-video">
@@ -210,7 +222,7 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
                                 src={`https://maps.googleapis.com/maps/api/staticmap?size=400x200&zoom=16&markers=color:red%7C${encodeURIComponent(`${property.address}, ${property.city || ''}, ${property.state || ''}`)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
                                 alt="Map"
                                 className="w-full h-full object-cover"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
                             />
                         </div>
                     </div>
@@ -247,89 +259,6 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
                                     <span className="w-6 text-muted-foreground/60 text-[9px]">{criterion.weight}</span>
                                 </div>
                             ))}
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* Property Info Card */}
-                <Card className="bg-card border-secondary/20 shadow-sm">
-                    <CardHeader className="py-2 px-3 pb-1">
-                        <CardTitle className="text-xs font-medium flex justify-between items-center">
-                            <span className="flex items-center gap-1.5">
-                                <Building2 className="w-3.5 h-3.5 text-blue-500" /> Property Details
-                            </span>
-                            <Badge variant="outline" className="text-[10px]">
-                                {property.propertyType?.replace(/_/g, ' ') || 'Commercial'}
-                            </Badge>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-3 pb-2 pt-0 space-y-2">
-                        {/* Address */}
-                        <div className="flex items-start gap-2 text-xs">
-                            <MapPin className="w-3 h-3 text-muted-foreground mt-0.5 flex-shrink-0" />
-                            <span>{property.address}, {property.city}, {property.state} {property.zip}</span>
-                        </div>
-
-                        {/* Sq Ft + Year Built */}
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                            {property.squareFootage && (
-                                <div className="flex items-center gap-1.5">
-                                    <Ruler className="w-3 h-3 text-muted-foreground" />
-                                    <span className="font-medium">{property.squareFootage.toLocaleString()} sq ft</span>
-                                </div>
-                            )}
-                            {property.yearBuilt && (
-                                <div className="flex items-center gap-1.5">
-                                    <Calendar className="w-3 h-3 text-muted-foreground" />
-                                    <span>Built {property.yearBuilt}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Last Sale */}
-                        {property.lastSalePrice && (
-                            <div className="flex items-center gap-1.5 text-xs">
-                                <DollarSign className="w-3 h-3 text-muted-foreground" />
-                                <span>Last sold: ${property.lastSalePrice.toLocaleString()}</span>
-                                {property.lastSaleDate && <span className="text-muted-foreground">({property.lastSaleDate})</span>}
-                            </div>
-                        )}
-
-                        {/* Tenant */}
-                        {property.tenantName && (
-                            <div className="flex items-center gap-1.5 text-xs border-t border-border pt-2 mt-2">
-                                <Building2 className="w-3 h-3 text-emerald-500" />
-                                <span><span className="font-medium">Tenant:</span> {property.tenantName}</span>
-                                {property.tenantCount && (
-                                    <Badge variant={property.tenantCount === 1 ? "default" : "secondary"} className="text-[10px] h-4 px-1">
-                                        {property.tenantCount === 1 ? 'Single-Tenant' : `${property.tenantCount} tenants`}
-                                    </Badge>
-                                )}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Owner Info Card */}
-                {(property.ownerName || property.ownerPhone) && (
-                    <Card className="bg-card border-secondary/20 shadow-sm">
-                        <CardHeader className="py-2 px-3 pb-1">
-                            <CardTitle className="text-xs font-medium flex items-center gap-1.5">
-                                <User className="w-3.5 h-3.5 text-amber-500" /> Owner / Decision Maker
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="px-3 pb-2 pt-0 space-y-1.5">
-                            {property.ownerName && (
-                                <div className="flex items-center gap-1.5 text-xs">
-                                    <User className="w-3 h-3 text-muted-foreground" />
-                                    <span className="font-medium">{toTitleCase(property.ownerName)}</span>
-                                </div>
-                            )}
-                            {property.ownerPhone && (
-                                <a href={`tel:${property.ownerPhone}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                                    <Phone className="w-3 h-3" /> {property.ownerPhone}
-                                </a>
-                            )}
                         </CardContent>
                     </Card>
                 )}
