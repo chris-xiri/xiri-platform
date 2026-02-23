@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { PreviewProperty } from '@xiri/shared';
 import ReactGoogleAutocomplete from 'react-google-autocomplete';
-import { searchOpenData, AVAILABLE_COUNTIES, PROPERTY_CLASS_OPTIONS, type OpenDataSearchParams } from '@/lib/openDataSearch';
+import { searchOpenData, AVAILABLE_COUNTIES, PROPERTY_CLASS_OPTIONS, PLUTO_BLDG_CLASS_OPTIONS, RECOMMENDED_CODES, RECOMMENDED_PLUTO_CODES, type OpenDataSearchParams } from '@/lib/openDataSearch';
 
 // ── Types ──
 
@@ -239,14 +239,15 @@ export default function LeadSourcingCampaignTable({
 
     // Open Data search state
     const [odCounties, setOdCounties] = useState<string[]>(['Nassau']);
-    const [odClasses, setOdClasses] = useState<string[]>(['465', '484', '483', '461', '471', '472']);
-    const [odMinSqFt, setOdMinSqFt] = useState('500');
-    const [odMaxSqFt, setOdMaxSqFt] = useState('12000');
+    const [odClasses, setOdClasses] = useState<string[]>([...RECOMMENDED_CODES]);
+    const [odPlutoClasses, setOdPlutoClasses] = useState<string[]>([...RECOMMENDED_PLUTO_CODES]);
+    const [odMinSqFt, setOdMinSqFt] = useState('');
+    const [odMaxSqFt, setOdMaxSqFt] = useState('');
     const [odMunicipality, setOdMunicipality] = useState('');
     const [odOffset, setOdOffset] = useState(0);
     const [odTotalCount, setOdTotalCount] = useState<number | null>(null);
     const [odHasMore, setOdHasMore] = useState(false);
-    const OD_PAGE_SIZE = 50;
+    const OD_PAGE_SIZE = 200;
 
     if (campaigns.length === 0) {
         return (
@@ -363,14 +364,15 @@ export default function LeadSourcingCampaignTable({
 
     // ── Open Data SODA API Search ──
     const handleOpenDataSearch = async (newOffset: number = 0) => {
-        if (odCounties.length === 0) { setSearchMessage('Select at least one county'); return; }
-        if (odClasses.length === 0) { setSearchMessage('Select at least one property class'); return; }
+        if (odCounties.length === 0) { setSearchMessage('Select at least one county/borough'); return; }
+        if (odClasses.length === 0 && odPlutoClasses.length === 0) { setSearchMessage('Select at least one property class'); return; }
         setLoading(true); setSearchMessage('');
 
         try {
             const params: OpenDataSearchParams = {
                 counties: odCounties,
                 propertyClasses: odClasses,
+                plutoBldgClasses: odPlutoClasses,
                 minLotSqFt: odMinSqFt ? parseInt(odMinSqFt) : undefined,
                 maxLotSqFt: odMaxSqFt ? parseInt(odMaxSqFt) : undefined,
                 municipality: odMunicipality || undefined,
@@ -388,15 +390,17 @@ export default function LeadSourcingCampaignTable({
             const uniqueNew = result.properties.filter(p => !existingIds.has(p.sourceId));
 
             if (uniqueNew.length > 0) {
+                const countyLabels = odCounties.map(c => AVAILABLE_COUNTIES.find(ac => ac.value === c)?.label || c);
                 onSearchResults(activeCampaign.id, uniqueNew, {
-                    query: `Open Data: ${odCounties.join(', ')}`,
-                    location: odMunicipality || odCounties.join(', '),
+                    query: `Open Data: ${countyLabels.join(', ')}`,
+                    location: odMunicipality || countyLabels.join(', '),
                     sourced: result.totalCount,
                 });
             }
 
             if (activeCampaign.label === 'New Campaign') {
-                onRenameCampaign(activeCampaign.id, `Open Data\n${odCounties.join(', ')}\nNY`);
+                const countyLabels = odCounties.map(c => AVAILABLE_COUNTIES.find(ac => ac.value === c)?.label || c);
+                onRenameCampaign(activeCampaign.id, `Open Data\n${countyLabels.join(', ')}\nNY`);
             }
 
             const page = Math.floor(newOffset / OD_PAGE_SIZE) + 1;
@@ -423,6 +427,15 @@ export default function LeadSourcingCampaignTable({
     const toggleOdClass = (code: string) => {
         setOdClasses(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
     };
+
+    // Toggle a PLUTO building class
+    const toggleOdPlutoClass = (code: string) => {
+        setOdPlutoClasses(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
+    };
+
+    // Detect which source types are selected
+    const hasNYStateCounty = odCounties.some(c => AVAILABLE_COUNTIES.find(ac => ac.value === c && ac.source === 'nystate'));
+    const hasPlutoBorough = odCounties.some(c => AVAILABLE_COUNTIES.find(ac => ac.value === c && ac.source === 'pluto'));
 
     // Infer XIRI facility type from Google Places types + search query
     function inferFacilityType(types: string[], searchQuery: string): string {
@@ -510,16 +523,16 @@ export default function LeadSourcingCampaignTable({
                                 <button
                                     onClick={() => setSearchSource('opendata')}
                                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${searchSource === 'opendata'
-                                            ? 'bg-emerald-600 text-white shadow-sm'
-                                            : 'text-muted-foreground hover:bg-muted'
+                                        ? 'bg-emerald-600 text-white shadow-sm'
+                                        : 'text-muted-foreground hover:bg-muted'
                                         }`}>
                                     <Database className="w-3 h-3" /> NY Open Data
                                 </button>
                                 <button
                                     onClick={() => setSearchSource('google')}
                                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${searchSource === 'google'
-                                            ? 'bg-blue-600 text-white shadow-sm'
-                                            : 'text-muted-foreground hover:bg-muted'
+                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        : 'text-muted-foreground hover:bg-muted'
                                         }`}>
                                     <Globe className="w-3 h-3" /> Google Maps
                                 </button>
@@ -552,8 +565,8 @@ export default function LeadSourcingCampaignTable({
                                         {AVAILABLE_COUNTIES.map(c => (
                                             <button key={c.value} onClick={() => toggleOdCounty(c.value)}
                                                 className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all ${odCounties.includes(c.value)
-                                                        ? 'bg-emerald-600 text-white border-emerald-600'
-                                                        : 'border-border text-muted-foreground hover:border-emerald-400'
+                                                    ? 'bg-emerald-600 text-white border-emerald-600'
+                                                    : 'border-border text-muted-foreground hover:border-emerald-400'
                                                     }`}>
                                                 {c.label}
                                             </button>
@@ -567,20 +580,45 @@ export default function LeadSourcingCampaignTable({
                                         />
                                     </div>
 
-                                    {/* Row 2: Property Classes */}
-                                    <div className="flex gap-1 items-center flex-wrap">
-                                        <span className="text-[10px] text-muted-foreground font-medium w-12 flex-shrink-0">Class</span>
-                                        {PROPERTY_CLASS_OPTIONS.map(pc => (
-                                            <button key={pc.code} onClick={() => toggleOdClass(pc.code)}
-                                                className={`px-1.5 py-0.5 rounded text-[10px] border transition-all ${odClasses.includes(pc.code)
+                                    {/* Row 2: NY State Property Classes (show when LI counties selected) */}
+                                    {hasNYStateCounty && (
+                                        <div className="flex gap-1 items-center flex-wrap">
+                                            <span className="text-[10px] text-muted-foreground font-medium w-12 flex-shrink-0">LI Class</span>
+                                            {PROPERTY_CLASS_OPTIONS.map(pc => (
+                                                <button key={pc.code} onClick={() => toggleOdClass(pc.code)}
+                                                    className={`px-1.5 py-0.5 rounded text-[10px] border transition-all ${odClasses.includes(pc.code)
                                                         ? 'bg-blue-600 text-white border-blue-600'
                                                         : 'border-border text-muted-foreground hover:border-blue-400'
-                                                    }`}
-                                                title={pc.label}>
-                                                {pc.code}
+                                                        }`}>
+                                                    <span className="font-semibold">{pc.code}</span>{' '}{pc.label}
+                                                </button>
+                                            ))}
+                                            <button onClick={() => setOdClasses([...RECOMMENDED_CODES])}
+                                                className="px-1.5 py-0.5 rounded text-[10px] border border-amber-400 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 transition-all ml-1">
+                                                ↺ Recommended
                                             </button>
-                                        ))}
-                                    </div>
+                                        </div>
+                                    )}
+
+                                    {/* Row 2b: PLUTO Building Classes (show when NYC boroughs selected) */}
+                                    {hasPlutoBorough && (
+                                        <div className="flex gap-1 items-center flex-wrap">
+                                            <span className="text-[10px] text-muted-foreground font-medium w-12 flex-shrink-0">NYC Class</span>
+                                            {PLUTO_BLDG_CLASS_OPTIONS.map(pc => (
+                                                <button key={pc.code} onClick={() => toggleOdPlutoClass(pc.code)}
+                                                    className={`px-1.5 py-0.5 rounded text-[10px] border transition-all ${odPlutoClasses.includes(pc.code)
+                                                        ? 'bg-purple-600 text-white border-purple-600'
+                                                        : 'border-border text-muted-foreground hover:border-purple-400'
+                                                        }`}>
+                                                    <span className="font-semibold">{pc.code}</span>{' '}{pc.label}
+                                                </button>
+                                            ))}
+                                            <button onClick={() => setOdPlutoClasses([...RECOMMENDED_PLUTO_CODES])}
+                                                className="px-1.5 py-0.5 rounded text-[10px] border border-amber-400 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 transition-all ml-1">
+                                                ↺ Recommended
+                                            </button>
+                                        </div>
+                                    )}
 
                                     {/* Row 3: Lot Size + Search */}
                                     <div className="flex gap-2 items-center">
