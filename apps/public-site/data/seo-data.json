@@ -405,6 +405,20 @@
       "name": "Great Neck, NY",
       "state": "NY",
       "region": "Nassau County",
+      "population": "40,000+",
+      "medicalDensity": "20+ medical offices along Northern Blvd",
+      "keyIntersection": "Northern Blvd & Middle Neck Rd",
+      "localInsight": "Home to the Northern Blvd Medical Mile — one of Long Island's densest concentrations of private medical practices, urgent care centers, and specialty clinics. Great Neck's affluent community demands exceptional facility presentation.",
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) that affect medical waste handling in private practices. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "High foot traffic in Great Neck Plaza and Northern Blvd storefronts requires more frequent day porter services during business hours. Multi-tenant medical buildings need coordinated after-hours cleaning schedules.",
+      "whyXiri": "We already operate along the Northern Blvd corridor, which means faster response times and route-dense service for your facility. Our Night Managers verify every clean within the Great Neck service zone.",
+      "facilityTypes": [
+        "Private medical practices",
+        "Urgent care centers",
+        "Dental offices",
+        "Surgery centers",
+        "Physical therapy clinics"
+      ],
       "zipCodes": [
         "11020",
         "11021",
@@ -421,6 +435,20 @@
         "New Hyde Park",
         "Manhasset",
         "Roslyn"
+      ],
+      "localFaqs": [
+        {
+          "question": "Do you service medical offices near Northwell Health on Northern Blvd?",
+          "answer": "Yes. We actively serve facilities along the entire Northern Blvd Medical Mile corridor, from Great Neck Plaza to the Northwell Health campus. Our teams are already in the area nightly."
+        },
+        {
+          "question": "Can you handle multi-tenant medical building cleaning in Great Neck?",
+          "answer": "Absolutely. We coordinate after-hours schedules across multiple suites in the same building, ensuring minimal disruption to the shared hallways and each individual practice gets their dedicated clean."
+        },
+        {
+          "question": "How do you handle the Nassau County medical waste regulations?",
+          "answer": "Our FSMs are trained on Nassau County's Local Law 12-2019 hazardous waste storage requirements. We ensure proper containerization, labeling, and manifesting for all red-bag waste."
+        }
       ]
     },
     {
@@ -428,6 +456,20 @@
       "name": "New Hyde Park, NY",
       "state": "NY",
       "region": "Nassau County",
+      "population": "10,000+",
+      "medicalDensity": "15+ medical facilities anchored by LIJ Medical Center",
+      "keyIntersection": "Lakeville Rd & Marcus Ave",
+      "localInsight": "Anchored by Long Island Jewish Medical Center (LIJ) and the Lake Success business park, New Hyde Park is a hub for medical professionals, specialty clinics, and ambulatory surgery centers serving the western Nassau corridor.",
+      "complianceNote": "Facilities near LIJ must meet heightened infection control standards due to proximity to a major hospital campus. Our terminal cleaning protocols align with JCAHO and CMS guidelines.",
+      "serviceChallenges": "Many New Hyde Park medical offices operate extended hours (7am–9pm) to serve the LIJ referral network. Our cleaning schedules flex around these demanding hours with late-night and early-morning options.",
+      "whyXiri": "Our route density in the LIJ corridor means we're already servicing nearby facilities every night. Adding your location to our route is seamless — no windshield time wasted, just reliable service.",
+      "facilityTypes": [
+        "Hospital-affiliated practices",
+        "Ambulatory surgery centers",
+        "Dialysis centers",
+        "Imaging centers",
+        "Corporate offices"
+      ],
       "zipCodes": [
         "11040",
         "11042"
@@ -441,6 +483,20 @@
         "Great Neck",
         "Floral Park",
         "Garden City"
+      ],
+      "localFaqs": [
+        {
+          "question": "Do you service medical practices near LIJ Medical Center?",
+          "answer": "Yes. We serve multiple facilities within the LIJ corridor, including practices on Lakeville Rd and Marcus Ave. Our Night Managers verify every clean in this zone."
+        },
+        {
+          "question": "Can you handle surgery center terminal cleaning in New Hyde Park?",
+          "answer": "Yes. We follow AORN-standard terminal cleaning protocols specifically designed for ambulatory surgery centers. Our contractors are trained in OR-grade disinfection and ATP testing verification."
+        },
+        {
+          "question": "What about facilities with extended operating hours?",
+          "answer": "We work around your schedule. Many New Hyde Park practices run until 9pm — our teams arrive after close and complete their work before your first patient arrives the next morning."
+        }
       ]
     }
   ]
