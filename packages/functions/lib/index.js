@@ -48,8 +48,8 @@ async function getTemplate(templateId) {
       return null;
     }
     return doc.data();
-  } catch (error10) {
-    console.error("Error fetching template:", error10);
+  } catch (error11) {
+    console.error("Error fetching template:", error11);
     return null;
   }
 }
@@ -96,8 +96,8 @@ BODY:
       subject: subjectMatch[1].trim(),
       body: bodyMatch[1].trim()
     };
-  } catch (error10) {
-    console.error("Error generating email:", error10);
+  } catch (error11) {
+    console.error("Error generating email:", error11);
     return null;
   }
 }
@@ -165,8 +165,8 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
       });
       resendId = data?.id;
       console.log(`\u2705 Email sent to ${vendor?.companyName}: ${email.subject} (Resend ID: ${data?.id})`);
-    } catch (error10) {
-      console.error("\u274C Resend API error:", error10);
+    } catch (error11) {
+      console.error("\u274C Resend API error:", error11);
       await db2.collection("vendor_activities").add({
         vendorId,
         type: "EMAIL_FAILED",
@@ -176,7 +176,7 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
           templateId,
           subject: email.subject,
           to: vendor?.email || "unknown",
-          error: String(error10)
+          error: String(error11)
         }
       });
       return;
@@ -197,13 +197,13 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
         // NEW: Track Resend email ID
       }
     });
-  } catch (error10) {
-    console.error("Error sending email:", error10);
+  } catch (error11) {
+    console.error("Error sending email:", error11);
   }
 }
 async function sendEmail(to, subject, html, attachments, from, vendorId) {
   try {
-    const { data, error: error10 } = await resend.emails.send({
+    const { data, error: error11 } = await resend.emails.send({
       from: from || "Xiri Facility Solutions <onboarding@xiri.ai>",
       replyTo: "chris@xiri.ai",
       to,
@@ -213,8 +213,8 @@ async function sendEmail(to, subject, html, attachments, from, vendorId) {
       // Tag with vendorId so the webhook can directly identify the vendor
       ...vendorId ? { tags: [{ name: "vendorId", value: vendorId }] } : {}
     });
-    if (error10) {
-      console.error("\u274C Resend API error:", error10);
+    if (error11) {
+      console.error("\u274C Resend API error:", error11);
       return { success: false };
     }
     console.log(`\u2705 Email sent to ${to}: ${subject} (ID: ${data?.id})`);
@@ -246,37 +246,37 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db22, task) {
-  return db22.collection(COLLECTION).add({
+async function enqueueTask(db23, task) {
+  return db23.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db22) {
+async function fetchPendingTasks(db23) {
   const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db22.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db23.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function updateTaskStatus(db22, taskId, status, updates = {}) {
-  await db22.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db23, taskId, status, updates = {}) {
+  await db23.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db22, vendorId) {
-  const snapshot = await db22.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db22.batch();
+async function cancelVendorTasks(db23, vendorId) {
+  const snapshot = await db23.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db23.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadTasks(db22, leadId) {
-  const snapshot = await db22.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db22.batch();
+async function cancelLeadTasks(db23, leadId) {
+  const snapshot = await db23.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db23.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
@@ -320,6 +320,7 @@ __export(index_exports, {
   onVendorUpdated: () => onVendorUpdated,
   onWorkOrderAssigned: () => onWorkOrderAssigned,
   onWorkOrderHandoff: () => onWorkOrderHandoff,
+  optimizeTemplate: () => optimizeTemplate,
   processCommissionPayouts: () => processCommissionPayouts,
   processMailQueue: () => processMailQueue,
   processOutreachQueue: () => processOutreachQueue,
@@ -330,10 +331,11 @@ __export(index_exports, {
   sendOnboardingInvite: () => sendOnboardingInvite,
   sendQuoteEmail: () => sendQuoteEmail,
   sourceProperties: () => sourceProperties,
-  testSendEmail: () => testSendEmail
+  testSendEmail: () => testSendEmail,
+  weeklyTemplateOptimizer: () => weeklyTemplateOptimizer
 });
 module.exports = __toCommonJS(index_exports);
-var import_https5 = require("firebase-functions/v2/https");
+var import_https6 = require("firebase-functions/v2/https");
 
 // src/utils/firebase.ts
 var admin = __toESM(require("firebase-admin"));
@@ -345,8 +347,8 @@ if (!admin.apps.length) {
 var db = admin.firestore();
 try {
   db.settings({ ignoreUndefinedProperties: true });
-} catch (error10) {
-  console.log("Firestore settings usage note:", error10);
+} catch (error11) {
+  console.log("Firestore settings usage note:", error11);
 }
 
 // src/agents/recruiter.ts
@@ -590,9 +592,9 @@ var searchVendors = async (query, location) => {
     const filteredVendors = rawVendors.filter((v) => v.rating === void 0 || v.rating >= 3.5);
     console.log(`Filtered ${rawVendors.length} -> ${filteredVendors.length} vendors (Rating >= 3.5 or N/A).`);
     return filteredVendors;
-  } catch (error10) {
-    console.error("Error searching vendors:", error10.message);
-    throw new Error(`Failed to source vendors: ${error10.message}`);
+  } catch (error11) {
+    console.error("Error searching vendors:", error11.message);
+    throw new Error(`Failed to source vendors: ${error11.message}`);
   }
 };
 var getMockVendors = (query, location) => {
@@ -779,9 +781,9 @@ var searchProperties = async (query, location, providerName = "mock") => {
     const singleTenant = properties.filter((p) => !p.tenantCount || p.tenantCount === 1);
     console.log(`[PropertySourcer] After single-tenant filter: ${singleTenant.length}`);
     return singleTenant;
-  } catch (error10) {
-    console.error(`[PropertySourcer] Error sourcing properties: ${error10.message}`);
-    throw new Error(`Failed to source properties: ${error10.message}`);
+  } catch (error11) {
+    console.error(`[PropertySourcer] Error sourcing properties: ${error11.message}`);
+    throw new Error(`Failed to source properties: ${error11.message}`);
   }
 };
 
@@ -873,8 +875,8 @@ async function scrapeWebsite(url, geminiApiKey) {
     }
     combinedData.confidence = determineConfidence(structuredData, patternData, mergedContact, linkData);
     return { success: true, data: combinedData };
-  } catch (error10) {
-    return { success: false, error: error10.message };
+  } catch (error11) {
+    return { success: false, error: error11.message };
   }
 }
 function extractMailtoAndTel($) {
@@ -1056,8 +1058,8 @@ ${text}`;
       };
     }
     return {};
-  } catch (error10) {
-    console.error("AI extraction error:", error10);
+  } catch (error11) {
+    console.error("AI extraction error:", error11);
     return {};
   }
 }
@@ -1129,8 +1131,8 @@ async function deepMailtoScan(baseUrl) {
       if (foundEmail) break;
     }
     return { email: foundEmail, phone: foundPhone, pagesScanned: visited.size };
-  } catch (error10) {
-    console.error("Deep mailto scan error:", error10);
+  } catch (error11) {
+    console.error("Deep mailto scan error:", error11);
     return { pagesScanned: visited.size };
   }
 }
@@ -1185,8 +1187,8 @@ async function searchWebForEmail(businessName, location, domain, serperApiKey) {
           return { phone: kg.phone, source: "serper_knowledge_graph" };
         }
       }
-    } catch (error10) {
-      console.error(`Serper search error for query "${query}":`, error10);
+    } catch (error11) {
+      console.error(`Serper search error for query "${query}":`, error11);
     }
   }
   return { source: "serper_exhausted" };
@@ -1206,7 +1208,7 @@ async function verifyEmail(email) {
     } else {
       return { valid: true, deliverable: false, reason: "No MX records found" };
     }
-  } catch (error10) {
+  } catch (error11) {
     return { valid: true, deliverable: false, reason: "Domain not found" };
   }
 }
@@ -1216,7 +1218,7 @@ async function resolveMX(domain) {
   const resolveMx = promisify(dns.resolveMx);
   try {
     return await resolveMx(domain);
-  } catch (error10) {
+  } catch (error11) {
     return [];
   }
 }
@@ -1548,8 +1550,8 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
       vendorId,
       vendorName ? "No email found \u2014 web search exhausted, no website on file" : "No email, no website, no business name \u2014 cannot enrich"
     );
-  } catch (error10) {
-    logger.error("Error in enrich pipeline:", error10);
+  } catch (error11) {
+    logger.error("Error in enrich pipeline:", error11);
   }
 }
 async function checkProfileCompleteness(vendorId, vendorData) {
@@ -1650,8 +1652,8 @@ var generateSalesOutreachContent = async (lead, sequence = 0) => {
       email: jsonContent.email,
       generatedAt: /* @__PURE__ */ new Date()
     };
-  } catch (error10) {
-    console.error("[SalesOutreach] Error generating content:", error10);
+  } catch (error11) {
+    console.error("[SalesOutreach] Error generating content:", error11);
     return {
       email: {
         subject: "Error",
@@ -1725,8 +1727,8 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
         }
       }
     }
-  } catch (error10) {
-    logger2.error("Fatal error in queue processor:", error10);
+  } catch (error11) {
+    logger2.error("Fatal error in queue processor:", error11);
   }
 });
 async function handleGenerate(task) {
@@ -1781,7 +1783,8 @@ async function handleGenerate(task) {
     metadata: {
       email: emailResult,
       channel: "EMAIL",
-      sequence
+      sequence,
+      templateId
     }
   });
   await updateTaskStatus(db4, task.id, "COMPLETED");
@@ -1833,6 +1836,7 @@ async function handleSend(task) {
       subject: task.metadata.channel === "SMS" ? null : task.metadata.email?.subject,
       body: task.metadata.channel === "SMS" ? task.metadata.sms : task.metadata.email?.body,
       html: task.metadata.channel === "SMS" ? null : htmlBody,
+      templateId: task.metadata.templateId || null,
       resendId: resendId || null
     }
   });
@@ -1880,16 +1884,47 @@ async function handleFollowUp(task) {
     await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
+  const engagement = vendor.emailEngagement?.lastEvent;
   const sequence = task.metadata?.sequence || 1;
-  const templateId = `vendor_outreach_${sequence + 1}`;
-  const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
-  const templateDoc = await db4.collection("templates").doc(templateId).get();
+  let variantSuffix = "";
+  let variantId = "standard";
+  if (engagement === "bounced") {
+    logger2.info(`Vendor ${task.vendorId} email bounced, flagging for manual outreach.`);
+    await db4.collection("vendors").doc(task.vendorId).update({
+      outreachStatus: "NEEDS_MANUAL",
+      statusUpdatedAt: /* @__PURE__ */ new Date()
+    });
+    await db4.collection("vendor_activities").add({
+      vendorId: task.vendorId,
+      type: "NEEDS_MANUAL_OUTREACH",
+      description: `Follow-up #${sequence} skipped \u2014 previous email bounced. Manual outreach needed.`,
+      createdAt: /* @__PURE__ */ new Date(),
+      metadata: { sequence, reason: "bounce" }
+    });
+    await updateTaskStatus(db4, task.id, "COMPLETED");
+    return;
+  } else if (engagement === "opened" || engagement === "clicked") {
+    variantSuffix = "_warm";
+    variantId = "warm";
+  } else if (engagement === "delivered") {
+    variantSuffix = "_cold";
+    variantId = "cold";
+  }
+  const baseTemplateId = `vendor_outreach_${sequence + 1}`;
+  let templateId = `${baseTemplateId}${variantSuffix}`;
+  let templateDoc = await db4.collection("templates").doc(templateId).get();
+  if (!templateDoc.exists && variantSuffix) {
+    templateId = baseTemplateId;
+    variantId = "standard";
+    templateDoc = await db4.collection("templates").doc(templateId).get();
+  }
   if (!templateDoc.exists) {
     logger2.info(`No template ${templateId} found. Follow-up sequence complete for vendor ${task.vendorId}.`);
     await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
   const template = templateDoc.data();
+  const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
   const services = Array.isArray(vendor.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.join(", ") : vendor.specialty || "Facility Services";
   const contactName = vendor.contactName || vendor.businessName || "there";
   const mergeVars = {
@@ -1932,6 +1967,7 @@ async function handleFollowUp(task) {
       body,
       html: htmlBody,
       templateId,
+      variantId,
       resendId: resendId || null
     }
   });
@@ -2098,8 +2134,8 @@ var analyzeIncomingMessage = async (vendor, messageContent, previousContext) => 
     text = text.replace(/^```json/gm, "").replace(/^```/gm, "").trim();
     const jsonContent = JSON.parse(text);
     return jsonContent;
-  } catch (error10) {
-    console.error("Error analyzing message:", error10);
+  } catch (error11) {
+    console.error("Error analyzing message:", error11);
     return { intent: "OTHER", reply: "Error analyzing message." };
   }
 };
@@ -2168,8 +2204,8 @@ var onIncomingMessage = (0, import_firestore3.onDocumentCreated)("vendor_activit
         inReplyTo: event.params.activityId
       }
     });
-  } catch (error10) {
-    logger3.error("Error processing inbound message:", error10);
+  } catch (error11) {
+    logger3.error("Error processing inbound message:", error11);
   }
 });
 
@@ -2251,11 +2287,11 @@ async function verifyDocument(docType, vendorName, specialty) {
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON found in response");
     return JSON.parse(jsonMatch[0]);
-  } catch (error10) {
-    console.error("AI Verification Failed:", error10);
+  } catch (error11) {
+    console.error("AI Verification Failed:", error11);
     return {
       valid: false,
-      reasoning: "AI Verification Failed: " + error10,
+      reasoning: "AI Verification Failed: " + error11,
       extracted: {}
     };
   }
@@ -2339,11 +2375,11 @@ Return ONLY valid JSON in this exact format:
     }
     logger4.info(`ACORD 25 verification result: valid=${parsed.valid}, flags=${parsed.flags.length}`);
     return parsed;
-  } catch (error10) {
-    logger4.error("ACORD 25 verification failed:", error10);
+  } catch (error11) {
+    logger4.error("ACORD 25 verification failed:", error11);
     return {
       valid: false,
-      reasoning: `AI verification failed: ${error10}`,
+      reasoning: `AI verification failed: ${error11}`,
       extracted: {},
       flags: ["AI_PROCESSING_ERROR"]
     };
@@ -2407,13 +2443,13 @@ var onDocumentUploaded = (0, import_firestore4.onDocumentUpdated)({
       if (status === "FLAGGED") {
         await sendFlagNotification(vendorId, vendorName, result.flags, result.reasoning);
       }
-    } catch (error10) {
-      logger5.error(`ACORD 25 verification failed for ${vendorId}:`, error10);
+    } catch (error11) {
+      logger5.error(`ACORD 25 verification failed for ${vendorId}:`, error11);
       await db8.doc(`vendors/${vendorId}`).update({
         "compliance.acord25.status": "FLAGGED",
         "compliance.acord25.aiAnalysis": {
           valid: false,
-          reasoning: `Verification error: ${error10}`,
+          reasoning: `Verification error: ${error11}`,
           extracted: {}
         },
         updatedAt: admin10.firestore.FieldValue.serverTimestamp()
@@ -2460,8 +2496,8 @@ async function runLegacyVerification(vendorId, docType, vendorData) {
         documentType: docType === "COI" ? "Certificate of Insurance" : "W-9 Form"
       });
     }
-  } catch (error10) {
-    logger5.error(`Verification failed for ${docType}:`, error10);
+  } catch (error11) {
+    logger5.error(`Verification failed for ${docType}:`, error11);
   }
 }
 async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
@@ -2496,8 +2532,8 @@ async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
             </div>`
     });
     logger5.info(`Flag notification sent for vendor ${vendorId}`);
-  } catch (error10) {
-    logger5.error("Failed to send flag notification:", error10);
+  } catch (error11) {
+    logger5.error("Failed to send flag notification:", error11);
   }
 }
 
@@ -2682,8 +2718,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db22 = (0, import_firestore6.getFirestore)();
-    const docRef = db22.collection(collection).doc(documentId);
+    const db23 = (0, import_firestore6.getFirestore)();
+    const docRef = db23.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -2752,12 +2788,12 @@ var enrichFromWebsite = (0, import_https.onCall)({
         confidence: scrapedData.confidence
       }
     };
-  } catch (error10) {
-    console.error("Enrichment error:", error10);
-    if (error10 instanceof import_https.HttpsError) {
-      throw error10;
+  } catch (error11) {
+    console.error("Enrichment error:", error11);
+    if (error11 instanceof import_https.HttpsError) {
+      throw error11;
     }
-    throw new import_https.HttpsError("internal", `Enrichment failed: ${error10.message}`);
+    throw new import_https.HttpsError("internal", `Enrichment failed: ${error11.message}`);
   }
 });
 
@@ -2823,14 +2859,14 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
         </p>
     </div>`;
   try {
-    const { data, error: error10 } = await resend2.emails.send({
+    const { data, error: error11 } = await resend2.emails.send({
       from: "Xiri Facility Solutions <onboarding@xiri.ai>",
       to: "chris@xiri.ai",
       subject: `\u{1F3D7}\uFE0F Vendor Onboarded: ${businessName}`,
       html
     });
-    if (error10) {
-      logger6.error("Failed to send onboarding notification:", error10);
+    if (error11) {
+      logger6.error("Failed to send onboarding notification:", error11);
     } else {
       logger6.info(`Notification sent to chris@xiri.ai (Resend ID: ${data?.id})`);
     }
@@ -2912,7 +2948,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger6.error("Error sending vendor confirmation:", err);
     }
   }
-  const db22 = admin12.firestore();
+  const db23 = admin12.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -2939,9 +2975,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db22.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db23.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger6.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db22.collection("vendor_activities").add({
+  await db23.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -2972,9 +3008,10 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
   logger7.info(`Scheduling drip campaign for vendor ${vendorId} (${businessName})`);
   const now = /* @__PURE__ */ new Date();
   const followUps = [
-    { dayOffset: 3, sequence: 1, subject: "Quick reminder \u2014 complete your Xiri profile" },
-    { dayOffset: 7, sequence: 2, subject: "Just checking in \u2014 your Xiri application" },
-    { dayOffset: 14, sequence: 3, subject: "Final follow-up \u2014 don't miss out on work opportunities" }
+    { dayOffset: 3, sequence: 1, subject: "Quick reminder \u2014 complete your XIRI profile" },
+    { dayOffset: 7, sequence: 2, subject: "Just checking in \u2014 your XIRI application" },
+    { dayOffset: 14, sequence: 3, subject: "Final follow-up \u2014 don't miss out on work opportunities" },
+    { dayOffset: 21, sequence: 4, subject: "Last chance \u2014 XIRI partnership closing soon" }
   ];
   for (const fu of followUps) {
     const scheduledDate = new Date(now);
@@ -3006,7 +3043,7 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
       metadata: { sequence: fu.sequence, dayOffset: fu.dayOffset, subject: fu.subject }
     });
   }
-  logger7.info(`Drip campaign scheduled for ${vendorId}: 3 follow-ups at days 3, 7, 14`);
+  logger7.info(`Drip campaign scheduled for ${vendorId}: 4 follow-ups at days 3, 7, 14, 21`);
 });
 
 // src/triggers/handleUnsubscribe.ts
@@ -3620,11 +3657,11 @@ var processMailQueue = (0, import_firestore10.onDocumentCreated)({
       await docRef.update({ status: "failed", error: "Resend API returned failure" });
       console.error(`\u274C Mail failed: ${templateType} \u2192 ${to}`);
     }
-  } catch (error10) {
-    console.error("Error processing mail_queue:", error10);
+  } catch (error11) {
+    console.error("Error processing mail_queue:", error11);
     await docRef.update({
       status: "failed",
-      error: error10.message || "Unknown error",
+      error: error11.message || "Unknown error",
       failedAt: admin17.firestore.FieldValue.serverTimestamp()
     });
   }
@@ -3843,10 +3880,10 @@ async function generateST1201(vendorData, xiriData, projectData) {
       // ISO for storage
       expiryDate
     };
-  } catch (error10) {
+  } catch (error11) {
     return {
       success: false,
-      error: `Failed to generate ST-120.1: ${error10.message}`
+      error: `Failed to generate ST-120.1: ${error11.message}`
     };
   }
 }
@@ -3867,10 +3904,10 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
   logger10.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
-  const db22 = admin18.firestore();
+  const db23 = admin18.firestore();
   let vendorData;
   try {
-    const vendorSnap = await db22.collection("vendors").doc(newVendorId).get();
+    const vendorSnap = await db23.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
       logger10.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
@@ -3883,7 +3920,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const salesTaxId = vendorData.compliance?.salesTaxId?.trim();
   if (!salesTaxId) {
     logger10.info(`[ST-120.1] Vendor ${newVendorId} has no salesTaxId \u2014 skipping certificate.`);
-    await db22.collection("vendor_activities").add({
+    await db23.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_SKIPPED",
       description: `ST-120.1 not generated for WO ${workOrderId} \u2014 vendor has no Sales Tax ID on file.`,
@@ -3895,7 +3932,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   let leadData = {};
   if (after.leadId) {
     try {
-      const leadSnap = await db22.collection("leads").doc(after.leadId).get();
+      const leadSnap = await db23.collection("leads").doc(after.leadId).get();
       if (leadSnap.exists) {
         leadData = leadSnap.data();
       }
@@ -3905,7 +3942,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   }
   let xiriData;
   try {
-    const settingsSnap = await db22.collection("settings").doc("corporate").get();
+    const settingsSnap = await db23.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
       logger10.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
@@ -3951,7 +3988,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const result = await generateST1201(vendorCertData, xiriData, projectDataInput);
   if (!result.success || !result.pdfBytes) {
     logger10.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
-    await db22.collection("vendor_activities").add({
+    await db23.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
       description: `ST-120.1 generation failed for WO ${workOrderId}: ${result.error}`,
@@ -3985,7 +4022,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     logger10.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err);
     return;
   }
-  await db22.collection("work_orders").doc(workOrderId).update({
+  await db23.collection("work_orders").doc(workOrderId).update({
     st1201CertificateUrl: pdfUrl,
     st1201IssueDate: result.issueDate,
     st1201ExpiryDate: result.expiryDate,
@@ -3994,7 +4031,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (vendorCertData.email) {
     const vendorName = vendorCertData.businessName;
     const projectName = projectDataInput.projectName;
-    await db22.collection("mail_queue").add({
+    await db23.collection("mail_queue").add({
       to: vendorCertData.email,
       subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${projectName}`,
       templateType: "st_120_1_certificate",
@@ -4014,7 +4051,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
       createdAt: admin18.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db22.collection("vendor_activities").add({
+  await db23.collection("vendor_activities").add({
     vendorId: newVendorId,
     type: "TAX_CERTIFICATE_ISSUED",
     description: `ST-120.1 generated for project "${projectDataInput.projectName}" (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
@@ -5161,10 +5198,27 @@ var resendWebhook = (0, import_https4.onRequest)({
       await db21.collection("vendors").doc(vendorId).update(engagementUpdate);
       import_v2.logger.info(`Vendor ${vendorId}: emailEngagement updated (${mapping.deliveryStatus})`);
     }
+    try {
+      const sentActivity = await db21.collection("vendor_activities").where("metadata.resendId", "==", emailId).where("type", "in", ["OUTREACH_SENT", "FOLLOW_UP_SENT"]).limit(1).get();
+      if (!sentActivity.empty) {
+        const actData = sentActivity.docs[0].data();
+        const templateId = actData.metadata?.templateId;
+        if (templateId) {
+          const statsField = mapping.deliveryStatus;
+          await db21.collection("templates").doc(templateId).update({
+            [`stats.${statsField}`]: admin25.firestore.FieldValue.increment(1),
+            "stats.lastUpdated": /* @__PURE__ */ new Date()
+          });
+          import_v2.logger.info(`Template ${templateId}: stats.${statsField} incremented`);
+        }
+      }
+    } catch (statsErr) {
+      import_v2.logger.warn("Template stats update failed:", statsErr);
+    }
     import_v2.logger.info(`Resend webhook: processed ${eventType} for vendor ${vendorId}`);
     res.status(200).json({ ok: true, processed: eventType });
-  } catch (error10) {
-    import_v2.logger.error("Resend webhook error:", error10);
+  } catch (error11) {
+    import_v2.logger.error("Resend webhook error:", error11);
     res.status(500).json({ error: "Internal error" });
   }
 });
@@ -5321,6 +5375,161 @@ var onStaffUpdated = (0, import_firestore16.onDocumentUpdated)("users/{userId}",
   }
 });
 
+// src/triggers/aiTemplateOptimizer.ts
+var import_scheduler4 = require("firebase-functions/v2/scheduler");
+var import_https5 = require("firebase-functions/v2/https");
+var admin26 = __toESM(require("firebase-admin"));
+var logger19 = __toESM(require("firebase-functions/logger"));
+if (!admin26.apps.length) {
+  admin26.initializeApp();
+}
+var db22 = admin26.firestore();
+var weeklyTemplateOptimizer = (0, import_scheduler4.onSchedule)({
+  schedule: "every monday 09:00",
+  timeZone: "America/New_York",
+  secrets: ["GEMINI_API_KEY"],
+  memory: "512MiB"
+}, async () => {
+  logger19.info("Running weekly template optimization check...");
+  await optimizeUnderperformingTemplates();
+});
+var optimizeTemplate = (0, import_https5.onCall)({
+  secrets: ["GEMINI_API_KEY"],
+  memory: "512MiB"
+}, async (request) => {
+  if (!request.auth) {
+    throw new import_https5.HttpsError("unauthenticated", "Must be logged in");
+  }
+  const templateId = request.data?.templateId;
+  if (templateId) {
+    const result = await optimizeSingleTemplate(templateId);
+    return result;
+  } else {
+    const results = await optimizeUnderperformingTemplates();
+    return { optimized: results };
+  }
+});
+var MIN_SENDS_FOR_ANALYSIS = 10;
+var LOW_OPEN_RATE_THRESHOLD = 0.3;
+async function optimizeUnderperformingTemplates() {
+  const templatesSnap = await db22.collection("templates").where("category", "==", "vendor").get();
+  const optimized = [];
+  for (const doc of templatesSnap.docs) {
+    const template = doc.data();
+    const stats = template.stats;
+    if (!stats || stats.sent < MIN_SENDS_FOR_ANALYSIS) continue;
+    const openRate = stats.sent > 0 ? stats.opened / stats.sent : 0;
+    if (openRate < LOW_OPEN_RATE_THRESHOLD) {
+      logger19.info(`Template ${doc.id}: ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
+      await optimizeSingleTemplate(doc.id);
+      optimized.push(doc.id);
+    }
+  }
+  if (optimized.length === 0) {
+    logger19.info("No underperforming templates found.");
+  }
+  return optimized;
+}
+async function optimizeSingleTemplate(templateId) {
+  const templateDoc = await db22.collection("templates").doc(templateId).get();
+  if (!templateDoc.exists) {
+    throw new import_https5.HttpsError("not-found", `Template ${templateId} not found`);
+  }
+  const template = templateDoc.data();
+  const stats = template.stats || { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 };
+  const openRate = stats.sent > 0 ? (stats.opened / stats.sent * 100).toFixed(1) : "N/A";
+  const clickRate = stats.opened > 0 ? (stats.clicked / stats.opened * 100).toFixed(1) : "N/A";
+  const bounceRate = stats.sent > 0 ? (stats.bounced / stats.sent * 100).toFixed(1) : "N/A";
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new import_https5.HttpsError("failed-precondition", "GEMINI_API_KEY not set");
+  }
+  const prompt = `You are an email marketing expert specializing in B2B contractor outreach for facility management companies.
+
+## Current Template Performance
+- Template: "${template.name}" (${templateId})
+- Sent: ${stats.sent} | Delivered: ${stats.delivered} | Opened: ${stats.opened} | Clicked: ${stats.clicked}
+- Open Rate: ${openRate}% | Click Rate: ${clickRate}% | Bounce Rate: ${bounceRate}%
+
+## Current Subject Line
+"${template.subject}"
+
+## Current Email Body
+${template.body}
+
+## Context
+This email targets independent contractors (janitorial, HVAC, cleaning, etc.) to join a facility management network. The CTA is to click a link and complete an onboarding profile. These are small business owners or independent operators \u2014 keep tone professional but blue-collar-friendly.
+
+## Available Merge Variables
+{{vendorName}}, {{contactName}}, {{city}}, {{state}}, {{services}}, {{specialty}}, {{onboardingUrl}}
+
+## Instructions
+Based on the performance data, suggest improvements. Return your response as JSON:
+{
+  "analysis": "Brief analysis of why this template may be underperforming",
+  "suggestions": [
+    {
+      "subject": "Improved subject line option 1",
+      "body": "Improved email body option 1 (keep merge variables, keep it concise)",
+      "rationale": "Why this version should perform better"
+    },
+    {
+      "subject": "Improved subject line option 2",
+      "body": "Improved email body option 2",
+      "rationale": "Why this version should perform better"
+    }
+  ],
+  "shortUrlTest": {
+    "recommendation": "Whether to test short vs long onboarding URL display",
+    "shortVariant": "Suggested short CTA text and link format if applicable"
+  }
+}
+
+Return ONLY valid JSON, no markdown fences.`;
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2e3
+          }
+        })
+      }
+    );
+    const result = await response.json();
+    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      logger19.error("No response from Gemini for template optimization");
+      throw new import_https5.HttpsError("internal", "Gemini returned empty response");
+    }
+    const cleanText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const suggestions = JSON.parse(cleanText);
+    await db22.collection("templates").doc(templateId).update({
+      aiSuggestions: admin26.firestore.FieldValue.arrayUnion({
+        ...suggestions,
+        generatedAt: /* @__PURE__ */ new Date(),
+        performanceSnapshot: stats
+      }),
+      lastOptimizedAt: /* @__PURE__ */ new Date()
+    });
+    logger19.info(`Template ${templateId}: AI suggestions stored (${suggestions.suggestions?.length || 0} variants)`);
+    return {
+      templateId,
+      analysis: suggestions.analysis,
+      suggestionsCount: suggestions.suggestions?.length || 0,
+      shortUrlTest: suggestions.shortUrlTest
+    };
+  } catch (err) {
+    logger19.error(`AI optimization failed for ${templateId}:`, err);
+    throw new import_https5.HttpsError("internal", `AI optimization failed: ${err}`);
+  }
+}
+
 // src/index.ts
 var import_auth = require("firebase-admin/auth");
 var DASHBOARD_CORS = [
@@ -5335,47 +5544,47 @@ var DASHBOARD_CORS = [
   "https://xiri-facility-solutions.web.app",
   "https://xiri-facility-solutions.firebaseapp.com"
 ];
-var adminUpdateAuthUser = (0, import_https5.onCall)({
+var adminUpdateAuthUser = (0, import_https6.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https5.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https6.HttpsError("unauthenticated", "Must be logged in");
   const callerDoc = await db.collection("users").doc(request.auth.uid).get();
   const callerRoles = callerDoc.data()?.roles || [];
-  if (!callerRoles.includes("admin")) throw new import_https5.HttpsError("permission-denied", "Admin only");
+  if (!callerRoles.includes("admin")) throw new import_https6.HttpsError("permission-denied", "Admin only");
   const { uid, email, password, displayName } = request.data;
-  if (!uid) throw new import_https5.HttpsError("invalid-argument", "uid is required");
+  if (!uid) throw new import_https6.HttpsError("invalid-argument", "uid is required");
   const updatePayload = {};
   if (email) updatePayload.email = email;
   if (password) updatePayload.password = password;
   if (displayName) updatePayload.displayName = displayName;
   if (Object.keys(updatePayload).length === 0) {
-    throw new import_https5.HttpsError("invalid-argument", "Nothing to update");
+    throw new import_https6.HttpsError("invalid-argument", "Nothing to update");
   }
   try {
     await (0, import_auth.getAuth)().updateUser(uid, updatePayload);
     return { success: true, message: `Auth updated for ${uid}` };
-  } catch (error10) {
-    console.error("adminUpdateAuthUser error:", error10);
-    throw new import_https5.HttpsError("internal", error10.message || "Failed to update Auth user");
+  } catch (error11) {
+    console.error("adminUpdateAuthUser error:", error11);
+    throw new import_https6.HttpsError("internal", error11.message || "Failed to update Auth user");
   }
 });
-var changeMyPassword = (0, import_https5.onCall)({
+var changeMyPassword = (0, import_https6.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https5.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https6.HttpsError("unauthenticated", "Must be logged in");
   const { newPassword } = request.data;
   if (!newPassword || newPassword.length < 6) {
-    throw new import_https5.HttpsError("invalid-argument", "Password must be at least 6 characters");
+    throw new import_https6.HttpsError("invalid-argument", "Password must be at least 6 characters");
   }
   try {
     await (0, import_auth.getAuth)().updateUser(request.auth.uid, { password: newPassword });
     return { success: true, message: "Password updated" };
-  } catch (error10) {
-    console.error("changeMyPassword error:", error10);
-    throw new import_https5.HttpsError("internal", error10.message || "Failed to change password");
+  } catch (error11) {
+    console.error("changeMyPassword error:", error11);
+    throw new import_https6.HttpsError("internal", error11.message || "Failed to change password");
   }
 });
-var generateLeads = (0, import_https5.onCall)({
+var generateLeads = (0, import_https6.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: [
     "http://localhost:3001",
@@ -5406,7 +5615,7 @@ var generateLeads = (0, import_https5.onCall)({
   const hasActiveContract = data.hasActiveContract || false;
   const previewOnly = data.previewOnly || false;
   if (!query || !location) {
-    throw new import_https5.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https6.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`Analyzing leads for query: ${query}, location: ${location}${previewOnly ? " (PREVIEW MODE)" : ""}`);
@@ -5420,12 +5629,12 @@ var generateLeads = (0, import_https5.onCall)({
       // Include vendor data in response for preview mode
       vendors: previewOnly ? result.vendors : void 0
     };
-  } catch (error10) {
-    console.error("Error in generateLeads:", error10);
-    throw new import_https5.HttpsError("internal", error10.message || "An internal error occurred.");
+  } catch (error11) {
+    console.error("Error in generateLeads:", error11);
+    throw new import_https6.HttpsError("internal", error11.message || "An internal error occurred.");
   }
 });
-var clearPipeline = (0, import_https5.onCall)({
+var clearPipeline = (0, import_https6.onCall)({
   cors: [
     "http://localhost:3001",
     "http://localhost:3000",
@@ -5454,11 +5663,11 @@ var clearPipeline = (0, import_https5.onCall)({
     chunks.push(currentBatch.commit());
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
-  } catch (error10) {
-    throw new import_https5.HttpsError("internal", error10.message);
+  } catch (error11) {
+    throw new import_https6.HttpsError("internal", error11.message);
   }
 });
-var runRecruiterAgent = (0, import_https5.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
+var runRecruiterAgent = (0, import_https6.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
   const rawVendors = req.body.vendors || [
     { name: "ABC Cleaning", services: "We do medical office cleaning and terminal cleaning." },
     { name: "Joe's Pizza", services: "Best pizza in town" },
@@ -5467,7 +5676,7 @@ var runRecruiterAgent = (0, import_https5.onRequest)({ secrets: ["GEMINI_API_KEY
   const result = await analyzeVendorLeads(rawVendors, "Commercial Cleaning");
   res.json(result);
 });
-var testSendEmail = (0, import_https5.onCall)({
+var testSendEmail = (0, import_https6.onCall)({
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
   cors: [
     "http://localhost:3001",
@@ -5481,17 +5690,17 @@ var testSendEmail = (0, import_https5.onCall)({
   const { sendTemplatedEmail: sendTemplatedEmail2 } = await Promise.resolve().then(() => (init_emailUtils(), emailUtils_exports));
   const { vendorId, templateId } = request.data;
   if (!vendorId || !templateId) {
-    throw new import_https5.HttpsError("invalid-argument", "Missing vendorId or templateId");
+    throw new import_https6.HttpsError("invalid-argument", "Missing vendorId or templateId");
   }
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
-  } catch (error10) {
-    console.error("Error sending test email:", error10);
-    throw new import_https5.HttpsError("internal", error10.message || "Failed to send email");
+  } catch (error11) {
+    console.error("Error sending test email:", error11);
+    throw new import_https6.HttpsError("internal", error11.message || "Failed to send email");
   }
 });
-var sourceProperties = (0, import_https5.onCall)({
+var sourceProperties = (0, import_https6.onCall)({
   cors: [
     "http://localhost:3001",
     "http://localhost:3000",
@@ -5510,7 +5719,7 @@ var sourceProperties = (0, import_https5.onCall)({
   const location = data.location;
   const providerName = data.provider || "mock";
   if (!query || !location) {
-    throw new import_https5.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https6.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`[sourceProperties] query="${query}", location="${location}", provider=${providerName}`);
@@ -5520,9 +5729,9 @@ var sourceProperties = (0, import_https5.onCall)({
       sourced: properties.length,
       properties
     };
-  } catch (error10) {
-    console.error("[sourceProperties] Error:", error10);
-    throw new import_https5.HttpsError("internal", error10.message || "Failed to source properties.");
+  } catch (error11) {
+    console.error("[sourceProperties] Error:", error11);
+    throw new import_https6.HttpsError("internal", error11.message || "Failed to source properties.");
   }
 });
 // Annotate the CommonJS export names for ESM import in node:
@@ -5552,6 +5761,7 @@ var sourceProperties = (0, import_https5.onCall)({
   onVendorUpdated,
   onWorkOrderAssigned,
   onWorkOrderHandoff,
+  optimizeTemplate,
   processCommissionPayouts,
   processMailQueue,
   processOutreachQueue,
@@ -5562,6 +5772,7 @@ var sourceProperties = (0, import_https5.onCall)({
   sendOnboardingInvite,
   sendQuoteEmail,
   sourceProperties,
-  testSendEmail
+  testSendEmail,
+  weeklyTemplateOptimizer
 });
 //# sourceMappingURL=index.js.map

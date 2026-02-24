@@ -25,10 +25,11 @@ import { onAuditFailed } from "./triggers/onAuditFailed";
 import { generateMonthlyInvoices } from "./triggers/generateMonthlyInvoices";
 import { resendWebhook } from "./triggers/resendWebhook";
 import { onLeadUpdated, onVendorUpdated, onStaffUpdated } from "./triggers/onLeadUpdated";
+import { weeklyTemplateOptimizer, optimizeTemplate } from "./triggers/aiTemplateOptimizer";
 
 // Export Bot Functions (Telegram disabled for now)
 // export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };
-export { onVendorApproved, onVendorCreated, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete, onAwaitingOnboarding, handleUnsubscribe, sendOnboardingInvite, sendQuoteEmail, respondToQuote, processMailQueue, onWorkOrderAssigned, onLeadQualified, onQuoteAccepted, onInvoicePaid, onWorkOrderHandoff, onClientCancelled, processCommissionPayouts, calculateNrr, onAuditSubmitted, onAuditFailed, generateMonthlyInvoices, resendWebhook, onLeadUpdated, onVendorUpdated, onStaffUpdated };
+export { onVendorApproved, onVendorCreated, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete, onAwaitingOnboarding, handleUnsubscribe, sendOnboardingInvite, sendQuoteEmail, respondToQuote, processMailQueue, onWorkOrderAssigned, onLeadQualified, onQuoteAccepted, onInvoicePaid, onWorkOrderHandoff, onClientCancelled, processCommissionPayouts, calculateNrr, onAuditSubmitted, onAuditFailed, generateMonthlyInvoices, resendWebhook, onLeadUpdated, onVendorUpdated, onStaffUpdated, weeklyTemplateOptimizer, optimizeTemplate };
 
 // ─── Admin: Sync Auth Email/Password ─────────────────────────────────────────
 import { getAuth } from "firebase-admin/auth";

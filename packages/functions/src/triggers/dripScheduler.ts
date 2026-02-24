@@ -36,11 +36,12 @@ export const onAwaitingOnboarding = onDocumentUpdated({
 
     const now = new Date();
 
-    // Schedule follow-ups: Day 3, Day 7, Day 14
+    // Schedule follow-ups: Day 3, 7, 14, 21
     const followUps = [
-        { dayOffset: 3, sequence: 1, subject: 'Quick reminder — complete your Xiri profile' },
-        { dayOffset: 7, sequence: 2, subject: 'Just checking in — your Xiri application' },
+        { dayOffset: 3, sequence: 1, subject: 'Quick reminder — complete your XIRI profile' },
+        { dayOffset: 7, sequence: 2, subject: 'Just checking in — your XIRI application' },
         { dayOffset: 14, sequence: 3, subject: 'Final follow-up — don\'t miss out on work opportunities' },
+        { dayOffset: 21, sequence: 4, subject: 'Last chance — XIRI partnership closing soon' },
     ];
 
     for (const fu of followUps) {
@@ -79,5 +80,5 @@ export const onAwaitingOnboarding = onDocumentUpdated({
         });
     }
 
-    logger.info(`Drip campaign scheduled for ${vendorId}: 3 follow-ups at days 3, 7, 14`);
+    logger.info(`Drip campaign scheduled for ${vendorId}: 4 follow-ups at days 3, 7, 14, 21`);
 });

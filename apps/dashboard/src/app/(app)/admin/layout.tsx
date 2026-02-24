@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Settings, Users, Bot, Scale, User, Mail, DollarSign } from "lucide-react";
+import { Settings, Users, Bot, Scale, User, Mail, DollarSign, BarChart3 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
@@ -36,6 +36,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                                     <NavLink href="/admin/email-templates" label="Email Templates" icon={Mail} pathname={pathname} />
                                     <NavLink href="/admin/legal" label="Legal Templates" icon={Scale} pathname={pathname} />
                                     <NavLink href="/admin/commissions" label="Commissions" icon={DollarSign} pathname={pathname} />
+                                    <NavLink href="/admin/templates" label="Template Analytics" icon={BarChart3} pathname={pathname} />
                                 </>
                             )}
                         </nav>

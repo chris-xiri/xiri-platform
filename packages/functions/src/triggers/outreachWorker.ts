@@ -163,6 +163,7 @@ async function handleGenerate(task: QueueItem) {
             email: emailResult,
             channel: 'EMAIL',
             sequence,
+            templateId,
         }
     });
 
@@ -223,6 +224,7 @@ async function handleSend(task: QueueItem) {
             subject: task.metadata.channel === 'SMS' ? null : task.metadata.email?.subject,
             body: task.metadata.channel === 'SMS' ? task.metadata.sms : task.metadata.email?.body,
             html: task.metadata.channel === 'SMS' ? null : htmlBody,
+            templateId: task.metadata.templateId || null,
             resendId: resendId || null,
         }
     });
@@ -282,13 +284,47 @@ async function handleFollowUp(task: QueueItem) {
         return;
     }
 
+    // ─── Engagement-Based Routing ───────────────────────────────────
+    const engagement = vendor.emailEngagement?.lastEvent;
     const sequence = task.metadata?.sequence || 1;
-    const templateId = `vendor_outreach_${sequence + 1}`; // Follow-ups use templates 2, 3, 4
+    let variantSuffix = '';  // standard (no suffix)
+    let variantId = 'standard';
 
-    const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
+    if (engagement === 'bounced') {
+        // Email bounced — don't send, flag for manual outreach
+        logger.info(`Vendor ${task.vendorId} email bounced, flagging for manual outreach.`);
+        await db.collection("vendors").doc(task.vendorId!).update({
+            outreachStatus: 'NEEDS_MANUAL',
+            statusUpdatedAt: new Date(),
+        });
+        await db.collection("vendor_activities").add({
+            vendorId: task.vendorId,
+            type: "NEEDS_MANUAL_OUTREACH",
+            description: `Follow-up #${sequence} skipped — previous email bounced. Manual outreach needed.`,
+            createdAt: new Date(),
+            metadata: { sequence, reason: 'bounce' },
+        });
+        await updateTaskStatus(db, task.id!, 'COMPLETED');
+        return;
+    } else if (engagement === 'opened' || engagement === 'clicked') {
+        variantSuffix = '_warm';
+        variantId = 'warm';
+    } else if (engagement === 'delivered') {
+        variantSuffix = '_cold';
+        variantId = 'cold';
+    }
 
-    // Fetch template from Firestore
-    const templateDoc = await db.collection("templates").doc(templateId).get();
+    // Try engagement variant first, fall back to standard template
+    const baseTemplateId = `vendor_outreach_${sequence + 1}`;
+    let templateId = `${baseTemplateId}${variantSuffix}`;
+    let templateDoc = await db.collection("templates").doc(templateId).get();
+
+    if (!templateDoc.exists && variantSuffix) {
+        // Fall back to standard template if variant doesn't exist yet
+        templateId = baseTemplateId;
+        variantId = 'standard';
+        templateDoc = await db.collection("templates").doc(templateId).get();
+    }
     if (!templateDoc.exists) {
         // No more templates in the sequence — we're done
         logger.info(`No template ${templateId} found. Follow-up sequence complete for vendor ${task.vendorId}.`);
@@ -297,6 +333,7 @@ async function handleFollowUp(task: QueueItem) {
     }
 
     const template = templateDoc.data()!;
+    const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
 
     // Merge vendor data
     const services = Array.isArray(vendor.capabilities) && vendor.capabilities.length > 0
@@ -346,6 +383,7 @@ async function handleFollowUp(task: QueueItem) {
             body,
             html: htmlBody,
             templateId,
+            variantId,
             resendId: resendId || null,
         }
     });
