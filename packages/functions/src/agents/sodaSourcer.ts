@@ -62,12 +62,13 @@ async function searchNycDca(query: string, location: string, dcaCategory?: strin
         const results = response.data || [];
         console.log(`[SODA/NYC] Found ${results.length} results from NYC DCA`);
 
-        return results.map((b: any) => ({
-            name: titleCase(b.business_name || ''),
-            description: `${b.business_category || 'Licensed Business'} — Active license, expires: ${b.lic_expir_dd ? new Date(b.lic_expir_dd).toLocaleDateString() : 'N/A'}`,
-            location: [b.address_building, b.address_street_name, b.address_city, b.address_state, b.address_zip].filter(Boolean).join(' '),
-            phone: b.contact_phone || undefined,
+        return results.map((item: any) => ({
+            name: item.business_name,
+            description: `NYC DCA Licensed ${item.business_category} (${item.license_status})`,
+            location: `${item.address_building} ${item.address_street_name}, ${item.address_city}, ${item.address_state} ${item.address_zip}`,
+            phone: item.contact_phone,
             source: 'nyc_open_data',
+            dcaCategory: item.business_category,
             rating: undefined,
             user_ratings_total: undefined,
         }));

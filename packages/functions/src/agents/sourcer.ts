@@ -10,6 +10,7 @@ export interface RawVendor {
     source: string;
     rating?: number;
     user_ratings_total?: number;
+    dcaCategory?: string;
 }
 
 /**

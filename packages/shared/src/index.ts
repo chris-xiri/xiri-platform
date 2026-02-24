@@ -124,6 +124,7 @@ export interface Vendor {
     country?: string;
     phone?: string;
     email?: string;
+    dcaCategory?: string;
 
     // Structured Contacts (CRM)
     contacts?: VendorContact[];
