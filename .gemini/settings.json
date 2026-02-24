@@ -1,0 +1,32 @@
+{
+    "mcpServers": {
+        "firebase": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "firebase-tools@latest",
+                "mcp"
+            ],
+            "env": {
+                "FIREBASE_PROJECT": "xiri-platform"
+            }
+        },
+        "resend": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "resend-mcp@latest"
+            ],
+            "env": {
+                "RESEND_API_KEY": "re_Z38tRp74_GHQhfz1MrZLL3YYWAgi5Xxux"
+            }
+        },
+        "gcloud": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@anthropic-ai/gcloud-mcp@latest"
+            ]
+        }
+    }
+}
