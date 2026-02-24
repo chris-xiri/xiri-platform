@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -211,8 +211,34 @@ export default function CampaignResultsTable({
     // Search state
     const [query, setQuery] = useState('');
     const [location, setLocation] = useState('');
+    const [provider, setProvider] = useState<'google_maps' | 'nyc_open_data' | 'all'>('google_maps');
+    const [dcaCategory, setDcaCategory] = useState<string>('');
+    const [dcaCategories, setDcaCategories] = useState<{ name: string; count: number }[]>([]);
+    const [loadingCategories, setLoadingCategories] = useState(false);
     const [loading, setLoading] = useState(false);
     const [searchMessage, setSearchMessage] = useState('');
+
+    // Fetch DCA categories when NYC Open Data is selected
+    useEffect(() => {
+        if ((provider === 'nyc_open_data' || provider === 'all') && dcaCategories.length === 0) {
+            setLoadingCategories(true);
+            const url = new URL('https://data.cityofnewyork.us/resource/w7w3-xahh.json');
+            url.searchParams.set('$select', 'business_category, count(*) as cnt');
+            url.searchParams.set('$group', 'business_category');
+            url.searchParams.set('$order', 'cnt DESC');
+            url.searchParams.set('$limit', '100');
+            url.searchParams.set('$where', "license_status='Active'");
+            fetch(url.toString())
+                .then(r => r.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setDcaCategories(data.map((d: any) => ({ name: d.business_category, count: parseInt(d.cnt) })));
+                    }
+                })
+                .catch(err => console.error('Failed to fetch DCA categories:', err))
+                .finally(() => setLoadingCategories(false));
+        }
+    }, [provider, dcaCategories.length]);
 
     if (campaigns.length === 0) {
         return (
@@ -258,11 +284,19 @@ export default function CampaignResultsTable({
     const handleSearch = async (overrideQuery?: string, overrideLocation?: string) => {
         const q = overrideQuery || query;
         const loc = overrideLocation || location;
-        if (!q.trim() || !loc.trim()) { setSearchMessage('Please fill in both fields'); return; }
+        const needsQuery = provider === 'google_maps';
+        if ((needsQuery && !q.trim()) || !loc.trim()) { setSearchMessage(needsQuery ? 'Please fill in both fields' : 'Please enter a location'); return; }
         setLoading(true); setSearchMessage('');
         try {
             const generateLeads = httpsCallable(functions, 'generateLeads', { timeout: 60000 });
-            const result = await generateLeads({ query: q, location: loc, hasActiveContract: false, previewOnly: true });
+            const result = await generateLeads({
+                query: q || undefined,
+                location: loc,
+                hasActiveContract: false,
+                previewOnly: true,
+                provider,
+                dcaCategory: dcaCategory || undefined
+            });
             const data = result.data as any;
             const newVendors: PreviewVendor[] = data.vendors || [];
             const sourced = data.sourced || 0;
@@ -340,16 +374,44 @@ export default function CampaignResultsTable({
                         {/* Search Bar */}
                         <div className="px-3 py-2 border-b border-border bg-muted/30 relative flex-shrink-0">
                             {loading && (<div className="absolute top-0 left-0 w-full h-0.5 bg-muted overflow-hidden"><div className="h-full bg-blue-600 animate-progress-indeterminate"></div></div>)}
-                            <div className="flex gap-2 items-center">
-                                <Input type="text" placeholder="Search query..." value={query} onChange={(e) => setQuery(e.target.value)} className="h-7 text-xs bg-white dark:bg-card flex-1" disabled={loading} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
+                            <div className="flex flex-wrap gap-2 items-center">
+                                <Input type="text" placeholder="Search query..." value={query} onChange={(e) => setQuery(e.target.value)} className="h-7 text-xs bg-white dark:bg-card flex-1 min-w-[150px]" disabled={loading} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
                                 <ReactGoogleAutocomplete
                                     apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
                                     onPlaceSelected={(place) => { if (place && (place.formatted_address || place.name)) { setLocation(place.formatted_address || place.name || ''); } }}
                                     options={{ types: ['geocode'], componentRestrictions: { country: 'us' } }}
                                     placeholder="Location..."
-                                    className="flex h-7 w-full rounded-md border border-input bg-white dark:bg-card px-2 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 flex-1"
+                                    className="flex h-7 w-full rounded-md border border-input bg-white dark:bg-card px-2 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 flex-1 min-w-[150px]"
                                     onChange={(e: any) => setLocation(e.target.value)} value={location} disabled={loading}
                                 />
+
+                                <select
+                                    value={provider}
+                                    onChange={(e) => { setProvider(e.target.value as any); setDcaCategory(''); }}
+                                    className="h-7 rounded-md border border-input bg-white dark:bg-card px-2 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                                    disabled={loading}
+                                >
+                                    <option value="google_maps">🗺️ Google Maps</option>
+                                    <option value="nyc_open_data">🏛️ NYC Open Data</option>
+                                    <option value="all">🔄 All Sources</option>
+                                </select>
+
+                                {(provider === 'nyc_open_data' || provider === 'all') && (
+                                    <select
+                                        value={dcaCategory}
+                                        onChange={(e) => setDcaCategory(e.target.value)}
+                                        className="h-7 rounded-md border border-input bg-white dark:bg-card px-2 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 max-w-[200px]"
+                                        disabled={loading || loadingCategories}
+                                    >
+                                        <option value="">{loadingCategories ? 'Loading...' : 'DCA All Categories'}</option>
+                                        {dcaCategories.map(c => (
+                                            <option key={c.name} value={c.name}>
+                                                {c.name} ({c.count.toLocaleString()})
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+
                                 <Button onClick={() => handleSearch()} disabled={loading} size="sm" className="h-7 text-xs px-3 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white">
                                     {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Rocket className="mr-1 h-3 w-3" /> Search</>}
                                 </Button>
