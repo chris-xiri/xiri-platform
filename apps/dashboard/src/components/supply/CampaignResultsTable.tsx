@@ -296,7 +296,7 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
                         <Button onClick={() => onDismiss(campaignId, vendor.id!)}
                             variant="default" size="sm"
                             className="w-full bg-red-600 hover:bg-red-700 text-white h-7 text-xs">
-                            <XCircle className="w-3 h-3 mr-1" /> Dismiss (Not a fit)
+                            <XCircle className="w-3 h-3 mr-1" /> Dismiss
                         </Button>
                     </>
                 )}
@@ -768,7 +768,7 @@ export default function CampaignResultsTable({
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Dismiss {selectedVendors.size} Vendor{selectedVendors.size > 1 ? 's' : ''}?</AlertDialogTitle>
-                        <AlertDialogDescription>They'll be blacklisted and shown grayed out in future campaigns.</AlertDialogDescription>
+                        <AlertDialogDescription>They will be removed from this campaign.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleBulkDismiss} className="bg-red-600 hover:bg-red-700 text-white">Dismiss</AlertDialogAction></AlertDialogFooter>
                 </AlertDialogContent>
@@ -777,7 +777,7 @@ export default function CampaignResultsTable({
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Close Campaign Tab?</AlertDialogTitle>
-                        <AlertDialogDescription>This will discard the preview. Vendors are not blacklisted.</AlertDialogDescription>
+                        <AlertDialogDescription>This will discard the preview. Vendors are NOT saved automatically.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmCloseTab} className="bg-slate-600 hover:bg-slate-700 text-white">Close Tab</AlertDialogAction></AlertDialogFooter>
                 </AlertDialogContent>

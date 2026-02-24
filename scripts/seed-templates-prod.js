@@ -75,6 +75,7 @@ A JSON list of vendors with name, description, address, website, and phone.
 1. Analyze each vendor based on their name, description, and any available info.
 2. Determine if they provide services relevant to the Query.
 3. Assign a Fit Score (0-100) based on relevance.
+   CRITICAL: Exclude ANY franchise companies (e.g., Jani-King, Jan-Pro, Coverall, Anago, Vanguard, Stratus, ServiceMaster, Merry Maids, The Cleaning Authority). Score them 0 and set isQualified to false. We ONLY want true independent local subcontractors.
 4. Extract ALL services they likely provide — be thorough. Infer from the business name, 
    description, and industry norms. For example, a "janitorial" company likely also 
    provides floor care, restroom sanitation, and trash removal.

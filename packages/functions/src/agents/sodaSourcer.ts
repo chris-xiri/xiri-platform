@@ -82,18 +82,18 @@ async function searchNycDca(query: string, location: string, dcaCategory?: strin
 const NYS_CORP_ENDPOINT = 'https://data.ny.gov/resource/n9v6-gdp6.json';
 
 async function searchNyState(query: string, location: string, limit: number = 50): Promise<RawVendor[]> {
-    // Build keyword filter from query
-    const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    // Build keyword filter from query. Split by space, comma, or slash.
+    const queryWords = query.toLowerCase().split(/[\s,\/]+/).filter(w => w.length > 3);
     const nameFilters = queryWords
         .map(w => `upper(current_entity_name) like '%${w.toUpperCase()}%'`)
         .join(' OR ');
 
     // Location filter
-    const locationWords = location.toLowerCase().split(/[\s,]+/).filter(w => w.length > 2);
+    const locationWords = location.toLowerCase().split(/[\s,\/]+/).filter(w => w.length > 2);
     let locFilter = '';
     if (locationWords.length > 0) {
         const locConditions = locationWords.map(w =>
-            `upper(dos_process_city) like '%${w.toUpperCase()}%'`
+            `(upper(dos_process_city) like '%${w.toUpperCase()}%' OR upper(county) like '%${w.toUpperCase()}%')`
         ).join(' OR ');
         locFilter = ` AND (${locConditions})`;
     }

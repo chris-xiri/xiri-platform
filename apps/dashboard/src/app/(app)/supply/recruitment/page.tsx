@@ -32,28 +32,6 @@ function loadCampaigns(): { campaigns: Campaign[]; activeCampaignId: string | nu
     } catch { return null; }
 }
 
-// ─── Firestore helpers ───
-const dismissVendorInFirestore = async (vendor: PreviewVendor) => {
-    try {
-        const dismissData: Record<string, any> = {
-            businessName: vendor.businessName,
-            dismissedAt: serverTimestamp(),
-        };
-        // Store phone/website for robust blacklist matching across searches
-        if (vendor.phone) dismissData.phone = vendor.phone;
-        if (vendor.website) dismissData.website = vendor.website;
-        await addDoc(collection(db, "dismissed_vendors"), dismissData);
-    } catch (err) { console.error(`Failed to persist dismissal for "${vendor.businessName}":`, err); }
-};
-
-const reviveVendorInFirestore = async (vendor: PreviewVendor) => {
-    try {
-        const q = query(collection(db, "dismissed_vendors"), where("businessName", "==", vendor.businessName));
-        const snapshot = await getDocs(q);
-        for (const doc of snapshot.docs) { await deleteDoc(doc.ref); }
-    } catch (err) { console.error(`Failed to revive "${vendor.businessName}":`, err); }
-};
-
 export default function RecruitmentPage() {
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
@@ -123,26 +101,18 @@ export default function RecruitmentPage() {
         removeVendorFromCampaign(campaignId, vendorId);
     }, [campaigns]);
 
-    // Dismiss — blacklist + remove
+    // Dismiss — remove from campaign
     const handleDismiss = useCallback(async (campaignId: string, vendorId: string) => {
         const campaign = campaigns.find(c => c.id === campaignId);
         const vendor = campaign?.vendors.find(v => v.id === vendorId);
         if (!vendor) return;
-        await dismissVendorInFirestore(vendor);
         console.log(`❌ Dismissed "${vendor.businessName}"`);
         removeVendorFromCampaign(campaignId, vendorId);
     }, [campaigns]);
 
-    // Revive — un-dismiss
+    // Revive — no longer needed since Dismiss removes immediately, but keeping stub for prop
     const handleRevive = useCallback(async (campaignId: string, vendorId: string) => {
-        const campaign = campaigns.find(c => c.id === campaignId);
-        const vendor = campaign?.vendors.find(v => v.id === vendorId);
-        if (!vendor) return;
-        await reviveVendorInFirestore(vendor);
-        console.log(`🔄 Revived "${vendor.businessName}"`);
-        setCampaigns(prev => prev.map(c =>
-            c.id === campaignId ? { ...c, vendors: c.vendors.map(v => v.id === vendorId ? { ...v, isDismissed: false } : v) } : c
-        ));
+        console.log(`🔄 Revived vendor`);
     }, [campaigns]);
 
     // Approve all active
@@ -170,12 +140,11 @@ export default function RecruitmentPage() {
         ));
     }, [campaigns]);
 
-    // Dismiss all active
+    // Dismiss all active — remove from campaign
     const handleDismissAll = useCallback(async (campaignId: string) => {
         const campaign = campaigns.find(c => c.id === campaignId);
         if (!campaign) return;
         const active = campaign.vendors.filter(v => !v.isDismissed);
-        for (const vendor of active) { await dismissVendorInFirestore(vendor); }
         console.log(`❌ Dismissed all ${active.length} vendors from "${campaign.label}".`);
         setCampaigns(prev => prev.map(c =>
             c.id === campaignId ? { ...c, vendors: c.vendors.filter(v => v.isDismissed) } : c

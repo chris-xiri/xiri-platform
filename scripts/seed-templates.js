@@ -3,11 +3,11 @@ const admin = require('firebase-admin');
 
 // Initialize Firebase Admin (reuse existing config if running in context, or init new)
 if (!admin.apps.length) {
-    process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8085';
-    process.env.GCLOUD_PROJECT = 'xiri-facility-solutions';
-    admin.initializeApp({
-        projectId: 'xiri-facility-solutions',
-    });
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8085';
+  process.env.GCLOUD_PROJECT = 'xiri-facility-solutions';
+  admin.initializeApp({
+    projectId: 'xiri-facility-solutions',
+  });
 }
 
 const db = admin.firestore();
@@ -28,6 +28,7 @@ A JSON list of vendors with name, description, website, and phone.
 1. Analyze each vendor.
 2. Determine if they offer services relevant to the Query.
 3. Assign a "Fit Score" (0-100).
+   CRITICAL: Exclude ANY franchise companies (e.g., Jani-King, Jan-Pro, Coverall, Anago, Vanguard, Stratus, ServiceMaster, Merry Maids, The Cleaning Authority). Score them 0 and set isQualified to false. We ONLY want true independent local subcontractors.
 4. Extract their "Specialty" (e.g., "Medical Cleaning", "HVAC", "General Janitorial").
 5. Return a JSON array of objects with:
    - index: (original index)
@@ -95,26 +96,26 @@ Return ONLY JSON:
 
 
 async function seedTemplate() {
-    console.log("Seeding templates...");
-    try {
-        await db.collection('templates').doc('recruiter_analysis_prompt').set({
-            name: "Recruiter Analysis Agent",
-            content: PROMPT_CONTENT,
-            version: "1.0",
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        console.log("✅ Successfully seeded 'recruiter_analysis_prompt'.");
+  console.log("Seeding templates...");
+  try {
+    await db.collection('templates').doc('recruiter_analysis_prompt').set({
+      name: "Recruiter Analysis Agent",
+      content: PROMPT_CONTENT,
+      version: "1.0",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    console.log("✅ Successfully seeded 'recruiter_analysis_prompt'.");
 
-        await db.collection('templates').doc('outreach_generation_prompt').set({
-            name: "Outreach Generation Agent",
-            content: OUTREACH_PROMPT_CONTENT,
-            version: "1.0",
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        console.log("✅ Successfully seeded 'outreach_generation_prompt'.");
+    await db.collection('templates').doc('outreach_generation_prompt').set({
+      name: "Outreach Generation Agent",
+      content: OUTREACH_PROMPT_CONTENT,
+      version: "1.0",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    console.log("✅ Successfully seeded 'outreach_generation_prompt'.");
 
-        // ─── Sales Lead Outreach (B2B, targeting business owners/property managers) ───
-        const SALES_OUTREACH_PROMPT = `
+    // ─── Sales Lead Outreach (B2B, targeting business owners/property managers) ───
+    const SALES_OUTREACH_PROMPT = `
 You are writing a B2B sales outreach email for XIRI Facility Solutions to a business owner, office manager, or property manager of a single-tenant commercial facility.
 
 **About XIRI:**
@@ -165,7 +166,7 @@ Return ONLY JSON:
 - "Your medical suite deserves better maintenance"
 `;
 
-        const SALES_FOLLOWUP_PROMPT = `
+    const SALES_FOLLOWUP_PROMPT = `
 You are writing a follow-up email for XIRI Facility Solutions to a business owner or property manager who has not yet responded to our initial outreach.
 
 **About XIRI:** Single-source facility management for medical and commercial facilities. One point of contact, one invoice, nightly audits.
@@ -197,25 +198,25 @@ Return ONLY JSON:
 }
 `;
 
-        await db.collection('templates').doc('sales_outreach_prompt').set({
-            name: "Sales Lead Outreach (B2B)",
-            content: SALES_OUTREACH_PROMPT,
-            version: "1.0",
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        console.log("✅ Successfully seeded 'sales_outreach_prompt'.");
+    await db.collection('templates').doc('sales_outreach_prompt').set({
+      name: "Sales Lead Outreach (B2B)",
+      content: SALES_OUTREACH_PROMPT,
+      version: "1.0",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    console.log("✅ Successfully seeded 'sales_outreach_prompt'.");
 
-        await db.collection('templates').doc('sales_followup_prompt').set({
-            name: "Sales Lead Follow-Up (B2B)",
-            content: SALES_FOLLOWUP_PROMPT,
-            version: "1.0",
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        console.log("✅ Successfully seeded 'sales_followup_prompt'.");
+    await db.collection('templates').doc('sales_followup_prompt').set({
+      name: "Sales Lead Follow-Up (B2B)",
+      content: SALES_FOLLOWUP_PROMPT,
+      version: "1.0",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    console.log("✅ Successfully seeded 'sales_followup_prompt'.");
 
-    } catch (error) {
-        console.error("❌ Error seeding templates:", error);
-    }
+  } catch (error) {
+    console.error("❌ Error seeding templates:", error);
+  }
 }
 
 seedTemplate();

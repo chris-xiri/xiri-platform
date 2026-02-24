@@ -31,25 +31,6 @@ function loadCampaigns(): { campaigns: PropertyCampaign[]; activeCampaignId: str
     } catch { return null; }
 }
 
-// ─── Firestore helpers ───
-const dismissPropertyInFirestore = async (property: CampaignPreviewProperty) => {
-    try {
-        await addDoc(collection(db, "dismissed_properties"), {
-            name: property.name,
-            address: property.address,
-            dismissedAt: serverTimestamp(),
-        });
-    } catch (err) { console.error(`Failed to persist dismissal for "${property.name}":`, err); }
-};
-
-const revivePropertyInFirestore = async (property: CampaignPreviewProperty) => {
-    try {
-        const q = query(collection(db, "dismissed_properties"), where("address", "==", property.address));
-        const snapshot = await getDocs(q);
-        for (const doc of snapshot.docs) { await deleteDoc(doc.ref); }
-    } catch (err) { console.error(`Failed to revive "${property.name}":`, err); }
-};
-
 export default function LeadSourcingPage() {
     const [campaigns, setCampaigns] = useState<PropertyCampaign[]>([]);
     const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
@@ -139,26 +120,18 @@ export default function LeadSourcingPage() {
         removePropertyFromCampaign(campaignId, propertyId);
     }, [campaigns]);
 
-    // Dismiss — blacklist + remove
+    // Dismiss — remove from campaign
     const handleDismiss = useCallback(async (campaignId: string, propertyId: string) => {
         const campaign = campaigns.find(c => c.id === campaignId);
         const property = campaign?.properties.find(p => p.id === propertyId);
         if (!property) return;
-        await dismissPropertyInFirestore(property);
         console.log(`❌ Dismissed "${property.name}"`);
         removePropertyFromCampaign(campaignId, propertyId);
     }, [campaigns]);
 
-    // Revive — un-dismiss
+    // Revive — no longer needed since Dismiss removes immediately, but keeping stub for prop
     const handleRevive = useCallback(async (campaignId: string, propertyId: string) => {
-        const campaign = campaigns.find(c => c.id === campaignId);
-        const property = campaign?.properties.find(p => p.id === propertyId);
-        if (!property) return;
-        await revivePropertyInFirestore(property);
-        console.log(`🔄 Revived "${property.name}"`);
-        setCampaigns(prev => prev.map(c =>
-            c.id === campaignId ? { ...c, properties: c.properties.map(p => p.id === propertyId ? { ...p, isDismissed: false } : p) } : c
-        ));
+        console.log(`🔄 Revived property`);
     }, [campaigns]);
 
     // Approve all active
@@ -206,12 +179,11 @@ export default function LeadSourcingPage() {
         ));
     }, [campaigns]);
 
-    // Dismiss all active
+    // Dismiss all active — remove from campaign
     const handleDismissAll = useCallback(async (campaignId: string) => {
         const campaign = campaigns.find(c => c.id === campaignId);
         if (!campaign) return;
         const active = campaign.properties.filter(p => !p.isDismissed);
-        for (const property of active) { await dismissPropertyInFirestore(property); }
         console.log(`❌ Dismissed all ${active.length} properties from "${campaign.label}".`);
         setCampaigns(prev => prev.map(c =>
             c.id === campaignId ? { ...c, properties: c.properties.filter(p => p.isDismissed) } : c
