@@ -18,7 +18,7 @@
                 "resend-mcp@latest"
             ],
             "env": {
-                "RESEND_API_KEY": "re_Z38tRp74_GHQhfz1MrZLL3YYWAgi5Xxux"
+                "RESEND_API_KEY": "${RESEND_API_KEY}"
             }
         },
         "gcloud": {
