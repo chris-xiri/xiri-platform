@@ -1,5 +1,6 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+npx lint-staged
 npm run translate:sync -- --auto-apply
 git add apps/public-site/app/onboarding/[vendorId]/translations.ts

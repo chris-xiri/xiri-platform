@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { QueryProvider } from "@/providers/QueryProvider";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -332,7 +333,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
 
                 <main className="flex-1 overflow-y-auto px-6 py-6">
-                    {children}
+                    <QueryProvider>
+                        {children}
+                    </QueryProvider>
                 </main>
             </div>
         </div>

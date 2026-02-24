@@ -1,0 +1,51 @@
+{
+    "$schema": "https://unpkg.com/knip@latest/schema.json",
+    "workspaces": {
+        ".": {
+            "entry": [
+                "scripts/*.{js,ts}"
+            ],
+            "ignoreDependencies": [
+                "turbo",
+                "firebase-tools",
+                "prettier"
+            ]
+        },
+        "apps/dashboard": {
+            "entry": [
+                "src/app/**/page.tsx",
+                "src/app/**/layout.tsx"
+            ],
+            "project": [
+                "src/**/*.{ts,tsx}"
+            ]
+        },
+        "apps/public-site": {
+            "entry": [
+                "app/**/page.tsx",
+                "app/**/layout.tsx"
+            ],
+            "project": [
+                "app/**/*.{ts,tsx}",
+                "components/**/*.{ts,tsx}",
+                "lib/**/*.{ts,tsx}"
+            ]
+        },
+        "packages/shared": {
+            "entry": [
+                "src/index.ts"
+            ],
+            "project": [
+                "src/**/*.{ts,tsx}"
+            ]
+        },
+        "packages/functions": {
+            "entry": [
+                "src/index.ts"
+            ],
+            "project": [
+                "src/**/*.{ts,tsx}"
+            ]
+        }
+    }
+}

@@ -13,12 +13,15 @@
         "build": "turbo run build",
         "lint": "turbo run lint",
         "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-        "translate:sync": "node scripts/translate-sync.js"
+        "translate:sync": "node scripts/translate-sync.js",
+        "knip": "knip"
     },
     "devDependencies": {
         "@types/node-fetch": "^2.6.13",
         "firebase-tools": "^15.5.1",
         "husky": "^9.1.7",
+        "knip": "^5.85.0",
+        "lint-staged": "^16.2.7",
         "prettier": "latest",
         "turbo": "latest",
         "typescript": "^5.0.0"
@@ -39,5 +42,10 @@
         "@types/react": "npm:types-react@19.0.0-rc.1",
         "@types/react-dom": "npm:types-react-dom@19.0.0-rc.1"
     },
-    "packageManager": "npm@10.8.2"
+    "packageManager": "npm@10.8.2",
+    "lint-staged": {
+        "*.{ts,tsx}": [
+            "bash -c 'npx tsc --noEmit --pretty'"
+        ]
+    }
 }
