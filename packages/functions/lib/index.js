@@ -5105,10 +5105,17 @@ var resendWebhook = (0, import_https4.onRequest)({
       return;
     }
     let vendorId = null;
-    const vendorTag = event?.data?.tags?.find((t) => t.name === "vendorId");
-    if (vendorTag?.value) {
-      vendorId = vendorTag.value;
-      import_v2.logger.info(`Resend webhook: resolved vendorId=${vendorId} from tag`);
+    const tags = event?.data?.tags;
+    if (tags) {
+      if (typeof tags === "object" && !Array.isArray(tags) && tags.vendorId) {
+        vendorId = tags.vendorId;
+      } else if (Array.isArray(tags)) {
+        const vendorTag = tags.find((t) => t.name === "vendorId");
+        if (vendorTag?.value) vendorId = vendorTag.value;
+      }
+      if (vendorId) {
+        import_v2.logger.info(`Resend webhook: resolved vendorId=${vendorId} from tag`);
+      }
     }
     if (!vendorId) {
       const activitiesSnapshot = await db21.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();

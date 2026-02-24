@@ -78,13 +78,21 @@ export const resendWebhook = onRequest({
         }
 
         // ─── Resolve vendorId ───────────────────────────────────────────
-        // Path 1: Resend tag (preferred) — emails sent after the fix include tags[{name:'vendorId'}]
+        // Path 1: Resend tags — handle both object ({vendorId:"xxx"}) and array ([{name,value}]) formats
         let vendorId: string | null = null;
-        const vendorTag = (event?.data?.tags as Array<{ name: string, value: string }> | undefined)
-            ?.find(t => t.name === 'vendorId');
-        if (vendorTag?.value) {
-            vendorId = vendorTag.value;
-            logger.info(`Resend webhook: resolved vendorId=${vendorId} from tag`);
+        const tags = event?.data?.tags;
+        if (tags) {
+            if (typeof tags === 'object' && !Array.isArray(tags) && tags.vendorId) {
+                // Object format: { vendorId: "xxx" }
+                vendorId = tags.vendorId;
+            } else if (Array.isArray(tags)) {
+                // Array format: [{ name: "vendorId", value: "xxx" }]
+                const vendorTag = tags.find((t: any) => t.name === 'vendorId');
+                if (vendorTag?.value) vendorId = vendorTag.value;
+            }
+            if (vendorId) {
+                logger.info(`Resend webhook: resolved vendorId=${vendorId} from tag`);
+            }
         }
 
         // Path 2: Activity lookup fallback — for emails that predate the tagging fix
