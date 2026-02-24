@@ -22,6 +22,7 @@ interface Template {
 
 // Auto-detect variables in prompt content (e.g., {{vendorName}})
 function extractVariables(content: string): string[] {
+    if (!content) return [];
     const matches = content.match(/\{\{(\w+)\}\}/g);
     if (!matches) return [];
     return [...new Set(matches.map(m => m.replace(/[{}]/g, '')))];

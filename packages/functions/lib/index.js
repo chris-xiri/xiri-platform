@@ -246,37 +246,37 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db23, task) {
-  return db23.collection(COLLECTION).add({
+async function enqueueTask(db22, task) {
+  return db22.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db23) {
+async function fetchPendingTasks(db22) {
   const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db23.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db22.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function updateTaskStatus(db23, taskId, status, updates = {}) {
-  await db23.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db22, taskId, status, updates = {}) {
+  await db22.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db23, vendorId) {
-  const snapshot = await db23.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db23.batch();
+async function cancelVendorTasks(db22, vendorId) {
+  const snapshot = await db22.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db22.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadTasks(db23, leadId) {
-  const snapshot = await db23.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db23.batch();
+async function cancelLeadTasks(db22, leadId) {
+  const snapshot = await db22.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db22.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
@@ -1086,6 +1086,111 @@ function formatPhone(phone) {
   }
   return void 0;
 }
+async function deepMailtoScan(baseUrl) {
+  const visited = /* @__PURE__ */ new Set();
+  let foundEmail;
+  let foundPhone;
+  try {
+    const homepage = await fetchPage(baseUrl);
+    if (!homepage) return { pagesScanned: 0 };
+    const internalLinks = /* @__PURE__ */ new Set();
+    homepage.$("a").each((_, elem) => {
+      const href = homepage.$(elem).attr("href");
+      if (!href || href.startsWith("#") || href.startsWith("tel:") || href.startsWith("mailto:")) return;
+      try {
+        const fullUrl = new URL(href, baseUrl).href;
+        if (new URL(fullUrl).hostname === new URL(baseUrl).hostname) {
+          internalLinks.add(fullUrl);
+        }
+      } catch {
+      }
+    });
+    const homeResult = extractMailtoAndTel(homepage.$);
+    if (homeResult.email) foundEmail = homeResult.email;
+    if (homeResult.phone) foundPhone = homeResult.phone;
+    visited.add(baseUrl);
+    if (foundEmail) return { email: foundEmail, phone: foundPhone, pagesScanned: 1 };
+    const pagesToCheck = Array.from(internalLinks).slice(0, 5);
+    for (const pageUrl of pagesToCheck) {
+      if (visited.has(pageUrl)) continue;
+      visited.add(pageUrl);
+      const page = await fetchPage(pageUrl);
+      if (!page) continue;
+      const pageResult = extractMailtoAndTel(page.$);
+      if (pageResult.email && !foundEmail) foundEmail = pageResult.email;
+      if (pageResult.phone && !foundPhone) foundPhone = pageResult.phone;
+      const obfuscatedEmails = page.html.match(/href\s*=\s*["']mailto:([^"'?]+)/gi) || [];
+      for (const match of obfuscatedEmails) {
+        const email = match.replace(/href\s*=\s*["']mailto:/i, "").trim().toLowerCase();
+        if (email && !email.match(/^(noreply|no-reply|support|webmaster)@/i)) {
+          foundEmail = foundEmail || email;
+        }
+      }
+      if (foundEmail) break;
+    }
+    return { email: foundEmail, phone: foundPhone, pagesScanned: visited.size };
+  } catch (error10) {
+    console.error("Deep mailto scan error:", error10);
+    return { pagesScanned: visited.size };
+  }
+}
+async function searchWebForEmail(businessName, location, domain, serperApiKey) {
+  const apiKey = serperApiKey || process.env.SERPER_API_KEY;
+  if (!apiKey) {
+    console.warn("No SERPER_API_KEY available for web email search.");
+    return { source: "serper_skipped" };
+  }
+  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  const phoneRegex = /(\+1[-.\\s]?)?\(?\d{3}\)?[-.\\s]?\d{3}[-.\\s]?\d{4}/g;
+  const queries = [];
+  if (domain) {
+    queries.push(`site:${domain} email OR contact`);
+  }
+  queries.push(`"${businessName}" ${location} email contact`);
+  for (const query of queries) {
+    try {
+      const response = await fetch("https://google.serper.dev/search", {
+        method: "POST",
+        headers: {
+          "X-API-KEY": apiKey.trim(),
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ q: query, num: 5 }),
+        signal: AbortSignal.timeout(1e4)
+      });
+      if (!response.ok) continue;
+      const data = await response.json();
+      const organic = data.organic || [];
+      for (const result of organic) {
+        const text = `${result.snippet || ""} ${result.title || ""}`;
+        const emails = text.match(emailRegex) || [];
+        const phones = text.match(phoneRegex) || [];
+        const validEmails = emails.filter(
+          (e) => !e.includes("example.com") && !e.includes("domain.com") && !e.includes("sentry.io") && !e.includes("wixpress.com") && !e.includes("wordpress.") && !e.match(/^(noreply|no-reply|bounce|mailer-daemon)@/i)
+        );
+        if (validEmails.length > 0) {
+          return {
+            email: validEmails[0].toLowerCase(),
+            phone: phones[0],
+            source: "serper_web_search"
+          };
+        }
+      }
+      if (data.knowledgeGraph) {
+        const kg = data.knowledgeGraph;
+        if (kg.email) {
+          return { email: kg.email.toLowerCase(), phone: kg.phone, source: "serper_knowledge_graph" };
+        }
+        if (kg.phone && !data.organic?.length) {
+          return { phone: kg.phone, source: "serper_knowledge_graph" };
+        }
+      }
+    } catch (error10) {
+      console.error(`Serper search error for query "${query}":`, error10);
+    }
+  }
+  return { source: "serper_exhausted" };
+}
 
 // src/utils/emailVerification.ts
 async function verifyEmail(email) {
@@ -1185,12 +1290,12 @@ function determinePhoneType(digits) {
 if (!admin4.apps.length) {
   admin4.initializeApp();
 }
-var db3 = admin4.firestore();
 var GEMINI_API_KEY = (0, import_params.defineSecret)("GEMINI_API_KEY");
-console.log("Loading onVendorApproved trigger...");
+var SERPER_API_KEY = (0, import_params.defineSecret)("SERPER_API_KEY");
+console.log("Loading vendor enrichment triggers...");
 var onVendorApproved = (0, import_firestore.onDocumentUpdated)({
   document: "vendors/{vendorId}",
-  secrets: [GEMINI_API_KEY]
+  secrets: [GEMINI_API_KEY, SERPER_API_KEY]
 }, async (event) => {
   if (!event.data) return;
   const newData = event.data.after.data();
@@ -1203,7 +1308,7 @@ var onVendorApproved = (0, import_firestore.onDocumentUpdated)({
 });
 var onVendorCreated = (0, import_firestore2.onDocumentCreated)({
   document: "vendors/{vendorId}",
-  secrets: [GEMINI_API_KEY]
+  secrets: [GEMINI_API_KEY, SERPER_API_KEY]
 }, async (event) => {
   if (!event.data) return;
   const data = event.data.data();
@@ -1215,7 +1320,7 @@ var onVendorCreated = (0, import_firestore2.onDocumentCreated)({
 });
 async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
   try {
-    await db3.collection("vendor_activities").add({
+    await db.collection("vendor_activities").add({
       vendorId,
       type: "STATUS_CHANGE",
       description: "Vendor approved \u2014 starting onboarding pipeline.",
@@ -1235,12 +1340,12 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
     }
     if (vendorWebsite) {
       logger.info(`Vendor ${vendorId} has no email but has website. Enriching...`);
-      await db3.collection("vendors").doc(vendorId).update({
+      await db.collection("vendors").doc(vendorId).update({
         outreachStatus: "ENRICHING",
         enrichmentStartedAt: /* @__PURE__ */ new Date(),
         statusUpdatedAt: /* @__PURE__ */ new Date()
       });
-      await db3.collection("vendor_activities").add({
+      await db.collection("vendor_activities").add({
         vendorId,
         type: "ENRICHMENT",
         description: `Scraping ${vendorWebsite} for contact info...`,
@@ -1306,9 +1411,9 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           confidence: scrapedData.confidence
         };
         if (enrichedFields.length > 0) {
-          await db3.collection("vendors").doc(vendorId).update(updateData);
+          await db.collection("vendors").doc(vendorId).update(updateData);
         }
-        await db3.collection("vendor_activities").add({
+        await db.collection("vendor_activities").add({
           vendorId,
           type: "ENRICHMENT",
           description: enrichedFields.length > 0 ? `Enriched ${enrichedFields.length} field(s): ${enrichedFields.join(", ")}` : "No new fields found from website.",
@@ -1316,37 +1421,87 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           metadata: { enrichedFields, confidence: scrapedData.confidence }
         });
         if (foundEmail) {
-          logger.info(`Found email ${foundEmail} for vendor ${vendorId}. Proceeding to outreach.`);
-          const updatedDoc = await db3.collection("vendors").doc(vendorId).get();
+          logger.info(`Found email ${foundEmail} for vendor ${vendorId} via website scrape. Proceeding to outreach.`);
+          const updatedDoc = await db.collection("vendors").doc(vendorId).get();
           await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
-        } else if (scrapedData.contactFormUrl) {
-          logger.info(`No email but found contact form for vendor ${vendorId}: ${scrapedData.contactFormUrl}`);
-          await db3.collection("vendors").doc(vendorId).update({
+          return;
+        }
+        logger.info(`No email from scrape for ${vendorId}. Trying deep mailto scan...`);
+        const mailtoResult = await deepMailtoScan(vendorWebsite);
+        if (mailtoResult.email) {
+          const mailtoVerification = await verifyEmail(mailtoResult.email);
+          if (mailtoVerification.valid && mailtoVerification.deliverable) {
+            await db.collection("vendors").doc(vendorId).update({
+              email: mailtoResult.email,
+              "enrichment.enrichedFields": admin4.firestore.FieldValue.arrayUnion("email"),
+              "enrichment.enrichmentSource": "deep_mailto_scan",
+              updatedAt: admin4.firestore.FieldValue.serverTimestamp()
+            });
+            await db.collection("vendor_activities").add({
+              vendorId,
+              type: "ENRICHMENT",
+              description: `Deep mailto scan found email (scanned ${mailtoResult.pagesScanned} pages)`,
+              createdAt: /* @__PURE__ */ new Date(),
+              metadata: { email: mailtoResult.email, pagesScanned: mailtoResult.pagesScanned }
+            });
+            logger.info(`Found email ${mailtoResult.email} via deep mailto for ${vendorId}.`);
+            const updatedDoc = await db.collection("vendors").doc(vendorId).get();
+            await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
+            return;
+          }
+        }
+        const vendorName2 = vendorData.businessName || vendorData.name || "";
+        const vendorLocation2 = vendorData.address || vendorData.location || "";
+        let domain;
+        try {
+          domain = new URL(vendorWebsite).hostname;
+        } catch {
+        }
+        logger.info(`No email from mailto scan for ${vendorId}. Trying Serper web search...`);
+        const webResult = await searchWebForEmail(vendorName2, vendorLocation2, domain, SERPER_API_KEY.value());
+        if (webResult.email) {
+          const webVerification = await verifyEmail(webResult.email);
+          if (webVerification.valid && webVerification.deliverable) {
+            await db.collection("vendors").doc(vendorId).update({
+              email: webResult.email,
+              "enrichment.enrichedFields": admin4.firestore.FieldValue.arrayUnion("email"),
+              "enrichment.enrichmentSource": webResult.source,
+              updatedAt: admin4.firestore.FieldValue.serverTimestamp()
+            });
+            await db.collection("vendor_activities").add({
+              vendorId,
+              type: "ENRICHMENT",
+              description: `Serper web search found email via ${webResult.source}`,
+              createdAt: /* @__PURE__ */ new Date(),
+              metadata: { email: webResult.email, source: webResult.source }
+            });
+            logger.info(`Found email ${webResult.email} via ${webResult.source} for ${vendorId}.`);
+            const updatedDoc = await db.collection("vendors").doc(vendorId).get();
+            await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
+            return;
+          }
+        }
+        if (scrapedData.contactFormUrl) {
+          logger.info(`All enrichment failed for ${vendorId}, but found contact form: ${scrapedData.contactFormUrl}`);
+          await db.collection("vendors").doc(vendorId).update({
             outreachStatus: "NEEDS_MANUAL_OUTREACH",
-            statusUpdatedAt: /* @__PURE__ */ new Date()
+            statusUpdatedAt: /* @__PURE__ */ new Date(),
+            "enrichment.exhausted": true,
+            "enrichment.sourcesAttempted": ["website_scrape", "deep_mailto", "serper_web_search"]
           });
-          await db3.collection("vendor_activities").add({
+          await db.collection("vendor_activities").add({
             vendorId,
             type: "NEEDS_MANUAL_OUTREACH",
-            description: `No email found. Contact form detected: ${scrapedData.contactFormUrl}`,
+            description: `No email found after 3-layer enrichment. Contact form: ${scrapedData.contactFormUrl}`,
             createdAt: /* @__PURE__ */ new Date(),
-            metadata: { contactFormUrl: scrapedData.contactFormUrl }
-          });
-          await db3.collection("scheduled_activities").add({
-            vendorId,
-            type: "OTHER",
-            status: "PENDING",
-            title: `Manual outreach: ${vendorData.businessName || "Unknown vendor"}`,
-            description: `Fill out their contact form at ${scrapedData.contactFormUrl}`,
-            dueDate: /* @__PURE__ */ new Date(),
-            assignedTo: "",
-            // Will be picked up by any recruiter
-            createdAt: /* @__PURE__ */ new Date(),
-            createdBy: "system",
-            metadata: { contactFormUrl: scrapedData.contactFormUrl }
+            metadata: { contactFormUrl: scrapedData.contactFormUrl, sourcesAttempted: 3 }
           });
         } else {
-          await markNeedsContact(vendorId, "No email found after enrichment");
+          await db.collection("vendors").doc(vendorId).update({
+            "enrichment.exhausted": true,
+            "enrichment.sourcesAttempted": ["website_scrape", "deep_mailto", "serper_web_search"]
+          });
+          await markNeedsContact(vendorId, "No email found after 3-layer enrichment (scrape \u2192 mailto \u2192 web search)");
         }
       } catch (enrichError) {
         logger.error(`Enrichment error for ${vendorId}:`, enrichError);
@@ -1354,8 +1509,45 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
       }
       return;
     }
-    logger.info(`Vendor ${vendorId} has no email and no website. Marking NEEDS_CONTACT.`);
-    await markNeedsContact(vendorId, "No email or website available");
+    logger.info(`Vendor ${vendorId} has no email and no website. Trying Serper web search...`);
+    const vendorName = vendorData.businessName || vendorData.name || "";
+    const vendorLocation = vendorData.address || vendorData.location || "";
+    if (vendorName) {
+      const webResult = await searchWebForEmail(vendorName, vendorLocation, void 0, SERPER_API_KEY.value());
+      if (webResult.email) {
+        const webVerification = await verifyEmail(webResult.email);
+        if (webVerification.valid && webVerification.deliverable) {
+          await db.collection("vendors").doc(vendorId).update({
+            email: webResult.email,
+            enrichment: {
+              lastEnriched: admin4.firestore.FieldValue.serverTimestamp(),
+              enrichedFields: ["email"],
+              enrichmentSource: webResult.source
+            },
+            updatedAt: admin4.firestore.FieldValue.serverTimestamp()
+          });
+          await db.collection("vendor_activities").add({
+            vendorId,
+            type: "ENRICHMENT",
+            description: `Serper web search found email via ${webResult.source} (no website on file)`,
+            createdAt: /* @__PURE__ */ new Date(),
+            metadata: { email: webResult.email, source: webResult.source }
+          });
+          logger.info(`Found email ${webResult.email} via web search for ${vendorId} (no website).`);
+          const updatedDoc = await db.collection("vendors").doc(vendorId).get();
+          await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
+          return;
+        }
+      }
+    }
+    await db.collection("vendors").doc(vendorId).update({
+      "enrichment.exhausted": true,
+      "enrichment.sourcesAttempted": vendorName ? ["serper_web_search"] : ["none_available"]
+    });
+    await markNeedsContact(
+      vendorId,
+      vendorName ? "No email found \u2014 web search exhausted, no website on file" : "No email, no website, no business name \u2014 cannot enrich"
+    );
   } catch (error10) {
     logger.error("Error in enrich pipeline:", error10);
   }
@@ -1373,11 +1565,11 @@ async function setOutreachPending(vendorId, vendorData) {
   const missingFields = await checkProfileCompleteness(vendorId, vendorData);
   if (missingFields.length > 0) {
     logger.warn(`Vendor ${vendorId} profile incomplete. Missing: ${missingFields.join(", ")}. Blocking outreach.`);
-    await db3.collection("vendors").doc(vendorId).update({
+    await db.collection("vendors").doc(vendorId).update({
       outreachStatus: "PROFILE_INCOMPLETE",
       statusUpdatedAt: /* @__PURE__ */ new Date()
     });
-    await db3.collection("vendor_activities").add({
+    await db.collection("vendor_activities").add({
       vendorId,
       type: "PROFILE_INCOMPLETE",
       description: `Outreach blocked \u2014 missing: ${missingFields.join(", ")}. Complete the vendor profile to enable outreach.`,
@@ -1386,12 +1578,12 @@ async function setOutreachPending(vendorId, vendorData) {
     });
     return;
   }
-  await db3.collection("vendors").doc(vendorId).update({
+  await db.collection("vendors").doc(vendorId).update({
     outreachStatus: "PENDING",
     statusUpdatedAt: /* @__PURE__ */ new Date()
   });
   const { enqueueTask: enqueueTask2 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
-  await enqueueTask2(db3, {
+  await enqueueTask2(db, {
     vendorId,
     type: "GENERATE",
     scheduledAt: /* @__PURE__ */ new Date(),
@@ -1411,11 +1603,11 @@ async function setOutreachPending(vendorId, vendorData) {
   logger.info(`Outreach GENERATE task enqueued for vendor ${vendorId}`);
 }
 async function markNeedsContact(vendorId, reason) {
-  await db3.collection("vendors").doc(vendorId).update({
+  await db.collection("vendors").doc(vendorId).update({
     outreachStatus: "NEEDS_CONTACT",
     statusUpdatedAt: /* @__PURE__ */ new Date()
   });
-  await db3.collection("vendor_activities").add({
+  await db.collection("vendor_activities").add({
     vendorId,
     type: "NEEDS_CONTACT",
     description: `Manual outreach required: ${reason}`,
@@ -1436,11 +1628,11 @@ var admin5 = __toESM(require("firebase-admin"));
 var API_KEY2 = process.env.GEMINI_API_KEY || "";
 var genAI3 = new import_generative_ai4.GoogleGenerativeAI(API_KEY2);
 var model2 = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
-var db4 = admin5.firestore();
+var db3 = admin5.firestore();
 var generateSalesOutreachContent = async (lead, sequence = 0) => {
   try {
     const templateId = sequence === 0 ? "sales_outreach_prompt" : "sales_followup_prompt";
-    const templateDoc = await db4.collection("templates").doc(templateId).get();
+    const templateDoc = await db3.collection("templates").doc(templateId).get();
     if (!templateDoc.exists) {
       throw new Error(`Template '${templateId}' not found in database`);
     }
@@ -1475,14 +1667,14 @@ init_emailUtils();
 if (!admin6.apps.length) {
   admin6.initializeApp();
 }
-var db5 = admin6.firestore();
+var db4 = admin6.firestore();
 var processOutreachQueue = (0, import_scheduler.onSchedule)({
   schedule: "every 1 minutes",
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"]
 }, async (event) => {
   logger2.info("Processing outreach queue...");
   try {
-    const tasks = await fetchPendingTasks(db5);
+    const tasks = await fetchPendingTasks(db4);
     if (tasks.length === 0) {
       logger2.info("No pending tasks found.");
       return;
@@ -1513,17 +1705,17 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
         const status = newRetryCount > 5 ? "FAILED" : "RETRY";
         const nextAttempt = /* @__PURE__ */ new Date();
         nextAttempt.setMinutes(nextAttempt.getMinutes() + Math.pow(2, newRetryCount));
-        await updateTaskStatus(db5, task.id, status, {
+        await updateTaskStatus(db4, task.id, status, {
           retryCount: newRetryCount,
           scheduledAt: admin6.firestore.Timestamp.fromDate(nextAttempt),
           error: String(err)
         });
         if (status === "FAILED" && task.vendorId) {
-          await db5.collection("vendors").doc(task.vendorId).update({
+          await db4.collection("vendors").doc(task.vendorId).update({
             outreachStatus: "FAILED",
             statusUpdatedAt: /* @__PURE__ */ new Date()
           });
-          await db5.collection("vendor_activities").add({
+          await db4.collection("vendor_activities").add({
             vendorId: task.vendorId,
             type: "OUTREACH_FAILED",
             description: `Outreach failed after ${newRetryCount} attempts: ${String(err).slice(0, 200)}`,
@@ -1539,11 +1731,11 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
 });
 async function handleGenerate(task) {
   logger2.info(`Generating content for task ${task.id}`);
-  const vendorDoc = await db5.collection("vendors").doc(task.vendorId).get();
+  const vendorDoc = await db4.collection("vendors").doc(task.vendorId).get();
   const vendor = vendorDoc.exists ? vendorDoc.data() : task.metadata;
   const sequence = task.metadata?.sequence || 1;
   const templateId = `vendor_outreach_${sequence}`;
-  const templateDoc = await db5.collection("templates").doc(templateId).get();
+  const templateDoc = await db4.collection("templates").doc(templateId).get();
   if (!templateDoc.exists) {
     throw new Error(`Email template ${templateId} not found in Firestore. Run seed-email-templates.js to create them.`);
   }
@@ -1569,7 +1761,7 @@ async function handleGenerate(task) {
   }
   body = body.replace(/\[ONBOARDING_LINK\]/g, onboardingUrl);
   const emailResult = { subject, body };
-  await db5.collection("vendor_activities").add({
+  await db4.collection("vendor_activities").add({
     vendorId: task.vendorId,
     type: "OUTREACH_QUEUED",
     description: `Outreach email draft generated from template (sequence ${sequence}).`,
@@ -1582,7 +1774,7 @@ async function handleGenerate(task) {
     }
   });
   const scheduledTime = /* @__PURE__ */ new Date();
-  await enqueueTask(db5, {
+  await enqueueTask(db4, {
     vendorId: task.vendorId,
     type: "SEND",
     scheduledAt: admin6.firestore.Timestamp.fromDate(scheduledTime),
@@ -1592,12 +1784,12 @@ async function handleGenerate(task) {
       sequence
     }
   });
-  await updateTaskStatus(db5, task.id, "COMPLETED");
+  await updateTaskStatus(db4, task.id, "COMPLETED");
   logger2.info(`Task ${task.id} completed (template: ${templateId}). Send scheduled.`);
 }
 async function handleSend(task) {
   logger2.info(`Executing SEND for task ${task.id}`);
-  const vendorDoc = await db5.collection("vendors").doc(task.vendorId).get();
+  const vendorDoc = await db4.collection("vendors").doc(task.vendorId).get();
   const vendor = vendorDoc.exists ? vendorDoc.data() : null;
   const vendorEmail = vendor?.email || task.metadata?.email?.to;
   let sendSuccess = false;
@@ -1627,7 +1819,7 @@ async function handleSend(task) {
     logger2.warn(`No email for task ${task.id}. Channel: ${task.metadata.channel}`);
     sendSuccess = false;
   }
-  await db5.collection("vendor_activities").add({
+  await db4.collection("vendor_activities").add({
     vendorId: task.vendorId,
     type: sendSuccess ? "OUTREACH_SENT" : "OUTREACH_FAILED",
     description: sendSuccess ? `Automated ${task.metadata.channel} sent to ${vendorEmail || "vendor"}.` : `Failed to send ${task.metadata.channel} to vendor.`,
@@ -1644,16 +1836,16 @@ async function handleSend(task) {
       resendId: resendId || null
     }
   });
-  await updateTaskStatus(db5, task.id, sendSuccess ? "COMPLETED" : "FAILED");
+  await updateTaskStatus(db4, task.id, sendSuccess ? "COMPLETED" : "FAILED");
   if (sendSuccess) {
-    await db5.collection("vendors").doc(task.vendorId).update({
+    await db4.collection("vendors").doc(task.vendorId).update({
       status: "awaiting_onboarding",
       outreachStatus: "SENT",
       outreachChannel: task.metadata.channel,
       outreachSentAt: /* @__PURE__ */ new Date(),
       statusUpdatedAt: /* @__PURE__ */ new Date()
     });
-    await db5.collection("vendor_activities").add({
+    await db4.collection("vendor_activities").add({
       vendorId: task.vendorId,
       type: "STATUS_CHANGE",
       description: `Pipeline advanced: qualified \u2192 awaiting_onboarding (outreach ${task.metadata.channel} delivered)`,
@@ -1661,7 +1853,7 @@ async function handleSend(task) {
       metadata: { from: "qualified", to: "awaiting_onboarding", trigger: "outreach_sent" }
     });
   } else {
-    await db5.collection("vendors").doc(task.vendorId).update({
+    await db4.collection("vendors").doc(task.vendorId).update({
       outreachStatus: "PENDING",
       outreachChannel: task.metadata.channel,
       outreachTime: /* @__PURE__ */ new Date()
@@ -1670,31 +1862,31 @@ async function handleSend(task) {
 }
 async function handleFollowUp(task) {
   logger2.info(`Processing FOLLOW_UP task ${task.id} (sequence ${task.metadata?.sequence})`);
-  const vendorDoc = await db5.collection("vendors").doc(task.vendorId).get();
+  const vendorDoc = await db4.collection("vendors").doc(task.vendorId).get();
   const vendor = vendorDoc.exists ? vendorDoc.data() : null;
   if (!vendor) {
     logger2.warn(`Vendor ${task.vendorId} not found, marking task completed.`);
-    await updateTaskStatus(db5, task.id, "COMPLETED");
+    await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
   if (vendor.status !== "awaiting_onboarding") {
     logger2.info(`Vendor ${task.vendorId} is now '${vendor.status}', skipping follow-up.`);
-    await updateTaskStatus(db5, task.id, "COMPLETED");
+    await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
   const vendorEmail = vendor.email || task.metadata?.email;
   if (!vendorEmail) {
     logger2.warn(`No email for vendor ${task.vendorId}, skipping follow-up.`);
-    await updateTaskStatus(db5, task.id, "COMPLETED");
+    await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
   const sequence = task.metadata?.sequence || 1;
   const templateId = `vendor_outreach_${sequence + 1}`;
   const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
-  const templateDoc = await db5.collection("templates").doc(templateId).get();
+  const templateDoc = await db4.collection("templates").doc(templateId).get();
   if (!templateDoc.exists) {
     logger2.info(`No template ${templateId} found. Follow-up sequence complete for vendor ${task.vendorId}.`);
-    await updateTaskStatus(db5, task.id, "COMPLETED");
+    await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
   const template = templateDoc.data();
@@ -1726,7 +1918,7 @@ async function handleFollowUp(task) {
     void 0,
     task.vendorId ?? void 0
   );
-  await db5.collection("vendor_activities").add({
+  await db4.collection("vendor_activities").add({
     vendorId: task.vendorId,
     type: sendSuccess ? "FOLLOW_UP_SENT" : "OUTREACH_FAILED",
     description: sendSuccess ? `Follow-up #${sequence} sent to ${vendorEmail}` : `Failed to send follow-up #${sequence} to ${vendorEmail}`,
@@ -1744,7 +1936,7 @@ async function handleFollowUp(task) {
     }
   });
   if (sendSuccess) {
-    await updateTaskStatus(db5, task.id, "COMPLETED");
+    await updateTaskStatus(db4, task.id, "COMPLETED");
     logger2.info(`Follow-up #${sequence} sent to ${vendorEmail} (template: ${templateId})`);
   } else {
     throw new Error(`Failed to send follow-up #${sequence} to ${vendorEmail}`);
@@ -1757,14 +1949,14 @@ async function handleLeadGenerate(task) {
   if (outreachResult.error) {
     throw new Error("AI Generation Failed for sales outreach");
   }
-  await db5.collection("lead_activities").add({
+  await db4.collection("lead_activities").add({
     leadId: task.leadId,
     type: "OUTREACH_QUEUED",
     description: `Sales outreach email generated for ${leadData.businessName || "lead"}.`,
     createdAt: /* @__PURE__ */ new Date(),
     metadata: { email: outreachResult.email }
   });
-  await enqueueTask(db5, {
+  await enqueueTask(db4, {
     leadId: task.leadId,
     type: "SEND",
     scheduledAt: admin6.firestore.Timestamp.fromDate(/* @__PURE__ */ new Date()),
@@ -1774,7 +1966,7 @@ async function handleLeadGenerate(task) {
       businessName: leadData.businessName
     }
   });
-  await updateTaskStatus(db5, task.id, "COMPLETED");
+  await updateTaskStatus(db4, task.id, "COMPLETED");
   logger2.info(`[SalesOutreach] Lead ${task.leadId} intro email generated, SEND queued.`);
 }
 async function handleLeadSend(task) {
@@ -1782,7 +1974,7 @@ async function handleLeadSend(task) {
   const toEmail = task.metadata?.toEmail;
   if (!toEmail) {
     logger2.warn(`[SalesOutreach] No email for lead ${task.leadId}, skipping.`);
-    await updateTaskStatus(db5, task.id, "COMPLETED");
+    await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
   const emailData = task.metadata.email;
@@ -1792,16 +1984,16 @@ async function handleLeadSend(task) {
     emailData?.subject || "Xiri Facility Solutions \u2014 Simplify Your Facility Management",
     htmlBody
   );
-  await db5.collection("lead_activities").add({
+  await db4.collection("lead_activities").add({
     leadId: task.leadId,
     type: sendSuccess ? "OUTREACH_SENT" : "OUTREACH_FAILED",
     description: sendSuccess ? `Sales email sent to ${toEmail}.` : `Failed to send sales email to ${toEmail}.`,
     createdAt: /* @__PURE__ */ new Date(),
     metadata: { to: toEmail, subject: emailData?.subject }
   });
-  await updateTaskStatus(db5, task.id, sendSuccess ? "COMPLETED" : "FAILED");
+  await updateTaskStatus(db4, task.id, sendSuccess ? "COMPLETED" : "FAILED");
   if (sendSuccess) {
-    await db5.collection("leads").doc(task.leadId).update({
+    await db4.collection("leads").doc(task.leadId).update({
       outreachStatus: "SENT",
       outreachSentAt: /* @__PURE__ */ new Date()
     });
@@ -1810,22 +2002,22 @@ async function handleLeadSend(task) {
 async function handleLeadFollowUp(task) {
   const sequence = task.metadata?.sequence || 1;
   logger2.info(`[SalesOutreach] Processing follow-up #${sequence} for lead ${task.leadId}`);
-  const leadDoc = await db5.collection("leads").doc(task.leadId).get();
+  const leadDoc = await db4.collection("leads").doc(task.leadId).get();
   const leadData = leadDoc.exists ? leadDoc.data() : null;
   if (!leadData) {
     logger2.warn(`[SalesOutreach] Lead ${task.leadId} not found, skipping.`);
-    await updateTaskStatus(db5, task.id, "COMPLETED");
+    await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
   if (leadData.outreachStatus === "REPLIED" || leadData.status === "lost") {
     logger2.info(`[SalesOutreach] Lead ${task.leadId} status is '${leadData.outreachStatus || leadData.status}', skipping follow-up.`);
-    await updateTaskStatus(db5, task.id, "COMPLETED");
+    await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
   const toEmail = task.metadata?.email || leadData.email;
   if (!toEmail) {
     logger2.warn(`[SalesOutreach] No email for lead ${task.leadId}, skipping.`);
-    await updateTaskStatus(db5, task.id, "COMPLETED");
+    await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
   const outreachResult = await generateSalesOutreachContent({
@@ -1845,14 +2037,14 @@ async function handleLeadFollowUp(task) {
   const subject = emailData?.subject || task.metadata?.subject || `Follow-up: ${task.metadata?.businessName || "Your facility"}`;
   const sendSuccess = await sendEmail(toEmail, subject, htmlBody);
   if (sendSuccess) {
-    await db5.collection("lead_activities").add({
+    await db4.collection("lead_activities").add({
       leadId: task.leadId,
       type: "FOLLOW_UP_SENT",
       description: `Sales follow-up #${sequence} sent to ${toEmail}`,
       createdAt: /* @__PURE__ */ new Date(),
       metadata: { sequence, email: toEmail }
     });
-    await updateTaskStatus(db5, task.id, "COMPLETED");
+    await updateTaskStatus(db4, task.id, "COMPLETED");
     logger2.info(`[SalesOutreach] Follow-up #${sequence} sent to ${toEmail} for lead ${task.leadId}`);
   } else {
     throw new Error(`Failed to send sales follow-up #${sequence} to ${toEmail}`);
@@ -1892,10 +2084,10 @@ var admin7 = __toESM(require("firebase-admin"));
 var API_KEY3 = process.env.GEMINI_API_KEY || "";
 var genAI4 = new import_generative_ai5.GoogleGenerativeAI(API_KEY3);
 var model3 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
-var db6 = admin7.firestore();
+var db5 = admin7.firestore();
 var analyzeIncomingMessage = async (vendor, messageContent, previousContext) => {
   try {
-    const templateDoc = await db6.collection("templates").doc("message_analysis_prompt").get();
+    const templateDoc = await db5.collection("templates").doc("message_analysis_prompt").get();
     if (!templateDoc.exists) {
       throw new Error("Message analysis prompt not found in database");
     }
@@ -1916,7 +2108,7 @@ var analyzeIncomingMessage = async (vendor, messageContent, previousContext) => 
 if (!admin8.apps.length) {
   admin8.initializeApp();
 }
-var db7 = admin8.firestore();
+var db6 = admin8.firestore();
 var onIncomingMessage = (0, import_firestore3.onDocumentCreated)("vendor_activities/{activityId}", async (event) => {
   if (!event.data) return;
   const activity = event.data.data();
@@ -1924,13 +2116,13 @@ var onIncomingMessage = (0, import_firestore3.onDocumentCreated)("vendor_activit
   if (activity.type !== "INBOUND_REPLY") return;
   logger3.info(`Processing inbound message from vendor ${vendorId}`);
   try {
-    const vendorDoc = await db7.collection("vendors").doc(vendorId).get();
+    const vendorDoc = await db6.collection("vendors").doc(vendorId).get();
     if (!vendorDoc.exists) {
       logger3.error(`Vendor ${vendorId} not found`);
       return;
     }
     const vendor = vendorDoc.data();
-    const lastOutreachSnapshot = await db7.collection("vendor_activities").where("vendorId", "==", vendorId).where("type", "==", "OUTREACH_SENT").orderBy("createdAt", "desc").limit(1).get();
+    const lastOutreachSnapshot = await db6.collection("vendor_activities").where("vendorId", "==", vendorId).where("type", "==", "OUTREACH_SENT").orderBy("createdAt", "desc").limit(1).get();
     const previousContext = !lastOutreachSnapshot.empty ? lastOutreachSnapshot.docs[0].data().description : "Initial outreach sent.";
     const analysis = await analyzeIncomingMessage(vendor, activity.description, previousContext);
     logger3.info(`Analysis result for ${vendorId}: ${JSON.stringify(analysis)}`);
@@ -1949,11 +2141,11 @@ var onIncomingMessage = (0, import_firestore3.onDocumentCreated)("vendor_activit
       actionDescription = "AI could not determine clear intent.";
     }
     if (newStatus && newStatus !== vendor?.status) {
-      await db7.collection("vendors").doc(vendorId).update({
+      await db6.collection("vendors").doc(vendorId).update({
         status: newStatus,
         statusUpdatedAt: /* @__PURE__ */ new Date()
       });
-      await db7.collection("vendor_activities").add({
+      await db6.collection("vendor_activities").add({
         vendorId,
         type: "STATUS_CHANGE",
         description: actionDescription,
@@ -1965,7 +2157,7 @@ var onIncomingMessage = (0, import_firestore3.onDocumentCreated)("vendor_activit
         }
       });
     }
-    await db7.collection("vendor_activities").add({
+    await db6.collection("vendor_activities").add({
       vendorId,
       type: "AI_REPLY",
       description: analysis.reply,
@@ -1992,7 +2184,7 @@ var admin9 = __toESM(require("firebase-admin"));
 var logger4 = __toESM(require("firebase-functions/logger"));
 var https = __toESM(require("https"));
 var genAI5 = new import_generative_ai6.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-var db8 = admin9.firestore();
+var db7 = admin9.firestore();
 function downloadFileAsBuffer(url) {
   return new Promise((resolve2, reject) => {
     https.get(url, (res) => {
@@ -2045,7 +2237,7 @@ async function verifyDocument(docType, vendorName, specialty) {
         `;
   }
   try {
-    const templateDoc = await db8.collection("templates").doc("document_verifier_prompt").get();
+    const templateDoc = await db7.collection("templates").doc("document_verifier_prompt").get();
     if (!templateDoc.exists) {
       throw new Error("Document verifier prompt not found in database");
     }
@@ -2159,7 +2351,7 @@ Return ONLY valid JSON in this exact format:
 }
 
 // src/triggers/onDocumentUploaded.ts
-var db9 = admin10.firestore();
+var db8 = admin10.firestore();
 var onDocumentUploaded = (0, import_firestore4.onDocumentUpdated)({
   document: "vendors/{vendorId}",
   secrets: ["GEMINI_API_KEY", "RESEND_API_KEY"]
@@ -2187,7 +2379,7 @@ var onDocumentUploaded = (0, import_firestore4.onDocumentUpdated)({
     try {
       const result = await verifyAcord25(fileUrl, vendorName, attestations);
       const status = result.valid ? "VERIFIED" : result.flags.length > 0 ? "FLAGGED" : "REJECTED";
-      await db9.doc(`vendors/${vendorId}`).update({
+      await db8.doc(`vendors/${vendorId}`).update({
         "compliance.acord25.status": status,
         "compliance.acord25.verifiedAt": admin10.firestore.FieldValue.serverTimestamp(),
         "compliance.acord25.aiAnalysis": {
@@ -2198,7 +2390,7 @@ var onDocumentUploaded = (0, import_firestore4.onDocumentUpdated)({
         "compliance.acord25.extractedData": result.extracted,
         updatedAt: admin10.firestore.FieldValue.serverTimestamp()
       });
-      await db9.collection("vendor_activities").add({
+      await db8.collection("vendor_activities").add({
         vendorId,
         type: "AI_VERIFICATION",
         description: `AI ${status === "VERIFIED" ? "Verified" : "Flagged"} ACORD 25: ${result.reasoning}`,
@@ -2217,7 +2409,7 @@ var onDocumentUploaded = (0, import_firestore4.onDocumentUpdated)({
       }
     } catch (error10) {
       logger5.error(`ACORD 25 verification failed for ${vendorId}:`, error10);
-      await db9.doc(`vendors/${vendorId}`).update({
+      await db8.doc(`vendors/${vendorId}`).update({
         "compliance.acord25.status": "FLAGGED",
         "compliance.acord25.aiAnalysis": {
           valid: false,
@@ -2242,7 +2434,7 @@ async function runLegacyVerification(vendorId, docType, vendorData) {
   try {
     const result = await verifyDocument(docType, vendorData.companyName || "Vendor", vendorData.specialty || "General");
     const fieldPath = docType === "COI" ? "compliance.coi" : "compliance.w9";
-    await db9.doc(`vendors/${vendorId}`).update({
+    await db8.doc(`vendors/${vendorId}`).update({
       [`${fieldPath}.status`]: result.valid ? "VERIFIED" : "REJECTED",
       [`${fieldPath}.aiAnalysis`]: {
         valid: result.valid,
@@ -2251,7 +2443,7 @@ async function runLegacyVerification(vendorId, docType, vendorData) {
       },
       [`${fieldPath}.verifiedAt`]: admin10.firestore.FieldValue.serverTimestamp()
     });
-    await db9.collection("vendor_activities").add({
+    await db8.collection("vendor_activities").add({
       vendorId,
       type: "AI_VERIFICATION",
       description: `AI ${result.valid ? "Verified" : "Rejected"} ${docType}: ${result.reasoning}`,
@@ -2314,7 +2506,7 @@ var import_firestore5 = require("firebase-functions/v2/firestore");
 init_emailUtils();
 var import_date_fns = require("date-fns");
 var admin11 = __toESM(require("firebase-admin"));
-var db10 = admin11.firestore();
+var db9 = admin11.firestore();
 var TIMEOUT_SECONDS = 300;
 var sendBookingConfirmation = (0, import_firestore5.onDocumentWritten)({
   document: "leads/{leadId}",
@@ -2373,7 +2565,7 @@ Power to the Facilities!`,
       content: icsContent
     }
   ]);
-  await db10.collection("activity_logs").add({
+  await db9.collection("activity_logs").add({
     entityType: "lead",
     entityId: event.params.leadId,
     type: sendSuccess ? "EMAIL_SENT" : "EMAIL_FAILED",
@@ -2490,8 +2682,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db23 = (0, import_firestore6.getFirestore)();
-    const docRef = db23.collection(collection).doc(documentId);
+    const db22 = (0, import_firestore6.getFirestore)();
+    const docRef = db22.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -2720,7 +2912,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger6.error("Error sending vendor confirmation:", err);
     }
   }
-  const db23 = admin12.firestore();
+  const db22 = admin12.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -2747,9 +2939,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db23.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db22.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger6.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db23.collection("vendor_activities").add({
+  await db22.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -2766,7 +2958,7 @@ init_queueUtils();
 if (!admin13.apps.length) {
   admin13.initializeApp();
 }
-var db11 = admin13.firestore();
+var db10 = admin13.firestore();
 var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
   document: "vendors/{vendorId}"
 }, async (event) => {
@@ -2788,7 +2980,7 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
     const scheduledDate = new Date(now);
     scheduledDate.setDate(scheduledDate.getDate() + fu.dayOffset);
     scheduledDate.setHours(15, 0, 0, 0);
-    await enqueueTask(db11, {
+    await enqueueTask(db10, {
       vendorId,
       type: "FOLLOW_UP",
       scheduledAt: admin13.firestore.Timestamp.fromDate(scheduledDate),
@@ -2805,7 +2997,7 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
     const scheduledDate = new Date(now);
     scheduledDate.setDate(scheduledDate.getDate() + fu.dayOffset);
     scheduledDate.setHours(15, 0, 0, 0);
-    await db11.collection("vendor_activities").add({
+    await db10.collection("vendor_activities").add({
       vendorId,
       type: "DRIP_SCHEDULED",
       description: `Follow-up #${fu.sequence} scheduled: "${fu.subject}"`,
@@ -2825,7 +3017,7 @@ init_queueUtils();
 if (!admin14.apps.length) {
   admin14.initializeApp();
 }
-var db12 = admin14.firestore();
+var db11 = admin14.firestore();
 var handleUnsubscribe = (0, import_https2.onRequest)({
   cors: true
 }, async (req, res) => {
@@ -2839,7 +3031,7 @@ var handleUnsubscribe = (0, import_https2.onRequest)({
     return;
   }
   try {
-    const vendorDoc = await db12.collection("vendors").doc(vendorId).get();
+    const vendorDoc = await db11.collection("vendors").doc(vendorId).get();
     if (!vendorDoc.exists) {
       res.status(404).send(renderPage(
         "Not Found",
@@ -2858,14 +3050,14 @@ var handleUnsubscribe = (0, import_https2.onRequest)({
       ));
       return;
     }
-    await db12.collection("vendors").doc(vendorId).update({
+    await db11.collection("vendors").doc(vendorId).update({
       status: "dismissed",
       statusUpdatedAt: /* @__PURE__ */ new Date(),
       dismissReason: "unsubscribed",
       unsubscribedAt: /* @__PURE__ */ new Date()
     });
-    const cancelledCount = await cancelVendorTasks(db12, vendorId);
-    await db12.collection("vendor_activities").add({
+    const cancelledCount = await cancelVendorTasks(db11, vendorId);
+    await db11.collection("vendor_activities").add({
       vendorId,
       type: "STATUS_CHANGE",
       description: `${businessName} unsubscribed via email link. ${cancelledCount} pending tasks cancelled.`,
@@ -2931,7 +3123,7 @@ var import_date_fns_tz = require("date-fns-tz");
 if (!admin15.apps.length) {
   admin15.initializeApp();
 }
-var db13 = admin15.firestore();
+var db12 = admin15.firestore();
 var ADMIN_EMAIL = "chris@xiri.ai";
 var EASTERN_TZ = "America/New_York";
 var sendOnboardingInvite = (0, import_firestore9.onDocumentUpdated)({
@@ -3019,7 +3211,7 @@ Power to the Facilities!`,
   await sendEmail(ADMIN_EMAIL, `Onboarding Call: ${businessName} \u2014 ${formattedTime}`, adminHtml, [
     { filename: "onboarding-call.ics", content: icsContent }
   ]);
-  await db13.collection("vendor_activities").add({
+  await db12.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_CALL_SCHEDULED",
     description: `Onboarding call scheduled for ${formattedTime}`,
@@ -3117,7 +3309,7 @@ function v4(options, buf, offset) {
 var v4_default = v4;
 
 // src/triggers/sendQuoteEmail.ts
-var db14 = admin16.firestore();
+var db13 = admin16.firestore();
 var sendQuoteEmail = (0, import_https3.onCall)({
   secrets: ["RESEND_API_KEY"],
   cors: [
@@ -3140,7 +3332,7 @@ var sendQuoteEmail = (0, import_https3.onCall)({
   if (!quoteId || !clientEmail) {
     throw new import_https3.HttpsError("invalid-argument", "Missing quoteId or clientEmail");
   }
-  const quoteRef = db14.collection("quotes").doc(quoteId);
+  const quoteRef = db13.collection("quotes").doc(quoteId);
   const quoteSnap = await quoteRef.get();
   if (!quoteSnap.exists) {
     throw new import_https3.HttpsError("not-found", "Quote not found");
@@ -3245,7 +3437,7 @@ var sendQuoteEmail = (0, import_https3.onCall)({
   if (!sent) {
     throw new import_https3.HttpsError("internal", "Failed to send email");
   }
-  await db14.collection("activity_logs").add({
+  await db13.collection("activity_logs").add({
     type: "QUOTE_SENT",
     quoteId,
     leadId: quote.leadId,
@@ -3270,7 +3462,7 @@ var respondToQuote = (0, import_https3.onCall)({
   if (!["accept", "request_changes"].includes(action)) {
     throw new import_https3.HttpsError("invalid-argument", "Invalid action");
   }
-  const quotesSnap = await db14.collection("quotes").where("reviewToken", "==", reviewToken).limit(1).get();
+  const quotesSnap = await db13.collection("quotes").where("reviewToken", "==", reviewToken).limit(1).get();
   if (quotesSnap.empty) {
     throw new import_https3.HttpsError("not-found", "Invalid or expired quote link");
   }
@@ -3281,7 +3473,7 @@ var respondToQuote = (0, import_https3.onCall)({
   }
   const now = admin16.firestore.FieldValue.serverTimestamp();
   if (action === "accept") {
-    const contractRef = await db14.collection("contracts").add({
+    const contractRef = await db13.collection("contracts").add({
       leadId: quote.leadId,
       quoteId: quoteDoc.id,
       clientBusinessName: quote.leadBusinessName,
@@ -3300,7 +3492,7 @@ var respondToQuote = (0, import_https3.onCall)({
       updatedAt: now
     });
     for (const item of quote.lineItems || []) {
-      await db14.collection("work_orders").add({
+      await db13.collection("work_orders").add({
         leadId: quote.leadId,
         contractId: contractRef.id,
         quoteLineItemId: item.id,
@@ -3335,7 +3527,7 @@ var respondToQuote = (0, import_https3.onCall)({
       clientResponseNotes: notes || null,
       updatedAt: now
     });
-    await db14.collection("leads").doc(quote.leadId).update({
+    await db13.collection("leads").doc(quote.leadId).update({
       status: "won",
       contractId: contractRef.id,
       wonAt: now
@@ -3352,7 +3544,7 @@ var respondToQuote = (0, import_https3.onCall)({
                 </div>`
       );
     }
-    await db14.collection("activity_logs").add({
+    await db13.collection("activity_logs").add({
       type: "QUOTE_ACCEPTED_BY_CLIENT",
       quoteId: quoteDoc.id,
       leadId: quote.leadId,
@@ -3367,7 +3559,7 @@ var respondToQuote = (0, import_https3.onCall)({
       clientResponseNotes: notes || "Client requested changes",
       updatedAt: now
     });
-    await db14.collection("activity_logs").add({
+    await db13.collection("activity_logs").add({
       type: "QUOTE_CHANGES_REQUESTED",
       quoteId: quoteDoc.id,
       leadId: quote.leadId,
@@ -3383,7 +3575,7 @@ var respondToQuote = (0, import_https3.onCall)({
 var import_firestore10 = require("firebase-functions/v2/firestore");
 var admin17 = __toESM(require("firebase-admin"));
 init_emailUtils();
-var db15 = admin17.firestore();
+var db14 = admin17.firestore();
 var processMailQueue = (0, import_firestore10.onDocumentCreated)({
   document: "mail_queue/{docId}",
   secrets: ["RESEND_API_KEY"]
@@ -3675,10 +3867,10 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
   logger10.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
-  const db23 = admin18.firestore();
+  const db22 = admin18.firestore();
   let vendorData;
   try {
-    const vendorSnap = await db23.collection("vendors").doc(newVendorId).get();
+    const vendorSnap = await db22.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
       logger10.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
@@ -3691,7 +3883,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const salesTaxId = vendorData.compliance?.salesTaxId?.trim();
   if (!salesTaxId) {
     logger10.info(`[ST-120.1] Vendor ${newVendorId} has no salesTaxId \u2014 skipping certificate.`);
-    await db23.collection("vendor_activities").add({
+    await db22.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_SKIPPED",
       description: `ST-120.1 not generated for WO ${workOrderId} \u2014 vendor has no Sales Tax ID on file.`,
@@ -3703,7 +3895,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   let leadData = {};
   if (after.leadId) {
     try {
-      const leadSnap = await db23.collection("leads").doc(after.leadId).get();
+      const leadSnap = await db22.collection("leads").doc(after.leadId).get();
       if (leadSnap.exists) {
         leadData = leadSnap.data();
       }
@@ -3713,7 +3905,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   }
   let xiriData;
   try {
-    const settingsSnap = await db23.collection("settings").doc("corporate").get();
+    const settingsSnap = await db22.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
       logger10.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
@@ -3759,7 +3951,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const result = await generateST1201(vendorCertData, xiriData, projectDataInput);
   if (!result.success || !result.pdfBytes) {
     logger10.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
-    await db23.collection("vendor_activities").add({
+    await db22.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
       description: `ST-120.1 generation failed for WO ${workOrderId}: ${result.error}`,
@@ -3793,7 +3985,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     logger10.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err);
     return;
   }
-  await db23.collection("work_orders").doc(workOrderId).update({
+  await db22.collection("work_orders").doc(workOrderId).update({
     st1201CertificateUrl: pdfUrl,
     st1201IssueDate: result.issueDate,
     st1201ExpiryDate: result.expiryDate,
@@ -3802,7 +3994,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (vendorCertData.email) {
     const vendorName = vendorCertData.businessName;
     const projectName = projectDataInput.projectName;
-    await db23.collection("mail_queue").add({
+    await db22.collection("mail_queue").add({
       to: vendorCertData.email,
       subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${projectName}`,
       templateType: "st_120_1_certificate",
@@ -3822,7 +4014,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
       createdAt: admin18.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db23.collection("vendor_activities").add({
+  await db22.collection("vendor_activities").add({
     vendorId: newVendorId,
     type: "TAX_CERTIFICATE_ISSUED",
     description: `ST-120.1 generated for project "${projectDataInput.projectName}" (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
@@ -3848,7 +4040,7 @@ init_queueUtils();
 if (!admin19.apps.length) {
   admin19.initializeApp();
 }
-var db16 = admin19.firestore();
+var db15 = admin19.firestore();
 var onLeadQualified = (0, import_firestore12.onDocumentUpdated)({
   document: "leads/{leadId}"
 }, async (event) => {
@@ -3862,10 +4054,10 @@ var onLeadQualified = (0, import_firestore12.onDocumentUpdated)({
   const contactEmail = after.email;
   if (!contactEmail || contactEmail.trim().length === 0) {
     logger11.warn(`[SalesOutreach] Lead ${leadId} (${businessName}) has no email \u2014 marking NEEDS_MANUAL.`);
-    await db16.collection("leads").doc(leadId).update({
+    await db15.collection("leads").doc(leadId).update({
       outreachStatus: "NEEDS_MANUAL"
     });
-    await db16.collection("lead_activities").add({
+    await db15.collection("lead_activities").add({
       leadId,
       type: "OUTREACH_NEEDS_MANUAL",
       description: `No email found for ${businessName}. Manual outreach required.`,
@@ -3886,7 +4078,7 @@ var onLeadQualified = (0, import_firestore12.onDocumentUpdated)({
     scheduledDate.setDate(scheduledDate.getDate() + step.dayOffset);
     scheduledDate.setHours(14, 0, 0, 0);
     const sendAt = step.dayOffset === 0 ? now : scheduledDate;
-    await enqueueTask(db16, {
+    await enqueueTask(db15, {
       leadId,
       type: step.sequence === 0 ? "GENERATE" : "FOLLOW_UP",
       scheduledAt: admin19.firestore.Timestamp.fromDate(sendAt),
@@ -3902,10 +4094,10 @@ var onLeadQualified = (0, import_firestore12.onDocumentUpdated)({
       }
     });
   }
-  await db16.collection("leads").doc(leadId).update({
+  await db15.collection("leads").doc(leadId).update({
     outreachStatus: "PENDING"
   });
-  await db16.collection("lead_activities").add({
+  await db15.collection("lead_activities").add({
     leadId,
     type: "DRIP_SCHEDULED",
     description: `Sales drip campaign scheduled: 4 emails over 14 days for ${businessName}.`,
@@ -3922,13 +4114,30 @@ var logger12 = __toESM(require("firebase-functions/logger"));
 if (!admin20.apps.length) {
   admin20.initializeApp();
 }
-var db17 = admin20.firestore();
-var MRR_THRESHOLD = 3e3;
-var RATE_STANDARD = 0.1;
-var RATE_PREMIUM = 0.15;
-var FSM_UPSELL_RATE = 0.05;
-var CLAWBACK_MONTHS = 6;
-var PAYOUT_SPLIT = [50, 25, 25];
+var db16 = admin20.firestore();
+var DEFAULTS = {
+  mrrThreshold: 3e3,
+  rateStandard: 0.05,
+  ratePremium: 0.075,
+  fsmUpsellRate: 0.05,
+  clawbackMonths: 6,
+  payoutSplit: [50, 25, 25]
+};
+async function getCommissionConfig() {
+  const snap = await db16.collection("settings").doc("commissions").get();
+  if (snap.exists) {
+    const data = snap.data();
+    return {
+      mrrThreshold: data.mrrThreshold ?? DEFAULTS.mrrThreshold,
+      rateStandard: data.rateStandard ?? DEFAULTS.rateStandard,
+      ratePremium: data.ratePremium ?? DEFAULTS.ratePremium,
+      fsmUpsellRate: data.fsmUpsellRate ?? DEFAULTS.fsmUpsellRate,
+      clawbackMonths: data.clawbackMonths ?? DEFAULTS.clawbackMonths,
+      payoutSplit: data.payoutSplit ?? DEFAULTS.payoutSplit
+    };
+  }
+  return DEFAULTS;
+}
 var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
   document: "quotes/{quoteId}"
 }, async (event) => {
@@ -3938,11 +4147,12 @@ var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
   if (before.status === after.status) return;
   if (after.status !== "accepted") return;
   const quoteId = event.params.quoteId;
-  const existingComm = await db17.collection("commissions").where("quoteId", "==", quoteId).limit(1).get();
+  const existingComm = await db16.collection("commissions").where("quoteId", "==", quoteId).limit(1).get();
   if (!existingComm.empty) {
     logger12.info(`[Commission] Commission already exists for quote ${quoteId} \u2014 skipping duplicate`);
     return;
   }
+  const cfg = await getCommissionConfig();
   const leadId = after.leadId;
   const assignedTo = after.assignedTo || after.createdBy;
   const isUpsell = after.isUpsell === true;
@@ -3951,14 +4161,14 @@ var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
   let rate;
   let type;
   if (isUpsell) {
-    rate = FSM_UPSELL_RATE;
+    rate = cfg.fsmUpsellRate;
     type = "FSM_UPSELL";
   } else {
-    rate = mrr > MRR_THRESHOLD ? RATE_PREMIUM : RATE_STANDARD;
+    rate = mrr > cfg.mrrThreshold ? cfg.ratePremium : cfg.rateStandard;
     type = "SALES_NEW";
   }
   const totalCommission = acv * rate;
-  const payoutSchedule = PAYOUT_SPLIT.map((pct, month) => ({
+  const payoutSchedule = cfg.payoutSplit.map((pct, month) => ({
     month,
     amount: Math.round(totalCommission * pct / 100 * 100) / 100,
     // Round to cents
@@ -3976,9 +4186,9 @@ var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
   }];
   const now = /* @__PURE__ */ new Date();
   const clawbackEnd = new Date(now);
-  clawbackEnd.setMonth(clawbackEnd.getMonth() + CLAWBACK_MONTHS);
+  clawbackEnd.setMonth(clawbackEnd.getMonth() + cfg.clawbackMonths);
   const staffRole = isUpsell ? "fsm" : "sales";
-  const commissionRef = await db17.collection("commissions").add({
+  const commissionRef = await db16.collection("commissions").add({
     staffId: assignedTo,
     staffRole,
     quoteId,
@@ -3995,7 +4205,7 @@ var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
     createdAt: now,
     updatedAt: now
   });
-  await db17.collection("commission_ledger").add({
+  await db16.collection("commission_ledger").add({
     commissionId: commissionRef.id,
     type: "PAYOUT_SCHEDULED",
     amount: totalCommission,
@@ -4003,7 +4213,7 @@ var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
     description: `${type === "FSM_UPSELL" ? "Upsell" : "New deal"} commission: ${(rate * 100).toFixed(0)}% of $${acv.toLocaleString()} ACV = $${totalCommission.toLocaleString()}`,
     createdAt: now
   });
-  await db17.collection("activity_logs").add({
+  await db16.collection("activity_logs").add({
     type: "COMMISSION_CREATED",
     quoteId,
     leadId,
@@ -4028,12 +4238,12 @@ var onInvoicePaid = (0, import_firestore13.onDocumentUpdated)({
   if (after.status !== "paid") return;
   const quoteId = after.quoteId;
   if (!quoteId) return;
-  const commSnap = await db17.collection("commissions").where("quoteId", "==", quoteId).where("status", "==", "PENDING").get();
+  const commSnap = await db16.collection("commissions").where("quoteId", "==", quoteId).where("status", "==", "PENDING").get();
   if (commSnap.empty) return;
   const now = /* @__PURE__ */ new Date();
   for (const commDoc of commSnap.docs) {
     try {
-      await db17.runTransaction(async (txn) => {
+      await db16.runTransaction(async (txn) => {
         const freshDoc = await txn.get(commDoc.ref);
         const freshData = freshDoc.data();
         if (!freshData || freshData.status !== "PENDING") {
@@ -4056,7 +4266,7 @@ var onInvoicePaid = (0, import_firestore13.onDocumentUpdated)({
       });
       const commission = commDoc.data();
       const schedule = commission.payoutSchedule;
-      await db17.collection("commission_ledger").add({
+      await db16.collection("commission_ledger").add({
         commissionId: commDoc.id,
         type: "PAYOUT_PAID",
         amount: schedule[0].amount,
@@ -4082,15 +4292,15 @@ var onWorkOrderHandoff = (0, import_firestore13.onDocumentUpdated)({
   const leadId = after.leadId;
   const fsmId = after.assignedFsmId || after.createdBy;
   if (!leadId) return;
-  const leadDoc = await db17.collection("leads").doc(leadId).get();
+  const leadDoc = await db16.collection("leads").doc(leadId).get();
   if (!leadDoc.exists) return;
   const leadData = leadDoc.data();
   if (leadData?.handedOffToFsm) return;
-  await db17.collection("leads").doc(leadId).update({
+  await db16.collection("leads").doc(leadId).update({
     handedOffToFsm: fsmId,
     handoffDate: /* @__PURE__ */ new Date()
   });
-  await db17.collection("activity_logs").add({
+  await db16.collection("activity_logs").add({
     type: "SALES_TO_FSM_HANDOFF",
     leadId,
     fsmId,
@@ -4100,7 +4310,7 @@ var onWorkOrderHandoff = (0, import_firestore13.onDocumentUpdated)({
   });
   logger12.info(`[Handoff] Lead ${leadId} handed off to FSM ${fsmId} via work order ${event.params.workOrderId}`);
   try {
-    const fsmDoc = await db17.collection("users").doc(fsmId).get();
+    const fsmDoc = await db16.collection("users").doc(fsmId).get();
     const fsmEmail = fsmDoc.data()?.email || "chris@xiri.ai";
     const fsmName = fsmDoc.data()?.displayName || "FSM";
     const clientName = leadData?.businessName || leadData?.companyName || leadData?.name || "New Client";
@@ -4108,7 +4318,7 @@ var onWorkOrderHandoff = (0, import_firestore13.onDocumentUpdated)({
     const clientPhone = leadData?.phone || leadData?.contactPhone || "";
     const clientAddress = leadData?.address || leadData?.location || "";
     const services = after.serviceType || after.description || "Facility Maintenance";
-    await db17.collection("mail_queue").add({
+    await db16.collection("mail_queue").add({
       to: fsmEmail,
       subject: `\u{1F4CB} New Client Assigned: ${clientName}`,
       templateType: "fsm_handoff",
@@ -4162,7 +4372,7 @@ var onClientCancelled = (0, import_firestore13.onDocumentUpdated)({
   if (after.status !== "churned") return;
   const leadId = event.params.leadId;
   const now = /* @__PURE__ */ new Date();
-  const commSnap = await db17.collection("commissions").where("leadId", "==", leadId).where("status", "in", ["PENDING", "ACTIVE"]).get();
+  const commSnap = await db16.collection("commissions").where("leadId", "==", leadId).where("status", "in", ["PENDING", "ACTIVE"]).get();
   if (commSnap.empty) return;
   for (const commDoc of commSnap.docs) {
     const commission = commDoc.data();
@@ -4185,7 +4395,7 @@ var onClientCancelled = (0, import_firestore13.onDocumentUpdated)({
       payoutSchedule: schedule,
       updatedAt: now
     });
-    await db17.collection("commission_ledger").add({
+    await db16.collection("commission_ledger").add({
       commissionId: commDoc.id,
       type: "CLAWBACK",
       amount: -cancelledAmount,
@@ -4204,7 +4414,7 @@ var logger13 = __toESM(require("firebase-functions/logger"));
 if (!admin21.apps.length) {
   admin21.initializeApp();
 }
-var db18 = admin21.firestore();
+var db17 = admin21.firestore();
 var NRR_TIERS = [
   { min: 1.1, rate: 0.02 },
   // > 110% NRR → 2% of portfolio ACV
@@ -4222,7 +4432,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
 }, async () => {
   const now = /* @__PURE__ */ new Date();
   logger13.info(`[CommissionPayouts] Processing scheduled payouts for ${now.toISOString()}`);
-  const commSnap = await db18.collection("commissions").where("status", "==", "ACTIVE").get();
+  const commSnap = await db17.collection("commissions").where("status", "==", "ACTIVE").get();
   let processed = 0;
   let paid = 0;
   for (const commDoc of commSnap.docs) {
@@ -4233,7 +4443,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
       if (entry.status !== "PENDING") continue;
       const scheduledAt = entry.scheduledAt?.toDate?.() || new Date(entry.scheduledAt);
       if (scheduledAt > now) continue;
-      const leadDoc = await db18.collection("leads").doc(commission.leadId).get();
+      const leadDoc = await db17.collection("leads").doc(commission.leadId).get();
       const leadData = leadDoc.data();
       if (leadData?.status === "churned" || leadData?.status === "lost") {
         entry.status = "CANCELLED";
@@ -4245,7 +4455,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
       entry.paidAt = now;
       changed2 = true;
       paid++;
-      await db18.collection("commission_ledger").add({
+      await db17.collection("commission_ledger").add({
         commissionId: commDoc.id,
         type: "PAYOUT_PAID",
         amount: entry.amount,
@@ -4295,7 +4505,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
   };
   const quarter = quarterMap[currentMonth] || `${currentYear}-Q${Math.ceil((currentMonth + 1) / 3)}`;
   logger13.info(`[NRR] Calculating Net Revenue Retention for ${quarter}`);
-  const leadsSnap = await db18.collection("leads").where("handedOffToFsm", "!=", null).get();
+  const leadsSnap = await db17.collection("leads").where("handedOffToFsm", "!=", null).get();
   const fsmPortfolios = /* @__PURE__ */ new Map();
   for (const leadDoc of leadsSnap.docs) {
     const lead = leadDoc.data();
@@ -4313,7 +4523,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
     }
     const portfolio = fsmPortfolios.get(fsmId);
     portfolio.leadIds.push(leadDoc.id);
-    const quotesSnap = await db18.collection("quotes").where("leadId", "==", leadDoc.id).where("status", "==", "accepted").get();
+    const quotesSnap = await db17.collection("quotes").where("leadId", "==", leadDoc.id).where("status", "==", "accepted").get();
     let leadMrr = 0;
     for (const quoteDoc of quotesSnap.docs) {
       leadMrr += quoteDoc.data().totalMonthlyRate || 0;
@@ -4323,7 +4533,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
     } else {
       portfolio.currentMrr += leadMrr;
     }
-    const upsellSnap = await db18.collection("quotes").where("leadId", "==", leadDoc.id).where("isUpsell", "==", true).where("status", "==", "accepted").get();
+    const upsellSnap = await db17.collection("quotes").where("leadId", "==", leadDoc.id).where("isUpsell", "==", true).where("status", "==", "accepted").get();
     for (const upsellDoc of upsellSnap.docs) {
       portfolio.upsells += upsellDoc.data().totalMonthlyRate || 0;
     }
@@ -4341,7 +4551,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
     }
     const portfolioAcv = portfolio.currentMrr * 12;
     const bonusAmount = Math.round(portfolioAcv * bonusRate / 4 * 100) / 100;
-    await db18.collection("nrr_snapshots").add({
+    await db17.collection("nrr_snapshots").add({
       fsmId,
       quarter,
       startingMrr,
@@ -4356,7 +4566,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
       calculatedAt: now
     });
     if (bonusAmount > 0) {
-      const commRef = await db18.collection("commissions").add({
+      const commRef = await db17.collection("commissions").add({
         staffId: fsmId,
         staffRole: "fsm",
         quoteId: "",
@@ -4382,7 +4592,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
         createdAt: now,
         updatedAt: now
       });
-      await db18.collection("commission_ledger").add({
+      await db17.collection("commission_ledger").add({
         commissionId: commRef.id,
         type: "PAYOUT_SCHEDULED",
         amount: bonusAmount,
@@ -4403,7 +4613,7 @@ var logger14 = __toESM(require("firebase-functions/logger"));
 if (!admin22.apps.length) {
   admin22.initializeApp();
 }
-var db19 = admin22.firestore();
+var db18 = admin22.firestore();
 var INTERNAL_NOTIFY_EMAIL = "chris@xiri.ai";
 var onAuditSubmitted = (0, import_firestore14.onDocumentCreated)({
   document: "leads/{leadId}"
@@ -4421,7 +4631,7 @@ var onAuditSubmitted = (0, import_firestore14.onDocumentCreated)({
     logger14.warn(`[AuditSubmitted] Lead ${leadId} has no email \u2014 skipping confirmation`);
     return;
   }
-  await db19.collection("mail_queue").add({
+  await db18.collection("mail_queue").add({
     to: contactEmail,
     subject: `We received your audit request \u2014 ${businessName}`,
     templateType: "audit_confirmation",
@@ -4431,7 +4641,7 @@ var onAuditSubmitted = (0, import_firestore14.onDocumentCreated)({
     status: "pending",
     createdAt: admin22.firestore.FieldValue.serverTimestamp()
   });
-  await db19.collection("mail_queue").add({
+  await db18.collection("mail_queue").add({
     to: INTERNAL_NOTIFY_EMAIL,
     subject: `\u{1F514} New Audit Lead: ${businessName}`,
     templateType: "internal_notification",
@@ -4441,7 +4651,7 @@ var onAuditSubmitted = (0, import_firestore14.onDocumentCreated)({
     status: "pending",
     createdAt: admin22.firestore.FieldValue.serverTimestamp()
   });
-  await db19.collection("activity_logs").add({
+  await db18.collection("activity_logs").add({
     type: "AUDIT_SUBMITTED",
     leadId,
     email: contactEmail,
@@ -4537,7 +4747,7 @@ var logger15 = __toESM(require("firebase-functions/logger"));
 if (!admin23.apps.length) {
   admin23.initializeApp();
 }
-var db20 = admin23.firestore();
+var db19 = admin23.firestore();
 var FAIL_THRESHOLD = 70;
 var SUSPENSION_THRESHOLD = 3;
 var INTERNAL_NOTIFY_EMAIL2 = "chris@xiri.ai";
@@ -4556,7 +4766,7 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
   const clientName = data.clientName || data.businessName || "";
   logger15.info(`[AuditFailed] Audit ${auditId} scored ${overallScore}% (threshold: ${FAIL_THRESHOLD}%)`);
   if (workOrderId) {
-    await db20.collection("work_orders").doc(workOrderId).update({
+    await db19.collection("work_orders").doc(workOrderId).update({
       status: "needs_remediation",
       failedAuditId: auditId,
       failedAuditScore: overallScore,
@@ -4565,9 +4775,9 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
   }
   let remediationId = null;
   if (workOrderId) {
-    const woDoc = await db20.collection("work_orders").doc(workOrderId).get();
+    const woDoc = await db19.collection("work_orders").doc(workOrderId).get();
     const woData = woDoc.exists ? woDoc.data() : null;
-    const remRef = await db20.collection("work_orders").add({
+    const remRef = await db19.collection("work_orders").add({
       type: "remediation",
       originalWorkOrderId: workOrderId,
       auditId,
@@ -4586,7 +4796,7 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
   let vendorName = "Unknown Vendor";
   let vendorSuspended = false;
   if (vendorId) {
-    const vendorRef = db20.collection("vendors").doc(vendorId);
+    const vendorRef = db19.collection("vendors").doc(vendorId);
     const vendorDoc = await vendorRef.get();
     if (vendorDoc.exists) {
       const vendorData = vendorDoc.data();
@@ -4608,14 +4818,14 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
   }
   let fsmEmail = INTERNAL_NOTIFY_EMAIL2;
   if (workOrderId) {
-    const woDoc = await db20.collection("work_orders").doc(workOrderId).get();
+    const woDoc = await db19.collection("work_orders").doc(workOrderId).get();
     const fsmId = woDoc.data()?.assignedFsmId;
     if (fsmId) {
-      const fsmDoc = await db20.collection("users").doc(fsmId).get();
+      const fsmDoc = await db19.collection("users").doc(fsmId).get();
       fsmEmail = fsmDoc.data()?.email || INTERNAL_NOTIFY_EMAIL2;
     }
   }
-  await db20.collection("mail_queue").add({
+  await db19.collection("mail_queue").add({
     to: fsmEmail,
     subject: `\u26A0\uFE0F Audit Failed: ${locationName} \u2014 ${overallScore}%`,
     templateType: "audit_failed",
@@ -4634,7 +4844,7 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
     createdAt: admin23.firestore.FieldValue.serverTimestamp()
   });
   if (vendorSuspended) {
-    await db20.collection("mail_queue").add({
+    await db19.collection("mail_queue").add({
       to: INTERNAL_NOTIFY_EMAIL2,
       subject: `\u{1F6AB} Vendor Suspended: ${vendorName} (${vendorFailCount} failed audits)`,
       templateType: "vendor_suspended",
@@ -4652,7 +4862,7 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
       createdAt: admin23.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db20.collection("activity_logs").add({
+  await db19.collection("activity_logs").add({
     type: "AUDIT_FAILED",
     auditId,
     workOrderId: workOrderId || null,
@@ -4717,7 +4927,7 @@ var logger16 = __toESM(require("firebase-functions/logger"));
 if (!admin24.apps.length) {
   admin24.initializeApp();
 }
-var db21 = admin24.firestore();
+var db20 = admin24.firestore();
 var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
   schedule: "0 6 1 * *",
   // 6 AM on 1st of every month
@@ -4728,7 +4938,7 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
   const periodEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   const periodStart = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), 1);
   const periodLabel = periodStart.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const contractsSnap = await db21.collection("contracts").where("status", "==", "active").get();
+  const contractsSnap = await db20.collection("contracts").where("status", "==", "active").get();
   if (contractsSnap.empty) {
     logger16.info("[MonthlyInvoices] No active contracts found. Done.");
     return;
@@ -4743,7 +4953,7 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
     const clientName = contract.clientBusinessName || contract.clientName || contract.businessName || "Client";
     const clientEmail = contract.contactEmail || contract.clientEmail || "";
     const contractLineItems = contract.lineItems || [];
-    let workOrdersQuery = db21.collection("work_orders").where("status", "==", "completed");
+    let workOrdersQuery = db20.collection("work_orders").where("status", "==", "completed");
     if (contract.leadId) {
       workOrdersQuery = workOrdersQuery.where("leadId", "==", contract.leadId);
     }
@@ -4799,7 +5009,7 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
     const totalAmount = invoiceLineItems.reduce((sum, li) => sum + li.rate, 0);
     const dueDate = new Date(now);
     dueDate.setDate(dueDate.getDate() + 30);
-    const invoiceRef = await db21.collection("invoices").add({
+    const invoiceRef = await db20.collection("invoices").add({
       contractId,
       leadId: leadId || null,
       clientName,
@@ -4819,7 +5029,7 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
       createdAt: admin24.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin24.firestore.FieldValue.serverTimestamp()
     });
-    await db21.collection("activity_logs").add({
+    await db20.collection("activity_logs").add({
       type: "INVOICE_AUTO_GENERATED",
       invoiceId: invoiceRef.id,
       contractId,
@@ -4841,7 +5051,7 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
 var import_https4 = require("firebase-functions/v2/https");
 var admin25 = __toESM(require("firebase-admin"));
 var import_v2 = require("firebase-functions/v2");
-var db22 = admin25.firestore();
+var db21 = admin25.firestore();
 var resendWebhook = (0, import_https4.onRequest)({
   cors: true,
   timeoutSeconds: 30,
@@ -4901,7 +5111,7 @@ var resendWebhook = (0, import_https4.onRequest)({
       import_v2.logger.info(`Resend webhook: resolved vendorId=${vendorId} from tag`);
     }
     if (!vendorId) {
-      const activitiesSnapshot = await db22.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
+      const activitiesSnapshot = await db21.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
       if (!activitiesSnapshot.empty) {
         vendorId = activitiesSnapshot.docs[0].data().vendorId;
         import_v2.logger.info(`Resend webhook: resolved vendorId=${vendorId} from activity lookup`);
@@ -4912,7 +5122,7 @@ var resendWebhook = (0, import_https4.onRequest)({
       res.status(200).json({ ok: true, notFound: true });
       return;
     }
-    await db22.collection("vendor_activities").add({
+    await db21.collection("vendor_activities").add({
       vendorId,
       type: mapping.activityType,
       description: mapping.description,
@@ -4941,7 +5151,7 @@ var resendWebhook = (0, import_https4.onRequest)({
         engagementUpdate["outreachMeta.bounceError"] = event?.data?.error_message || "Email bounced";
       }
       engagementUpdate["updatedAt"] = /* @__PURE__ */ new Date();
-      await db22.collection("vendors").doc(vendorId).update(engagementUpdate);
+      await db21.collection("vendors").doc(vendorId).update(engagementUpdate);
       import_v2.logger.info(`Vendor ${vendorId}: emailEngagement updated (${mapping.deliveryStatus})`);
     }
     import_v2.logger.info(`Resend webhook: processed ${eventType} for vendor ${vendorId}`);
