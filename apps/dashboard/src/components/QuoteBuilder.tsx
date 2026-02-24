@@ -348,14 +348,15 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
         updateLineItem(itemId, { daysOfWeek: newDays });
     };
 
-    const recurringItems = lineItems.filter(li => li.frequency !== 'one_time');
-    const oneTimeItems = lineItems.filter(li => li.frequency === 'one_time');
+    const activeItems = lineItems.filter(li => li.lineItemStatus !== 'cancelled');
+    const recurringItems = activeItems.filter(li => li.frequency !== 'one_time');
+    const oneTimeItems = activeItems.filter(li => li.frequency === 'one_time');
     const recurringSubtotal = recurringItems.reduce((sum, li) => sum + (li.clientRate || 0), 0);
     const oneTimeSubtotal = oneTimeItems.reduce((sum, li) => sum + (li.clientRate || 0), 0);
-    const subtotalBeforeTax = lineItems.reduce((sum, li) => sum + (li.clientRate || 0), 0);
+    const subtotalBeforeTax = activeItems.reduce((sum, li) => sum + (li.clientRate || 0), 0);
     const recurringTax = recurringItems.reduce((sum, li) => sum + (li.taxAmount || 0), 0);
     const oneTimeTax = oneTimeItems.reduce((sum, li) => sum + (li.taxAmount || 0), 0);
-    const totalTax = lineItems.reduce((sum, li) => sum + (li.taxAmount || 0), 0);
+    const totalTax = activeItems.reduce((sum, li) => sum + (li.taxAmount || 0), 0);
     const totalMonthly = recurringSubtotal + recurringTax;
     const totalOneTime = oneTimeSubtotal + oneTimeTax;
 
