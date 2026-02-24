@@ -10,8 +10,8 @@ const db = admin.firestore();
 
 // ─── Commission Constants ───
 const MRR_THRESHOLD = 3000;        // $3K MRR = $36K ACV
-const RATE_STANDARD = 0.10;        // 10% for deals ≤ $3K MRR
-const RATE_PREMIUM = 0.15;         // 15% for deals > $3K MRR
+const RATE_STANDARD = 0.05;        // 5% for deals ≤ $3K MRR
+const RATE_PREMIUM = 0.075;        // 7.5% for deals > $3K MRR
 const FSM_UPSELL_RATE = 0.05;      // 5% of annualized upsell
 const CLAWBACK_MONTHS = 6;         // Cancel unpaid payouts within 6 months
 const PAYOUT_SPLIT = [50, 25, 25]; // 3-month payout schedule

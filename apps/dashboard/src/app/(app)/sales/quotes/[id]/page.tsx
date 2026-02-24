@@ -500,7 +500,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 const tenure = quote.contractTenure || 12;
                 const acv = (mrr * tenure) + oneTimeTotal; // recurring × tenure + one-time flat
                 const isUpsell = quote.isUpsell === true;
-                const commissionRate = isUpsell ? 0.05 : 0.10;
+                const commissionRate = isUpsell ? 0.05 : (mrr > 3000 ? 0.075 : 0.05);
                 const totalCommission = Math.round(acv * commissionRate * 100) / 100;
                 const staffId = quote.assignedTo || quote.createdBy || userId;
 
