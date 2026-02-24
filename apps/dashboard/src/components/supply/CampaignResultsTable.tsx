@@ -18,7 +18,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-    CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, ExternalLink, Phone, Globe, MapPin, X, RotateCcw, Plus, Rocket, Loader2, Search, Zap, ShieldCheck, Database
+    CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, ExternalLink, Phone, Globe, MapPin, X, RotateCcw, Plus, Rocket, Loader2, Search, Zap, ShieldCheck, Database, Star, Clock
 } from 'lucide-react';
 import { Vendor } from '@xiri/shared';
 import { httpsCallable } from 'firebase/functions';
@@ -26,6 +26,7 @@ import { functions } from '@/lib/firebase';
 import ReactGoogleAutocomplete from 'react-google-autocomplete';
 import MultiSelectDropdown from '@/components/ui/multi-select-dropdown';
 import { AVAILABLE_COUNTIES } from '@/lib/openDataSearch';
+import { enrichWithGooglePlaces, type PlacesEnrichment } from '@/lib/googlePlaces';
 
 export interface PreviewVendor extends Vendor {
     isDismissed?: boolean;
@@ -62,8 +63,20 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
     onRevive: (campaignId: string, vendorId: string) => void;
     campaignId: string;
 }) {
-    const [websiteError, setWebsiteError] = useState(false);
     const dismissed = vendor.isDismissed;
+    const [placesData, setPlacesData] = useState<PlacesEnrichment | null>(null);
+    const [placesLoading, setPlacesLoading] = useState(false);
+
+    // Fetch Google Places enrichment on mount or vendor change
+    useEffect(() => {
+        if (!vendor.address && !vendor.city && !vendor.businessName) return;
+        setPlacesLoading(true);
+        setPlacesData(null);
+        enrichWithGooglePlaces(vendor.address, vendor.city, vendor.state, vendor.businessName)
+            .then(data => setPlacesData(data))
+            .catch(err => console.error('Places enrichment failed:', err))
+            .finally(() => setPlacesLoading(false));
+    }, [vendor.id, vendor.address, vendor.city, vendor.state, vendor.businessName]);
 
     return (
         <div className="flex flex-col h-full bg-background border-l border-border overflow-hidden animate-in slide-in-from-right-5 duration-200">
@@ -71,11 +84,18 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
             <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30 flex-shrink-0">
                 <div className="min-w-0 flex-1">
                     <h3 className={`font-semibold text-sm truncate ${dismissed ? 'line-through text-muted-foreground' : ''}`}>
-                        {vendor.businessName}
+                        {placesData?.name || vendor.businessName}
                     </h3>
-                    <p className="text-xs text-muted-foreground truncate">
-                        {vendor.city && vendor.state ? `${vendor.city}, ${vendor.state}` : vendor.address || 'N/A'}
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-muted-foreground truncate">
+                            {vendor.city && vendor.state ? `${vendor.city}, ${vendor.state}` : vendor.address || 'N/A'}
+                        </p>
+                        {vendor.dcaCategory && (
+                            <Badge variant="secondary" className="text-[9px] px-1 h-3.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-none flex-shrink-0 capitalize">
+                                NY Open Data
+                            </Badge>
+                        )}
+                    </div>
                 </div>
                 <button onClick={onClose} className="p-1 hover:bg-muted rounded transition-colors flex-shrink-0 ml-2">
                     <X className="w-4 h-4" />
@@ -83,7 +103,7 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
             </div>
 
             {/* Info + Actions */}
-            <div className="p-3 space-y-3 border-b border-border flex-shrink-0 bg-muted/5">
+            <div className="p-3 space-y-3 border-b border-border flex-shrink-0 bg-muted/5 flex-1 overflow-y-auto">
                 {/* AI Analysis */}
                 <Card className="bg-card border-secondary/20 shadow-sm">
                     <CardHeader className="py-2 px-3 pb-1">
@@ -97,102 +117,189 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-3 pb-2 pt-0">
-                        <p className="text-xs text-muted-foreground italic border-l-2 border-primary/30 pl-2 my-1.5">
+                        <p className="text-[11px] text-muted-foreground italic border-l-2 border-primary/30 pl-2 my-1.5 leading-tight">
                             "{vendor.aiReasoning || 'No reasoning available.'}"
                         </p>
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                            {vendor.capabilities?.map((cap, i) => (
-                                <Badge key={i} variant="outline" className="text-[10px] h-5">{cap}</Badge>
-                            ))}
-                        </div>
+                        {vendor.capabilities && vendor.capabilities.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                                {vendor.capabilities.map((cap, i) => (
+                                    <Badge key={i} variant="outline" className="text-[9px] h-4 px-1 py-0 font-normal">{cap}</Badge>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
-                {/* Contact Info */}
-                <div className="flex items-center gap-3 text-xs">
-                    {vendor.phone && (
-                        <a href={`tel:${vendor.phone}`} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
-                            <Phone className="w-3 h-3" /> {vendor.phone}
-                        </a>
-                    )}
-                    {vendor.website && (
-                        <a href={vendor.website.startsWith('http') ? vendor.website : `https://${vendor.website}`}
-                            target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-blue-500 hover:underline">
-                            <Globe className="w-3 h-3" /> Website
-                        </a>
-                    )}
-                </div>
+                {/* DCA Licensing Data Card (if available) */}
+                {vendor.dcaCategory && (
+                    <Card className="bg-card border-emerald-200 dark:border-emerald-800 shadow-sm">
+                        <CardHeader className="py-2 px-3 pb-1">
+                            <CardTitle className="text-xs font-medium flex justify-between items-center">
+                                <span className="flex items-center gap-1.5">
+                                    <Database className="w-3.5 h-3.5 text-emerald-500" /> Licensing Data
+                                </span>
+                                <Badge variant="default" className="text-[9px] px-1.5 h-4 bg-emerald-600">
+                                    NYC DCA Verified
+                                </Badge>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-3 pb-2 pt-0 space-y-1.5">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                                <span className="font-medium text-foreground">{vendor.dcaCategory}</span>
+                            </div>
+                            {vendor.phone && (
+                                <a href={`tel:${vendor.phone}`} className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
+                                    <Phone className="w-3 h-3 flex-shrink-0" /> {vendor.phone}
+                                </a>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
 
-                {/* Action Buttons */}
+                {/* Google Business Card */}
+                {placesLoading && (
+                    <Card className="bg-card border-secondary/20 shadow-sm">
+                        <CardContent className="px-3 py-3 space-y-2">
+                            <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+                            <div className="h-2 w-48 bg-muted rounded animate-pulse" />
+                            <div className="h-2 w-24 bg-muted rounded animate-pulse" />
+                        </CardContent>
+                    </Card>
+                )}
+
+                {placesData && (
+                    <Card className="bg-card border-blue-200 dark:border-blue-800 shadow-sm">
+                        <CardHeader className="py-2 px-3 pb-1">
+                            <CardTitle className="text-xs font-medium flex justify-between items-center">
+                                <span className="flex items-center gap-1.5">
+                                    <Globe className="w-3.5 h-3.5 text-blue-500" /> Google Business
+                                </span>
+                                {placesData.openNow !== undefined && (
+                                    <Badge variant="default" className={`text-[9px] px-1.5 h-4 ${placesData.openNow ? 'bg-emerald-600' : 'bg-red-600'}`}>
+                                        {placesData.openNow ? 'Open Now' : 'Closed'}
+                                    </Badge>
+                                )}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-3 pb-2 pt-0 space-y-2">
+                            {/* Rating */}
+                            {(placesData.rating || vendor.rating) && (
+                                <div className="flex items-center gap-1.5 text-xs">
+                                    <div className="flex items-center gap-0.5">
+                                        {[1, 2, 3, 4, 5].map(star => {
+                                            const rating = placesData.rating || vendor.rating || 0;
+                                            return <Star key={star} className={`w-3 h-3 ${star <= Math.round(rating) ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground/30'}`} />;
+                                        })}
+                                    </div>
+                                    <span className="font-medium">{placesData.rating || vendor.rating}</span>
+                                    {(placesData.ratingCount || vendor.totalRatings) && (
+                                        <span className="text-muted-foreground">({(placesData.ratingCount || vendor.totalRatings)?.toLocaleString()} reviews)</span>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Links (Phone / Website / Map) */}
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                                {(placesData.phone || vendor.phone) && (
+                                    <a href={`tel:${placesData.phone || vendor.phone}`} className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                                        <Phone className="w-3 h-3 flex-shrink-0" /> {placesData.phone || vendor.phone}
+                                    </a>
+                                )}
+                                {(placesData.website || vendor.website) && (
+                                    <a href={placesData.website || vendor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                                        <Globe className="w-3 h-3 flex-shrink-0" /> Website
+                                    </a>
+                                )}
+                                {(placesData.googleMapsUrl) && (
+                                    <a href={placesData.googleMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                                        <MapPin className="w-3 h-3 flex-shrink-0" /> Open in Maps
+                                    </a>
+                                )}
+                            </div>
+
+                            {/* Hours Grid */}
+                            {placesData.weekdayHours && placesData.weekdayHours.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-border">
+                                    <div className="flex items-center gap-1 text-xs font-medium mb-1">
+                                        <Clock className="w-3.5 h-3.5 text-muted-foreground" /> Hours
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-0.5 ml-4.5">
+                                        {placesData.weekdayHours.map((hourStr, i) => {
+                                            const [day, ...times] = hourStr.split(':');
+                                            const isToday = i === ((new Date().getDay() + 6) % 7);
+                                            return (
+                                                <div key={i} className={`flex justify-between text-[10px] ${isToday ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                                                    <span>{day}:</span>
+                                                    <span>{times.join(':').trim()}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Google Photos (Static API fallback logic handled inside Places) */}
+                            {placesData.photoUrls && placesData.photoUrls.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-border">
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                        {placesData.photoUrls.map((url, i) => (
+                                            <a key={i} href={placesData.googleMapsUrl || placesData.website || '#'} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 w-20 h-20 rounded-md overflow-hidden bg-muted hover:opacity-90 transition-opacity">
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={url} alt="Business photo" className="w-full h-full object-cover" />
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Legacy Fallback for Phone/Web if no Google Places match AND not DCA (DCA has it's own card) */}
+                {!placesLoading && !placesData && !vendor.dcaCategory && (vendor.phone || vendor.website) && (
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 bg-white dark:bg-card p-3 rounded-md border border-border shadow-sm text-xs">
+                        {vendor.phone && (
+                            <a href={`tel:${vendor.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
+                                <Phone className="w-3.5 h-3.5 flex-shrink-0" /> {vendor.phone}
+                            </a>
+                        )}
+                        {vendor.website && (
+                            <a href={vendor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
+                                <Globe className="w-3.5 h-3.5 flex-shrink-0" /> Website
+                            </a>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Action Buttons (Sticky Bottom) */}
+            <div className="p-3 bg-muted/30 border-t border-border flex-shrink-0">
                 {dismissed ? (
                     <Button onClick={() => onRevive(campaignId, vendor.id!)} className="w-full h-8 text-xs bg-amber-500 hover:bg-amber-600 text-white">
                         <RotateCcw className="w-3 h-3 mr-1" /> Revive Vendor
                     </Button>
                 ) : (
                     <>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-2 mb-2">
                             <Button onClick={() => onApprove(campaignId, vendor.id!, 'FAST_TRACK')}
                                 className="bg-orange-500 hover:bg-orange-600 text-white h-auto py-2 flex-col items-start gap-0.5 text-xs">
-                                <span className="flex items-center font-bold"><Zap className="w-3.5 h-3.5 mr-1 fill-current" /> Urgent</span>
-                                <span className="text-[10px] opacity-90 font-normal">Fast-track onboarding</span>
+                                <span className="flex items-center font-bold"><Zap className="w-3.5 h-3.5 mr-1 fill-current" /> Urgent Needs</span>
+                                <span className="text-[9px] opacity-90 font-normal leading-tight">Fast-track onboarding</span>
                             </Button>
                             <Button onClick={() => onApprove(campaignId, vendor.id!, 'STANDARD')}
                                 className="bg-green-600 hover:bg-green-700 text-white h-auto py-2 flex-col items-start gap-0.5 text-xs">
                                 <span className="flex items-center font-bold"><ShieldCheck className="w-3.5 h-3.5 mr-1" /> Standard</span>
-                                <span className="text-[10px] opacity-90 font-normal">Add to pipeline</span>
+                                <span className="text-[9px] opacity-90 font-normal leading-tight">Add to pipeline</span>
                             </Button>
                         </div>
                         <Button onClick={() => onDismiss(campaignId, vendor.id!)}
                             variant="default" size="sm"
                             className="w-full bg-red-600 hover:bg-red-700 text-white h-7 text-xs">
-                            <XCircle className="w-3 h-3 mr-1" /> Dismiss (Blacklist)
+                            <XCircle className="w-3 h-3 mr-1" /> Dismiss (Not a fit)
                         </Button>
                     </>
                 )}
-            </div>
-
-            {/* Website Preview */}
-            <div className="flex-1 min-h-[200px] relative bg-white group">
-                {vendor.websiteScreenshotUrl ? (
-                    <div className="w-full h-full relative cursor-pointer" onClick={() => window.open(vendor.website, '_blank')}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={vendor.websiteScreenshotUrl} alt={`Preview of ${vendor.businessName}`} className="w-full h-full object-cover object-top hover:opacity-95 transition-opacity" />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none">
-                            <ExternalLink className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 drop-shadow-lg transition-opacity" />
-                        </div>
-                    </div>
-                ) : vendor.website ? (
-                    !websiteError ? (
-                        <iframe
-                            src={vendor.website.startsWith('http') ? vendor.website : `https://${vendor.website}`}
-                            className="w-full h-full border-none"
-                            title="Vendor Website"
-                            sandbox="allow-scripts allow-same-origin"
-                            onError={() => setWebsiteError(true)}
-                        />
-                    ) : (
-                        <div className="flex items-center justify-center h-full text-muted-foreground flex-col gap-3 bg-muted/10 p-6 text-center">
-                            <Globe className="w-8 h-8 text-muted-foreground" />
-                            <div>
-                                <p className="font-medium text-foreground text-sm">Preview Unavailable</p>
-                                <p className="text-xs mt-1">{vendor.businessName}&apos;s website prevents embedding.</p>
-                            </div>
-                            <Button variant="outline" size="sm" onClick={() => window.open(vendor.website, '_blank')}>
-                                <ExternalLink className="w-3 h-3 mr-2" /> Open Website
-                            </Button>
-                        </div>
-                    )
-                ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground flex-col gap-2">
-                        <Globe className="w-10 h-10 opacity-20" />
-                        <p className="text-xs">No website URL provided</p>
-                    </div>
-                )}
-                <div className="absolute top-2 right-2 bg-background/90 backdrop-blur px-2 py-1 rounded text-xs border border-border flex items-center gap-1 shadow-sm pointer-events-none z-10">
-                    <Globe className="w-3 h-3" />
-                    {vendor.websiteScreenshotUrl ? 'Live Snapshot' : 'Website Preview'}
-                </div>
             </div>
         </div>
     );
