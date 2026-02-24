@@ -982,6 +982,18 @@ export interface PreviewProperty extends RawProperty {
 
 // --- COMMISSION & COMPENSATION ---
 
+/** Stored at Firestore: settings/commissions */
+export interface CommissionConfig {
+    rateStandard: number;          // e.g. 0.05 (5%) for deals ≤ MRR threshold
+    ratePremium: number;           // e.g. 0.075 (7.5%) for deals > MRR threshold
+    mrrThreshold: number;          // e.g. 3000 ($3K MRR boundary)
+    fsmUpsellRate: number;         // e.g. 0.05 (5% of annualized upsell)
+    clawbackMonths: number;        // e.g. 6
+    payoutSplit: number[];         // e.g. [50, 25, 25]
+    updatedAt?: Date;
+    updatedBy?: string;
+}
+
 export type CommissionType = 'SALES_NEW' | 'FSM_UPSELL' | 'FSM_RETENTION';
 export type CommissionStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'PARTIALLY_CANCELLED';
 export type PayoutStatus = 'PENDING' | 'PAID' | 'CANCELLED';

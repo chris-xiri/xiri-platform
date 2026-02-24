@@ -8,13 +8,31 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// ─── Commission Constants ───
-const MRR_THRESHOLD = 3000;        // $3K MRR = $36K ACV
-const RATE_STANDARD = 0.05;        // 5% for deals ≤ $3K MRR
-const RATE_PREMIUM = 0.075;        // 7.5% for deals > $3K MRR
-const FSM_UPSELL_RATE = 0.05;      // 5% of annualized upsell
-const CLAWBACK_MONTHS = 6;         // Cancel unpaid payouts within 6 months
-const PAYOUT_SPLIT = [50, 25, 25]; // 3-month payout schedule
+// ─── Commission Defaults (overridden by Firestore settings/commissions) ───
+const DEFAULTS = {
+    mrrThreshold: 3000,
+    rateStandard: 0.05,
+    ratePremium: 0.075,
+    fsmUpsellRate: 0.05,
+    clawbackMonths: 6,
+    payoutSplit: [50, 25, 25],
+};
+
+async function getCommissionConfig() {
+    const snap = await db.collection('settings').doc('commissions').get();
+    if (snap.exists) {
+        const data = snap.data()!;
+        return {
+            mrrThreshold: data.mrrThreshold ?? DEFAULTS.mrrThreshold,
+            rateStandard: data.rateStandard ?? DEFAULTS.rateStandard,
+            ratePremium: data.ratePremium ?? DEFAULTS.ratePremium,
+            fsmUpsellRate: data.fsmUpsellRate ?? DEFAULTS.fsmUpsellRate,
+            clawbackMonths: data.clawbackMonths ?? DEFAULTS.clawbackMonths,
+            payoutSplit: data.payoutSplit ?? DEFAULTS.payoutSplit,
+        };
+    }
+    return DEFAULTS;
+}
 
 /**
  * Fires when a Quote's status changes to 'accepted'.
@@ -46,6 +64,9 @@ export const onQuoteAccepted = onDocumentUpdated({
         return;
     }
 
+    // Load configurable rates from Firestore
+    const cfg = await getCommissionConfig();
+
     const leadId = after.leadId;
     const assignedTo = after.assignedTo || after.createdBy;
     const isUpsell = after.isUpsell === true;
@@ -59,19 +80,17 @@ export const onQuoteAccepted = onDocumentUpdated({
     let type: string;
 
     if (isUpsell) {
-        // FSM upsell: 5% of annualized upsell (one-time)
-        rate = FSM_UPSELL_RATE;
+        rate = cfg.fsmUpsellRate;
         type = 'FSM_UPSELL';
     } else {
-        // Sales commission: 10% or 15% based on MRR threshold
-        rate = mrr > MRR_THRESHOLD ? RATE_PREMIUM : RATE_STANDARD;
+        rate = mrr > cfg.mrrThreshold ? cfg.ratePremium : cfg.rateStandard;
         type = 'SALES_NEW';
     }
 
     const totalCommission = acv * rate;
 
     // Build payout schedule (payouts start when first invoice is paid)
-    const payoutSchedule = PAYOUT_SPLIT.map((pct, month) => ({
+    const payoutSchedule = cfg.payoutSplit.map((pct: number, month: number) => ({
         month,
         amount: Math.round((totalCommission * pct / 100) * 100) / 100, // Round to cents
         percentage: pct,
@@ -90,7 +109,7 @@ export const onQuoteAccepted = onDocumentUpdated({
 
     const now = new Date();
     const clawbackEnd = new Date(now);
-    clawbackEnd.setMonth(clawbackEnd.getMonth() + CLAWBACK_MONTHS);
+    clawbackEnd.setMonth(clawbackEnd.getMonth() + cfg.clawbackMonths);
 
     // Determine staffRole
     const staffRole = isUpsell ? 'fsm' : 'sales';

@@ -500,7 +500,21 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 const tenure = quote.contractTenure || 12;
                 const acv = (mrr * tenure) + oneTimeTotal; // recurring × tenure + one-time flat
                 const isUpsell = quote.isUpsell === true;
-                const commissionRate = isUpsell ? 0.05 : (mrr > 3000 ? 0.075 : 0.05);
+
+                // Read configurable rates from Firestore
+                let rateStandard = 0.05, ratePremium = 0.075, fsmUpsellRate = 0.05, mrrThreshold = 3000;
+                try {
+                    const cfgSnap = await getDoc(doc(db, 'settings', 'commissions'));
+                    if (cfgSnap.exists()) {
+                        const cfg = cfgSnap.data();
+                        rateStandard = cfg.rateStandard ?? rateStandard;
+                        ratePremium = cfg.ratePremium ?? ratePremium;
+                        fsmUpsellRate = cfg.fsmUpsellRate ?? fsmUpsellRate;
+                        mrrThreshold = cfg.mrrThreshold ?? mrrThreshold;
+                    }
+                } catch (e) { /* fallback to defaults */ }
+
+                const commissionRate = isUpsell ? fsmUpsellRate : (mrr > mrrThreshold ? ratePremium : rateStandard);
                 const totalCommission = Math.round(acv * commissionRate * 100) / 100;
                 const staffId = quote.assignedTo || quote.createdBy || userId;
 
