@@ -237,6 +237,125 @@ var init_emailUtils = __esm({
   }
 });
 
+// src/agents/sodaSourcer.ts
+var sodaSourcer_exports = {};
+__export(sodaSourcer_exports, {
+  searchVendorsSoda: () => searchVendorsSoda
+});
+async function searchNycDca(query, location, limit = 50) {
+  const queryWords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+  const searchTerms = queryWords.length > 0 ? queryWords : ["clean", "janitor", "maintenance", "hvac"];
+  const nameFilter = searchTerms.map((w) => `upper(business_name) like '%${w.toUpperCase()}%'`).join(" OR ");
+  const boroughMap = {
+    "manhattan": "Manhattan",
+    "nyc": "",
+    "new york": "",
+    "brooklyn": "Brooklyn",
+    "queens": "Queens",
+    "bronx": "Bronx",
+    "staten island": "Staten Island"
+  };
+  const normalizedLoc = location.toLowerCase().trim();
+  const borough = boroughMap[normalizedLoc];
+  let where = `(${nameFilter}) AND license_status='Active'`;
+  if (borough) {
+    where += ` AND address_borough='${borough}'`;
+  }
+  try {
+    const params = new URLSearchParams({
+      "$limit": String(limit),
+      "$where": where,
+      "$select": "business_name,business_category,contact_phone,address_building,address_street_name,address_city,address_state,address_zip,address_borough,license_status,lic_expir_dd,latitude,longitude",
+      "$order": "business_name ASC"
+    });
+    console.log(`[SODA/NYC] Querying DCA: ${where}`);
+    const response = await import_axios.default.get(`${NYC_DCA_ENDPOINT}?${params}`);
+    const results = response.data || [];
+    console.log(`[SODA/NYC] Found ${results.length} results from NYC DCA`);
+    return results.map((b) => ({
+      name: titleCase(b.business_name || ""),
+      description: `${b.business_category || "Licensed Business"} \u2014 Active license, expires: ${b.lic_expir_dd ? new Date(b.lic_expir_dd).toLocaleDateString() : "N/A"}`,
+      location: [b.address_building, b.address_street_name, b.address_city, b.address_state, b.address_zip].filter(Boolean).join(" "),
+      phone: b.contact_phone || void 0,
+      source: "nyc_open_data",
+      rating: void 0,
+      user_ratings_total: void 0
+    }));
+  } catch (error11) {
+    console.error("[SODA/NYC] Error:", error11.message);
+    return [];
+  }
+}
+async function searchNyState(query, location, limit = 50) {
+  const queryWords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+  const nameFilters = queryWords.map((w) => `upper(current_entity_name) like '%${w.toUpperCase()}%'`).join(" OR ");
+  const locationWords = location.toLowerCase().split(/[\s,]+/).filter((w) => w.length > 2);
+  let locFilter = "";
+  if (locationWords.length > 0) {
+    const locConditions = locationWords.map(
+      (w) => `upper(dos_process_city) like '%${w.toUpperCase()}%'`
+    ).join(" OR ");
+    locFilter = ` AND (${locConditions})`;
+  }
+  const where = `(${nameFilters || "current_entity_name like '%CLEAN%'"})${locFilter}`;
+  try {
+    const params = new URLSearchParams({
+      "$limit": String(limit),
+      "$where": where,
+      "$order": "initial_dos_filing_date DESC"
+    });
+    console.log(`[SODA/NYS] Querying State Corps: ${where}`);
+    const response = await import_axios.default.get(`${NYS_CORP_ENDPOINT}?${params}`);
+    const results = response.data || [];
+    console.log(`[SODA/NYS] Found ${results.length} results from NY State`);
+    return results.map((b) => ({
+      name: titleCase(b.current_entity_name || ""),
+      description: `${b.entity_type_desc || "Business Entity"} \u2014 Registered in NY State. Filed: ${b.initial_dos_filing_date ? new Date(b.initial_dos_filing_date).toLocaleDateString() : "N/A"}`,
+      location: [b.dos_process_address_1, b.dos_process_city, "NY", b.dos_process_zip].filter(Boolean).join(", "),
+      phone: void 0,
+      source: "ny_state_corps",
+      rating: void 0,
+      user_ratings_total: void 0
+    }));
+  } catch (error11) {
+    console.error("[SODA/NYS] Error:", error11.message);
+    return [];
+  }
+}
+async function searchVendorsSoda(query, location) {
+  const normalizedLoc = location.toLowerCase().trim();
+  const isNycBorough = ["manhattan", "brooklyn", "queens", "bronx", "staten island", "nyc", "new york city", "new york"].includes(normalizedLoc);
+  const isLongIsland = ["nassau", "suffolk", "long island", "garden city", "mineola", "hempstead", "hicksville", "huntington", "babylon", "islip"].includes(normalizedLoc);
+  const results = [];
+  if (isNycBorough || !isLongIsland) {
+    const nycResults = await searchNycDca(query, location, 25);
+    results.push(...nycResults);
+  }
+  const nysResults = await searchNyState(query, location, 25);
+  results.push(...nysResults);
+  const seen = /* @__PURE__ */ new Set();
+  const deduped = results.filter((v) => {
+    const key = v.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  console.log(`[SODA] Total: ${deduped.length} unique vendors (${results.length} before dedup)`);
+  return deduped;
+}
+function titleCase(s) {
+  return s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+var import_axios, NYC_DCA_ENDPOINT, NYS_CORP_ENDPOINT;
+var init_sodaSourcer = __esm({
+  "src/agents/sodaSourcer.ts"() {
+    "use strict";
+    import_axios = __toESM(require("axios"));
+    NYC_DCA_ENDPOINT = "https://data.cityofnewyork.us/resource/w7w3-xahh.json";
+    NYS_CORP_ENDPOINT = "https://data.ny.gov/resource/n9v6-gdp6.json";
+  }
+});
+
 // src/utils/queueUtils.ts
 var queueUtils_exports = {};
 __export(queueUtils_exports, {
@@ -562,8 +681,13 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
 };
 
 // src/agents/sourcer.ts
-var import_axios = __toESM(require("axios"));
-var searchVendors = async (query, location) => {
+var import_axios2 = __toESM(require("axios"));
+var searchVendors = async (query, location, provider = "google_maps") => {
+  console.log(`Searching for: "${query}" in "${location}" [provider: ${provider}]`);
+  if (provider === "nyc_open_data") {
+    const { searchVendorsSoda: searchVendorsSoda2 } = await Promise.resolve().then(() => (init_sodaSourcer(), sodaSourcer_exports));
+    return searchVendorsSoda2(query, location);
+  }
   const apiKey = process.env.SERPER_API_KEY || "02ece77ffd27d2929e3e79604cb27e1dfaa40fe7";
   if (!apiKey) {
     console.warn("SERPER_API_KEY is not set. Returning mock data.");
@@ -571,8 +695,9 @@ var searchVendors = async (query, location) => {
   }
   const fullQuery = `${query} in ${location}`;
   console.log(`Searching for: ${fullQuery} using Serper (places)...`);
+  let googleResults = [];
   try {
-    const response = await import_axios.default.post(
+    const response = await import_axios2.default.post(
       "https://google.serper.dev/places",
       { q: fullQuery },
       { headers: { "X-API-KEY": apiKey.trim(), "Content-Type": "application/json" } }
@@ -589,13 +714,29 @@ var searchVendors = async (query, location) => {
       rating: place.rating,
       user_ratings_total: place.userRatingsTotal
     }));
-    const filteredVendors = rawVendors.filter((v) => v.rating === void 0 || v.rating >= 3.5);
-    console.log(`Filtered ${rawVendors.length} -> ${filteredVendors.length} vendors (Rating >= 3.5 or N/A).`);
-    return filteredVendors;
+    googleResults = rawVendors.filter((v) => v.rating === void 0 || v.rating >= 3.5);
+    console.log(`Filtered ${rawVendors.length} -> ${googleResults.length} vendors (Rating >= 3.5 or N/A).`);
   } catch (error11) {
-    console.error("Error searching vendors:", error11.message);
-    throw new Error(`Failed to source vendors: ${error11.message}`);
+    console.error("Error searching vendors via Google:", error11.message);
+    if (provider !== "all") {
+      throw new Error(`Failed to source vendors: ${error11.message}`);
+    }
   }
+  if (provider === "all") {
+    const { searchVendorsSoda: searchVendorsSoda2 } = await Promise.resolve().then(() => (init_sodaSourcer(), sodaSourcer_exports));
+    const sodaResults = await searchVendorsSoda2(query, location);
+    const combined = [...googleResults, ...sodaResults];
+    const seen = /* @__PURE__ */ new Set();
+    const deduped = combined.filter((v) => {
+      const key = v.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    console.log(`Combined: ${googleResults.length} Google + ${sodaResults.length} SODA = ${deduped.length} unique`);
+    return deduped;
+  }
+  return googleResults;
 };
 var getMockVendors = (query, location) => {
   return [
@@ -5614,13 +5755,14 @@ var generateLeads = (0, import_https6.onCall)({
   const location = data.location;
   const hasActiveContract = data.hasActiveContract || false;
   const previewOnly = data.previewOnly || false;
+  const provider = data.provider || "google_maps";
   if (!query || !location) {
     throw new import_https6.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
-    console.log(`Analyzing leads for query: ${query}, location: ${location}${previewOnly ? " (PREVIEW MODE)" : ""}`);
-    const rawVendors = await searchVendors(query, location);
-    console.log(`Sourced ${rawVendors.length} vendors.`);
+    console.log(`Analyzing leads for query: ${query}, location: ${location}, provider: ${provider}${previewOnly ? " (PREVIEW MODE)" : ""}`);
+    const rawVendors = await searchVendors(query, location, provider);
+    console.log(`Sourced ${rawVendors.length} vendors from ${provider}.`);
     const result = await analyzeVendorLeads(rawVendors, query, hasActiveContract, previewOnly);
     return {
       message: "Lead generation process completed.",

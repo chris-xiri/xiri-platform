@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Rocket, Loader2 } from "lucide-react";
+import { Rocket, Loader2, Database, MapPin } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "@/lib/firebase";
 import { Vendor } from "@xiri/shared";
@@ -18,6 +18,7 @@ interface CampaignLauncherProps {
 export default function CampaignLauncher({ onResults }: CampaignLauncherProps) {
     const [query, setQuery] = useState("");
     const [location, setLocation] = useState("");
+    const [provider, setProvider] = useState<'google_maps' | 'nyc_open_data' | 'all'>('google_maps');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
 
@@ -37,7 +38,8 @@ export default function CampaignLauncher({ onResults }: CampaignLauncherProps) {
                 query,
                 location,
                 hasActiveContract: false,
-                previewOnly: true // Don't save to Firestore — return vendor data for preview
+                previewOnly: true,
+                provider,
             });
 
             const data = result.data as any;
@@ -99,7 +101,7 @@ export default function CampaignLauncher({ onResults }: CampaignLauncherProps) {
                                 apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
                                 onPlaceSelected={(place) => {
                                     if (place && (place.formatted_address || place.name)) {
-                                        setLocation(place.formatted_address || place.name);
+                                        setLocation(place.formatted_address || place.name || '');
                                     } else {
                                         console.warn("Invalid place selected:", place);
                                     }
@@ -114,6 +116,22 @@ export default function CampaignLauncher({ onResults }: CampaignLauncherProps) {
                                 value={location}
                             />
                         </div>
+                    </div>
+
+                    {/* Source Selector */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Source
+                        </label>
+                        <select
+                            value={provider}
+                            onChange={(e) => setProvider(e.target.value as any)}
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        >
+                            <option value="google_maps">🗺️ Google Maps</option>
+                            <option value="nyc_open_data">🏛️ NYC Open Data</option>
+                            <option value="all">🔄 All Sources</option>
+                        </select>
                     </div>
 
                     {/* Launch Button */}

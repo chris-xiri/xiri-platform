@@ -14,11 +14,27 @@ export interface RawVendor {
 
 /**
  * Lead Sourcing Agent
- * Uses Serper.dev (Google Maps) to find vendors.
- * 
- * Requires: process.env.SERPER_API_KEY
+ * Supports multiple data providers:
+ * - google_maps (default): Serper.dev / Google Maps
+ * - nyc_open_data: NYC DCA + NY State SODA APIs — licensed, verified businesses
+ * - all: Both sources combined and deduplicated
+ *
+ * Requires: process.env.SERPER_API_KEY (for google_maps)
  */
-export const searchVendors = async (query: string, location: string): Promise<RawVendor[]> => {
+export const searchVendors = async (
+    query: string,
+    location: string,
+    provider: 'google_maps' | 'nyc_open_data' | 'all' = 'google_maps'
+): Promise<RawVendor[]> => {
+    console.log(`Searching for: "${query}" in "${location}" [provider: ${provider}]`);
+
+    // ─── NYC Open Data Only ───
+    if (provider === 'nyc_open_data') {
+        const { searchVendorsSoda } = await import('./sodaSourcer');
+        return searchVendorsSoda(query, location);
+    }
+
+    // ─── Google Maps ───
     const apiKey = process.env.SERPER_API_KEY || "02ece77ffd27d2929e3e79604cb27e1dfaa40fe7";
     if (!apiKey) {
         console.warn("SERPER_API_KEY is not set. Returning mock data.");
@@ -27,6 +43,8 @@ export const searchVendors = async (query: string, location: string): Promise<Ra
 
     const fullQuery = `${query} in ${location}`;
     console.log(`Searching for: ${fullQuery} using Serper (places)...`);
+
+    let googleResults: RawVendor[] = [];
 
     try {
         const response = await axios.post(
@@ -38,8 +56,6 @@ export const searchVendors = async (query: string, location: string): Promise<Ra
         const places = response.data.places || [];
         console.log(`Serper returned ${places.length} raw results.`);
 
-        // Return results directly from Serper without strict string matching on the city
-        // This allows "NYC" -> "New York" matches to persist.
         const rawVendors = places.map((place: any) => ({
             name: place.title,
             description: `${place.category || ''} - ${place.address || ''}`,
@@ -52,15 +68,37 @@ export const searchVendors = async (query: string, location: string): Promise<Ra
         }));
 
         // Filter out low-rated vendors immediately
-        const filteredVendors = rawVendors.filter((v: any) => v.rating === undefined || v.rating >= 3.5);
-        console.log(`Filtered ${rawVendors.length} -> ${filteredVendors.length} vendors (Rating >= 3.5 or N/A).`);
-
-        return filteredVendors;
+        googleResults = rawVendors.filter((v: any) => v.rating === undefined || v.rating >= 3.5);
+        console.log(`Filtered ${rawVendors.length} -> ${googleResults.length} vendors (Rating >= 3.5 or N/A).`);
 
     } catch (error: any) {
-        console.error("Error searching vendors:", error.message);
-        throw new Error(`Failed to source vendors: ${error.message}`);
+        console.error("Error searching vendors via Google:", error.message);
+        if (provider !== 'all') {
+            throw new Error(`Failed to source vendors: ${error.message}`);
+        }
     }
+
+    // ─── Combined (All Sources) ───
+    if (provider === 'all') {
+        const { searchVendorsSoda } = await import('./sodaSourcer');
+        const sodaResults = await searchVendorsSoda(query, location);
+
+        const combined = [...googleResults, ...sodaResults];
+
+        // Deduplicate by normalized name
+        const seen = new Set<string>();
+        const deduped = combined.filter(v => {
+            const key = v.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
+        console.log(`Combined: ${googleResults.length} Google + ${sodaResults.length} SODA = ${deduped.length} unique`);
+        return deduped;
+    }
+
+    return googleResults;
 };
 
 // Fallback Mock Data if no API Key
