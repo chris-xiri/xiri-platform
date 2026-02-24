@@ -242,10 +242,16 @@ var sodaSourcer_exports = {};
 __export(sodaSourcer_exports, {
   searchVendorsSoda: () => searchVendorsSoda
 });
-async function searchNycDca(query, location, limit = 50) {
-  const queryWords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
-  const searchTerms = queryWords.length > 0 ? queryWords : ["clean", "janitor", "maintenance", "hvac"];
-  const nameFilter = searchTerms.map((w) => `upper(business_name) like '%${w.toUpperCase()}%'`).join(" OR ");
+async function searchNycDca(query, location, dcaCategory, limit = 50) {
+  let where = "license_status='Active'";
+  if (dcaCategory) {
+    where += ` AND business_category='${dcaCategory.replace(/'/g, "''")}'`;
+  } else {
+    const queryWords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+    const searchTerms = queryWords.length > 0 ? queryWords : ["clean", "janitor", "maintenance", "hvac"];
+    const nameFilter = searchTerms.map((w) => `upper(business_name) like '%${w.toUpperCase()}%'`).join(" OR ");
+    where += ` AND (${nameFilter})`;
+  }
   const boroughMap = {
     "manhattan": "Manhattan",
     "nyc": "",
@@ -257,7 +263,6 @@ async function searchNycDca(query, location, limit = 50) {
   };
   const normalizedLoc = location.toLowerCase().trim();
   const borough = boroughMap[normalizedLoc];
-  let where = `(${nameFilter}) AND license_status='Active'`;
   if (borough) {
     where += ` AND address_borough='${borough}'`;
   }
@@ -322,13 +327,13 @@ async function searchNyState(query, location, limit = 50) {
     return [];
   }
 }
-async function searchVendorsSoda(query, location) {
+async function searchVendorsSoda(query, location, dcaCategory) {
   const normalizedLoc = location.toLowerCase().trim();
   const isNycBorough = ["manhattan", "brooklyn", "queens", "bronx", "staten island", "nyc", "new york city", "new york"].includes(normalizedLoc);
   const isLongIsland = ["nassau", "suffolk", "long island", "garden city", "mineola", "hempstead", "hicksville", "huntington", "babylon", "islip"].includes(normalizedLoc);
   const results = [];
   if (isNycBorough || !isLongIsland) {
-    const nycResults = await searchNycDca(query, location, 25);
+    const nycResults = await searchNycDca(query, location, dcaCategory, 25);
     results.push(...nycResults);
   }
   const nysResults = await searchNyState(query, location, 25);
@@ -682,11 +687,11 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
 
 // src/agents/sourcer.ts
 var import_axios2 = __toESM(require("axios"));
-var searchVendors = async (query, location, provider = "google_maps") => {
+var searchVendors = async (query, location, provider = "google_maps", dcaCategory) => {
   console.log(`Searching for: "${query}" in "${location}" [provider: ${provider}]`);
   if (provider === "nyc_open_data") {
     const { searchVendorsSoda: searchVendorsSoda2 } = await Promise.resolve().then(() => (init_sodaSourcer(), sodaSourcer_exports));
-    return searchVendorsSoda2(query, location);
+    return searchVendorsSoda2(query, location, dcaCategory);
   }
   const apiKey = process.env.SERPER_API_KEY || "02ece77ffd27d2929e3e79604cb27e1dfaa40fe7";
   if (!apiKey) {
@@ -724,7 +729,7 @@ var searchVendors = async (query, location, provider = "google_maps") => {
   }
   if (provider === "all") {
     const { searchVendorsSoda: searchVendorsSoda2 } = await Promise.resolve().then(() => (init_sodaSourcer(), sodaSourcer_exports));
-    const sodaResults = await searchVendorsSoda2(query, location);
+    const sodaResults = await searchVendorsSoda2(query, location, dcaCategory);
     const combined = [...googleResults, ...sodaResults];
     const seen = /* @__PURE__ */ new Set();
     const deduped = combined.filter((v) => {
@@ -5756,12 +5761,13 @@ var generateLeads = (0, import_https6.onCall)({
   const hasActiveContract = data.hasActiveContract || false;
   const previewOnly = data.previewOnly || false;
   const provider = data.provider || "google_maps";
-  if (!query || !location) {
-    throw new import_https6.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+  const dcaCategory = data.dcaCategory;
+  if (provider === "google_maps" && !query || !location) {
+    throw new import_https6.HttpsError("invalid-argument", "Missing required fields in request.");
   }
   try {
-    console.log(`Analyzing leads for query: ${query}, location: ${location}, provider: ${provider}${previewOnly ? " (PREVIEW MODE)" : ""}`);
-    const rawVendors = await searchVendors(query, location, provider);
+    console.log(`Analyzing leads for query: ${query}, location: ${location}, provider: ${provider}, category: ${dcaCategory}${previewOnly ? " (PREVIEW MODE)" : ""}`);
+    const rawVendors = await searchVendors(query, location, provider, dcaCategory);
     console.log(`Sourced ${rawVendors.length} vendors from ${provider}.`);
     const result = await analyzeVendorLeads(rawVendors, query, hasActiveContract, previewOnly);
     return {

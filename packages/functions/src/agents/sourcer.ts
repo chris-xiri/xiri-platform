@@ -24,14 +24,15 @@ export interface RawVendor {
 export const searchVendors = async (
     query: string,
     location: string,
-    provider: 'google_maps' | 'nyc_open_data' | 'all' = 'google_maps'
+    provider: 'google_maps' | 'nyc_open_data' | 'all' = 'google_maps',
+    dcaCategory?: string
 ): Promise<RawVendor[]> => {
     console.log(`Searching for: "${query}" in "${location}" [provider: ${provider}]`);
 
     // ─── NYC Open Data Only ───
     if (provider === 'nyc_open_data') {
         const { searchVendorsSoda } = await import('./sodaSourcer');
-        return searchVendorsSoda(query, location);
+        return searchVendorsSoda(query, location, dcaCategory);
     }
 
     // ─── Google Maps ───
@@ -81,7 +82,7 @@ export const searchVendors = async (
     // ─── Combined (All Sources) ───
     if (provider === 'all') {
         const { searchVendorsSoda } = await import('./sodaSourcer');
-        const sodaResults = await searchVendorsSoda(query, location);
+        const sodaResults = await searchVendorsSoda(query, location, dcaCategory);
 
         const combined = [...googleResults, ...sodaResults];
 

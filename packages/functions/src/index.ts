@@ -126,16 +126,17 @@ export const generateLeads = onCall({
     const hasActiveContract = data.hasActiveContract || false; // Default to false (Building Supply)
     const previewOnly = data.previewOnly || false; // Preview mode: don't save to Firestore
     const provider = data.provider || 'google_maps'; // google_maps | nyc_open_data | all
+    const dcaCategory = data.dcaCategory;
 
-    if (!query || !location) {
-        throw new HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    if ((provider === 'google_maps' && !query) || !location) {
+        throw new HttpsError("invalid-argument", "Missing required fields in request.");
     }
 
     try {
-        console.log(`Analyzing leads for query: ${query}, location: ${location}, provider: ${provider}${previewOnly ? ' (PREVIEW MODE)' : ''}`);
+        console.log(`Analyzing leads for query: ${query}, location: ${location}, provider: ${provider}, category: ${dcaCategory}${previewOnly ? ' (PREVIEW MODE)' : ''}`);
 
         // 1. Source Leads (provider determines data source)
-        const rawVendors = await searchVendors(query, location, provider);
+        const rawVendors = await searchVendors(query, location, provider, dcaCategory);
         console.log(`Sourced ${rawVendors.length} vendors from ${provider}.`);
 
         // 2. Analyze & Qualify (Recruiter Agent)

@@ -17,15 +17,24 @@ const NYC_DCA_ENDPOINT = 'https://data.cityofnewyork.us/resource/w7w3-xahh.json'
 // SODA query: search business names for facility service keywords
 // DCA categories don't map well to commercial services, so name search is more effective
 
-async function searchNycDca(query: string, location: string, limit: number = 50): Promise<RawVendor[]> {
-    // Build name keyword filter from the user's search query
-    const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+async function searchNycDca(query: string, location: string, dcaCategory?: string, limit: number = 50): Promise<RawVendor[]> {
+    let where = "license_status='Active'";
 
-    // If no useful keywords from query, use common facility service terms
-    const searchTerms = queryWords.length > 0 ? queryWords : ['clean', 'janitor', 'maintenance', 'hvac'];
-    const nameFilter = searchTerms
-        .map(w => `upper(business_name) like '%${w.toUpperCase()}%'`)
-        .join(' OR ');
+    if (dcaCategory) {
+        // If exact category is selected, filter by it directly
+        where += ` AND business_category='${dcaCategory.replace(/'/g, "''")}'`;
+    } else {
+        // Build name keyword filter from the user's search query
+        const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+
+        // If no useful keywords from query, use common facility service terms
+        const searchTerms = queryWords.length > 0 ? queryWords : ['clean', 'janitor', 'maintenance', 'hvac'];
+        const nameFilter = searchTerms
+            .map(w => `upper(business_name) like '%${w.toUpperCase()}%'`)
+            .join(' OR ');
+
+        where += ` AND (${nameFilter})`;
+    }
 
     // Location filter — map common names to boroughs
     const boroughMap: Record<string, string> = {
@@ -36,7 +45,6 @@ async function searchNycDca(query: string, location: string, limit: number = 50)
     const normalizedLoc = location.toLowerCase().trim();
     const borough = boroughMap[normalizedLoc];
 
-    let where = `(${nameFilter}) AND license_status='Active'`;
     if (borough) {
         where += ` AND address_borough='${borough}'`;
     }
@@ -124,7 +132,7 @@ async function searchNyState(query: string, location: string, limit: number = 50
  * Search SODA open data sources for vendors.
  * Combines NYC DCA (5 boroughs) + NY State Corps (state-wide including Nassau/Suffolk).
  */
-export async function searchVendorsSoda(query: string, location: string): Promise<RawVendor[]> {
+export async function searchVendorsSoda(query: string, location: string, dcaCategory?: string): Promise<RawVendor[]> {
     const normalizedLoc = location.toLowerCase().trim();
 
     // Determine which datasets to query based on location
@@ -135,7 +143,7 @@ export async function searchVendorsSoda(query: string, location: string): Promis
 
     if (isNycBorough || (!isLongIsland)) {
         // Query NYC DCA for boroughs (or if location is ambiguous, try both)
-        const nycResults = await searchNycDca(query, location, 25);
+        const nycResults = await searchNycDca(query, location, dcaCategory, 25);
         results.push(...nycResults);
     }
 

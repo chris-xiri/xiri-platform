@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,12 +19,38 @@ export default function CampaignLauncher({ onResults }: CampaignLauncherProps) {
     const [query, setQuery] = useState("");
     const [location, setLocation] = useState("");
     const [provider, setProvider] = useState<'google_maps' | 'nyc_open_data' | 'all'>('google_maps');
+    const [dcaCategory, setDcaCategory] = useState<string>('');
+    const [dcaCategories, setDcaCategories] = useState<{ name: string; count: number }[]>([]);
+    const [loadingCategories, setLoadingCategories] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
 
+    // Fetch DCA categories when NYC Open Data is selected
+    useEffect(() => {
+        if ((provider === 'nyc_open_data' || provider === 'all') && dcaCategories.length === 0) {
+            setLoadingCategories(true);
+            const url = new URL('https://data.cityofnewyork.us/resource/w7w3-xahh.json');
+            url.searchParams.set('$select', 'business_category, count(*) as cnt');
+            url.searchParams.set('$group', 'business_category');
+            url.searchParams.set('$order', 'cnt DESC');
+            url.searchParams.set('$limit', '100');
+            url.searchParams.set('$where', "license_status='Active'");
+            fetch(url.toString())
+                .then(r => r.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setDcaCategories(data.map((d: any) => ({ name: d.business_category, count: parseInt(d.cnt) })));
+                    }
+                })
+                .catch(err => console.error('Failed to fetch DCA categories:', err))
+                .finally(() => setLoadingCategories(false));
+        }
+    }, [provider]);
+
     const handleLaunch = async () => {
-        if (!query.trim() || !location.trim()) {
-            setMessage("Please fill in both fields");
+        const needsQuery = provider === 'google_maps'; // SODA can search by category alone
+        if ((needsQuery && !query.trim()) || !location.trim()) {
+            setMessage(needsQuery ? 'Please fill in both fields' : 'Please enter a location');
             return;
         }
 
@@ -35,11 +61,12 @@ export default function CampaignLauncher({ onResults }: CampaignLauncherProps) {
             const generateLeads = httpsCallable(functions, 'generateLeads', { timeout: 60000 });
 
             const result = await generateLeads({
-                query,
+                query: query || undefined,
                 location,
                 hasActiveContract: false,
                 previewOnly: true,
                 provider,
+                dcaCategory: dcaCategory || undefined,
             });
 
             const data = result.data as any;
@@ -125,7 +152,7 @@ export default function CampaignLauncher({ onResults }: CampaignLauncherProps) {
                         </label>
                         <select
                             value={provider}
-                            onChange={(e) => setProvider(e.target.value as any)}
+                            onChange={(e) => { setProvider(e.target.value as any); setDcaCategory(''); }}
                             className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         >
                             <option value="google_maps">🗺️ Google Maps</option>
@@ -133,6 +160,28 @@ export default function CampaignLauncher({ onResults }: CampaignLauncherProps) {
                             <option value="all">🔄 All Sources</option>
                         </select>
                     </div>
+
+                    {/* DCA Category Dropdown — only shown for NYC Open Data */}
+                    {(provider === 'nyc_open_data' || provider === 'all') && (
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                DCA Category
+                            </label>
+                            <select
+                                value={dcaCategory}
+                                onChange={(e) => setDcaCategory(e.target.value)}
+                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                disabled={loadingCategories}
+                            >
+                                <option value="">{loadingCategories ? 'Loading...' : 'All Categories'}</option>
+                                {dcaCategories.map(c => (
+                                    <option key={c.name} value={c.name}>
+                                        {c.name} ({c.count.toLocaleString()})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     {/* Launch Button */}
                     <Button
