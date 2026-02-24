@@ -8,6 +8,9 @@ var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
 };
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
@@ -277,12 +280,13 @@ async function searchNycDca(query, location, dcaCategory, limit = 50) {
     const response = await import_axios.default.get(`${NYC_DCA_ENDPOINT}?${params}`);
     const results = response.data || [];
     console.log(`[SODA/NYC] Found ${results.length} results from NYC DCA`);
-    return results.map((b) => ({
-      name: titleCase(b.business_name || ""),
-      description: `${b.business_category || "Licensed Business"} \u2014 Active license, expires: ${b.lic_expir_dd ? new Date(b.lic_expir_dd).toLocaleDateString() : "N/A"}`,
-      location: [b.address_building, b.address_street_name, b.address_city, b.address_state, b.address_zip].filter(Boolean).join(" "),
-      phone: b.contact_phone || void 0,
+    return results.map((item) => ({
+      name: item.business_name,
+      description: `NYC DCA Licensed ${item.business_category} (${item.license_status})`,
+      location: `${item.address_building} ${item.address_street_name}, ${item.address_city}, ${item.address_state} ${item.address_zip}`,
+      phone: item.contact_phone,
       source: "nyc_open_data",
+      dcaCategory: item.business_category,
       rating: void 0,
       user_ratings_total: void 0
     }));
@@ -292,13 +296,13 @@ async function searchNycDca(query, location, dcaCategory, limit = 50) {
   }
 }
 async function searchNyState(query, location, limit = 50) {
-  const queryWords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+  const queryWords = query.toLowerCase().split(/[\s,\/]+/).filter((w) => w.length > 3);
   const nameFilters = queryWords.map((w) => `upper(current_entity_name) like '%${w.toUpperCase()}%'`).join(" OR ");
-  const locationWords = location.toLowerCase().split(/[\s,]+/).filter((w) => w.length > 2);
+  const locationWords = location.toLowerCase().split(/[\s,\/]+/).filter((w) => w.length > 2);
   let locFilter = "";
   if (locationWords.length > 0) {
     const locConditions = locationWords.map(
-      (w) => `upper(dos_process_city) like '%${w.toUpperCase()}%'`
+      (w) => `(upper(dos_process_city) like '%${w.toUpperCase()}%' OR upper(county) like '%${w.toUpperCase()}%')`
     ).join(" OR ");
     locFilter = ` AND (${locConditions})`;
   }
@@ -413,6 +417,136 @@ var init_queueUtils = __esm({
     "use strict";
     admin3 = __toESM(require("firebase-admin"));
     COLLECTION = "outreach_queue";
+  }
+});
+
+// ../shared/src/TaxCertificateService.js
+var require_TaxCertificateService = __commonJS({
+  "../shared/src/TaxCertificateService.js"(exports2) {
+    "use strict";
+    var __createBinding = exports2 && exports2.__createBinding || (Object.create ? (function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      var desc = Object.getOwnPropertyDescriptor(m, k);
+      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+        desc = { enumerable: true, get: function() {
+          return m[k];
+        } };
+      }
+      Object.defineProperty(o, k2, desc);
+    }) : (function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      o[k2] = m[k];
+    }));
+    var __setModuleDefault = exports2 && exports2.__setModuleDefault || (Object.create ? (function(o, v) {
+      Object.defineProperty(o, "default", { enumerable: true, value: v });
+    }) : function(o, v) {
+      o["default"] = v;
+    });
+    var __importStar = exports2 && exports2.__importStar || /* @__PURE__ */ (function() {
+      var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function(o2) {
+          var ar = [];
+          for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
+          return ar;
+        };
+        return ownKeys(o);
+      };
+      return function(mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) {
+          for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        }
+        __setModuleDefault(result, mod);
+        return result;
+      };
+    })();
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.generateST1201 = generateST12012;
+    var pdf_lib_1 = require("pdf-lib");
+    var fs = __importStar(require("fs"));
+    var path = __importStar(require("path"));
+    var CERT_VALIDITY_YEARS = 3;
+    async function generateST12012(vendorData, xiriData, projectData) {
+      if (!vendorData.salesTaxId || vendorData.salesTaxId.trim().length === 0) {
+        return {
+          success: false,
+          error: "Vendor does not have a valid Sales Tax ID (Certificate of Authority). Cannot generate ST-120.1."
+        };
+      }
+      try {
+        const now = /* @__PURE__ */ new Date();
+        const issueDate = now.toLocaleDateString("en-US");
+        const expiry = new Date(now);
+        expiry.setFullYear(expiry.getFullYear() + CERT_VALIDITY_YEARS);
+        const expiryDate = expiry.toISOString().split("T")[0];
+        const templatePath = path.resolve(__dirname, "templates", "st120_1_template.pdf");
+        const templateBytes = fs.readFileSync(templatePath);
+        const pdfDoc = await pdf_lib_1.PDFDocument.load(templateBytes);
+        const form = pdfDoc.getForm();
+        form.getTextField("name of vendor").setText(vendorData.businessName);
+        form.getTextField("street address1").setText(vendorData.address || "");
+        form.getTextField("city1").setText(vendorData.city || "");
+        form.getTextField("state1").setText(vendorData.state || "");
+        form.getTextField("zip code 1").setText(vendorData.zip || "");
+        form.getTextField("enter your sales tax vendor id number").setText(vendorData.salesTaxId);
+        form.getTextField("name of purchasing contractor").setText(xiriData.businessName);
+        form.getTextField("street address2").setText(xiriData.address);
+        form.getTextField("city2").setText(xiriData.city);
+        form.getTextField("state2").setText(xiriData.state);
+        form.getTextField("zip code 2").setText(xiriData.zip);
+        form.getTextField("line 2 1").setText(projectData.projectName);
+        const fullProjectAddress = [
+          projectData.projectAddress,
+          projectData.projectCity,
+          projectData.projectState,
+          projectData.projectZip
+        ].filter(Boolean).join(", ");
+        form.getTextField("line 2 2").setText(fullProjectAddress);
+        form.getTextField("line 2 3").setText(projectData.ownerName);
+        form.getTextField("line 2 4").setText(projectData.ownerAddress);
+        form.getCheckBox("box m").check();
+        form.getTextField("type or print name and title of owner").setText(`${xiriData.signerName}, ${xiriData.signerTitle}`);
+        form.getTextField("date prepared").setText(issueDate);
+        if (xiriData.signatureImageBase64) {
+          try {
+            const sigBytes = Buffer.from(xiriData.signatureImageBase64, "base64");
+            let sigImage;
+            try {
+              sigImage = await pdfDoc.embedPng(sigBytes);
+            } catch {
+              sigImage = await pdfDoc.embedJpg(sigBytes);
+            }
+            const pages = pdfDoc.getPages();
+            const lastPage = pages[pages.length - 1];
+            const { height } = lastPage.getSize();
+            lastPage.drawImage(sigImage, {
+              x: 72,
+              y: height - 720,
+              // near bottom of form
+              width: 150,
+              height: 40
+            });
+          } catch (sigErr) {
+            console.warn("Could not embed signature image:", sigErr);
+          }
+        }
+        form.flatten();
+        const pdfBytes = await pdfDoc.save();
+        return {
+          success: true,
+          pdfBytes,
+          issueDate: now.toISOString().split("T")[0],
+          // ISO for storage
+          expiryDate
+        };
+      } catch (error11) {
+        return {
+          success: false,
+          error: `Failed to generate ST-120.1: ${error11.message}`
+        };
+      }
+    }
   }
 });
 
@@ -615,6 +749,7 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
           phone: originalVendor.phone || item.phone || void 0,
           email: originalVendor.email || item.email || void 0,
           website: originalVendor.website || item.website || void 0,
+          dcaCategory: originalVendor.dcaCategory || void 0,
           fitScore: item.fitScore,
           aiReasoning: item.reasoning || void 0,
           hasActiveContract,
@@ -663,6 +798,7 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
         phone: originalVendor.phone || void 0,
         email: originalVendor.email || void 0,
         website: originalVendor.website || void 0,
+        dcaCategory: originalVendor.dcaCategory || void 0,
         fitScore: 0,
         status: "pending_review",
         hasActiveContract,
@@ -773,7 +909,7 @@ var MockPropertyProvider = class {
   }
   async search(params) {
     console.log(`[MockPropertyProvider] Searching "${params.query}" in "${params.location}"...`);
-    await new Promise((resolve2) => setTimeout(resolve2, 800));
+    await new Promise((resolve) => setTimeout(resolve, 800));
     const mockProperties = [
       {
         name: "Williston Park Medical Plaza",
@@ -2368,17 +2504,17 @@ var https = __toESM(require("https"));
 var genAI5 = new import_generative_ai6.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 var db7 = admin9.firestore();
 function downloadFileAsBuffer(url) {
-  return new Promise((resolve2, reject) => {
+  return new Promise((resolve, reject) => {
     https.get(url, (res) => {
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        return downloadFileAsBuffer(res.headers.location).then(resolve2).catch(reject);
+        return downloadFileAsBuffer(res.headers.location).then(resolve).catch(reject);
       }
       if (res.statusCode !== 200) {
         return reject(new Error(`Download failed with status ${res.statusCode}`));
       }
       const chunks = [];
       res.on("data", (chunk) => chunks.push(chunk));
-      res.on("end", () => resolve2(Buffer.concat(chunks)));
+      res.on("end", () => resolve(Buffer.concat(chunks)));
       res.on("error", reject);
     }).on("error", reject);
   });
@@ -3944,97 +4080,7 @@ function buildVendorRemittanceEmail(data) {
 var import_firestore11 = require("firebase-functions/v2/firestore");
 var admin18 = __toESM(require("firebase-admin"));
 var logger10 = __toESM(require("firebase-functions/logger"));
-
-// ../shared/src/TaxCertificateService.ts
-var import_pdf_lib = require("pdf-lib");
-var fs = __toESM(require("fs"));
-var path = __toESM(require("path"));
-var CERT_VALIDITY_YEARS = 3;
-async function generateST1201(vendorData, xiriData, projectData) {
-  if (!vendorData.salesTaxId || vendorData.salesTaxId.trim().length === 0) {
-    return {
-      success: false,
-      error: "Vendor does not have a valid Sales Tax ID (Certificate of Authority). Cannot generate ST-120.1."
-    };
-  }
-  try {
-    const now = /* @__PURE__ */ new Date();
-    const issueDate = now.toLocaleDateString("en-US");
-    const expiry = new Date(now);
-    expiry.setFullYear(expiry.getFullYear() + CERT_VALIDITY_YEARS);
-    const expiryDate = expiry.toISOString().split("T")[0];
-    const expiryDisplay = expiry.toLocaleDateString("en-US");
-    const templatePath = path.resolve(__dirname, "templates", "st120_1_template.pdf");
-    const templateBytes = fs.readFileSync(templatePath);
-    const pdfDoc = await import_pdf_lib.PDFDocument.load(templateBytes);
-    const form = pdfDoc.getForm();
-    form.getTextField("name of vendor").setText(vendorData.businessName);
-    form.getTextField("street address1").setText(vendorData.address || "");
-    form.getTextField("city1").setText(vendorData.city || "");
-    form.getTextField("state1").setText(vendorData.state || "");
-    form.getTextField("zip code 1").setText(vendorData.zip || "");
-    form.getTextField("enter your sales tax vendor id number").setText(vendorData.salesTaxId);
-    form.getTextField("name of purchasing contractor").setText(xiriData.businessName);
-    form.getTextField("street address2").setText(xiriData.address);
-    form.getTextField("city2").setText(xiriData.city);
-    form.getTextField("state2").setText(xiriData.state);
-    form.getTextField("zip code 2").setText(xiriData.zip);
-    form.getTextField("line 2 1").setText(projectData.projectName);
-    const fullProjectAddress = [
-      projectData.projectAddress,
-      projectData.projectCity,
-      projectData.projectState,
-      projectData.projectZip
-    ].filter(Boolean).join(", ");
-    form.getTextField("line 2 2").setText(fullProjectAddress);
-    form.getTextField("line 2 3").setText(projectData.ownerName);
-    form.getTextField("line 2 4").setText(projectData.ownerAddress);
-    form.getCheckBox("box m").check();
-    form.getTextField("type or print name and title of owner").setText(
-      `${xiriData.signerName}, ${xiriData.signerTitle}`
-    );
-    form.getTextField("date prepared").setText(issueDate);
-    if (xiriData.signatureImageBase64) {
-      try {
-        const sigBytes = Buffer.from(xiriData.signatureImageBase64, "base64");
-        let sigImage;
-        try {
-          sigImage = await pdfDoc.embedPng(sigBytes);
-        } catch {
-          sigImage = await pdfDoc.embedJpg(sigBytes);
-        }
-        const pages = pdfDoc.getPages();
-        const lastPage = pages[pages.length - 1];
-        const { height } = lastPage.getSize();
-        lastPage.drawImage(sigImage, {
-          x: 72,
-          y: height - 720,
-          // near bottom of form
-          width: 150,
-          height: 40
-        });
-      } catch (sigErr) {
-        console.warn("Could not embed signature image:", sigErr);
-      }
-    }
-    form.flatten();
-    const pdfBytes = await pdfDoc.save();
-    return {
-      success: true,
-      pdfBytes,
-      issueDate: now.toISOString().split("T")[0],
-      // ISO for storage
-      expiryDate
-    };
-  } catch (error11) {
-    return {
-      success: false,
-      error: `Failed to generate ST-120.1: ${error11.message}`
-    };
-  }
-}
-
-// src/triggers/onVendorReady.ts
+var import_TaxCertificateService = __toESM(require_TaxCertificateService());
 if (!admin18.apps.length) {
   admin18.initializeApp();
 }
@@ -4131,7 +4177,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     ownerName,
     ownerAddress
   };
-  const result = await generateST1201(vendorCertData, xiriData, projectDataInput);
+  const result = await (0, import_TaxCertificateService.generateST1201)(vendorCertData, xiriData, projectDataInput);
   if (!result.success || !result.pdfBytes) {
     logger10.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
     await db23.collection("vendor_activities").add({
