@@ -69,7 +69,7 @@ export default function EmailTemplatesPage() {
         try {
             const q = query(
                 collection(db, "templates"),
-                where("category", "in", ["vendor_email", "vendor"])
+                where("category", "==", "vendor_email")
             );
             const snap = await getDocs(q);
             const results = snap.docs.map(d => ({ id: d.id, ...d.data() } as EmailTemplate));
@@ -133,6 +133,17 @@ export default function EmailTemplatesPage() {
                         Vendor outreach email sequence. These templates are sent automatically when a campaign runs.
                         Use <code className="bg-muted px-1 rounded text-[11px]">{'{{vendorName}}'}</code> style merge fields — they get replaced with real vendor data at send time.
                     </p>
+                </div>
+
+                {/* Banner pointing to A/B variants */}
+                <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-md p-3 flex items-start gap-3 text-sm">
+                    <Mail className="w-4 h-4 text-blue-600 mt-0.5" />
+                    <div>
+                        <p className="text-blue-900 dark:text-blue-100 font-medium">Looking for Warm/Cold A/B variants?</p>
+                        <p className="text-blue-700 dark:text-blue-300 mt-0.5 text-xs">
+                            Base sequence steps are edited here. To view or edit automatically generated <strong>Warm</strong> and <strong>Cold</strong> variants from the AI optimizer, utilize the <a href="/admin/templates" className="underline font-semibold hover:text-blue-600">Template Analytics</a> dashboard.
+                        </p>
+                    </div>
                 </div>
 
                 {/* Sequence visual */}
