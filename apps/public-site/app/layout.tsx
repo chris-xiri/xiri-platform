@@ -71,6 +71,7 @@ export default function RootLayout({
               "@type": "Organization",
               "name": "XIRI Facility Solutions",
               "url": "https://xiri.ai",
+              "logo": "https://xiri.ai/icon.png",
               "description": "Medical-grade facility management for single-tenant buildings.",
               "serviceType": "Facility Management",
               "areaServed": {
@@ -82,6 +83,19 @@ export default function RootLayout({
                 "contactType": "sales",
                 "email": "chris@xiri.ai"
               }
+            })
+          }}
+        />
+        {/* WebSite Schema — tells Google our site name is "XIRI Facility Solutions", not "xiri.ai" */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "XIRI Facility Solutions",
+              "alternateName": ["XIRI", "Xiri Facility Solutions", "XIRI FM"],
+              "url": "https://xiri.ai"
             })
           }}
         />

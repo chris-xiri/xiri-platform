@@ -204,8 +204,11 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
     console.error("Error sending email:", error11);
   }
 }
-async function sendEmail(to, subject, html, attachments, from, vendorId) {
+async function sendEmail(to, subject, html, attachments, from, vendorId, templateId) {
   try {
+    const tags = [];
+    if (vendorId) tags.push({ name: "vendorId", value: vendorId });
+    if (templateId) tags.push({ name: "templateId", value: templateId });
     const { data, error: error11 } = await resend.emails.send({
       from: from || "Xiri Facility Solutions <onboarding@xiri.ai>",
       replyTo: "chris@xiri.ai",
@@ -213,8 +216,7 @@ async function sendEmail(to, subject, html, attachments, from, vendorId) {
       subject,
       html,
       attachments,
-      // Tag with vendorId so the webhook can directly identify the vendor
-      ...vendorId ? { tags: [{ name: "vendorId", value: vendorId }] } : {}
+      ...tags.length > 0 ? { tags } : {}
     });
     if (error11) {
       console.error("\u274C Resend API error:", error11);
@@ -2091,8 +2093,10 @@ async function handleSend(task) {
       // no attachments
       void 0,
       // default from
-      task.vendorId ?? void 0
+      task.vendorId ?? void 0,
       // tag email with vendorId for webhook tracking
+      task.metadata.templateId ?? void 0
+      // tag with templateId for stats tracking
     );
     sendSuccess = result.success;
     resendId = result.resendId;
@@ -2131,6 +2135,17 @@ async function handleSend(task) {
       outreachSentAt: /* @__PURE__ */ new Date(),
       statusUpdatedAt: /* @__PURE__ */ new Date()
     });
+    if (task.metadata.templateId) {
+      try {
+        await db4.collection("templates").doc(task.metadata.templateId).update({
+          "stats.sent": admin6.firestore.FieldValue.increment(1),
+          "stats.lastUpdated": /* @__PURE__ */ new Date()
+        });
+        logger2.info(`Template ${task.metadata.templateId}: stats.sent incremented`);
+      } catch (statsErr) {
+        logger2.warn("Template stats.sent update failed:", statsErr);
+      }
+    }
     await db4.collection("vendor_activities").add({
       vendorId: task.vendorId,
       type: "STATUS_CHANGE",
@@ -2233,7 +2248,8 @@ async function handleFollowUp(task) {
     htmlBody,
     void 0,
     void 0,
-    task.vendorId ?? void 0
+    task.vendorId ?? void 0,
+    templateId
   );
   await db4.collection("vendor_activities").add({
     vendorId: task.vendorId,
@@ -2256,6 +2272,15 @@ async function handleFollowUp(task) {
   if (sendSuccess) {
     await updateTaskStatus(db4, task.id, "COMPLETED");
     logger2.info(`Follow-up #${sequence} sent to ${vendorEmail} (template: ${templateId})`);
+    try {
+      await db4.collection("templates").doc(templateId).update({
+        "stats.sent": admin6.firestore.FieldValue.increment(1),
+        "stats.lastUpdated": /* @__PURE__ */ new Date()
+      });
+      logger2.info(`Template ${templateId}: stats.sent incremented`);
+    } catch (statsErr) {
+      logger2.warn("Template stats.sent update failed:", statsErr);
+    }
   } else {
     throw new Error(`Failed to send follow-up #${sequence} to ${vendorEmail}`);
   }
@@ -5391,18 +5416,28 @@ var resendWebhook = (0, import_https4.onRequest)({
       import_v2.logger.info(`Vendor ${vendorId}: emailEngagement updated (${mapping.deliveryStatus})`);
     }
     try {
-      const sentActivity = await db21.collection("vendor_activities").where("metadata.resendId", "==", emailId).where("type", "in", ["OUTREACH_SENT", "FOLLOW_UP_SENT"]).limit(1).get();
-      if (!sentActivity.empty) {
-        const actData = sentActivity.docs[0].data();
-        const templateId = actData.metadata?.templateId;
-        if (templateId) {
-          const statsField = mapping.deliveryStatus;
-          await db21.collection("templates").doc(templateId).update({
-            [`stats.${statsField}`]: admin25.firestore.FieldValue.increment(1),
-            "stats.lastUpdated": /* @__PURE__ */ new Date()
-          });
-          import_v2.logger.info(`Template ${templateId}: stats.${statsField} incremented`);
+      let templateId = null;
+      if (tags) {
+        if (typeof tags === "object" && !Array.isArray(tags) && tags.templateId) {
+          templateId = tags.templateId;
+        } else if (Array.isArray(tags)) {
+          const templateTag = tags.find((t) => t.name === "templateId");
+          if (templateTag?.value) templateId = templateTag.value;
         }
+      }
+      if (!templateId) {
+        const sentActivity = await db21.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
+        if (!sentActivity.empty) {
+          templateId = sentActivity.docs[0].data().metadata?.templateId || null;
+        }
+      }
+      if (templateId) {
+        const statsField = mapping.deliveryStatus;
+        await db21.collection("templates").doc(templateId).update({
+          [`stats.${statsField}`]: admin25.firestore.FieldValue.increment(1),
+          "stats.lastUpdated": /* @__PURE__ */ new Date()
+        });
+        import_v2.logger.info(`Template ${templateId}: stats.${statsField} incremented`);
       }
     } catch (statsErr) {
       import_v2.logger.warn("Template stats update failed:", statsErr);
