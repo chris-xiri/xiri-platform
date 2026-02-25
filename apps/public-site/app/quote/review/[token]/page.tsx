@@ -139,7 +139,7 @@ export default function QuoteReviewPage() {
                     </div>
                     <h2 className="text-xl font-bold text-gray-900 mb-2">Quote Not Found</h2>
                     <p className="text-gray-500">{error}</p>
-                    <p className="text-sm text-gray-400 mt-4">Need help? Contact us at <a href="mailto:info@xiri.ai" className="text-sky-600 underline">info@xiri.ai</a></p>
+                    <p className="text-sm text-gray-400 mt-4">Need help? Contact us at <a href="mailto:chris@xiri.ai" className="text-sky-600 underline">chris@xiri.ai</a></p>
                 </div>
             </div>
         );
@@ -310,7 +310,7 @@ export default function QuoteReviewPage() {
                 <div className="text-center pb-8">
                     <p className="text-xs text-gray-400">
                         XIRI Facility Solutions • Professional Facility Management<br />
-                        <a href="https://xiri.ai" className="text-sky-600 hover:underline">xiri.ai</a> • <a href="mailto:info@xiri.ai" className="text-sky-600 hover:underline">info@xiri.ai</a>
+                        <a href="https://xiri.ai" className="text-sky-600 hover:underline">xiri.ai</a> • <a href="mailto:chris@xiri.ai" className="text-sky-600 hover:underline">chris@xiri.ai</a>
                     </p>
                 </div>
             </div>

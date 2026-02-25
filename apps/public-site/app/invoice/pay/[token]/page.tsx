@@ -36,7 +36,7 @@ interface InvoiceData {
 const PAYMENT_OPTIONS = [
     { id: 'ach', label: 'ACH / Bank Transfer', description: 'Direct bank transfer — no processing fees', icon: '🏦' },
     { id: 'check', label: 'Check', description: 'Mail a check to our office', icon: '📝' },
-    { id: 'zelle', label: 'Zelle', description: 'Send via Zelle to billing@xiri.ai', icon: '💸' },
+    { id: 'zelle', label: 'Zelle', description: 'Send via Zelle to chris@xiri.ai', icon: '💸' },
     { id: 'credit_card', label: 'Credit Card', description: 'Coming soon — Stripe integration', icon: '💳', disabled: true },
 ];
 
@@ -113,7 +113,7 @@ export default function InvoicePayPage() {
                     <p className="text-gray-500 text-sm">{error}</p>
                     <p className="text-gray-400 text-xs mt-4">
                         If you believe this is an error, please contact your Facility Solutions Manager or email{' '}
-                        <a href="mailto:billing@xiri.ai" className="text-sky-600 hover:underline">billing@xiri.ai</a>
+                        <a href="mailto:chris@xiri.ai" className="text-sky-600 hover:underline">chris@xiri.ai</a>
                     </p>
                 </div>
             </div>
@@ -223,7 +223,7 @@ export default function InvoicePayPage() {
                                 {selectedMethod === 'ach' && (
                                     <div className="text-sm text-amber-700 space-y-1">
                                         <p>Please initiate a bank transfer to our account. Your Facility Solutions Manager will provide the routing and account details.</p>
-                                        <p className="text-xs text-amber-600 mt-2">Contact: <a href="mailto:billing@xiri.ai" className="underline">billing@xiri.ai</a></p>
+                                        <p className="text-xs text-amber-600 mt-2">Contact: <a href="mailto:chris@xiri.ai" className="underline">chris@xiri.ai</a></p>
                                     </div>
                                 )}
                                 {selectedMethod === 'check' && (
@@ -235,7 +235,7 @@ export default function InvoicePayPage() {
                                 {selectedMethod === 'zelle' && (
                                     <div className="text-sm text-amber-700 space-y-1">
                                         <p>Send your payment via Zelle to:</p>
-                                        <p className="font-mono text-xs mt-1 font-bold">billing@xiri.ai</p>
+                                        <p className="font-mono text-xs mt-1 font-bold">chris@xiri.ai</p>
                                         <p className="text-xs text-amber-600 mt-1">Please include your business name in the memo.</p>
                                     </div>
                                 )}
@@ -251,7 +251,7 @@ export default function InvoicePayPage() {
                     Xiri Facility Solutions • <a href="https://xiri.ai" className="text-sky-600 hover:underline">xiri.ai</a>
                 </p>
                 <p className="text-xs text-gray-300 mt-1">
-                    Questions? Contact <a href="mailto:billing@xiri.ai" className="text-sky-500 hover:underline">billing@xiri.ai</a>
+                    Questions? Contact <a href="mailto:chris@xiri.ai" className="text-sky-500 hover:underline">chris@xiri.ai</a>
                 </p>
             </div>
         </div>

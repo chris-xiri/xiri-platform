@@ -48,10 +48,10 @@ export function Footer() {
                         </p>
                         <div className="mt-6">
                             <a
-                                href="mailto:info@xiri.ai"
+                                href="mailto:chris@xiri.ai"
                                 className="text-sm text-sky-400 hover:text-sky-300 transition-colors font-medium"
                             >
-                                info@xiri.ai
+                                chris@xiri.ai
                             </a>
                         </div>
                     </div>

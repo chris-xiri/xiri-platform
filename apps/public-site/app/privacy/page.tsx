@@ -112,7 +112,7 @@ export default function PrivacyPolicyPage() {
                         </ul>
                         <p>
                             To exercise any of these rights, contact us at{' '}
-                            <a href="mailto:privacy@xiri.ai" className="text-sky-600 hover:underline">privacy@xiri.ai</a>.
+                            <a href="mailto:chris@xiri.ai" className="text-sky-600 hover:underline">chris@xiri.ai</a>.
                         </p>
                     </section>
 
@@ -139,7 +139,7 @@ export default function PrivacyPolicyPage() {
                         </p>
                         <p className="font-medium">
                             XIRI Facility Solutions<br />
-                            Email: <a href="mailto:privacy@xiri.ai" className="text-sky-600 hover:underline">privacy@xiri.ai</a>
+                            Email: <a href="mailto:chris@xiri.ai" className="text-sky-600 hover:underline">chris@xiri.ai</a>
                         </p>
                     </section>
                 </div>

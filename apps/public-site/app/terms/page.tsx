@@ -157,7 +157,7 @@ export default function TermsOfServicePage() {
                         </p>
                         <p className="font-medium">
                             XIRI Facility Solutions<br />
-                            Email: <a href="mailto:legal@xiri.ai" className="text-sky-600 hover:underline">legal@xiri.ai</a>
+                            Email: <a href="mailto:chris@xiri.ai" className="text-sky-600 hover:underline">chris@xiri.ai</a>
                         </p>
                     </section>
                 </div>
