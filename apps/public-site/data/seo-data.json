@@ -220,7 +220,8 @@
       "slug": "medical-office-cleaning",
       "targetFacilityType": "medical_private",
       "name": "Medical Office Cleaning",
-      "shortDescription": "Specialized cleaning for healthcare facilities focused on infection control.",
+      "shortDescription": "Specialized cleaning for healthcare facilities focused on infection control and regulatory compliance.",
+      "longDescription": "Medical offices face unique cleaning demands that generic janitorial services can't meet. From bloodborne pathogen protocols to JCAHO-compliant documentation, every surface in your practice carries compliance weight. Our contractors are specifically trained in healthcare cleaning standards — using hospital-grade EPA-registered disinfectants, following CDC guidelines for environmental infection control, and maintaining the detailed logs your accreditation surveys demand.",
       "benefits": [
         "JCAHO & OSHA Compliant",
         "Hospital-Grade Disinfectants",
@@ -234,16 +235,55 @@
           "description": "JCAHO & OSHA compliant."
         }
       ],
+      "features": [
+        {
+          "title": "Terminal Cleaning",
+          "description": "End-of-day deep disinfection of exam rooms, procedure areas, and high-touch surfaces following CDC guidelines for healthcare facilities.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Compliance Documentation",
+          "description": "Digital logs of every cleaning session, chemicals used, and protocols followed — ready for JCAHO, OSHA, or state health department audits.",
+          "icon": "shield"
+        },
+        {
+          "title": "Biohazard Safety",
+          "description": "Contractors trained in OSHA's Bloodborne Pathogen Standard (29 CFR 1910.1030) for safe handling of sharps containers, red-bag waste, and contaminated surfaces.",
+          "icon": "shield"
+        },
+        {
+          "title": "Nightly Verification",
+          "description": "Our Night Managers physically inspect your facility after every clean, submitting a photographic audit report before morning.",
+          "icon": "sparkles"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "What certifications do your medical cleaning contractors have?",
+          "answer": "All contractors deployed to medical facilities are trained in OSHA's Bloodborne Pathogen Standard, HIPAA environmental compliance, and infection control best practices. We verify credentials before any contractor steps foot in your practice."
+        },
+        {
+          "question": "How do you handle cleaning around sensitive medical equipment?",
+          "answer": "Our cleaning protocols account for equipment sensitivity. Contractors use approved non-corrosive disinfectants near electronics and never disturb calibrated instruments. We work with your office manager to create a custom scope for every room."
+        },
+        {
+          "question": "Can you provide documentation for our JCAHO survey?",
+          "answer": "Yes. We maintain digital logs with timestamps, chemical SDS sheets, and Night Manager audit photos. Your FSM can generate a compliance report on demand for any survey or inspection."
+        }
+      ],
       "heroTitle": "Professional Medical Office Cleaning"
     },
     {
       "slug": "urgent-care-cleaning",
       "targetFacilityType": "medical_urgent_care",
       "name": "Urgent Care Cleaning",
-      "shortDescription": "Rapid response cleaning for high-traffic urgent care centers.",
+      "shortDescription": "Rapid response cleaning for high-traffic urgent care centers that operate extended hours.",
+      "longDescription": "Urgent care centers see 300+ patients per week in environments where every surface is a potential vector. Unlike standard offices, your facility needs same-day spill response, high-frequency touchpoint disinfection, and cleaning crews that can work around walk-in patient flow. We match you with contractors experienced in high-velocity healthcare environments and verify every clean through our Night Manager audit system.",
       "benefits": [
         "Rapid Response",
-        "High-Traffic Disinfection"
+        "High-Traffic Disinfection",
+        "Extended Hour Coverage",
+        "Flu Season Scaling"
       ],
       "valueProps": [
         {
@@ -252,16 +292,55 @@
           "description": "Fast resolution."
         }
       ],
+      "features": [
+        {
+          "title": "High-Traffic Disinfection",
+          "description": "Hourly touchpoint wipe-downs during peak seasons and end-of-day full-room disinfection using EPA-registered hospital-grade products.",
+          "icon": "shield"
+        },
+        {
+          "title": "Same-Day Spill Response",
+          "description": "Biohazard spill cleanup within your operating hours — our on-call contractors respond within 60 minutes for bodily fluid incidents.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Extended-Hour Scheduling",
+          "description": "Flexible cleaning windows that work around 7am–9pm urgent care schedules, including split-shift and overnight options.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Seasonal Surge Support",
+          "description": "Automatic scaling of porter and disinfecting services during flu season, RSV outbreaks, and other high-demand periods.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Can you clean while patients are still being seen?",
+          "answer": "Yes. Our day porter services handle waiting room maintenance, restroom restocking, and touchpoint disinfection during operating hours without disrupting patient flow. Deep cleaning happens after close."
+        },
+        {
+          "question": "How quickly can you respond to a biohazard spill?",
+          "answer": "Our on-call contractors respond within 60 minutes for biohazard incidents during your operating hours. After hours, your nightly crew handles it as part of their standard terminal cleaning protocol."
+        },
+        {
+          "question": "Do you scale up during flu season?",
+          "answer": "Absolutely. We proactively increase disinfection frequency and add electrostatic spraying services from October through March. Your FSM coordinates this automatically — no extra legwork on your end."
+        }
+      ],
       "heroTitle": "Urgent Care Cleaning Services"
     },
     {
       "slug": "surgery-center-cleaning",
       "targetFacilityType": "medical_surgery",
       "name": "Surgery Center Cleaning",
-      "shortDescription": "Sterile audit-ready cleaning for ambulatory surgery centers.",
+      "shortDescription": "Sterile audit-ready cleaning for ambulatory surgery centers meeting AAAHC and CMS standards.",
+      "longDescription": "Ambulatory surgery centers face the highest cleaning standards in healthcare — one missed surface can trigger a CMS citation or compromise a patient. Our terminal cleaning protocols follow AORN guidelines: every OR is stripped, disinfected, and verified by a Night Manager using ATP testing before morning. We maintain the documentation chain your AAAHC or state survey demands, so you can focus on care instead of compliance paperwork.",
       "benefits": [
         "Terminal Cleaning",
-        "CMS Compliance"
+        "CMS Compliance",
+        "ATP Verification",
+        "AAAHC Survey Ready"
       ],
       "valueProps": [
         {
@@ -270,16 +349,55 @@
           "description": "OR-grade cleaning."
         }
       ],
-      "heroTitle": "Surgery Center Cleaning"
+      "features": [
+        {
+          "title": "AORN Terminal Cleaning",
+          "description": "Operating room turnover and end-of-day terminal cleaning following Association of periOperative Registered Nurses standards for sterile environments.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "ATP Verification",
+          "description": "Adenosine triphosphate testing on critical surfaces to provide measurable proof of disinfection — not just visual cleanliness.",
+          "icon": "shield"
+        },
+        {
+          "title": "CMS Survey Documentation",
+          "description": "Complete digital audit trail including cleaning timestamps, chemical logs, and Night Manager inspection photos ready for unannounced CMS surveys.",
+          "icon": "shield"
+        },
+        {
+          "title": "Sterile Supply Coordination",
+          "description": "We coordinate with your materials management team to ensure proper waste segregation, linen handling, and sterile supply storage protocols.",
+          "icon": "sparkles"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Are your contractors certified for operating room cleaning?",
+          "answer": "Yes. We only deploy contractors with specific training in AORN standards, proper PPE usage, and terminal cleaning protocols for perioperative environments. Certification is verified before assignment."
+        },
+        {
+          "question": "How do you handle unannounced CMS surveys?",
+          "answer": "Because our Night Managers verify every clean nightly with photographic documentation and ATP testing, your facility is always survey-ready. We maintain 12 months of digital cleaning records accessible within minutes."
+        },
+        {
+          "question": "Can you coordinate cleaning around our surgical schedule?",
+          "answer": "Yes. Your FSM works with your OR coordinator to build a cleaning schedule that accounts for case end-times, turnover requirements, and overnight terminal cleaning windows."
+        }
+      ],
+      "heroTitle": "Surgery Center Cleaning Services"
     },
     {
       "slug": "daycare-cleaning",
       "targetFacilityType": "edu_daycare",
       "name": "Daycare Cleaning",
-      "shortDescription": "Safe, non-toxic cleaning for sensitive environments.",
+      "shortDescription": "Safe, non-toxic cleaning for childcare environments using Green Seal certified products.",
+      "longDescription": "Children touch everything — and put most of it in their mouths. Daycare and preschool cleaning requires a fundamentally different approach than standard commercial cleaning. Every product must be non-toxic and Green Seal certified, every toy and surface must be sanitized to prevent illness outbreaks, and every contractor must pass enhanced background screening. We build these safeguards into your scope so parents see a facility they can trust.",
       "benefits": [
         "Green Seal Products",
-        "Toy Sanitization"
+        "Toy Sanitization",
+        "Background-Checked Crews",
+        "Viral Prevention Protocols"
       ],
       "valueProps": [
         {
@@ -288,13 +406,50 @@
           "description": "Non-toxic products."
         }
       ],
-      "heroTitle": "Daycare & Preschool Cleaning"
+      "features": [
+        {
+          "title": "Non-Toxic Product Standard",
+          "description": "We strictly enforce Green Seal and EPA Safer Choice certified products — zero harsh chemicals in classrooms, play areas, or napping rooms.",
+          "icon": "shield"
+        },
+        {
+          "title": "Toy & Surface Sanitization",
+          "description": "Nightly sanitization of shared toys, play mats, cribs, and high-touch surfaces using child-safe quaternary disinfectants.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Outbreak Response",
+          "description": "Electrostatic spraying deployed within 24 hours of an illness notification to prevent the spread of hand-foot-mouth, RSV, or flu through your facility.",
+          "icon": "shield"
+        },
+        {
+          "title": "Enhanced Background Screening",
+          "description": "Every contractor assigned to your daycare undergoes expanded background checks beyond standard requirements, appropriate for child-focused environments.",
+          "icon": "sparkles"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Are all your cleaning products safe for infants and toddlers?",
+          "answer": "Absolutely. We require Green Seal or EPA Safer Choice certified products exclusively in childcare facilities. No bleach fumes, no harsh residues — just effective, child-safe cleaning."
+        },
+        {
+          "question": "How do you handle a lice or illness outbreak?",
+          "answer": "We have specific outbreak protocols including targeted electrostatic disinfection, enhanced toy sanitization, and increased cleaning frequency. Your FSM coordinates the response within 24 hours of notification."
+        },
+        {
+          "question": "Do your contractors undergo background checks for childcare facilities?",
+          "answer": "Yes. Every contractor deployed to daycares and preschools undergoes enhanced background screening including sex offender registry checks, beyond our standard vetting process."
+        }
+      ],
+      "heroTitle": "Daycare & Preschool Cleaning Services"
     },
     {
       "slug": "floor-care",
       "targetFacilityType": "other",
       "name": "Floor Care",
-      "shortDescription": "Hard floor maintenance, stripping, waxing, and buffing.",
+      "shortDescription": "Professional hard floor maintenance including stripping, waxing, buffing, and tile restoration.",
+      "longDescription": "Your floors are the first thing visitors notice and the last thing most cleaning companies prioritize. Neglected VCT, tile, and hardwood floors become slip hazards, look unprofessional, and cost thousands to replace prematurely. Our floor care specialists extend the life of your flooring investment through scheduled strip-and-wax cycles, high-speed burnishing, tile and grout restoration, and concrete sealing — all coordinated through your FSM so you never have to think about it.",
       "valueProps": [
         {
           "icon": "✨",
@@ -304,7 +459,45 @@
       ],
       "benefits": [
         "Strip & Wax",
-        "Tile & Grout"
+        "Tile & Grout Restoration",
+        "High-Speed Burnishing",
+        "Slip Hazard Prevention"
+      ],
+      "features": [
+        {
+          "title": "Strip & Wax Cycles",
+          "description": "Scheduled removal of old wax buildup and application of fresh high-gloss finish coats to restore VCT and vinyl floors to showroom condition.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Tile & Grout Restoration",
+          "description": "Deep steam cleaning and grout sealing to eliminate discoloration, mold, and bacteria hiding in porous grout lines.",
+          "icon": "shield"
+        },
+        {
+          "title": "High-Speed Burnishing",
+          "description": "Ultra-high-speed buffing to maintain a wet-look shine between strip-and-wax cycles, keeping your floors presentation-ready year-round.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Concrete & Epoxy Sealing",
+          "description": "Protective coatings for warehouse floors, service bays, and utility areas to prevent staining, dusting, and moisture damage.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How often should commercial floors be stripped and waxed?",
+          "answer": "It depends on foot traffic. Medical offices typically need quarterly strip-and-wax with monthly burnishing in between. High-traffic lobbies may need it monthly. Your FSM builds a schedule based on your facility's actual wear patterns."
+        },
+        {
+          "question": "Can you work on floors overnight without disrupting our business?",
+          "answer": "Yes. All floor care work is scheduled after hours. Our crews section off areas systematically so the floor is dry and walkable before your first employee arrives."
+        },
+        {
+          "question": "Do you handle both hard floors and carpeted areas?",
+          "answer": "Yes. We coordinate hard floor care and carpet cleaning under one scope. See our Carpet & Upholstery service for deep extraction cleaning of carpeted areas."
+        }
       ],
       "heroTitle": "Commercial Floor Care Services"
     },
@@ -369,7 +562,8 @@
       "slug": "commercial-cleaning",
       "targetFacilityType": "other",
       "name": "Commercial Cleaning",
-      "shortDescription": "Consistent pristine clean tailored to your facility type.",
+      "shortDescription": "Consistent, customized nightly cleaning tailored to your facility type and business hours.",
+      "longDescription": "Every facility is different — a medical waiting room has different needs than a car dealership showroom. Generic cleaning packages miss the details that matter. We build a custom scope for your specific facility, deploy trained crews who learn your space, and verify quality through nightly Night Manager audits. The result: consistently clean, zero surprises, one invoice.",
       "valueProps": [
         {
           "icon": "🏢",
@@ -379,7 +573,45 @@
       ],
       "benefits": [
         "Consistent Quality",
-        "Trained Crews"
+        "Trained Crews",
+        "Custom Scopes",
+        "Nightly Audits"
+      ],
+      "features": [
+        {
+          "title": "Custom Cleaning Scopes",
+          "description": "Your FSM walks your facility room by room, documenting specific needs — from restroom frequency to trash liner types — before work begins.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Dedicated Crew Assignment",
+          "description": "The same trained crew services your facility every night, learning your space and building consistency that rotating teams can't match.",
+          "icon": "shield"
+        },
+        {
+          "title": "Quality Verification",
+          "description": "Night Managers physically audit every clean using a standardized checklist and submit photographic documentation before morning.",
+          "icon": "shield"
+        },
+        {
+          "title": "After-Hours Scheduling",
+          "description": "All cleaning happens outside your business hours — overnight, early morning, or weekends — so your team never sees a mop bucket.",
+          "icon": "sparkles"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How do you handle security and keys for after-hours access?",
+          "answer": "We work with your property management to establish secure key protocols, alarm procedures, and check-in/check-out logs. Every contractor is background-checked and bonded."
+        },
+        {
+          "question": "What happens if a cleaning issue is missed?",
+          "answer": "Our Night Managers catch issues before you arrive. If something is missed, your FSM is notified immediately and dispatches a crew for same-day resolution — no extra charge."
+        },
+        {
+          "question": "Can we adjust the scope as our needs change?",
+          "answer": "Absolutely. Your FSM does quarterly scope reviews and adjusts frequency, tasks, and crew size based on seasonal changes, tenant turnover, or evolving needs."
+        }
       ],
       "heroTitle": "Commercial Cleaning Services"
     },
@@ -387,7 +619,8 @@
       "slug": "day-porter",
       "targetFacilityType": "other",
       "name": "Day Porters",
-      "shortDescription": "Daytime staff to oversee your building during business hours.",
+      "shortDescription": "On-site daytime staff for continuous lobby, restroom, and common area upkeep during business hours.",
+      "longDescription": "Between nightly cleans, your facility takes a beating — restrooms run out of supplies, lobbies collect debris, and spills happen at the worst times. Day porters provide continuous, visible upkeep during operating hours. They restock restrooms, clean up spills, maintain lobby appearance, and handle break room turnover — so your facility always looks like it was just cleaned, even at 4pm.",
       "valueProps": [
         {
           "icon": "☀️",
@@ -397,7 +630,45 @@
       ],
       "benefits": [
         "Restroom Restocking",
-        "Spill Cleanup"
+        "Spill Cleanup",
+        "Lobby Maintenance",
+        "Break Room Turnover"
+      ],
+      "features": [
+        {
+          "title": "Restroom Monitoring",
+          "description": "Scheduled restroom checks every 1–2 hours to restock paper products, refill soap dispensers, clean surfaces, and address odor issues in real-time.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Lobby & Reception Care",
+          "description": "Continuous upkeep of entrance areas including glass cleaning, floor spot-mopping, trash emptying, and furniture straightening throughout the day.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Spill & Emergency Response",
+          "description": "Immediate response to spills, messes, and unexpected cleaning needs during business hours — no waiting until the night crew arrives.",
+          "icon": "shield"
+        },
+        {
+          "title": "Break Room & Kitchen Service",
+          "description": "Counter wiping, dish clearing, appliance cleaning, and trash rotation in communal eating areas to maintain hygiene standards all day.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How many hours per day does a day porter work?",
+          "answer": "It depends on your facility size and traffic. Most clients start with 4–6 hours during peak business hours. Your FSM will recommend the right coverage based on your foot traffic patterns."
+        },
+        {
+          "question": "Is the day porter an XIRI employee?",
+          "answer": "Day porters are independent contractors vetted, insured, and managed through XIRI. We handle scheduling, quality control, and backup coverage if your regular porter is unavailable."
+        },
+        {
+          "question": "Can we combine day porter with nightly cleaning?",
+          "answer": "Yes — most clients do. Day porter handles daytime maintenance while a separate nightly crew performs the deep clean. Both are managed under your single XIRI invoice."
+        }
       ],
       "heroTitle": "Day Porter Services"
     },
@@ -405,7 +676,8 @@
       "slug": "disinfecting-services",
       "targetFacilityType": "other",
       "name": "Disinfecting Services",
-      "shortDescription": "EPA-registered disinfectants to eliminate germs and viruses.",
+      "shortDescription": "EPA-registered electrostatic and surface disinfection to eliminate germs, viruses, and bacteria.",
+      "longDescription": "Standard cleaning removes visible dirt. Disinfecting eliminates what you can't see — influenza, norovirus, MRSA, and other pathogens that live on surfaces for hours or days. We deploy EPA-registered hospital-grade disinfectants through electrostatic sprayers and manual application, targeting high-touch surfaces and shared spaces. Whether it's a scheduled program or an emergency outbreak response, your facility is protected.",
       "valueProps": [
         {
           "icon": "🦠",
@@ -415,15 +687,54 @@
       ],
       "benefits": [
         "Viral Control",
-        "Healthier Workplace"
+        "Healthier Workplace",
+        "Electrostatic Spraying",
+        "Outbreak Response"
       ],
-      "heroTitle": "Commercial Disinfecting"
+      "features": [
+        {
+          "title": "Electrostatic Spraying",
+          "description": "360-degree coverage using electrostatic sprayers that wrap disinfectant around surfaces, reaching areas manual wiping misses — including chair undersides, keyboard backs, and vent grilles.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "High-Touch Surface Protocol",
+          "description": "Targeted manual disinfection of door handles, elevator buttons, shared equipment, light switches, and other high-touch vectors using EPA List N products.",
+          "icon": "shield"
+        },
+        {
+          "title": "Outbreak Emergency Response",
+          "description": "Same-day or next-day full-facility disinfection when a confirmed illness is reported — flu, COVID, norovirus, or other communicable diseases.",
+          "icon": "shield"
+        },
+        {
+          "title": "Scheduled Prevention Programs",
+          "description": "Weekly or monthly disinfection programs that run alongside your normal cleaning to proactively reduce sick days and workplace transmission.",
+          "icon": "sparkles"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "What disinfectants do you use?",
+          "answer": "We exclusively use EPA-registered, hospital-grade disinfectants from the EPA's List N (effective against SARS-CoV-2) and List G (effective against norovirus). Product selection is matched to your facility type."
+        },
+        {
+          "question": "How quickly can you respond to an outbreak?",
+          "answer": "We deploy same-day or next-day emergency disinfection. Your FSM coordinates the response, and our contractors arrive with electrostatic sprayers and full PPE within 24 hours of notification."
+        },
+        {
+          "question": "Is electrostatic spraying safe for electronics and sensitive equipment?",
+          "answer": "Yes. The mist is ultra-fine and dries within minutes without residue. We cover or avoid sensitive electronics as needed, and our contractors are trained on proper application near medical and IT equipment."
+        }
+      ],
+      "heroTitle": "Commercial Disinfecting Services"
     },
     {
       "slug": "janitorial-services",
       "targetFacilityType": "other",
       "name": "Janitorial Services",
-      "shortDescription": "Daily or nightly cleaning services for professional maintenance.",
+      "shortDescription": "Reliable nightly janitorial services — vacuuming, trash removal, restroom cleaning, and surface care.",
+      "longDescription": "Janitorial service is the backbone of facility maintenance — and the most common source of complaints when done poorly. The difference between a forgettable cleaning company and XIRI is accountability. Your crew cleans every night, your Night Manager verifies every clean, and your FSM handles every issue before you need to make a phone call. No more chasing vendors, no more inconsistent results, no more surprise invoices.",
       "valueProps": [
         {
           "icon": "🧹",
@@ -433,9 +744,560 @@
       ],
       "benefits": [
         "Trash Removal",
-        "Vacuuming"
+        "Vacuuming & Mopping",
+        "Restroom Sanitization",
+        "Surface Dusting"
+      ],
+      "features": [
+        {
+          "title": "Nightly Deep Clean",
+          "description": "Complete vacuuming, mopping, trash removal, surface dusting, and restroom sanitization — every night, following your custom scope document.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Restroom Sanitization",
+          "description": "Full restroom cleaning including toilet and urinal disinfection, sink and mirror polishing, floor mopping, and restocking of all paper and soap supplies.",
+          "icon": "shield"
+        },
+        {
+          "title": "Kitchen & Break Room Care",
+          "description": "Counter sanitization, appliance exterior cleaning, sink scrubbing, trash rotation, and floor maintenance for communal eating areas.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Night Manager Audits",
+          "description": "Independent quality verification after every clean — our Night Managers aren't the cleaners, they're the auditors. Photo documentation submitted nightly.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How is XIRI different from other janitorial companies?",
+          "answer": "Most janitorial companies send a crew and hope for the best. We send a crew AND a Night Manager who independently audits their work. You get photographic proof of quality every morning, one invoice per month, and a dedicated FSM who handles everything."
+        },
+        {
+          "question": "What if my regular crew calls out sick?",
+          "answer": "We maintain backup crews on every route. If your regular team can't make it, a qualified backup is dispatched the same night. You never miss a clean."
+        },
+        {
+          "question": "Can I get cleaning 7 nights a week?",
+          "answer": "Yes. We offer 3, 5, or 7-night service options. Your FSM will recommend the right frequency based on your facility type, foot traffic, and budget."
+        }
       ],
       "heroTitle": "Commercial Janitorial Services"
+    },
+    {
+      "slug": "window-cleaning",
+      "targetFacilityType": "other",
+      "name": "Window Cleaning",
+      "shortDescription": "Interior and exterior commercial window cleaning for storefronts, lobbies, and multi-story buildings.",
+      "longDescription": "Dirty windows silently degrade your facility's curb appeal and interior lighting. Whether it's a medical office storefront, a car dealership showroom wall, or a multi-story office building, our window cleaning contractors deliver streak-free results using professional-grade equipment — squeegees, water-fed poles, and lift access for upper floors. Scheduled monthly or quarterly to keep your glass sparkling year-round.",
+      "valueProps": [
+        {
+          "icon": "🪟",
+          "title": "Crystal Clear",
+          "description": "Streak-free glass."
+        }
+      ],
+      "benefits": [
+        "Interior & Exterior",
+        "Streak-Free Results",
+        "Multi-Story Capable",
+        "Scheduled Service"
+      ],
+      "features": [
+        {
+          "title": "Storefront & Entrance Glass",
+          "description": "Regular cleaning of customer-facing glass doors, sidelights, and windows to maintain a professional first impression.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Interior Partition Glass",
+          "description": "Office partition glass, conference room walls, and lobby glass cleaned to eliminate fingerprints, smudges, and dust buildup.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Multi-Story Exterior",
+          "description": "Water-fed pole systems and lift-accessed cleaning for second-floor and above exterior windows without scaffolding.",
+          "icon": "shield"
+        },
+        {
+          "title": "Frame & Track Detailing",
+          "description": "Window frames, tracks, and sills cleaned and debris-free to prevent water damage and maintain operable windows.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How often should commercial windows be cleaned?",
+          "answer": "Storefronts and customer-facing glass benefit from monthly service. Interior office glass and exterior upper-floor windows are typically scheduled quarterly. Your FSM recommends a frequency based on your location and traffic."
+        },
+        {
+          "question": "Can you clean windows on a multi-story building?",
+          "answer": "Yes. We deploy water-fed pole systems for buildings up to 4 stories and coordinate lift access for taller buildings. All contractors carry proper insurance for elevated work."
+        },
+        {
+          "question": "Do you clean windows in winter?",
+          "answer": "Yes, weather permitting. We use cold-weather solutions that prevent freezing and streaking. Service may be rescheduled during active precipitation but resumes as soon as conditions allow."
+        }
+      ],
+      "heroTitle": "Commercial Window Cleaning Services"
+    },
+    {
+      "slug": "pressure-washing",
+      "targetFacilityType": "other",
+      "name": "Pressure Washing",
+      "shortDescription": "Commercial pressure washing for building exteriors, sidewalks, parking areas, and dumpster pads.",
+      "longDescription": "Grime, mold, and oil stains on your building exterior, sidewalks, and parking areas send a clear message to clients: this business doesn't care about details. Pressure washing removes years of buildup in hours, restoring concrete, brick, and siding to near-original condition. We schedule it seasonally so your curb appeal never slips — and it's all on your single monthly XIRI invoice.",
+      "valueProps": [
+        {
+          "icon": "💦",
+          "title": "Curb Appeal",
+          "description": "Restore exteriors."
+        }
+      ],
+      "benefits": [
+        "Building Exteriors",
+        "Sidewalk & Concrete",
+        "Dumpster Pad Cleaning",
+        "Grease & Oil Removal"
+      ],
+      "features": [
+        {
+          "title": "Building Exterior Washing",
+          "description": "Brick, stucco, siding, and EIFS cleaning to remove mold, algae, pollution staining, and cobwebs from your facility's exterior walls.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Sidewalk & Entrance Cleaning",
+          "description": "High-pressure concrete cleaning to remove gum, stains, and grime from walkways, entry aprons, and ADA ramps.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Parking Area Degreasing",
+          "description": "Oil spot treatment and full-surface pressure washing for parking lots, drive lanes, and service bay aprons.",
+          "icon": "shield"
+        },
+        {
+          "title": "Dumpster Pad Sanitization",
+          "description": "Deep cleaning and deodorizing of dumpster enclosures and concrete pads to eliminate odors and pest attractants.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How often should a commercial building be pressure washed?",
+          "answer": "Most facilities benefit from semi-annual pressure washing — spring and fall. High-traffic areas like sidewalks and dumpster pads may need quarterly service. Your FSM schedules it automatically."
+        },
+        {
+          "question": "Will pressure washing damage our building materials?",
+          "answer": "No. Our contractors adjust PSI and nozzle selection based on the surface material — soft-wash for painted surfaces and EIFS, higher pressure for concrete and brick. We never use inappropriate pressure on delicate materials."
+        },
+        {
+          "question": "Can you pressure wash during business hours?",
+          "answer": "Sidewalks and parking areas are typically done early morning or weekends. Building exteriors can be done during business hours as they don't affect interior operations."
+        }
+      ],
+      "heroTitle": "Commercial Pressure Washing Services"
+    },
+    {
+      "slug": "snow-ice-removal",
+      "targetFacilityType": "other",
+      "name": "Snow & Ice Removal",
+      "shortDescription": "Commercial snow plowing, sidewalk clearing, and ice management to keep your facility safe and accessible.",
+      "longDescription": "One slip-and-fall lawsuit costs more than a decade of snow removal service. We pair you with insured snow contractors who pre-treat, plow, and clear your lot and sidewalks according to your trigger depth — 1 inch, 2 inches, or storm-based. Salt and calcium chloride application keeps walkways safe throughout the day. Your FSM monitors weather forecasts and dispatches crews proactively so you never wake up to an uncleared lot.",
+      "valueProps": [
+        {
+          "icon": "❄️",
+          "title": "Winter Ready",
+          "description": "24/7 snow response."
+        }
+      ],
+      "benefits": [
+        "Parking Lot Plowing",
+        "Sidewalk Clearing",
+        "Salt & De-Icing",
+        "Slip-and-Fall Prevention"
+      ],
+      "features": [
+        {
+          "title": "Trigger-Based Plowing",
+          "description": "Automatic dispatch at your chosen snow depth trigger — 1\", 2\", or 3\" — with continuous service during extended storms to maintain access.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Sidewalk & Entry Clearing",
+          "description": "Hand-shoveling and snow blowing of all walkways, ADA ramps, emergency exits, and building entries to maintain safe pedestrian access.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Salt & Calcium Application",
+          "description": "Pre-treatment before forecasted storms and post-storm application of rock salt or calcium chloride to prevent ice formation and refreeze.",
+          "icon": "shield"
+        },
+        {
+          "title": "Weather Monitoring",
+          "description": "Your FSM monitors NWS forecasts and activates snow crews proactively — you don't need to call, we're already on it.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "What happens during an overnight storm?",
+          "answer": "Our snow crews operate 24/7 during active storms. They plow continuously to maintain access, with a final pass and salt application before your business opens in the morning."
+        },
+        {
+          "question": "Do I need a separate snow removal contract?",
+          "answer": "No. Snow and ice management is included in your XIRI service agreement. It appears on your same monthly invoice alongside janitorial and other services."
+        },
+        {
+          "question": "Are your snow contractors insured for slip-and-fall liability?",
+          "answer": "Yes. All snow contractors carry commercial general liability insurance with snow and ice removal endorsements. We verify coverage annually and maintain certificates on file."
+        }
+      ],
+      "heroTitle": "Commercial Snow & Ice Removal Services"
+    },
+    {
+      "slug": "hvac-maintenance",
+      "targetFacilityType": "other",
+      "name": "HVAC Maintenance",
+      "shortDescription": "Scheduled HVAC filter replacement, vent cleaning, and preventive maintenance for commercial systems.",
+      "longDescription": "Your HVAC system circulates air through every room in your facility — and whatever is trapped in those filters goes with it. Clogged filters increase energy costs by up to 15%, accelerate equipment wear, and push dust, allergens, and pathogens into patient exam rooms and work areas. We schedule regular filter replacement, vent cleaning, and preventive maintenance checks so your system runs efficiently and your air stays clean.",
+      "valueProps": [
+        {
+          "icon": "🌬️",
+          "title": "Clean Air",
+          "description": "Filter management."
+        }
+      ],
+      "benefits": [
+        "Filter Replacement",
+        "Vent Cleaning",
+        "Energy Savings",
+        "Indoor Air Quality"
+      ],
+      "features": [
+        {
+          "title": "Scheduled Filter Replacement",
+          "description": "Monthly or quarterly filter swaps with proper MERV-rated filters for your system type — tracked and documented by your FSM.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Vent & Diffuser Cleaning",
+          "description": "Supply and return vent cleaning to remove dust buildup, improve airflow, and eliminate the dirty-vent appearance in patient and client areas.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Preventive Maintenance Checks",
+          "description": "Quarterly system inspections including belt checks, condensate drain clearance, and thermostat calibration to prevent costly breakdowns.",
+          "icon": "shield"
+        },
+        {
+          "title": "Air Quality Documentation",
+          "description": "Maintenance logs and filter change records for facilities requiring IAQ documentation for accreditation or tenant reporting.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How often should commercial HVAC filters be changed?",
+          "answer": "Standard commercial filters should be changed every 30–90 days depending on system type, filter rating, and occupancy level. Medical facilities typically need monthly changes. Your FSM sets the schedule based on your specific system."
+        },
+        {
+          "question": "Can you service our rooftop units?",
+          "answer": "Yes. Our HVAC contractors service rooftop package units, split systems, and mini-splits. They carry the required certifications and insurance for rooftop access and refrigerant handling."
+        },
+        {
+          "question": "Does HVAC maintenance really save money?",
+          "answer": "Yes. A dirty filter forces your system to work harder, increasing energy consumption by 5–15%. Regular maintenance also extends equipment lifespan and prevents emergency repair calls that cost 3–5x more than preventive service."
+        }
+      ],
+      "heroTitle": "Commercial HVAC Maintenance Services"
+    },
+    {
+      "slug": "pest-control",
+      "targetFacilityType": "other",
+      "name": "Pest Control",
+      "shortDescription": "Licensed commercial pest management for medical, childcare, food service, and general commercial facilities.",
+      "longDescription": "A single pest sighting can destroy patient confidence, trigger a health department citation, or violate your lease terms. Our licensed pest control contractors provide integrated pest management (IPM) — combining preventive measures, monitoring, and targeted treatment to eliminate infestations without overusing chemicals. For medical and childcare facilities, we use low-toxicity products that meet regulatory requirements while keeping your space pest-free.",
+      "valueProps": [
+        {
+          "icon": "🐜",
+          "title": "Pest Free",
+          "description": "Licensed IPM."
+        }
+      ],
+      "benefits": [
+        "Integrated Pest Management",
+        "Licensed Technicians",
+        "Low-Toxicity Options",
+        "Monthly Monitoring"
+      ],
+      "features": [
+        {
+          "title": "Integrated Pest Management",
+          "description": "A science-based approach that combines exclusion, sanitation recommendations, monitoring stations, and targeted treatment to prevent infestations before they start.",
+          "icon": "shield"
+        },
+        {
+          "title": "Monthly Monitoring & Treatment",
+          "description": "Scheduled monthly visits for bait station checks, perimeter treatment, and inspection of vulnerable areas like break rooms, utility closets, and exterior entry points.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Medical-Safe Products",
+          "description": "Low-toxicity, odor-free treatment options specifically selected for healthcare, childcare, and food service environments where chemical sensitivity is critical.",
+          "icon": "shield"
+        },
+        {
+          "title": "Emergency Response",
+          "description": "Same-day or next-day emergency treatment for sudden infestations — rodent sightings, ant invasions, or roach complaints handled before your next business day.",
+          "icon": "sparkles"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Are your pest control products safe for medical offices?",
+          "answer": "Yes. We use EPA-registered, low-toxicity products specifically formulated for sensitive environments. Bait stations and gel applications are placed in concealed locations, never in patient-accessible areas."
+        },
+        {
+          "question": "How quickly can you respond to an emergency pest issue?",
+          "answer": "Our pest control contractors provide same-day or next-day emergency response. Your FSM coordinates the call and ensures the issue is resolved before it affects your operations or patients."
+        },
+        {
+          "question": "Do you provide documentation for health inspections?",
+          "answer": "Yes. We maintain digital pest management logs including treatment dates, products used, and inspection findings — ready for DOH inspections or accreditation surveys."
+        }
+      ],
+      "heroTitle": "Commercial Pest Control Services"
+    },
+    {
+      "slug": "waste-management",
+      "targetFacilityType": "other",
+      "name": "Waste Management",
+      "shortDescription": "Commercial and medical waste management including red-bag disposal, recycling, and dumpster coordination.",
+      "longDescription": "Waste in a commercial facility isn't just trash — it's a compliance liability. Medical offices generate regulated biohazard waste that requires certified handling. All facilities need proper recycling separation to meet local ordinances. And if your dumpster service is unreliable, overflow becomes a pest and odor problem fast. We coordinate waste hauling, red-bag pickup, recycling compliance, and dumpster scheduling under one managed service.",
+      "valueProps": [
+        {
+          "icon": "♻️",
+          "title": "Compliant",
+          "description": "Regulated waste."
+        }
+      ],
+      "benefits": [
+        "Medical Waste Pickup",
+        "Recycling Compliance",
+        "Dumpster Coordination",
+        "OSHA Compliant"
+      ],
+      "features": [
+        {
+          "title": "Medical Waste Handling",
+          "description": "Certified red-bag waste pickup, sharps container exchange, and manifesting in full compliance with OSHA's Bloodborne Pathogen Standard and DOT shipping regulations.",
+          "icon": "shield"
+        },
+        {
+          "title": "Recycling Program Management",
+          "description": "Proper recycling stream separation, container placement, and hauler coordination to meet local recycling ordinances and reduce waste costs.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Dumpster & Compactor Service",
+          "description": "Scheduling, sizing, and vendor coordination for dumpster service — ensuring you never have overflow issues or missed pickups.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Compliance Documentation",
+          "description": "Waste manifests, hauling receipts, and disposal certificates maintained digitally for regulatory inspections and accreditation surveys.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Do you handle biohazard waste for medical offices?",
+          "answer": "Yes. We coordinate certified medical waste haulers who provide red-bag pickup, sharps container exchange, and pharmaceutical waste disposal in full compliance with OSHA and state regulations."
+        },
+        {
+          "question": "Can you help us reduce waste disposal costs?",
+          "answer": "Yes. Your FSM audits your current waste stream and often identifies opportunities to right-size dumpster service, improve recycling separation, and reduce overall hauling frequency — saving 10–20% on waste costs."
+        },
+        {
+          "question": "How do you handle waste documentation for accreditation?",
+          "answer": "We maintain digital waste manifests, BOL copies, and disposal certificates. Your FSM can pull a compliance report for any date range within minutes for JCAHO, OSHA, or state health department surveys."
+        }
+      ],
+      "heroTitle": "Commercial Waste Management Services"
+    },
+    {
+      "slug": "parking-lot-maintenance",
+      "targetFacilityType": "other",
+      "name": "Parking Lot Maintenance",
+      "shortDescription": "Parking lot sweeping, striping, pothole repair, and lighting maintenance for commercial properties.",
+      "longDescription": "Your parking lot is the first and last thing every visitor sees. Faded striping, debris-filled corners, burned-out lights, and potholes communicate neglect before anyone walks through the door. We coordinate regular sweeping, line striping, crack sealing, and light maintenance so your parking area stays safe, ADA-compliant, and presentation-ready — all under your single XIRI service agreement.",
+      "valueProps": [
+        {
+          "icon": "🅿️",
+          "title": "Curb Appeal",
+          "description": "Safe parking areas."
+        }
+      ],
+      "benefits": [
+        "Power Sweeping",
+        "Line Striping",
+        "Pothole Repair",
+        "Lighting Maintenance"
+      ],
+      "features": [
+        {
+          "title": "Power Sweeping",
+          "description": "Mechanical sweeping of parking surfaces to remove debris, sand, leaves, and litter — scheduled weekly, bi-weekly, or monthly based on traffic.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Line Striping & ADA Compliance",
+          "description": "Fresh paint for parking stalls, fire lanes, directional arrows, and ADA-accessible spaces to maintain compliance and professional appearance.",
+          "icon": "shield"
+        },
+        {
+          "title": "Crack Sealing & Pothole Repair",
+          "description": "Preventive crack filling and pothole patching to extend pavement life and prevent trip-and-fall liability on your property.",
+          "icon": "shield"
+        },
+        {
+          "title": "Parking Lot Lighting",
+          "description": "Bulb replacement, fixture repair, and timer adjustment for parking lot and building-perimeter lighting to maintain safety and security.",
+          "icon": "sparkles"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How often should a commercial parking lot be swept?",
+          "answer": "High-traffic medical and retail lots benefit from weekly sweeping. Lower-traffic office lots can run bi-weekly or monthly. Your FSM sets the schedule based on debris accumulation and local ordinance requirements."
+        },
+        {
+          "question": "When should parking lot lines be repainted?",
+          "answer": "Typically every 18–24 months, depending on traffic and weather exposure. ADA spaces and fire lanes should be evaluated annually. Your FSM flags fading lines during site visits."
+        },
+        {
+          "question": "Do you handle parking lot lighting repairs?",
+          "answer": "Yes. We coordinate bulb replacement, ballast repair, and photocell adjustment for parking lot pole lights and building-mounted fixtures. All electrical work is performed by licensed contractors."
+        }
+      ],
+      "heroTitle": "Parking Lot Maintenance Services"
+    },
+    {
+      "slug": "handyman-services",
+      "targetFacilityType": "other",
+      "name": "Handyman Services",
+      "shortDescription": "On-demand commercial handyman for repairs, installations, and minor maintenance projects.",
+      "longDescription": "A broken towel dispenser, a sticking door, a leaking faucet — these small issues pile up fast when you don't have a maintenance person on staff. Our handyman contractors handle the miscellaneous repairs and installations that don't warrant a specialized trade contractor. Drywall patching, fixture installs, door adjustments, caulking, and more — all requested through your FSM and billed on your single monthly invoice.",
+      "valueProps": [
+        {
+          "icon": "🔧",
+          "title": "Fix It",
+          "description": "On-demand repairs."
+        }
+      ],
+      "benefits": [
+        "Minor Repairs",
+        "Fixture Installation",
+        "Drywall Patching",
+        "Door & Hardware Repair"
+      ],
+      "features": [
+        {
+          "title": "General Repairs",
+          "description": "Drywall patching, paint touch-ups, caulking, grout repair, and other cosmetic fixes to maintain your facility's professional appearance.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Fixture & Hardware Installation",
+          "description": "Mounting shelves, installing soap dispensers, replacing towel holders, hanging signage, and other fixture work that doesn't require a licensed trade.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Door & Lock Maintenance",
+          "description": "Door closer adjustment, hinge replacement, weatherstripping, and lockset repair to keep entries secure and ADA-compliant.",
+          "icon": "shield"
+        },
+        {
+          "title": "Plumbing & Electrical Minor Work",
+          "description": "Faucet washer replacement, toilet handle repair, light switch swaps, and outlet cover replacement — items too small for a trade call but too important to ignore.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "What's the difference between handyman and a licensed contractor?",
+          "answer": "Handyman services cover general repairs and installations that don't require a trade license — drywall, fixtures, doors, minor plumbing. For licensed work like electrical panel changes or plumbing rough-ins, we coordinate a licensed trade specialist."
+        },
+        {
+          "question": "How do I request handyman work?",
+          "answer": "Just tell your FSM. They create a work order, dispatch a handyman, and confirm completion — all within your existing service agreement. No separate quotes or invoices."
+        },
+        {
+          "question": "Can your handyman work during business hours?",
+          "answer": "Yes. Most handyman tasks are quiet enough to perform during operating hours. Your FSM coordinates scheduling to minimize disruption to your staff and patients or clients."
+        }
+      ],
+      "heroTitle": "Commercial Handyman Services"
+    },
+    {
+      "slug": "post-construction-cleanup",
+      "targetFacilityType": "other",
+      "name": "Post-Construction Cleanup",
+      "shortDescription": "Multi-phase construction cleanup: rough clean, final clean, and move-in ready detailing.",
+      "longDescription": "After a buildout, renovation, or tenant improvement project, construction dust and debris penetrate every surface — HVAC ducts, window tracks, behind fixtures, inside cabinets. Standard cleaning won't cut it. Our post-construction crews perform multi-phase cleanup: rough clean to remove bulk debris, detail clean to address dust and residue on every surface, and a final punch-list walkthrough to ensure move-in readiness. Get your space open faster without pulling your regular cleaning crew off their routes.",
+      "valueProps": [
+        {
+          "icon": "🏗️",
+          "title": "Move-In Ready",
+          "description": "Construction cleanup."
+        }
+      ],
+      "benefits": [
+        "Rough & Final Clean",
+        "Dust Remediation",
+        "Window & Glass Cleaning",
+        "Move-In Ready Detailing"
+      ],
+      "features": [
+        {
+          "title": "Rough Clean (Phase 1)",
+          "description": "Removal of bulk construction debris, scrap materials, and dust accumulation. Sweep and vacuum all surfaces, remove protective coverings and tape residue.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Detail Clean (Phase 2)",
+          "description": "Surface-by-surface dust removal including cabinetry interiors, window tracks, light fixtures, vent covers, and all horizontal and vertical surfaces.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Glass & Window Cleaning",
+          "description": "Removal of construction film, paint overspray, label adhesive, and dust from all glass surfaces including interior partitions.",
+          "icon": "shield"
+        },
+        {
+          "title": "Final Punch-List Walkthrough",
+          "description": "Project manager walkthrough with your contractor or property manager to identify and address any remaining issues before occupancy.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How long does post-construction cleanup take?",
+          "answer": "It depends on the project size. A single medical suite buildout typically takes 1–2 days for detail cleaning. Larger projects may take 3–5 days. We provide a time estimate after an on-site assessment."
+        },
+        {
+          "question": "Can you clean immediately after construction finishes?",
+          "answer": "Yes. We can deploy crews within 24–48 hours of project completion. Your FSM coordinates directly with your general contractor to schedule the cleanup phases."
+        },
+        {
+          "question": "Do you handle HVAC duct cleaning after construction?",
+          "answer": "Yes. Construction dust in ductwork is a major indoor air quality issue. We coordinate duct cleaning specialists as part of the post-construction scope to ensure your HVAC system is debris-free before occupancy."
+        }
+      ],
+      "heroTitle": "Post-Construction Cleanup Services"
     }
   ],
   "locations": [
