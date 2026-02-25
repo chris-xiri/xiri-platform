@@ -56,7 +56,7 @@ export default function TemplateAnalyticsPage() {
         const snap = await getDocs(collection(db, 'templates'));
         const data = snap.docs
             .map(d => ({ id: d.id, ...d.data() } as Template))
-            .filter(t => t.category === 'vendor')
+            .filter(t => t.category === 'vendor' || t.category === 'vendor_email')
             .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         setTemplates(data);
         setLoading(false);

@@ -67,7 +67,6 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
     const [placesData, setPlacesData] = useState<PlacesEnrichment | null>(null);
     const [placesLoading, setPlacesLoading] = useState(false);
 
-    // Fetch Google Places enrichment on mount or vendor change
     useEffect(() => {
         if (!vendor.address && !vendor.city && !vendor.businessName) return;
         setPlacesLoading(true);
@@ -77,6 +76,15 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
             .catch(err => console.error('Places enrichment failed:', err))
             .finally(() => setPlacesLoading(false));
     }, [vendor.id, vendor.address, vendor.city, vendor.state, vendor.businessName]);
+
+    const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const addressStr = vendor.address
+        ? `${vendor.address}, ${vendor.city || ''}, ${vendor.state || ''}`
+        : `${vendor.businessName || ''} ${vendor.city || ''}, ${vendor.state || ''}`;
+    const uriEncodedAddress = encodeURIComponent(addressStr);
+    const streetViewUrl = mapsApiKey && uriEncodedAddress ? `https://maps.googleapis.com/maps/api/streetview?size=400x160&location=${uriEncodedAddress}&key=${mapsApiKey}` : null;
+    const mapUrl = mapsApiKey && uriEncodedAddress ? `https://maps.googleapis.com/maps/api/staticmap?center=${uriEncodedAddress}&zoom=15&size=400x160&markers=color:red%7C${uriEncodedAddress}&key=${mapsApiKey}` : null;
+
 
     return (
         <div className="flex flex-col h-full bg-background border-l border-border overflow-hidden animate-in slide-in-from-right-5 duration-200">
@@ -101,6 +109,17 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
                     <X className="w-4 h-4" />
                 </button>
             </div>
+
+            {/* Image Strip: Street View + Map Map */}
+            {mapsApiKey && streetViewUrl && mapUrl && (
+                <div className="grid grid-cols-2 h-28 flex-shrink-0 bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={streetViewUrl} alt="Street view" className="w-full h-full object-cover border-r border-background/20" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={mapUrl} alt="Map view" className="w-full h-full object-cover" />
+                </div>
+            )}
+
 
             {/* Info + Actions */}
             <div className="p-3 space-y-3 border-b border-border flex-shrink-0 bg-muted/5 flex-1 overflow-y-auto">

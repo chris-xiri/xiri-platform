@@ -69,7 +69,7 @@ export default function EmailTemplatesPage() {
         try {
             const q = query(
                 collection(db, "templates"),
-                where("category", "==", "vendor_email")
+                where("category", "in", ["vendor_email", "vendor"])
             );
             const snap = await getDocs(q);
             const results = snap.docs.map(d => ({ id: d.id, ...d.data() } as EmailTemplate));
