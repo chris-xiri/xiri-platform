@@ -130,7 +130,7 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
                             <span className="flex items-center gap-1.5">
                                 <Zap className="w-3.5 h-3.5 text-yellow-500 fill-current" /> AI Analysis
                             </span>
-                            <span className={`font-bold text-sm ${(vendor.fitScore || 0) > 70 ? 'text-green-600' : 'text-yellow-600'}`}>
+                            <span className={`font-bold text-sm ${(vendor.fitScore || 0) > 70 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
                                 {vendor.fitScore || 0}/100
                             </span>
                         </CardTitle>
@@ -168,7 +168,7 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
                                 <span className="font-medium text-foreground">{vendor.dcaCategory}</span>
                             </div>
                             {vendor.phone && (
-                                <a href={`tel:${vendor.phone}`} className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
+                                <a href={`tel:${vendor.phone}`} className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline">
                                     <Phone className="w-3 h-3 flex-shrink-0" /> {vendor.phone}
                                 </a>
                             )}
@@ -221,17 +221,17 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
                             {/* Links (Phone / Website / Map) */}
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                                 {(placesData.phone || vendor.phone) && (
-                                    <a href={`tel:${placesData.phone || vendor.phone}`} className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                                    <a href={`tel:${placesData.phone || vendor.phone}`} className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
                                         <Phone className="w-3 h-3 flex-shrink-0" /> {placesData.phone || vendor.phone}
                                     </a>
                                 )}
                                 {(placesData.website || vendor.website) && (
-                                    <a href={placesData.website || vendor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                                    <a href={placesData.website || vendor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
                                         <Globe className="w-3 h-3 flex-shrink-0" /> Website
                                     </a>
                                 )}
                                 {(placesData.googleMapsUrl) && (
-                                    <a href={placesData.googleMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                                    <a href={placesData.googleMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
                                         <MapPin className="w-3 h-3 flex-shrink-0" /> Open in Maps
                                     </a>
                                 )}
@@ -277,14 +277,14 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
 
                 {/* Legacy Fallback for Phone/Web if no Google Places match AND not DCA (DCA has it's own card) */}
                 {!placesLoading && !placesData && !vendor.dcaCategory && (vendor.phone || vendor.website) && (
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 bg-white dark:bg-card p-3 rounded-md border border-border shadow-sm text-xs">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 bg-card p-3 rounded-md border border-border shadow-sm text-xs">
                         {vendor.phone && (
-                            <a href={`tel:${vendor.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
+                            <a href={`tel:${vendor.phone}`} className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline">
                                 <Phone className="w-3.5 h-3.5 flex-shrink-0" /> {vendor.phone}
                             </a>
                         )}
                         {vendor.website && (
-                            <a href={vendor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
+                            <a href={vendor.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline">
                                 <Globe className="w-3.5 h-3.5 flex-shrink-0" /> Website
                             </a>
                         )}
@@ -413,7 +413,7 @@ export default function CampaignResultsTable({
     const confirmCloseTab = () => { if (showCloseTabDialog) { onCloseCampaign(showCloseTabDialog); setShowCloseTabDialog(null); setSelectedVendors(new Set()); setSelectedVendorId(null); } };
 
     const allSelected = activeVendors.length > 0 && selectedVendors.size === activeVendors.length;
-    const getScoreColor = (score?: number) => { if (!score) return 'text-muted-foreground'; if (score >= 80) return 'text-green-600'; if (score >= 50) return 'text-yellow-600'; return 'text-red-500'; };
+    const getScoreColor = (score?: number) => { if (!score) return 'text-muted-foreground'; if (score >= 80) return 'text-green-600 dark:text-green-400'; if (score >= 50) return 'text-yellow-600 dark:text-yellow-400'; return 'text-red-500 dark:text-red-400'; };
     const handleTabSwitch = (id: string) => { setSelectedVendors(new Set()); setSearchMessage(''); setSelectedVendorId(null); onSetActiveCampaign(id); };
 
     const handleSearch = async (overrideQuery?: string, overrideLocation?: string) => {
@@ -616,12 +616,12 @@ export default function CampaignResultsTable({
                             )}
                             {searchMessage && (
                                 <div className="flex items-center gap-2 mt-1">
-                                    <p className={`text-[10px] ${searchMessage.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>{searchMessage}</p>
+                                    <p className={`text-[10px] ${searchMessage.includes('Error') ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{searchMessage}</p>
                                     {!searchMessage.includes('Error') && activeCampaign.searches.length > 0 && (
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            className="h-5 text-[10px] px-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            className="h-5 text-[10px] px-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950"
                                             onClick={() => {
                                                 const lastSearch = activeCampaign.searches[activeCampaign.searches.length - 1];
                                                 handleSearch(lastSearch.query, lastSearch.location);
@@ -653,7 +653,7 @@ export default function CampaignResultsTable({
                                             <Button size="sm" className="h-6 text-[10px] bg-orange-500 hover:bg-orange-600 text-white px-2" onClick={() => { setBulkTrack('FAST_TRACK'); setShowBulkApproveDialog(true); }}>
                                                 <Zap className="w-3 h-3 mr-0.5" /> Urg ({selectedVendors.size})
                                             </Button>
-                                            <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 px-2" onClick={() => setShowBulkDismissDialog(true)}>
+                                            <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 dark:text-red-400 px-2" onClick={() => setShowBulkDismissDialog(true)}>
                                                 <XCircle className="w-3 h-3 mr-0.5" /> ✕
                                             </Button>
                                         </>
@@ -662,7 +662,7 @@ export default function CampaignResultsTable({
                                             <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white px-2" onClick={() => onApproveAll(activeCampaign.id, 'STANDARD')}>
                                                 <CheckCircle2 className="w-3 h-3 mr-0.5" /> Approve All
                                             </Button>
-                                            <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 px-2" onClick={() => onDismissAll(activeCampaign.id)}>
+                                            <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 dark:text-red-400 px-2" onClick={() => onDismissAll(activeCampaign.id)}>
                                                 <XCircle className="w-3 h-3 mr-0.5" /> Dismiss All
                                             </Button>
                                         </>
@@ -702,7 +702,7 @@ export default function CampaignResultsTable({
                                                     <span className={`font-medium truncate ${dismissed ? 'line-through text-muted-foreground' : ''}`}>
                                                         {vendor.businessName}
                                                     </span>
-                                                    {dismissed && <Badge variant="outline" className="text-[8px] px-0.5 py-0 border-amber-300 text-amber-500 flex-shrink-0 leading-tight">Dismissed</Badge>}
+                                                    {dismissed && <Badge variant="outline" className="text-[8px] px-0.5 py-0 border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 flex-shrink-0 leading-tight">Dismissed</Badge>}
                                                     {vendor.dcaCategory && <Badge variant="secondary" className="text-[8px] px-1 py-0 h-4 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-none ml-1 truncate max-w-[120px]" title={vendor.dcaCategory}>{vendor.dcaCategory}</Badge>}
                                                 </div>
                                                 <div className="flex items-center gap-1 text-muted-foreground">
@@ -719,18 +719,18 @@ export default function CampaignResultsTable({
                                             {/* Quick Actions */}
                                             <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                                                 {dismissed ? (
-                                                    <Button size="sm" variant="ghost" className="h-6 text-[10px] text-amber-600 px-1.5" onClick={() => onRevive(activeCampaign.id, vendor.id!)}>
+                                                    <Button size="sm" variant="ghost" className="h-6 text-[10px] text-amber-600 dark:text-amber-400 px-1.5" onClick={() => onRevive(activeCampaign.id, vendor.id!)}>
                                                         <RotateCcw className="w-3 h-3" />
                                                     </Button>
                                                 ) : (
                                                     <>
-                                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-green-600 hover:bg-green-50" onClick={() => onApprove(activeCampaign.id, vendor.id!, 'STANDARD')} title="Standard">
+                                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950" onClick={() => onApprove(activeCampaign.id, vendor.id!, 'STANDARD')} title="Standard">
                                                             <CheckCircle2 className="w-3.5 h-3.5" />
                                                         </Button>
-                                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-orange-500 hover:bg-orange-50" onClick={() => onApprove(activeCampaign.id, vendor.id!, 'FAST_TRACK')} title="Urgent">
+                                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-orange-500 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950" onClick={() => onApprove(activeCampaign.id, vendor.id!, 'FAST_TRACK')} title="Urgent">
                                                             <Zap className="w-3.5 h-3.5" />
                                                         </Button>
-                                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-500 hover:bg-red-50" onClick={() => onDismiss(activeCampaign.id, vendor.id!)} title="Dismiss">
+                                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950" onClick={() => onDismiss(activeCampaign.id, vendor.id!)} title="Dismiss">
                                                             <XCircle className="w-3.5 h-3.5" />
                                                         </Button>
                                                     </>
