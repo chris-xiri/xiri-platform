@@ -106,7 +106,7 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
                             {vendor.city && vendor.state ? `${vendor.city}, ${vendor.state}` : vendor.address || 'N/A'}
                         </p>
                         {vendor.dcaCategory && (
-                            <Badge variant="secondary" className="text-[9px] px-1 h-3.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-none flex-shrink-0 capitalize">
+                            <Badge variant="secondary" className="text-[9px] px-1 h-3.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-none flex-shrink-0 capitalize">
                                 NY Open Data
                             </Badge>
                         )}
@@ -158,7 +158,7 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
 
                 {/* DCA Licensing Data Card (if available) */}
                 {vendor.dcaCategory && (
-                    <Card className="bg-card border-emerald-200 dark:border-emerald-800 shadow-sm">
+                    <Card className="bg-card border-slate-300 dark:border-slate-600 shadow-sm">
                         <CardHeader className="py-2 px-3 pb-1">
                             <CardTitle className="text-xs font-medium flex justify-between items-center">
                                 <span className="flex items-center gap-1.5">
@@ -710,7 +710,7 @@ export default function CampaignResultsTable({
                                                         {vendor.businessName}
                                                     </span>
                                                     {dismissed && <Badge variant="outline" className="text-[8px] px-0.5 py-0 border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 flex-shrink-0 leading-tight">Dismissed</Badge>}
-                                                    {vendor.dcaCategory && <Badge variant="secondary" className="text-[8px] px-1 py-0 h-4 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-none ml-1 truncate max-w-[120px]" title={vendor.dcaCategory}>{vendor.dcaCategory}</Badge>}
+                                                    {vendor.dcaCategory && <Badge variant="secondary" className="text-[8px] px-1 py-0 h-4 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-none ml-1 truncate max-w-[120px]" title={vendor.dcaCategory}>{vendor.dcaCategory}</Badge>}
                                                 </div>
                                                 <div className="flex items-center gap-1 text-muted-foreground">
                                                     <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
