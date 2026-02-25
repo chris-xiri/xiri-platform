@@ -200,15 +200,48 @@ async function getPlaceDetails(placeId: string): Promise<PlacesEnrichment | null
     };
 }
 
+// ── Helpers: Name Cleanup ──
+
+/**
+ * Strip common legal suffixes from entity names to improve Google matching.
+ * "3442 JANITORIAL SERVICES CORP." → "3442 Janitorial Services"
+ */
+function stripLegalSuffixes(name: string): string {
+    return name
+        .replace(/\b(inc\.?|corp\.?|llc\.?|ltd\.?|l\.?l\.?c\.?|co\.?|company|incorporated|corporation|limited)\b\.?/gi, '')
+        .replace(/[.,]+$/g, '')   // trailing punctuation
+        .replace(/\s{2,}/g, ' ')  // collapse whitespace
+        .trim();
+}
+
+/**
+ * Validate a Places result against the expected state.
+ * Returns true if valid, false if it's a wrong-state match.
+ */
+function validateResultState(details: PlacesEnrichment, expectedState?: string): boolean {
+    if (!expectedState || !details.formattedAddress) return true;
+    const resultState = extractStateFromAddress(details.formattedAddress);
+    if (resultState && resultState !== expectedState.toUpperCase().trim()) {
+        console.warn(
+            `Places enrichment discarded: expected ${expectedState.toUpperCase()} but got ${resultState} (${details.formattedAddress})`
+        );
+        return false;
+    }
+    return true;
+}
+
 // ── Public API ──
 
 /** Cache to avoid duplicate API calls for the same property */
 const cache = new Map<string, PlacesEnrichment | null>();
 
 /**
- * Enrich a property with Google Places data.
- * Uses the address + business name (if available) as the search query.
- * Results are cached per-address to avoid duplicate API calls.
+ * Enrich a vendor with Google Places data using a cascading search strategy:
+ *
+ * 1. Try cleaned entity name + location (strips "Inc.", "Corp.", "LLC", etc.)
+ * 2. If no match, try address-only (finds whatever business operates there)
+ *
+ * Results are cached per-query to avoid duplicate API calls.
  */
 export async function enrichWithGooglePlaces(
     address: string,
@@ -221,45 +254,47 @@ export async function enrichWithGooglePlaces(
         return null;
     }
 
-    // Build search query
     const location = [address, city, state].filter(Boolean).join(', ');
-    const query = businessName ? `${businessName} ${location}` : location;
-
-    // Check cache
-    const cacheKey = query.toLowerCase().trim();
+    const cacheKey = `${businessName || ''}|${location}`.toLowerCase().trim();
     if (cache.has(cacheKey)) {
         return cache.get(cacheKey) || null;
     }
 
+    const biasCenter = resolveLocationBias(city, state);
+
     try {
-        // Resolve geographic bias from vendor city/state
-        const biasCenter = resolveLocationBias(city, state);
+        // ── Try 1: Cleaned entity name + location ──
+        if (businessName) {
+            const cleanName = stripLegalSuffixes(businessName);
+            const query1 = `${cleanName} ${location}`;
+            const result1 = await textSearchPlace(query1, biasCenter);
 
-        // Step 1: Text search to find the place (with location bias)
-        const searchResult = await textSearchPlace(query, biasCenter);
-        if (!searchResult) {
-            cache.set(cacheKey, null);
-            return null;
-        }
-
-        // Step 2: Get full details
-        const details = await getPlaceDetails(searchResult.placeId);
-
-        // Step 3: Post-search state validation — discard wrong-state matches
-        if (details && state && details.formattedAddress) {
-            const resultState = extractStateFromAddress(details.formattedAddress);
-            const expectedState = state.toUpperCase().trim();
-            if (resultState && resultState !== expectedState) {
-                console.warn(
-                    `Places enrichment discarded: expected ${expectedState} but got ${resultState} for "${businessName}" (${details.formattedAddress})`
-                );
-                cache.set(cacheKey, null);
-                return null;
+            if (result1) {
+                const details = await getPlaceDetails(result1.placeId);
+                if (details && validateResultState(details, state)) {
+                    cache.set(cacheKey, details);
+                    return details;
+                }
             }
         }
 
-        cache.set(cacheKey, details);
-        return details;
+        // ── Try 2: Address-only (find whatever business is at this address) ──
+        if (address && city) {
+            const query2 = location; // just the address without business name
+            const result2 = await textSearchPlace(query2, biasCenter);
+
+            if (result2) {
+                const details = await getPlaceDetails(result2.placeId);
+                if (details && validateResultState(details, state)) {
+                    cache.set(cacheKey, details);
+                    return details;
+                }
+            }
+        }
+
+        // No valid match found
+        cache.set(cacheKey, null);
+        return null;
     } catch (err) {
         console.error('Google Places enrichment failed:', err);
         cache.set(cacheKey, null);

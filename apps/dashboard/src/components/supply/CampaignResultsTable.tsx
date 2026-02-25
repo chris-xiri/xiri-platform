@@ -94,6 +94,13 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
                     <h3 className={`font-semibold text-sm truncate ${dismissed ? 'line-through text-muted-foreground' : ''}`}>
                         {placesData?.name || vendor.businessName}
                     </h3>
+                    {/* Show registered entity name when Google found a different DBA */}
+                    {placesData?.name && vendor.businessName &&
+                        placesData.name.toLowerCase().replace(/[^a-z0-9]/g, '') !== vendor.businessName.toLowerCase().replace(/[^a-z0-9]/g, '') && (
+                            <p className="text-[10px] text-muted-foreground/70 truncate mt-0.5">
+                                Registered as: {vendor.businessName}
+                            </p>
+                        )}
                     <div className="flex items-center gap-2 mt-0.5">
                         <p className="text-xs text-muted-foreground truncate">
                             {vendor.city && vendor.state ? `${vendor.city}, ${vendor.state}` : vendor.address || 'N/A'}
