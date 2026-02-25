@@ -213,6 +213,316 @@
           "answer": "We have specific viral prevention protocols (electrostatic spraying) ready to deploy immediately upon notification of an illness."
         }
       ]
+    },
+    {
+      "slug": "dental-offices",
+      "name": "Dental Offices",
+      "heroTitle": "Facility Management for Dental Practices",
+      "heroSubtitle": "Sterile-grade cleaning that keeps your operatories compliant, your patients confident, and your schedule uninterrupted.",
+      "coreServices": [
+        "medical-office-cleaning",
+        "disinfecting-services",
+        "floor-care",
+        "waste-management",
+        "hvac-maintenance",
+        "handyman-services"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "Operatory Disinfection",
+          "description": "CDC-compliant surface disinfection between your last patient and your first morning appointment.",
+          "icon": "shield-check"
+        },
+        {
+          "title": "Amalgam Waste Compliance",
+          "description": "Proper handling and disposal of amalgam waste, sharps, and extracted materials per EPA and OSHA requirements.",
+          "icon": "shield"
+        },
+        {
+          "title": "One Invoice",
+          "description": "Janitorial, waste, HVAC, and maintenance consolidated into one predictable monthly bill.",
+          "icon": "invoice"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Do you understand dental office cleaning requirements?",
+          "answer": "Yes. Dental operatories require CDC-compliant disinfection of all patient contact surfaces, proper handling of sharps and amalgam waste, and OSHA-standard bloodborne pathogen protocols. Our contractors are specifically trained for these environments."
+        },
+        {
+          "question": "Can you clean without disrupting our schedule?",
+          "answer": "All cleaning is scheduled after your last patient. Our crews work overnight so your operatories are disinfected, floors are clean, and restrooms are restocked before your first morning appointment."
+        },
+        {
+          "question": "Do you handle dental-specific waste disposal?",
+          "answer": "Yes. We coordinate certified waste haulers for sharps containers, amalgam waste, and red-bag disposal in full compliance with EPA, OSHA, and state dental board requirements."
+        }
+      ]
+    },
+    {
+      "slug": "dialysis-centers",
+      "name": "Dialysis Centers",
+      "heroTitle": "Infection Control for Dialysis Facilities",
+      "heroSubtitle": "CMS-compliant cleaning and disinfection for high-acuity environments where infection prevention is non-negotiable.",
+      "coreServices": [
+        "medical-office-cleaning",
+        "disinfecting-services",
+        "floor-care",
+        "waste-management",
+        "hvac-maintenance",
+        "day-porter"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "CMS Compliant",
+          "description": "Environmental cleaning protocols that meet CMS Conditions for Coverage for ESRD facilities.",
+          "icon": "shield-check"
+        },
+        {
+          "title": "Bloodborne Pathogen Safety",
+          "description": "Contractors trained in OSHA BBP standards for environments with routine blood exposure.",
+          "icon": "shield"
+        },
+        {
+          "title": "Extended-Hour Support",
+          "description": "Day porters and split-shift cleaning for facilities that run patient chairs from 5am to late evening.",
+          "icon": "lightning"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Are your contractors trained for dialysis environments?",
+          "answer": "Yes. Dialysis centers have among the highest infection control standards in outpatient healthcare. Our contractors are trained in OSHA's Bloodborne Pathogen Standard and understand the specific disinfection requirements for treatment stations, water treatment areas, and isolation rooms."
+        },
+        {
+          "question": "Can you clean between patient shifts?",
+          "answer": "Yes. We provide split-shift and day porter services that handle station turnover cleaning between patient shifts without disrupting your treatment schedule."
+        }
+      ]
+    },
+    {
+      "slug": "veterinary-clinics",
+      "name": "Veterinary Clinics",
+      "heroTitle": "Facility Services for Veterinary Practices",
+      "heroSubtitle": "Odor control, kennel sanitation, and exam room disinfection to keep your clinic safe for animals and their owners.",
+      "coreServices": [
+        "commercial-cleaning",
+        "disinfecting-services",
+        "floor-care",
+        "pest-control",
+        "carpet-upholstery",
+        "hvac-maintenance"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "Odor Elimination",
+          "description": "Enzymatic treatments and deep extraction cleaning to eliminate pet odors from floors, furniture, and fabrics.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Kennel & Run Sanitation",
+          "description": "Nightly disinfection of boarding areas, runs, and isolation rooms to prevent cross-contamination between animals.",
+          "icon": "shield"
+        },
+        {
+          "title": "Exam Room Disinfection",
+          "description": "Veterinary-grade disinfection of exam tables, floors, and high-touch surfaces following each day's appointments.",
+          "icon": "shield-check"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Do you use pet-safe cleaning products?",
+          "answer": "Yes. We use veterinary-approved disinfectants that are effective against parvo, kennel cough, and ringworm while being safe for animals once dry. No harsh residues in treatment or boarding areas."
+        },
+        {
+          "question": "Can you handle the odor challenges of a vet clinic?",
+          "answer": "Absolutely. We use enzymatic cleaners that break down organic odors at the molecular level — not just mask them. Combined with HVAC filter maintenance, we keep your clinic smelling fresh for clients."
+        },
+        {
+          "question": "Do you clean surgical suites in veterinary facilities?",
+          "answer": "Yes. Our contractors follow proper surgical suite disinfection protocols including surface disinfection, floor care, and waste removal appropriate for veterinary surgical environments."
+        }
+      ]
+    },
+    {
+      "slug": "fitness-gyms",
+      "name": "Fitness Centers & Gyms",
+      "heroTitle": "Facility Management for Fitness & Wellness",
+      "heroSubtitle": "Keep your equipment sanitized, your locker rooms fresh, and your members confident in your cleanliness standards.",
+      "coreServices": [
+        "commercial-cleaning",
+        "disinfecting-services",
+        "floor-care",
+        "carpet-upholstery",
+        "window-cleaning",
+        "hvac-maintenance"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "Equipment Sanitization",
+          "description": "Nightly wipe-down and disinfection of all cardio machines, weight equipment, and group fitness surfaces.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Locker Room Deep Clean",
+          "description": "Full restroom and locker room disinfection including showers, saunas, and wet areas to prevent mold and bacteria.",
+          "icon": "shield"
+        },
+        {
+          "title": "Member Confidence",
+          "description": "Visible cleanliness reduces cancellations. A facility that looks and smells fresh retains more members.",
+          "icon": "shield-check"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How do you handle gym equipment sanitization?",
+          "answer": "Our nightly crews wipe down every piece of equipment — cardio machines, weight benches, cable handles, and group fitness props — using EPA-registered disinfectants effective against staph, MRSA, and common gym bacteria."
+        },
+        {
+          "question": "Can you clean locker rooms and shower areas?",
+          "answer": "Yes. Locker room and wet area cleaning is one of the most critical services for gyms. We include tile scrubbing, drain cleaning, mirror polishing, and mold prevention in our standard scope."
+        },
+        {
+          "question": "Do you clean during or after business hours?",
+          "answer": "Both options are available. Day porters can handle restroom restocking and visible maintenance during operating hours, while deep cleaning happens overnight after close."
+        }
+      ]
+    },
+    {
+      "slug": "professional-offices",
+      "name": "Professional Offices",
+      "heroTitle": "Facility Management for Professional Offices",
+      "heroSubtitle": "Consistent, reliable cleaning for law firms, accounting practices, insurance agencies, and corporate suites.",
+      "coreServices": [
+        "janitorial-services",
+        "commercial-cleaning",
+        "floor-care",
+        "window-cleaning",
+        "carpet-upholstery",
+        "day-porter"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "Client-Ready Spaces",
+          "description": "Lobbies, conference rooms, and restrooms that make the right impression on every visitor.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Consistent Quality",
+          "description": "Same crew every night, Night Manager audits, and a dedicated FSM who handles everything.",
+          "icon": "shield-check"
+        },
+        {
+          "title": "One Invoice",
+          "description": "Janitorial, floor care, windows, and supplies consolidated into one simple monthly bill.",
+          "icon": "invoice"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Can you work around confidential documents and sensitive materials?",
+          "answer": "Yes. Our contractors are background-checked and trained to respect document security. They do not open drawers, move papers, or access locked areas. We can customize restricted zones in your scope."
+        },
+        {
+          "question": "Do you handle conference room setup and turnover?",
+          "answer": "Day porter services include conference room reset — chairs straightened, surfaces wiped, whiteboards cleaned, and trash emptied between meetings."
+        }
+      ]
+    },
+    {
+      "slug": "private-schools",
+      "name": "Private Schools",
+      "heroTitle": "Facility Management for Private & Charter Schools",
+      "heroSubtitle": "Safe, non-toxic cleaning for classrooms, gymnasiums, and campus facilities that parents and administrators trust.",
+      "coreServices": [
+        "daycare-cleaning",
+        "commercial-cleaning",
+        "floor-care",
+        "carpet-upholstery",
+        "window-cleaning",
+        "pest-control"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "Student Safety First",
+          "description": "Green Seal certified, non-toxic products used in every classroom, cafeteria, and gymnasium.",
+          "icon": "shield-check"
+        },
+        {
+          "title": "Campus-Wide Coverage",
+          "description": "Classrooms, offices, gymnasiums, restrooms, cafeterias, and common areas all under one managed service.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Background-Checked Crews",
+          "description": "Every contractor working on school grounds undergoes enhanced background screening appropriate for educational environments.",
+          "icon": "user-tie"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Are your products safe for classrooms with young children?",
+          "answer": "Yes. We require Green Seal or EPA Safer Choice certified products in all educational facilities. No harsh chemicals, no strong fumes — just effective, student-safe cleaning."
+        },
+        {
+          "question": "Can you handle summer deep cleaning?",
+          "answer": "Yes. We coordinate annual deep-cleaning projects during summer break including floor stripping and waxing, carpet extraction, window cleaning, and full-campus disinfection."
+        },
+        {
+          "question": "Do you provide custodial coverage during school hours?",
+          "answer": "Yes. Our day porter services handle cafeteria turnover, restroom restocking, spill response, and gym floor maintenance during the school day."
+        }
+      ]
+    },
+    {
+      "slug": "retail-storefronts",
+      "name": "Retail Storefronts",
+      "heroTitle": "Facility Services for Retail Locations",
+      "heroSubtitle": "First impressions drive foot traffic. Keep your storefront, floors, and restrooms customer-ready every single day.",
+      "coreServices": [
+        "commercial-cleaning",
+        "floor-care",
+        "window-cleaning",
+        "pressure-washing",
+        "day-porter",
+        "parking-lot-maintenance"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "Storefront Curb Appeal",
+          "description": "Clean windows, swept sidewalks, and pressure-washed exteriors that invite customers through the door.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "High-Traffic Floor Care",
+          "description": "Regular strip-and-wax, burnishing, or concrete polishing to keep retail floors safe and presentable under heavy foot traffic.",
+          "icon": "shield"
+        },
+        {
+          "title": "Restroom Standards",
+          "description": "Customer-facing restrooms checked and maintained throughout the day to prevent complaints and negative reviews.",
+          "icon": "shield-check"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Can you clean during business hours without disrupting customers?",
+          "answer": "Yes. Day porters handle restroom maintenance, spill cleanup, and visible sweeping during operating hours. Deep cleaning happens overnight after close."
+        },
+        {
+          "question": "Do you handle exterior maintenance for storefronts?",
+          "answer": "Yes. Window cleaning, sidewalk pressure washing, parking lot sweeping, and seasonal snow removal are all included in our managed service options."
+        }
+      ]
     }
   ],
   "services": [

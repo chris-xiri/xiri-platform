@@ -11,8 +11,15 @@ const FACILITY_TYPES = [
     { group: "Medical", label: "Medical Offices", slug: "medical-offices" },
     { group: "Medical", label: "Urgent Care Centers", slug: "urgent-care" },
     { group: "Medical", label: "Surgery Centers", slug: "surgery-centers" },
+    { group: "Medical", label: "Dental Offices", slug: "dental-offices" },
+    { group: "Medical", label: "Dialysis Centers", slug: "dialysis-centers" },
+    { group: "Medical", label: "Veterinary Clinics", slug: "veterinary-clinics" },
     { group: "Automotive", label: "Auto Dealerships", slug: "auto-dealerships" },
-    { group: "Education", label: "Daycares & Preschools", slug: "daycare-preschool" }
+    { group: "Education", label: "Daycares & Preschools", slug: "daycare-preschool" },
+    { group: "Education", label: "Private Schools", slug: "private-schools" },
+    { group: "Commercial", label: "Professional Offices", slug: "professional-offices" },
+    { group: "Commercial", label: "Fitness & Gyms", slug: "fitness-gyms" },
+    { group: "Commercial", label: "Retail Storefronts", slug: "retail-storefronts" },
 ];
 
 import { LeadFormModal } from './LeadFormModal';
