@@ -312,7 +312,8 @@
       "slug": "carpet-upholstery",
       "targetFacilityType": "other",
       "name": "Carpet & Upholstery",
-      "shortDescription": "Deep cleaning extraction to remove stains and allergens.",
+      "shortDescription": "Deep cleaning extraction to remove stains, allergens, and odors from commercial carpets and upholstered furniture.",
+      "longDescription": "Carpets and upholstered furniture in commercial facilities silently accumulate allergens, bacteria, and stains that daily vacuuming can't reach. Over time, this degrades indoor air quality, creates odors, and shortens the life of your flooring investment. Professional hot-water extraction and encapsulation cleaning removes embedded contaminants at the fiber level — extending carpet life by up to 50%, improving air quality scores, and restoring the professional appearance your clients and patients expect.",
       "valueProps": [
         {
           "icon": "🧹",
@@ -322,9 +323,47 @@
       ],
       "benefits": [
         "Stain Removal",
-        "Odor Elimination"
+        "Odor Elimination",
+        "Allergen Reduction",
+        "Extended Carpet Life"
       ],
-      "heroTitle": "Commercial Carpet Cleaning"
+      "features": [
+        {
+          "title": "Hot Water Extraction",
+          "description": "Truck-mounted steam cleaning penetrates deep into carpet fibers, dissolving embedded dirt, grease, and bacteria that vacuuming leaves behind.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Stain & Spot Treatment",
+          "description": "Pre-treatment of high-traffic zones, coffee spills, and stubborn stains using commercial-grade spotting agents before the main extraction.",
+          "icon": "shield"
+        },
+        {
+          "title": "Upholstery Restoration",
+          "description": "Waiting room chairs, lobby couches, and reception furniture cleaned with fabric-safe solutions that eliminate odors and restore appearance.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Allergen & Odor Control",
+          "description": "HEPA-grade filtration combined with antimicrobial treatments to neutralize pet dander, dust mites, mold spores, and trapped odors.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How often should commercial carpets be professionally cleaned?",
+          "answer": "For medical and high-traffic facilities, we recommend quarterly deep extraction. Offices with moderate traffic benefit from semi-annual cleaning. Our FSMs assess your space and build a schedule that balances cost and cleanliness."
+        },
+        {
+          "question": "Will the cleaning disrupt our business hours?",
+          "answer": "No. Our contractors perform all carpet and upholstery work after hours or on weekends. Drying time is typically 4–6 hours, so your facility is ready before the next business day."
+        },
+        {
+          "question": "Is hot water extraction safe for all carpet types?",
+          "answer": "Yes. Our contractors are trained on manufacturer specifications for every carpet type — from commercial loop pile to medical-grade sealed-back carpet tile. We adjust water temperature, pressure, and chemistry accordingly."
+        }
+      ],
+      "heroTitle": "Commercial Carpet & Upholstery Cleaning"
     },
     {
       "slug": "commercial-cleaning",

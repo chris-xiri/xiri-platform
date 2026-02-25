@@ -390,6 +390,7 @@ export interface SeoService {
     targetFacilityType: FacilityType; // Mapped to the immutable FacilityType enum
     name: string;
     shortDescription: string;
+    longDescription?: string;
 
     // Content Injection
     heroTitle?: string;
