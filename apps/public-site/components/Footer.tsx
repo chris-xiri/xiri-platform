@@ -15,9 +15,24 @@ const FOOTER_SECTIONS = [
         title: 'Services',
         links: [
             { label: 'Janitorial Services', href: '/services/janitorial-services' },
+            { label: 'Commercial Cleaning', href: '/services/commercial-cleaning' },
             { label: 'Floor Care', href: '/services/floor-care' },
+            { label: 'Window Cleaning', href: '/services/window-cleaning' },
+            { label: 'HVAC Maintenance', href: '/services/hvac-maintenance' },
+            { label: 'Pest Control', href: '/services/pest-control' },
+            { label: 'Snow & Ice Removal', href: '/services/snow-ice-removal' },
             { label: 'Disinfecting', href: '/services/disinfecting-services' },
-            { label: 'Day Porters', href: '/services/day-porter' },
+        ],
+    },
+    {
+        title: 'Solutions & Guides',
+        links: [
+            { label: 'Medical Facility Management', href: '/solutions/medical-facility-management' },
+            { label: 'Single-Tenant Maintenance', href: '/solutions/single-tenant-maintenance' },
+            { label: 'Vendor Management Alternative', href: '/solutions/vendor-management-alternative' },
+            { label: 'JCAHO Cleaning Guide', href: '/guides/jcaho-cleaning-requirements' },
+            { label: 'Cleaning Cost Guide', href: '/guides/commercial-cleaning-cost-guide' },
+            { label: 'In-House vs Outsourced', href: '/guides/inhouse-vs-outsourced-facility-management' },
         ],
     },
     {
@@ -37,7 +52,7 @@ export function Footer() {
         <footer className="bg-gray-900 text-gray-300">
             {/* Main Footer */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
                     {/* Brand Column */}
                     <div>
                         <Link href="/" className="text-white font-heading font-bold text-2xl tracking-tight">

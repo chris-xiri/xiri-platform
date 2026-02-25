@@ -21,6 +21,8 @@ export default function Navigation() {
     const pathname = usePathname();
     const router = useRouter();
     const [industriesOpen, setIndustriesOpen] = useState(false);
+    const [servicesOpen, setServicesOpen] = useState(false);
+    const [resourcesOpen, setResourcesOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
 
@@ -68,6 +70,42 @@ export default function Navigation() {
         return acc;
     }, {} as Record<string, typeof FACILITY_TYPES>);
 
+    const SERVICE_LINKS = {
+        'Core Services': [
+            { label: 'Janitorial Services', slug: 'janitorial-services' },
+            { label: 'Commercial Cleaning', slug: 'commercial-cleaning' },
+            { label: 'Floor Care', slug: 'floor-care' },
+            { label: 'Carpet & Upholstery', slug: 'carpet-upholstery' },
+            { label: 'Day Porters', slug: 'day-porter' },
+            { label: 'Disinfecting', slug: 'disinfecting-services' },
+        ],
+        'Building Maintenance': [
+            { label: 'Window Cleaning', slug: 'window-cleaning' },
+            { label: 'Pressure Washing', slug: 'pressure-washing' },
+            { label: 'HVAC Maintenance', slug: 'hvac-maintenance' },
+            { label: 'Pest Control', slug: 'pest-control' },
+            { label: 'Snow & Ice Removal', slug: 'snow-ice-removal' },
+            { label: 'Handyman Services', slug: 'handyman-services' },
+        ],
+    };
+
+    const RESOURCE_LINKS = [
+        {
+            group: 'Solutions', items: [
+                { label: 'Medical Facility Management', href: '/solutions/medical-facility-management' },
+                { label: 'Single-Tenant Building Maintenance', href: '/solutions/single-tenant-maintenance' },
+                { label: 'Vendor Management Alternative', href: '/solutions/vendor-management-alternative' },
+            ]
+        },
+        {
+            group: 'Guides', items: [
+                { label: 'JCAHO Cleaning Requirements', href: '/guides/jcaho-cleaning-requirements' },
+                { label: 'Commercial Cleaning Costs', href: '/guides/commercial-cleaning-cost-guide' },
+                { label: 'In-House vs Outsourced', href: '/guides/inhouse-vs-outsourced-facility-management' },
+            ]
+        },
+    ];
+
     return (
         <header className="fixed top-0 z-50 w-full font-sans shadow-md">
             {/* Trust Bar - Sticky Top */}
@@ -110,7 +148,7 @@ export default function Navigation() {
                         </Link>
 
                         {/* Navigation Links */}
-                        <div className="hidden md:flex items-center space-x-10">
+                        <div className="hidden md:flex items-center space-x-8">
                             {/* Industries Dropdown */}
                             <div
                                 className="relative group"
@@ -148,6 +186,85 @@ export default function Navigation() {
                                         </div>
                                         <div className="bg-gray-50 px-4 py-3 text-xs text-gray-500 border-t border-gray-100">
                                             Trusted by 500+ NYC facilities
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Services Dropdown */}
+                            <div
+                                className="relative group"
+                                onMouseEnter={() => setServicesOpen(true)}
+                                onMouseLeave={() => setServicesOpen(false)}
+                            >
+                                <button className="text-gray-600 font-medium hover:text-sky-600 transition-colors flex items-center gap-1.5 py-2 group-hover:text-sky-600">
+                                    Services
+                                    <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                <div className={`absolute top-full -left-4 pt-4 w-[480px] transition-all duration-200 origin-top-left ${servicesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
+                                    <div className="bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden ring-1 ring-black/5">
+                                        <div className="p-2 grid grid-cols-2 gap-1">
+                                            {Object.entries(SERVICE_LINKS).map(([group, services]) => (
+                                                <div key={group} className="pb-2">
+                                                    <div className="px-3 py-1.5 text-xs font-bold text-sky-500 uppercase tracking-wider">
+                                                        {group}
+                                                    </div>
+                                                    {services.map((service) => (
+                                                        <Link
+                                                            key={service.slug}
+                                                            href={`/services/${service.slug}`}
+                                                            className="block px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 transition-colors"
+                                                            onClick={() => handleNavClick(`/services/${service.slug}`, service.label)}
+                                                        >
+                                                            {service.label}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="bg-gray-50 px-4 py-3 text-xs text-gray-500 border-t border-gray-100">
+                                            <Link href="/services/janitorial-services" className="text-sky-600 hover:text-sky-700 font-medium">View all services →</Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Resources Dropdown */}
+                            <div
+                                className="relative group"
+                                onMouseEnter={() => setResourcesOpen(true)}
+                                onMouseLeave={() => setResourcesOpen(false)}
+                            >
+                                <button className="text-gray-600 font-medium hover:text-sky-600 transition-colors flex items-center gap-1.5 py-2 group-hover:text-sky-600">
+                                    Resources
+                                    <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                <div className={`absolute top-full -left-4 pt-4 w-80 transition-all duration-200 origin-top-left ${resourcesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
+                                    <div className="bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden ring-1 ring-black/5">
+                                        <div className="p-2 space-y-1">
+                                            {RESOURCE_LINKS.map(({ group, items }) => (
+                                                <div key={group} className="pb-2 last:pb-0">
+                                                    <div className="px-3 py-1.5 text-xs font-bold text-sky-500 uppercase tracking-wider">
+                                                        {group}
+                                                    </div>
+                                                    {items.map((item) => (
+                                                        <Link
+                                                            key={item.href}
+                                                            href={item.href}
+                                                            className="block px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 transition-colors"
+                                                            onClick={() => handleNavClick(item.href, item.label)}
+                                                        >
+                                                            {item.label}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
