@@ -169,12 +169,12 @@ export default function Navigation() {
                                     </svg>
                                 </button>
 
-                                <div className={`absolute top-full -left-4 pt-4 w-72 transition-all duration-200 origin-top-left ${industriesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
+                                <div className={`absolute top-full -left-4 pt-4 w-[520px] transition-all duration-200 origin-top-left ${industriesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
                                     <div className="bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden ring-1 ring-black/5">
-                                        <div className="p-2 space-y-1">
+                                        <div className="p-2 grid grid-cols-2 gap-1">
                                             {/* Render Groups */}
                                             {Object.entries(groupedFacilities).map(([group, facilities]) => (
-                                                <div key={group} className="pb-2 last:pb-0">
+                                                <div key={group} className="pb-2">
                                                     <div className="px-3 py-1.5 text-xs font-bold text-sky-500 uppercase tracking-wider">
                                                         {group}
                                                     </div>
@@ -233,7 +233,7 @@ export default function Navigation() {
                                             ))}
                                         </div>
                                         <div className="bg-gray-50 px-4 py-3 text-xs text-gray-500 border-t border-gray-100">
-                                            <Link href="/services/janitorial-services" className="text-sky-600 hover:text-sky-700 font-medium">View all services →</Link>
+                                            Roof-to-floor coverage, one invoice
                                         </div>
                                     </div>
                                 </div>
