@@ -130,8 +130,10 @@ async function backfill() {
         }
 
         await templateRef.update({
-            stats: stats[templateId],
-            'stats.lastUpdated': new Date(),
+            stats: {
+                ...stats[templateId],
+                lastUpdated: new Date(),
+            },
         });
         written++;
     }
