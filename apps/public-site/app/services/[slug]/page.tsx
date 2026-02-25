@@ -178,6 +178,49 @@ export default async function ServicePage({ params }: Props) {
                 </section>
                 {/* FAQs */}
                 <FAQ items={service.faqs || []} />
+
+                {/* ═══ OTHER SERVICES (cross-link) ═══ */}
+                {(() => {
+                    const otherServices = seoData.services.filter(s => s.slug !== service.slug).slice(0, 6);
+                    if (otherServices.length === 0) return null;
+                    return (
+                        <section className="py-16 bg-white border-t border-gray-200">
+                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                                    Explore Our Other Services
+                                </h2>
+                                <p className="text-gray-500 text-center mb-10 max-w-2xl mx-auto">
+                                    From daily janitorial to specialized floor care, XIRI manages every aspect of your facility under one roof.
+                                </p>
+                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {otherServices.map((s: any) => (
+                                        <Link key={s.slug} href={`/services/${s.slug}`} className="block bg-gray-50 hover:bg-sky-50 rounded-xl p-5 border border-gray-200 hover:border-sky-300 transition-colors group">
+                                            <h3 className="font-bold text-gray-900 group-hover:text-sky-700 transition-colors">{s.name}</h3>
+                                            <p className="text-sm text-gray-500 mt-1">{s.shortDescription?.slice(0, 100)}…</p>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+                    );
+                })()}
+
+                {/* ═══ FINAL CTA ═══ */}
+                <section className="py-16 bg-gray-50 border-t border-gray-200">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                            Ready to Get Started?
+                        </h2>
+                        <p className="text-xl text-gray-600 mb-8">
+                            Book a free site audit. We'll walk your facility, build a custom scope, and match you with vetted contractors — all under one invoice.
+                        </p>
+                        <CTAButton
+                            href="/#audit"
+                            text="Get Your Free Site Audit"
+                            className="inline-block bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
+                        />
+                    </div>
+                </section>
             </div>
         );
     }
