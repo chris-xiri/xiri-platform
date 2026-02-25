@@ -7,7 +7,7 @@ import { db, functions } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Sparkles, CheckCircle, XCircle, RefreshCw, TrendingUp, TrendingDown, Mail, MousePointerClick, Eye, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
+import { BarChart3, Sparkles, CheckCircle, XCircle, RefreshCw, Mail, MousePointerClick, Eye, AlertTriangle, ChevronDown, ChevronRight, Copy } from 'lucide-react';
 
 interface TemplateStats {
     sent: number;
@@ -43,22 +43,29 @@ interface Template {
     lastOptimizedAt?: any;
 }
 
-// Group templates by their base outreach step (e.g. vendor_outreach_2 groups _warm and _cold)
-function groupTemplates(templates: Template[]): { label: string; base: Template | null; variants: Template[] }[] {
+// Variant color schemes for visual distinction
+const VARIANT_COLORS: Record<string, { bg: string; border: string; badge: string; badgeText: string }> = {
+    base: { bg: 'bg-white dark:bg-card', border: 'border-border', badge: 'bg-sky-100 dark:bg-sky-900/30', badgeText: 'text-sky-700 dark:text-sky-300' },
+    warm: { bg: 'bg-orange-50/50 dark:bg-orange-950/10', border: 'border-orange-200 dark:border-orange-800', badge: 'bg-orange-100 dark:bg-orange-900/30', badgeText: 'text-orange-700 dark:text-orange-300' },
+    cold: { bg: 'bg-blue-50/50 dark:bg-blue-950/10', border: 'border-blue-200 dark:border-blue-800', badge: 'bg-blue-100 dark:bg-blue-900/30', badgeText: 'text-blue-700 dark:text-blue-300' },
+};
+
+function getVariantType(id: string): 'warm' | 'cold' | 'base' {
+    if (id.includes('_warm')) return 'warm';
+    if (id.includes('_cold')) return 'cold';
+    return 'base';
+}
+
+// Group templates by their base outreach step
+function groupTemplates(templates: Template[]): { label: string; stepNumber: number; base: Template | null; variants: Template[] }[] {
     const groups: Record<string, { base: Template | null; variants: Template[] }> = {};
 
     for (const t of templates) {
-        // Match pattern: vendor_outreach_N or vendor_outreach_N_warm/cold
         const match = t.id.match(/^(vendor_outreach_\d+)(?:_(.+))?$/);
-        if (!match) {
-            // Standalone template
-            groups[t.id] = groups[t.id] || { base: null, variants: [] };
-            groups[t.id].base = t;
-            continue;
-        }
+        if (!match) continue; // Skip non-outreach templates entirely
 
         const baseId = match[1];
-        const variant = match[2]; // 'warm', 'cold', or undefined
+        const variant = match[2];
         groups[baseId] = groups[baseId] || { base: null, variants: [] };
 
         if (!variant) {
@@ -68,13 +75,13 @@ function groupTemplates(templates: Template[]): { label: string; base: Template 
         }
     }
 
-    // Build sorted array with labels
     return Object.entries(groups)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, group]) => {
+            const stepNum = parseInt(key.match(/\d+$/)?.[0] || '0');
             const base = group.base;
-            const label = base?.name || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-            return { label, base, variants: group.variants };
+            const label = base?.name || `Outreach Step ${stepNum}`;
+            return { label, stepNumber: stepNum, base, variants: group.variants };
         });
 }
 
@@ -83,7 +90,7 @@ export default function TemplateAnalyticsPage() {
     const [loading, setLoading] = useState(true);
     const [optimizing, setOptimizing] = useState<string | null>(null);
     const [applying, setApplying] = useState<string | null>(null);
-    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+    const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
 
     useEffect(() => { fetchTemplates(); }, []);
 
@@ -92,12 +99,13 @@ export default function TemplateAnalyticsPage() {
         const snap = await getDocs(collection(db, 'templates'));
         const data = snap.docs
             .map(d => ({ id: d.id, ...d.data() } as Template))
-            .filter(t => t.category === 'vendor' || t.category === 'vendor_email')
-            .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            // Only show actual email templates, not agent prompts
+            .filter(t => t.id.startsWith('vendor_outreach_'))
+            .sort((a, b) => (a.id || '').localeCompare(b.id || ''));
         setTemplates(data);
         // Auto-expand all groups on first load
         const grouped = groupTemplates(data);
-        setExpandedGroups(new Set(grouped.map(g => g.label)));
+        setExpandedGroups(new Set(grouped.map(g => g.stepNumber)));
         setLoading(false);
     }
 
@@ -106,7 +114,7 @@ export default function TemplateAnalyticsPage() {
         try {
             const fn = httpsCallable(functions, 'optimizeTemplate');
             await fn({ templateId });
-            await fetchTemplates(); // reload
+            await fetchTemplates();
         } catch (err) {
             console.error('Optimize failed:', err);
             alert('Failed to optimize. Check console.');
@@ -122,7 +130,6 @@ export default function TemplateAnalyticsPage() {
                 subject: suggestion.subject,
                 body: suggestion.body,
                 updatedAt: new Date(),
-                // Reset stats for the new version
                 stats: { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 },
             });
             await fetchTemplates();
@@ -142,21 +149,22 @@ export default function TemplateAnalyticsPage() {
 
     function rate(n: number, d: number): string {
         if (d === 0) return '—';
-        return `${((n / d) * 100).toFixed(1)}%`;
+        const pct = Math.min((n / d) * 100, 100); // Cap at 100%
+        return `${pct.toFixed(1)}%`;
     }
 
     function getRateColor(n: number, d: number, threshold: number): string {
         if (d === 0) return 'text-muted-foreground';
-        const pct = n / d;
-        if (pct >= threshold) return 'text-green-600';
-        if (pct >= threshold * 0.7) return 'text-amber-600';
-        return 'text-red-600';
+        const pct = Math.min(n / d, 1); // Cap at 1.0
+        if (pct >= threshold) return 'text-green-600 dark:text-green-400';
+        if (pct >= threshold * 0.7) return 'text-amber-600 dark:text-amber-400';
+        return 'text-red-600 dark:text-red-400';
     }
 
-    const toggleGroup = (label: string) => {
+    const toggleGroup = (stepNumber: number) => {
         setExpandedGroups(prev => {
             const next = new Set(prev);
-            if (next.has(label)) { next.delete(label); } else { next.add(label); }
+            if (next.has(stepNumber)) { next.delete(stepNumber); } else { next.add(stepNumber); }
             return next;
         });
     };
@@ -176,7 +184,7 @@ export default function TemplateAnalyticsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => {
-                        setExpandedGroups(prev => prev.size === groups.length ? new Set() : new Set(groups.map(g => g.label)));
+                        setExpandedGroups(prev => prev.size === groups.length ? new Set() : new Set(groups.map(g => g.stepNumber)));
                     }} className="gap-1 text-xs">
                         {expandedGroups.size === groups.length ? 'Collapse All' : 'Expand All'}
                     </Button>
@@ -233,7 +241,7 @@ export default function TemplateAnalyticsPage() {
             {/* Grouped Template Cards */}
             <div className="space-y-3">
                 {groups.map(group => {
-                    const isExpanded = expandedGroups.has(group.label);
+                    const isExpanded = expandedGroups.has(group.stepNumber);
                     const allTemplates = [group.base, ...group.variants].filter(Boolean) as Template[];
                     const groupStats = allTemplates.reduce((acc, t) => ({
                         sent: acc.sent + (t.stats?.sent || 0),
@@ -243,13 +251,11 @@ export default function TemplateAnalyticsPage() {
                         bounced: acc.bounced + (t.stats?.bounced || 0),
                     }), { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 });
 
-                    const isUnderperforming = groupStats.sent >= 10 && (groupStats.opened / groupStats.sent) < 0.3;
-
                     return (
-                        <Card key={group.label} className={isUnderperforming ? 'border-amber-300' : ''}>
-                            {/* Group Header — always visible */}
+                        <Card key={group.stepNumber}>
+                            {/* Group Header */}
                             <button
-                                onClick={() => toggleGroup(group.label)}
+                                onClick={() => toggleGroup(group.stepNumber)}
                                 className="w-full text-left px-5 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors rounded-t-lg"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -257,17 +263,13 @@ export default function TemplateAnalyticsPage() {
                                         ? <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                                         : <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                                     }
-                                    <div className="min-w-0">
+                                    <div className="min-w-0 flex items-center gap-2">
+                                        <Badge variant="outline" className="text-[10px] font-mono">Step {group.stepNumber}</Badge>
                                         <span className="font-semibold text-sm">{group.label}</span>
                                         {group.variants.length > 0 && (
-                                            <span className="text-xs text-muted-foreground ml-2">
-                                                ({group.variants.length} variant{group.variants.length > 1 ? 's' : ''})
+                                            <span className="text-xs text-muted-foreground">
+                                                + {group.variants.length} variant{group.variants.length > 1 ? 's' : ''}
                                             </span>
-                                        )}
-                                        {isUnderperforming && (
-                                            <Badge variant="outline" className="ml-2 text-amber-600 border-amber-300 text-[10px] gap-1">
-                                                <AlertTriangle className="w-3 h-3" /> Low Performance
-                                            </Badge>
                                         )}
                                     </div>
                                 </div>
@@ -281,7 +283,7 @@ export default function TemplateAnalyticsPage() {
                                         {rate(groupStats.clicked, groupStats.opened)} click
                                     </span>
                                     {groupStats.bounced > 0 && (
-                                        <span className="text-red-600">{groupStats.bounced} bounced</span>
+                                        <span className="text-red-600 dark:text-red-400">{groupStats.bounced} bounced</span>
                                     )}
                                 </div>
                             </button>
@@ -300,7 +302,6 @@ export default function TemplateAnalyticsPage() {
                                             onDismiss={handleDismissSuggestions}
                                             optimizing={optimizing}
                                             applying={applying}
-                                            isVariant={t.id.includes('_warm') || t.id.includes('_cold')}
                                         />
                                     ))}
                                 </CardContent>
@@ -314,7 +315,7 @@ export default function TemplateAnalyticsPage() {
 }
 
 /* ─── Individual Template Row ─── */
-function TemplateRow({ template: t, rate, getRateColor, onOptimize, onApply, onDismiss, optimizing, applying, isVariant }: {
+function TemplateRow({ template: t, rate, getRateColor, onOptimize, onApply, onDismiss, optimizing, applying }: {
     template: Template;
     rate: (n: number, d: number) => string;
     getRateColor: (n: number, d: number, threshold: number) => string;
@@ -323,21 +324,25 @@ function TemplateRow({ template: t, rate, getRateColor, onOptimize, onApply, onD
     onDismiss: (id: string) => void;
     optimizing: string | null;
     applying: string | null;
-    isVariant: boolean;
 }) {
     const s = t.stats || { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 };
     const hasAI = t.aiSuggestions && t.aiSuggestions.length > 0;
     const latestAI = hasAI ? t.aiSuggestions![t.aiSuggestions!.length - 1] : null;
     const [showAI, setShowAI] = useState(false);
+    const [showBody, setShowBody] = useState(false);
+
+    const variantType = getVariantType(t.id);
+    const colors = VARIANT_COLORS[variantType];
 
     return (
-        <div className={`rounded-lg border p-4 space-y-3 ${isVariant ? 'ml-6 border-dashed' : ''}`}>
+        <div className={`rounded-lg border p-4 space-y-3 ${colors.bg} ${colors.border} ${variantType !== 'base' ? 'ml-4' : ''}`}>
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2 min-w-0">
+                    <Badge className={`${colors.badge} ${colors.badgeText} text-[10px] shadow-none border-none`}>
+                        {variantType === 'warm' ? '🔥 Warm' : variantType === 'cold' ? '❄️ Cold' : '📧 Base'}
+                    </Badge>
                     <span className="text-sm font-medium truncate">{t.name}</span>
-                    {t.id.includes('_warm') && <Badge className="bg-orange-100 text-orange-700 text-[10px] shadow-none">Warm</Badge>}
-                    {t.id.includes('_cold') && <Badge className="bg-blue-100 text-blue-700 text-[10px] shadow-none">Cold</Badge>}
                     <code className="text-[9px] text-muted-foreground bg-muted px-1 rounded hidden sm:inline">{t.id}</code>
                 </div>
                 <div className="flex items-center gap-1">
@@ -363,9 +368,26 @@ function TemplateRow({ template: t, rate, getRateColor, onOptimize, onApply, onD
             </div>
 
             {/* Subject Line */}
-            <p className="text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">Subject:</span> {t.subject}
-            </p>
+            <div className="text-xs">
+                <span className="font-medium text-foreground">Subject:</span>{' '}
+                <span className="text-muted-foreground">{t.subject}</span>
+            </div>
+
+            {/* Email Body (collapsible) */}
+            <div>
+                <button
+                    onClick={() => setShowBody(!showBody)}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    {showBody ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                    {showBody ? 'Hide email body' : 'Show email body'}
+                </button>
+                {showBody && (
+                    <div className="mt-2 p-3 bg-muted/50 rounded-md border text-xs text-foreground whitespace-pre-wrap font-mono leading-relaxed max-h-[300px] overflow-y-auto">
+                        {t.body || 'No body content'}
+                    </div>
+                )}
+            </div>
 
             {/* Stats Row */}
             <div className="grid grid-cols-5 gap-2 text-center">
@@ -392,7 +414,7 @@ function TemplateRow({ template: t, rate, getRateColor, onOptimize, onApply, onD
                     <p className="text-[10px] text-muted-foreground uppercase">Clicked</p>
                 </div>
                 <div>
-                    <p className={`text-base font-bold ${s.bounced > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                    <p className={`text-base font-bold ${s.bounced > 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
                         {s.bounced}
                     </p>
                     <p className="text-[10px] text-muted-foreground uppercase">Bounced</p>
@@ -407,12 +429,7 @@ function TemplateRow({ template: t, rate, getRateColor, onOptimize, onApply, onD
                             <Sparkles className="w-4 h-4 text-purple-600" />
                             <span className="text-sm font-medium text-purple-800 dark:text-purple-300">AI Suggestions</span>
                         </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs text-muted-foreground"
-                            onClick={() => onDismiss(t.id)}
-                        >
+                        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => onDismiss(t.id)}>
                             Dismiss
                         </Button>
                     </div>
@@ -438,7 +455,7 @@ function TemplateRow({ template: t, rate, getRateColor, onOptimize, onApply, onD
                                 </Button>
                             </div>
                             <p className="text-xs"><span className="font-medium">Subject:</span> {sug.subject}</p>
-                            <p className="text-[11px] text-muted-foreground line-clamp-3">{sug.body}</p>
+                            <p className="text-[11px] text-muted-foreground whitespace-pre-wrap">{sug.body}</p>
                             <p className="text-[10px] text-purple-600 dark:text-purple-400 italic">{sug.rationale}</p>
                         </div>
                     ))}

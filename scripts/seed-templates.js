@@ -98,7 +98,7 @@ Return ONLY JSON:
 async function seedTemplate() {
   console.log("Seeding templates...");
   try {
-    await db.collection('templates').doc('recruiter_analysis_prompt').set({
+    await db.collection('prompts').doc('recruiter_analysis_prompt').set({
       name: "Recruiter Analysis Agent",
       content: PROMPT_CONTENT,
       version: "1.0",
@@ -106,7 +106,7 @@ async function seedTemplate() {
     });
     console.log("✅ Successfully seeded 'recruiter_analysis_prompt'.");
 
-    await db.collection('templates').doc('outreach_generation_prompt').set({
+    await db.collection('prompts').doc('outreach_generation_prompt').set({
       name: "Outreach Generation Agent",
       content: OUTREACH_PROMPT_CONTENT,
       version: "1.0",
@@ -198,7 +198,7 @@ Return ONLY JSON:
 }
 `;
 
-    await db.collection('templates').doc('sales_outreach_prompt').set({
+    await db.collection('prompts').doc('sales_outreach_prompt').set({
       name: "Sales Lead Outreach (B2B)",
       content: SALES_OUTREACH_PROMPT,
       version: "1.0",
@@ -206,7 +206,7 @@ Return ONLY JSON:
     });
     console.log("✅ Successfully seeded 'sales_outreach_prompt'.");
 
-    await db.collection('templates').doc('sales_followup_prompt').set({
+    await db.collection('prompts').doc('sales_followup_prompt').set({
       name: "Sales Lead Follow-Up (B2B)",
       content: SALES_FOLLOWUP_PROMPT,
       version: "1.0",

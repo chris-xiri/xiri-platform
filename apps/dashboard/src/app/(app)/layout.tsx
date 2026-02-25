@@ -287,16 +287,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             <Monitor className="w-4 h-4" /> System
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        {showAdminNav && (
-                            <>
-                                <DropdownMenuItem asChild>
-                                    <Link href="/admin/users" className="flex items-center gap-2 cursor-pointer">
-                                        <Settings className="w-4 h-4" /> Admin Settings
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                            </>
-                        )}
                         <DropdownMenuItem onClick={() => signOut()} className="flex items-center gap-2 text-red-600 cursor-pointer">
                             <LogOut className="w-4 h-4" /> Logout
                         </DropdownMenuItem>
