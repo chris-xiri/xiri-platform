@@ -97,5 +97,35 @@ export default function sitemap(): MetadataRoute.Sitemap {
         });
     });
 
+    // 6. Solutions Pages (/solutions/[slug])
+    const solutionSlugs = [
+        'medical-facility-management',
+        'single-tenant-maintenance',
+        'vendor-management-alternative',
+    ];
+    solutionSlugs.forEach((slug) => {
+        sitemapEntries.push({
+            url: `${BASE_URL}/solutions/${slug}`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.8,
+        });
+    });
+
+    // 7. Guide Pages (/guides/[slug])
+    const guideSlugs = [
+        'jcaho-cleaning-requirements',
+        'commercial-cleaning-cost-guide',
+        'inhouse-vs-outsourced-facility-management',
+    ];
+    guideSlugs.forEach((slug) => {
+        sitemapEntries.push({
+            url: `${BASE_URL}/guides/${slug}`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.7,
+        });
+    });
+
     return sitemapEntries;
 }
