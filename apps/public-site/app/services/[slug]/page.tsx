@@ -151,7 +151,6 @@ export default async function ServicePage({ params }: Props) {
                 />
                 <ValuePropsSection
                     title={`Why Choose XIRI for ${service.name}`}
-                    items={service.valueProps || []}
                 />
                 {/* Features */}
                 <section className="py-16 bg-gray-50">
