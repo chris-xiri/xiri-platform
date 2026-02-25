@@ -130,7 +130,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                 </TableCell>
             )}
             {/* Vendor Name + Contact + Capabilities */}
-            <TableCell className="py-2 min-w-[200px]">
+            <TableCell className="py-2">
                 <Link href={detailLink} onClick={handleRowClick} className="block group cursor-pointer">
                     <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-1.5">
@@ -139,7 +139,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                             ) : null}
                             <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{vendor.businessName}</span>
                         </div>
-                        <span className="text-xs text-muted-foreground truncate max-w-[220px]">
+                        <span className="text-xs text-muted-foreground truncate block">
                             {vendor.contactName || vendor.email || "No contact info"}
                         </span>
                         {/* Inline capabilities */}
@@ -159,7 +159,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                 </Link>
             </TableCell>
             {/* Location (merged City, State, Zip) */}
-            <TableCell className="py-2 text-center min-w-[120px]">
+            <TableCell className="py-2 text-center hidden lg:table-cell">
                 <span className="text-sm">{locationStr}</span>
             </TableCell>
             {/* AI Score */}
@@ -169,7 +169,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                 </div>
             </TableCell>
             {/* Status + Engagement Signal */}
-            <TableCell className="py-2 text-center min-w-[140px]">
+            <TableCell className="py-2 text-center">
                 <div className="flex flex-col items-center gap-1">
                     <Badge className={`${getStatusColor(vendor.status, vendor.outreachStatus)} shadow-none text-[10px] px-1.5 py-0 h-5`}>
                         {getStatusLabel(vendor.status, vendor.outreachStatus)}
@@ -187,7 +187,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                 </div>
             </TableCell>
             {/* Actions */}
-            <TableCell className="text-right py-2 min-w-[100px]">
+            <TableCell className="text-right py-2">
                 {isGrayedOut ? (
                     <Badge variant="outline" className="text-[10px] text-muted-foreground border-slate-300">
                         Already in CRM

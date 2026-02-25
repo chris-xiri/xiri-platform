@@ -332,8 +332,8 @@ export default function VendorList({
                 ) : (
                     <>
                         {/* Desktop Table View */}
-                        <div className="hidden md:block flex-1 overflow-auto">
-                            <table className="w-full caption-bottom text-sm text-foreground">
+                        <div className="hidden md:block flex-1 overflow-y-auto">
+                            <table className="w-full caption-bottom text-sm text-foreground table-fixed">
                                 <TableHeader className="bg-muted/50 shadow-sm">
                                     <TableRow className="border-b border-border hover:bg-muted/50">
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 w-8 shadow-sm text-center">
@@ -344,7 +344,7 @@ export default function VendorList({
                                             />
                                         </TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-xs">Vendor</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Location</TableHead>
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs hidden lg:table-cell">Location</TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs w-16">Score</TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Status</TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Actions</TableHead>
