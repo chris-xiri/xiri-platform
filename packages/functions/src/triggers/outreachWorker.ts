@@ -194,7 +194,8 @@ async function handleSend(task: QueueItem) {
             htmlBody,
             undefined,   // no attachments
             undefined,   // default from
-            task.vendorId ?? undefined  // tag email with vendorId for webhook tracking
+            task.vendorId ?? undefined,  // tag email with vendorId for webhook tracking
+            task.metadata.templateId ?? undefined  // tag with templateId for stats tracking
         );
         sendSuccess = result.success;
         resendId = result.resendId;
@@ -240,6 +241,19 @@ async function handleSend(task: QueueItem) {
             outreachSentAt: new Date(),
             statusUpdatedAt: new Date()
         });
+
+        // Increment template stats.sent
+        if (task.metadata.templateId) {
+            try {
+                await db.collection('templates').doc(task.metadata.templateId).update({
+                    'stats.sent': admin.firestore.FieldValue.increment(1),
+                    'stats.lastUpdated': new Date(),
+                });
+                logger.info(`Template ${task.metadata.templateId}: stats.sent incremented`);
+            } catch (statsErr) {
+                logger.warn('Template stats.sent update failed:', statsErr);
+            }
+        }
 
         // Log status transition
         await db.collection("vendor_activities").add({
@@ -364,7 +378,7 @@ async function handleFollowUp(task: QueueItem) {
 
     const { success: sendSuccess, resendId } = await sendEmail(
         vendorEmail, subject, htmlBody,
-        undefined, undefined, task.vendorId ?? undefined
+        undefined, undefined, task.vendorId ?? undefined, templateId
     );
 
     await db.collection("vendor_activities").add({
@@ -391,6 +405,17 @@ async function handleFollowUp(task: QueueItem) {
     if (sendSuccess) {
         await updateTaskStatus(db, task.id!, 'COMPLETED');
         logger.info(`Follow-up #${sequence} sent to ${vendorEmail} (template: ${templateId})`);
+
+        // Increment template stats.sent
+        try {
+            await db.collection('templates').doc(templateId).update({
+                'stats.sent': admin.firestore.FieldValue.increment(1),
+                'stats.lastUpdated': new Date(),
+            });
+            logger.info(`Template ${templateId}: stats.sent incremented`);
+        } catch (statsErr) {
+            logger.warn('Template stats.sent update failed:', statsErr);
+        }
     } else {
         throw new Error(`Failed to send follow-up #${sequence} to ${vendorEmail}`);
     }

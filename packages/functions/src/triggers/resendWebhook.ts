@@ -157,25 +157,36 @@ export const resendWebhook = onRequest({
 
         // ─── Template Stats Tracking (for A/B testing analytics) ───
         try {
-            // Find the original sent activity to get templateId
-            const sentActivity = await db.collection('vendor_activities')
-                .where('metadata.resendId', '==', emailId)
-                .where('type', 'in', ['OUTREACH_SENT', 'FOLLOW_UP_SENT'])
-                .limit(1)
-                .get();
-
-            if (!sentActivity.empty) {
-                const actData = sentActivity.docs[0].data();
-                const templateId = actData.metadata?.templateId;
-
-                if (templateId) {
-                    const statsField = mapping.deliveryStatus; // delivered, opened, clicked, bounced
-                    await db.collection('templates').doc(templateId).update({
-                        [`stats.${statsField}`]: admin.firestore.FieldValue.increment(1),
-                        'stats.lastUpdated': new Date(),
-                    });
-                    logger.info(`Template ${templateId}: stats.${statsField} incremented`);
+            // Path 1: Read templateId directly from Resend tags (preferred - no Firestore query needed)
+            let templateId: string | null = null;
+            if (tags) {
+                if (typeof tags === 'object' && !Array.isArray(tags) && tags.templateId) {
+                    templateId = tags.templateId;
+                } else if (Array.isArray(tags)) {
+                    const templateTag = tags.find((t: any) => t.name === 'templateId');
+                    if (templateTag?.value) templateId = templateTag.value;
                 }
+            }
+
+            // Path 2: Fallback — query activity to find templateId (legacy emails without tag)
+            if (!templateId) {
+                const sentActivity = await db.collection('vendor_activities')
+                    .where('metadata.resendId', '==', emailId)
+                    .limit(1)
+                    .get();
+
+                if (!sentActivity.empty) {
+                    templateId = sentActivity.docs[0].data().metadata?.templateId || null;
+                }
+            }
+
+            if (templateId) {
+                const statsField = mapping.deliveryStatus; // delivered, opened, clicked, bounced
+                await db.collection('templates').doc(templateId).update({
+                    [`stats.${statsField}`]: admin.firestore.FieldValue.increment(1),
+                    'stats.lastUpdated': new Date(),
+                });
+                logger.info(`Template ${templateId}: stats.${statsField} incremented`);
             }
         } catch (statsErr) {
             // Non-critical — don't fail the webhook over stats

@@ -7,7 +7,7 @@ import { db, functions } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Sparkles, CheckCircle, XCircle, RefreshCw, TrendingUp, TrendingDown, Mail, MousePointerClick, Eye, AlertTriangle } from 'lucide-react';
+import { BarChart3, Sparkles, CheckCircle, XCircle, RefreshCw, TrendingUp, TrendingDown, Mail, MousePointerClick, Eye, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface TemplateStats {
     sent: number;
@@ -43,11 +43,47 @@ interface Template {
     lastOptimizedAt?: any;
 }
 
+// Group templates by their base outreach step (e.g. vendor_outreach_2 groups _warm and _cold)
+function groupTemplates(templates: Template[]): { label: string; base: Template | null; variants: Template[] }[] {
+    const groups: Record<string, { base: Template | null; variants: Template[] }> = {};
+
+    for (const t of templates) {
+        // Match pattern: vendor_outreach_N or vendor_outreach_N_warm/cold
+        const match = t.id.match(/^(vendor_outreach_\d+)(?:_(.+))?$/);
+        if (!match) {
+            // Standalone template
+            groups[t.id] = groups[t.id] || { base: null, variants: [] };
+            groups[t.id].base = t;
+            continue;
+        }
+
+        const baseId = match[1];
+        const variant = match[2]; // 'warm', 'cold', or undefined
+        groups[baseId] = groups[baseId] || { base: null, variants: [] };
+
+        if (!variant) {
+            groups[baseId].base = t;
+        } else {
+            groups[baseId].variants.push(t);
+        }
+    }
+
+    // Build sorted array with labels
+    return Object.entries(groups)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, group]) => {
+            const base = group.base;
+            const label = base?.name || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            return { label, base, variants: group.variants };
+        });
+}
+
 export default function TemplateAnalyticsPage() {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
     const [optimizing, setOptimizing] = useState<string | null>(null);
     const [applying, setApplying] = useState<string | null>(null);
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
     useEffect(() => { fetchTemplates(); }, []);
 
@@ -59,6 +95,9 @@ export default function TemplateAnalyticsPage() {
             .filter(t => t.category === 'vendor' || t.category === 'vendor_email')
             .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         setTemplates(data);
+        // Auto-expand all groups on first load
+        const grouped = groupTemplates(data);
+        setExpandedGroups(new Set(grouped.map(g => g.label)));
         setLoading(false);
     }
 
@@ -114,7 +153,17 @@ export default function TemplateAnalyticsPage() {
         return 'text-red-600';
     }
 
+    const toggleGroup = (label: string) => {
+        setExpandedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(label)) { next.delete(label); } else { next.add(label); }
+            return next;
+        });
+    };
+
     if (loading) return <div className="p-8 text-center text-muted-foreground">Loading templates...</div>;
+
+    const groups = groupTemplates(templates);
 
     return (
         <div className="space-y-6">
@@ -125,13 +174,20 @@ export default function TemplateAnalyticsPage() {
                         Track email performance and get AI-powered optimization suggestions
                     </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={fetchTemplates} className="gap-2">
-                    <RefreshCw className="w-4 h-4" /> Refresh
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => {
+                        setExpandedGroups(prev => prev.size === groups.length ? new Set() : new Set(groups.map(g => g.label)));
+                    }} className="gap-1 text-xs">
+                        {expandedGroups.size === groups.length ? 'Collapse All' : 'Expand All'}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={fetchTemplates} className="gap-2">
+                        <RefreshCw className="w-4 h-4" /> Refresh
+                    </Button>
+                </div>
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {(() => {
                     const totals = templates.reduce((acc, t) => ({
                         sent: acc.sent + (t.stats?.sent || 0),
@@ -174,128 +230,220 @@ export default function TemplateAnalyticsPage() {
                 })()}
             </div>
 
-            {/* Template Cards */}
-            {templates.map(t => {
-                const s = t.stats || { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 };
-                const hasAI = t.aiSuggestions && t.aiSuggestions.length > 0;
-                const latestAI = hasAI ? t.aiSuggestions![t.aiSuggestions!.length - 1] : null;
-                const isUnderperforming = s.sent >= 10 && (s.opened / s.sent) < 0.3;
+            {/* Grouped Template Cards */}
+            <div className="space-y-3">
+                {groups.map(group => {
+                    const isExpanded = expandedGroups.has(group.label);
+                    const allTemplates = [group.base, ...group.variants].filter(Boolean) as Template[];
+                    const groupStats = allTemplates.reduce((acc, t) => ({
+                        sent: acc.sent + (t.stats?.sent || 0),
+                        delivered: acc.delivered + (t.stats?.delivered || 0),
+                        opened: acc.opened + (t.stats?.opened || 0),
+                        clicked: acc.clicked + (t.stats?.clicked || 0),
+                        bounced: acc.bounced + (t.stats?.bounced || 0),
+                    }), { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 });
 
-                return (
-                    <Card key={t.id} className={isUnderperforming ? 'border-amber-300' : ''}>
-                        <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <CardTitle className="text-base">{t.name}</CardTitle>
-                                    {t.id.includes('_warm') && <Badge className="bg-orange-100 text-orange-700 text-[10px]">Warm</Badge>}
-                                    {t.id.includes('_cold') && <Badge className="bg-blue-100 text-blue-700 text-[10px]">Cold</Badge>}
-                                    {isUnderperforming && (
-                                        <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px] gap-1">
-                                            <AlertTriangle className="w-3 h-3" /> Low Performance
-                                        </Badge>
+                    const isUnderperforming = groupStats.sent >= 10 && (groupStats.opened / groupStats.sent) < 0.3;
+
+                    return (
+                        <Card key={group.label} className={isUnderperforming ? 'border-amber-300' : ''}>
+                            {/* Group Header — always visible */}
+                            <button
+                                onClick={() => toggleGroup(group.label)}
+                                className="w-full text-left px-5 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors rounded-t-lg"
+                            >
+                                <div className="flex items-center gap-3 min-w-0">
+                                    {isExpanded
+                                        ? <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                        : <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                    }
+                                    <div className="min-w-0">
+                                        <span className="font-semibold text-sm">{group.label}</span>
+                                        {group.variants.length > 0 && (
+                                            <span className="text-xs text-muted-foreground ml-2">
+                                                ({group.variants.length} variant{group.variants.length > 1 ? 's' : ''})
+                                            </span>
+                                        )}
+                                        {isUnderperforming && (
+                                            <Badge variant="outline" className="ml-2 text-amber-600 border-amber-300 text-[10px] gap-1">
+                                                <AlertTriangle className="w-3 h-3" /> Low Performance
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </div>
+                                {/* Inline summary stats */}
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground flex-shrink-0">
+                                    <span><strong className="text-foreground">{groupStats.sent}</strong> sent</span>
+                                    <span className={getRateColor(groupStats.opened, groupStats.sent, 0.3)}>
+                                        {rate(groupStats.opened, groupStats.sent)} open
+                                    </span>
+                                    <span className={getRateColor(groupStats.clicked, groupStats.opened, 0.1)}>
+                                        {rate(groupStats.clicked, groupStats.opened)} click
+                                    </span>
+                                    {groupStats.bounced > 0 && (
+                                        <span className="text-red-600">{groupStats.bounced} bounced</span>
                                     )}
                                 </div>
+                            </button>
+
+                            {/* Expanded: show each template */}
+                            {isExpanded && (
+                                <CardContent className="pt-0 pb-4 px-5 space-y-3">
+                                    {allTemplates.map(t => (
+                                        <TemplateRow
+                                            key={t.id}
+                                            template={t}
+                                            rate={rate}
+                                            getRateColor={getRateColor}
+                                            onOptimize={handleOptimize}
+                                            onApply={handleApplySuggestion}
+                                            onDismiss={handleDismissSuggestions}
+                                            optimizing={optimizing}
+                                            applying={applying}
+                                            isVariant={t.id.includes('_warm') || t.id.includes('_cold')}
+                                        />
+                                    ))}
+                                </CardContent>
+                            )}
+                        </Card>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+/* ─── Individual Template Row ─── */
+function TemplateRow({ template: t, rate, getRateColor, onOptimize, onApply, onDismiss, optimizing, applying, isVariant }: {
+    template: Template;
+    rate: (n: number, d: number) => string;
+    getRateColor: (n: number, d: number, threshold: number) => string;
+    onOptimize: (id: string) => void;
+    onApply: (id: string, sug: { subject: string; body: string }) => void;
+    onDismiss: (id: string) => void;
+    optimizing: string | null;
+    applying: string | null;
+    isVariant: boolean;
+}) {
+    const s = t.stats || { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 };
+    const hasAI = t.aiSuggestions && t.aiSuggestions.length > 0;
+    const latestAI = hasAI ? t.aiSuggestions![t.aiSuggestions!.length - 1] : null;
+    const [showAI, setShowAI] = useState(false);
+
+    return (
+        <div className={`rounded-lg border p-4 space-y-3 ${isVariant ? 'ml-6 border-dashed' : ''}`}>
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-medium truncate">{t.name}</span>
+                    {t.id.includes('_warm') && <Badge className="bg-orange-100 text-orange-700 text-[10px] shadow-none">Warm</Badge>}
+                    {t.id.includes('_cold') && <Badge className="bg-blue-100 text-blue-700 text-[10px] shadow-none">Cold</Badge>}
+                    <code className="text-[9px] text-muted-foreground bg-muted px-1 rounded hidden sm:inline">{t.id}</code>
+                </div>
+                <div className="flex items-center gap-1">
+                    {hasAI && (
+                        <Button variant="ghost" size="sm" className="text-xs gap-1 text-purple-600" onClick={() => setShowAI(!showAI)}>
+                            <Sparkles className="w-3 h-3" /> {showAI ? 'Hide' : 'View'} AI
+                        </Button>
+                    )}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 text-xs h-7"
+                        onClick={() => onOptimize(t.id)}
+                        disabled={optimizing === t.id}
+                    >
+                        {optimizing === t.id ? (
+                            <><RefreshCw className="w-3 h-3 animate-spin" /> Optimizing...</>
+                        ) : (
+                            <><Sparkles className="w-3 h-3" /> AI Optimize</>
+                        )}
+                    </Button>
+                </div>
+            </div>
+
+            {/* Subject Line */}
+            <p className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Subject:</span> {t.subject}
+            </p>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-5 gap-2 text-center">
+                <div>
+                    <p className="text-base font-bold">{s.sent}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Sent</p>
+                </div>
+                <div>
+                    <p className={`text-base font-bold ${getRateColor(s.delivered, s.sent, 0.9)}`}>
+                        {rate(s.delivered, s.sent)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Delivered</p>
+                </div>
+                <div>
+                    <p className={`text-base font-bold ${getRateColor(s.opened, s.sent, 0.3)}`}>
+                        {rate(s.opened, s.sent)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Opened</p>
+                </div>
+                <div>
+                    <p className={`text-base font-bold ${getRateColor(s.clicked, s.opened, 0.1)}`}>
+                        {rate(s.clicked, s.opened)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Clicked</p>
+                </div>
+                <div>
+                    <p className={`text-base font-bold ${s.bounced > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                        {s.bounced}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Bounced</p>
+                </div>
+            </div>
+
+            {/* AI Suggestions (collapsible) */}
+            {showAI && latestAI && (
+                <div className="border rounded-lg p-4 bg-purple-50/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-purple-600" />
+                            <span className="text-sm font-medium text-purple-800 dark:text-purple-300">AI Suggestions</span>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-muted-foreground"
+                            onClick={() => onDismiss(t.id)}
+                        >
+                            Dismiss
+                        </Button>
+                    </div>
+                    <p className="text-xs text-purple-700 dark:text-purple-400">{latestAI.analysis}</p>
+
+                    {latestAI.shortUrlTest && (
+                        <div className="text-xs p-2 bg-white/60 dark:bg-white/10 rounded border border-purple-100 dark:border-purple-800">
+                            <span className="font-medium">🔗 URL Test:</span> {latestAI.shortUrlTest.recommendation}
+                        </div>
+                    )}
+
+                    {latestAI.suggestions?.map((sug, i) => (
+                        <div key={i} className="p-3 bg-white dark:bg-card rounded border space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium">Option {i + 1}</span>
                                 <Button
-                                    variant="outline"
                                     size="sm"
-                                    className="gap-1 text-xs"
-                                    onClick={() => handleOptimize(t.id)}
-                                    disabled={optimizing === t.id}
+                                    className="text-xs h-7 gap-1"
+                                    onClick={() => onApply(t.id, sug)}
+                                    disabled={applying === t.id}
                                 >
-                                    {optimizing === t.id ? (
-                                        <><RefreshCw className="w-3 h-3 animate-spin" /> Optimizing...</>
-                                    ) : (
-                                        <><Sparkles className="w-3 h-3" /> AI Optimize</>
-                                    )}
+                                    <CheckCircle className="w-3 h-3" /> Apply
                                 </Button>
                             </div>
-                            <CardDescription className="text-xs">
-                                <code className="text-[10px] bg-muted px-1 rounded">{t.id}</code>
-                                {' · Subject: '}<span className="font-medium">{t.subject}</span>
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Stats Row */}
-                            <div className="grid grid-cols-5 gap-3 text-center">
-                                <div>
-                                    <p className="text-lg font-bold">{s.sent}</p>
-                                    <p className="text-[10px] text-muted-foreground uppercase">Sent</p>
-                                </div>
-                                <div>
-                                    <p className={`text-lg font-bold ${getRateColor(s.delivered, s.sent, 0.9)}`}>
-                                        {rate(s.delivered, s.sent)}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground uppercase">Delivered</p>
-                                </div>
-                                <div>
-                                    <p className={`text-lg font-bold ${getRateColor(s.opened, s.sent, 0.3)}`}>
-                                        {rate(s.opened, s.sent)}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground uppercase">Opened</p>
-                                </div>
-                                <div>
-                                    <p className={`text-lg font-bold ${getRateColor(s.clicked, s.opened, 0.1)}`}>
-                                        {rate(s.clicked, s.opened)}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground uppercase">Clicked</p>
-                                </div>
-                                <div>
-                                    <p className={`text-lg font-bold ${s.bounced > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
-                                        {s.bounced}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground uppercase">Bounced</p>
-                                </div>
-                            </div>
-
-                            {/* AI Suggestions */}
-                            {latestAI && (
-                                <div className="border rounded-lg p-4 bg-purple-50/50 border-purple-200 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Sparkles className="w-4 h-4 text-purple-600" />
-                                            <span className="text-sm font-medium text-purple-800">AI Suggestions</span>
-                                        </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-xs text-muted-foreground"
-                                            onClick={() => handleDismissSuggestions(t.id)}
-                                        >
-                                            Dismiss
-                                        </Button>
-                                    </div>
-                                    <p className="text-xs text-purple-700">{latestAI.analysis}</p>
-
-                                    {latestAI.shortUrlTest && (
-                                        <div className="text-xs p-2 bg-white/60 rounded border border-purple-100">
-                                            <span className="font-medium">🔗 URL Test:</span> {latestAI.shortUrlTest.recommendation}
-                                        </div>
-                                    )}
-
-                                    {latestAI.suggestions?.map((sug, i) => (
-                                        <div key={i} className="p-3 bg-white rounded border space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-medium">Option {i + 1}</span>
-                                                <Button
-                                                    size="sm"
-                                                    className="text-xs h-7 gap-1"
-                                                    onClick={() => handleApplySuggestion(t.id, sug)}
-                                                    disabled={applying === t.id}
-                                                >
-                                                    <CheckCircle className="w-3 h-3" /> Apply
-                                                </Button>
-                                            </div>
-                                            <p className="text-xs"><span className="font-medium">Subject:</span> {sug.subject}</p>
-                                            <p className="text-[11px] text-muted-foreground line-clamp-3">{sug.body}</p>
-                                            <p className="text-[10px] text-purple-600 italic">{sug.rationale}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                );
-            })}
+                            <p className="text-xs"><span className="font-medium">Subject:</span> {sug.subject}</p>
+                            <p className="text-[11px] text-muted-foreground line-clamp-3">{sug.body}</p>
+                            <p className="text-[10px] text-purple-600 dark:text-purple-400 italic">{sug.rationale}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

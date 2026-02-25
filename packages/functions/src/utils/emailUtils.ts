@@ -253,9 +253,15 @@ export async function sendEmail(
     html: string,
     attachments?: any[],
     from?: string,
-    vendorId?: string
+    vendorId?: string,
+    templateId?: string
 ): Promise<{ success: boolean; resendId?: string }> {
     try {
+        // Build tags array for webhook tracking
+        const tags: { name: string; value: string }[] = [];
+        if (vendorId) tags.push({ name: 'vendorId', value: vendorId });
+        if (templateId) tags.push({ name: 'templateId', value: templateId });
+
         const { data, error } = await resend.emails.send({
             from: from || 'Xiri Facility Solutions <onboarding@xiri.ai>',
             replyTo: 'chris@xiri.ai',
@@ -263,8 +269,7 @@ export async function sendEmail(
             subject,
             html,
             attachments,
-            // Tag with vendorId so the webhook can directly identify the vendor
-            ...(vendorId ? { tags: [{ name: 'vendorId', value: vendorId }] } : {}),
+            ...(tags.length > 0 ? { tags } : {}),
         });
 
         if (error) {
