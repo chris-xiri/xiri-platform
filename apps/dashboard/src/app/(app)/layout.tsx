@@ -154,8 +154,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             icon: <Building2 className="w-3.5 h-3.5" />,
             show: showClientsNav,
             items: [
-                ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Pipeline', href: '/sales/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/sourcing', profile.roles) ? [{ label: 'Lead Sourcing', href: '/sales/sourcing', icon: <Search className="w-4 h-4" /> }] : []),
+                ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Pipeline', href: '/sales/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/quotes', profile.roles) ? [{ label: 'Quotes', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> }] : []),
                 ...(canAccess('operations/contracts', profile.roles) ? [{ label: 'Contracts', href: '/operations/contracts', icon: <FileText className="w-4 h-4" /> }] : []),
                 ...(canAccess('operations/work-orders', profile.roles) ? [{ label: 'Work Orders', href: '/operations/work-orders', icon: <ClipboardList className="w-4 h-4" /> }] : []),
@@ -166,8 +166,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             icon: <HardHat className="w-3.5 h-3.5" />,
             show: showContractorsNav,
             items: [
-                { label: 'Pipeline', href: '/supply/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
                 { label: 'Sourcing', href: '/supply/recruitment', icon: <Search className="w-4 h-4" /> },
+                { label: 'Pipeline', href: '/supply/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
                 ...(canAccess('accounting/vendor-remittances', profile.roles) ? [{ label: 'Remittances', href: '/accounting/vendor-remittances', icon: <DollarSign className="w-4 h-4" /> }] : []),
             ],
         },
