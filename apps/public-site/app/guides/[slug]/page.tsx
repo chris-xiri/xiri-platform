@@ -84,62 +84,55 @@ const GUIDES: Record<string, {
     },
     'commercial-cleaning-cost-guide': {
         title: 'How Much Does Commercial Cleaning Cost?',
-        heroTitle: 'How Much Does Commercial Cleaning Cost in 2025?',
-        heroSubtitle: 'A transparent breakdown of per-square-foot pricing, what drives costs up, and how to avoid overpaying.',
-        metaDescription: 'Commercial cleaning costs $0.05–$0.25 per square foot depending on facility type, frequency, and scope. Get a transparent cost breakdown and learn how to budget for your facility.',
+        heroTitle: 'What Drives the Cost of Commercial Cleaning?',
+        heroSubtitle: 'Understand the factors that determine your cleaning costs — and how to make sure you\'re getting real value, not just the lowest bid.',
+        metaDescription: 'Learn what drives commercial cleaning costs for offices, medical facilities, and single-tenant buildings. Understand key pricing factors and how to budget effectively.',
         sections: [
             {
-                title: 'The Short Answer',
-                content: 'Commercial cleaning typically costs between $0.05 and $0.25 per square foot per visit, depending on facility type, cleaning frequency, and scope of work. A standard 5,000 sq ft office cleaned 5 nights per week costs approximately $1,500–$3,000 per month. Medical offices and specialized facilities run 20–40% higher due to compliance requirements.',
+                title: 'Why Cleaning Costs Vary So Much',
+                content: 'Commercial cleaning isn\'t one-size-fits-all. A general office with standard trash-and-vacuum needs costs significantly less than a medical office requiring terminal disinfection and compliance documentation. The right question isn\'t "how much per square foot?" — it\'s "what does my facility actually need, and how do I avoid paying for work that isn\'t getting done?"',
             },
             {
-                title: 'Cost by Facility Type',
-                content: 'Different facility types carry different cleaning complexity — and cost:',
+                title: 'The Biggest Factors That Affect Your Price',
+                content: 'When evaluating cleaning proposals or building a budget, these are the variables that matter most:',
                 items: [
-                    'General Office — $0.05–$0.12/sq ft — Standard vacuuming, trash, restrooms, and surface dusting',
-                    'Medical Office — $0.10–$0.20/sq ft — Terminal cleaning, biohazard protocols, compliance documentation',
-                    'Surgery Center — $0.15–$0.25/sq ft — AORN-standard terminal cleaning, ATP testing, sterile area protocols',
-                    'Daycare/Preschool — $0.08–$0.15/sq ft — Non-toxic products, toy sanitization, enhanced background checks',
-                    'Auto Dealership — $0.06–$0.14/sq ft — Showroom glass, service bay degreasing, restroom high-traffic service',
-                ],
-            },
-            {
-                title: 'What Drives the Price Up',
-                content: 'Several factors can push cleaning costs above the baseline range:',
-                items: [
-                    'Frequency — 5–7 nights/week costs more than 3 nights; daily day porter adds to the total',
-                    'Compliance Requirements — Medical facilities need OSHA-compliant chemicals, documented training, and log maintenance',
-                    'Scope Expansion — Adding floor care, window cleaning, or restroom supply stocking increases the per-visit cost',
-                    'After-Hours Access — Facilities that require late-night or weekend cleaning may pay a small premium for scheduling flexibility',
-                    'Square Footage — Larger facilities cost more in total but often achieve a lower per-sq-ft rate due to efficiency',
+                    'Facility Type — Medical, surgical, and childcare environments require specialized chemicals, training, and compliance protocols that general offices don\'t. Higher regulatory standards mean higher service requirements',
+                    'Cleaning Frequency — The more nights per week you need service, the higher the monthly cost. But less frequent cleaning often leads to deeper buildup and higher per-visit costs when you do clean',
+                    'Scope of Work — Are you covering just trash and vacuuming, or do you need restroom sanitization, kitchen service, floor care, and supply restocking? A detailed scope prevents both overpaying and under-servicing',
+                    'Quality Verification — A vendor who sends a crew with no oversight will always be cheaper than a service that independently audits every clean. But unverified cleaning is the most expensive option long-term',
+                    'Building Size & Layout — Larger facilities benefit from efficiency gains, but complex layouts with many small rooms cost more per square foot than open floor plans',
                 ],
             },
             {
                 title: 'How to Avoid Overpaying',
-                content: 'The most common reason facilities overpay for cleaning is poor scope definition. Without a detailed written scope, you\'re paying for what the vendor thinks you need, not what you actually need. Here\'s how to get the right price:',
+                content: 'The most common reason facilities overpay for cleaning is poor scope definition. Without a detailed written scope, you\'re paying for what the vendor thinks you need — not what you actually need. Here\'s how to get the right price:',
                 items: [
-                    'Get a walkthrough-based scope — Never accept a quote based solely on square footage. A qualified vendor should walk your facility room by room',
+                    'Get a walkthrough-based scope — Never accept a quote based solely on square footage. A qualified vendor should walk your facility room by room and document exactly what\'s needed',
                     'Define frequencies by area — Not every room needs the same attention every night. High-traffic areas may need nightly service; storage rooms may need weekly',
-                    'Consolidate vendors — Using one vendor (or one managed service like XIRI) for multiple services typically saves 15–25% vs. separate vendors for each service',
-                    'Include quality verification — The cheapest bid with no quality control is the most expensive option long-term. Missed cleans and re-work cost more than doing it right',
+                    'Consolidate vendors — Using one managed service for multiple needs (cleaning, floor care, pest control) reduces overhead and typically costs less than hiring separate vendors for each',
+                    'Include quality verification — The cheapest bid with no quality control is the most expensive option long-term. Missed cleans and re-work cost more than doing it right the first time',
                 ],
             },
+            {
+                title: 'The Hidden Cost of "Cheap" Cleaning',
+                content: 'Low-bid cleaning vendors cut corners in predictable ways: they skip rooms, reduce dwell time on disinfectants, thin out crew sizes, and provide zero oversight. The result is inconsistent quality, tenant complaints, and eventual re-bidding — which costs more in time and frustration than paying for a properly managed service from the start.',
+            },
         ],
-        calloutTitle: 'Get a Real Number for Your Facility',
-        calloutContent: 'Per-square-foot ranges are useful for budgeting, but your actual cost depends on your specific facility. Our FSMs conduct a free on-site walkthrough and build a custom scope with transparent pricing — no surprises, no hidden fees.',
+        calloutTitle: 'Get a Custom Quote for Your Facility',
+        calloutContent: 'Every facility is different. Our FSMs conduct a free on-site walkthrough, build a detailed room-by-room scope, and provide transparent flat-rate pricing — no hidden fees, no surprises.',
         relatedServices: ['commercial-cleaning', 'janitorial-services', 'medical-office-cleaning'],
         faqs: [
             {
-                question: 'Does XIRI charge per square foot?',
-                answer: 'We quote based on a custom scope, not just square footage. After your free site audit, you receive a flat monthly rate that reflects your actual cleaning needs, frequency, and facility complexity — with no hidden fees or per-incident charges.',
+                question: 'How does XIRI determine pricing?',
+                answer: 'We quote based on a custom scope built from an on-site walkthrough — not just square footage. Your flat monthly rate reflects your actual cleaning needs, frequency, and facility complexity. No hidden fees, no per-incident charges.',
             },
             {
                 question: 'Is XIRI more expensive than hiring a cleaning company directly?',
-                answer: 'For basic office cleaning, we may be marginally higher than a bare-bones vendor — but we include Night Manager quality audits, FSM management, backup crew coverage, and consolidated invoicing. When you factor in the cost of managing a vendor yourself, most clients find XIRI is cost-neutral or saves money.',
+                answer: 'Our pricing includes Night Manager quality audits, FSM management, backup crew coverage, and consolidated invoicing — things a standalone vendor doesn\'t provide. When you factor in the cost of managing a vendor yourself, most clients find XIRI is cost-neutral or saves money.',
             },
             {
-                question: 'Do you offer different pricing tiers?',
-                answer: 'We customize your scope and frequency rather than offering pre-set tiers. A 3-night basic clean costs less than a 5-night comprehensive scope. Your FSM recommends the right level based on your facility type and budget.',
+                question: 'Can I start with a smaller scope and expand later?',
+                answer: 'Absolutely. Many clients start with core janitorial and add floor care, pest control, or other services over time. Your FSM recommends additions based on what they observe during weekly site visits.',
             },
         ],
     },
@@ -147,17 +140,16 @@ const GUIDES: Record<string, {
         title: 'In-House vs Outsourced Facility Management',
         heroTitle: 'Should You Hire In-House or Outsource Facility Management?',
         heroSubtitle: 'A practical comparison for business owners who are tired of managing building maintenance themselves.',
-        metaDescription: 'Compare in-house facility management vs outsourcing to a managed service. Cost analysis, pros and cons, and when each approach makes sense for your business.',
+        metaDescription: 'Compare in-house facility management vs outsourcing to a managed service. Pros, cons, and when each approach makes sense for your business.',
         sections: [
             {
                 title: 'The Real Cost of In-House',
-                content: 'Hiring an in-house facility manager sounds simple until you add up the total cost. For most single-tenant buildings under 25,000 sq ft, the math doesn\'t work:',
+                content: 'Hiring an in-house facility manager sounds simple until you add up the total cost. For most single-tenant buildings, the math is harder to justify than it looks:',
                 items: [
-                    'Salary — A full-time facility manager in the NYC metro area costs $55,000–$85,000/year',
-                    'Benefits — Health insurance, PTO, and payroll taxes add 25–35% on top of salary',
-                    'Coverage Gap — One person can\'t cover nights, weekends, and vacations. Who verifies the cleaning at midnight?',
-                    'Vendor Management — They still need to source, vet, and manage every contractor. The work doesn\'t disappear',
-                    'Total Effective Cost — $80,000–$115,000/year before you\'ve paid a single cleaning vendor',
+                    'Salary + Benefits — A full-time facility manager requires a competitive salary plus health insurance, PTO, and payroll taxes that significantly increase the total cost of employment',
+                    'Coverage Gap — One person can\'t cover nights, weekends, and vacations. Who verifies the cleaning was done at midnight?',
+                    'Vendor Management — They still need to source, vet, and manage every contractor. Hiring a manager doesn\'t make the vendor coordination work disappear',
+                    'Overhead — Between salary, benefits, tools, and vehicle costs, the fully-loaded expense of an in-house hire far exceeds what most small facilities expect',
                 ],
             },
             {
@@ -168,14 +160,14 @@ const GUIDES: Record<string, {
                     'Night Coverage — Night Managers audit contractor work at midnight, 365 nights per year — something no single employee can do',
                     'Vendor Network — We\'ve already sourced, vetted, and insured contractors across every trade. No recruiting needed',
                     'Backup Coverage — If a vendor no-shows, we auto-dispatch a backup. No scrambling, no missed cleans',
-                    'Total Cost — Typically 40–60% less than an in-house hire, and the service scales up or down with your needs',
+                    'Lower Total Cost — A managed service typically costs significantly less than a full-time hire, and scales up or down with your needs',
                 ],
             },
             {
                 title: 'When In-House Makes Sense',
                 content: 'In-house facility management can be the right choice in specific situations:',
                 items: [
-                    'Large campuses (50,000+ sq ft) with complex mechanical systems requiring daily on-site presence',
+                    'Large campuses with complex mechanical systems requiring daily on-site presence',
                     'Organizations with regulatory requirements for a named Facilities Director (some hospital systems)',
                     'Budgets that can support a full team — manager, assistant, and backup coverage',
                 ],
@@ -184,7 +176,7 @@ const GUIDES: Record<string, {
                 title: 'When Outsourcing Makes Sense',
                 content: 'Outsourcing is the better fit for most single-tenant buildings:',
                 items: [
-                    'Buildings under 25,000 sq ft where a full-time hire is overkill',
+                    'Small to mid-size facilities where a full-time hire is overkill for the actual workload',
                     'Medical offices, auto dealerships, daycares, and professional offices that need consistent quality but don\'t have facility management expertise',
                     'Business owners who want to focus on their core business and not on vendor coordination and maintenance logistics',
                     'Organizations that want verified quality (nightly audits) without the overhead of a management hire',
@@ -197,7 +189,7 @@ const GUIDES: Record<string, {
         faqs: [
             {
                 question: 'Can XIRI fully replace an in-house facility manager?',
-                answer: 'For most single-tenant buildings under 25,000 sq ft — yes. Your FSM handles weekly site visits, vendor coordination, quality control, and issue resolution. Night Managers cover overnight auditing. You get better coverage than a single employee at a lower total cost.',
+                answer: 'For most single-tenant buildings — yes. Your FSM handles weekly site visits, vendor coordination, quality control, and issue resolution. Night Managers cover overnight auditing. You get better coverage than a single employee at a lower total cost.',
             },
             {
                 question: 'What if we have an in-house person and just want help with vendor management?',
@@ -205,7 +197,7 @@ const GUIDES: Record<string, {
             },
             {
                 question: 'How do your costs compare to a full-time hire?',
-                answer: 'A fully-loaded in-house facility manager costs $80,000–$115,000/year in the NYC metro area. XIRI\'s managed service typically runs 40–60% less — and includes Night Manager audits, backup coverage, and consolidated vendor management that a single employee can\'t provide.',
+                answer: 'When you factor in salary, benefits, coverage gaps, and the vendor management work that doesn\'t go away, a managed service like XIRI typically costs significantly less — and includes Night Manager audits, backup coverage, and consolidated vendor management that a single employee can\'t provide.',
             },
         ],
     },
