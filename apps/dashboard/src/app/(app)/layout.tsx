@@ -8,7 +8,7 @@ import {
     Home, Users, User, Settings, LogOut, Package, DollarSign,
     ClipboardList, FileText, Sun, Moon, Monitor, Shield, Receipt,
     MapPin, ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, Menu, X,
-    Building2, LayoutDashboard, Search, HardHat,
+    Building2, LayoutDashboard, Search, HardHat, Bot, BarChart3, Mail, Scale,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
@@ -188,6 +188,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             items: [
                 ...(canAccess('accounting/invoices', profile.roles) ? [{ label: 'Invoices', href: '/accounting/invoices', icon: <Receipt className="w-4 h-4" /> }] : []),
                 ...(canAccess('accounting/commissions', profile.roles) ? [{ label: 'Commissions', href: '/accounting/commissions', icon: <DollarSign className="w-4 h-4" /> }] : []),
+            ],
+        },
+        {
+            label: 'Administration',
+            icon: <Settings className="w-3.5 h-3.5" />,
+            show: showAdminNav,
+            dividerAbove: true,
+            items: [
+                { label: 'User Manager', href: '/admin/users', icon: <Users className="w-4 h-4" /> },
+                { label: 'AI Agents', href: '/admin/agents', icon: <Bot className="w-4 h-4" /> },
+                { label: 'Email Templates', href: '/admin/email-templates', icon: <Mail className="w-4 h-4" /> },
+                { label: 'Template Analytics', href: '/admin/templates', icon: <BarChart3 className="w-4 h-4" /> },
+                { label: 'Legal Templates', href: '/admin/legal', icon: <Scale className="w-4 h-4" /> },
+                { label: 'Commissions', href: '/admin/commissions', icon: <DollarSign className="w-4 h-4" /> },
             ],
         },
     ];
