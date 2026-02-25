@@ -18,16 +18,14 @@ const templates = [
         subject: 'Saw you checked us out — quick question, {{contactName}}',
         body: `Hi {{contactName}},
 
-I noticed you took a look at our partnership details — that tells me you're at least curious about what XIRI can do for {{vendorName}}.
+I noticed you took a look at the {{specialty}} jobs we have available in {{city}} — sounds like you might be looking for work.
 
-Here's the quick version: we handle all the sales, scheduling, and client management. You just do what you do best — {{specialty}}.
+Here's the deal: we have recurring nightly contracts at medical offices and commercial sites. You clean. We handle every other part — finding clients, invoicing, scheduling, client management.
 
-No cold calling, no chasing invoices, no admin headaches.
-
-Takes about 5 minutes to get started:
+Check what's available near you:
 {{onboardingUrl}}
 
-Any questions? Just hit reply — I read every one.
+Any questions? Just hit reply.
 
 Best,
 Chris
@@ -41,19 +39,19 @@ XIRI Facility Solutions`,
         name: 'Follow-Up #1 — Cold (No Open)',
         category: 'vendor',
         description: 'Sent when initial email was delivered but never opened. Different subject line angle.',
-        subject: '{{contactName}}, contractors in {{city}} are getting booked through us',
+        subject: '{{specialty}} crews needed in {{city}} — steady nightly routes',
         body: `Hi {{contactName}},
 
 Not sure if my last email got buried — so I'll keep this short.
 
-We're connecting {{specialty}} contractors in {{city}} with steady, recurring facility work. No bidding wars, no chasing payments.
+We have {{specialty}} contracts available in {{city}}. Recurring nightly work at medical offices and commercial buildings.
 
 XIRI handles:
 ✅ Finding you clients
-✅ Scheduling your jobs
-✅ Getting you paid on time
+✅ Scheduling your routes
+✅ Getting you paid — automatically
 
-Sound interesting? Takes 5 minutes:
+See what jobs are available:
 {{onboardingUrl}}
 
 Best,
@@ -68,14 +66,12 @@ XIRI Facility Solutions`,
         name: 'Follow-Up #2 — Warm',
         category: 'vendor',
         description: 'Second follow-up for engaged vendors. Social proof angle.',
-        subject: 'Other {{specialty}} pros in {{city}} are already on board',
+        subject: 'Other {{specialty}} pros in {{city}} are already getting routed',
         body: `Hey {{contactName}},
 
-Quick update — we've been onboarding {{specialty}} contractors in the {{city}} area, and the feedback has been great.
+Quick update — {{specialty}} contractors in the {{city}} area are getting matched with recurring jobs through us. The ones who joined early are the ones with the best routes.
 
-Most of our partners tell us the best part is not having to chase down new clients or deal with invoicing anymore.
-
-If you've been thinking about it, now's a good time to join:
+If you've been thinking about it, check what's still available:
 {{onboardingUrl}}
 
 Happy to answer any questions — just reply here.
@@ -90,20 +86,18 @@ XIRI Facility Solutions`,
         id: 'vendor_outreach_3_cold',
         name: 'Follow-Up #2 — Cold',
         category: 'vendor',
-        description: 'Second follow-up for unengaged vendors. Value prop angle.',
-        subject: 'What if you never had to do sales again?',
+        description: 'Second follow-up for unengaged vendors. Direct value prop.',
+        subject: 'What if you never had to do sales again, {{contactName}}?',
         body: `Hi {{contactName}},
 
 I know your inbox is busy, so I'll be direct:
 
-XIRI is looking for quality {{specialty}} contractors in {{city}}. We bring you the clients. You do the work. We handle everything else.
+We have {{specialty}} contracts in {{city}} that need crews. You do the work. We handle everything else — sales, billing, client management.
 
-No contracts to chase. No sales calls. No paperwork.
+No sales calls. No chasing payments. Just steady work.
 
-If that sounds like something you'd be into:
+See what's available near you:
 {{onboardingUrl}}
-
-No pressure — but the spots in your area won't last forever.
 
 Chris
 XIRI Facility Solutions`,
@@ -115,18 +109,18 @@ XIRI Facility Solutions`,
         id: 'vendor_outreach_5',
         name: 'Follow-Up #4 — Last Chance',
         category: 'vendor',
-        description: 'Final "breakup" email. Creates urgency without being pushy.',
-        subject: 'Closing the loop — {{contactName}}',
+        description: 'Final breakup email. Creates urgency without being pushy.',
+        subject: 'Last note — {{contactName}}',
         body: `Hi {{contactName}},
 
 This is my last follow-up — I don't want to keep filling your inbox.
 
-If {{vendorName}} is interested in getting matched with facility clients in {{city}}, the door is still open:
+If {{vendorName}} ever wants steady {{specialty}} work in {{city}} without the sales grind, the link still works:
 {{onboardingUrl}}
 
-If the timing isn't right, no worries at all. I'll close out your file for now, and you can always reach out whenever you're ready.
+If the timing isn't right, no worries at all. You can always reach out whenever you're ready.
 
-Wishing you the best,
+All the best,
 Chris
 XIRI Facility Solutions`,
         content: 'Final breakup email creating urgency without being pushy.',
@@ -138,22 +132,22 @@ XIRI Facility Solutions`,
         name: 'Follow-Up #4 — Warm (Last Chance)',
         category: 'vendor',
         description: 'Final email for engaged vendors who still haven\'t signed up.',
-        subject: 'Still interested? Let me make this easy — {{contactName}}',
+        subject: 'Still looking for work? Let me make this easy — {{contactName}}',
         body: `Hey {{contactName}},
 
-I can see you've been checking out what XIRI has to offer — so I want to make this as easy as possible.
+I can see you've been checking out what we have available — so let me make this as easy as possible.
 
 Here's what happens when you sign up:
 1️⃣ You fill out a quick 5-min profile
-2️⃣ We match you with facility clients near {{city}}
-3️⃣ You start getting scheduled jobs
+2️⃣ We match you with facility jobs near {{city}}
+3️⃣ You start getting scheduled routes
 
-No upfront costs. No commitments. Just more work.
+No upfront costs. No commitment. Just more work.
 
-Last chance to jump in:
+Last chance to see what's available:
 {{onboardingUrl}}
 
-After this, I'll close your file — but you can always come back later.
+After this, I'll step back — but you can always come back later.
 
 Chris
 XIRI Facility Solutions`,
@@ -169,11 +163,11 @@ XIRI Facility Solutions`,
         subject: 'No hard feelings — {{contactName}}',
         body: `Hi {{contactName}},
 
-I've reached out a few times about partnering with XIRI for {{specialty}} work in {{city}}.
+I've reached out a few times about {{specialty}} work available in {{city}}.
 
-I get it — not everyone's looking for new clients right now.
+I get it — not everyone's looking right now.
 
-I'm going to close out your file, but if things change, the link below still works:
+I'll step back, but if things change, the link below still works:
 {{onboardingUrl}}
 
 All the best,

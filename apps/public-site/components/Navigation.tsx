@@ -294,7 +294,7 @@ export default function Navigation() {
                                     disabled={loading}
                                     className="bg-sky-600 text-white px-6 py-2.5 rounded-full font-medium shadow-md shadow-sky-600/20 hover:bg-sky-700 hover:shadow-lg hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
-                                    {loading ? 'Starting...' : 'Apply to Join Network'}
+                                    {loading ? 'Loading...' : 'See Available Jobs'}
                                 </button>
                             ) : (
                                 <>

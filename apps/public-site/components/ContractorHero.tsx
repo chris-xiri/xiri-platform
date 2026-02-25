@@ -65,14 +65,14 @@ export function ContractorHero({
     );
 
     const defaultSubheadline = (
-        <span className="text-slate-300">Join XIRI's vetted contractor network and get consistent facility management jobs—without the sales headaches or payment delays.</span>
+        <span className="text-slate-300">We have active facility contracts that need crews. See what's available in your area — no commitment to start.</span>
     );
 
     return (
         <Hero
             title={headline ? <span className="text-white" dangerouslySetInnerHTML={{ __html: headline.replace(/\n/g, "<br/>") }} /> : defaultHeadline}
             subtitle={subheadline ? <span className="text-slate-300">{subheadline}</span> : defaultSubheadline}
-            ctaText={loading ? "Initializing..." : (ctaText || "Apply to Join Network")}
+            ctaText={loading ? "Loading..." : (ctaText || "See Available Jobs")}
             onCtaClick={handleStart}
             industryIcon="🛠️"
             industryLabel="Verified Service Partner"
