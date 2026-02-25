@@ -66,6 +66,8 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
     const [phoneInput, setPhoneInput] = useState('');
     const [showContactInputs, setShowContactInputs] = useState(false);
     const isNeedsContact = vendor.outreachStatus === 'NEEDS_CONTACT' && (vendor.status === 'qualified' || vendor.status === 'QUALIFIED');
+    const isBounced = vendor.outreachStatus === 'FAILED' && vendor.status === 'awaiting_onboarding';
+    const showEditEmail = isNeedsContact || isBounced;
 
     // Parse location — merge city/state/zip into single string
     const locationParts = [
@@ -224,8 +226,8 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                                     <X className="w-3 h-3" />
                                 </Button>
                             </>
-                        ) : isNeedsContact && !isRecruitmentMode ? (
-                            /* NEEDS_CONTACT: show email + phone inputs */
+                        ) : showEditEmail && !isRecruitmentMode ? (
+                            /* NEEDS_CONTACT or BOUNCED: show email + phone inputs */
                             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                                 {showContactInputs ? (
                                     <div className="flex flex-col gap-1">
@@ -281,9 +283,12 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setShowContactInputs(true)}
-                                        className="h-7 px-2 border-amber-200 text-amber-700 hover:bg-amber-600 hover:text-white text-xs font-medium"
+                                        className={`h-7 px-2 text-xs font-medium ${isBounced
+                                            ? 'border-red-200 text-red-700 hover:bg-red-600 hover:text-white'
+                                            : 'border-amber-200 text-amber-700 hover:bg-amber-600 hover:text-white'
+                                            }`}
                                     >
-                                        <Send className="w-3 h-3 mr-1" /> Add Contact
+                                        <Send className="w-3 h-3 mr-1" /> {isBounced ? 'Fix Email' : 'Add Contact'}
                                     </Button>
                                 )}
                             </div>
