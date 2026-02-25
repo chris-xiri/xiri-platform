@@ -17,7 +17,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, Loader2, X, Search, Trash2 } from "lucide-react";
+import { Users, Loader2, X, Search, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { collection, onSnapshot, query, orderBy, limit, doc, updateDoc, serverTimestamp, writeBatch, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Vendor } from "@xiri/shared";
@@ -46,6 +46,8 @@ export default function VendorList({
     const [loading, setLoading] = useState(true);
     const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [sortField, setSortField] = useState<'name' | 'location' | 'score' | 'status' | null>('score');
+    const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
     const [processedOpen, setProcessedOpen] = useState(false);
 
@@ -70,26 +72,65 @@ export default function VendorList({
     // Use pendingVendors as the primary display list in recruitment mode
     const displayVendors = isRecruitmentMode ? pendingVendors : filteredVendors;
 
-    // Heat-sort: when showing awaiting_onboarding, sort by engagement signal (clicked > opened > delivered > none > bounced)
+    // Sort logic
+    const handleSort = (field: 'name' | 'location' | 'score' | 'status') => {
+        if (sortField === field) {
+            setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDir(field === 'score' ? 'desc' : 'asc');
+        }
+    };
+
+    const SortIcon = ({ field }: { field: string }) => {
+        if (sortField !== field) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-30" />;
+        return sortDir === 'asc'
+            ? <ArrowUp className="w-3 h-3 ml-1 text-primary" />
+            : <ArrowDown className="w-3 h-3 ml-1 text-primary" />;
+    };
+
     const sortedDisplayVendors = (() => {
-        // Check if we're filtering to awaiting_onboarding
+        // Heat-sort takes priority for awaiting_onboarding view
         const isAwaitingFilter = statusFilters?.some(f => f.toLowerCase() === 'awaiting_onboarding');
-        if (!isAwaitingFilter) return displayVendors;
+        if (isAwaitingFilter) {
+            const heatScore = (v: Vendor): number => {
+                const event = v.emailEngagement?.lastEvent;
+                if (!event) return 0;
+                switch (event) {
+                    case 'clicked': return 3;
+                    case 'opened': return 2;
+                    case 'delivered': return 1;
+                    case 'bounced': return -1;
+                    case 'spam': return -2;
+                    default: return 0;
+                }
+            };
+            return [...displayVendors].sort((a, b) => heatScore(b) - heatScore(a));
+        }
 
-        const heatScore = (v: Vendor): number => {
-            const event = v.emailEngagement?.lastEvent;
-            if (!event) return 0; // no data — neutral
-            switch (event) {
-                case 'clicked': return 3;
-                case 'opened': return 2;
-                case 'delivered': return 1;
-                case 'bounced': return -1;
-                case 'spam': return -2;
-                default: return 0;
+        if (!sortField) return displayVendors;
+
+        return [...displayVendors].sort((a, b) => {
+            let cmp = 0;
+            switch (sortField) {
+                case 'name':
+                    cmp = (a.businessName || '').localeCompare(b.businessName || '');
+                    break;
+                case 'location': {
+                    const locA = `${a.city || ''} ${a.state || ''}`.trim();
+                    const locB = `${b.city || ''} ${b.state || ''}`.trim();
+                    cmp = locA.localeCompare(locB);
+                    break;
+                }
+                case 'score':
+                    cmp = (a.fitScore || 0) - (b.fitScore || 0);
+                    break;
+                case 'status':
+                    cmp = (a.status || '').localeCompare(b.status || '');
+                    break;
             }
-        };
-
-        return [...displayVendors].sort((a, b) => heatScore(b) - heatScore(a));
+            return sortDir === 'asc' ? cmp : -cmp;
+        });
     })();
 
     // Log unique status values for debugging
@@ -343,10 +384,18 @@ export default function VendorList({
                                                 aria-label="Select all vendors"
                                             />
                                         </TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-xs">Vendor</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs hidden lg:table-cell">Location</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs w-16">Score</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Status</TableHead>
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-xs cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('name')}>
+                                            <span className="flex items-center">Vendor <SortIcon field="name" /></span>
+                                        </TableHead>
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs hidden lg:table-cell cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('location')}>
+                                            <span className="flex items-center justify-center">Location <SortIcon field="location" /></span>
+                                        </TableHead>
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs w-16 cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('score')}>
+                                            <span className="flex items-center justify-center">Score <SortIcon field="score" /></span>
+                                        </TableHead>
+                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('status')}>
+                                            <span className="flex items-center justify-center">Status <SortIcon field="status" /></span>
+                                        </TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
