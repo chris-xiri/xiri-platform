@@ -70,15 +70,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     if (type === 'SERVICE') {
         const service = data as any;
+        // Title: value prop + brand (max ~60 chars for SERP display)
+        const title = `${service.heroTitle || service.name} — Nightly Verified | XIRI Facility Solutions`;
+        // Description: hook + differentiator + CTA (max ~155 chars)
+        const description = `${service.shortDescription} One partner. One invoice. Nightly quality audits. Get a free facility walkthrough today.`.slice(0, 155);
         return {
-            title: `${service.heroTitle || service.name} | XIRI`,
-            description: service.shortDescription,
+            title,
+            description,
             alternates: {
                 canonical: `https://xiri.ai/services/${service.slug}`
             },
             openGraph: {
-                title: `${service.heroTitle || service.name} | XIRI`,
-                description: service.shortDescription,
+                title,
+                description,
                 url: `https://xiri.ai/services/${service.slug}`,
                 siteName: 'XIRI Facility Solutions',
                 type: 'website',
@@ -86,20 +90,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         };
     } else if (type === 'LOCATION') {
         const { service, location } = data as { service: any; location: Location };
-        const title = `${service.name} in ${location.name} — ${location.medicalDensity || location.region} | XIRI`;
-        const description = location.localInsight
-            ? `${service.name} in ${location.name}. ${location.localInsight}`
-            : `Professional ${service.name} in ${location.name}. ${service.shortDescription}`;
+        // Numbers + compliance in title catch the eye in SERPs
+        const title = `100% OSHA-Compliant ${service.name} in ${location.name}, ${location.state} | XIRI`;
+        // Description: numbers + compliance + CTA
+        const localHook = location.localInsight
+            ? `${location.localInsight} `
+            : '';
+        const description = `${localHook}${service.name} in ${location.name} — 365 nights/yr verified, $1M-insured contractors, 1 invoice. OSHA + HIPAA audit-ready. Free walkthrough →`.slice(0, 155);
 
         return {
             title,
-            description: description.slice(0, 160),
+            description,
             alternates: {
                 canonical: `https://xiri.ai/services/${slug}`
             },
             openGraph: {
                 title,
-                description: description.slice(0, 160),
+                description,
                 url: `https://xiri.ai/services/${slug}`,
                 siteName: 'XIRI Facility Solutions',
                 type: 'website',
