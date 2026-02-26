@@ -14,6 +14,7 @@ interface HeroProps {
     features?: { text: string; icon?: React.ReactNode }[];
     showSecondaryBtn?: boolean;
     variant?: 'light' | 'dark';
+    showBrandEyebrow?: boolean;
     onCtaClick?: (e: React.MouseEvent) => void;
 }
 
@@ -34,6 +35,7 @@ export function Hero({
     features,
     showSecondaryBtn = true,
     variant = 'light',
+    showBrandEyebrow = true,
     onCtaClick
 }: HeroProps) {
     const [logoIndex, setLogoIndex] = useState<number>(0);
@@ -58,6 +60,11 @@ export function Hero({
                     {/* Text Content */}
                     <div className="max-w-2xl">
                         <h1 className={`text-4xl md:text-6xl font-heading font-bold tracking-tight leading-[1.1] mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {showBrandEyebrow && (
+                                <span className="block text-sm md:text-base font-semibold tracking-[0.2em] uppercase text-sky-600 mb-3">
+                                    XIRI Facility Solutions
+                                </span>
+                            )}
                             {title}
                         </h1>
                         <p className={`text-lg md:text-xl mb-8 leading-relaxed max-w-lg ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>

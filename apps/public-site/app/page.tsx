@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white font-sans">
       <Hero
-        title={<><span className="block text-sm md:text-base font-semibold tracking-[0.2em] uppercase text-sky-600 mb-3">XIRI Facility Solutions</span>The New Standard in<br /><span className="text-sky-600">Facility Management</span></>}
+        title={<>The New Standard in<br /><span className="text-sky-600">Facility Management</span></>}
         subtitle="Professional facility management for single-tenant buildings. One Partner. Zero Headaches. Nightly Verified."
         ctaText="Get Your Facility Audit"
         ctaLink="#audit"
