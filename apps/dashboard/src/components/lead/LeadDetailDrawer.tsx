@@ -26,14 +26,14 @@ function toDate(value: any): Date | null {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-    'new': 'bg-blue-100 text-blue-800 border-blue-200 dark:border-blue-800',
+    'new': 'bg-blue-100 text-blue-800 border-blue-200',
     'contacted': 'bg-yellow-100 text-yellow-800 border-yellow-200',
     'qualified': 'bg-green-100 text-green-800 border-green-200',
-    'walkthrough': 'bg-purple-100 text-purple-800 dark:text-purple-300 border-purple-200',
+    'walkthrough': 'bg-purple-100 text-purple-800 border-purple-200',
     'proposal': 'bg-orange-100 text-orange-800 border-orange-200',
-    'quoted': 'bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800',
+    'quoted': 'bg-sky-100 text-sky-800 border-sky-200',
     'won': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    'lost': 'bg-gray-100 dark:bg-gray-800 text-gray-800 border-gray-200',
+    'lost': 'bg-gray-100 text-gray-800 border-gray-200',
     'churned': 'bg-red-100 text-red-800 border-red-200',
 };
 
@@ -60,11 +60,11 @@ interface LeadDetailDrawerProps {
 }
 
 const QUOTE_BADGE: Record<string, { color: string; label: string }> = {
-    draft: { color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300', label: 'Draft' },
-    sent: { color: 'bg-blue-100 text-blue-700 dark:text-blue-400', label: 'Sent' },
-    accepted: { color: 'bg-green-100 text-green-700 dark:text-green-400', label: 'Accepted' },
+    draft: { color: 'bg-gray-100 text-gray-700', label: 'Draft' },
+    sent: { color: 'bg-blue-100 text-blue-700', label: 'Sent' },
+    accepted: { color: 'bg-green-100 text-green-700', label: 'Accepted' },
     rejected: { color: 'bg-red-100 text-red-700', label: 'Rejected' },
-    expired: { color: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400', label: 'Expired' },
+    expired: { color: 'bg-gray-100 text-gray-500', label: 'Expired' },
     changes_requested: { color: 'bg-amber-100 text-amber-700', label: 'Changes' },
 };
 
@@ -122,10 +122,10 @@ function EditableField({
                     onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') handleCancel(); }}
                 />
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleSave} disabled={saving}>
-                    {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3 text-green-600 dark:text-green-400" />}
+                    {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3 text-green-600" />}
                 </Button>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCancel}>
-                    <X className="w-3 h-3 text-red-500 dark:text-red-400" />
+                    <X className="w-3 h-3 text-red-500" />
                 </Button>
             </div>
         );

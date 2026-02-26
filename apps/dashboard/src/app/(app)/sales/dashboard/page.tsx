@@ -35,7 +35,7 @@ function pct(n: number, d: number): string {
 /* ─── Commission Status Colors ────────────────────────────────────── */
 
 const COMM_STATUS: Record<string, string> = {
-    PENDING: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+    PENDING: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
     ACTIVE: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
     COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
     PARTIALLY_CANCELLED: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
@@ -46,21 +46,21 @@ const COMM_STATUS: Record<string, string> = {
 const PAYOUT_ICON: Record<string, React.ReactNode> = {
     PAID: <CheckCircle className="w-3.5 h-3.5 text-green-500" />,
     PENDING: <Clock className="w-3.5 h-3.5 text-amber-500" />,
-    CANCELLED: <XCircle className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />,
+    CANCELLED: <XCircle className="w-3.5 h-3.5 text-red-500" />,
 };
 
 /* ─── Status Tabs ─────────────────────────────────────────────────── */
 
 const STATUS_TABS = [
     { key: 'all', label: 'All', icon: Users, color: '' },
-    { key: 'new', label: 'New', icon: Users, color: 'text-blue-600 dark:text-blue-400' },
-    { key: 'contacted', label: 'Contacted', icon: Mail, color: 'text-yellow-600 dark:text-yellow-400' },
-    { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-green-600 dark:text-green-400' },
-    { key: 'walkthrough', label: 'Walkthrough', icon: Eye, color: 'text-purple-600 dark:text-purple-400' },
-    { key: 'proposal', label: 'Proposal', icon: Target, color: 'text-orange-600 dark:text-orange-400' },
-    { key: 'quoted', label: 'Quoted', icon: DollarSign, color: 'text-sky-600 dark:text-sky-400' },
-    { key: 'won', label: 'Won', icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400' },
-    { key: 'lost', label: 'Lost', icon: XCircle, color: 'text-gray-500 dark:text-gray-400' },
+    { key: 'new', label: 'New', icon: Users, color: 'text-blue-600' },
+    { key: 'contacted', label: 'Contacted', icon: Mail, color: 'text-yellow-600' },
+    { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-green-600' },
+    { key: 'walkthrough', label: 'Walkthrough', icon: Eye, color: 'text-purple-600' },
+    { key: 'proposal', label: 'Proposal', icon: Target, color: 'text-orange-600' },
+    { key: 'quoted', label: 'Quoted', icon: DollarSign, color: 'text-sky-600' },
+    { key: 'won', label: 'Won', icon: CheckCircle, color: 'text-emerald-600' },
+    { key: 'lost', label: 'Lost', icon: XCircle, color: 'text-gray-500' },
 ] as const;
 
 /* ─── Commission Interface ────────────────────────────────────────── */
@@ -285,7 +285,7 @@ export default function SalesDashboardPage() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-xs text-muted-foreground">Earned</p>
-                                            <p className="text-xl font-bold text-green-600 dark:text-green-400">{fmt(commTotals.earned)}</p>
+                                            <p className="text-xl font-bold text-green-600">{fmt(commTotals.earned)}</p>
                                         </div>
                                         <CheckCircle className="w-5 h-5 text-green-500" />
                                     </div>
@@ -296,7 +296,7 @@ export default function SalesDashboardPage() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-xs text-muted-foreground">Pending</p>
-                                            <p className="text-xl font-bold text-amber-600 dark:text-amber-400">{fmt(commTotals.pending)}</p>
+                                            <p className="text-xl font-bold text-amber-600">{fmt(commTotals.pending)}</p>
                                         </div>
                                         <Clock className="w-5 h-5 text-amber-500" />
                                     </div>
@@ -307,9 +307,9 @@ export default function SalesDashboardPage() {
                         {/* Inline Outreach Funnel Bar */}
                         <div className="flex items-center gap-2 text-xs">
                             {[
-                                { label: 'Sent', count: outreach.sent, color: 'bg-sky-50 dark:bg-sky-950/300' },
-                                { label: 'Opened', count: outreach.opened, color: 'bg-blue-50 dark:bg-blue-950/300' },
-                                { label: 'Clicked', count: outreach.clicked, color: 'bg-purple-50 dark:bg-purple-950/300' },
+                                { label: 'Sent', count: outreach.sent, color: 'bg-sky-500' },
+                                { label: 'Opened', count: outreach.opened, color: 'bg-blue-500' },
+                                { label: 'Clicked', count: outreach.clicked, color: 'bg-purple-500' },
                                 { label: 'Won', count: wonCount, color: 'bg-emerald-600' },
                             ].map((step, i, arr) => (
                                 <div key={step.label} className="flex items-center gap-1.5">
@@ -321,7 +321,7 @@ export default function SalesDashboardPage() {
                                 </div>
                             ))}
                             {outreach.bounced > 0 && (
-                                <div className="flex items-center gap-1 ml-2 text-red-500 dark:text-red-400">
+                                <div className="flex items-center gap-1 ml-2 text-red-500">
                                     <AlertTriangle className="w-3 h-3" /> {outreach.bounced} bounced
                                 </div>
                             )}
@@ -377,8 +377,8 @@ export default function SalesDashboardPage() {
                                 <Badge variant="secondary" className="text-[10px]">{commRecords.length}</Badge>
                             </div>
                             <div className="flex items-center gap-3 text-xs">
-                                <span className="text-green-600 dark:text-green-400 font-medium">{fmt(commTotals.earned)} earned</span>
-                                <span className="text-amber-600 dark:text-amber-400 font-medium">{fmt(commTotals.pending)} pending</span>
+                                <span className="text-green-600 font-medium">{fmt(commTotals.earned)} earned</span>
+                                <span className="text-amber-600 font-medium">{fmt(commTotals.pending)} pending</span>
                             </div>
                         </div>
                         <div className="max-h-[250px] overflow-y-auto">

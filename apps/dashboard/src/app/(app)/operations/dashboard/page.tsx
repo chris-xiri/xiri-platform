@@ -181,7 +181,7 @@ export default function OperationsDashboardPage() {
                     <Card className="border-red-200 dark:border-red-900">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Needs Vendor</CardTitle>
-                            <AlertTriangle className="h-4 w-4 text-red-500 dark:text-red-400" />
+                            <AlertTriangle className="h-4 w-4 text-red-500" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-red-600 dark:text-red-400">{loading ? '...' : woStats.needsVendor}</div>
@@ -243,7 +243,7 @@ export default function OperationsDashboardPage() {
                                                 {!wo.vendorId && (
                                                     <Badge variant="destructive" className="text-xs">No Vendor</Badge>
                                                 )}
-                                                <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/30 text-amber-700 border-amber-200">
+                                                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
                                                     {daysUntil}d to start
                                                 </Badge>
                                             </div>

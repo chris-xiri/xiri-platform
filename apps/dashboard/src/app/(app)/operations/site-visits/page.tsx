@@ -129,7 +129,7 @@ export default function SiteVisitsPage() {
                 </Card>
                 <Card>
                     <CardContent className="pt-6 text-center">
-                        <AlertTriangle className={`w-6 h-6 mx-auto mb-2 ${openActions > 0 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`} />
+                        <AlertTriangle className={`w-6 h-6 mx-auto mb-2 ${openActions > 0 ? 'text-red-500' : 'text-gray-400'}`} />
                         <p className="text-2xl font-bold">{openActions}</p>
                         <p className="text-xs text-muted-foreground">Open Action Items</p>
                     </CardContent>
@@ -140,7 +140,7 @@ export default function SiteVisitsPage() {
             {overdueWOs.length > 0 && (
                 <Card className="border-red-200 dark:border-red-900/50">
                     <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2 text-red-600 dark:text-red-400">
+                        <CardTitle className="text-base flex items-center gap-2 text-red-600">
                             <AlertTriangle className="w-4 h-4" />
                             Overdue Visits ({overdueWOs.length})
                         </CardTitle>
@@ -154,7 +154,7 @@ export default function SiteVisitsPage() {
                                     onClick={() => router.push(`/operations/site-visits/conduct?workOrderId=${wo.id}`)}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <Building2 className="w-4 h-4 text-red-500 dark:text-red-400" />
+                                        <Building2 className="w-4 h-4 text-red-500" />
                                         <div>
                                             <p className="font-medium text-sm">{wo.locationName}</p>
                                             <p className="text-xs text-muted-foreground">{wo.serviceType}</p>
@@ -246,7 +246,7 @@ export default function SiteVisitsPage() {
                                     </div>
                                     <div className="flex items-center gap-3">
                                         {v.clientContactMade && (
-                                            <Badge variant="outline" className="text-[10px] text-green-600 dark:text-green-400 border-green-200">
+                                            <Badge variant="outline" className="text-[10px] text-green-600 border-green-200">
                                                 Client Met
                                             </Badge>
                                         )}

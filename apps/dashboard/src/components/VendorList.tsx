@@ -337,7 +337,7 @@ export default function VendorList({
 
             {/* Bulk Actions Bar */}
             {selectedVendors.size > 0 && (
-                <div className="px-3 py-2 bg-blue-50 dark:bg-blue-950/30 border-b border-blue-200 dark:border-blue-800 flex items-center justify-between">
+                <div className="px-3 py-2 bg-blue-50 border-b border-blue-200 flex items-center justify-between">
                     <span className="text-sm font-medium text-blue-900">
                         {selectedVendors.size} selected
                     </span>

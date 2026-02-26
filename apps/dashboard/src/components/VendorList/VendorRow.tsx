@@ -32,15 +32,15 @@ function getEngagementSignal(vendor: Vendor) {
 
     switch (eng.lastEvent) {
         case 'clicked':
-            return { icon: MousePointerClick, label: 'Clicked', color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200', heat: 3 };
+            return { icon: MousePointerClick, label: 'Clicked', color: 'text-emerald-600 bg-emerald-50 border-emerald-200', heat: 3 };
         case 'opened':
-            return { icon: MailOpen, label: `Opened${eng.openCount > 1 ? ` ×${eng.openCount}` : ''}`, color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800', heat: 2 };
+            return { icon: MailOpen, label: `Opened${eng.openCount > 1 ? ` ×${eng.openCount}` : ''}`, color: 'text-blue-600 bg-blue-50 border-blue-200', heat: 2 };
         case 'delivered':
-            return { icon: MailCheck, label: 'Delivered', color: 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30 border-gray-200', heat: 1 };
+            return { icon: MailCheck, label: 'Delivered', color: 'text-gray-500 bg-gray-50 border-gray-200', heat: 1 };
         case 'bounced':
-            return { icon: AlertTriangle, label: 'Bounced', color: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border-red-200', heat: -1 };
+            return { icon: AlertTriangle, label: 'Bounced', color: 'text-red-600 bg-red-50 border-red-200', heat: -1 };
         case 'spam':
-            return { icon: Ban, label: 'Spam', color: 'text-red-700 bg-red-50 dark:bg-red-950/30 border-red-200', heat: -2 };
+            return { icon: Ban, label: 'Spam', color: 'text-red-700 bg-red-50 border-red-200', heat: -2 };
         default:
             return null;
     }
@@ -202,7 +202,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                                     variant="outline"
                                     size="sm"
                                     onClick={() => onUpdateStatus(vendor.id!, 'qualified', { onboardingTrack: 'STANDARD', hasActiveContract: false })}
-                                    className="h-7 px-2 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition-all font-medium text-xs"
+                                    className="h-7 px-2 border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white transition-all font-medium text-xs"
                                     title="Standard Network Invite"
                                 >
                                     <Check className="w-3 h-3 mr-1" /> Standard
@@ -211,7 +211,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                                     variant="outline"
                                     size="sm"
                                     onClick={() => onUpdateStatus(vendor.id!, 'qualified', { onboardingTrack: 'FAST_TRACK', hasActiveContract: true })}
-                                    className="h-7 px-2 border-purple-200 text-purple-700 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all font-medium text-xs"
+                                    className="h-7 px-2 border-purple-200 text-purple-700 hover:bg-purple-600 hover:text-white transition-all font-medium text-xs"
                                     title="Urgent Contract Invite"
                                 >
                                     <Zap className="w-3 h-3 mr-1" /> Urgent
@@ -220,7 +220,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                                     variant="outline"
                                     size="sm"
                                     onClick={() => onUpdateStatus(vendor.id!, 'rejected')}
-                                    className="h-7 px-2 border-red-200 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-all font-medium text-xs"
+                                    className="h-7 px-2 border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition-all font-medium text-xs"
                                     title="Reject Vendor"
                                 >
                                     <X className="w-3 h-3" />
@@ -264,7 +264,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                                                 size="sm"
                                                 disabled={!emailInput.includes('@') && !phoneInput.trim()}
                                                 onClick={handleSaveContact}
-                                                className="h-6 px-2 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 hover:bg-blue-600 hover:text-white text-[10px]"
+                                                className="h-6 px-2 border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white text-[10px]"
                                             >
                                                 <Send className="w-3 h-3 mr-0.5" /> Save
                                             </Button>

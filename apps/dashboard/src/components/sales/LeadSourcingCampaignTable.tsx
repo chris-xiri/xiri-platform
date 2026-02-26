@@ -142,19 +142,19 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
                                 <span className="flex items-center gap-1.5">
                                     <Rocket className="w-3.5 h-3.5 text-yellow-500 fill-current" /> Fit Score
                                 </span>
-                                <span className={`font-bold text-sm ${fitScore.total >= 70 ? 'text-emerald-600 dark:text-emerald-400' : fitScore.total >= 45 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+                                <span className={`font-bold text-sm ${fitScore.total >= 70 ? 'text-emerald-600' : fitScore.total >= 45 ? 'text-amber-600' : 'text-red-600'}`}>
                                     {fitScore.total}/100
                                 </span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="px-3 pb-2 pt-0 space-y-1">
                             {[
-                                { label: 'Vertical', value: fitScore.verticalAlignment, weight: '30%', color: 'bg-blue-50 dark:bg-blue-950/300' },
-                                { label: 'Single Tenant (NNN)', value: fitScore.singleTenant, weight: '20%', color: 'bg-emerald-50 dark:bg-emerald-950/300' },
-                                { label: 'Enrichment', value: fitScore.enrichmentMatch, weight: '20%', color: 'bg-purple-50 dark:bg-purple-950/300' },
-                                { label: 'Intent Signal', value: fitScore.intentSignal, weight: '15%', color: 'bg-amber-50 dark:bg-amber-950/300' },
+                                { label: 'Vertical', value: fitScore.verticalAlignment, weight: '30%', color: 'bg-blue-500' },
+                                { label: 'Single Tenant (NNN)', value: fitScore.singleTenant, weight: '20%', color: 'bg-emerald-500' },
+                                { label: 'Enrichment', value: fitScore.enrichmentMatch, weight: '20%', color: 'bg-purple-500' },
+                                { label: 'Intent Signal', value: fitScore.intentSignal, weight: '15%', color: 'bg-amber-500' },
                                 { label: 'Building Size', value: fitScore.buildingSize, weight: '10%', color: 'bg-cyan-500' },
-                                { label: 'Property Value', value: fitScore.propertyValue, weight: '5%', color: 'bg-gray-50 dark:bg-gray-900/300' },
+                                { label: 'Property Value', value: fitScore.propertyValue, weight: '5%', color: 'bg-gray-500' },
                             ].map(criterion => (
                                 <div key={criterion.label} className="flex items-center gap-1.5 text-[10px]">
                                     <span className="w-[85px] text-muted-foreground truncate flex-shrink-0">{criterion.label}</span>
@@ -202,7 +202,7 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
                                 </div>
                             )}
                             {enrichMatch.phone && (
-                                <a href={`tel:${enrichMatch.phone}`} className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                                <a href={`tel:${enrichMatch.phone}`} className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
                                     <Phone className="w-3 h-3" /> {enrichMatch.phone}
                                 </a>
                             )}
@@ -232,7 +232,7 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
                                 </div>
                             )}
                             {intentMatch.ownerPhone && (
-                                <a href={`tel:${intentMatch.ownerPhone}`} className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                                <a href={`tel:${intentMatch.ownerPhone}`} className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
                                     <Phone className="w-3 h-3" /> {intentMatch.ownerPhone}
                                 </a>
                             )}
@@ -283,7 +283,7 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
                             {/* Website */}
                             {placesData.website && (
                                 <a href={placesData.website} target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline truncate">
+                                    className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline truncate">
                                     <Globe className="w-3 h-3 flex-shrink-0" />
                                     {placesData.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                                 </a>
@@ -291,7 +291,7 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
 
                             {/* Phone */}
                             {placesData.phone && (
-                                <a href={`tel:${placesData.phone}`} className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                                <a href={`tel:${placesData.phone}`} className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
                                     <Phone className="w-3 h-3 flex-shrink-0" /> {placesData.phone}
                                 </a>
                             )}
@@ -339,7 +339,7 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
                                 <span className="flex items-center gap-1.5">
                                     <Rocket className="w-3.5 h-3.5 text-yellow-500 fill-current" /> Fit Score
                                 </span>
-                                <span className={`font-bold text-sm ${(property.fitScore || 0) > 70 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                                <span className={`font-bold text-sm ${(property.fitScore || 0) > 70 ? 'text-green-600' : 'text-yellow-600'}`}>
                                     {property.fitScore}/100
                                 </span>
                             </CardTitle>
@@ -357,7 +357,7 @@ function PropertyDetailPanel({ property, onClose, onApprove, onDismiss, onRevive
                 {/* Action Buttons */}
                 <div className="pt-2">
                     {dismissed ? (
-                        <Button onClick={() => onRevive(campaignId, property.id)} className="w-full h-8 text-xs bg-amber-50 dark:bg-amber-950/300 hover:bg-amber-600 text-white">
+                        <Button onClick={() => onRevive(campaignId, property.id)} className="w-full h-8 text-xs bg-amber-500 hover:bg-amber-600 text-white">
                             <RotateCcw className="w-3 h-3 mr-1" /> Revive Property
                         </Button>
                     ) : (
@@ -725,7 +725,7 @@ export default function LeadSourcingCampaignTable({
                                         <span className="truncate">{campaign.label}</span>
                                     )}
                                     {activeCount > 0 && <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 flex-shrink-0 mt-0.5">{activeCount}</Badge>}
-                                    <button className="opacity-0 group-hover:opacity-100 hover:text-red-500 dark:text-red-400 transition-all flex-shrink-0 ml-0.5 mt-0.5"
+                                    <button className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all flex-shrink-0 ml-0.5 mt-0.5"
                                         onClick={(e) => { e.stopPropagation(); setShowCloseTabDialog(campaign.id); }}>
                                         <X className="w-3 h-3" />
                                     </button>
@@ -876,7 +876,7 @@ export default function LeadSourcingCampaignTable({
                                 </div>
                             )}
 
-                            {searchMessage && <p className={`text-[10px] mt-1 ${searchMessage.includes('Error') ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{searchMessage}</p>}
+                            {searchMessage && <p className={`text-[10px] mt-1 ${searchMessage.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>{searchMessage}</p>}
                         </div>
 
                         {/* Bulk Bar */}
@@ -919,7 +919,7 @@ export default function LeadSourcingCampaignTable({
                                                 <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white px-2" onClick={() => setShowBulkApproveDialog(true)}>
                                                     <CheckCircle2 className="w-3 h-3 mr-0.5" /> Approve ({selectedProperties.size})
                                                 </Button>
-                                                <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 dark:text-red-400 px-2" onClick={() => setShowBulkDismissDialog(true)}>
+                                                <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 px-2" onClick={() => setShowBulkDismissDialog(true)}>
                                                     <XCircle className="w-3 h-3 mr-0.5" /> ✕
                                                 </Button>
                                             </>
@@ -928,7 +928,7 @@ export default function LeadSourcingCampaignTable({
                                                 <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white px-2" onClick={() => onApproveAll(activeCampaign.id)}>
                                                     <CheckCircle2 className="w-3 h-3 mr-0.5" /> Approve All
                                                 </Button>
-                                                <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 dark:text-red-400 px-2" onClick={() => onDismissAll(activeCampaign.id)}>
+                                                <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 px-2" onClick={() => onDismissAll(activeCampaign.id)}>
                                                     <XCircle className="w-3 h-3 mr-0.5" /> Dismiss All
                                                 </Button>
                                             </>
@@ -1028,22 +1028,22 @@ export default function LeadSourcingCampaignTable({
                                             </div>
 
                                             {/* Property Type Tag */}
-                                            <Badge variant="outline" className={`text-[9px] px-1.5 flex-shrink-0 ${property.propertyType === 'medical_office' ? 'border-blue-300 text-blue-600 dark:text-blue-400' : property.propertyType === 'auto_dealership' ? 'border-orange-300 text-orange-600 dark:text-orange-400' : ''}`}>
+                                            <Badge variant="outline" className={`text-[9px] px-1.5 flex-shrink-0 ${property.propertyType === 'medical_office' ? 'border-blue-300 text-blue-600' : property.propertyType === 'auto_dealership' ? 'border-orange-300 text-orange-600' : ''}`}>
                                                 {property.propertyType?.replace(/_/g, ' ') || 'Commercial'}
                                             </Badge>
 
                                             {/* Quick Actions */}
                                             <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                                                 {dismissed ? (
-                                                    <Button size="sm" variant="ghost" className="h-6 text-[10px] text-amber-600 dark:text-amber-400 px-1.5" onClick={() => onRevive(activeCampaign.id, property.id!)}>
+                                                    <Button size="sm" variant="ghost" className="h-6 text-[10px] text-amber-600 px-1.5" onClick={() => onRevive(activeCampaign.id, property.id!)}>
                                                         <RotateCcw className="w-3 h-3" />
                                                     </Button>
                                                 ) : (
                                                     <>
-                                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-green-600 dark:text-green-400 hover:bg-green-50 dark:bg-green-950/30" onClick={() => onApprove(activeCampaign.id, property.id!)} title="Approve to CRM">
+                                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-green-600 hover:bg-green-50" onClick={() => onApprove(activeCampaign.id, property.id!)} title="Approve to CRM">
                                                             <CheckCircle2 className="w-3.5 h-3.5" />
                                                         </Button>
-                                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-500 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/30" onClick={() => onDismiss(activeCampaign.id, property.id!)} title="Dismiss">
+                                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-500 hover:bg-red-50" onClick={() => onDismiss(activeCampaign.id, property.id!)} title="Dismiss">
                                                             <XCircle className="w-3.5 h-3.5" />
                                                         </Button>
                                                     </>
@@ -1060,7 +1060,7 @@ export default function LeadSourcingCampaignTable({
                             <div className="flex-1 flex flex-col items-center justify-center py-8">
                                 <Search className="w-6 h-6 text-muted-foreground/40 mb-2" />
                                 <p className="text-xs text-muted-foreground">No properties match the <strong>{filterMode}</strong> filter</p>
-                                <button onClick={() => setFilterMode('all')} className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline mt-1">Show all</button>
+                                <button onClick={() => setFilterMode('all')} className="text-[10px] text-blue-600 hover:underline mt-1">Show all</button>
                             </div>
                         )}
 

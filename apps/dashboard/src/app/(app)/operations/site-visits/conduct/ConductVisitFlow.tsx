@@ -208,7 +208,7 @@ export default function ConductVisitFlow() {
                     </p>
                 )}
                 {isFirstVisit && (
-                    <Badge variant="outline" className="text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800">
+                    <Badge variant="outline" className="text-blue-600 border-blue-200">
                         ★ First Visit Recorded
                     </Badge>
                 )}
@@ -235,7 +235,7 @@ export default function ConductVisitFlow() {
                     )}
                 </div>
                 {isFirstVisit && selectedWO && (
-                    <Badge variant="outline" className="text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 ml-auto">
+                    <Badge variant="outline" className="text-blue-600 border-blue-200 ml-auto">
                         ★ First Visit
                     </Badge>
                 )}
@@ -333,7 +333,7 @@ export default function ConductVisitFlow() {
                                                 <Star
                                                     className={`w-5 h-5 transition-colors ${n <= area.rating
                                                         ? 'text-amber-400 fill-amber-400'
-                                                        : 'text-gray-300 dark:text-gray-600 dark:text-gray-400'
+                                                        : 'text-gray-300 dark:text-gray-600'
                                                         }`}
                                                 />
                                             </button>
@@ -416,7 +416,7 @@ export default function ConductVisitFlow() {
                                                 <Star
                                                     className={`w-8 h-8 transition-colors ${n <= clientSatisfaction
                                                         ? 'text-green-500 fill-green-500'
-                                                        : 'text-gray-300 dark:text-gray-600 dark:text-gray-400'
+                                                        : 'text-gray-300 dark:text-gray-600'
                                                         }`}
                                                 />
                                             </button>
@@ -612,7 +612,7 @@ export default function ConductVisitFlow() {
                         {/* Upsell */}
                         {upsellNotes && (
                             <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/10">
-                                <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1 flex items-center gap-1">
+                                <p className="text-xs text-green-600 font-medium mb-1 flex items-center gap-1">
                                     <TrendingUp className="w-3 h-3" /> Upsell Opportunity
                                 </p>
                                 <p className="text-sm">{upsellNotes}</p>

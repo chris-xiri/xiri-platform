@@ -18,7 +18,7 @@ const formatCurrency = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
 
 const STATUS_COLORS: Record<string, string> = {
-    PENDING: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+    PENDING: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
     ACTIVE: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
     COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
     PARTIALLY_CANCELLED: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
@@ -29,7 +29,7 @@ const STATUS_COLORS: Record<string, string> = {
 const PAYOUT_ICONS: Record<string, React.ReactNode> = {
     PAID: <CheckCircle className="w-3.5 h-3.5 text-green-500" />,
     PENDING: <Clock className="w-3.5 h-3.5 text-amber-500" />,
-    CANCELLED: <XCircle className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />,
+    CANCELLED: <XCircle className="w-3.5 h-3.5 text-red-500" />,
 };
 
 interface CommissionRow {
@@ -187,7 +187,7 @@ export default function AccountingCommissionsPage() {
                     <Card className="border-red-200 dark:border-red-900">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Cancelled (Clawback)</CardTitle>
-                            <AlertTriangle className="h-4 w-4 text-red-500 dark:text-red-400" />
+                            <AlertTriangle className="h-4 w-4 text-red-500" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-red-600 dark:text-red-400">

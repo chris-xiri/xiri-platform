@@ -56,16 +56,16 @@ function pct(n: number, d: number): string { return d === 0 ? '—' : `${Math.ro
 
 const STATUS_TABS = [
     { key: 'all', label: 'All', icon: Users, color: '' },
-    { key: 'pending_review', label: 'Sourced', icon: Users, color: 'text-sky-600 dark:text-sky-400' },
-    { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-blue-600 dark:text-blue-400' },
+    { key: 'pending_review', label: 'Sourced', icon: Users, color: 'text-sky-600' },
+    { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-blue-600' },
     { key: 'awaiting_onboarding', label: 'Awaiting Form', icon: Mail, color: 'text-indigo-600' },
-    { key: 'compliance_review', label: 'Compliance', icon: ShieldCheck, color: 'text-amber-600 dark:text-amber-400' },
-    { key: 'pending_verification', label: 'Verifying Docs', icon: FileSearch, color: 'text-orange-600 dark:text-orange-400' },
+    { key: 'compliance_review', label: 'Compliance', icon: ShieldCheck, color: 'text-amber-600' },
+    { key: 'pending_verification', label: 'Verifying Docs', icon: FileSearch, color: 'text-orange-600' },
     { key: 'onboarding_scheduled', label: 'Onboarding Call', icon: CalendarCheck, color: 'text-violet-600' },
     { key: 'ready_for_assignment', label: 'Ready', icon: Rocket, color: 'text-teal-600' },
-    { key: 'active', label: 'Active', icon: Star, color: 'text-emerald-600 dark:text-emerald-400' },
-    { key: 'suspended', label: 'Suspended', icon: Pause, color: 'text-orange-600 dark:text-orange-400' },
-    { key: 'dismissed', label: 'Dismissed', icon: Ban, color: 'text-red-600 dark:text-red-400' },
+    { key: 'active', label: 'Active', icon: Star, color: 'text-emerald-600' },
+    { key: 'suspended', label: 'Suspended', icon: Pause, color: 'text-orange-600' },
+    { key: 'dismissed', label: 'Dismissed', icon: Ban, color: 'text-red-600' },
 ] as const;
 
 /* ───────── Component ─────────────────────────────────────────────────── */
@@ -193,10 +193,10 @@ export default function SupplyDashboardPage() {
                         {/* Funnel Mini Bar */}
                         <div className="flex items-center gap-2 text-xs">
                             {[
-                                { label: 'Sent', count: funnel.sent, color: 'bg-sky-50 dark:bg-sky-950/300' },
-                                { label: 'Delivered', count: funnel.delivered, color: 'bg-green-50 dark:bg-green-950/300' },
-                                { label: 'Opened', count: funnel.opened, color: 'bg-blue-50 dark:bg-blue-950/300' },
-                                { label: 'Clicked', count: funnel.clicked, color: 'bg-purple-50 dark:bg-purple-950/300' },
+                                { label: 'Sent', count: funnel.sent, color: 'bg-sky-500' },
+                                { label: 'Delivered', count: funnel.delivered, color: 'bg-green-500' },
+                                { label: 'Opened', count: funnel.opened, color: 'bg-blue-500' },
+                                { label: 'Clicked', count: funnel.clicked, color: 'bg-purple-500' },
                                 { label: 'Onboarded', count: funnel.onboarded, color: 'bg-emerald-600' },
                             ].map((step, i, arr) => (
                                 <div key={step.label} className="flex items-center gap-1.5">
@@ -207,7 +207,7 @@ export default function SupplyDashboardPage() {
                                 </div>
                             ))}
                             {funnel.bounced > 0 && (
-                                <div className="flex items-center gap-1 ml-2 text-red-500 dark:text-red-400">
+                                <div className="flex items-center gap-1 ml-2 text-red-500">
                                     <XCircle className="w-3 h-3" /> {funnel.bounced} bounced
                                 </div>
                             )}

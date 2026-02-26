@@ -166,7 +166,7 @@ export default function WorkOrdersPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-2">
-                            <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
+                            <AlertCircle className="w-5 h-5 text-red-500" />
                             <div>
                                 <p className="text-2xl font-bold">{pending.length}</p>
                                 <p className="text-xs text-muted-foreground">Needs Vendor</p>
@@ -188,7 +188,7 @@ export default function WorkOrdersPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-2">
-                            <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            <DollarSign className="w-5 h-5 text-green-600" />
                             <div>
                                 <p className="text-2xl font-bold">
                                     {formatCurrency(active.filter(wo => wo.schedule?.frequency !== 'one_time').reduce((s, wo) => s + (wo.clientRate || 0), 0))}
@@ -273,7 +273,7 @@ export default function WorkOrdersPage() {
                                                 <p className="font-semibold text-sm">{group.clientName}</p>
                                                 <p className="text-xs text-muted-foreground">
                                                     {group.orders.length} work order{group.orders.length !== 1 ? 's' : ''}
-                                                    {needsVendor > 0 && <span className="text-red-500 dark:text-red-400 ml-2">• {needsVendor} needs vendor</span>}
+                                                    {needsVendor > 0 && <span className="text-red-500 ml-2">• {needsVendor} needs vendor</span>}
                                                 </p>
                                             </div>
                                         </div>
@@ -318,7 +318,7 @@ export default function WorkOrdersPage() {
                                                                     {wo.vendorId ? (
                                                                         <span className="text-sm">{wo.vendorHistory?.[wo.vendorHistory.length - 1]?.vendorName || 'Assigned'}</span>
                                                                     ) : (
-                                                                        <span className="text-sm text-red-500 dark:text-red-400 font-medium">Unassigned</span>
+                                                                        <span className="text-sm text-red-500 font-medium">Unassigned</span>
                                                                     )}
                                                                 </td>
                                                                 <td className="px-4 py-2.5 font-medium text-sm">{formatCurrency(wo.clientRate)}</td>
@@ -327,7 +327,7 @@ export default function WorkOrdersPage() {
                                                                 </td>
                                                                 <td className="px-4 py-2.5 text-sm">
                                                                     {margin !== null ? (
-                                                                        <span className={margin > 0 ? 'text-green-600 dark:text-green-400 font-medium' : 'text-red-600 dark:text-red-400'}>
+                                                                        <span className={margin > 0 ? 'text-green-600 font-medium' : 'text-red-600'}>
                                                                             {formatCurrency(margin)}
                                                                         </span>
                                                                     ) : '—'}
@@ -344,7 +344,7 @@ export default function WorkOrdersPage() {
                                                                         const daysUntil = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                                                                         if (daysUntil > 0) {
                                                                             return (
-                                                                                <Badge variant="outline" className="ml-1.5 text-[10px] bg-amber-50 dark:bg-amber-950/30 text-amber-700 border-amber-200">
+                                                                                <Badge variant="outline" className="ml-1.5 text-[10px] bg-amber-50 text-amber-700 border-amber-200">
                                                                                     {daysUntil}d to start
                                                                                 </Badge>
                                                                             );

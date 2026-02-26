@@ -45,11 +45,11 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
     const CompactItem = ({ icon: Icon, label, value, verified, required }: any) => (
         <div className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors text-sm">
             <div className="flex items-center gap-2">
-                <div className={`p-1.5 rounded-full ${value ? 'bg-green-100 text-green-700 dark:text-green-400' : 'bg-red-100 text-red-700'}`}>
+                <div className={`p-1.5 rounded-full ${value ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     <Icon className="w-3.5 h-3.5" />
                 </div>
                 <span className="font-medium text-foreground">{label}</span>
-                {required && <span className="text-[10px] text-red-500 dark:text-red-400 font-semibold">*</span>}
+                {required && <span className="text-[10px] text-red-500 font-semibold">*</span>}
             </div>
             <div className="flex items-center gap-2">
                 {verified !== undefined && (
@@ -58,9 +58,9 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
                     </Badge>
                 )}
                 {value ? (
-                    <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
                 ) : (
-                    <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    <XCircle className="w-4 h-4 text-red-600" />
                 )}
             </div>
         </div>
@@ -75,7 +75,7 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
                     <p className="text-xs text-muted-foreground">{metRequirements}/{totalRequirements} Requirements Met</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className={`text-xl font-bold ${complianceScore === 100 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                    <span className={`text-xl font-bold ${complianceScore === 100 ? 'text-green-600' : 'text-yellow-600'}`}>
                         {complianceScore}%
                     </span>
                     <Badge variant={complianceScore === 100 ? "default" : "outline"}>

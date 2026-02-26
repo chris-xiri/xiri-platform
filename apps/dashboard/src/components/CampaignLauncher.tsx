@@ -201,7 +201,7 @@ export default function CampaignLauncher({ onResults }: CampaignLauncherProps) {
                 </div>
 
                 {message && (
-                    <p className={`text-xs mt-2 ${message.includes("Error") ? "text-red-500 dark:text-red-400" : "text-green-500"}`}>
+                    <p className={`text-xs mt-2 ${message.includes("Error") ? "text-red-500" : "text-green-500"}`}>
                         {message}
                     </p>
                 )}

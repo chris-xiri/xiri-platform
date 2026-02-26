@@ -147,7 +147,7 @@ export default function ContractsPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-2">
-                            <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            <DollarSign className="w-5 h-5 text-green-600" />
                             <div>
                                 <p className="text-2xl font-bold">
                                     {formatCurrency(activeContracts.reduce((s, c) => {

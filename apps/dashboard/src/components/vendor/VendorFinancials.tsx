@@ -26,7 +26,7 @@ export default function VendorFinancials({ vendor }: VendorFinancialsProps) {
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">W-9 Form</span>
                             {vendor.compliance?.w9?.status === 'VERIFIED' ? (
-                                <Badge variant="outline" className="text-green-600 dark:text-green-400 border-green-200 bg-green-50 dark:bg-green-950/30">Verified</Badge>
+                                <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
                             ) : (
                                 <Badge variant="secondary">Not Submitted</Badge>
                             )}

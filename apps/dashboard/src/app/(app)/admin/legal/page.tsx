@@ -38,8 +38,8 @@ const CATEGORY_COLORS: Record<string, string> = {
     msa: 'bg-blue-100 text-blue-800',
     contract: 'bg-green-100 text-green-800',
     addendum: 'bg-amber-100 text-amber-800',
-    nda: 'bg-purple-100 text-purple-800 dark:text-purple-300',
-    other: 'bg-gray-100 dark:bg-gray-800 text-gray-800',
+    nda: 'bg-purple-100 text-purple-800',
+    other: 'bg-gray-100 text-gray-800',
 };
 
 function LegalTemplateForm({
@@ -329,7 +329,7 @@ export default function LegalTemplatesPage() {
                                                 title="Copy content"
                                             >
                                                 {copiedId === template.id
-                                                    ? <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                                                    ? <Check className="w-3.5 h-3.5 text-green-600" />
                                                     : <Copy className="w-3.5 h-3.5" />}
                                             </Button>
                                             <Button

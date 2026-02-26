@@ -207,7 +207,7 @@ function CheckInFlow() {
                         <div
                             key={s}
                             className={`w-8 h-1.5 rounded-full transition-colors ${s === step ? 'bg-primary' :
-                                ['qr', 'tasks', 'score'].indexOf(step) > i ? 'bg-green-50 dark:bg-green-950/300' : 'bg-muted'
+                                ['qr', 'tasks', 'score'].indexOf(step) > i ? 'bg-green-500' : 'bg-muted'
                                 }`}
                         />
                     ))}
@@ -258,7 +258,7 @@ function CheckInFlow() {
 
                     {qrValid === true && (
                         <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/30 rounded-xl border border-green-200 dark:border-green-800 animate-in fade-in">
-                            <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400 shrink-0" />
+                            <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0" />
                             <div>
                                 <p className="font-medium text-green-800 dark:text-green-300">Verified! ✅</p>
                                 <p className="text-xs text-green-600 dark:text-green-400">On-site confirmed. Moving to task checklist...</p>
@@ -268,7 +268,7 @@ function CheckInFlow() {
 
                     {qrValid === false && (
                         <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-950/30 rounded-xl border border-red-200 dark:border-red-800">
-                            <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400 shrink-0" />
+                            <AlertTriangle className="w-6 h-6 text-red-600 shrink-0" />
                             <div>
                                 <p className="font-medium text-red-800 dark:text-red-300">Invalid QR Code</p>
                                 <p className="text-xs text-red-600 dark:text-red-400">This doesn&apos;t match this location. Try again.</p>
@@ -351,7 +351,7 @@ function CheckInFlow() {
                     <div className="bg-muted/30 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium">{completedCount}/{tasks.length} verified</span>
-                            <span className={`text-sm font-bold ${completionRate === 100 ? 'text-green-600 dark:text-green-400' : 'text-primary'}`}>
+                            <span className={`text-sm font-bold ${completionRate === 100 ? 'text-green-600' : 'text-primary'}`}>
                                 {completionRate}%
                             </span>
                         </div>
@@ -371,13 +371,13 @@ function CheckInFlow() {
                         {tasks.map((task) => (
                             <Card
                                 key={task.taskId}
-                                className={`cursor-pointer transition-all active:scale-[0.98] ${task.completed ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30/50 dark:bg-green-950/20' : ''
+                                className={`cursor-pointer transition-all active:scale-[0.98] ${task.completed ? 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20' : ''
                                     }`}
                                 onClick={() => toggleTask(task.taskId)}
                             >
                                 <CardContent className="p-4 flex items-center gap-3">
                                     <div className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${task.completed
-                                        ? 'bg-green-50 dark:bg-green-950/300 border-green-500'
+                                        ? 'bg-green-500 border-green-500'
                                         : 'border-muted-foreground/30'
                                         }`}>
                                         {task.completed && <CheckCircle2 className="w-4 h-4 text-white" />}
@@ -392,7 +392,7 @@ function CheckInFlow() {
 
                     {completionRate === 100 && (
                         <div className="text-center py-2 animate-in fade-in">
-                            <p className="text-sm font-medium text-green-600 dark:text-green-400">All tasks verified! 🎉</p>
+                            <p className="text-sm font-medium text-green-600">All tasks verified! 🎉</p>
                         </div>
                     )}
 

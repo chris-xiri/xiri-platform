@@ -18,7 +18,7 @@ const LanguageBadge = ({ lang }: { lang?: 'en' | 'es' }) => {
     if (lang === 'es') {
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">🇪🇸 ES</Badge>;
     }
-    return <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">🇺🇸 EN</Badge>;
+    return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">🇺🇸 EN</Badge>;
 };
 
 interface RecruitmentDetailViewProps {
@@ -109,7 +109,7 @@ export default function RecruitmentDetailView({ vendorId, onClose }: Recruitment
                                     </span>
                                     <div className="flex items-center gap-2">
                                         <LanguageBadge lang={vendor.preferredLanguage} />
-                                        <span className={`font-bold ${(vendor.fitScore || 0) > 70 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                                        <span className={`font-bold ${(vendor.fitScore || 0) > 70 ? 'text-green-600' : 'text-yellow-600'}`}>
                                             {vendor.fitScore || 0}/100
                                         </span>
                                     </div>
@@ -156,7 +156,7 @@ export default function RecruitmentDetailView({ vendorId, onClose }: Recruitment
                     </div>
 
                     {/* Bottom: Website Preview */}
-                    <div className="flex-1 min-h-[400px] relative bg-white dark:bg-card group">
+                    <div className="flex-1 min-h-[400px] relative bg-white group">
                         {vendor.websiteScreenshotUrl ? (
                             // 1. BEST CASE: Screenshot Available
                             <div className="w-full h-full relative cursor-pointer" onClick={() => window.open(vendor.website, '_blank')}>
