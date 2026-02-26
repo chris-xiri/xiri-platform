@@ -31,7 +31,7 @@ export const SPOKE_HUBS: Record<string, SpokeHub> = {
         metaDescription: 'Specialized facility cleaning for medical offices, surgery centers, dental suites, cleanrooms, and laboratories. JCAHO and ISO compliant.',
         dlpSlugs: [
             'jcaho-survey-ready-disinfection', 'terminal-cleaning-surgery-centers',
-            'dental-suite-sanitization', 'npi-verified-facility-governance',
+            'dental-suite-sanitization', 'npi-verified-facility-governance', 'converted-clinical-suites',
             'iso-7-8-cleanroom-protocol', 'cgmp-lab-decontamination', 'bsl-2-lab-waste-management',
         ],
         sidebarCategory: 'medical',
@@ -156,6 +156,34 @@ export const DLP_SOLUTIONS: Record<string, DLPSolution> = {
             { question: 'Is this required for credentialing?', answer: 'Many credentialing bodies (NCQA, hospital systems) ask about facility maintenance standards. Having documented records significantly strengthens your credentialing applications and renewals.' },
         ],
         relevantServices: ['medical-office-cleaning', 'disinfecting-services'],
+    },
+    'converted-clinical-suites': {
+        title: 'Converted Clinical Suites',
+        heroTitle: 'Facility Management for Converted Clinical Suites',
+        heroSubtitle: 'Residential-to-medical conversions need specialized protocols. Residential HVAC, wood flooring, basement labs — we know what surveyors look for.',
+        metaDescription: 'Medical office conversion compliance in Nassau County. OSHA standards for residential-based clinics NY. JCAHO environment of care for small practices on Long Island.',
+        sidebarCategory: 'medical',
+        complianceChecklist: [
+            { item: 'Residential HVAC system cleaning and filter protocol', standard: 'ASHRAE 62.1 / JCAHO EC' },
+            { item: 'Wood and laminate flooring sanitization (non-VCT)', standard: 'CDC Surface Guidelines' },
+            { item: 'Basement or lower-level lab decontamination', standard: 'OSHA 1910.1030' },
+            { item: 'ADA accessibility pathway cleaning and clearance', standard: 'ADA Title III' },
+            { item: 'Residential plumbing backflow prevention verification', standard: 'NYS Plumbing Code' },
+            { item: 'Shared-entrance infection control (patient vs. residential)', standard: 'JCAHO IC.02.01.01' },
+            { item: 'Low-ceiling dust control and HEPA filtration', standard: 'OSHA PEL / JCAHO EC' },
+        ],
+        sections: [
+            { title: 'Why Converted Suites Are Different', content: 'A converted residential home operating as a medical practice has compliance challenges that purpose-built medical offices don\'t. Residential HVAC systems weren\'t designed for clinical air quality. Wood flooring can\'t be strip-waxed like VCT. Basement labs face unique decontamination challenges. Low ceilings trap particulates. And shared entrances create infection control risks that surveyors increasingly flag.' },
+            { title: 'Common in Great Neck and Long Island', content: 'Nassau County — particularly Great Neck, Manhasset, and the Northern Boulevard corridor — has hundreds of independent physician practices operating from converted residential buildings. These high-end residential conversions are architecturally beautiful but operationally complex. XIRI has developed specific protocols for these environments.' },
+            { title: 'The One-Key-Ring Advantage', content: 'Independent physicians in converted suites typically juggle 3–4 separate maintenance vendors. XIRI consolidates everything under one agreement: cleaning, floor care, HVAC filter changes, pest control, and compliance documentation. One point of contact. One invoice. One system that understands the unique challenges of your converted space.' },
+        ],
+        faqs: [
+            { question: 'What are the OSHA standards for residential-based clinics in New York?', answer: 'OSHA 29 CFR 1910.1030 (bloodborne pathogens) applies regardless of building type. Additionally, residential conversions must meet ventilation (1910.94), walking surfaces (1910.22), and electrical safety standards. XIRI documents compliance for all applicable standards.' },
+            { question: 'Can a converted home pass a JCAHO environment of care survey?', answer: 'Yes — with proper protocols. Key challenges include HVAC air quality, non-standard flooring sanitization, and shared-entrance infection control. XIRI\'s converted suite protocol addresses each survey focal point.' },
+            { question: 'What is One-Key-Ring management?', answer: 'One-Key-Ring is XIRI\'s consolidation model: one partner manages all facility services. Instead of 4–5 vendors, you hand XIRI the key ring. We manage cleaning, floors, HVAC, pest control, and documentation under one agreement.' },
+            { question: 'How do you handle wood flooring in a medical environment?', answer: 'We use CDC-recommended intermediate-level disinfectants effective against bloodborne pathogens without damaging wood finishes. We document moisture levels and finish condition to prevent deterioration.' },
+        ],
+        relevantServices: ['medical-office-cleaning', 'disinfecting-services', 'floor-care', 'hvac-maintenance'],
     },
 
     // ─── LIFE SCIENCES (3) ───

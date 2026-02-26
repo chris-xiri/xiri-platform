@@ -12,6 +12,7 @@ const SIDEBAR_LINKS: Record<string, { label: string; href: string }[]> = {
         { label: 'Terminal Cleaning for Surgery Centers', href: '/solutions/terminal-cleaning-surgery-centers' },
         { label: 'Dental Suite Sanitization', href: '/solutions/dental-suite-sanitization' },
         { label: 'NPI-Verified Facility Governance', href: '/solutions/npi-verified-facility-governance' },
+        { label: 'Converted Clinical Suites', href: '/solutions/converted-clinical-suites' },
         { label: 'JCAHO Cleaning Requirements Guide', href: '/guides/jcaho-cleaning-requirements' },
         { label: 'Accreditation 360 Prep Guide', href: '/guides/accreditation-360-preparation-guide' },
     ],
@@ -41,8 +42,8 @@ const SIDEBAR_LINKS: Record<string, { label: string; href: string }[]> = {
         { label: 'Handyman Subcontractor', href: '/contractors/handyman-subcontractor' },
     ],
     'contractor-geo': [
-        { label: 'Jobs in Great Neck', href: '/contractors/cleaning-jobs-in-great-neck-nassau-ny' },
-        { label: 'Jobs in New Hyde Park', href: '/contractors/cleaning-jobs-in-new-hyde-park-nassau-ny' },
+        { label: 'Jobs in Great Neck', href: '/contractors/cleaning-jobs-in-great-neck-ny' },
+        { label: 'Jobs in New Hyde Park', href: '/contractors/cleaning-jobs-in-new-hyde-park-ny' },
     ],
     'contractor-keyword': [
         { label: '1099 Subcontractor Opportunities', href: '/contractors/subcontractor-opportunities' },
