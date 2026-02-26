@@ -7,7 +7,7 @@ import { trackEvent } from '@/lib/tracking';
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-// Ordered for 3-column nav layout: Medical | Auto+Edu+Specialized | Commercial
+// Ordered for 2-column nav: Medical | Everything Else
 const FACILITY_TYPES = [
     // Column 1: Medical (6 items)
     { group: "Medical", label: "Medical Offices", slug: "medical-offices" },
@@ -16,13 +16,12 @@ const FACILITY_TYPES = [
     { group: "Medical", label: "Dental Offices", slug: "dental-offices" },
     { group: "Medical", label: "Dialysis Centers", slug: "dialysis-centers" },
     { group: "Medical", label: "Veterinary Clinics", slug: "veterinary-clinics" },
-    // Column 2: Auto (1) + Education (2) + Specialized (2)
-    { group: "Automotive", label: "Auto Dealerships", slug: "auto-dealerships" },
-    { group: "Education", label: "Daycares & Preschools", slug: "daycare-preschool" },
-    { group: "Education", label: "Private Schools", slug: "private-schools" },
+    // Column 2: Specialized (3) + Education (2) + Commercial (3)
+    { group: "Specialized", label: "Auto Dealerships", slug: "auto-dealerships" },
     { group: "Specialized", label: "Labs & Cleanrooms", slug: "labs-cleanrooms" },
     { group: "Specialized", label: "Light Manufacturing", slug: "light-manufacturing" },
-    // Column 3: Commercial (3)
+    { group: "Education", label: "Daycares & Preschools", slug: "daycare-preschool" },
+    { group: "Education", label: "Private Schools", slug: "private-schools" },
     { group: "Commercial", label: "Professional Offices", slug: "professional-offices" },
     { group: "Commercial", label: "Fitness & Gyms", slug: "fitness-gyms" },
     { group: "Commercial", label: "Retail Storefronts", slug: "retail-storefronts" },
@@ -175,20 +174,20 @@ export default function Navigation() {
                                     </svg>
                                 </button>
 
-                                <div className={`absolute top-full -left-4 pt-4 w-[700px] transition-all duration-200 origin-top-left ${industriesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
+                                <div className={`absolute top-full -left-4 pt-4 w-[480px] transition-all duration-200 origin-top-left ${industriesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
                                     <div className="bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden ring-1 ring-black/5">
-                                        <div className="p-2 grid grid-cols-3 gap-1">
+                                        <div className="p-2 grid grid-cols-2 gap-x-2">
                                             {/* Render Groups */}
                                             {Object.entries(groupedFacilities).map(([group, facilities]) => (
-                                                <div key={group} className="pb-2">
-                                                    <div className="px-3 py-1.5 text-xs font-bold text-sky-500 uppercase tracking-wider">
+                                                <div key={group} className="pb-1">
+                                                    <div className="px-3 py-1 text-xs font-bold text-sky-500 uppercase tracking-wider">
                                                         {group}
                                                     </div>
                                                     {facilities.map((facility) => (
                                                         <Link
                                                             key={facility.slug}
                                                             href={`/${facility.slug}`}
-                                                            className="block px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 transition-colors"
+                                                            className="block px-3 py-1.5 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 transition-colors"
                                                             onClick={() => handleNavClick(`/${facility.slug}`, facility.label)}
                                                         >
                                                             {facility.label}

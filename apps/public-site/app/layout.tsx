@@ -21,7 +21,7 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   metadataBase: new URL('https://xiri.ai'),
   title: {
-    default: "XIRI Facility Solutions | Medical-Grade Facility Management",
+    default: "XIRI Facility Solutions | The New Standard",
     template: "%s | XIRI Facility Solutions",
   },
   description: "The facility management standard for single-tenant buildings. One partner. Zero headaches. Nightly verified.",

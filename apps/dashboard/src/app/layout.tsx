@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Xiri Platform",
+  title: "XIRI Dashboard",
   description: "AI-powered vendor and sales management",
   robots: {
     index: false,
