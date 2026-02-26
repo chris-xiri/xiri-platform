@@ -45,24 +45,37 @@ export default function sitemap(): MetadataRoute.Sitemap {
         });
     });
 
-    // 4. Client Location Pages (/services/[service]-in-[town]-[county]-[state])
-    // Must match: services/[slug]/page.tsx generateStaticParams
+    // 4. Location Pages
     const toSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
+    // 4a. Service x Location Pages
     services.forEach((service) => {
         (seoData.locations || []).forEach((location) => {
             const countySlug = toSlug(location.region);
             const townSlug = toSlug(location.name.split(',')[0]);
             const stateSlug = location.state.toLowerCase();
-
-            // Match actual route: /services/{service}-in-{town}-{county}-{state}
             const flatSlug = `${service.slug}-in-${townSlug}-${countySlug}-${stateSlug}`;
-
             sitemapEntries.push({
                 url: `${BASE_URL}/services/${flatSlug}`,
                 lastModified: new Date(),
                 changeFrequency: 'monthly',
                 priority: 0.9,
+            });
+        });
+    });
+
+    // 4b. Industry x Location Pages
+    industries.forEach((industry) => {
+        (seoData.locations || []).forEach((location) => {
+            const countySlug = toSlug(location.region);
+            const townSlug = toSlug(location.name.split(',')[0]);
+            const stateSlug = location.state.toLowerCase();
+            const flatSlug = `${industry.slug}-in-${townSlug}-${countySlug}-${stateSlug}`;
+            sitemapEntries.push({
+                url: `${BASE_URL}/services/${flatSlug}`,
+                lastModified: new Date(),
+                changeFrequency: 'monthly',
+                priority: 0.8,
             });
         });
     });
@@ -115,6 +128,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // 7. Guide Pages (/guides/[slug])
     const guideSlugs = [
         'jcaho-cleaning-requirements',
+        'accreditation-360-preparation-guide',
         'commercial-cleaning-cost-guide',
         'inhouse-vs-outsourced-facility-management',
     ];
