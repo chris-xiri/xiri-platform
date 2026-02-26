@@ -147,6 +147,12 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if hasRole('admin');
     }
+
+    // Settings (commission rates, company config)
+    match /settings/{settingId} {
+      allow read: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'accounting']);
+      allow write: if hasRole('admin');
+    }
     
     // Default deny
     match /{document=**} {
