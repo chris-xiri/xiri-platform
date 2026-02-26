@@ -4,7 +4,7 @@
       "slug": "medical-offices",
       "name": "Medical Offices",
       "heroTitle": "Clinical-Grade Facility Management",
-      "heroSubtitle": "We protect your accreditation with JCAHO-compliant cleaning and documentation. From waiting rooms to sterile fields.",
+      "heroSubtitle": "JCAHO survey-ready cleaning with HIPAA-compliant documentation. We protect your accreditation from waiting rooms to sterile fields — so you're never scrambling before an inspection.",
       "coreServices": [
         "medical-office-cleaning",
         "consumable-procurement",
@@ -42,7 +42,11 @@
         },
         {
           "question": "How do you ensure quality?",
-          "answer": "Unlike other companies that set it and forget it, we employ Night Managers who physically audit our contractors' work to ensuring consistent quality."
+          "answer": "Unlike other companies that set it and forget it, we employ Night Managers who physically audit our contractors' work to ensure consistent quality."
+        },
+        {
+          "question": "Are you ready for the 2026 Accreditation 360 changes?",
+          "answer": "Yes. The Joint Commission's Accreditation 360 update merges Environment of Care and Life Safety into a single Physical Environment chapter and shifts to continuous-readiness. Our documentation system and nightly audits already align with this outcome-focused model — so your facility stays survey-ready without a last-minute scramble."
         }
       ]
     },
@@ -540,8 +544,8 @@
       "specializedServices": [],
       "benefits": [
         {
-          "title": "ISO 14644-1 Compliant",
-          "description": "We train every contractor on your cleanroom classification — ISO 7 or ISO 8 — with proper gowning, HEPA-filtered equipment, and particle-count protocols.",
+          "title": "ISO 7 & ISO 8 Particle Control",
+          "description": "We train every contractor on your ISO 14644-1 cleanroom classification — ISO 7 or ISO 8 — with proper gowning, HEPA-filtered equipment, and particle control protocols that protect your rating.",
           "icon": "shield-check"
         },
         {
@@ -571,6 +575,10 @@
         {
           "question": "What about cGMP documentation requirements?",
           "answer": "For FDA-regulated facilities producing supplements, cosmetics, or medical devices, we maintain cGMP-compliant cleaning logs — documenting every product used, every surface cleaned, and every timestamp to prove no cross-contact occurred during cleaning."
+        },
+        {
+          "question": "Do you handle biolab decontamination?",
+          "answer": "Yes. For BSL-1 and BSL-2 labs, we follow proper decontamination protocols for work surfaces, floors, and shared areas — using EPA-registered disinfectants appropriate for your biosafety level. Our crews are trained to distinguish between routine cleaning and decontamination procedures."
         }
       ]
     },
@@ -616,11 +624,15 @@
         },
         {
           "question": "Do you meet cGMP requirements for cosmetic or supplement manufacturing?",
-          "answer": "Yes. For FDA-regulated light manufacturing (cosmetics, supplements, small-batch pharmaceuticals), we maintain full cGMP cleaning logs — documenting every product, every surface, and every timestamp to satisfy FDA auditor inquiries."
+          "answer": "Yes. For FDA-regulated light manufacturing (cosmetics, supplements, small-batch pharmaceuticals), we maintain full cGMP warehouse sanitation logs — documenting every product, every surface, and every timestamp to satisfy FDA auditor inquiries."
         },
         {
           "question": "Can you handle aerospace-grade cleanliness requirements?",
           "answer": "Yes. For precision manufacturing environments — aerospace parts, medical devices, optical components — we follow AS9100-compatible cleaning protocols with documented chain-of-custody and contamination prevention procedures."
+        },
+        {
+          "question": "Do you provide industrial floor degreasing?",
+          "answer": "Yes. For manufacturing floors with oil, coolant, or chemical residue, we use industrial-grade degreasers and scrubbing equipment rated for concrete and epoxy coatings. Regular degreasing prevents slip hazards with OSHA and keeps your production area clean for quality inspections."
         }
       ]
     }

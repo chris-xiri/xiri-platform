@@ -112,6 +112,7 @@ export default function Navigation() {
         {
             group: 'Guides', items: [
                 { label: 'JCAHO Cleaning Requirements', href: '/guides/jcaho-cleaning-requirements' },
+                { label: 'Accreditation 360 Prep Guide', href: '/guides/accreditation-360-preparation-guide' },
                 { label: 'Commercial Cleaning Costs', href: '/guides/commercial-cleaning-cost-guide' },
                 { label: 'In-House vs Outsourced', href: '/guides/inhouse-vs-outsourced-facility-management' },
             ]

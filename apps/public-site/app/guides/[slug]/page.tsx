@@ -201,6 +201,74 @@ const GUIDES: Record<string, {
             },
         ],
     },
+    'accreditation-360-preparation-guide': {
+        title: 'Preparing for JCAHO Accreditation 360: 2026 Guide for Nassau Medical Offices',
+        heroTitle: 'Preparing for the 2026 Accreditation 360 Update',
+        heroSubtitle: 'A surgical-grade guide for Nassau County medical offices navigating the biggest accreditation overhaul since Medicare\'s creation.',
+        metaDescription: 'Prepare for JCAHO Accreditation 360 in 2026. Learn what changed, how it affects your cleaning compliance, and how to stay survey-ready under the new Physical Environment standards.',
+        sections: [
+            {
+                title: 'What Is Accreditation 360?',
+                content: 'Accreditation 360 is the Joint Commission\'s most comprehensive overhaul of its hospital and medical office accreditation model — effective January 1, 2026. It removes over 700 redundant requirements, merges the Environment of Care (EC) and Life Safety (LS) chapters into a single "Physical Environment" section, and replaces the National Patient Safety Goals (NPSGs) with new National Performance Goals (NPGs) that emphasize measurable outcomes over static documentation.',
+            },
+            {
+                title: 'The 5 Biggest Changes That Affect Your Cleaning Program',
+                content: 'For practice managers and office administrators, here\'s what matters most:',
+                items: [
+                    'EC + LS Merge → "Physical Environment" — Your cleaning program, fire safety, and utilities management are now evaluated as one integrated category. Surveyors will expect a unified compliance system, not separate binders.',
+                    'Continuous Readiness Over Survey Prep — The old model rewarded cramming before a survey. The new model emphasizes year-round operational compliance. If your cleaning documentation has gaps between surveys, you\'re exposed.',
+                    'Direct Observation Over Document Review — Surveyors will spend more time watching your workflows and less time reviewing paperwork. Your cleaning crews need to demonstrate proper technique on the spot.',
+                    'National Performance Goals (NPGs) — Infection control outcomes (HAIs, SSIs) will be measured against national benchmarks. Your environmental cleaning directly impacts these numbers.',
+                    'Publicly Available Standards — For the first time, Joint Commission standards will be publicly available without a paid subscription. This means patients, insurers, and competitors can all see what you\'re being measured against.',
+                ],
+            },
+            {
+                title: 'What Surveyors Will Look for Under the New Model',
+                content: 'Under Accreditation 360, survey methodology shifts significantly. Here\'s what to expect in your next unannounced survey:',
+                items: [
+                    'Live observation of terminal cleaning procedures — not just documentation that it happened',
+                    'Evidence of continuous quality monitoring (not just pre-survey audits)',
+                    'Staff competency demonstrated in real-time — can your cleaning crew explain proper dwell times, PPE usage, and high-touch surface protocols?',
+                    'Integrated Physical Environment documentation — cleaning logs, chemical SDS sheets, and safety records in one accessible system',
+                    'Infection control metrics tied to environmental cleaning practices',
+                ],
+            },
+            {
+                title: 'Your 2026 Readiness Checklist',
+                content: 'Use this checklist to assess your practice\'s readiness for Accreditation 360:',
+                items: [
+                    'Merge your EC and LS documentation into a single "Physical Environment" compliance system',
+                    'Implement a continuous cleaning quality monitoring program — not just annual training refreshers',
+                    'Ensure every cleaning session is digitally logged with timestamps, chemicals used, and staff IDs',
+                    'Train or retrain cleaning staff on verbal competency — they may be asked to explain their protocols during observation',
+                    'Establish a regular audit cadence (nightly or weekly) with photographic evidence',
+                    'Review and update your chemical inventory — ensure all products are EPA-registered and healthcare-grade with documented dwell times',
+                    'Create a single point-of-contact who owns environmental cleaning compliance for your practice',
+                ],
+            },
+        ],
+        calloutTitle: 'How XIRI Makes You Accreditation 360-Ready',
+        calloutContent: 'Our Night Managers already conduct nightly audits with photographic documentation — the exact continuous monitoring model that Accreditation 360 demands. Your FSM maintains digital cleaning logs, chemical SDS sheets, and training records in one system. When a surveyor walks in unannounced, you hand them a login, not a binder.',
+        relatedServices: ['medical-office-cleaning', 'surgery-center-cleaning', 'disinfecting-services'],
+        faqs: [
+            {
+                question: 'When does Accreditation 360 take effect?',
+                answer: 'January 1, 2026, for hospitals and critical access hospitals. Medical offices and ambulatory care settings should expect the rollout shortly after as the Joint Commission extends the model to additional healthcare settings throughout 2026.',
+            },
+            {
+                question: 'Does XIRI already comply with the new Accreditation 360 standards?',
+                answer: 'Yes. Our operating model — nightly audits, digital documentation, continuous quality monitoring, and trained crews — already aligns with the outcome-focused, continuous-readiness approach that Accreditation 360 requires. We didn\'t need to change; the standards caught up to how we already work.',
+            },
+            {
+                question: 'What happens to our existing JCAHO documentation?',
+                answer: 'Your existing documentation is still valid, but it needs to be reorganized. The old EC and LS chapters merge into "Physical Environment." We help our clients consolidate their cleaning, safety, and environmental records into one integrated digital system that matches the new structure.',
+            },
+            {
+                question: 'How is this different from your existing JCAHO guide?',
+                answer: 'Our JCAHO Cleaning Requirements guide covers the foundational standards that haven\'t changed — terminal cleaning, chemical management, staff training, and documentation. This Accreditation 360 guide specifically addresses the 2026 structural changes and what they mean for your day-to-day cleaning operations.',
+            },
+        ],
+    },
 };
 
 type Props = {
