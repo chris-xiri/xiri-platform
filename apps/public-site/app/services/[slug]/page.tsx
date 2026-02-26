@@ -63,17 +63,33 @@ export async function generateStaticParams() {
     return params;
 }
 
-// ─── Industry Compliance Pitch Map ───
-// Medical industries use native medical compliance terms
-// Non-medical industries use their own industry-specific compliance language
+// ─── Industry & Service Compliance Pitch Map ───
+// Maps both industry pages (/services/auto-dealerships) and service pages (/services/janitorial-services)
 const MEDICAL_LOGIC: Record<string, { titlePrefix: string; compliance: string; pitch: string }> = {
-    // Medical verticals — native compliance language
+    // ── INDUSTRY PAGES (tenant building types) ──
+    // Medical
+    'medical-offices': { titlePrefix: '100% OSHA-Compliant', compliance: 'OSHA + HIPAA', pitch: 'JCAHO-grade disinfection, nightly audits & full infection control' },
+    'urgent-care': { titlePrefix: 'OSHA + HIPAA Compliant', compliance: 'OSHA + HIPAA', pitch: 'rapid-turnover sterile protocols for high-volume patient care' },
+    'surgery-centers': { titlePrefix: 'AAAHC Audit-Ready', compliance: 'CMS + AAAHC', pitch: 'terminal cleaning with AORN-standard OR protocols' },
+    'dental-offices': { titlePrefix: 'OSHA-Compliant', compliance: 'OSHA + HIPAA', pitch: 'sterilization-grade cleaning for operatories & waiting areas' },
+    'dialysis-centers': { titlePrefix: 'CMS Audit-Ready', compliance: 'CMS + OSHA', pitch: 'bloodborne pathogen protocols & dialysis-specific sanitation' },
+    // Automotive
+    'auto-dealerships': { titlePrefix: 'CSI Score-Boosting', compliance: 'OSHA + EPA', pitch: 'showroom-ready cleaning + OSHA chemical safety (SDS) for service bays' },
+    // Childcare & Education
+    'daycare-preschool': { titlePrefix: 'Child-Safe & Licensed', compliance: 'CDC + Green Seal', pitch: 'non-toxic Green Seal cleaning to reduce illness & keep parents confident' },
+    'private-schools': { titlePrefix: 'Child-Safe & Compliant', compliance: 'CDC + Green Seal', pitch: 'non-toxic cleaning meeting school health & safety licensing requirements' },
+    // Veterinary
+    'veterinary-clinics': { titlePrefix: 'Cross-Contamination Safe', compliance: 'OSHA + EPA', pitch: 'clinical-grade sanitation preventing cross-contamination in surgical & recovery areas' },
+    // Other commercial
+    'fitness-gyms': { titlePrefix: 'Health Code-Compliant', compliance: 'Health Dept + ADA', pitch: 'high-touch surface sanitization & locker room health code compliance' },
+    'professional-offices': { titlePrefix: 'Nightly-Verified', compliance: 'OSHA', pitch: 'nightly-verified cleaning with documented shift logs & $1M insurance' },
+    'retail-storefronts': { titlePrefix: 'Customer-Ready', compliance: 'OSHA + ADA', pitch: 'ADA-compliant, nightly-verified cleaning for high-traffic retail' },
+
+    // ── SERVICE PAGES (cross-industry services) ──
     'medical-office-cleaning': { titlePrefix: '100% OSHA-Compliant', compliance: 'OSHA + HIPAA', pitch: 'JCAHO-grade disinfection protocols, nightly verified' },
     'urgent-care-cleaning': { titlePrefix: 'OSHA + HIPAA Compliant', compliance: 'OSHA + HIPAA', pitch: 'rapid-turnover sterile protocols for high-volume patient care' },
     'surgery-center-cleaning': { titlePrefix: 'AAAHC Audit-Ready', compliance: 'CMS + AAAHC', pitch: 'terminal cleaning with AORN-standard OR protocols' },
-    // Daycare/Education — child safety + licensing language
     'daycare-cleaning': { titlePrefix: 'Child-Safe & Licensed', compliance: 'CDC + Green Seal', pitch: 'non-toxic Green Seal cleaning to reduce seasonal illness & keep parents confident' },
-    // Auto — OSHA + environmental safety
     'commercial-cleaning': { titlePrefix: 'Nightly-Verified', compliance: 'OSHA', pitch: 'nightly-verified cleaning with $1M-insured contractors' },
     'janitorial-services': { titlePrefix: 'Nightly-Verified', compliance: 'OSHA', pitch: '365 nights/yr audited janitorial with $1M-insured contractors' },
     'floor-care': { titlePrefix: 'Slip/Fall Prevention', compliance: 'OSHA', pitch: 'OSHA-compliant slip/fall prevention & high-gloss floor care' },
