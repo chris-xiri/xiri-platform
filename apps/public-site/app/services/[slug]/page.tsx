@@ -39,27 +39,41 @@ type Props = {
     }>;
 };
 
-// Generate all Service + Location combinations
+// Generate all Service + Industry + Location combinations
 export async function generateStaticParams() {
     const params = [];
+    const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-    // 1. Service Hubs (e.g. /medical-office-cleaning)
+    // 1. Service Hubs (e.g. /services/medical-office-cleaning)
     for (const service of seoData.services) {
         params.push({ slug: service.slug });
     }
 
-    // 2. Service Locations (e.g. /medical-office-cleaning-in-garden-city-nassau-ny)
-    const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    // 2. Industry Hubs (e.g. /services/auto-dealerships)
+    for (const industry of seoData.industries) {
+        params.push({ slug: industry.slug });
+    }
 
+    // 3. Service x Location combos (e.g. /services/medical-office-cleaning-in-garden-city-nassau-ny)
     for (const service of seoData.services) {
         for (const location of seoData.locations) {
             const countySlug = slugify(location.region);
             const townSlug = slugify(location.name.split(',')[0]);
             const stateSlug = "ny";
-            const flatSlug = `${service.slug}-in-${townSlug}-${countySlug}-${stateSlug}`;
-            params.push({ slug: flatSlug });
+            params.push({ slug: `${service.slug}-in-${townSlug}-${countySlug}-${stateSlug}` });
         }
     }
+
+    // 4. Industry x Location combos (e.g. /services/auto-dealerships-in-new-hyde-park-nassau-ny)
+    for (const industry of seoData.industries) {
+        for (const location of seoData.locations) {
+            const countySlug = slugify(location.region);
+            const townSlug = slugify(location.name.split(',')[0]);
+            const stateSlug = "ny";
+            params.push({ slug: `${industry.slug}-in-${townSlug}-${countySlug}-${stateSlug}` });
+        }
+    }
+
     return params;
 }
 
@@ -642,30 +656,39 @@ function parseSlug(slug: string) {
         return { type: 'SERVICE', data: service };
     }
 
-    // 2. Check if it's a Location Page
-    // Pattern: [service]-in-[town]-[county]-[state]
+    // 2. Check if it's an Industry Hub (e.g. /services/auto-dealerships)
+    const industry = seoData.industries.find((i: any) => i.slug === slug);
+    if (industry) {
+        return { type: 'SERVICE', data: industry };
+    }
+
     const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-    // Reverse engineer: Try to find a service that matches the start of the string
-    // This is safer than splitting by '-in-' if service slug has that pattern (unlikely but possible)
+    // 3. Check if it's a Service x Location page
     const matchingService = seoData.services.find(s => slug.startsWith(s.slug + '-in-'));
-
     if (matchingService) {
-        // Extract the location part
-        const locationPart = slug.substring(matchingService.slug.length + 4); // remove "service-in-"
-
-        // Now we need to find which location matches this slug part
-        // We construct the slug for each location and check equality
+        const locationPart = slug.substring(matchingService.slug.length + 4);
         const matchingLocation = seoData.locations.find(loc => {
             const townSlug = slugify(loc.name.split(',')[0]);
             const countySlug = slugify(loc.region);
-            // We can assume state is ny for now as per generator
-            const constructedSlug = `${townSlug}-${countySlug}-ny`;
-            return constructedSlug === locationPart;
+            return `${townSlug}-${countySlug}-ny` === locationPart;
         });
-
         if (matchingLocation) {
             return { type: 'LOCATION', data: { service: matchingService, location: matchingLocation } };
+        }
+    }
+
+    // 4. Check if it's an Industry x Location page (e.g. /services/auto-dealerships-in-new-hyde-park-nassau-ny)
+    const matchingIndustry = seoData.industries.find((i: any) => slug.startsWith(i.slug + '-in-'));
+    if (matchingIndustry) {
+        const locationPart = slug.substring(matchingIndustry.slug.length + 4);
+        const matchingLocation = seoData.locations.find(loc => {
+            const townSlug = slugify(loc.name.split(',')[0]);
+            const countySlug = slugify(loc.region);
+            return `${townSlug}-${countySlug}-ny` === locationPart;
+        });
+        if (matchingLocation) {
+            return { type: 'LOCATION', data: { service: matchingIndustry, location: matchingLocation } };
         }
     }
 
