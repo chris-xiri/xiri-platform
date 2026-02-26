@@ -261,8 +261,8 @@ function PipelineSection({ title, icon, pipeline, optimizing, applying, onOptimi
                             <button
                                 onClick={() => setExpandedStep(isExpanded ? null : step.step)}
                                 className={`flex flex-col justify-between min-w-[180px] max-w-[220px] p-4 rounded-xl border-2 transition-all hover:shadow-md text-left ${isExpanded
-                                        ? 'border-sky-500 bg-sky-50/50 dark:bg-sky-950/20 shadow-md'
-                                        : 'border-border bg-card hover:border-muted-foreground/30'
+                                    ? 'border-sky-500 bg-sky-50/50 dark:bg-sky-950/20 shadow-md'
+                                    : 'border-border bg-card hover:border-muted-foreground/30'
                                     }`}
                             >
                                 {/* Step Label */}
@@ -422,7 +422,7 @@ function TemplateDetail({ template: t, onOptimize, onApply, onDismiss, optimizin
                     {showBody ? 'Hide email body' : 'Show full email body'}
                 </button>
                 {showBody && (
-                    <div className="mt-2 p-3 bg-muted/50 rounded-md border text-xs text-foreground whitespace-pre-wrap font-mono leading-relaxed max-h-[300px] overflow-y-auto">
+                    <div className="mt-2 p-3 bg-muted/50 rounded-md border text-xs text-foreground whitespace-pre-wrap font-mono leading-relaxed overflow-y-auto">
                         {t.body || 'No body content'}
                     </div>
                 )}

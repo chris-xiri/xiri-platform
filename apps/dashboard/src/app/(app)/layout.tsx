@@ -27,6 +27,7 @@ interface NavItem {
     label: string;
     href: string;
     icon: React.ReactNode;
+    subGroup?: string;
 }
 
 interface NavSection {
@@ -83,6 +84,18 @@ function SidebarSection({ section, collapsed, pathname, expandedSections, toggle
         );
     }
 
+    // Group items by subGroup for rendering sub-labels
+    const subGroups: { group: string | null; items: NavItem[] }[] = [];
+    for (const item of section.items) {
+        const g = item.subGroup || null;
+        const last = subGroups[subGroups.length - 1];
+        if (last && last.group === g) {
+            last.items.push(item);
+        } else {
+            subGroups.push({ group: g, items: [item] });
+        }
+    }
+
     return (
         <div>
             {section.dividerAbove && <hr className="my-3 border-border" />}
@@ -101,8 +114,15 @@ function SidebarSection({ section, collapsed, pathname, expandedSections, toggle
             </button>
             {isExpanded && (
                 <div className="mt-1 ml-1 space-y-0.5">
-                    {section.items.map(item => (
-                        <SidebarLink key={item.href} item={item} collapsed={collapsed} pathname={pathname} />
+                    {subGroups.map((sg, idx) => (
+                        <div key={sg.group || idx}>
+                            {sg.group && (
+                                <p className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">{sg.group}</p>
+                            )}
+                            {sg.items.map(item => (
+                                <SidebarLink key={item.href} item={item} collapsed={collapsed} pathname={pathname} />
+                            ))}
+                        </div>
                     ))}
                 </div>
             )}
@@ -118,9 +138,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+    const [initialExpanded, setInitialExpanded] = useState(false);
 
     const toggleSection = (key: string) => {
-        setExpandedSections(prev => ({ ...prev, [key]: prev[key] === false ? true : false }));
+        setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
     useEffect(() => {
@@ -133,6 +154,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         setMobileOpen(false);
     }, [pathname]);
+
+    // Auto-expand section that contains the active page on first load
+    useEffect(() => {
+        if (initialExpanded) return;
+        const activeSection = sections.find(s => s.show && s.items.some(item => pathname === item.href || pathname.startsWith(item.href + '/')));
+        if (activeSection) {
+            setExpandedSections(prev => ({ ...prev, [activeSection.label]: true }));
+            setInitialExpanded(true);
+        }
+    }, [pathname, initialExpanded]);
 
     if (loading) {
         return <div className="flex h-screen items-center justify-center">Loading...</div>;
@@ -196,12 +227,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             show: showAdminNav,
             dividerAbove: true,
             items: [
-                { label: 'User Manager', href: '/admin/users', icon: <Users className="w-4 h-4" /> },
-                { label: 'AI Agents', href: '/admin/agents', icon: <Bot className="w-4 h-4" /> },
-                { label: 'Email Templates', href: '/admin/email-templates', icon: <Mail className="w-4 h-4" /> },
-                { label: 'Template Analytics', href: '/admin/templates', icon: <BarChart3 className="w-4 h-4" /> },
-                { label: 'Legal Templates', href: '/admin/legal', icon: <Scale className="w-4 h-4" /> },
-                { label: 'Commissions', href: '/admin/commissions', icon: <DollarSign className="w-4 h-4" /> },
+                { label: 'User Manager', href: '/admin/users', icon: <Users className="w-4 h-4" />, subGroup: 'Settings' },
+                { label: 'AI Agents', href: '/admin/agents', icon: <Bot className="w-4 h-4" />, subGroup: 'Settings' },
+                { label: 'Email Templates', href: '/admin/email-templates', icon: <Mail className="w-4 h-4" />, subGroup: 'Communications' },
+                { label: 'Legal Templates', href: '/admin/legal', icon: <Scale className="w-4 h-4" />, subGroup: 'Communications' },
+                { label: 'Template Analytics', href: '/admin/templates', icon: <BarChart3 className="w-4 h-4" />, subGroup: 'Reporting' },
+                { label: 'Commissions', href: '/admin/commissions', icon: <DollarSign className="w-4 h-4" />, subGroup: 'Reporting' },
             ],
         },
     ];

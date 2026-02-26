@@ -136,12 +136,12 @@ export default function EmailTemplatesPage() {
                 </div>
 
                 {/* Banner pointing to A/B variants */}
-                <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-md p-3 flex items-start gap-3 text-sm">
-                    <Mail className="w-4 h-4 text-blue-600 mt-0.5" />
+                <div className="bg-sky-50 dark:bg-sky-950/40 border border-sky-300 dark:border-sky-800 rounded-md p-3 flex items-start gap-3 text-sm">
+                    <Mail className="w-4 h-4 text-sky-700 dark:text-sky-400 mt-0.5" />
                     <div>
-                        <p className="text-blue-900 dark:text-blue-100 font-medium">Looking for Warm/Cold A/B variants?</p>
-                        <p className="text-blue-700 dark:text-blue-300 mt-0.5 text-xs">
-                            Base sequence steps are edited here. To view or edit automatically generated <strong>Warm</strong> and <strong>Cold</strong> variants from the AI optimizer, utilize the <a href="/admin/templates" className="underline font-semibold hover:text-blue-600">Template Analytics</a> dashboard.
+                        <p className="text-slate-900 dark:text-sky-100 font-medium">Looking for Warm/Cold A/B variants?</p>
+                        <p className="text-slate-700 dark:text-sky-300 mt-0.5 text-xs">
+                            Base sequence steps are edited here. To view or edit automatically generated <strong>Warm</strong> and <strong>Cold</strong> variants from the AI optimizer, utilize the <a href="/admin/templates" className="underline font-semibold text-sky-700 dark:text-sky-300 hover:text-sky-600">Template Analytics</a> dashboard.
                         </p>
                     </div>
                 </div>
