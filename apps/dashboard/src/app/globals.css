@@ -7,31 +7,23 @@
 :root {
   --radius: 0.625rem;
   --background: oklch(0.984 0.003 247.86);
-  /* Slate-50 */
   --foreground: oklch(0.21 0.03 260);
-  /* Slate-900 */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.21 0.03 260);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.21 0.03 260);
   --primary: oklch(0.588 0.158 241.97);
-  /* Sky-600 */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.961 0.01 247.8);
-  /* Slate-100 */
   --secondary-foreground: oklch(0.21 0.03 260);
   --muted: oklch(0.961 0.01 247.8);
   --muted-foreground: oklch(0.552 0.01 247.8);
-  /* Slate-500 */
   --accent: oklch(0.704 0.14 169.35);
-  /* Teal-500 */
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.92 0.01 247.8);
-  /* Slate-200 */
   --input: oklch(0.92 0.01 247.8);
   --ring: oklch(0.588 0.158 241.97);
-  /* Sky-600 */
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -45,25 +37,63 @@
   --sidebar-accent-foreground: oklch(0.21 0.03 260);
   --sidebar-border: oklch(0.92 0.01 247.8);
   --sidebar-ring: oklch(0.588 0.158 241.97);
+
+  /* ── XIRI Brand: Navigation ── */
+  --nav-section: #334155;          /* slate-700 */
+  --nav-section-active: #075985;   /* sky-800 */
+  --nav-item: #475569;             /* slate-600 */
+  --nav-item-hover: #1e293b;       /* slate-800 */
+  --nav-item-hover-bg: #f1f5f9;    /* slate-100 */
+  --nav-item-active: #0c4a6e;      /* sky-900 */
+  --nav-item-active-bg: #e0f2fe;   /* sky-100 */
+  --nav-item-active-icon: #0369a1; /* sky-700 */
+  --nav-icon: #64748b;             /* slate-500 */
+  --nav-sub-label: #94a3b8;        /* slate-400 */
+
+  /* ── XIRI Brand: Status Indicators ── */
+  --success: #059669;              /* emerald-600 */
+  --success-bg: #ecfdf5;           /* emerald-50 */
+  --success-border: #a7f3d0;       /* emerald-200 */
+  --warning: #d97706;              /* amber-600 */
+  --warning-bg: #fffbeb;           /* amber-50 */
+  --warning-border: #fde68a;       /* amber-200 */
+  --info: #0284c7;                 /* sky-600 */
+  --info-bg: #f0f9ff;              /* sky-50 */
+  --info-border: #bae6fd;          /* sky-200 */
+  --danger: #dc2626;               /* red-600 */
+  --danger-bg: #fef2f2;            /* red-50 */
+  --danger-border: #fecaca;        /* red-200 */
+
+  /* ── XIRI Brand: Badges ── */
+  --badge-neutral-bg: #f1f5f9;     /* slate-100 */
+  --badge-neutral-text: #334155;   /* slate-700 */
+  --badge-brand-bg: #e0f2fe;       /* sky-100 */
+  --badge-brand-text: #0c4a6e;     /* sky-900 */
+
+  /* ── XIRI Brand: Tables ── */
+  --table-header-bg: #f8fafc;      /* slate-50 */
+  --table-row-hover: #f8fafc;      /* slate-50 */
+  --table-border: #e2e8f0;         /* slate-200 */
+
+  /* ── XIRI Brand: Logo ── */
+  --brand-logo: #075985;           /* sky-800 */
+  --brand-logo-sub: #64748b;       /* slate-500 */
 }
 
 .dark {
   --background: oklch(0.13 0.02 260);
-  /* Dark Slate */
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.17 0.02 260);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.17 0.02 260);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.588 0.158 241.97);
-  /* Sky-600 (Keep consistent for brand) */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.704 0.14 169.35);
-  /* Teal-500 */
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(0.269 0 0);
@@ -82,6 +112,47 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.588 0.158 241.97);
+
+  /* ── XIRI Brand: Navigation (Dark) ── */
+  --nav-section: #94a3b8;          /* slate-400 */
+  --nav-section-active: #38bdf8;   /* sky-400 */
+  --nav-item: #94a3b8;             /* slate-400 */
+  --nav-item-hover: #e2e8f0;       /* slate-200 */
+  --nav-item-hover-bg: #1e293b;    /* slate-800 */
+  --nav-item-active: #7dd3fc;      /* sky-300 */
+  --nav-item-active-bg: rgba(12, 74, 110, 0.35); /* sky-900/35 */
+  --nav-item-active-icon: #38bdf8; /* sky-400 */
+  --nav-icon: #64748b;             /* slate-500 */
+  --nav-sub-label: #475569;        /* slate-600 */
+
+  /* ── XIRI Brand: Status Indicators (Dark) ── */
+  --success: #34d399;              /* emerald-400 */
+  --success-bg: rgba(6, 78, 59, 0.3);  /* emerald-950/30 */
+  --success-border: #065f46;       /* emerald-800 */
+  --warning: #fbbf24;              /* amber-400 */
+  --warning-bg: rgba(69, 26, 3, 0.3);  /* amber-950/30 */
+  --warning-border: #92400e;       /* amber-800 */
+  --info: #38bdf8;                 /* sky-400 */
+  --info-bg: rgba(12, 74, 110, 0.3);   /* sky-950/30 */
+  --info-border: #075985;          /* sky-800 */
+  --danger: #f87171;               /* red-400 */
+  --danger-bg: rgba(69, 10, 10, 0.3);  /* red-950/30 */
+  --danger-border: #991b1b;        /* red-800 */
+
+  /* ── XIRI Brand: Badges (Dark) ── */
+  --badge-neutral-bg: #1e293b;     /* slate-800 */
+  --badge-neutral-text: #cbd5e1;   /* slate-300 */
+  --badge-brand-bg: rgba(12, 74, 110, 0.3); /* sky-900/30 */
+  --badge-brand-text: #7dd3fc;     /* sky-300 */
+
+  /* ── XIRI Brand: Tables (Dark) ── */
+  --table-header-bg: #0f172a;      /* slate-900 */
+  --table-row-hover: rgba(30, 41, 59, 0.5); /* slate-800/50 */
+  --table-border: #1e293b;         /* slate-800 */
+
+  /* ── XIRI Brand: Logo (Dark) ── */
+  --brand-logo: #0ea5e9;           /* sky-500 */
+  --brand-logo-sub: #64748b;       /* slate-500 */
 }
 
 
