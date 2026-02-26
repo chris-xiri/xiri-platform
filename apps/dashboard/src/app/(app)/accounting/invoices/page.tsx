@@ -102,16 +102,16 @@ export default function InvoicesPage() {
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
                             <p className="text-xs text-muted-foreground uppercase">Collected</p>
                         </div>
-                        <p className="text-2xl font-bold text-green-600">{formatCurrency(totalPaid)}</p>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(totalPaid)}</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-2 mb-1">
-                            <AlertTriangle className="w-4 h-4 text-red-500" />
+                            <AlertTriangle className="w-4 h-4 text-red-500 dark:text-red-400" />
                             <p className="text-xs text-muted-foreground uppercase">Overdue</p>
                         </div>
-                        <p className="text-2xl font-bold text-red-600">{overdueCount}</p>
+                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">{overdueCount}</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -120,7 +120,7 @@ export default function InvoicesPage() {
                             <DollarSign className="w-4 h-4 text-emerald-500" />
                             <p className="text-xs text-muted-foreground uppercase">Gross Margin</p>
                         </div>
-                        <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalMargin)}</p>
+                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(totalMargin)}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -198,7 +198,7 @@ export default function InvoicesPage() {
                                                     {formatCurrency(inv.totalAmount)}
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
-                                                    <span className={`font-medium ${(inv.grossMargin || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                    <span className={`font-medium ${(inv.grossMargin || 0) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                         {formatCurrency(inv.grossMargin || 0)}
                                                     </span>
                                                 </td>

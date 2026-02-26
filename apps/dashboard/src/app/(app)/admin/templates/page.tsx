@@ -39,8 +39,8 @@ interface Template {
 // ─── Variant color schemes ───
 const VARIANT_COLORS: Record<string, { bg: string; border: string; badge: string; badgeText: string }> = {
     base: { bg: 'bg-white dark:bg-card', border: 'border-border', badge: 'bg-sky-100 dark:bg-sky-900/30', badgeText: 'text-sky-700 dark:text-sky-300' },
-    warm: { bg: 'bg-orange-50/60 dark:bg-orange-950/20', border: 'border-orange-200 dark:border-orange-800', badge: 'bg-orange-100 dark:bg-orange-900/30', badgeText: 'text-orange-700 dark:text-orange-300' },
-    cold: { bg: 'bg-blue-50/60 dark:bg-blue-950/20', border: 'border-blue-200 dark:border-blue-800', badge: 'bg-blue-100 dark:bg-blue-900/30', badgeText: 'text-blue-700 dark:text-blue-300' },
+    warm: { bg: 'bg-orange-50 dark:bg-orange-950/30/60 dark:bg-orange-950/20', border: 'border-orange-200 dark:border-orange-800', badge: 'bg-orange-100 dark:bg-orange-900/30', badgeText: 'text-orange-700 dark:text-orange-300' },
+    cold: { bg: 'bg-blue-50 dark:bg-blue-950/30/60 dark:bg-blue-950/20', border: 'border-blue-200 dark:border-blue-800', badge: 'bg-blue-100 dark:bg-blue-900/30', badgeText: 'text-blue-700 dark:text-blue-300' },
 };
 
 function getVariantType(id: string): 'warm' | 'cold' | 'base' {
@@ -244,7 +244,7 @@ function PipelineSection({ title, icon, pipeline, optimizing, applying, onOptimi
                     <span className={rateColor(totals.opened, totals.sent, 0.3)}>
                         {rate(totals.opened, totals.sent)} opens
                     </span>
-                    {totals.bounced > 0 && <span className="text-red-500">{totals.bounced} bounced</span>}
+                    {totals.bounced > 0 && <span className="text-red-500 dark:text-red-400">{totals.bounced} bounced</span>}
                 </div>
             </div>
 
@@ -261,7 +261,7 @@ function PipelineSection({ title, icon, pipeline, optimizing, applying, onOptimi
                             <button
                                 onClick={() => setExpandedStep(isExpanded ? null : step.step)}
                                 className={`flex flex-col justify-between min-w-[180px] max-w-[220px] p-4 rounded-xl border-2 transition-all hover:shadow-md text-left ${isExpanded
-                                    ? 'border-sky-500 bg-sky-50/50 dark:bg-sky-950/20 shadow-md'
+                                    ? 'border-sky-500 dark:border-sky-600 bg-sky-50/50 dark:bg-sky-950/20 shadow-md'
                                     : 'border-border bg-card hover:border-muted-foreground/30'
                                     }`}
                             >
@@ -297,7 +297,7 @@ function PipelineSection({ title, icon, pipeline, optimizing, applying, onOptimi
                                     {step.stats.bounced > 0 && (
                                         <div className="flex justify-between text-xs">
                                             <span className="text-muted-foreground">Bounced</span>
-                                            <span className="font-bold text-red-500">{step.stats.bounced}</span>
+                                            <span className="font-bold text-red-500 dark:text-red-400">{step.stats.bounced}</span>
                                         </div>
                                     )}
 
@@ -305,7 +305,7 @@ function PipelineSection({ title, icon, pipeline, optimizing, applying, onOptimi
                                     <div className="pt-1">
                                         <div className="w-full bg-muted rounded-full h-1.5">
                                             <div
-                                                className="bg-green-500 h-1.5 rounded-full transition-all"
+                                                className="bg-green-50 dark:bg-green-950/300 h-1.5 rounded-full transition-all"
                                                 style={{ width: `${barFill * 100}%` }}
                                             />
                                         </div>
@@ -397,7 +397,7 @@ function TemplateDetail({ template: t, onOptimize, onApply, onDismiss, optimizin
                 </div>
                 <div className="flex items-center gap-1">
                     {hasAI && (
-                        <Button variant="ghost" size="sm" className="text-xs gap-1 text-purple-600" onClick={() => setShowAI(!showAI)}>
+                        <Button variant="ghost" size="sm" className="text-xs gap-1 text-purple-600 dark:text-purple-400" onClick={() => setShowAI(!showAI)}>
                             <Sparkles className="w-3 h-3" /> {showAI ? 'Hide' : 'View'} AI
                         </Button>
                     )}
@@ -447,17 +447,17 @@ function TemplateDetail({ template: t, onOptimize, onApply, onDismiss, optimizin
                     <p className="text-[10px] text-muted-foreground uppercase">Clicked</p>
                 </div>
                 <div>
-                    <p className={`text-base font-bold ${s.bounced > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>{s.bounced}</p>
+                    <p className={`text-base font-bold ${s.bounced > 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>{s.bounced}</p>
                     <p className="text-[10px] text-muted-foreground uppercase">Bounced</p>
                 </div>
             </div>
 
             {/* AI Suggestions */}
             {showAI && latestAI && (
-                <div className="border rounded-lg p-4 bg-purple-50/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800 space-y-3">
+                <div className="border rounded-lg p-4 bg-purple-50 dark:bg-purple-950/30/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800 space-y-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-purple-600" />
+                            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                             <span className="text-sm font-medium text-purple-800 dark:text-purple-300">AI Suggestions</span>
                         </div>
                         <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => onDismiss(t.id)}>Dismiss</Button>

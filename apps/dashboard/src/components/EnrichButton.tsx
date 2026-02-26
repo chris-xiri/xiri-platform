@@ -74,8 +74,8 @@ export function EnrichButton({
 
     const getIcon = () => {
         if (loading) return <Loader2 className="w-4 h-4 animate-spin" />;
-        if (status === 'success') return <CheckCircle2 className="w-4 h-4 text-green-600" />;
-        if (status === 'error') return <XCircle className="w-4 h-4 text-red-600" />;
+        if (status === 'success') return <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />;
+        if (status === 'error') return <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />;
         return <Sparkles className="w-4 h-4" />;
     };
 

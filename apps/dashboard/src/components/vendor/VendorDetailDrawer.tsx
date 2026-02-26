@@ -27,7 +27,7 @@ import ScheduleFollowUpDialog from '@/components/vendor/ScheduleFollowUpDialog';
 
 const LanguageBadge = ({ lang }: { lang?: 'en' | 'es' }) => {
     if (lang === 'es') return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">🇪🇸 ES</Badge>;
-    return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">🇺🇸 EN</Badge>;
+    return <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">🇺🇸 EN</Badge>;
 };
 
 const InlineEditField = ({
@@ -151,11 +151,11 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                         </select>
                                         {vendor.outreachStatus && (
                                             <Badge variant="outline" className={
-                                                vendor.outreachStatus === 'SENT' ? 'border-green-400 text-green-600' :
-                                                    vendor.outreachStatus === 'FAILED' ? 'border-red-500 text-red-600' :
-                                                        vendor.outreachStatus === 'PENDING' ? 'border-purple-400 text-purple-600' :
-                                                            vendor.outreachStatus === 'NEEDS_CONTACT' ? 'border-amber-400 text-amber-600' :
-                                                                vendor.outreachStatus === 'ENRICHING' ? 'border-blue-400 text-blue-600' : ''
+                                                vendor.outreachStatus === 'SENT' ? 'border-green-400 text-green-600 dark:text-green-400' :
+                                                    vendor.outreachStatus === 'FAILED' ? 'border-red-500 text-red-600 dark:text-red-400' :
+                                                        vendor.outreachStatus === 'PENDING' ? 'border-purple-400 text-purple-600 dark:text-purple-400' :
+                                                            vendor.outreachStatus === 'NEEDS_CONTACT' ? 'border-amber-400 text-amber-600 dark:text-amber-400' :
+                                                                vendor.outreachStatus === 'ENRICHING' ? 'border-blue-400 text-blue-600 dark:text-blue-400' : ''
                                             }>
                                                 {vendor.outreachStatus === 'SENT' && 'Outreach Sent'}
                                                 {vendor.outreachStatus === 'FAILED' && <><AlertTriangle className="w-3 h-3 mr-1" /> Failed</>}
@@ -176,7 +176,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                             onClick={async () => { await updateDoc(doc(db, 'vendors', vendor.id!), { status: 'qualified', updatedAt: new Date() }); }}>
                                             <Check className="w-3 h-3 mr-1" /> Qualify
                                         </Button>
-                                        <Button size="sm" variant="outline" className="h-7 text-xs border-red-300 text-red-600 hover:bg-red-50"
+                                        <Button size="sm" variant="outline" className="h-7 text-xs border-red-300 text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/30"
                                             onClick={async () => { await updateDoc(doc(db, 'vendors', vendor.id!), { status: 'dismissed', updatedAt: new Date() }); }}>
                                             Dismiss
                                         </Button>
@@ -201,7 +201,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                             navigator.clipboard.writeText(`${ONBOARDING_BASE_URL}/onboarding/${vendor.id}`);
                                             setCopied(true); setTimeout(() => setCopied(false), 2000);
                                         }}>
-                                        {copied ? <><Check className="w-3 h-3 mr-1 text-green-600" /> Copied!</> : <><Copy className="w-3 h-3 mr-1" /> Onboarding Link</>}
+                                        {copied ? <><Check className="w-3 h-3 mr-1 text-green-600 dark:text-green-400" /> Copied!</> : <><Copy className="w-3 h-3 mr-1" /> Onboarding Link</>}
                                     </Button>
                                 )}
                                 <EditVendorDialog vendor={vendor} />

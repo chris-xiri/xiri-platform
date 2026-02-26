@@ -377,7 +377,7 @@ export default function InvoiceGenerator({ onClose, onCreated }: Props) {
                                             </div>
                                             <div className="flex justify-between border-t pt-2">
                                                 <span className="font-medium">Gross Margin</span>
-                                                <span className={`font-bold ${grossMargin > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                <span className={`font-bold ${grossMargin > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                     {formatCurrency(grossMargin)}
                                                 </span>
                                             </div>

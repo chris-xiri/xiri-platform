@@ -552,11 +552,11 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
 
                             {/* Duplicate quote warning */}
                             {existingQuoteId && selectedLead && (
-                                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 rounded-lg">
                                     <p className="text-sm font-medium text-amber-800 mb-2">
                                         ⚠️ {selectedLead.businessName} already has an active quote.
                                     </p>
-                                    <p className="text-xs text-amber-600 mb-3">
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 mb-3">
                                         To add services or update pricing, revise the existing quote instead of creating a new one.
                                     </p>
                                     <Button
@@ -653,7 +653,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                             />
                                         </div>
                                         <div>
-                                            <Label className="text-xs">Zip <span className="text-red-500">*</span></Label>
+                                            <Label className="text-xs">Zip <span className="text-red-500 dark:text-red-400">*</span></Label>
                                             <Input
                                                 placeholder="11021"
                                                 value={newLocationZip}
@@ -708,7 +708,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                 locItems.map((item, itemIdx) => (
                                                     item.lineItemStatus === 'cancelled' ? (
                                                         /* ─── CANCELLED: Strikethrough display ─── */
-                                                        <div key={item.id} className="border rounded-lg p-4 bg-red-50/50 border-red-200 flex items-center justify-between">
+                                                        <div key={item.id} className="border rounded-lg p-4 bg-red-50 dark:bg-red-950/30/50 border-red-200 flex items-center justify-between">
                                                             <div className="flex items-center gap-3">
                                                                 <span className="inline-flex items-center gap-1 text-red-700 bg-red-100 px-2 py-0.5 rounded text-xs font-medium">🚫 Cancelled</span>
                                                                 <span className="font-medium text-sm line-through text-muted-foreground">{item.serviceType}</span>
@@ -730,10 +730,10 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                         </div>
                                                     ) : item.lineItemStatus === 'accepted' ? (
                                                         /* ─── ACCEPTED: Locked with Cancel/Edit actions ─── */
-                                                        <div key={item.id} className="border rounded-lg p-4 bg-green-50/50 border-green-200">
+                                                        <div key={item.id} className="border rounded-lg p-4 bg-green-50 dark:bg-green-950/30/50 border-green-200">
                                                             <div className="flex items-center justify-between">
                                                                 <div className="flex items-center gap-3">
-                                                                    <span className="inline-flex items-center gap-1 text-green-700 bg-green-100 px-2 py-0.5 rounded text-xs font-medium">✅ Accepted</span>
+                                                                    <span className="inline-flex items-center gap-1 text-green-700 dark:text-green-400 bg-green-100 px-2 py-0.5 rounded text-xs font-medium">✅ Accepted</span>
                                                                     <span className="font-medium text-sm">{item.serviceType}</span>
                                                                     <span className="text-xs text-muted-foreground">
                                                                         {item.frequency === 'custom_days' && item.daysOfWeek
@@ -765,7 +765,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                                             <Button
                                                                                 variant="ghost"
                                                                                 size="sm"
-                                                                                className="text-xs h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                                className="text-xs h-7 px-2 text-red-600 dark:text-red-400 hover:text-red-700 hover:bg-red-50 dark:bg-red-950/30"
                                                                                 onClick={() => updateLineItem(item.id, {
                                                                                     lineItemStatus: 'cancelled',
                                                                                     cancelledInVersion: existingQuote?.version ? existingQuote.version + 1 : 2,
@@ -832,7 +832,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                                 )}
                                                                 {item.taxExempt && (
                                                                     <div className="col-span-12">
-                                                                        <p className="text-xs text-green-600">✓ Tax exempt{item.taxExemptReason ? ` (${item.taxExemptReason})` : ''}</p>
+                                                                        <p className="text-xs text-green-600 dark:text-green-400">✓ Tax exempt{item.taxExemptReason ? ` (${item.taxExemptReason})` : ''}</p>
                                                                     </div>
                                                                 )}
                                                                 <div className="col-span-2 flex justify-end">
@@ -1017,7 +1017,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
 
                                                                 {/* Consumable info */}
                                                                 {item.isConsumable && (
-                                                                    <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
+                                                                    <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
                                                                         ⓘ Estimated cost — actual cost will be updated after procurement with markup.
                                                                     </p>
                                                                 )}
@@ -1112,7 +1112,7 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                     {oneTimeItems.length > 0 && (
                                         <div className="flex justify-between">
                                             <span className="font-medium">One-Time Charges (incl. tax)</span>
-                                            <span className="text-xl font-bold text-amber-600">{formatCurrency(totalOneTime)}</span>
+                                            <span className="text-xl font-bold text-amber-600 dark:text-amber-400">{formatCurrency(totalOneTime)}</span>
                                         </div>
                                     )}
                                 </CardContent>

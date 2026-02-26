@@ -23,14 +23,14 @@ interface LeadRowProps {
 }
 
 const STATUS_COLORS: Record<LeadStatus, string> = {
-    'new': 'bg-blue-100 text-blue-800 border-blue-200',
+    'new': 'bg-blue-100 text-blue-800 border-blue-200 dark:border-blue-800',
     'contacted': 'bg-yellow-100 text-yellow-800 border-yellow-200',
     'qualified': 'bg-green-100 text-green-800 border-green-200',
-    'walkthrough': 'bg-purple-100 text-purple-800 border-purple-200',
+    'walkthrough': 'bg-purple-100 text-purple-800 dark:text-purple-300 border-purple-200',
     'proposal': 'bg-orange-100 text-orange-800 border-orange-200',
-    'quoted': 'bg-sky-100 text-sky-800 border-sky-200',
+    'quoted': 'bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800',
     'won': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    'lost': 'bg-gray-100 text-gray-800 border-gray-200',
+    'lost': 'bg-gray-100 dark:bg-gray-800 text-gray-800 border-gray-200',
     'churned': 'bg-red-100 text-red-800 border-red-200',
 };
 

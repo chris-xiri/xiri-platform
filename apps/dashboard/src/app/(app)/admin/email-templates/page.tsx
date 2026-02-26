@@ -141,7 +141,7 @@ export default function EmailTemplatesPage() {
                     <div>
                         <p className="text-slate-900 dark:text-sky-100 font-medium">Looking for Warm/Cold A/B variants?</p>
                         <p className="text-slate-700 dark:text-sky-300 mt-0.5 text-xs">
-                            Base sequence steps are edited here. To view or edit automatically generated <strong>Warm</strong> and <strong>Cold</strong> variants from the AI optimizer, utilize the <a href="/admin/templates" className="underline font-semibold text-sky-700 dark:text-sky-300 hover:text-sky-600">Template Analytics</a> dashboard.
+                            Base sequence steps are edited here. To view or edit automatically generated <strong>Warm</strong> and <strong>Cold</strong> variants from the AI optimizer, utilize the <a href="/admin/templates" className="underline font-semibold text-sky-700 dark:text-sky-300 hover:text-sky-600 dark:text-sky-400">Template Analytics</a> dashboard.
                         </p>
                     </div>
                 </div>

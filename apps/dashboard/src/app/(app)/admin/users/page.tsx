@@ -26,19 +26,19 @@ interface UserProfile {
 
 const ALL_ROLES = [
     { value: "admin", label: "Admin", icon: Shield, color: "bg-red-100 text-red-800", borderColor: "border-red-200" },
-    { value: "sales", label: "Sales", icon: ShoppingCart, color: "bg-blue-100 text-blue-800", borderColor: "border-blue-200" },
-    { value: "sales_exec", label: "Sales Exec", icon: ShoppingCart, color: "bg-sky-100 text-sky-800", borderColor: "border-sky-200" },
+    { value: "sales", label: "Sales", icon: ShoppingCart, color: "bg-blue-100 text-blue-800", borderColor: "border-blue-200 dark:border-blue-800" },
+    { value: "sales_exec", label: "Sales Exec", icon: ShoppingCart, color: "bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-300", borderColor: "border-sky-200 dark:border-sky-800" },
     { value: "sales_mgr", label: "Sales Mgr", icon: ShoppingCart, color: "bg-indigo-100 text-indigo-800", borderColor: "border-indigo-200" },
     { value: "fsm", label: "FSM", icon: Briefcase, color: "bg-green-100 text-green-800", borderColor: "border-green-200" },
-    { value: "night_mgr", label: "Night Manager", icon: Moon, color: "bg-purple-100 text-purple-800", borderColor: "border-purple-200" },
-    { value: "night_manager", label: "Night Manager", icon: Moon, color: "bg-purple-100 text-purple-800", borderColor: "border-purple-200" },
+    { value: "night_mgr", label: "Night Manager", icon: Moon, color: "bg-purple-100 text-purple-800 dark:text-purple-300", borderColor: "border-purple-200" },
+    { value: "night_manager", label: "Night Manager", icon: Moon, color: "bg-purple-100 text-purple-800 dark:text-purple-300", borderColor: "border-purple-200" },
     { value: "recruiter", label: "Recruiter", icon: UserCheck, color: "bg-amber-100 text-amber-800", borderColor: "border-amber-200" },
     { value: "accounting", label: "Accounting", icon: Briefcase, color: "bg-emerald-100 text-emerald-800", borderColor: "border-emerald-200" },
 ];
 
 function getRoleBadge(role: string) {
     const config = ALL_ROLES.find(r => r.value === role);
-    return config || { value: role, label: role, color: "bg-gray-100 text-gray-800", borderColor: "border-gray-200", icon: Users };
+    return config || { value: role, label: role, color: "bg-gray-100 dark:bg-gray-800 text-gray-800", borderColor: "border-gray-200", icon: Users };
 }
 
 // ─── Empty State Form ─────────────────────────────────────────────────────────

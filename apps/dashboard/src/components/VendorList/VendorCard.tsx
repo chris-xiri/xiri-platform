@@ -54,7 +54,7 @@ export function VendorCard({ vendor, index, isRecruitmentMode = false, isSelecte
                         vendor.preferredLanguage === 'es' ? (
                             <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 px-1.5 h-5 text-[10px]">ES</Badge>
                         ) : (
-                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 px-1.5 h-5 text-[10px]">EN</Badge>
+                            <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 px-1.5 h-5 text-[10px]">EN</Badge>
                         )
                     )}
                     <span className={`text-xs font-medium ${getScoreColor(vendor.fitScore)}`}>

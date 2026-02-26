@@ -18,16 +18,16 @@ import {
 // Status tab definitions — mirrors VendorStatusTimeline pipeline
 const STATUS_TABS = [
     { key: 'all', label: 'All', icon: Users, color: '' },
-    { key: 'pending_review', label: 'Sourced', icon: Users, color: 'text-sky-600' },
-    { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-blue-600' },
+    { key: 'pending_review', label: 'Sourced', icon: Users, color: 'text-sky-600 dark:text-sky-400' },
+    { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-blue-600 dark:text-blue-400' },
     { key: 'awaiting_onboarding', label: 'Awaiting Form', icon: Mail, color: 'text-indigo-600' },
-    { key: 'compliance_review', label: 'Compliance', icon: ShieldCheck, color: 'text-amber-600' },
-    { key: 'pending_verification', label: 'Verifying Docs', icon: FileSearch, color: 'text-orange-600' },
+    { key: 'compliance_review', label: 'Compliance', icon: ShieldCheck, color: 'text-amber-600 dark:text-amber-400' },
+    { key: 'pending_verification', label: 'Verifying Docs', icon: FileSearch, color: 'text-orange-600 dark:text-orange-400' },
     { key: 'onboarding_scheduled', label: 'Onboarding Call', icon: CalendarCheck, color: 'text-violet-600' },
     { key: 'ready_for_assignment', label: 'Ready', icon: Rocket, color: 'text-teal-600' },
-    { key: 'active', label: 'Active', icon: Star, color: 'text-emerald-600' },
-    { key: 'suspended', label: 'Suspended', icon: Pause, color: 'text-orange-600' },
-    { key: 'dismissed', label: 'Dismissed', icon: Ban, color: 'text-red-600' },
+    { key: 'active', label: 'Active', icon: Star, color: 'text-emerald-600 dark:text-emerald-400' },
+    { key: 'suspended', label: 'Suspended', icon: Pause, color: 'text-orange-600 dark:text-orange-400' },
+    { key: 'dismissed', label: 'Dismissed', icon: Ban, color: 'text-red-600 dark:text-red-400' },
 ] as const;
 
 export default function CRMPage() {

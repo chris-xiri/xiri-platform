@@ -136,7 +136,7 @@ export default function QuotesPage() {
                 </Card>
                 <Card>
                     <CardContent className="p-4 flex items-center gap-3">
-                        <DollarSign className="w-5 h-5 text-green-600 shrink-0" />
+                        <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
                         <div>
                             <p className="text-xl font-bold leading-none">
                                 {formatCurrency(quotes.filter(q => q.status === 'accepted').reduce((sum, q) => {
@@ -154,7 +154,7 @@ export default function QuotesPage() {
                 </Card>
                 <Card>
                     <CardContent className="p-4 flex items-center gap-3">
-                        <Calendar className="w-5 h-5 text-blue-600 shrink-0" />
+                        <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
                         <div>
                             <p className="text-xl font-bold leading-none">{quotes.filter(q => q.status === 'sent').length}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">Pending</p>
@@ -163,7 +163,7 @@ export default function QuotesPage() {
                 </Card>
                 <Card>
                     <CardContent className="p-4 flex items-center gap-3">
-                        <Building2 className="w-5 h-5 text-yellow-600 shrink-0" />
+                        <Building2 className="w-5 h-5 text-yellow-600 dark:text-yellow-400 shrink-0" />
                         <div>
                             <p className="text-xl font-bold leading-none">{quotes.filter(q => q.status === 'draft').length}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">Drafts</p>

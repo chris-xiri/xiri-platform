@@ -67,8 +67,8 @@ export default function VendorRemittancesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Card>
                     <CardContent className="p-4 flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-amber-500/10">
-                            <Send className="w-5 h-5 text-amber-600" />
+                        <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/300/10">
+                            <Send className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                         </div>
                         <div>
                             <p className="text-xs text-muted-foreground">Outstanding</p>
@@ -78,8 +78,8 @@ export default function VendorRemittancesPage() {
                 </Card>
                 <Card>
                     <CardContent className="p-4 flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-green-500/10">
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                        <div className="p-2 rounded-lg bg-green-50 dark:bg-green-950/300/10">
+                            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
                         </div>
                         <div>
                             <p className="text-xs text-muted-foreground">Paid Out</p>
@@ -89,8 +89,8 @@ export default function VendorRemittancesPage() {
                 </Card>
                 <Card>
                     <CardContent className="p-4 flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-blue-500/10">
-                            <FileText className="w-5 h-5 text-blue-600" />
+                        <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/300/10">
+                            <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
                             <p className="text-xs text-muted-foreground">Total Remittances</p>

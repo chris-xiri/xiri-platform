@@ -45,14 +45,14 @@ function SidebarLink({ item, collapsed, pathname }: { item: NavItem; collapsed: 
             href={item.href}
             className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all group
                 ${isActive
-                    ? 'bg-sky-100 text-sky-900 font-medium dark:bg-sky-950/50 dark:text-sky-300'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+                    ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-900 dark:text-sky-300 font-medium dark:bg-sky-950/50 dark:text-sky-300'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
                 }
                 ${collapsed ? 'justify-center px-2' : ''}
             `}
             title={collapsed ? item.label : undefined}
         >
-            <span className={`shrink-0 ${isActive ? 'text-sky-700 dark:text-sky-400' : 'text-slate-500 dark:text-slate-500'}`}>{item.icon}</span>
+            <span className={`shrink-0 ${isActive ? 'text-sky-700 dark:text-sky-400' : 'text-slate-500 dark:text-slate-500 dark:text-slate-400'}`}>{item.icon}</span>
             {!collapsed && <span className="truncate">{item.label}</span>}
         </Link>
     );
@@ -117,7 +117,7 @@ function SidebarSection({ section, collapsed, pathname, expandedSections, toggle
                     {subGroups.map((sg, idx) => (
                         <div key={sg.group || idx}>
                             {sg.group && (
-                                <p className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">{sg.group}</p>
+                                <p className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600 dark:text-slate-400">{sg.group}</p>
                             )}
                             {sg.items.map(item => (
                                 <SidebarLink key={item.href} item={item} collapsed={collapsed} pathname={pathname} />
@@ -246,7 +246,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         {collapsed ? 'X' : 'XIRI'}
                     </span>
                     {!collapsed && (
-                        <span className="text-[10px] font-normal text-slate-500 dark:text-slate-500 mt-1 leading-tight">
+                        <span className="text-[10px] font-normal text-slate-500 dark:text-slate-500 dark:text-slate-400 mt-1 leading-tight">
                             FACILITY<br />SOLUTIONS
                         </span>
                     )}
@@ -318,7 +318,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             <Monitor className="w-4 h-4" /> System
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => signOut()} className="flex items-center gap-2 text-red-600 cursor-pointer">
+                        <DropdownMenuItem onClick={() => signOut()} className="flex items-center gap-2 text-red-600 dark:text-red-400 cursor-pointer">
                             <LogOut className="w-4 h-4" /> Logout
                         </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -364,7 +364,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)}>
                         <Menu className="w-5 h-5" />
                     </Button>
-                    <span className="text-xl font-bold text-sky-700">XIRI</span>
+                    <span className="text-xl font-bold text-sky-700 dark:text-sky-400">XIRI</span>
                 </div>
 
                 <main className="flex-1 overflow-y-auto px-6 py-6">

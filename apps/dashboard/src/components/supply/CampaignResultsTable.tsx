@@ -302,14 +302,14 @@ function VendorDetailPanel({ vendor, onClose, onApprove, onDismiss, onRevive, ca
             {/* Action Buttons (Sticky Bottom) */}
             <div className="p-3 bg-muted/30 border-t border-border flex-shrink-0">
                 {dismissed ? (
-                    <Button onClick={() => onRevive(campaignId, vendor.id!)} className="w-full h-8 text-xs bg-amber-500 hover:bg-amber-600 text-white">
+                    <Button onClick={() => onRevive(campaignId, vendor.id!)} className="w-full h-8 text-xs bg-amber-50 dark:bg-amber-950/300 hover:bg-amber-600 text-white">
                         <RotateCcw className="w-3 h-3 mr-1" /> Revive Vendor
                     </Button>
                 ) : (
                     <>
                         <div className="grid grid-cols-2 gap-2 mb-2">
                             <Button onClick={() => onApprove(campaignId, vendor.id!, 'FAST_TRACK')}
-                                className="bg-orange-500 hover:bg-orange-600 text-white h-auto py-2 flex-col items-start gap-0.5 text-xs">
+                                className="bg-orange-50 dark:bg-orange-950/300 hover:bg-orange-600 text-white h-auto py-2 flex-col items-start gap-0.5 text-xs">
                                 <span className="flex items-center font-bold"><Zap className="w-3.5 h-3.5 mr-1 fill-current" /> Urgent Needs</span>
                                 <span className="text-[9px] opacity-90 font-normal leading-tight">Fast-track onboarding</span>
                             </Button>
@@ -508,7 +508,7 @@ export default function CampaignResultsTable({
                                         <span className="truncate">{campaign.label}</span>
                                     )}
                                     {activeCount > 0 && <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 flex-shrink-0 mt-0.5">{activeCount}</Badge>}
-                                    <button className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all flex-shrink-0 ml-0.5 mt-0.5"
+                                    <button className="opacity-0 group-hover:opacity-100 hover:text-red-500 dark:text-red-400 transition-all flex-shrink-0 ml-0.5 mt-0.5"
                                         onClick={(e) => { e.stopPropagation(); setShowCloseTabDialog(campaign.id); }}>
                                         <X className="w-3 h-3" />
                                     </button>
@@ -657,7 +657,7 @@ export default function CampaignResultsTable({
                                             <Button size="sm" className="h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white px-2" onClick={() => { setBulkTrack('STANDARD'); setShowBulkApproveDialog(true); }}>
                                                 <CheckCircle2 className="w-3 h-3 mr-0.5" /> Std ({selectedVendors.size})
                                             </Button>
-                                            <Button size="sm" className="h-6 text-[10px] bg-orange-500 hover:bg-orange-600 text-white px-2" onClick={() => { setBulkTrack('FAST_TRACK'); setShowBulkApproveDialog(true); }}>
+                                            <Button size="sm" className="h-6 text-[10px] bg-orange-50 dark:bg-orange-950/300 hover:bg-orange-600 text-white px-2" onClick={() => { setBulkTrack('FAST_TRACK'); setShowBulkApproveDialog(true); }}>
                                                 <Zap className="w-3 h-3 mr-0.5" /> Urg ({selectedVendors.size})
                                             </Button>
                                             <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-600 dark:text-red-400 px-2" onClick={() => setShowBulkDismissDialog(true)}>
@@ -786,7 +786,7 @@ export default function CampaignResultsTable({
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleBulkApprove} className={bulkTrack === 'FAST_TRACK' ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-green-600 hover:bg-green-700 text-white'}>Approve</AlertDialogAction>
+                        <AlertDialogAction onClick={handleBulkApprove} className={bulkTrack === 'FAST_TRACK' ? 'bg-orange-50 dark:bg-orange-950/300 hover:bg-orange-600 text-white' : 'bg-green-600 hover:bg-green-700 text-white'}>Approve</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

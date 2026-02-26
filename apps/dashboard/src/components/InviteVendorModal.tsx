@@ -58,7 +58,7 @@ export function InviteVendorModal({ vendor, open, onOpenChange, onSuccess }: Inv
                             <RadioGroupItem value="URGENT" id="urgent" className="mt-1" />
                             <div className="flex-1 space-y-1">
                                 <Label htmlFor="urgent" className="font-medium cursor-pointer flex items-center gap-2">
-                                    <Briefcase className="h-4 w-4 text-red-500" />
+                                    <Briefcase className="h-4 w-4 text-red-500 dark:text-red-400" />
                                     Urgent Contract Coverage
                                     <Badge variant="destructive" className="ml-auto text-xs">Fast Track</Badge>
                                 </Label>

@@ -16,12 +16,12 @@ import {
 
 const ROLE_COLORS: Record<string, string> = {
     admin: "bg-red-100 text-red-800 border-red-200",
-    sales: "bg-blue-100 text-blue-800 border-blue-200",
-    sales_exec: "bg-sky-100 text-sky-800 border-sky-200",
+    sales: "bg-blue-100 text-blue-800 border-blue-200 dark:border-blue-800",
+    sales_exec: "bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800",
     sales_mgr: "bg-indigo-100 text-indigo-800 border-indigo-200",
     fsm: "bg-green-100 text-green-800 border-green-200",
-    night_manager: "bg-purple-100 text-purple-800 border-purple-200",
-    night_mgr: "bg-purple-100 text-purple-800 border-purple-200",
+    night_manager: "bg-purple-100 text-purple-800 dark:text-purple-300 border-purple-200",
+    night_mgr: "bg-purple-100 text-purple-800 dark:text-purple-300 border-purple-200",
     recruiter: "bg-amber-100 text-amber-800 border-amber-200",
     accounting: "bg-emerald-100 text-emerald-800 border-emerald-200",
 };
@@ -131,7 +131,7 @@ export default function ProfilePage() {
                             <div className="flex items-center gap-3">
                                 <p className="text-sm font-medium">{profile.displayName}</p>
                                 {nameSaved ? (
-                                    <span className="text-xs text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> Saved</span>
+                                    <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1"><Check className="w-3 h-3" /> Saved</span>
                                 ) : (
                                     <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setEditingName(true)}>
                                         Edit
@@ -171,7 +171,7 @@ export default function ProfilePage() {
                 <CardContent>
                     <div className="flex flex-wrap gap-2">
                         {profile.roles.map((role) => (
-                            <Badge key={role} variant="outline" className={`text-xs font-medium ${ROLE_COLORS[role] || 'bg-gray-100 text-gray-800'}`}>
+                            <Badge key={role} variant="outline" className={`text-xs font-medium ${ROLE_COLORS[role] || 'bg-gray-100 dark:bg-gray-800 text-gray-800'}`}>
                                 {role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </Badge>
                         ))}
@@ -217,7 +217,7 @@ export default function ProfilePage() {
                         </p>
                     )}
                     {passwordSuccess && (
-                        <p className="text-sm text-green-600 flex items-center gap-1">
+                        <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
                             <Check className="w-4 h-4" /> Password updated successfully!
                         </p>
                     )}

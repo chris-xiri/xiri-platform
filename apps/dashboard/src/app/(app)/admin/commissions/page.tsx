@@ -123,7 +123,7 @@ export default function CommissionsSettingsPage() {
             <Card>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
-                        <Percent className="w-4 h-4 text-blue-600" /> Sales Commission Rates
+                        <Percent className="w-4 h-4 text-blue-600 dark:text-blue-400" /> Sales Commission Rates
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -206,7 +206,7 @@ export default function CommissionsSettingsPage() {
             <Card>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
-                        <Percent className="w-4 h-4 text-amber-600" /> FSM Upsell Commission
+                        <Percent className="w-4 h-4 text-amber-600 dark:text-amber-400" /> FSM Upsell Commission
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -232,7 +232,7 @@ export default function CommissionsSettingsPage() {
             <Card>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-purple-600" /> Payout Schedule & Clawback
+                        <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" /> Payout Schedule & Clawback
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -288,7 +288,7 @@ export default function CommissionsSettingsPage() {
 
             {/* Security Note */}
             <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-                <Shield className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                 <div>
                     <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Admin-Only Setting</p>
                     <p className="text-xs text-amber-700 dark:text-amber-500 mt-0.5">

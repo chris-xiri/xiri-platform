@@ -30,8 +30,8 @@ function extractVariables(content: string): string[] {
 
 // Category display config
 const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
-    vendor: { label: "Supply (Vendor Outreach)", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30" },
-    sales: { label: "Demand (Sales Outreach)", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" },
+    vendor: { label: "Supply (Vendor Outreach)", color: "bg-blue-50 dark:bg-blue-950/300/10 text-blue-600 dark:text-blue-400 border-blue-500/30" },
+    sales: { label: "Demand (Sales Outreach)", color: "bg-emerald-50 dark:bg-emerald-950/300/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" },
 };
 
 export default function AIAgentsPage() {
@@ -148,7 +148,7 @@ export default function AIAgentsPage() {
                                                             <Bot className="w-4 h-4 text-muted-foreground" />
                                                             {template.name}
                                                             {isSaved && (
-                                                                <Badge className="bg-green-500/10 text-green-600 border-green-500/30 gap-1">
+                                                                <Badge className="bg-green-50 dark:bg-green-950/300/10 text-green-600 dark:text-green-400 border-green-500/30 gap-1">
                                                                     <Check className="w-3 h-3" /> Saved
                                                                 </Badge>
                                                             )}
@@ -208,7 +208,7 @@ export default function AIAgentsPage() {
                                                     )}
 
                                                     {/* Warning */}
-                                                    <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                                                    <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/300/10 border border-amber-500/20 rounded-lg p-3">
                                                         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                                                         <span>
                                                             Changes are saved directly to production. The next AI generation will use the updated prompt.

@@ -24,19 +24,19 @@ const ACTIVITY_CONFIG: Record<string, { icon: React.ElementType; color: string; 
     'STATUS_CHANGE': { icon: ArrowRight, color: 'text-blue-500', label: 'Status Change' },
     'OUTREACH_SENT': { icon: Mail, color: 'text-green-500', label: 'Email Sent' },
     'OUTREACH_RESENT': { icon: RefreshCw, color: 'text-blue-500', label: 'Email Resent' },
-    'OUTREACH_FAILED': { icon: XCircle, color: 'text-red-500', label: 'Email Failed' },
+    'OUTREACH_FAILED': { icon: XCircle, color: 'text-red-500 dark:text-red-400', label: 'Email Failed' },
     'DRIP_SENT': { icon: Mail, color: 'text-purple-500', label: 'Drip Email' },
     'DRIP_SCHEDULED': { icon: Clock, color: 'text-purple-400', label: 'Drip Scheduled' },
     'ENRICHMENT': { icon: Globe, color: 'text-cyan-500', label: 'Enrichment' },
     'DOCUMENT_UPLOADED': { icon: FileText, color: 'text-amber-500', label: 'Document' },
     'DOCUMENT_VERIFIED': { icon: Shield, color: 'text-green-500', label: 'Doc Verified' },
     'COMPLIANCE_UPDATED': { icon: Shield, color: 'text-blue-500', label: 'Compliance' },
-    'ONBOARDING_COMPLETE': { icon: Check, color: 'text-green-600', label: 'Onboarded' },
+    'ONBOARDING_COMPLETE': { icon: Check, color: 'text-green-600 dark:text-green-400', label: 'Onboarded' },
     'CALL': { icon: Phone, color: 'text-blue-500', label: 'Call' },
     'EMAIL_DELIVERED': { icon: Check, color: 'text-green-500', label: 'Delivered' },
     'EMAIL_OPENED': { icon: Eye, color: 'text-blue-500', label: 'Opened' },
     'EMAIL_CLICKED': { icon: LinkIcon, color: 'text-purple-500', label: 'Clicked' },
-    'EMAIL_BOUNCED': { icon: XCircle, color: 'text-red-500', label: 'Bounced' },
+    'EMAIL_BOUNCED': { icon: XCircle, color: 'text-red-500 dark:text-red-400', label: 'Bounced' },
     'FAST_TRACK': { icon: Zap, color: 'text-orange-500', label: 'Fast Track' },
 };
 
@@ -161,13 +161,13 @@ export default function VendorActivityFeed({ vendorId }: { vendorId: string }) {
                     {activity.metadata?.deliveryStatus && (
                         <div className="flex gap-1 mt-1">
                             {activity.metadata.deliveryStatus === 'delivered' && (
-                                <Badge className="text-[8px] bg-green-100 text-green-700 border-green-200">✅ Delivered</Badge>
+                                <Badge className="text-[8px] bg-green-100 text-green-700 dark:text-green-400 border-green-200">✅ Delivered</Badge>
                             )}
                             {activity.metadata.deliveryStatus === 'opened' && (
-                                <Badge className="text-[8px] bg-blue-100 text-blue-700 border-blue-200">👁️ Opened</Badge>
+                                <Badge className="text-[8px] bg-blue-100 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">👁️ Opened</Badge>
                             )}
                             {activity.metadata.deliveryStatus === 'clicked' && (
-                                <Badge className="text-[8px] bg-purple-100 text-purple-700 border-purple-200">🔗 Clicked</Badge>
+                                <Badge className="text-[8px] bg-purple-100 text-purple-700 dark:text-purple-400 border-purple-200">🔗 Clicked</Badge>
                             )}
                             {activity.metadata.deliveryStatus === 'bounced' && (
                                 <Badge className="text-[8px] bg-red-100 text-red-700 border-red-200">❌ Bounced</Badge>
@@ -249,7 +249,7 @@ export default function VendorActivityFeed({ vendorId }: { vendorId: string }) {
                 {scheduled.length > 0 && (
                     <>
                         <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/30 border-b flex items-center gap-2">
-                            <Clock className="w-3.5 h-3.5 text-amber-600" />
+                            <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                             <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Scheduled ({scheduled.length})</span>
                         </div>
                         <div className="divide-y divide-border border-b-2 border-amber-200 dark:border-amber-800">

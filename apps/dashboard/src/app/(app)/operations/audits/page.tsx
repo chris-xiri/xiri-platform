@@ -111,8 +111,8 @@ export default function AuditsPage() {
         <div className="max-w-2xl mx-auto space-y-6 pb-20">
             {/* Hero Header - Gamified */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 p-6 text-white">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-10 translate-x-10" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-8 -translate-x-8" />
+                <div className="absolute top-0 right-0 w-40 h-40 bg-white dark:bg-card/5 rounded-full -translate-y-10 translate-x-10" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white dark:bg-card/5 rounded-full translate-y-8 -translate-x-8" />
 
                 <div className="relative z-10">
                     <div className="flex items-center justify-between mb-4">
@@ -120,7 +120,7 @@ export default function AuditsPage() {
                             <p className="text-sm text-white/70">Good evening,</p>
                             <h1 className="text-2xl font-bold">{profile?.displayName?.split(' ')[0] || 'Manager'} 👋</h1>
                         </div>
-                        <div className="flex items-center gap-1 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
+                        <div className="flex items-center gap-1 bg-white dark:bg-card/15 backdrop-blur-sm rounded-full px-3 py-1.5">
                             <Flame className="w-4 h-4 text-orange-300" />
                             <span className="text-sm font-bold">{streak} day streak</span>
                         </div>
@@ -132,7 +132,7 @@ export default function AuditsPage() {
                             <span className="text-white/80">Tonight&apos;s Progress</span>
                             <span className="font-bold">{doneWOs.length}/{tonightsWOs.length} sites</span>
                         </div>
-                        <div className="h-3 bg-white/20 rounded-full overflow-hidden">
+                        <div className="h-3 bg-white dark:bg-card/20 rounded-full overflow-hidden">
                             <div
                                 className="h-full bg-gradient-to-r from-green-400 to-emerald-300 rounded-full transition-all duration-1000 ease-out"
                                 style={{ width: `${tonightProgress}%` }}
@@ -141,7 +141,7 @@ export default function AuditsPage() {
                     </div>
 
                     {tonightProgress === 100 && (
-                        <div className="flex items-center gap-2 bg-green-500/30 backdrop-blur-sm rounded-lg px-3 py-2 mt-2">
+                        <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950/300/30 backdrop-blur-sm rounded-lg px-3 py-2 mt-2">
                             <Trophy className="w-5 h-5 text-yellow-300" />
                             <span className="text-sm font-medium">All sites audited! Great work tonight! 🎉</span>
                         </div>
@@ -202,7 +202,7 @@ export default function AuditsPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">
+                                        <Badge variant="outline" className="text-xs bg-amber-50 dark:bg-amber-950/30 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">
                                             Pending
                                         </Badge>
                                         <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -218,7 +218,7 @@ export default function AuditsPage() {
             {doneWOs.length > 0 && (
                 <div>
                     <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
                         Done Tonight ({doneWOs.length})
                     </h2>
                     <div className="space-y-2">
@@ -229,7 +229,7 @@ export default function AuditsPage() {
                                     <CardContent className="p-4 flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
-                                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
                                             </div>
                                             <div>
                                                 <p className="font-medium text-sm">{wo.locationName}</p>
@@ -285,8 +285,8 @@ export default function AuditsPage() {
                                         <Badge
                                             variant="outline"
                                             className={`text-xs ${ci.completionRate === 100
-                                                ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400'
-                                                : 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-400'
+                                                ? 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:bg-green-950 dark:text-green-400'
+                                                : 'bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-400'
                                                 }`}
                                         >
                                             {ci.completionRate}%
