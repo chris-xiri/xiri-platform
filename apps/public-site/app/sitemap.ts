@@ -62,26 +62,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
         sitemapEntries.push({ url: `${BASE_URL}/solutions/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
     });
 
-    // 7. Solutions — Niche × Location cross-products
-    Object.keys(DLP_SOLUTIONS).forEach((nicheSlug) => {
-        locations.forEach((location) => {
-            sitemapEntries.push({ url: `${BASE_URL}/solutions/${nicheSlug}-in-${location.slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 });
-        });
-    });
-
-    // 8. Contractor DLPs
+    // 7. Contractor DLPs
     [...Object.keys(TRADES), ...Object.keys(getGeoPages()), ...Object.keys(KEYWORD_PAGES), ...Object.keys(GUIDE_PAGES)].forEach((slug) => {
         sitemapEntries.push({ url: `${BASE_URL}/contractors/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
     });
 
-    // 9. Contractor — Trade × Location cross-products
-    Object.keys(TRADES).forEach((tradeSlug) => {
-        locations.forEach((location) => {
-            sitemapEntries.push({ url: `${BASE_URL}/contractors/${tradeSlug}-in-${location.slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 });
-        });
-    });
-
-    // 10. Guide Pages
+    // 8. Guide Pages
     ['jcaho-cleaning-requirements', 'accreditation-360-preparation-guide', 'commercial-cleaning-cost-guide', 'inhouse-vs-outsourced-facility-management'].forEach((slug) => {
         sitemapEntries.push({ url: `${BASE_URL}/guides/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
     });
