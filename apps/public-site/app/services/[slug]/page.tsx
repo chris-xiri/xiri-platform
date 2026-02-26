@@ -135,8 +135,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (type === 'SERVICE') {
         const service = data as any;
         const logic = MEDICAL_LOGIC[service.slug] || DEFAULT_LOGIC;
-        // Title: compliance prefix + service name + brand
-        const title = `${logic.titlePrefix} ${service.heroTitle || service.name} | XIRI Facility Solutions`;
+        // Title: compliance prefix + "Cleaning for" + service name + brand
+        const title = `${logic.titlePrefix} Cleaning for ${service.heroTitle || service.name} | XIRI Facility Solutions`;
         // Description: surgical pitch + numbers + CTA
         const description = `${service.shortDescription} ${logic.pitch}. 1 partner, 1 invoice, 365 nights/yr verified. Free walkthrough →`.slice(0, 155);
         return {
@@ -156,8 +156,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     } else if (type === 'LOCATION') {
         const { service, location } = data as { service: any; location: Location };
         const logic = MEDICAL_LOGIC[service.slug] || DEFAULT_LOGIC;
-        // Title: compliance prefix + service + location + brand
-        const title = `${logic.titlePrefix} ${service.name} in ${location.name}, ${location.state} | XIRI`;
+        // Title: compliance prefix + "Cleaning for" + service + location + brand
+        const title = `${logic.titlePrefix} Cleaning for ${service.name} in ${location.name} | XIRI`;
         // Description: local hook + surgical pitch + numbers + CTA
         const localHook = location.localInsight
             ? `${location.localInsight} `
