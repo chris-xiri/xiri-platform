@@ -1,6 +1,6 @@
 // --- SHARED DOMAIN TYPES ---
 
-export type IndustryVertical = 'medical' | 'auto' | 'education' | 'general';
+export type IndustryVertical = 'medical' | 'auto' | 'education' | 'lab' | 'manufacturing' | 'general';
 
 // The "Medical First" Facility List
 export type FacilityType =
@@ -8,12 +8,18 @@ export type FacilityType =
     | 'medical_private'          // Aesthetic focus
     | 'medical_surgery'          // High margin/Terminal cleaning
     | 'medical_dialysis'
+    | 'medical_dental'
+    | 'medical_veterinary'
     | 'auto_dealer_showroom'
     | 'auto_service_center'
     | 'edu_daycare'
     | 'edu_private_school'
+    | 'lab_cleanroom'            // ISO 14644-1 / cGMP
+    | 'lab_bsl'                  // BSL-1 / BSL-2
+    | 'manufacturing_light'      // FOD / ESD / chain-of-custody
     | 'office_general'
     | 'fitness_gym'
+    | 'retail_storefront'
     | 'other';
 
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'walkthrough' | 'proposal' | 'quoted' | 'won' | 'lost' | 'churned';

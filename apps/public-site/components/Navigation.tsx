@@ -17,6 +17,8 @@ const FACILITY_TYPES = [
     { group: "Automotive", label: "Auto Dealerships", slug: "auto-dealerships" },
     { group: "Education", label: "Daycares & Preschools", slug: "daycare-preschool" },
     { group: "Education", label: "Private Schools", slug: "private-schools" },
+    { group: "Specialized", label: "Labs & Cleanrooms", slug: "labs-cleanrooms" },
+    { group: "Specialized", label: "Light Manufacturing", slug: "light-manufacturing" },
     { group: "Commercial", label: "Professional Offices", slug: "professional-offices" },
     { group: "Commercial", label: "Fitness & Gyms", slug: "fitness-gyms" },
     { group: "Commercial", label: "Retail Storefronts", slug: "retail-storefronts" },
