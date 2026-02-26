@@ -523,6 +523,106 @@
           "answer": "Yes. Window cleaning, sidewalk pressure washing, parking lot sweeping, and seasonal snow removal are all included in our managed service options."
         }
       ]
+    },
+    {
+      "slug": "labs-cleanrooms",
+      "name": "Labs & Cleanrooms",
+      "heroTitle": "ISO-Certified Cleanroom & Laboratory Facility Services",
+      "heroSubtitle": "We maintain your ISO 14644-1 classification and cGMP documentation. Every mop stroke logged. Every gowning protocol followed.",
+      "coreServices": [
+        "commercial-cleaning",
+        "disinfecting-services",
+        "floor-care",
+        "hvac-maintenance",
+        "waste-management",
+        "handyman-services"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "ISO 14644-1 Compliant",
+          "description": "We train every contractor on your cleanroom classification — ISO 7 or ISO 8 — with proper gowning, HEPA-filtered equipment, and particle-count protocols.",
+          "icon": "shield-check"
+        },
+        {
+          "title": "cGMP Documentation",
+          "description": "FDA-grade cleaning logs for facilities making supplements, cosmetics, or electronics. Every surface, every chemical, every timestamp documented to prevent cross-contact.",
+          "icon": "microscope"
+        },
+        {
+          "title": "Chemical Hygiene Plan (CHP) Trained",
+          "description": "Under OSHA 1910.1450, your lab requires a CHP. Our crews read your hazard signage, follow your lab's specific protocols, and never touch critical equipment.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Can your crew maintain our ISO classification?",
+          "answer": "Yes. We train every contractor assigned to your facility on ISO 14644-1 requirements — proper gowning (hairnets, booties, cleanroom suits), HEPA-filtered vacuums only, and particle-migration prevention protocols. A single protocol violation can ruin an ISO 7 rating in 30 seconds. We don't let that happen."
+        },
+        {
+          "question": "How do you handle BSL-1 and BSL-2 lab cleaning?",
+          "answer": "Lab cleaning is a different discipline than standard janitorial. Our contractors follow the 'Don't Touch' rule — they handle floors, trash, and non-critical benches only. They never touch equipment, samples, or critical surfaces unless specifically trained and authorized by your lab manager."
+        },
+        {
+          "question": "Do you comply with NYS VOC regulations?",
+          "answer": "Yes. Under NYS DEC Part 226, there are strict limits on Volatile Organic Compounds in cleaning solvents. We use low-VOC, lab-safe products that won't interfere with sensitive experiments or contaminate your air quality readings."
+        },
+        {
+          "question": "What about cGMP documentation requirements?",
+          "answer": "For FDA-regulated facilities producing supplements, cosmetics, or medical devices, we maintain cGMP-compliant cleaning logs — documenting every product used, every surface cleaned, and every timestamp to prove no cross-contact occurred during cleaning."
+        }
+      ]
+    },
+    {
+      "slug": "light-manufacturing",
+      "name": "Light Manufacturing",
+      "heroTitle": "Facility Services for Manufacturing & Assembly",
+      "heroSubtitle": "FOD prevention. ESD-safe cleaning. Chain-of-custody documentation. We protect your production line from particle contamination.",
+      "coreServices": [
+        "commercial-cleaning",
+        "floor-care",
+        "waste-management",
+        "hvac-maintenance",
+        "pressure-washing",
+        "handyman-services"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "FOD Prevention",
+          "description": "Foreign Object Debris destroys precision components. We use microfiber-only tools and HEPA-filtered vacuums to prevent particle migration in your assembly areas.",
+          "icon": "shield-check"
+        },
+        {
+          "title": "ESD-Safe Floor Care",
+          "description": "In electronics manufacturing, static kills components. We use ESD-safe floor cleaners that don't leave insulating film — protecting your production from electrostatic discharge.",
+          "icon": "shield"
+        },
+        {
+          "title": "Chain of Custody Logs",
+          "description": "Every shift documented — who cleaned what, when, and with which products. Full traceability for your quality audits and ISO inspections.",
+          "icon": "microscope"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How do you prevent FOD contamination?",
+          "answer": "A single loose bristle from a cheap broom can destroy a jet engine component. We use microfiber-only cloths, HEPA-filtered vacuums, and tack mats to prevent particle migration. No cotton rags, no corn brooms, no shortcuts."
+        },
+        {
+          "question": "What is ESD-safe cleaning?",
+          "answer": "Electrostatic Discharge can destroy circuit boards and sensitive electronics. We use ESD-safe floor cleaners that don't leave an insulating film on surfaces, and our crews are trained in proper grounding procedures for electronics manufacturing environments."
+        },
+        {
+          "question": "Do you meet cGMP requirements for cosmetic or supplement manufacturing?",
+          "answer": "Yes. For FDA-regulated light manufacturing (cosmetics, supplements, small-batch pharmaceuticals), we maintain full cGMP cleaning logs — documenting every product, every surface, and every timestamp to satisfy FDA auditor inquiries."
+        },
+        {
+          "question": "Can you handle aerospace-grade cleanliness requirements?",
+          "answer": "Yes. For precision manufacturing environments — aerospace parts, medical devices, optical components — we follow AS9100-compatible cleaning protocols with documented chain-of-custody and contamination prevention procedures."
+        }
+      ]
     }
   ],
   "services": [

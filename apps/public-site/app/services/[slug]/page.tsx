@@ -80,6 +80,10 @@ const MEDICAL_LOGIC: Record<string, { titlePrefix: string; compliance: string; p
     'private-schools': { titlePrefix: 'Child-Safe & Compliant', compliance: 'CDC + Green Seal', pitch: 'non-toxic cleaning meeting school health & safety licensing requirements' },
     // Veterinary
     'veterinary-clinics': { titlePrefix: 'Cross-Contamination Safe', compliance: 'OSHA + EPA', pitch: 'clinical-grade sanitation preventing cross-contamination in surgical & recovery areas' },
+    // Labs & Cleanrooms
+    'labs-cleanrooms': { titlePrefix: 'ISO 14644-1 Certified', compliance: 'ISO 14644-1 + cGMP', pitch: 'ISO-classified cleanroom maintenance with cGMP documentation & CHP-trained crews' },
+    // Light Manufacturing
+    'light-manufacturing': { titlePrefix: 'FOD-Prevention Grade', compliance: 'cGMP + OSHA', pitch: 'FOD prevention, ESD-safe floor care & chain-of-custody documentation for production facilities' },
     // Other commercial
     'fitness-gyms': { titlePrefix: 'Health Code-Compliant', compliance: 'Health Dept + ADA', pitch: 'high-touch surface sanitization & locker room health code compliance' },
     'professional-offices': { titlePrefix: 'Nightly-Verified', compliance: 'OSHA', pitch: 'nightly-verified cleaning with documented shift logs & $1M insurance' },
