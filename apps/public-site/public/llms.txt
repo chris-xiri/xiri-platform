@@ -1,0 +1,60 @@
+# XIRI Facility Solutions
+
+> XIRI provides managed facility maintenance for single-tenant NNN buildings — medical offices, labs, auto dealerships, and commercial facilities in Nassau County, Long Island, NY. One partner. One invoice. Nightly verified.
+
+## Core Services
+- [Janitorial Services](https://xiri.ai/services/janitorial-services): Recurring janitorial for medical, commercial, and institutional facilities.
+- [Medical Office Cleaning](https://xiri.ai/services/medical-office-cleaning): JCAHO-compliant cleaning with terminal disinfection and documentation.
+- [Commercial Cleaning](https://xiri.ai/services/commercial-cleaning): Full-service cleaning for offices, retail, and professional suites.
+- [Floor Care](https://xiri.ai/services/floor-care): Strip, seal, and maintain VCT, LVT, epoxy, and concrete flooring.
+- [Disinfecting Services](https://xiri.ai/services/disinfecting-services): EPA-registered disinfection for healthcare and high-touch environments.
+- [HVAC Maintenance](https://xiri.ai/services/hvac-maintenance): Preventive HVAC service for single-tenant commercial buildings.
+- [Window Cleaning](https://xiri.ai/services/window-cleaning): Interior and exterior window cleaning for commercial facilities.
+- [Pressure Washing](https://xiri.ai/services/pressure-washing): Exterior surface cleaning for parking lots, sidewalks, and building facades.
+- [Pest Control](https://xiri.ai/services/pest-control): Licensed pest management for medical, food service, and commercial facilities.
+- [Waste Management](https://xiri.ai/services/waste-management): Regulated and general waste handling including red-bag medical waste.
+- [Snow & Ice Removal](https://xiri.ai/services/snow-ice-removal): Winter weather response for parking lots, walkways, and entrances.
+- [Handyman Services](https://xiri.ai/services/handyman-services): General maintenance and repair for commercial buildings.
+- [Parking Lot Maintenance](https://xiri.ai/services/parking-lot-maintenance): Sweeping, striping, and surface repair.
+- [Post-Construction Cleanup](https://xiri.ai/services/post-construction-cleanup): Final clean and punch-list support for new builds and renovations.
+
+## Industries Served
+- [Medical Offices](https://xiri.ai/medical-offices): JCAHO-compliant facility management for private practices and clinics.
+- [Surgery Centers](https://xiri.ai/surgery-centers): Terminal cleaning and sterile environment maintenance.
+- [Dental Offices](https://xiri.ai/dental-offices): Dental suite sanitization with CDC-aligned protocols.
+- [Urgent Care Centers](https://xiri.ai/urgent-care): High-traffic clinical cleaning with rapid turnover.
+- [Dialysis Centers](https://xiri.ai/dialysis-centers): Infection control for dialysis environments.
+- [Veterinary Clinics](https://xiri.ai/veterinary-clinics): Animal hospital cleaning with biohazard handling.
+- [Auto Dealerships](https://xiri.ai/auto-dealerships): Showroom, service bay, and lot maintenance.
+- [Daycares & Preschools](https://xiri.ai/daycare-preschool): Child-safe cleaning with non-toxic products.
+- [Labs & Cleanrooms](https://xiri.ai/labs-cleanrooms): ISO 14644-1 compliant cleanroom and laboratory maintenance.
+- [Light Manufacturing](https://xiri.ai/light-manufacturing): FOD prevention, ESD-safe cleaning, and chain-of-custody documentation.
+- [Professional Offices](https://xiri.ai/professional-offices): General office cleaning and maintenance.
+- [Fitness Centers](https://xiri.ai/fitness-gyms): Gym and fitness facility sanitation.
+
+## Specialized Solutions
+- [JCAHO Survey-Ready Disinfection](https://xiri.ai/solutions/jcaho-survey-ready-disinfection): Audit-ready disinfection protocols for medical facilities.
+- [Terminal Cleaning for Surgery Centers](https://xiri.ai/solutions/terminal-cleaning-surgery-centers): End-of-day sterile field cleaning for surgical environments.
+- [Dental Suite Sanitization](https://xiri.ai/solutions/dental-suite-sanitization): CDC-aligned sterilization support for dental practices.
+- [ISO 7/8 Cleanroom Protocol](https://xiri.ai/solutions/iso-7-8-cleanroom-protocol): Particle control and gowning protocols for classified cleanrooms.
+- [cGMP Lab Decontamination](https://xiri.ai/solutions/cgmp-lab-decontamination): FDA-grade decontamination for regulated laboratories.
+- [BSL-2 Lab Waste Management](https://xiri.ai/solutions/bsl-2-lab-waste-management): Biosafety-compliant waste handling and decontamination.
+- [ESD-Safe Floor Care](https://xiri.ai/solutions/esd-safe-floor-care): Electrostatic discharge prevention for electronics manufacturing.
+- [Auto Shop Slip-Coefficient Logging](https://xiri.ai/solutions/auto-shop-slip-coefficient-logging): NYS Part 226 compliant floor safety documentation.
+- [Data Center Zinc-Whisker Remediation](https://xiri.ai/solutions/data-center-zinc-whisker-remediation): Sub-floor contamination removal for data centers.
+
+## Guides
+- [JCAHO Cleaning Requirements](https://xiri.ai/guides/jcaho-cleaning-requirements): Complete guide to Joint Commission environmental cleaning standards.
+- [Accreditation 360 Preparation Guide](https://xiri.ai/guides/accreditation-360-preparation-guide): Preparing for the 2026 JCAHO accreditation overhaul.
+- [Commercial Cleaning Cost Guide](https://xiri.ai/guides/commercial-cleaning-cost-guide): Understanding pricing factors for commercial cleaning.
+- [In-House vs Outsourced Facility Management](https://xiri.ai/guides/inhouse-vs-outsourced-facility-management): When to hire vs. outsource.
+
+## For Contractors
+- [Join Our Network](https://xiri.ai/contractors): Apply to become a vetted XIRI contractor partner.
+- [Subcontractor Opportunities](https://xiri.ai/contractors/subcontractor-opportunities): 1099 partnership program for cleaning LLCs.
+- [Medical Cleaning Careers](https://xiri.ai/contractors/medical-cleaning-careers): Opportunities for HIPAA/cGMP-trained contractors.
+- [RFP & Bidding](https://xiri.ai/contractors/facility-management-rfp): Formal bidding channel for established vendors.
+
+## Service Areas
+- [Great Neck, NY](https://xiri.ai/directory/locations): Northern Blvd Medical Mile corridor, Nassau County.
+- [New Hyde Park, NY](https://xiri.ai/directory/locations): LIJ Medical Center / Marcus Avenue Hub, Nassau County.

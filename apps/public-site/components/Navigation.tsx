@@ -34,7 +34,6 @@ export default function Navigation() {
     const router = useRouter();
     const [industriesOpen, setIndustriesOpen] = useState(false);
     const [servicesOpen, setServicesOpen] = useState(false);
-    const [resourcesOpen, setResourcesOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
 
@@ -101,23 +100,7 @@ export default function Navigation() {
         ],
     };
 
-    const RESOURCE_LINKS = [
-        {
-            group: 'Solutions', items: [
-                { label: 'Medical Facility Management', href: '/solutions/medical-facility-management' },
-                { label: 'Single-Tenant Building Maintenance', href: '/solutions/single-tenant-maintenance' },
-                { label: 'Vendor Management Alternative', href: '/solutions/vendor-management-alternative' },
-            ]
-        },
-        {
-            group: 'Guides', items: [
-                { label: 'JCAHO Cleaning Requirements', href: '/guides/jcaho-cleaning-requirements' },
-                { label: 'Accreditation 360 Prep Guide', href: '/guides/accreditation-360-preparation-guide' },
-                { label: 'Commercial Cleaning Costs', href: '/guides/commercial-cleaning-cost-guide' },
-                { label: 'In-House vs Outsourced', href: '/guides/inhouse-vs-outsourced-facility-management' },
-            ]
-        },
-    ];
+
 
     return (
         <header className="fixed top-0 z-50 w-full font-sans shadow-md">
@@ -245,43 +228,6 @@ export default function Navigation() {
                                 </div>
                             </div>
 
-                            {/* Resources Dropdown */}
-                            <div
-                                className="relative group"
-                                onMouseEnter={() => setResourcesOpen(true)}
-                                onMouseLeave={() => setResourcesOpen(false)}
-                            >
-                                <button className="text-gray-600 font-medium hover:text-sky-600 transition-colors flex items-center gap-1.5 py-2 group-hover:text-sky-600">
-                                    Resources
-                                    <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-
-                                <div className={`absolute top-full -left-4 pt-4 w-80 transition-all duration-200 origin-top-left ${resourcesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
-                                    <div className="bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden ring-1 ring-black/5">
-                                        <div className="p-2 space-y-1">
-                                            {RESOURCE_LINKS.map(({ group, items }) => (
-                                                <div key={group} className="pb-2 last:pb-0">
-                                                    <div className="px-3 py-1.5 text-xs font-bold text-sky-500 uppercase tracking-wider">
-                                                        {group}
-                                                    </div>
-                                                    {items.map((item) => (
-                                                        <Link
-                                                            key={item.href}
-                                                            href={item.href}
-                                                            className="block px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 transition-colors"
-                                                            onClick={() => handleNavClick(item.href, item.label)}
-                                                        >
-                                                            {item.label}
-                                                        </Link>
-                                                    ))}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
 
                             <Link
                                 href="/contractors"
