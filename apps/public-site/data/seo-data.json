@@ -635,6 +635,60 @@
           "answer": "Yes. For manufacturing floors with oil, coolant, or chemical residue, we use industrial-grade degreasers and scrubbing equipment rated for concrete and epoxy coatings. Regular degreasing prevents slip hazards with OSHA and keeps your production area clean for quality inspections."
         }
       ]
+    },
+    {
+      "slug": "converted-clinical-suites",
+      "name": "Converted Clinical Suites",
+      "heroTitle": "Facility Management for Converted Clinical Suites",
+      "heroSubtitle": "Residential-to-medical conversions need specialized protocols. Residential HVAC, wood flooring, shared entrances — we know what surveyors look for in converted spaces.",
+      "coreServices": [
+        "medical-office-cleaning",
+        "disinfecting-services",
+        "floor-care",
+        "hvac-maintenance",
+        "handyman-services",
+        "pest-control"
+      ],
+      "specializedServices": [],
+      "benefits": [
+        {
+          "title": "Converted-Space Expertise",
+          "description": "Residential HVAC, wood flooring, low ceilings, basement labs — we've built protocols for every challenge unique to converted medical suites.",
+          "icon": "shield-check"
+        },
+        {
+          "title": "One-Key-Ring Management",
+          "description": "Stop juggling 4–5 vendors. Hand XIRI the key ring — cleaning, floors, HVAC, pest control, and compliance docs under one agreement.",
+          "icon": "key"
+        },
+        {
+          "title": "JCAHO Environment of Care Ready",
+          "description": "Converted homes can pass surveys with proper protocols. We maintain documentation that addresses every EC focal point surveyors flag.",
+          "icon": "microscope"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "What are the OSHA standards for residential-based clinics in New York?",
+          "answer": "OSHA 29 CFR 1910.1030 (bloodborne pathogens) applies regardless of building type. Residential conversions must also meet ventilation (1910.94), walking surfaces (1910.22), and electrical safety standards. XIRI documents compliance for all applicable standards."
+        },
+        {
+          "question": "Can a converted home pass a JCAHO environment of care survey?",
+          "answer": "Yes — with proper protocols. Key challenges include HVAC air quality documentation, non-standard flooring sanitization, and shared-entrance infection control. XIRI's converted suite protocol addresses each survey focal point."
+        },
+        {
+          "question": "What is One-Key-Ring management for independent physicians?",
+          "answer": "One-Key-Ring is XIRI's consolidation model: one partner manages all facility maintenance services. Instead of coordinating 4–5 vendors, you hand XIRI the key ring. We manage cleaning, floors, HVAC, pest control, and documentation under one agreement."
+        },
+        {
+          "question": "How do you handle wood flooring in a medical environment?",
+          "answer": "Wood and laminate floors require different sanitization than VCT. We use CDC-recommended intermediate-level disinfectants effective against bloodborne pathogens without damaging wood finishes. We document moisture levels and finish condition to prevent deterioration."
+        },
+        {
+          "question": "Do converted clinical suites need different HVAC protocols?",
+          "answer": "Yes. Residential HVAC systems weren't designed for clinical air quality. We implement more frequent filter changes, document air quality metrics, and ensure compliance with ASHRAE 62.1 ventilation standards required for healthcare occupancy."
+        }
+      ]
     }
   ],
   "services": [

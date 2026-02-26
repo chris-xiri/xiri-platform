@@ -16,7 +16,7 @@ const FACILITY_TYPES = [
     { group: "Medical", label: "Dental Offices", slug: "dental-offices" },
     { group: "Medical", label: "Dialysis Centers", slug: "dialysis-centers" },
     { group: "Medical", label: "Veterinary Clinics", slug: "veterinary-clinics" },
-    { group: "Medical", label: "Converted Clinical Suites", slug: "solutions/converted-clinical-suites" },
+    { group: "Medical", label: "Converted Clinical Suites", slug: "converted-clinical-suites" },
     // Column 2: Specialized (3) + Education (2) + Commercial (3)
     { group: "Specialized", label: "Auto Dealerships", slug: "auto-dealerships" },
     { group: "Specialized", label: "Labs & Cleanrooms", slug: "labs-cleanrooms" },

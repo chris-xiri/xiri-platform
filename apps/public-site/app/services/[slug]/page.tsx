@@ -94,6 +94,7 @@ const MEDICAL_LOGIC: Record<string, { titlePrefix: string; compliance: string; p
     'private-schools': { titlePrefix: 'Child-Safe & Compliant', compliance: 'CDC + Green Seal', pitch: 'non-toxic cleaning meeting school health & safety licensing requirements' },
     // Veterinary
     'veterinary-clinics': { titlePrefix: 'Cross-Contamination Safe', compliance: 'OSHA + EPA', pitch: 'clinical-grade sanitation preventing cross-contamination in surgical & recovery areas' },
+    'converted-clinical-suites': { titlePrefix: 'Compliance-Ready', compliance: 'OSHA + JCAHO', pitch: 'specialized protocols for residential-to-medical conversions — HVAC, flooring & shared-entrance infection control' },
     // Labs & Cleanrooms
     'labs-cleanrooms': { titlePrefix: 'ISO 14644-1 Certified', compliance: 'ISO 14644-1 + cGMP', pitch: 'ISO-classified cleanroom maintenance with cGMP documentation & CHP-trained crews' },
     // Light Manufacturing
