@@ -5,6 +5,7 @@ import { Hero } from '@/components/Hero';
 import { CTAButton } from '@/components/CTAButton';
 import { JsonLd } from '@/components/JsonLd';
 import { FAQ } from '@/components/FAQ';
+import { DLPSidebar } from '@/components/DLPSidebar';
 import seoData from '@/data/seo-data.json';
 import { CheckCircle, ArrowRight, Building2, Stethoscope, Shield, Users, FileText, Phone } from 'lucide-react';
 
@@ -188,28 +189,37 @@ const SOLUTIONS: Record<string, {
     },
 };
 
+import { DLP_SOLUTIONS, SPOKE_HUBS } from '@/data/dlp-solutions';
+
 type Props = {
     params: Promise<{ slug: string }>;
 };
 
 export async function generateStaticParams() {
-    return Object.keys(SOLUTIONS).map(slug => ({ slug }));
+    return [
+        ...Object.keys(SOLUTIONS).map(slug => ({ slug })),
+        ...Object.keys(DLP_SOLUTIONS).map(slug => ({ slug })),
+        ...Object.keys(SPOKE_HUBS).map(slug => ({ slug })),
+    ];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
     const solution = SOLUTIONS[slug];
-    if (!solution) return {};
+    const dlp = DLP_SOLUTIONS[slug];
+    const hub = SPOKE_HUBS[slug];
+    const page = solution || dlp || hub;
+    if (!page) return {};
 
     return {
-        title: `${solution.title} | XIRI Facility Solutions`,
-        description: solution.metaDescription,
+        title: `${page.title} | XIRI Facility Solutions`,
+        description: page.metaDescription,
         alternates: {
             canonical: `https://xiri.ai/solutions/${slug}`,
         },
         openGraph: {
-            title: `${solution.title} | XIRI`,
-            description: solution.metaDescription,
+            title: `${page.title} | XIRI`,
+            description: page.metaDescription,
             url: `https://xiri.ai/solutions/${slug}`,
             siteName: 'XIRI Facility Solutions',
             type: 'website',
@@ -219,159 +229,200 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SolutionPage({ params }: Props) {
     const { slug } = await params;
+
+    // ── Editorial Solutions (existing 3) ──
     const solution = SOLUTIONS[slug];
-
-    if (!solution) {
-        notFound();
-    }
-
-    const relevantServices = seoData.services.filter(s =>
-        solution.relevantServices.includes(s.slug)
-    );
-
-    return (
-        <div className="min-h-screen bg-white">
-            <JsonLd
-                data={{
-                    '@context': 'https://schema.org',
-                    '@type': 'WebPage',
-                    name: solution.title,
-                    description: solution.metaDescription,
-                    url: `https://xiri.ai/solutions/${slug}`,
-                }}
-            />
-
-            {/* Hero */}
-            <Hero
-                title={solution.heroTitle}
-                subtitle={solution.heroSubtitle}
-                ctaText="Get a Free Site Audit"
-            />
-
-            {/* ═══ THE PROBLEM ═══ */}
-            <section className="py-16 bg-slate-50 border-y border-slate-200">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">
-                        {solution.problemTitle}
-                    </h2>
-                    <div className="space-y-4">
-                        {solution.problemPoints.map((point, i) => (
-                            <div key={i} className="flex gap-4 items-start bg-white p-5 rounded-xl border border-slate-200">
-                                <div className="w-8 h-8 flex-shrink-0 bg-red-100 text-red-600 rounded-full flex items-center justify-center font-bold text-sm">
-                                    {i + 1}
-                                </div>
-                                <p className="text-slate-700 text-lg">{point}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* ═══ COMPARISON TABLE (vendor-management only) ═══ */}
-            {solution.comparisonTable && (
-                <section className="py-16 bg-white">
-                    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-4 text-center">
-                            DIY vs. Software vs. XIRI
-                        </h2>
-                        <p className="text-slate-500 text-center mb-10 max-w-2xl mx-auto">
-                            See why more facility managers are ditching spreadsheets and software for a managed solution.
-                        </p>
-                        <div className="overflow-x-auto">
-                            <table className="w-full border-collapse">
-                                <thead>
-                                    <tr className="border-b-2 border-slate-200">
-                                        <th className="text-left py-4 px-4 text-slate-500 font-medium"></th>
-                                        <th className="text-center py-4 px-4 text-slate-500 font-medium">DIY / Spreadsheets</th>
-                                        <th className="text-center py-4 px-4 text-slate-500 font-medium">FM Software</th>
-                                        <th className="text-center py-4 px-4 text-sky-700 font-bold bg-sky-50 rounded-t-xl">XIRI</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {solution.comparisonTable.map((row, i) => (
-                                        <tr key={i} className="border-b border-slate-100">
-                                            <td className="py-4 px-4 font-semibold text-slate-900">{row.category}</td>
-                                            <td className="py-4 px-4 text-center text-slate-500">{row.diy}</td>
-                                            <td className="py-4 px-4 text-center text-slate-500">{row.software}</td>
-                                            <td className="py-4 px-4 text-center text-sky-700 font-semibold bg-sky-50">{row.xiri}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-            )}
-
-            {/* ═══ THE SOLUTION ═══ */}
-            <section className="py-16 bg-white">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <h2 className="text-3xl font-bold text-slate-900 mb-4 text-center">
-                        {solution.solutionTitle}
-                    </h2>
-                    <p className="text-slate-500 text-center mb-12 max-w-2xl mx-auto">
-                        We don&apos;t just clean — we manage your entire facility so you don&apos;t have to.
-                    </p>
-                    <div className="grid md:grid-cols-2 gap-6">
-                        {solution.solutionPoints.map((point, i) => (
-                            <div key={i} className="bg-slate-50 rounded-xl p-8 border border-slate-200 hover:border-sky-300 transition-colors">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <CheckCircle className="w-6 h-6 text-sky-600 flex-shrink-0" />
-                                    <h3 className="text-xl font-bold text-slate-900">{point.title}</h3>
-                                </div>
-                                <p className="text-slate-600">{point.description}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* ═══ RELEVANT SERVICES ═══ */}
-            {relevantServices.length > 0 && (
+    if (solution) {
+        const relevantServices = seoData.services.filter(s =>
+            solution.relevantServices.includes(s.slug)
+        );
+        return (
+            <div className="min-h-screen bg-white">
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: solution.title, description: solution.metaDescription, url: `https://xiri.ai/solutions/${slug}` }} />
+                <Hero title={solution.heroTitle} subtitle={solution.heroSubtitle} ctaText="Get a Free Site Audit" />
                 <section className="py-16 bg-slate-50 border-y border-slate-200">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <h2 className="text-2xl font-bold text-slate-900 mb-3 text-center">
-                            Services Included
-                        </h2>
-                        <p className="text-slate-500 text-center mb-10 max-w-2xl mx-auto">
-                            All managed under one agreement, one FSM, and one monthly invoice.
-                        </p>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {relevantServices.map((s: any) => (
-                                <Link key={s.slug} href={`/services/${s.slug}`} className="group block bg-white rounded-xl p-5 border border-slate-200 hover:border-sky-300 hover:shadow-sm transition-all">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className="font-bold text-slate-900 group-hover:text-sky-700 transition-colors">{s.name}</h3>
-                                            <p className="text-sm text-slate-500 mt-1">{s.shortDescription?.slice(0, 80)}…</p>
-                                        </div>
-                                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-sky-600 transition-colors flex-shrink-0" />
-                                    </div>
-                                </Link>
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">{solution.problemTitle}</h2>
+                        <div className="space-y-4">
+                            {solution.problemPoints.map((point, i) => (
+                                <div key={i} className="flex gap-4 items-start bg-white p-5 rounded-xl border border-slate-200">
+                                    <div className="w-8 h-8 flex-shrink-0 bg-red-100 text-red-600 rounded-full flex items-center justify-center font-bold text-sm">{i + 1}</div>
+                                    <p className="text-slate-700 text-lg">{point}</p>
+                                </div>
                             ))}
                         </div>
                     </div>
                 </section>
-            )}
+                {solution.comparisonTable && (
+                    <section className="py-16 bg-white">
+                        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <h2 className="text-3xl font-bold text-slate-900 mb-4 text-center">DIY vs. Software vs. XIRI</h2>
+                            <p className="text-slate-500 text-center mb-10 max-w-2xl mx-auto">See why more facility managers are ditching spreadsheets and software for a managed solution.</p>
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse">
+                                    <thead><tr className="border-b-2 border-slate-200"><th className="text-left py-4 px-4 text-slate-500 font-medium"></th><th className="text-center py-4 px-4 text-slate-500 font-medium">DIY / Spreadsheets</th><th className="text-center py-4 px-4 text-slate-500 font-medium">FM Software</th><th className="text-center py-4 px-4 text-sky-700 font-bold bg-sky-50 rounded-t-xl">XIRI</th></tr></thead>
+                                    <tbody>{solution.comparisonTable.map((row, i) => (<tr key={i} className="border-b border-slate-100"><td className="py-4 px-4 font-semibold text-slate-900">{row.category}</td><td className="py-4 px-4 text-center text-slate-500">{row.diy}</td><td className="py-4 px-4 text-center text-slate-500">{row.software}</td><td className="py-4 px-4 text-center text-sky-700 font-semibold bg-sky-50">{row.xiri}</td></tr>))}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                )}
+                <section className="py-16 bg-white">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <h2 className="text-3xl font-bold text-slate-900 mb-4 text-center">{solution.solutionTitle}</h2>
+                        <p className="text-slate-500 text-center mb-12 max-w-2xl mx-auto">We don&apos;t just clean — we manage your entire facility so you don&apos;t have to.</p>
+                        <div className="grid md:grid-cols-2 gap-6">
+                            {solution.solutionPoints.map((point, i) => (
+                                <div key={i} className="bg-slate-50 rounded-xl p-8 border border-slate-200 hover:border-sky-300 transition-colors">
+                                    <div className="flex items-center gap-3 mb-4"><CheckCircle className="w-6 h-6 text-sky-600 flex-shrink-0" /><h3 className="text-xl font-bold text-slate-900">{point.title}</h3></div>
+                                    <p className="text-slate-600">{point.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+                {relevantServices.length > 0 && (
+                    <section className="py-16 bg-slate-50 border-y border-slate-200">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <h2 className="text-2xl font-bold text-slate-900 mb-3 text-center">Services Included</h2>
+                            <p className="text-slate-500 text-center mb-10 max-w-2xl mx-auto">All managed under one agreement, one FSM, and one monthly invoice.</p>
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {relevantServices.map((s: any) => (
+                                    <Link key={s.slug} href={`/services/${s.slug}`} className="group block bg-white rounded-xl p-5 border border-slate-200 hover:border-sky-300 hover:shadow-sm transition-all">
+                                        <div className="flex items-center justify-between">
+                                            <div><h3 className="font-bold text-slate-900 group-hover:text-sky-700 transition-colors">{s.name}</h3><p className="text-sm text-slate-500 mt-1">{s.shortDescription?.slice(0, 80)}…</p></div>
+                                            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-sky-600 transition-colors flex-shrink-0" />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                )}
+                <FAQ items={solution.faqs} />
+                <section className="py-16 bg-slate-900 text-white">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <h2 className="text-3xl font-bold mb-4">Ready to Simplify Your Facility?</h2>
+                        <p className="text-xl text-slate-300 mb-8">Book a free site audit. We&apos;ll walk your facility, build a custom scope, and show you exactly what XIRI looks like for your building.</p>
+                        <CTAButton href="/#audit" text="Get Your Free Site Audit" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                    </div>
+                </section>
+            </div>
+        );
+    }
 
-            {/* ═══ FAQs ═══ */}
-            <FAQ items={solution.faqs} />
+    // ── Spoke Hub Pages (3) ──
+    const hub = SPOKE_HUBS[slug];
+    if (hub) {
+        const hubDlps = hub.dlpSlugs.map(s => ({ slug: s, ...DLP_SOLUTIONS[s] })).filter(Boolean);
+        return (
+            <div className="min-h-screen bg-white">
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', name: hub.title, description: hub.metaDescription, url: `https://xiri.ai/solutions/${slug}` }} />
+                <Hero title={hub.heroTitle} subtitle={hub.heroSubtitle} ctaText="Get a Free Site Audit" />
+                <section className="py-16">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex flex-col lg:flex-row gap-12">
+                            <div className="flex-1">
+                                <h2 className="text-2xl font-bold text-slate-900 mb-8">Specialized Solutions</h2>
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {hubDlps.map((dlp) => (
+                                        <Link key={dlp.slug} href={`/solutions/${dlp.slug}`} className="group block bg-slate-50 rounded-xl p-6 border border-slate-200 hover:border-sky-300 hover:shadow-md transition-all">
+                                            <h3 className="font-bold text-slate-900 group-hover:text-sky-700 transition-colors mb-2">{dlp.title}</h3>
+                                            <p className="text-sm text-slate-500">{dlp.heroSubtitle.slice(0, 120)}…</p>
+                                            <div className="mt-3 text-sky-600 text-sm font-medium flex items-center gap-1">Learn more <ArrowRight className="w-3 h-3" /></div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="lg:w-72 flex-shrink-0">
+                                <DLPSidebar category={hub.sidebarCategory} currentSlug={slug} />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section className="py-16 bg-slate-900 text-white">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <h2 className="text-3xl font-bold mb-4">Need a Specialized Solution?</h2>
+                        <p className="text-xl text-slate-300 mb-8">Book a free site audit. We&apos;ll assess your facility&apos;s specific compliance requirements and build a protocol that fits.</p>
+                        <CTAButton href="/#audit" text="Get Your Free Site Audit" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                    </div>
+                </section>
+            </div>
+        );
+    }
 
-            {/* ═══ FINAL CTA ═══ */}
-            <section className="py-16 bg-slate-900 text-white">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 className="text-3xl font-bold mb-4">
-                        Ready to Simplify Your Facility?
-                    </h2>
-                    <p className="text-xl text-slate-300 mb-8">
-                        Book a free site audit. We&apos;ll walk your facility, build a custom scope, and show you exactly what XIRI looks like for your building.
-                    </p>
-                    <CTAButton
-                        href="/#audit"
-                        text="Get Your Free Site Audit"
-                        className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors"
-                    />
-                </div>
-            </section>
-        </div>
-    );
+    // ── DLP Pages (12) ──
+    const dlp = DLP_SOLUTIONS[slug];
+    if (dlp) {
+        const relevantServices = seoData.services.filter(s => dlp.relevantServices.includes(s.slug));
+        return (
+            <div className="min-h-screen bg-white">
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: dlp.title, description: dlp.metaDescription, url: `https://xiri.ai/solutions/${slug}` }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: dlp.faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
+                <Hero title={dlp.heroTitle} subtitle={dlp.heroSubtitle} ctaText="Get a Free Site Audit" />
+                <section className="py-16">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex flex-col lg:flex-row gap-12">
+                            <div className="flex-1">
+                                {/* Content Sections */}
+                                {dlp.sections.map((section, i) => (
+                                    <div key={i} className="mb-10">
+                                        <h2 className="text-2xl font-bold text-slate-900 mb-4">{section.title}</h2>
+                                        <p className="text-slate-600 text-lg leading-relaxed">{section.content}</p>
+                                    </div>
+                                ))}
+
+                                {/* Compliance Checklist (Layer 2) */}
+                                <div className="bg-slate-50 rounded-xl p-8 border border-slate-200 mb-10">
+                                    <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                                        <Shield className="w-5 h-5 text-sky-600" /> Compliance Checklist
+                                    </h3>
+                                    <div className="space-y-4">
+                                        {dlp.complianceChecklist.map((item, i) => (
+                                            <div key={i} className="flex items-start gap-3">
+                                                <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                                <div>
+                                                    <p className="text-slate-800 font-medium">{item.item}</p>
+                                                    <p className="text-xs text-slate-400 mt-0.5">{item.standard}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Services */}
+                                {relevantServices.length > 0 && (
+                                    <div className="mb-10">
+                                        <h3 className="text-xl font-bold text-slate-900 mb-4">Related Services</h3>
+                                        <div className="grid sm:grid-cols-2 gap-3">
+                                            {relevantServices.map((s: any) => (
+                                                <Link key={s.slug} href={`/services/${s.slug}`} className="group flex items-center justify-between bg-white rounded-lg p-4 border border-slate-200 hover:border-sky-300 transition-colors">
+                                                    <span className="font-medium text-slate-800 group-hover:text-sky-700">{s.name}</span>
+                                                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-sky-600" />
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="lg:w-72 flex-shrink-0">
+                                <DLPSidebar category={dlp.sidebarCategory} currentSlug={slug} />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <FAQ items={dlp.faqs} />
+                <section className="py-16 bg-slate-900 text-white">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <h2 className="text-3xl font-bold mb-4">Ready to Upgrade Your Protocol?</h2>
+                        <p className="text-xl text-slate-300 mb-8">Book a free site audit. We&apos;ll assess your facility and build a compliance-ready cleaning protocol.</p>
+                        <CTAButton href="/#audit" text="Get Your Free Site Audit" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                    </div>
+                </section>
+            </div>
+        );
+    }
+
+    notFound();
 }
+
