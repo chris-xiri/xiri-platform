@@ -45,14 +45,14 @@ function SidebarLink({ item, collapsed, pathname }: { item: NavItem; collapsed: 
             href={item.href}
             className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all group
                 ${isActive
-                    ? 'bg-sky-50 text-sky-700 font-medium dark:bg-sky-950/40 dark:text-sky-400'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ? 'bg-sky-100 text-sky-900 font-medium dark:bg-sky-950/50 dark:text-sky-300'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
                 }
                 ${collapsed ? 'justify-center px-2' : ''}
             `}
             title={collapsed ? item.label : undefined}
         >
-            <span className={`shrink-0 ${isActive ? 'text-sky-600 dark:text-sky-400' : ''}`}>{item.icon}</span>
+            <span className={`shrink-0 ${isActive ? 'text-sky-700 dark:text-sky-400' : 'text-slate-500 dark:text-slate-500'}`}>{item.icon}</span>
             {!collapsed && <span className="truncate">{item.label}</span>}
         </Link>
     );
@@ -102,7 +102,7 @@ function SidebarSection({ section, collapsed, pathname, expandedSections, toggle
             <button
                 onClick={() => toggleSection(section.label)}
                 className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors
-                    ${hasActiveChild ? 'text-sky-800 dark:text-sky-400' : 'text-slate-800 dark:text-slate-400 hover:text-foreground'}
+                    ${hasActiveChild ? 'text-sky-800 dark:text-sky-400' : 'text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
                 `}
             >
                 {section.icon}
@@ -117,7 +117,7 @@ function SidebarSection({ section, collapsed, pathname, expandedSections, toggle
                     {subGroups.map((sg, idx) => (
                         <div key={sg.group || idx}>
                             {sg.group && (
-                                <p className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">{sg.group}</p>
+                                <p className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">{sg.group}</p>
                             )}
                             {sg.items.map(item => (
                                 <SidebarLink key={item.href} item={item} collapsed={collapsed} pathname={pathname} />
@@ -242,11 +242,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {/* Logo */}
             <div className={`flex items-center gap-2 px-4 py-5 border-b ${collapsed ? 'justify-center px-2' : ''}`}>
                 <Link href="/" className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-sky-700 tracking-tight">
+                    <span className="text-2xl font-bold text-sky-800 dark:text-sky-500 tracking-tight">
                         {collapsed ? 'X' : 'XIRI'}
                     </span>
                     {!collapsed && (
-                        <span className="text-[10px] font-normal text-muted-foreground mt-1 leading-tight">
+                        <span className="text-[10px] font-normal text-slate-500 dark:text-slate-500 mt-1 leading-tight">
                             FACILITY<br />SOLUTIONS
                         </span>
                     )}
