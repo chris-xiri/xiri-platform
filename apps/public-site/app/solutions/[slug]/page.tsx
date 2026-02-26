@@ -196,11 +196,29 @@ type Props = {
 };
 
 export async function generateStaticParams() {
+    const locationSlugs = (seoData.locations || []).map((l: any) => l.slug);
+    const dlpSlugs = Object.keys(DLP_SOLUTIONS);
+    const crossProducts = dlpSlugs.flatMap(d => locationSlugs.map((l: string) => ({ slug: `${d}-in-${l}` })));
     return [
         ...Object.keys(SOLUTIONS).map(slug => ({ slug })),
-        ...Object.keys(DLP_SOLUTIONS).map(slug => ({ slug })),
+        ...dlpSlugs.map(slug => ({ slug })),
         ...Object.keys(SPOKE_HUBS).map(slug => ({ slug })),
+        ...crossProducts,
     ];
+}
+
+// Helper: parse cross-product slug like "jcaho-survey-ready-disinfection-in-great-neck-ny"
+function parseCrossProductSlug(slug: string): { dlp: typeof DLP_SOLUTIONS[string]; dlpSlug: string; location: any } | null {
+    const locations = seoData.locations || [];
+    for (const loc of locations) {
+        const suffix = `-in-${(loc as any).slug}`;
+        if (slug.endsWith(suffix)) {
+            const dlpSlug = slug.slice(0, slug.length - suffix.length);
+            const dlp = DLP_SOLUTIONS[dlpSlug];
+            if (dlp) return { dlp, dlpSlug, location: loc };
+        }
+    }
+    return null;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -209,6 +227,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const dlp = DLP_SOLUTIONS[slug];
     const hub = SPOKE_HUBS[slug];
     const page = solution || dlp || hub;
+
+    // Cross-product: DLP × Location
+    const cross = parseCrossProductSlug(slug);
+    if (cross) {
+        const title = `${cross.dlp.title} in ${cross.location.name} | XIRI Facility Solutions`;
+        const description = `${cross.dlp.metaDescription} Serving ${cross.location.name} and surrounding areas.`.slice(0, 155);
+        return {
+            title,
+            description,
+            alternates: { canonical: `https://xiri.ai/solutions/${slug}` },
+            openGraph: { title, description, url: `https://xiri.ai/solutions/${slug}`, siteName: 'XIRI Facility Solutions', type: 'website' },
+        };
+    }
+
     if (!page) return {};
 
     return {
@@ -416,6 +448,104 @@ export default async function SolutionPage({ params }: Props) {
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-bold mb-4">Ready to Upgrade Your Protocol?</h2>
                         <p className="text-xl text-slate-300 mb-8">Book a free site audit. We&apos;ll assess your facility and build a compliance-ready cleaning protocol.</p>
+                        <CTAButton href="/#audit" text="Get Your Free Site Audit" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                    </div>
+                </section>
+            </div>
+        );
+    }
+
+    // ── Cross-Product: DLP × Location ──
+    const cross = parseCrossProductSlug(slug);
+    if (cross) {
+        const { dlp, dlpSlug, location } = cross;
+        const relevantServices = seoData.services.filter(s => dlp.relevantServices.includes(s.slug));
+        return (
+            <div className="min-h-screen bg-white">
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: `${dlp.title} in ${location.name}`, description: dlp.metaDescription, url: `https://xiri.ai/solutions/${slug}` }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'LocalBusiness', name: 'XIRI Facility Solutions', address: { '@type': 'PostalAddress', addressLocality: location.name.split(',')[0], addressRegion: location.state }, ...(location.latitude ? { geo: { '@type': 'GeoCoordinates', latitude: location.latitude, longitude: location.longitude } } : {}) }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: dlp.faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
+                <Hero title={`${dlp.heroTitle} in ${location.name.split(',')[0]}`} subtitle={dlp.heroSubtitle} ctaText="Get a Free Site Audit" />
+                <section className="py-16">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex flex-col lg:flex-row gap-12">
+                            <div className="flex-1">
+                                {/* Embedded Map (Layer 3) */}
+                                {location.latitude && (
+                                    <div className="mb-10 rounded-xl overflow-hidden border border-slate-200">
+                                        <iframe
+                                            title={`Map of ${location.name}`}
+                                            width="100%" height="300" style={{ border: 0 }} loading="lazy" referrerPolicy="no-referrer-when-downgrade"
+                                            src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${location.latitude},${location.longitude}&zoom=14`}
+                                        />
+                                    </div>
+                                )}
+                                {/* Local Context */}
+                                <div className="mb-10 bg-sky-50 rounded-xl p-6 border border-sky-100">
+                                    <h2 className="text-xl font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                        <Building2 className="w-5 h-5 text-sky-600" /> Serving {location.name.split(',')[0]}
+                                    </h2>
+                                    <p className="text-slate-600">
+                                        XIRI provides {dlp.title.toLowerCase()} services for facilities in {location.name} and the surrounding {location.region || ''} area.
+                                        {location.localInsight ? ` ${location.localInsight}` : ''}
+                                    </p>
+                                </div>
+                                {/* Content Sections */}
+                                {dlp.sections.map((section, i) => (
+                                    <div key={i} className="mb-10">
+                                        <h2 className="text-2xl font-bold text-slate-900 mb-4">{section.title}</h2>
+                                        <p className="text-slate-600 text-lg leading-relaxed">{section.content}</p>
+                                    </div>
+                                ))}
+                                {/* Compliance Checklist */}
+                                <div className="bg-slate-50 rounded-xl p-8 border border-slate-200 mb-10">
+                                    <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                                        <Shield className="w-5 h-5 text-sky-600" /> Compliance Checklist
+                                    </h3>
+                                    <div className="space-y-4">
+                                        {dlp.complianceChecklist.map((item, i) => (
+                                            <div key={i} className="flex items-start gap-3">
+                                                <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                                <div>
+                                                    <p className="text-slate-800 font-medium">{item.item}</p>
+                                                    <p className="text-xs text-slate-400 mt-0.5">{item.standard}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                {/* Related Services */}
+                                {relevantServices.length > 0 && (
+                                    <div className="mb-10">
+                                        <h3 className="text-xl font-bold text-slate-900 mb-4">Related Services in {location.name.split(',')[0]}</h3>
+                                        <div className="grid sm:grid-cols-2 gap-3">
+                                            {relevantServices.map((s: any) => (
+                                                <Link key={s.slug} href={`/services/${s.slug}`} className="group flex items-center justify-between bg-white rounded-lg p-4 border border-slate-200 hover:border-sky-300 transition-colors">
+                                                    <span className="font-medium text-slate-800 group-hover:text-sky-700">{s.name}</span>
+                                                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-sky-600" />
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {/* Back to DLP */}
+                                <div className="mb-6">
+                                    <Link href={`/solutions/${dlpSlug}`} className="text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1">
+                                        ← {dlp.title} (All Locations)
+                                    </Link>
+                                </div>
+                            </div>
+                            <div className="lg:w-72 flex-shrink-0">
+                                <DLPSidebar category={dlp.sidebarCategory} currentSlug={slug} />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <FAQ items={dlp.faqs} />
+                <section className="py-16 bg-slate-900 text-white">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <h2 className="text-3xl font-bold mb-4">Need {dlp.title} in {location.name.split(',')[0]}?</h2>
+                        <p className="text-xl text-slate-300 mb-8">Book a free site audit. We&apos;ll assess your facility and build a compliance-ready protocol.</p>
                         <CTAButton href="/#audit" text="Get Your Free Site Audit" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
                     </div>
                 </section>

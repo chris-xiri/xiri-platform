@@ -67,7 +67,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
         sitemapEntries.push({ url: `${BASE_URL}/contractors/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
     });
 
-    // 8. Guide Pages
+    // 8. Solutions — Niche × Location cross-products
+    Object.keys(DLP_SOLUTIONS).forEach((nicheSlug) => {
+        locations.forEach((location) => {
+            sitemapEntries.push({ url: `${BASE_URL}/solutions/${nicheSlug}-in-${(location as any).slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 });
+        });
+    });
+
+    // 9. Contractor — Trade × Location cross-products
+    Object.keys(TRADES).forEach((tradeSlug) => {
+        locations.forEach((location) => {
+            sitemapEntries.push({ url: `${BASE_URL}/contractors/${tradeSlug}-in-${(location as any).slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 });
+        });
+    });
+
+    // 10. Guide Pages
     ['jcaho-cleaning-requirements', 'accreditation-360-preparation-guide', 'commercial-cleaning-cost-guide', 'inhouse-vs-outsourced-facility-management'].forEach((slug) => {
         sitemapEntries.push({ url: `${BASE_URL}/guides/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
     });
