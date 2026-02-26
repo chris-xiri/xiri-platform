@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { admin, db } from "../utils/firebase";
 import { Vendor, RecruitmentAnalysisResult } from "../utils/types";
 import { parseAddress } from "../utils/emailUtils";
+import { batchEnrichVendors, calculatePlacesSubScores } from "../utils/googlePlacesEnrichment";
 
 // Normalize URL for comparison (strip protocol, www, trailing slash)
 function normalizeUrl(url: string): string {
@@ -142,20 +143,40 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
         vendorsToAnalyze = vendorsToProcess;
 
         // Fetch prompt from database
-        const templateDoc = await db.collection("templates").doc("recruiter_analysis_prompt").get();
+        const templateDoc = await db.collection("prompts").doc("recruiter_analysis_prompt").get();
         if (!templateDoc.exists) {
-            throw new Error("Recruiter analysis prompt not found in database");
+            throw new Error("Recruiter analysis prompt not found in database (prompts/recruiter_analysis_prompt)");
         }
 
         const template = templateDoc.data();
-        const vendorList = JSON.stringify(vendorsToAnalyze.map((v, i) => ({
+        // ─── Google Places Enrichment ─────────────────────────────
+        const vendorsForEnrichment = vendorsToAnalyze.map((v, i) => ({
+            name: v.name || v.companyName || v.title || '',
+            address: v.location || v.address || v.vicinity || '',
             index: i,
-            name: v.name || v.companyName,
-            description: v.description || v.services,
-            address: v.location || v.address || v.vicinity, // Google Places often uses 'vicinity'
-            website: v.website,
-            phone: v.phone
-        })));
+        }));
+
+        console.log(`Starting Google Places enrichment for ${vendorsForEnrichment.length} vendors...`);
+        const placesData = await batchEnrichVendors(vendorsForEnrichment);
+        console.log(`Google Places enrichment complete: ${placesData.size}/${vendorsForEnrichment.length} matched.`);
+
+        const vendorList = JSON.stringify(vendorsToAnalyze.map((v, i) => {
+            const places = placesData.get(i);
+            return {
+                index: i,
+                name: v.name || v.companyName,
+                description: v.description || v.services,
+                address: v.location || v.address || v.vicinity,
+                website: v.website,
+                phone: v.phone,
+                // Google Places enrichment
+                googleRating: places?.rating || null,
+                googleReviewCount: places?.ratingCount || null,
+                googleTypes: places?.types?.slice(0, 5) || [],
+                isEstablished: places?.isEstablished || false,
+                isHighlyRated: places?.isHighlyRated || false,
+            };
+        }));
 
         // Replace variables
         prompt = template?.content
@@ -191,6 +212,10 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
                 const vendorRef = db.collection('vendors').doc(); // Auto-ID
                 const rawAddr = originalVendor.location || item.address || "Unknown";
                 const parsed = parseAddress(rawAddr);
+                // Build Google Places data for persistence
+                const placesEnrichment = placesData.get(item.index);
+                const placesSubScores = calculatePlacesSubScores(placesEnrichment || null);
+
                 const newVendor: Vendor = {
                     id: vendorRef.id,
                     businessName: bName,
@@ -204,15 +229,38 @@ export const analyzeVendorLeads = async (rawVendors: any[], jobQuery: string, ha
                     state: item.state || parsed.state || undefined,
                     zip: item.zip || parsed.zip || undefined,
                     country: item.country || "USA",
-                    phone: originalVendor.phone || item.phone || undefined,
+                    phone: placesEnrichment?.phone || originalVendor.phone || item.phone || undefined,
                     email: originalVendor.email || item.email || undefined,
-                    website: originalVendor.website || item.website || undefined,
+                    website: placesEnrichment?.website || originalVendor.website || item.website || undefined,
                     dcaCategory: originalVendor.dcaCategory || undefined,
                     fitScore: item.fitScore,
                     aiReasoning: item.reasoning || undefined,
                     hasActiveContract: hasActiveContract,
                     onboardingTrack: hasActiveContract ? 'FAST_TRACK' : 'STANDARD',
                     status: 'pending_review',
+                    // Google Places enrichment (persisted)
+                    googlePlaces: placesEnrichment ? {
+                        placeId: placesEnrichment.placeId,
+                        name: placesEnrichment.name,
+                        rating: placesEnrichment.rating,
+                        ratingCount: placesEnrichment.ratingCount,
+                        phone: placesEnrichment.phone,
+                        website: placesEnrichment.website,
+                        types: placesEnrichment.types,
+                        openNow: placesEnrichment.openNow,
+                        googleMapsUrl: placesEnrichment.googleMapsUrl,
+                        enrichedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    } : undefined,
+                    // Fit score breakdown
+                    fitScoreBreakdown: {
+                        googleReputation: placesSubScores.googleReputation,
+                        serviceAlignment: item.serviceAlignmentScore || 50,
+                        locationScore: item.locationScore || 50,
+                        businessMaturity: placesSubScores.businessMaturity,
+                        websiteQuality: placesSubScores.websiteQuality,
+                    },
+                    rating: placesEnrichment?.rating || undefined,
+                    totalRatings: placesEnrichment?.ratingCount || undefined,
                     createdAt: admin.firestore.FieldValue.serverTimestamp() as any,
                     updatedAt: admin.firestore.FieldValue.serverTimestamp() as any
                 };

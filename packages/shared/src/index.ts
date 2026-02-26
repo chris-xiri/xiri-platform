@@ -239,6 +239,30 @@ export interface Vendor {
         xeroContactId?: string;
     };
 
+    // Google Places Enrichment (persisted server-side)
+    googlePlaces?: {
+        placeId?: string;
+        name?: string;
+        rating?: number;
+        ratingCount?: number;
+        phone?: string;
+        website?: string;
+        types?: string[];
+        openNow?: boolean;
+        photoUrls?: string[];
+        googleMapsUrl?: string;
+        enrichedAt?: any; // Firestore Timestamp
+    };
+
+    // AI Fit Score Breakdown (from recruiter analysis)
+    fitScoreBreakdown?: {
+        googleReputation: number;   // 0-100: rating + review volume
+        serviceAlignment: number;   // 0-100: capabilities match
+        locationScore: number;      // 0-100: proximity to service area
+        businessMaturity: number;   // 0-100: years/reviews as proxy
+        websiteQuality: number;     // 0-100: has site, content quality
+    };
+
     // Bank Details (for Mercury ACH payouts)
     bankAccount?: {
         bankName?: string;

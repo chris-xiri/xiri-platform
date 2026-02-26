@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
     X, ExternalLink, MapPin, Phone, Globe,
-    ArrowLeft, AlertTriangle, ShieldCheck, Zap, Star, Clock, Database
+    ArrowLeft, AlertTriangle, ShieldCheck, Zap, Star, Clock, Database,
+    BarChart3, TrendingUp
 } from 'lucide-react';
 import Link from 'next/link';
 import { enrichWithGooglePlaces, type PlacesEnrichment } from '@/lib/googlePlaces';
@@ -20,6 +21,30 @@ const LanguageBadge = ({ lang }: { lang?: 'en' | 'es' }) => {
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">🇪🇸 ES</Badge>;
     }
     return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">🇺🇸 EN</Badge>;
+};
+
+// Fit Score Breakdown bar component
+const ScoreBar = ({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) => {
+    const getColor = (v: number) => {
+        if (v >= 80) return 'bg-emerald-500';
+        if (v >= 60) return 'bg-blue-500';
+        if (v >= 40) return 'bg-yellow-500';
+        return 'bg-red-400';
+    };
+    return (
+        <div className="flex items-center gap-2">
+            <div className="w-4 flex-shrink-0 text-muted-foreground">{icon}</div>
+            <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center mb-0.5">
+                    <span className="text-[10px] text-muted-foreground truncate">{label}</span>
+                    <span className="text-[10px] font-semibold tabular-nums">{value}</span>
+                </div>
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${getColor(value)}`} style={{ width: `${value}%` }} />
+                </div>
+            </div>
+        </div>
+    );
 };
 
 interface RecruitmentDetailViewProps {
@@ -54,14 +79,65 @@ export default function RecruitmentDetailView({ vendorId, onClose }: Recruitment
         fetchVendor();
     }, [vendorId]);
 
-    // Google Places enrichment
+    // Google Places enrichment — check persisted data first, re-fetch if stale (>7 days)
     useEffect(() => {
         if (!vendor) return;
+
+        // Check if vendor has fresh persisted Google Places data
+        const persisted = vendor.googlePlaces;
+        if (persisted?.placeId) {
+            const enrichedAt = persisted.enrichedAt?.toDate?.() || persisted.enrichedAt;
+            const isStale = !enrichedAt || (Date.now() - new Date(enrichedAt).getTime()) > 7 * 24 * 60 * 60 * 1000;
+            if (!isStale) {
+                // Use persisted data directly
+                setPlacesData({
+                    name: persisted.name || vendor.businessName,
+                    rating: persisted.rating,
+                    ratingCount: persisted.ratingCount,
+                    phone: persisted.phone,
+                    website: persisted.website,
+                    types: persisted.types,
+                    openNow: persisted.openNow,
+                    googleMapsUrl: persisted.googleMapsUrl,
+                    photoUrls: persisted.photoUrls,
+                } as PlacesEnrichment);
+                return;
+            }
+        }
+
         if (!vendor.address && !vendor.city && !vendor.businessName) return;
         setPlacesLoading(true);
         setPlacesData(null);
         enrichWithGooglePlaces(vendor.address, vendor.city, vendor.state, vendor.businessName)
-            .then(data => setPlacesData(data))
+            .then(async (data) => {
+                setPlacesData(data);
+                // Persist enrichment to Firestore for future loads
+                if (data && vendor.id) {
+                    try {
+                        await updateDoc(doc(db, 'vendors', vendor.id), {
+                            googlePlaces: {
+                                placeId: data.placeId || null,
+                                name: data.name || null,
+                                rating: data.rating || null,
+                                ratingCount: data.ratingCount || null,
+                                phone: data.phone || null,
+                                website: data.website || null,
+                                types: data.types || [],
+                                openNow: data.openNow ?? null,
+                                photoUrls: data.photoUrls || [],
+                                googleMapsUrl: data.googleMapsUrl || null,
+                                enrichedAt: serverTimestamp(),
+                            },
+                            // Also update top-level rating fields
+                            ...(data.rating ? { rating: data.rating } : {}),
+                            ...(data.ratingCount ? { totalRatings: data.ratingCount } : {}),
+                            updatedAt: serverTimestamp(),
+                        });
+                    } catch (err) {
+                        console.warn('Failed to persist Places data:', err);
+                    }
+                }
+            })
             .catch(err => console.error('Places enrichment failed:', err))
             .finally(() => setPlacesLoading(false));
     }, [vendor?.id, vendor?.address, vendor?.city, vendor?.state, vendor?.businessName]);
@@ -177,6 +253,25 @@ export default function RecruitmentDetailView({ vendorId, onClose }: Recruitment
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Fit Score Breakdown */}
+                    {vendor.fitScoreBreakdown && (
+                        <Card className="bg-card border-secondary/20 shadow-sm">
+                            <CardHeader className="py-2 px-4 pb-1">
+                                <CardTitle className="text-xs font-medium flex items-center gap-1.5">
+                                    <BarChart3 className="w-3.5 h-3.5 text-primary" />
+                                    Score Breakdown
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="px-4 pb-3 pt-1 space-y-1.5">
+                                <ScoreBar label="Google Reputation" value={vendor.fitScoreBreakdown.googleReputation} icon={<Star className="w-3 h-3" />} />
+                                <ScoreBar label="Service Alignment" value={vendor.fitScoreBreakdown.serviceAlignment} icon={<ShieldCheck className="w-3 h-3" />} />
+                                <ScoreBar label="Location" value={vendor.fitScoreBreakdown.locationScore} icon={<MapPin className="w-3 h-3" />} />
+                                <ScoreBar label="Business Maturity" value={vendor.fitScoreBreakdown.businessMaturity} icon={<TrendingUp className="w-3 h-3" />} />
+                                <ScoreBar label="Website Quality" value={vendor.fitScoreBreakdown.websiteQuality} icon={<Globe className="w-3 h-3" />} />
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* Google Business Card */}
                     {placesLoading && (
