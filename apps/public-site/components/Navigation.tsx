@@ -7,18 +7,22 @@ import { trackEvent } from '@/lib/tracking';
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+// Ordered for 3-column nav layout: Medical | Auto+Edu+Specialized | Commercial
 const FACILITY_TYPES = [
+    // Column 1: Medical (6 items)
     { group: "Medical", label: "Medical Offices", slug: "medical-offices" },
     { group: "Medical", label: "Urgent Care Centers", slug: "urgent-care" },
     { group: "Medical", label: "Surgery Centers", slug: "surgery-centers" },
     { group: "Medical", label: "Dental Offices", slug: "dental-offices" },
     { group: "Medical", label: "Dialysis Centers", slug: "dialysis-centers" },
     { group: "Medical", label: "Veterinary Clinics", slug: "veterinary-clinics" },
+    // Column 2: Auto (1) + Education (2) + Specialized (2)
     { group: "Automotive", label: "Auto Dealerships", slug: "auto-dealerships" },
     { group: "Education", label: "Daycares & Preschools", slug: "daycare-preschool" },
     { group: "Education", label: "Private Schools", slug: "private-schools" },
     { group: "Specialized", label: "Labs & Cleanrooms", slug: "labs-cleanrooms" },
     { group: "Specialized", label: "Light Manufacturing", slug: "light-manufacturing" },
+    // Column 3: Commercial (3)
     { group: "Commercial", label: "Professional Offices", slug: "professional-offices" },
     { group: "Commercial", label: "Fitness & Gyms", slug: "fitness-gyms" },
     { group: "Commercial", label: "Retail Storefronts", slug: "retail-storefronts" },
@@ -171,9 +175,9 @@ export default function Navigation() {
                                     </svg>
                                 </button>
 
-                                <div className={`absolute top-full -left-4 pt-4 w-[520px] transition-all duration-200 origin-top-left ${industriesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
+                                <div className={`absolute top-full -left-4 pt-4 w-[700px] transition-all duration-200 origin-top-left ${industriesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
                                     <div className="bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden ring-1 ring-black/5">
-                                        <div className="p-2 grid grid-cols-2 gap-1">
+                                        <div className="p-2 grid grid-cols-3 gap-1">
                                             {/* Render Groups */}
                                             {Object.entries(groupedFacilities).map(([group, facilities]) => (
                                                 <div key={group} className="pb-2">
