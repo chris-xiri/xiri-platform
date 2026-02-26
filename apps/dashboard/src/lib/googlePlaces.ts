@@ -113,7 +113,7 @@ async function textSearchPlace(
         requestBody.locationBias = {
             circle: {
                 center: biasCenter,
-                radiusMeters: 30000, // 30km radius
+                radius: 30000, // 30km radius
             },
         };
     }
