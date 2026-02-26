@@ -102,7 +102,7 @@ function SidebarSection({ section, collapsed, pathname, expandedSections, toggle
             <button
                 onClick={() => toggleSection(section.label)}
                 className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors
-                    ${hasActiveChild ? 'text-sky-700 dark:text-sky-400' : 'text-muted-foreground hover:text-foreground'}
+                    ${hasActiveChild ? 'text-sky-800 dark:text-sky-400' : 'text-slate-800 dark:text-slate-400 hover:text-foreground'}
                 `}
             >
                 {section.icon}
