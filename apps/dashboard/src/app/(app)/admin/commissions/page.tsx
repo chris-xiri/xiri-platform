@@ -287,11 +287,11 @@ export default function CommissionsSettingsPage() {
             </Card>
 
             {/* Security Note */}
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-                <Shield className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-3 p-4 rounded-lg bg-warning-bg border border-warning-border">
+                <Shield className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
                 <div>
-                    <p className="text-sm font-medium text-amber-800 dark:text-amber-400">Admin-Only Setting</p>
-                    <p className="text-xs text-amber-700 dark:text-amber-500 mt-0.5">
+                    <p className="text-sm font-medium text-foreground">Admin-Only Setting</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
                         All changes are logged. Commission rates are read by Cloud Functions when a quote is accepted, ensuring consistent calculations.
                     </p>
                 </div>
