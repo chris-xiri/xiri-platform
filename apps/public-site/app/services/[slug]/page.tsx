@@ -63,6 +63,36 @@ export async function generateStaticParams() {
     return params;
 }
 
+// ─── Industry Compliance Pitch Map ───
+// Medical industries use native medical compliance terms
+// Non-medical industries use their own industry-specific compliance language
+const MEDICAL_LOGIC: Record<string, { titlePrefix: string; compliance: string; pitch: string }> = {
+    // Medical verticals — native compliance language
+    'medical-office-cleaning': { titlePrefix: '100% OSHA-Compliant', compliance: 'OSHA + HIPAA', pitch: 'JCAHO-grade disinfection protocols, nightly verified' },
+    'urgent-care-cleaning': { titlePrefix: 'OSHA + HIPAA Compliant', compliance: 'OSHA + HIPAA', pitch: 'rapid-turnover sterile protocols for high-volume patient care' },
+    'surgery-center-cleaning': { titlePrefix: 'AAAHC Audit-Ready', compliance: 'CMS + AAAHC', pitch: 'terminal cleaning with AORN-standard OR protocols' },
+    // Daycare/Education — child safety + licensing language
+    'daycare-cleaning': { titlePrefix: 'Child-Safe & Licensed', compliance: 'CDC + Green Seal', pitch: 'non-toxic Green Seal cleaning to reduce seasonal illness & keep parents confident' },
+    // Auto — OSHA + environmental safety
+    'commercial-cleaning': { titlePrefix: 'Nightly-Verified', compliance: 'OSHA', pitch: 'nightly-verified cleaning with $1M-insured contractors' },
+    'janitorial-services': { titlePrefix: 'Nightly-Verified', compliance: 'OSHA', pitch: '365 nights/yr audited janitorial with $1M-insured contractors' },
+    'floor-care': { titlePrefix: 'Slip/Fall Prevention', compliance: 'OSHA', pitch: 'OSHA-compliant slip/fall prevention & high-gloss floor care' },
+    'disinfecting-services': { titlePrefix: 'EPA-Registered', compliance: 'CDC + EPA', pitch: 'EPA-registered disinfection with documented kill-rate protocols' },
+    'carpet-upholstery': { titlePrefix: 'Deep-Cleaned & Verified', compliance: 'EPA', pitch: 'deep extraction cleaning with EPA-compliant products' },
+    'window-cleaning': { titlePrefix: 'Fully Insured', compliance: 'OSHA', pitch: '$1M-insured, scheduled & inspected window care' },
+    'pressure-washing': { titlePrefix: 'EPA-Compliant', compliance: 'OSHA + EPA', pitch: 'EPA-compliant runoff management with OSHA safety protocols' },
+    'day-porter': { titlePrefix: 'Shift-Documented', compliance: 'OSHA', pitch: 'real-time facility monitoring with documented shift logs' },
+    'snow-ice-removal': { titlePrefix: 'Liability-Protected', compliance: 'OSHA', pitch: 'OSHA-compliant slip/fall prevention — every event documented & audited' },
+    'hvac-maintenance': { titlePrefix: 'EPA-Compliant', compliance: 'EPA + OSHA', pitch: 'EPA-compliant air quality maintenance for occupied facilities' },
+    'pest-control': { titlePrefix: 'Health Code-Compliant', compliance: 'EPA + Health Dept', pitch: 'integrated pest management meeting local health code standards' },
+    'waste-management': { titlePrefix: 'Fully Compliant', compliance: 'OSHA + EPA', pitch: 'documented chain-of-custody waste handling with EPA compliance' },
+    'parking-lot-maintenance': { titlePrefix: 'ADA-Compliant', compliance: 'ADA + OSHA', pitch: 'ADA accessibility maintenance + slip/fall prevention' },
+    'handyman-services': { titlePrefix: 'Fully Insured', compliance: 'OSHA', pitch: '$1M-insured, background-checked maintenance crews' },
+};
+
+// Fallback for any service not in the map
+const DEFAULT_LOGIC = { titlePrefix: '100% OSHA-Compliant', compliance: 'OSHA', pitch: 'nightly-verified, $1M-insured contractors' };
+
 // Generate dynamic metadata for SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
@@ -70,10 +100,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     if (type === 'SERVICE') {
         const service = data as any;
-        // Title: value prop + brand (max ~60 chars for SERP display)
-        const title = `${service.heroTitle || service.name} — Nightly Verified | XIRI Facility Solutions`;
-        // Description: hook + differentiator + CTA (max ~155 chars)
-        const description = `${service.shortDescription} One partner. One invoice. Nightly quality audits. Get a free facility walkthrough today.`.slice(0, 155);
+        const logic = MEDICAL_LOGIC[service.slug] || DEFAULT_LOGIC;
+        // Title: compliance prefix + service name + brand
+        const title = `${logic.titlePrefix} ${service.heroTitle || service.name} | XIRI Facility Solutions`;
+        // Description: surgical pitch + numbers + CTA
+        const description = `${service.shortDescription} ${logic.pitch}. 1 partner, 1 invoice, 365 nights/yr verified. Free walkthrough →`.slice(0, 155);
         return {
             title,
             description,
@@ -90,13 +121,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         };
     } else if (type === 'LOCATION') {
         const { service, location } = data as { service: any; location: Location };
-        // Numbers + compliance in title catch the eye in SERPs
-        const title = `100% OSHA-Compliant ${service.name} in ${location.name}, ${location.state} | XIRI`;
-        // Description: numbers + compliance + CTA
+        const logic = MEDICAL_LOGIC[service.slug] || DEFAULT_LOGIC;
+        // Title: compliance prefix + service + location + brand
+        const title = `${logic.titlePrefix} ${service.name} in ${location.name}, ${location.state} | XIRI`;
+        // Description: local hook + surgical pitch + numbers + CTA
         const localHook = location.localInsight
             ? `${location.localInsight} `
             : '';
-        const description = `${localHook}${service.name} in ${location.name} — 365 nights/yr verified, $1M-insured contractors, 1 invoice. OSHA + HIPAA audit-ready. Free walkthrough →`.slice(0, 155);
+        const description = `${localHook}${service.name} in ${location.name} — ${logic.pitch}. $1M-insured, 1 invoice. ${logic.compliance} audit-ready. Free walkthrough →`.slice(0, 155);
 
         return {
             title,
