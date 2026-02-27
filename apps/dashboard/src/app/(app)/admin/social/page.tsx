@@ -52,7 +52,10 @@ interface DraftPost {
     audience?: 'client' | 'contractor';
     imageUrl?: string;
     videoUrl?: string;
+    videoStoragePath?: string;
     videoDurationSeconds?: number;
+    location?: string;
+    reusedFrom?: string;
     engagementContext?: {
         avgLikes: number;
         avgComments: number;
@@ -468,120 +471,68 @@ export default function SocialMediaPage() {
             {/* ── Feed Tab ── */}
             {
                 activeTab === 'feed' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Compose */}
-                        <div className="lg:col-span-1">
-                            <Card className="sticky top-6">
-                                <CardHeader><CardTitle className="text-lg">Compose Post</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <textarea
-                                        value={message}
-                                        onChange={(e) => setMessage(e.target.value)}
-                                        placeholder="What's on your mind?"
-                                        className="w-full min-h-[140px] p-3 text-sm border rounded-lg bg-muted/20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        maxLength={5000}
-                                    />
-                                    <div className="text-xs text-muted-foreground text-right">{message.length}/5,000</div>
+                    <div className="space-y-4">
+                        {/* Published Posts/Reels Feed */}
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-semibold">
+                                {activeChannel === 'facebook_reels' ? 'Published Reels' : 'Recent Posts'}
+                            </h2>
+                            <Button variant="ghost" size="sm" onClick={fetchPosts} disabled={loading}>
+                                <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                            </Button>
+                        </div>
 
-                                    <div className="flex gap-2">
-                                        <Button variant={showLink ? 'default' : 'outline'} size="sm" className="h-8 text-xs" onClick={() => setShowLink(!showLink)}>
-                                            <Link2 className="w-3 h-3 mr-1" /> Link
-                                        </Button>
-                                        <Button variant={showImage ? 'default' : 'outline'} size="sm" className="h-8 text-xs" onClick={() => setShowImage(!showImage)}>
-                                            <ImageIcon className="w-3 h-3 mr-1" /> Image
-                                        </Button>
-                                        <Button variant={showSchedule ? 'default' : 'outline'} size="sm" className="h-8 text-xs" onClick={() => setShowSchedule(!showSchedule)}>
-                                            <Calendar className="w-3 h-3 mr-1" /> Schedule
-                                        </Button>
+                        {loading ? (
+                            <div className="space-y-4">{[1, 2, 3].map(i => (
+                                <Card key={i}><CardContent className="p-4 space-y-3">
+                                    <Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-[200px] w-full rounded-lg" />
+                                </CardContent></Card>
+                            ))}</div>
+                        ) : posts.length === 0 ? (
+                            <Card><CardContent className="p-8 text-center text-muted-foreground">
+                                <Facebook className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>No posts yet.</p>
+                            </CardContent></Card>
+                        ) : posts.map(post => (
+                            <Card key={post.id} className="overflow-hidden">
+                                <CardContent className="p-4">
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">X</div>
+                                            <div>
+                                                <p className="text-sm font-semibold">XIRI Facility Solutions</p>
+                                                <p className="text-xs text-muted-foreground">{formatDate(post.created_time)}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            {post.permalink_url && (
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                                                    <a href={post.permalink_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4" /></a>
+                                                </Button>
+                                            )}
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                onClick={() => handleDelete(post.id)} disabled={deleting === post.id}>
+                                                {deleting === post.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                            </Button>
+                                        </div>
                                     </div>
-
-                                    {showLink && (
-                                        <input type="url" value={link} onChange={(e) => setLink(e.target.value)}
-                                            placeholder="https://xiri.ai/..." className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    {post.message && (
+                                        <p className="text-sm whitespace-pre-wrap mb-3 leading-relaxed">
+                                            {post.message.length > 300 ? post.message.slice(0, 300) + '...' : post.message}
+                                        </p>
                                     )}
-                                    {showImage && (
-                                        <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
-                                            placeholder="Image URL" className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                    )}
-                                    {showSchedule && (
-                                        <div className="flex gap-2">
-                                            <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)}
-                                                className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                            <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)}
-                                                className="w-[120px] px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    {post.full_picture && (
+                                        <div className="rounded-lg overflow-hidden border mb-3">
+                                            <img src={post.full_picture} alt="Post" className="w-full max-h-[400px] object-cover" />
                                         </div>
                                     )}
-
-                                    <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={handlePublish} disabled={posting || !message.trim()}>
-                                        {posting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Publishing...</>
-                                            : showSchedule ? <><Clock className="w-4 h-4 mr-2" /> Schedule Post</>
-                                                : <><Send className="w-4 h-4 mr-2" /> Publish Now</>}
-                                    </Button>
+                                    <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
+                                        <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" />{post.likes?.summary?.total_count || 0}</span>
+                                        <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" />{post.comments?.summary?.total_count || 0}</span>
+                                        <span className="flex items-center gap-1"><Share2 className="w-3.5 h-3.5" />{post.shares?.count || 0}</span>
+                                    </div>
                                 </CardContent>
                             </Card>
-                        </div>
-
-                        {/* Posts Feed */}
-                        <div className="lg:col-span-2 space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-lg font-semibold">Recent Posts</h2>
-                                <Button variant="ghost" size="sm" onClick={fetchPosts} disabled={loading}>
-                                    <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
-                                </Button>
-                            </div>
-
-                            {loading ? (
-                                <div className="space-y-4">{[1, 2, 3].map(i => (
-                                    <Card key={i}><CardContent className="p-4 space-y-3">
-                                        <Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-[200px] w-full rounded-lg" />
-                                    </CardContent></Card>
-                                ))}</div>
-                            ) : posts.length === 0 ? (
-                                <Card><CardContent className="p-8 text-center text-muted-foreground">
-                                    <Facebook className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>No posts yet.</p>
-                                </CardContent></Card>
-                            ) : posts.map(post => (
-                                <Card key={post.id} className="overflow-hidden">
-                                    <CardContent className="p-4">
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">X</div>
-                                                <div>
-                                                    <p className="text-sm font-semibold">XIRI Facility Solutions</p>
-                                                    <p className="text-xs text-muted-foreground">{formatDate(post.created_time)}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-1">
-                                                {post.permalink_url && (
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                                                        <a href={post.permalink_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4" /></a>
-                                                    </Button>
-                                                )}
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                    onClick={() => handleDelete(post.id)} disabled={deleting === post.id}>
-                                                    {deleting === post.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                        {post.message && (
-                                            <p className="text-sm whitespace-pre-wrap mb-3 leading-relaxed">
-                                                {post.message.length > 300 ? post.message.slice(0, 300) + '...' : post.message}
-                                            </p>
-                                        )}
-                                        {post.full_picture && (
-                                            <div className="rounded-lg overflow-hidden border mb-3">
-                                                <img src={post.full_picture} alt="Post" className="w-full max-h-[400px] object-cover" />
-                                            </div>
-                                        )}
-                                        <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
-                                            <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" />{post.likes?.summary?.total_count || 0}</span>
-                                            <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" />{post.comments?.summary?.total_count || 0}</span>
-                                            <span className="flex items-center gap-1"><Share2 className="w-3.5 h-3.5" />{post.shares?.count || 0}</span>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
+                        ))}
                     </div>
                 )
             }
@@ -591,10 +542,14 @@ export default function SocialMediaPage() {
                 activeTab === 'drafts' && (
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold">AI-Generated Drafts</h2>
-                            <Button variant="ghost" size="sm" onClick={fetchDrafts} disabled={loadingDrafts}>
-                                <RefreshCw className={`w-4 h-4 mr-1 ${loadingDrafts ? 'animate-spin' : ''}`} /> Refresh
-                            </Button>
+                            <h2 className="text-lg font-semibold">
+                                {activeChannel === 'facebook_reels' ? 'Reel Drafts' : 'AI-Generated Drafts'}
+                            </h2>
+                            <div className="flex gap-2">
+                                <Button variant="ghost" size="sm" onClick={fetchDrafts} disabled={loadingDrafts}>
+                                    <RefreshCw className={`w-4 h-4 mr-1 ${loadingDrafts ? 'animate-spin' : ''}`} /> Refresh
+                                </Button>
+                            </div>
                         </div>
 
                         {loadingDrafts ? (
@@ -605,115 +560,169 @@ export default function SocialMediaPage() {
                             <Card>
                                 <CardContent className="p-8 text-center text-muted-foreground">
                                     <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                    <p>No drafts yet. Click &quot;Generate Draft&quot; to create one.</p>
+                                    <p>No drafts yet. Click &quot;{activeChannel === 'facebook_reels' ? 'Generate Reel' : 'Generate Draft'}&quot; to create one.</p>
                                 </CardContent>
                             </Card>
-                        ) : drafts.map(draft => (
-                            <Card key={draft.id} className={`overflow-hidden ${draft.status === 'draft' ? 'border-purple-200 dark:border-purple-800' : ''}`}>
-                                <CardContent className="p-4">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant={
-                                                draft.status === 'draft' ? 'secondary' :
-                                                    draft.status === 'approved' ? 'default' :
-                                                        'destructive'
-                                            } className={
-                                                draft.status === 'draft' ? 'bg-purple-100 text-purple-700' :
-                                                    draft.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                                        ''
-                                            }>
-                                                {draft.status === 'draft' && <Sparkles className="w-3 h-3 mr-1" />}
-                                                {draft.status === 'approved' && <Check className="w-3 h-3 mr-1" />}
-                                                {draft.status}
-                                            </Badge>
-                                            <Badge variant="outline" className="text-[10px]">
-                                                {draft.generatedBy === 'ai' ? '🤖 AI Generated' : '✍️ Manual'}
-                                            </Badge>
-                                            {draft.audience && (
-                                                <Badge variant="outline" className={`text-[10px] ${draft.audience === 'client'
-                                                    ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800'
-                                                    : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800'
-                                                    }`}>
-                                                    {draft.audience === 'client' ? '🏢 Client' : '🔧 Contractor'}
-                                                </Badge>
-                                            )}
-                                            {draft.scheduledFor && (
-                                                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                    <Clock className="w-3 h-3" />
-                                                    {draft.scheduledFor?.toDate ? formatDate(draft.scheduledFor.toDate().toISOString()) : 'Pending'}
-                                                </span>
-                                            )}
-                                        </div>
-                                        {/* Deadline countdown */}
-                                        {draft.status === 'draft' && draft.scheduledFor && (() => {
-                                            const remaining = getTimeRemaining(draft.scheduledFor);
-                                            if (!remaining) return null;
-                                            return (
-                                                <div className={`text-xs px-2 py-1 rounded-md flex items-center gap-1 font-medium ${remaining.urgent
-                                                    ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                                                    : remaining.hours < 12
-                                                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-                                                        : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300'
-                                                    }`}>
-                                                    <Timer className="w-3 h-3" />
-                                                    {remaining.text}
+                        ) : (
+                            <div className={activeChannel === 'facebook_reels' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-4'}>
+                                {drafts.map(draft => (
+                                    <Card key={draft.id} className={`overflow-hidden ${draft.status === 'draft' ? 'border-purple-200 dark:border-purple-800' : ''}`}>
+                                        <CardContent className="p-4">
+                                            {/* Header badges */}
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <Badge variant={
+                                                        draft.status === 'draft' ? 'secondary' :
+                                                            draft.status === 'approved' ? 'default' : 'destructive'
+                                                    } className={
+                                                        draft.status === 'draft' ? 'bg-purple-100 text-purple-700' :
+                                                            draft.status === 'approved' ? 'bg-green-100 text-green-700' : ''
+                                                    }>
+                                                        {draft.status === 'draft' && <Sparkles className="w-3 h-3 mr-1" />}
+                                                        {draft.status === 'approved' && <Check className="w-3 h-3 mr-1" />}
+                                                        {draft.status}
+                                                    </Badge>
+                                                    {draft.audience && (
+                                                        <Badge variant="outline" className={`text-[10px] ${draft.audience === 'client'
+                                                            ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300'
+                                                            : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300'
+                                                            }`}>
+                                                            {draft.audience === 'client' ? '🏢 Client' : '🔧 Contractor'}
+                                                        </Badge>
+                                                    )}
+                                                    {(draft as any).location && (
+                                                        <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300">
+                                                            📍 {(draft as any).location}
+                                                        </Badge>
+                                                    )}
                                                 </div>
-                                            );
-                                        })()}
-                                    </div>
+                                                {/* Deadline countdown */}
+                                                {draft.status === 'draft' && draft.scheduledFor && (() => {
+                                                    const remaining = getTimeRemaining(draft.scheduledFor);
+                                                    if (!remaining) return null;
+                                                    return (
+                                                        <div className={`text-xs px-2 py-1 rounded-md flex items-center gap-1 font-medium shrink-0 ${remaining.urgent
+                                                            ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+                                                            : remaining.hours < 12
+                                                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                                                                : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300'
+                                                            }`}>
+                                                            <Timer className="w-3 h-3" />
+                                                            {remaining.text}
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
 
-                                    {/* Engagement Context */}
-                                    {draft.engagementContext && (
-                                        <div className="mb-3 p-2 bg-muted/40 rounded-lg text-xs text-muted-foreground">
-                                            <p className="font-medium mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" /> AI trained on:</p>
-                                            <span>Avg {draft.engagementContext.avgLikes} likes · {draft.engagementContext.avgComments} comments · {draft.engagementContext.avgShares} shares</span>
-                                        </div>
-                                    )}
-
-                                    {/* Image Preview */}
-                                    {draft.imageUrl && (
-                                        <div className="mb-3 rounded-lg overflow-hidden border">
-                                            <img src={draft.imageUrl} alt="AI-generated post image" className="w-full h-48 object-cover" />
-                                        </div>
-                                    )}
-
-                                    {/* Message (editable if in edit mode) */}
-                                    {editingDraft === draft.id ? (
-                                        <textarea
-                                            value={editedMessage}
-                                            onChange={(e) => setEditedMessage(e.target.value)}
-                                            className="w-full min-h-[160px] p-3 text-sm border rounded-lg bg-muted/20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-                                        />
-                                    ) : (
-                                        <p className="text-sm whitespace-pre-wrap mb-3 leading-relaxed">{draft.message}</p>
-                                    )}
-
-                                    {/* Actions */}
-                                    {draft.status === 'draft' && (
-                                        <div className="flex gap-2 pt-2 border-t">
-                                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleReview(draft.id, 'approve')}
-                                                disabled={reviewingId === draft.id}>
-                                                {reviewingId === draft.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
-                                                Approve
-                                            </Button>
-                                            {editingDraft === draft.id ? (
-                                                <Button size="sm" variant="outline" onClick={() => { setEditingDraft(null); setEditedMessage(''); }}>
-                                                    Cancel Edit
-                                                </Button>
-                                            ) : (
-                                                <Button size="sm" variant="outline" onClick={() => { setEditingDraft(draft.id); setEditedMessage(draft.message); }}>
-                                                    <Edit3 className="w-4 h-4 mr-1" /> Edit
-                                                </Button>
+                                            {/* Video Preview (Reels) */}
+                                            {activeChannel === 'facebook_reels' && (draft as any).videoUrl && (
+                                                <div className="mb-3 rounded-lg overflow-hidden border bg-black aspect-[9/16] max-h-[320px] relative group">
+                                                    <video
+                                                        src={(draft as any).videoUrl}
+                                                        className="w-full h-full object-cover"
+                                                        controls
+                                                        preload="metadata"
+                                                        poster={(draft as any).videoUrl + '#t=0.5'}
+                                                    />
+                                                    {(draft as any).videoDurationSeconds && (
+                                                        <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
+                                                            {(draft as any).videoDurationSeconds}s
+                                                        </span>
+                                                    )}
+                                                </div>
                                             )}
-                                            <Button size="sm" variant="destructive" onClick={() => handleReview(draft.id, 'reject')}
-                                                disabled={reviewingId === draft.id}>
-                                                <X className="w-4 h-4 mr-1" /> Reject
-                                            </Button>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        ))}
+
+                                            {/* Image Preview (Posts) */}
+                                            {activeChannel === 'facebook_posts' && draft.imageUrl && (
+                                                <div className="mb-3 rounded-lg overflow-hidden border">
+                                                    <img src={draft.imageUrl} alt="AI-generated post image" className="w-full h-48 object-cover" />
+                                                </div>
+                                            )}
+
+                                            {/* Caption / Message */}
+                                            {editingDraft === draft.id ? (
+                                                <textarea
+                                                    value={editedMessage}
+                                                    onChange={(e) => setEditedMessage(e.target.value)}
+                                                    className="w-full min-h-[100px] p-3 text-sm border rounded-lg bg-muted/20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+                                                />
+                                            ) : (
+                                                <p className={`text-sm whitespace-pre-wrap mb-3 leading-relaxed ${activeChannel === 'facebook_reels' ? 'line-clamp-4' : ''}`}>
+                                                    {draft.message}
+                                                </p>
+                                            )}
+
+                                            {/* Location Tag Input */}
+                                            {draft.status === 'draft' && (
+                                                <div className="mb-3">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="📍 Add location (e.g. New Hyde Park)"
+                                                        defaultValue={(draft as any).location || ''}
+                                                        className="w-full px-3 py-1.5 text-xs border rounded-lg bg-muted/20 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                        onBlur={async (e) => {
+                                                            const loc = e.target.value.trim();
+                                                            if (loc !== ((draft as any).location || '')) {
+                                                                const { doc, updateDoc } = await import('firebase/firestore');
+                                                                await updateDoc(doc(db, 'social_posts', draft.id), { location: loc || null });
+                                                                fetchDrafts();
+                                                            }
+                                                        }}
+                                                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* Actions */}
+                                            {draft.status === 'draft' && (
+                                                <div className="flex gap-2 pt-2 border-t flex-wrap">
+                                                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleReview(draft.id, 'approve')}
+                                                        disabled={reviewingId === draft.id}>
+                                                        {reviewingId === draft.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                                                        Approve
+                                                    </Button>
+                                                    {editingDraft === draft.id ? (
+                                                        <Button size="sm" variant="outline" onClick={() => { setEditingDraft(null); setEditedMessage(''); }}>
+                                                            Cancel
+                                                        </Button>
+                                                    ) : (
+                                                        <Button size="sm" variant="outline" onClick={() => { setEditingDraft(draft.id); setEditedMessage(draft.message); }}>
+                                                            <Edit3 className="w-4 h-4 mr-1" /> Edit
+                                                        </Button>
+                                                    )}
+                                                    <Button size="sm" variant="destructive" onClick={() => handleReview(draft.id, 'reject')}
+                                                        disabled={reviewingId === draft.id}>
+                                                        <X className="w-4 h-4 mr-1" /> Reject
+                                                    </Button>
+                                                    {/* Reuse Button (clone with new location) */}
+                                                    {(draft as any).videoUrl && (
+                                                        <Button size="sm" variant="outline" className="ml-auto text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                                                            onClick={async () => {
+                                                                const newLoc = prompt('Enter location for the reused reel (e.g. Great Neck, NY):');
+                                                                if (!newLoc) return;
+                                                                const { collection, addDoc } = await import('firebase/firestore');
+                                                                await addDoc(collection(db, 'social_posts'), {
+                                                                    ...draft,
+                                                                    id: undefined,
+                                                                    location: newLoc,
+                                                                    status: 'draft',
+                                                                    reusedFrom: draft.id,
+                                                                    reviewedBy: null,
+                                                                    reviewedAt: null,
+                                                                    createdAt: new Date(),
+                                                                });
+                                                                fetchDrafts();
+                                                            }}>
+                                                            ♻️ Reuse
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )
             }
@@ -888,7 +897,8 @@ export default function SocialMediaPage() {
                             </CardContent>
                         </Card>
                     </div>
-                )}
-        </div>
+                )
+            }
+        </div >
     );
 }

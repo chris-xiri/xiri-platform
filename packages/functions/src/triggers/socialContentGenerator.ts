@@ -9,6 +9,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "../utils/firebase";
 import { getRecentPosts } from "../utils/facebookApi";
 import { generatePostImage } from "../utils/imagenApi";
+import { generateReelVideo } from "../utils/veoApi";
 
 const API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -104,6 +105,56 @@ Generate exactly 1 Facebook post for XIRI Facility Solutions targeting ${audienc
 7. Be written in a natural, human voice — not corporate jargon
 
 Respond with ONLY the post text. No introductions, no explanations, just the ready-to-publish Facebook post.`;
+}
+
+/**
+ * Build Gemini prompt for Reel captions (shorter, punchier, hook-driven)
+ */
+function buildReelCaptionPrompt(
+    config: SocialConfig,
+    audience: "client" | "contractor",
+    location?: string,
+): string {
+    const audienceHook = audience === "client"
+        ? `Hook angle: Speak to facility managers / building owners who are tired of managing 5+ vendors.
+Key points: one call, one invoice, nightly audits verify quality, medical-grade standards.
+CTA: "DM us" or "Link in bio" or "Comment CLEAN for a free site audit"`
+        : `Hook angle: Speak to contractors / cleaning crews looking for steady, reliable work.
+Key points: guaranteed payout on the 10th, no franchise fees, we handle the sales.
+CTA: "DM us" or "Link in bio" or "Comment WORK to get started"`;
+
+    const locationNote = location
+        ? `\nMention ${location}, NY naturally — e.g., "Looking for reliable facility management in ${location}?"`
+        : `\nMention Long Island / Queens area naturally.`;
+
+    return `You are writing a Facebook Reel caption for XIRI Facility Solutions — a facility management company in New York (Queens, Nassau, Suffolk County).
+
+## TARGET AUDIENCE: ${audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS"}
+${audienceHook}
+${locationNote}
+
+## CONTENT PREFERENCES
+- Tone: ${config.tone || "Professional, bold, punchy"}
+- Hashtags: ${config.hashtagSets.length > 0 ? config.hashtagSets.join(" ") : "#FacilityManagement #CommercialCleaning #LongIsland"}
+
+## YOUR TASK
+Generate a Facebook Reel caption (NOT a full post). A reel caption should be:
+
+1. **2-4 lines MAX** — short, punchy, scroll-stopping
+2. Start with a hook (question or bold statement)
+3. One key value prop
+4. Clear CTA
+5. Relevant hashtags at the end
+6. Use emoji sparingly (1-2 max)
+7. Written like a human, not a brand
+
+Example format:
+"Still managing 5 different vendors? 🤯
+One call. One invoice. Nightly verified.
+DM us for a free site audit 👇
+#FacilityManagement #LongIsland"
+
+Respond with ONLY the caption text. Nothing else.`;
 }
 
 /**
@@ -293,6 +344,7 @@ export async function generateSocialContent(channel: string = "facebook_posts"):
     // 6. Generate content for each missing slot
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const isReels = channel === "facebook_reels";
 
     let slotIndex = 0;
     for (const scheduledFor of toGenerate) {
@@ -304,50 +356,100 @@ export async function generateSocialContent(channel: string = "facebook_posts"):
                     : (slotIndex % 2 === 0 ? "contractor" : "client");
             slotIndex++;
 
-            console.log(`[SocialGenerator] Generating ${audience} draft for ${scheduledFor.toISOString()}...`);
-            const prompt = buildPrompt(config, summary, themes, audience);
-            const result = await model.generateContent(prompt);
-            const generatedMessage = result.response.text().trim();
+            if (isReels) {
+                // ── REELS FLOW: Gemini caption + Veo 3 video ──
+                console.log(`[SocialGenerator] Generating ${audience} reel for ${scheduledFor.toISOString()}...`);
 
-            if (!generatedMessage) {
-                console.error("[SocialGenerator] Gemini returned empty response. Skipping slot.");
-                continue;
+                // 1. Generate reel caption via Gemini
+                const captionPrompt = buildReelCaptionPrompt(config, audience);
+                const captionResult = await model.generateContent(captionPrompt);
+                const caption = captionResult.response.text().trim();
+
+                if (!caption) {
+                    console.error("[SocialGenerator] Gemini returned empty reel caption. Skipping.");
+                    continue;
+                }
+
+                // 2. Generate video via Veo 3 (with audio)
+                let videoUrl: string | null = null;
+                let videoStoragePath: string | null = null;
+                let videoDurationSeconds = 8;
+                try {
+                    const videoResult = await generateReelVideo(caption, audience);
+                    if (videoResult) {
+                        videoUrl = videoResult.videoUrl;
+                        videoStoragePath = videoResult.storagePath;
+                        videoDurationSeconds = videoResult.durationSeconds;
+                    }
+                } catch (vidErr: any) {
+                    console.warn("[SocialGenerator] Video generation failed, saving caption-only draft:", vidErr.message);
+                }
+
+                await db.collection("social_posts").add({
+                    platform: "facebook",
+                    channel,
+                    audience,
+                    message: caption,
+                    videoUrl,
+                    videoStoragePath,
+                    videoDurationSeconds,
+                    status: "draft",
+                    generatedBy: "ai",
+                    scheduledFor,
+                    reviewedBy: null,
+                    reviewedAt: null,
+                    rejectionReason: null,
+                    createdAt: new Date(),
+                });
+
+                themes.push(caption.split("\n")[0].slice(0, 60));
+                console.log(`[SocialGenerator] ${audience} reel draft created ${videoUrl ? "(with video)" : "(caption only)"}`);
+
+            } else {
+                // ── POSTS FLOW: Gemini post + Imagen image ──
+                console.log(`[SocialGenerator] Generating ${audience} draft for ${scheduledFor.toISOString()}...`);
+                const prompt = buildPrompt(config, summary, themes, audience);
+                const result = await model.generateContent(prompt);
+                const generatedMessage = result.response.text().trim();
+
+                if (!generatedMessage) {
+                    console.error("[SocialGenerator] Gemini returned empty response. Skipping slot.");
+                    continue;
+                }
+
+                // Generate a branded image for the post
+                let imageUrl: string | null = null;
+                try {
+                    const imageResult = await generatePostImage(generatedMessage, audience);
+                    imageUrl = imageResult?.imageUrl || null;
+                } catch (imgErr: any) {
+                    console.warn("[SocialGenerator] Image generation failed, proceeding without image:", imgErr.message);
+                }
+
+                await db.collection("social_posts").add({
+                    platform: channel.startsWith("facebook") ? "facebook" : "linkedin",
+                    channel,
+                    audience,
+                    message: generatedMessage,
+                    imageUrl,
+                    status: "draft",
+                    generatedBy: "ai",
+                    scheduledFor,
+                    engagementContext: {
+                        avgLikes,
+                        avgComments,
+                        avgShares,
+                        topPostThemes: themes.slice(0, 5),
+                    },
+                    reviewedBy: null,
+                    reviewedAt: null,
+                    rejectionReason: null,
+                    createdAt: new Date(),
+                });
+
+                themes.push(generatedMessage.split("\n")[0].slice(0, 60));
+                console.log(`[SocialGenerator] ${audience} draft created for ${scheduledFor.toISOString()} ${imageUrl ? "(with image)" : "(no image)"}`);
             }
-
-            // Generate a branded image for the post
-            let imageUrl: string | null = null;
-            try {
-                const imageResult = await generatePostImage(generatedMessage, audience);
-                imageUrl = imageResult?.imageUrl || null;
-            } catch (imgErr: any) {
-                console.warn("[SocialGenerator] Image generation failed, proceeding without image:", imgErr.message);
-            }
-
-            await db.collection("social_posts").add({
-                platform: channel.startsWith("facebook") ? "facebook" : "linkedin",
-                channel,
-                audience,
-                message: generatedMessage,
-                imageUrl,
-                status: "draft",
-                generatedBy: "ai",
-                scheduledFor,
-                engagementContext: {
-                    avgLikes,
-                    avgComments,
-                    avgShares,
-                    topPostThemes: themes.slice(0, 5),
-                },
-                reviewedBy: null,
-                reviewedAt: null,
-                rejectionReason: null,
-                createdAt: new Date(),
-            });
-
-            // Add the generated message to themes so the next draft in this batch avoids repeating it
-            themes.push(generatedMessage.split("\n")[0].slice(0, 60));
-
-            console.log(`[SocialGenerator] ${audience} draft created for ${scheduledFor.toISOString()} ${imageUrl ? "(with image)" : "(no image)"}`);
         } catch (err: any) {
             console.error(`[SocialGenerator] Error generating for ${scheduledFor.toISOString()}:`, err.message);
         }
