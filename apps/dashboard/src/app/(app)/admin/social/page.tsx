@@ -591,10 +591,10 @@ export default function SocialMediaPage() {
                                         if (!remaining) return null;
                                         return (
                                             <div className={`text-xs px-2 py-1 rounded-md flex items-center gap-1 font-medium ${remaining.urgent
-                                                    ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                                                    : remaining.hours < 12
-                                                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-                                                        : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300'
+                                                ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+                                                : remaining.hours < 12
+                                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                                                    : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300'
                                                 }`}>
                                                 <Timer className="w-3 h-3" />
                                                 {remaining.text}
@@ -732,20 +732,59 @@ export default function SocialMediaPage() {
 
                             {/* Topics */}
                             <div>
-                                <label className="text-sm font-medium mb-2 block">Topics (comma-separated)</label>
-                                <input type="text" value={config.topics.join(', ')}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, topics: e.target.value.split(',').map(t => t.trim()).filter(Boolean) }))}
-                                    placeholder="contractor recruitment, client success, industry tips"
-                                    className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                <label className="text-sm font-medium mb-2 block">Topics</label>
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                    {config.topics.map((topic, i) => (
+                                        <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                            {topic}
+                                            <button onClick={() => setConfig(prev => ({ ...prev, topics: prev.topics.filter((_, idx) => idx !== i) }))}
+                                                className="hover:text-red-500 ml-0.5">
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                                <input type="text" placeholder="Type a topic and press Enter"
+                                    className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            const val = (e.target as HTMLInputElement).value.trim();
+                                            if (val && !config.topics.includes(val)) {
+                                                setConfig(prev => ({ ...prev, topics: [...prev.topics, val] }));
+                                                (e.target as HTMLInputElement).value = '';
+                                            }
+                                        }
+                                    }} />
                             </div>
 
                             {/* Hashtags */}
                             <div>
-                                <label className="text-sm font-medium mb-2 block">Default Hashtags</label>
-                                <input type="text" value={config.hashtagSets.join(' ')}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, hashtagSets: [e.target.value] }))}
-                                    placeholder="#FacilityManagement #CommercialCleaning..."
-                                    className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                <label className="text-sm font-medium mb-2 block">Hashtags</label>
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                    {config.hashtagSets.map((tag, i) => (
+                                        <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                            {tag}
+                                            <button onClick={() => setConfig(prev => ({ ...prev, hashtagSets: prev.hashtagSets.filter((_, idx) => idx !== i) }))}
+                                                className="hover:text-red-500 ml-0.5">
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                                <input type="text" placeholder="Type a hashtag and press Enter"
+                                    className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            let val = (e.target as HTMLInputElement).value.trim();
+                                            if (val && !val.startsWith('#')) val = '#' + val;
+                                            if (val && !config.hashtagSets.includes(val)) {
+                                                setConfig(prev => ({ ...prev, hashtagSets: [...prev.hashtagSets, val] }));
+                                                (e.target as HTMLInputElement).value = '';
+                                            }
+                                        }
+                                    }} />
                             </div>
 
                             {/* Save */}
