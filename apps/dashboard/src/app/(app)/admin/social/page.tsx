@@ -158,7 +158,7 @@ export default function SocialMediaPage() {
                 collection(db, 'social_posts'),
                 where('channel', '==', activeChannel),
                 where('status', 'in', ['draft', 'approved', 'rejected']),
-                orderBy('createdAt', 'desc'),
+                orderBy('scheduledFor', 'asc'),
                 limit(20)
             );
             const snapshot = await getDocs(q);

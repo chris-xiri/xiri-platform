@@ -110,7 +110,7 @@
             ]
         },
         {
-            "__comment": "Channel Drafts: fetches drafts per channel sorted by date — admin/social/page.tsx",
+            "__comment": "Channel Drafts: fetches drafts per channel sorted by deadline — admin/social/page.tsx",
             "collectionGroup": "social_posts",
             "queryScope": "COLLECTION",
             "fields": [
@@ -123,8 +123,8 @@
                     "order": "ASCENDING"
                 },
                 {
-                    "fieldPath": "createdAt",
-                    "order": "DESCENDING"
+                    "fieldPath": "scheduledFor",
+                    "order": "ASCENDING"
                 }
             ]
         }
