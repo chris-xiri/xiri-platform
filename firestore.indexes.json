@@ -59,6 +59,55 @@
                     "order": "ASCENDING"
                 }
             ]
+        },
+        {
+            "__comment": "Social Media Drafts: fetches drafts by status sorted by date — admin/social/page.tsx",
+            "collectionGroup": "social_posts",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "__comment": "Social Publisher: finds approved posts due for publishing — socialPublisher.ts",
+            "collectionGroup": "social_posts",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "scheduledFor",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
+            "__comment": "Social Generator: checks for existing AI drafts today — socialContentGenerator.ts",
+            "collectionGroup": "social_posts",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "generatedBy",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "ASCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []
