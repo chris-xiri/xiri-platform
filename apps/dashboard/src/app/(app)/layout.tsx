@@ -9,6 +9,7 @@ import {
     ClipboardList, FileText, Sun, Moon, Monitor, Shield, Receipt,
     MapPin, ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, Menu, X,
     Building2, LayoutDashboard, Search, HardHat, Bot, BarChart3, Mail, Scale,
+    Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
@@ -231,6 +232,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 { label: 'AI Agents', href: '/admin/agents', icon: <Bot className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'Email Templates', href: '/admin/email-templates', icon: <Mail className="w-4 h-4" />, subGroup: 'Communications' },
                 { label: 'Legal Templates', href: '/admin/legal', icon: <Scale className="w-4 h-4" />, subGroup: 'Communications' },
+                { label: 'Social Media', href: '/admin/social', icon: <Share2 className="w-4 h-4" />, subGroup: 'Social Media' },
                 { label: 'Template Analytics', href: '/admin/templates', icon: <BarChart3 className="w-4 h-4" />, subGroup: 'Reporting' },
                 { label: 'Commissions', href: '/admin/commissions', icon: <DollarSign className="w-4 h-4" />, subGroup: 'Reporting' },
             ],

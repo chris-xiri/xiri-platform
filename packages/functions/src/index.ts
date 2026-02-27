@@ -288,3 +288,186 @@ export const sourceProperties = onCall({
         throw new HttpsError('internal', error.message || 'Failed to source properties.');
     }
 });
+
+// ── Facebook Page Management ──
+import { publishPost, schedulePost, getRecentPosts, getPageInsights, deletePost } from "./utils/facebookApi";
+
+export const publishFacebookPost = onCall({
+    secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
+    cors: DASHBOARD_CORS,
+}, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+
+    const { message, link, imageUrl, scheduledTime } = request.data;
+
+    if (!message) {
+        throw new HttpsError("invalid-argument", "Message is required");
+    }
+
+    try {
+        let result;
+        if (scheduledTime) {
+            result = await schedulePost(message, new Date(scheduledTime), link);
+            console.log(`[Facebook] Scheduled post for ${scheduledTime}:`, result);
+        } else {
+            result = await publishPost(message, link, imageUrl);
+            console.log(`[Facebook] Published post:`, result);
+        }
+
+        // Log to Firestore for tracking
+        await db.collection('social_posts').add({
+            platform: 'facebook',
+            message,
+            link: link || null,
+            imageUrl: imageUrl || null,
+            scheduledTime: scheduledTime || null,
+            facebookPostId: result.id,
+            postUrl: result.postUrl || null,
+            success: result.success,
+            error: result.error || null,
+            postedBy: request.auth.uid,
+            createdAt: new Date(),
+        });
+
+        return result;
+    } catch (error: any) {
+        console.error("[Facebook] Publish error:", error);
+        throw new HttpsError("internal", error.message || "Failed to publish to Facebook");
+    }
+});
+
+export const getFacebookPosts = onCall({
+    secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
+    cors: DASHBOARD_CORS,
+}, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+
+    const { limit } = request.data || {};
+
+    try {
+        const posts = await getRecentPosts(limit || 10);
+        const insights = await getPageInsights("week");
+
+        return { posts, insights };
+    } catch (error: any) {
+        console.error("[Facebook] Get posts error:", error);
+        throw new HttpsError("internal", error.message || "Failed to get Facebook posts");
+    }
+});
+
+export const deleteFacebookPost = onCall({
+    secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
+    cors: DASHBOARD_CORS,
+}, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+
+    const { postId } = request.data;
+    if (!postId) throw new HttpsError("invalid-argument", "postId is required");
+
+    try {
+        const success = await deletePost(postId);
+
+        // Update tracking record
+        const snapshot = await db.collection('social_posts')
+            .where('facebookPostId', '==', postId)
+            .limit(1)
+            .get();
+
+        if (!snapshot.empty) {
+            await snapshot.docs[0].ref.update({
+                deleted: true,
+                deletedAt: new Date(),
+                deletedBy: request.auth.uid,
+            });
+        }
+
+        return { success };
+    } catch (error: any) {
+        console.error("[Facebook] Delete error:", error);
+        throw new HttpsError("internal", error.message || "Failed to delete Facebook post");
+    }
+});
+
+// ── Social Media AI Engine ──
+import { runSocialContentGenerator, generateSocialContent } from "./triggers/socialContentGenerator";
+import { runSocialPublisher } from "./triggers/socialPublisher";
+
+export { runSocialContentGenerator, runSocialPublisher };
+
+// Manual trigger to generate content now (for testing)
+export const triggerSocialContentGeneration = onCall({
+    secrets: ["GEMINI_API_KEY", "FACEBOOK_PAGE_ACCESS_TOKEN"],
+    cors: DASHBOARD_CORS,
+}, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+    await generateSocialContent();
+    return { success: true };
+});
+
+// Update social config (cadence, tone, topics, etc.)
+export const updateSocialConfig = onCall({
+    cors: DASHBOARD_CORS,
+}, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+
+    const { cadence, preferredDays, preferredTime, tone, topics, hashtagSets, enabled } = request.data;
+
+    const config: Record<string, any> = { updatedAt: new Date() };
+    if (cadence !== undefined) config.cadence = cadence;
+    if (preferredDays !== undefined) config.preferredDays = preferredDays;
+    if (preferredTime !== undefined) config.preferredTime = preferredTime;
+    if (tone !== undefined) config.tone = tone;
+    if (topics !== undefined) config.topics = topics;
+    if (hashtagSets !== undefined) config.hashtagSets = hashtagSets;
+    if (enabled !== undefined) config.enabled = enabled;
+    config.platform = "facebook";
+
+    await db.collection("social_config").doc("facebook").set(config, { merge: true });
+    console.log("[Social] Config updated:", config);
+
+    return { success: true };
+});
+
+// Review (approve/reject/edit) a social post draft
+export const reviewSocialPost = onCall({
+    cors: DASHBOARD_CORS,
+}, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+
+    const { postId, action, editedMessage, rejectionReason, scheduledFor } = request.data;
+
+    if (!postId || !action) {
+        throw new HttpsError("invalid-argument", "postId and action are required");
+    }
+
+    const postRef = db.collection("social_posts").doc(postId);
+    const postDoc = await postRef.get();
+
+    if (!postDoc.exists) {
+        throw new HttpsError("not-found", "Post not found");
+    }
+
+    const update: Record<string, any> = {
+        reviewedBy: request.auth.uid,
+        reviewedAt: new Date(),
+    };
+
+    switch (action) {
+        case "approve":
+            update.status = "approved";
+            if (editedMessage) update.message = editedMessage;
+            if (scheduledFor) update.scheduledFor = new Date(scheduledFor);
+            break;
+        case "reject":
+            update.status = "rejected";
+            update.rejectionReason = rejectionReason || null;
+            break;
+        default:
+            throw new HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
+    }
+
+    await postRef.update(update);
+    console.log(`[Social] Post ${postId} ${action}ed by ${request.auth.uid}`);
+
+    return { success: true, status: update.status };
+});
