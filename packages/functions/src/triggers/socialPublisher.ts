@@ -9,28 +9,32 @@ import { db } from "../utils/firebase";
 import { publishPost } from "../utils/facebookApi";
 
 /**
- * Find approved posts that are due and publish them
+ * Find posts due for publishing:
+ * - "approved" posts past their scheduledFor time
+ * - "draft" posts past their scheduledFor (auto-publish: review window expired)
  */
 export async function publishScheduledPosts(): Promise<void> {
-    console.log("[SocialPublisher] Checking for approved posts to publish...");
+    console.log("[SocialPublisher] Checking for posts to publish...");
 
     const now = new Date();
 
-    const approvedPosts = await db.collection("social_posts")
-        .where("status", "==", "approved")
+    // Get both approved AND unreviewed drafts past their deadline
+    const duePosts = await db.collection("social_posts")
+        .where("status", "in", ["approved", "draft"])
         .where("scheduledFor", "<=", now)
         .limit(5)
         .get();
 
-    if (approvedPosts.empty) {
+    if (duePosts.empty) {
         console.log("[SocialPublisher] No posts due for publishing.");
         return;
     }
 
-    console.log(`[SocialPublisher] Found ${approvedPosts.size} post(s) to publish.`);
+    console.log(`[SocialPublisher] Found ${duePosts.size} post(s) to publish.`);
 
-    for (const doc of approvedPosts.docs) {
+    for (const doc of duePosts.docs) {
         const post = doc.data();
+        const wasAutoPublished = post.status === "draft"; // Not reviewed by the human
 
         try {
             const result = await publishPost(
@@ -45,8 +49,9 @@ export async function publishScheduledPosts(): Promise<void> {
                     facebookPostId: result.id,
                     postUrl: result.postUrl || null,
                     publishedAt: new Date(),
+                    autoPublished: wasAutoPublished,
                 });
-                console.log(`[SocialPublisher] Published post ${doc.id} -> FB ID: ${result.id}`);
+                console.log(`[SocialPublisher] ${wasAutoPublished ? "AUTO-" : ""}Published post ${doc.id} -> FB ID: ${result.id}`);
             } else {
                 await doc.ref.update({
                     status: "failed",

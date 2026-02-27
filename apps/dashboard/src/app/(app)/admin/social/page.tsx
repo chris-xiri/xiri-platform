@@ -12,7 +12,7 @@ import {
     Send, Clock, Loader2, ThumbsUp, MessageCircle, Share2,
     Trash2, Calendar, Image as ImageIcon, Link2, RefreshCw, ExternalLink,
     Facebook, Settings, Sparkles, Check, X, Edit3, TrendingUp, Users, Eye,
-    Zap,
+    Zap, AlertTriangle, Timer,
 } from 'lucide-react';
 
 // ── Types ──
@@ -295,6 +295,22 @@ export default function SocialMediaPage() {
             hour: 'numeric', minute: '2-digit',
         });
 
+    const getTimeRemaining = (scheduledFor: any) => {
+        if (!scheduledFor) return null;
+        const target = scheduledFor?.toDate ? scheduledFor.toDate() : new Date(scheduledFor);
+        const now = new Date();
+        const diff = target.getTime() - now.getTime();
+        if (diff <= 0) return { text: 'Auto-publishing soon', urgent: true, hours: 0 };
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        if (hours > 24) {
+            const days = Math.floor(hours / 24);
+            return { text: `${days}d ${hours % 24}h left to review`, urgent: false, hours };
+        }
+        if (hours > 0) return { text: `${hours}h ${minutes}m left to review`, urgent: hours < 3, hours };
+        return { text: `${minutes}m left to review`, urgent: true, hours: 0 };
+    };
+
     // ── Metrics ──
     const totalPosts = posts.length;
     const avgLikes = totalPosts > 0 ? Math.round(posts.reduce((s, p) => s + (p.likes?.summary?.total_count || 0), 0) / totalPosts) : 0;
@@ -569,6 +585,22 @@ export default function SocialMediaPage() {
                                             </span>
                                         )}
                                     </div>
+                                    {/* Deadline countdown */}
+                                    {draft.status === 'draft' && draft.scheduledFor && (() => {
+                                        const remaining = getTimeRemaining(draft.scheduledFor);
+                                        if (!remaining) return null;
+                                        return (
+                                            <div className={`text-xs px-2 py-1 rounded-md flex items-center gap-1 font-medium ${remaining.urgent
+                                                    ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+                                                    : remaining.hours < 12
+                                                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                                                        : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300'
+                                                }`}>
+                                                <Timer className="w-3 h-3" />
+                                                {remaining.text}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
 
                                 {/* Engagement Context */}

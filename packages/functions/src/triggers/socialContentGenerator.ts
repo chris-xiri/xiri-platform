@@ -28,18 +28,6 @@ const DAY_MAP: Record<string, number> = {
 };
 
 /**
- * Check if today is a posting day based on the config
- */
-function isTodayAPostingDay(config: SocialConfig): boolean {
-    const today = new Date().getDay(); // 0=Sun, 6=Sat
-    if (config.cadence === "daily") return true;
-
-    return config.preferredDays.some(
-        (day) => DAY_MAP[day.toLowerCase()] === today
-    );
-}
-
-/**
  * Build the Gemini prompt using engagement data and config
  */
 function buildPrompt(
@@ -145,7 +133,51 @@ function summarizeEngagement(posts: any[]): {
 }
 
 /**
- * Main function: Generate social media content drafts
+ * Calculate the next N posting dates based on cadence config
+ */
+function getNextPostingDates(config: SocialConfig, count: number): Date[] {
+    const dates: Date[] = [];
+    const [hours, minutes] = (config.preferredTime || "10:00").split(":").map(Number);
+    const now = new Date();
+    let cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // If today's posting time hasn't passed yet, include today
+    const todayPost = new Date(cursor.getTime());
+    todayPost.setHours(hours, minutes, 0, 0);
+
+    // Start from today if time hasn't passed, otherwise tomorrow
+    if (now >= todayPost) {
+        cursor.setDate(cursor.getDate() + 1);
+    }
+
+    let safety = 0;
+    while (dates.length < count && safety < 30) {
+        safety++;
+        const dayOfWeek = cursor.getDay();
+
+        let isPostingDay = false;
+        if (config.cadence === "daily") {
+            isPostingDay = true;
+        } else {
+            isPostingDay = config.preferredDays.some(
+                (day) => DAY_MAP[day.toLowerCase()] === dayOfWeek
+            );
+        }
+
+        if (isPostingDay) {
+            const postDate = new Date(cursor.getTime());
+            postDate.setHours(hours, minutes, 0, 0);
+            dates.push(postDate);
+        }
+
+        cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return dates;
+}
+
+/**
+ * Main function: Ensure 3 upcoming drafts are always queued
  */
 export async function generateSocialContent(): Promise<void> {
     console.log("[SocialGenerator] Starting content generation...");
@@ -163,74 +195,92 @@ export async function generateSocialContent(): Promise<void> {
         return;
     }
 
-    // 2. Check if today is a posting day
-    if (!isTodayAPostingDay(config)) {
-        console.log("[SocialGenerator] Today is not a scheduled posting day. Skipping.");
-        return;
-    }
+    // 2. Get the next 3 posting dates
+    const TARGET_QUEUE_SIZE = 3;
+    const upcomingDates = getNextPostingDates(config, TARGET_QUEUE_SIZE);
+    console.log(`[SocialGenerator] Next ${TARGET_QUEUE_SIZE} posting dates:`, upcomingDates.map(d => d.toISOString()));
 
-    // 3. Check if we already have a pending draft for today
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
-
-    const existingDrafts = await db.collection("social_posts")
-        .where("generatedBy", "==", "ai")
+    // 3. Check which dates already have drafts
+    const now = new Date();
+    const pendingDrafts = await db.collection("social_posts")
         .where("status", "in", ["draft", "approved"])
-        .where("createdAt", ">=", startOfDay)
-        .where("createdAt", "<", endOfDay)
-        .limit(1)
+        .where("scheduledFor", ">", now)
         .get();
 
-    if (!existingDrafts.empty) {
-        console.log("[SocialGenerator] Draft already exists for today. Skipping.");
+    const existingScheduledTimes = new Set(
+        pendingDrafts.docs.map(d => {
+            const sf = d.data().scheduledFor;
+            return sf?.toDate ? sf.toDate().toISOString() : new Date(sf).toISOString();
+        })
+    );
+
+    const datesToGenerate = upcomingDates.filter(
+        (d) => !existingScheduledTimes.has(d.toISOString())
+    );
+
+    const currentQueueSize = pendingDrafts.size;
+    const slotsToFill = Math.max(0, TARGET_QUEUE_SIZE - currentQueueSize);
+
+    if (slotsToFill === 0) {
+        console.log(`[SocialGenerator] Queue is full (${currentQueueSize}/${TARGET_QUEUE_SIZE}). Skipping.`);
         return;
     }
 
-    // 4. Fetch engagement data
+    const toGenerate = datesToGenerate.slice(0, slotsToFill);
+    if (toGenerate.length === 0) {
+        console.log("[SocialGenerator] All upcoming dates already have drafts. Skipping.");
+        return;
+    }
+
+    // 4. Fetch engagement data once
     console.log("[SocialGenerator] Fetching recent posts for analysis...");
     const recentPosts = await getRecentPosts(20);
     const { summary, themes, avgLikes, avgComments, avgShares } = summarizeEngagement(recentPosts);
 
-    // 5. Generate content with Gemini
-    console.log("[SocialGenerator] Generating content with Gemini...");
+    // 5. Generate content for each missing slot
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const prompt = buildPrompt(config, summary, themes);
-    const result = await model.generateContent(prompt);
-    const generatedMessage = result.response.text().trim();
+    for (const scheduledFor of toGenerate) {
+        try {
+            console.log(`[SocialGenerator] Generating draft for ${scheduledFor.toISOString()}...`);
+            const prompt = buildPrompt(config, summary, themes);
+            const result = await model.generateContent(prompt);
+            const generatedMessage = result.response.text().trim();
 
-    if (!generatedMessage) {
-        console.error("[SocialGenerator] Gemini returned empty response.");
-        return;
+            if (!generatedMessage) {
+                console.error("[SocialGenerator] Gemini returned empty response. Skipping slot.");
+                continue;
+            }
+
+            await db.collection("social_posts").add({
+                platform: "facebook",
+                message: generatedMessage,
+                status: "draft",
+                generatedBy: "ai",
+                scheduledFor,
+                engagementContext: {
+                    avgLikes,
+                    avgComments,
+                    avgShares,
+                    topPostThemes: themes.slice(0, 5),
+                },
+                reviewedBy: null,
+                reviewedAt: null,
+                rejectionReason: null,
+                createdAt: new Date(),
+            });
+
+            // Add the generated message to themes so the next draft in this batch avoids repeating it
+            themes.push(generatedMessage.split("\n")[0].slice(0, 60));
+
+            console.log(`[SocialGenerator] Draft created for ${scheduledFor.toISOString()}`);
+        } catch (err: any) {
+            console.error(`[SocialGenerator] Error generating for ${scheduledFor.toISOString()}:`, err.message);
+        }
     }
 
-    // 6. Calculate scheduled time
-    const [hours, minutes] = (config.preferredTime || "10:00").split(":").map(Number);
-    const scheduledFor = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes);
-
-    // 7. Save as draft
-    const postDoc = await db.collection("social_posts").add({
-        platform: "facebook",
-        message: generatedMessage,
-        status: "draft",
-        generatedBy: "ai",
-        scheduledFor,
-        engagementContext: {
-            avgLikes,
-            avgComments,
-            avgShares,
-            topPostThemes: themes.slice(0, 5),
-        },
-        reviewedBy: null,
-        reviewedAt: null,
-        rejectionReason: null,
-        createdAt: new Date(),
-    });
-
-    console.log(`[SocialGenerator] Draft created: ${postDoc.id}`);
-    console.log(`[SocialGenerator] Message preview: ${generatedMessage.slice(0, 100)}...`);
+    console.log(`[SocialGenerator] Done. Generated ${toGenerate.length} draft(s).`);
 }
 
 // Scheduled export: Runs daily at 6 AM ET (11 AM UTC)
