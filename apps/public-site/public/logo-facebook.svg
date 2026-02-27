@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320">
+  <!-- XIRI — Facebook Circular Profile Logo -->
+  <!-- Background circle -->
+  <circle cx="160" cy="160" r="160" fill="#ffffff"/>
+  <!-- XIRI text -->
+  <text x="160" y="158" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="84" font-weight="800" fill="#0369a1" text-anchor="middle" letter-spacing="-2">XIRI</text>
+  <!-- Divider line -->
+  <line x1="80" y1="172" x2="240" y2="172" stroke="#e5e7eb" stroke-width="1"/>
+  <!-- FACILITY SOLUTIONS subtitle -->
+  <text x="160" y="194" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="18" font-weight="500" fill="#6b7280" text-anchor="middle" letter-spacing="3.5">FACILITY</text>
+  <text x="160" y="216" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="18" font-weight="500" fill="#6b7280" text-anchor="middle" letter-spacing="3.5">SOLUTIONS</text>
+</svg>

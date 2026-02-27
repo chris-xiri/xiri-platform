@@ -12,7 +12,7 @@ import {
     Send, Clock, Loader2, ThumbsUp, MessageCircle, Share2,
     Trash2, Calendar, Image as ImageIcon, Link2, RefreshCw, ExternalLink,
     Facebook, Settings, Sparkles, Check, X, Edit3, TrendingUp, Users, Eye,
-    Zap, AlertTriangle, Timer,
+    Zap, AlertTriangle, Timer, Film, Linkedin, Video,
 } from 'lucide-react';
 
 // ── Types ──
@@ -36,6 +36,10 @@ interface SocialConfig {
     topics: string[];
     hashtagSets: string[];
     enabled: boolean;
+    audienceMix?: {
+        client: number;
+        contractor: number;
+    };
 }
 
 interface DraftPost {
@@ -44,6 +48,11 @@ interface DraftPost {
     status: string;
     generatedBy: string;
     scheduledFor: any;
+    channel?: string;
+    audience?: 'client' | 'contractor';
+    imageUrl?: string;
+    videoUrl?: string;
+    videoDurationSeconds?: number;
     engagementContext?: {
         avgLikes: number;
         avgComments: number;
@@ -53,6 +62,14 @@ interface DraftPost {
     createdAt: any;
 }
 
+type Channel = 'facebook_posts' | 'facebook_reels' | 'linkedin';
+
+const CHANNELS: { id: Channel; label: string; icon: React.ReactNode; enabled: boolean }[] = [
+    { id: 'facebook_posts', label: 'FB Posts', icon: <Facebook className="w-4 h-4" />, enabled: true },
+    { id: 'facebook_reels', label: 'FB Reels', icon: <Film className="w-4 h-4" />, enabled: true },
+    { id: 'linkedin', label: 'LinkedIn', icon: <Linkedin className="w-4 h-4" />, enabled: false },
+];
+
 const DEFAULT_CONFIG: SocialConfig = {
     cadence: '3x_week',
     preferredDays: ['monday', 'wednesday', 'friday'],
@@ -61,6 +78,7 @@ const DEFAULT_CONFIG: SocialConfig = {
     topics: ['contractor recruitment', 'client success', 'industry tips'],
     hashtagSets: ['#FacilityManagement #CommercialCleaning #LongIsland #Queens #NYContractors'],
     enabled: false,
+    audienceMix: { client: 50, contractor: 50 },
 };
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -75,6 +93,8 @@ const CADENCE_OPTIONS = [
 // ── Main Page ──
 
 export default function SocialMediaPage() {
+    // Channel state
+    const [activeChannel, setActiveChannel] = useState<Channel>('facebook_posts');
     // Tab state
     const [activeTab, setActiveTab] = useState<'feed' | 'drafts' | 'settings'>('feed');
 
@@ -133,10 +153,10 @@ export default function SocialMediaPage() {
     const fetchDrafts = useCallback(async () => {
         try {
             setLoadingDrafts(true);
-            // Read drafts from Firestore directly
             const { collection, query, where, orderBy, getDocs, limit } = await import('firebase/firestore');
             const q = query(
                 collection(db, 'social_posts'),
+                where('channel', '==', activeChannel),
                 where('status', 'in', ['draft', 'approved', 'rejected']),
                 orderBy('createdAt', 'desc'),
                 limit(20)
@@ -152,21 +172,23 @@ export default function SocialMediaPage() {
         } finally {
             setLoadingDrafts(false);
         }
-    }, []);
+    }, [activeChannel]);
 
     const fetchConfig = useCallback(async () => {
         try {
             setLoadingConfig(true);
-            const configDoc = await getDoc(doc(db, 'social_config', 'facebook'));
+            const configDoc = await getDoc(doc(db, 'social_config', activeChannel));
             if (configDoc.exists()) {
                 setConfig({ ...DEFAULT_CONFIG, ...configDoc.data() as any });
+            } else {
+                setConfig(DEFAULT_CONFIG);
             }
         } catch (err: any) {
             console.error('Error fetching config:', err);
         } finally {
             setLoadingConfig(false);
         }
-    }, []);
+    }, [activeChannel]);
 
     useEffect(() => {
         fetchPosts();
@@ -257,7 +279,7 @@ export default function SocialMediaPage() {
         setGenerating(true);
         try {
             const trigger = httpsCallable(functions, 'triggerSocialContentGeneration');
-            await trigger({});
+            await trigger({ channel: activeChannel });
             setSuccessMessage('AI draft generated! Check the Drafts tab.');
             setTimeout(fetchDrafts, 2000);
         } catch (err: any) {
@@ -271,7 +293,7 @@ export default function SocialMediaPage() {
         setSavingConfig(true);
         try {
             const updateConfig = httpsCallable(functions, 'updateSocialConfig');
-            await updateConfig(config);
+            await updateConfig({ ...config, channel: activeChannel });
             setSuccessMessage('Settings saved!');
         } catch (err: any) {
             setErrorMessage('Failed to save settings');
@@ -324,26 +346,52 @@ export default function SocialMediaPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                        <Facebook className="w-6 h-6 text-blue-600" />
+                        <Share2 className="w-6 h-6 text-blue-600" />
                         Social Media
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Manage your XIRI Facebook page — post, schedule, and review AI-generated content
+                        Manage content across platforms — post, schedule, and review AI-generated content
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating}>
+                    <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating || !CHANNELS.find(c => c.id === activeChannel)?.enabled}>
                         {generating
                             ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Generating...</>
-                            : <><Sparkles className="w-4 h-4 mr-1" /> Generate Draft</>
+                            : activeChannel === 'facebook_reels'
+                                ? <><Video className="w-4 h-4 mr-1" /> Generate Reel</>
+                                : <><Sparkles className="w-4 h-4 mr-1" /> Generate Draft</>
                         }
                     </Button>
-                    <Button variant="outline" size="sm" asChild>
-                        <a href="https://facebook.com/profile.php?id=61586963125764" target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="w-4 h-4 mr-1" /> View Page
-                        </a>
-                    </Button>
+                    {activeChannel.startsWith('facebook') && (
+                        <Button variant="outline" size="sm" asChild>
+                            <a href="https://facebook.com/profile.php?id=61586963125764" target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="w-4 h-4 mr-1" /> View Page
+                            </a>
+                        </Button>
+                    )}
                 </div>
+            </div>
+
+            {/* Channel Selector */}
+            <div className="flex gap-2">
+                {CHANNELS.map(ch => (
+                    <button
+                        key={ch.id}
+                        onClick={() => ch.enabled && setActiveChannel(ch.id)}
+                        disabled={!ch.enabled}
+                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all
+                            ${activeChannel === ch.id
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                : ch.enabled
+                                    ? 'bg-card hover:bg-muted border-border text-foreground'
+                                    : 'bg-muted/30 border-border text-muted-foreground cursor-not-allowed opacity-50'
+                            }`}
+                    >
+                        {ch.icon}
+                        {ch.label}
+                        {!ch.enabled && <Badge variant="outline" className="text-[9px] h-4 px-1">Soon</Badge>}
+                    </button>
+                ))}
             </div>
 
             {/* Feedback */}
@@ -418,383 +466,429 @@ export default function SocialMediaPage() {
             </div>
 
             {/* ── Feed Tab ── */}
-            {activeTab === 'feed' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Compose */}
-                    <div className="lg:col-span-1">
-                        <Card className="sticky top-6">
-                            <CardHeader><CardTitle className="text-lg">Compose Post</CardTitle></CardHeader>
-                            <CardContent className="space-y-4">
-                                <textarea
-                                    value={message}
-                                    onChange={(e) => setMessage(e.target.value)}
-                                    placeholder="What's on your mind?"
-                                    className="w-full min-h-[140px] p-3 text-sm border rounded-lg bg-muted/20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    maxLength={5000}
-                                />
-                                <div className="text-xs text-muted-foreground text-right">{message.length}/5,000</div>
+            {
+                activeTab === 'feed' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Compose */}
+                        <div className="lg:col-span-1">
+                            <Card className="sticky top-6">
+                                <CardHeader><CardTitle className="text-lg">Compose Post</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <textarea
+                                        value={message}
+                                        onChange={(e) => setMessage(e.target.value)}
+                                        placeholder="What's on your mind?"
+                                        className="w-full min-h-[140px] p-3 text-sm border rounded-lg bg-muted/20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        maxLength={5000}
+                                    />
+                                    <div className="text-xs text-muted-foreground text-right">{message.length}/5,000</div>
 
-                                <div className="flex gap-2">
-                                    <Button variant={showLink ? 'default' : 'outline'} size="sm" className="h-8 text-xs" onClick={() => setShowLink(!showLink)}>
-                                        <Link2 className="w-3 h-3 mr-1" /> Link
-                                    </Button>
-                                    <Button variant={showImage ? 'default' : 'outline'} size="sm" className="h-8 text-xs" onClick={() => setShowImage(!showImage)}>
-                                        <ImageIcon className="w-3 h-3 mr-1" /> Image
-                                    </Button>
-                                    <Button variant={showSchedule ? 'default' : 'outline'} size="sm" className="h-8 text-xs" onClick={() => setShowSchedule(!showSchedule)}>
-                                        <Calendar className="w-3 h-3 mr-1" /> Schedule
-                                    </Button>
-                                </div>
-
-                                {showLink && (
-                                    <input type="url" value={link} onChange={(e) => setLink(e.target.value)}
-                                        placeholder="https://xiri.ai/..." className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                )}
-                                {showImage && (
-                                    <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
-                                        placeholder="Image URL" className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                )}
-                                {showSchedule && (
                                     <div className="flex gap-2">
-                                        <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)}
-                                            className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                        <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)}
-                                            className="w-[120px] px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                        <Button variant={showLink ? 'default' : 'outline'} size="sm" className="h-8 text-xs" onClick={() => setShowLink(!showLink)}>
+                                            <Link2 className="w-3 h-3 mr-1" /> Link
+                                        </Button>
+                                        <Button variant={showImage ? 'default' : 'outline'} size="sm" className="h-8 text-xs" onClick={() => setShowImage(!showImage)}>
+                                            <ImageIcon className="w-3 h-3 mr-1" /> Image
+                                        </Button>
+                                        <Button variant={showSchedule ? 'default' : 'outline'} size="sm" className="h-8 text-xs" onClick={() => setShowSchedule(!showSchedule)}>
+                                            <Calendar className="w-3 h-3 mr-1" /> Schedule
+                                        </Button>
                                     </div>
-                                )}
 
-                                <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={handlePublish} disabled={posting || !message.trim()}>
-                                    {posting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Publishing...</>
-                                        : showSchedule ? <><Clock className="w-4 h-4 mr-2" /> Schedule Post</>
-                                            : <><Send className="w-4 h-4 mr-2" /> Publish Now</>}
+                                    {showLink && (
+                                        <input type="url" value={link} onChange={(e) => setLink(e.target.value)}
+                                            placeholder="https://xiri.ai/..." className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    )}
+                                    {showImage && (
+                                        <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
+                                            placeholder="Image URL" className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    )}
+                                    {showSchedule && (
+                                        <div className="flex gap-2">
+                                            <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)}
+                                                className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)}
+                                                className="w-[120px] px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                        </div>
+                                    )}
+
+                                    <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={handlePublish} disabled={posting || !message.trim()}>
+                                        {posting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Publishing...</>
+                                            : showSchedule ? <><Clock className="w-4 h-4 mr-2" /> Schedule Post</>
+                                                : <><Send className="w-4 h-4 mr-2" /> Publish Now</>}
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Posts Feed */}
+                        <div className="lg:col-span-2 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-semibold">Recent Posts</h2>
+                                <Button variant="ghost" size="sm" onClick={fetchPosts} disabled={loading}>
+                                    <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
                                 </Button>
-                            </CardContent>
-                        </Card>
-                    </div>
+                            </div>
 
-                    {/* Posts Feed */}
-                    <div className="lg:col-span-2 space-y-4">
+                            {loading ? (
+                                <div className="space-y-4">{[1, 2, 3].map(i => (
+                                    <Card key={i}><CardContent className="p-4 space-y-3">
+                                        <Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-[200px] w-full rounded-lg" />
+                                    </CardContent></Card>
+                                ))}</div>
+                            ) : posts.length === 0 ? (
+                                <Card><CardContent className="p-8 text-center text-muted-foreground">
+                                    <Facebook className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>No posts yet.</p>
+                                </CardContent></Card>
+                            ) : posts.map(post => (
+                                <Card key={post.id} className="overflow-hidden">
+                                    <CardContent className="p-4">
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">X</div>
+                                                <div>
+                                                    <p className="text-sm font-semibold">XIRI Facility Solutions</p>
+                                                    <p className="text-xs text-muted-foreground">{formatDate(post.created_time)}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-1">
+                                                {post.permalink_url && (
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                                                        <a href={post.permalink_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4" /></a>
+                                                    </Button>
+                                                )}
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                    onClick={() => handleDelete(post.id)} disabled={deleting === post.id}>
+                                                    {deleting === post.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        {post.message && (
+                                            <p className="text-sm whitespace-pre-wrap mb-3 leading-relaxed">
+                                                {post.message.length > 300 ? post.message.slice(0, 300) + '...' : post.message}
+                                            </p>
+                                        )}
+                                        {post.full_picture && (
+                                            <div className="rounded-lg overflow-hidden border mb-3">
+                                                <img src={post.full_picture} alt="Post" className="w-full max-h-[400px] object-cover" />
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
+                                            <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" />{post.likes?.summary?.total_count || 0}</span>
+                                            <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" />{post.comments?.summary?.total_count || 0}</span>
+                                            <span className="flex items-center gap-1"><Share2 className="w-3.5 h-3.5" />{post.shares?.count || 0}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* ── Drafts Tab ── */}
+            {
+                activeTab === 'drafts' && (
+                    <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold">Recent Posts</h2>
-                            <Button variant="ghost" size="sm" onClick={fetchPosts} disabled={loading}>
-                                <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                            <h2 className="text-lg font-semibold">AI-Generated Drafts</h2>
+                            <Button variant="ghost" size="sm" onClick={fetchDrafts} disabled={loadingDrafts}>
+                                <RefreshCw className={`w-4 h-4 mr-1 ${loadingDrafts ? 'animate-spin' : ''}`} /> Refresh
                             </Button>
                         </div>
 
-                        {loading ? (
-                            <div className="space-y-4">{[1, 2, 3].map(i => (
-                                <Card key={i}><CardContent className="p-4 space-y-3">
-                                    <Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-[200px] w-full rounded-lg" />
-                                </CardContent></Card>
+                        {loadingDrafts ? (
+                            <div className="space-y-4">{[1, 2].map(i => (
+                                <Card key={i}><CardContent className="p-4"><Skeleton className="h-24 w-full" /></CardContent></Card>
                             ))}</div>
-                        ) : posts.length === 0 ? (
-                            <Card><CardContent className="p-8 text-center text-muted-foreground">
-                                <Facebook className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>No posts yet.</p>
-                            </CardContent></Card>
-                        ) : posts.map(post => (
-                            <Card key={post.id} className="overflow-hidden">
+                        ) : drafts.length === 0 ? (
+                            <Card>
+                                <CardContent className="p-8 text-center text-muted-foreground">
+                                    <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                    <p>No drafts yet. Click &quot;Generate Draft&quot; to create one.</p>
+                                </CardContent>
+                            </Card>
+                        ) : drafts.map(draft => (
+                            <Card key={draft.id} className={`overflow-hidden ${draft.status === 'draft' ? 'border-purple-200 dark:border-purple-800' : ''}`}>
                                 <CardContent className="p-4">
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">X</div>
-                                            <div>
-                                                <p className="text-sm font-semibold">XIRI Facility Solutions</p>
-                                                <p className="text-xs text-muted-foreground">{formatDate(post.created_time)}</p>
-                                            </div>
+                                            <Badge variant={
+                                                draft.status === 'draft' ? 'secondary' :
+                                                    draft.status === 'approved' ? 'default' :
+                                                        'destructive'
+                                            } className={
+                                                draft.status === 'draft' ? 'bg-purple-100 text-purple-700' :
+                                                    draft.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                                        ''
+                                            }>
+                                                {draft.status === 'draft' && <Sparkles className="w-3 h-3 mr-1" />}
+                                                {draft.status === 'approved' && <Check className="w-3 h-3 mr-1" />}
+                                                {draft.status}
+                                            </Badge>
+                                            <Badge variant="outline" className="text-[10px]">
+                                                {draft.generatedBy === 'ai' ? '🤖 AI Generated' : '✍️ Manual'}
+                                            </Badge>
+                                            {draft.audience && (
+                                                <Badge variant="outline" className={`text-[10px] ${draft.audience === 'client'
+                                                    ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800'
+                                                    : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800'
+                                                    }`}>
+                                                    {draft.audience === 'client' ? '🏢 Client' : '🔧 Contractor'}
+                                                </Badge>
+                                            )}
+                                            {draft.scheduledFor && (
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" />
+                                                    {draft.scheduledFor?.toDate ? formatDate(draft.scheduledFor.toDate().toISOString()) : 'Pending'}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="flex gap-1">
-                                            {post.permalink_url && (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                                                    <a href={post.permalink_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4" /></a>
+                                        {/* Deadline countdown */}
+                                        {draft.status === 'draft' && draft.scheduledFor && (() => {
+                                            const remaining = getTimeRemaining(draft.scheduledFor);
+                                            if (!remaining) return null;
+                                            return (
+                                                <div className={`text-xs px-2 py-1 rounded-md flex items-center gap-1 font-medium ${remaining.urgent
+                                                    ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+                                                    : remaining.hours < 12
+                                                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                                                        : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300'
+                                                    }`}>
+                                                    <Timer className="w-3 h-3" />
+                                                    {remaining.text}
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+
+                                    {/* Engagement Context */}
+                                    {draft.engagementContext && (
+                                        <div className="mb-3 p-2 bg-muted/40 rounded-lg text-xs text-muted-foreground">
+                                            <p className="font-medium mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" /> AI trained on:</p>
+                                            <span>Avg {draft.engagementContext.avgLikes} likes · {draft.engagementContext.avgComments} comments · {draft.engagementContext.avgShares} shares</span>
+                                        </div>
+                                    )}
+
+                                    {/* Image Preview */}
+                                    {draft.imageUrl && (
+                                        <div className="mb-3 rounded-lg overflow-hidden border">
+                                            <img src={draft.imageUrl} alt="AI-generated post image" className="w-full h-48 object-cover" />
+                                        </div>
+                                    )}
+
+                                    {/* Message (editable if in edit mode) */}
+                                    {editingDraft === draft.id ? (
+                                        <textarea
+                                            value={editedMessage}
+                                            onChange={(e) => setEditedMessage(e.target.value)}
+                                            className="w-full min-h-[160px] p-3 text-sm border rounded-lg bg-muted/20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+                                        />
+                                    ) : (
+                                        <p className="text-sm whitespace-pre-wrap mb-3 leading-relaxed">{draft.message}</p>
+                                    )}
+
+                                    {/* Actions */}
+                                    {draft.status === 'draft' && (
+                                        <div className="flex gap-2 pt-2 border-t">
+                                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleReview(draft.id, 'approve')}
+                                                disabled={reviewingId === draft.id}>
+                                                {reviewingId === draft.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                                                Approve
+                                            </Button>
+                                            {editingDraft === draft.id ? (
+                                                <Button size="sm" variant="outline" onClick={() => { setEditingDraft(null); setEditedMessage(''); }}>
+                                                    Cancel Edit
+                                                </Button>
+                                            ) : (
+                                                <Button size="sm" variant="outline" onClick={() => { setEditingDraft(draft.id); setEditedMessage(draft.message); }}>
+                                                    <Edit3 className="w-4 h-4 mr-1" /> Edit
                                                 </Button>
                                             )}
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                onClick={() => handleDelete(post.id)} disabled={deleting === post.id}>
-                                                {deleting === post.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                            <Button size="sm" variant="destructive" onClick={() => handleReview(draft.id, 'reject')}
+                                                disabled={reviewingId === draft.id}>
+                                                <X className="w-4 h-4 mr-1" /> Reject
                                             </Button>
                                         </div>
-                                    </div>
-                                    {post.message && (
-                                        <p className="text-sm whitespace-pre-wrap mb-3 leading-relaxed">
-                                            {post.message.length > 300 ? post.message.slice(0, 300) + '...' : post.message}
-                                        </p>
                                     )}
-                                    {post.full_picture && (
-                                        <div className="rounded-lg overflow-hidden border mb-3">
-                                            <img src={post.full_picture} alt="Post" className="w-full max-h-[400px] object-cover" />
-                                        </div>
-                                    )}
-                                    <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
-                                        <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" />{post.likes?.summary?.total_count || 0}</span>
-                                        <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" />{post.comments?.summary?.total_count || 0}</span>
-                                        <span className="flex items-center gap-1"><Share2 className="w-3.5 h-3.5" />{post.shares?.count || 0}</span>
-                                    </div>
                                 </CardContent>
                             </Card>
                         ))}
                     </div>
-                </div>
-            )}
-
-            {/* ── Drafts Tab ── */}
-            {activeTab === 'drafts' && (
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-semibold">AI-Generated Drafts</h2>
-                        <Button variant="ghost" size="sm" onClick={fetchDrafts} disabled={loadingDrafts}>
-                            <RefreshCw className={`w-4 h-4 mr-1 ${loadingDrafts ? 'animate-spin' : ''}`} /> Refresh
-                        </Button>
-                    </div>
-
-                    {loadingDrafts ? (
-                        <div className="space-y-4">{[1, 2].map(i => (
-                            <Card key={i}><CardContent className="p-4"><Skeleton className="h-24 w-full" /></CardContent></Card>
-                        ))}</div>
-                    ) : drafts.length === 0 ? (
-                        <Card>
-                            <CardContent className="p-8 text-center text-muted-foreground">
-                                <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                <p>No drafts yet. Click &quot;Generate Draft&quot; to create one.</p>
-                            </CardContent>
-                        </Card>
-                    ) : drafts.map(draft => (
-                        <Card key={draft.id} className={`overflow-hidden ${draft.status === 'draft' ? 'border-purple-200 dark:border-purple-800' : ''}`}>
-                            <CardContent className="p-4">
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant={
-                                            draft.status === 'draft' ? 'secondary' :
-                                                draft.status === 'approved' ? 'default' :
-                                                    'destructive'
-                                        } className={
-                                            draft.status === 'draft' ? 'bg-purple-100 text-purple-700' :
-                                                draft.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                                    ''
-                                        }>
-                                            {draft.status === 'draft' && <Sparkles className="w-3 h-3 mr-1" />}
-                                            {draft.status === 'approved' && <Check className="w-3 h-3 mr-1" />}
-                                            {draft.status}
-                                        </Badge>
-                                        <Badge variant="outline" className="text-[10px]">
-                                            {draft.generatedBy === 'ai' ? '🤖 AI Generated' : '✍️ Manual'}
-                                        </Badge>
-                                        {draft.scheduledFor && (
-                                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
-                                                {draft.scheduledFor?.toDate ? formatDate(draft.scheduledFor.toDate().toISOString()) : 'Pending'}
-                                            </span>
-                                        )}
-                                    </div>
-                                    {/* Deadline countdown */}
-                                    {draft.status === 'draft' && draft.scheduledFor && (() => {
-                                        const remaining = getTimeRemaining(draft.scheduledFor);
-                                        if (!remaining) return null;
-                                        return (
-                                            <div className={`text-xs px-2 py-1 rounded-md flex items-center gap-1 font-medium ${remaining.urgent
-                                                ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                                                : remaining.hours < 12
-                                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-                                                    : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300'
-                                                }`}>
-                                                <Timer className="w-3 h-3" />
-                                                {remaining.text}
-                                            </div>
-                                        );
-                                    })()}
-                                </div>
-
-                                {/* Engagement Context */}
-                                {draft.engagementContext && (
-                                    <div className="mb-3 p-2 bg-muted/40 rounded-lg text-xs text-muted-foreground">
-                                        <p className="font-medium mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" /> AI trained on:</p>
-                                        <span>Avg {draft.engagementContext.avgLikes} likes · {draft.engagementContext.avgComments} comments · {draft.engagementContext.avgShares} shares</span>
-                                    </div>
-                                )}
-
-                                {/* Message (editable if in edit mode) */}
-                                {editingDraft === draft.id ? (
-                                    <textarea
-                                        value={editedMessage}
-                                        onChange={(e) => setEditedMessage(e.target.value)}
-                                        className="w-full min-h-[160px] p-3 text-sm border rounded-lg bg-muted/20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-                                    />
-                                ) : (
-                                    <p className="text-sm whitespace-pre-wrap mb-3 leading-relaxed">{draft.message}</p>
-                                )}
-
-                                {/* Actions */}
-                                {draft.status === 'draft' && (
-                                    <div className="flex gap-2 pt-2 border-t">
-                                        <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleReview(draft.id, 'approve')}
-                                            disabled={reviewingId === draft.id}>
-                                            {reviewingId === draft.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
-                                            Approve
-                                        </Button>
-                                        {editingDraft === draft.id ? (
-                                            <Button size="sm" variant="outline" onClick={() => { setEditingDraft(null); setEditedMessage(''); }}>
-                                                Cancel Edit
-                                            </Button>
-                                        ) : (
-                                            <Button size="sm" variant="outline" onClick={() => { setEditingDraft(draft.id); setEditedMessage(draft.message); }}>
-                                                <Edit3 className="w-4 h-4 mr-1" /> Edit
-                                            </Button>
-                                        )}
-                                        <Button size="sm" variant="destructive" onClick={() => handleReview(draft.id, 'reject')}
-                                            disabled={reviewingId === draft.id}>
-                                            <X className="w-4 h-4 mr-1" /> Reject
-                                        </Button>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            )}
+                )
+            }
 
             {/* ── Settings Tab ── */}
-            {activeTab === 'settings' && (
-                <div className="max-w-2xl space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                                <Zap className="w-5 h-5 text-amber-500" /> AI Content Engine
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {/* Enable/Disable */}
-                            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+            {
+                activeTab === 'settings' && (
+                    <div className="max-w-2xl space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <Zap className="w-5 h-5 text-amber-500" /> AI Content Engine
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Enable/Disable */}
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                                    <div>
+                                        <p className="font-medium text-sm">Auto-generate drafts</p>
+                                        <p className="text-xs text-muted-foreground">AI will create Facebook post drafts for your review</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config.enabled ? 'bg-blue-600' : 'bg-muted'}`}
+                                    >
+                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    </button>
+                                </div>
+
+                                {/* Cadence */}
                                 <div>
-                                    <p className="font-medium text-sm">Auto-generate drafts</p>
-                                    <p className="text-xs text-muted-foreground">AI will create Facebook post drafts for your review</p>
-                                </div>
-                                <button
-                                    onClick={() => setConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config.enabled ? 'bg-blue-600' : 'bg-muted'}`}
-                                >
-                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                                </button>
-                            </div>
-
-                            {/* Cadence */}
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Posting Cadence</label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {CADENCE_OPTIONS.map(opt => (
-                                        <button key={opt.value}
-                                            onClick={() => setConfig(prev => ({ ...prev, cadence: opt.value }))}
-                                            className={`px-3 py-2 text-sm rounded-lg border transition-colors
+                                    <label className="text-sm font-medium mb-2 block">Posting Cadence</label>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {CADENCE_OPTIONS.map(opt => (
+                                            <button key={opt.value}
+                                                onClick={() => setConfig(prev => ({ ...prev, cadence: opt.value }))}
+                                                className={`px-3 py-2 text-sm rounded-lg border transition-colors
                                                 ${config.cadence === opt.value
-                                                    ? 'bg-blue-600 text-white border-blue-600'
-                                                    : 'hover:bg-muted border-border'
-                                                }`}
-                                        >
-                                            {opt.label}
-                                        </button>
-                                    ))}
+                                                        ? 'bg-blue-600 text-white border-blue-600'
+                                                        : 'hover:bg-muted border-border'
+                                                    }`}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Preferred Days */}
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Preferred Days</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {DAYS.map(day => (
-                                        <button key={day}
-                                            onClick={() => toggleDay(day)}
-                                            className={`px-3 py-1.5 text-xs rounded-full border transition-colors capitalize
+                                {/* Preferred Days */}
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Preferred Days</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {DAYS.map(day => (
+                                            <button key={day}
+                                                onClick={() => toggleDay(day)}
+                                                className={`px-3 py-1.5 text-xs rounded-full border transition-colors capitalize
                                                 ${config.preferredDays.includes(day)
-                                                    ? 'bg-blue-600 text-white border-blue-600'
-                                                    : 'hover:bg-muted border-border'
-                                                }`}
-                                        >
-                                            {day.slice(0, 3)}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Preferred Time */}
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Posting Time (ET)</label>
-                                <input type="time" value={config.preferredTime}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, preferredTime: e.target.value }))}
-                                    className="px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-[140px]" />
-                            </div>
-
-                            {/* Tone */}
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Tone</label>
-                                <input type="text" value={config.tone}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, tone: e.target.value }))}
-                                    placeholder="e.g. Professional, bold, blue-collar-friendly"
-                                    className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                            </div>
-
-                            {/* Topics */}
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Topics</label>
-                                <div className="flex flex-wrap gap-1.5 mb-2">
-                                    {config.topics.map((topic, i) => (
-                                        <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                                            {topic}
-                                            <button onClick={() => setConfig(prev => ({ ...prev, topics: prev.topics.filter((_, idx) => idx !== i) }))}
-                                                className="hover:text-red-500 ml-0.5">
-                                                <X className="w-3 h-3" />
+                                                        ? 'bg-blue-600 text-white border-blue-600'
+                                                        : 'hover:bg-muted border-border'
+                                                    }`}
+                                            >
+                                                {day.slice(0, 3)}
                                             </button>
-                                        </span>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                                <input type="text" placeholder="Type a topic and press Enter"
-                                    className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            const val = (e.target as HTMLInputElement).value.trim();
-                                            if (val && !config.topics.includes(val)) {
-                                                setConfig(prev => ({ ...prev, topics: [...prev.topics, val] }));
-                                                (e.target as HTMLInputElement).value = '';
-                                            }
-                                        }
-                                    }} />
-                            </div>
 
-                            {/* Hashtags */}
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Hashtags</label>
-                                <div className="flex flex-wrap gap-1.5 mb-2">
-                                    {config.hashtagSets.map((tag, i) => (
-                                        <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
-                                            {tag}
-                                            <button onClick={() => setConfig(prev => ({ ...prev, hashtagSets: prev.hashtagSets.filter((_, idx) => idx !== i) }))}
-                                                className="hover:text-red-500 ml-0.5">
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        </span>
-                                    ))}
+                                {/* Preferred Time */}
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Posting Time (ET)</label>
+                                    <input type="time" value={config.preferredTime}
+                                        onChange={(e) => setConfig(prev => ({ ...prev, preferredTime: e.target.value }))}
+                                        className="px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-[140px]" />
                                 </div>
-                                <input type="text" placeholder="Type a hashtag and press Enter"
-                                    className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            let val = (e.target as HTMLInputElement).value.trim();
-                                            if (val && !val.startsWith('#')) val = '#' + val;
-                                            if (val && !config.hashtagSets.includes(val)) {
-                                                setConfig(prev => ({ ...prev, hashtagSets: [...prev.hashtagSets, val] }));
-                                                (e.target as HTMLInputElement).value = '';
-                                            }
-                                        }
-                                    }} />
-                            </div>
 
-                            {/* Save */}
-                            <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={handleSaveConfig} disabled={savingConfig}>
-                                {savingConfig ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : 'Save Settings'}
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+                                {/* Tone */}
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Tone</label>
+                                    <input type="text" value={config.tone}
+                                        onChange={(e) => setConfig(prev => ({ ...prev, tone: e.target.value }))}
+                                        placeholder="e.g. Professional, bold, blue-collar-friendly"
+                                        className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                </div>
+
+                                {/* Audience Mix */}
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Audience Mix</label>
+                                    <p className="text-xs text-muted-foreground mb-3">Balance content between clients (lead gen) and contractors (recruitment)</p>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs font-medium text-sky-600 w-20">🏢 Client</span>
+                                        <input
+                                            type="range" min="0" max="100" step="10"
+                                            value={config.audienceMix?.client ?? 50}
+                                            onChange={(e) => {
+                                                const clientVal = Number(e.target.value);
+                                                setConfig(prev => ({
+                                                    ...prev,
+                                                    audienceMix: { client: clientVal, contractor: 100 - clientVal },
+                                                }));
+                                            }}
+                                            className="flex-1 accent-blue-600"
+                                        />
+                                        <span className="text-xs font-medium text-orange-600 w-24 text-right">🔧 Contractor</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                                        <span>{config.audienceMix?.client ?? 50}%</span>
+                                        <span>{config.audienceMix?.contractor ?? 50}%</span>
+                                    </div>
+                                </div>
+
+                                {/* Topics */}
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Topics</label>
+                                    <div className="flex flex-wrap gap-1.5 mb-2">
+                                        {config.topics.map((topic, i) => (
+                                            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                                {topic}
+                                                <button onClick={() => setConfig(prev => ({ ...prev, topics: prev.topics.filter((_, idx) => idx !== i) }))}
+                                                    className="hover:text-red-500 ml-0.5">
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <input type="text" placeholder="Type a topic and press Enter"
+                                        className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                const val = (e.target as HTMLInputElement).value.trim();
+                                                if (val && !config.topics.includes(val)) {
+                                                    setConfig(prev => ({ ...prev, topics: [...prev.topics, val] }));
+                                                    (e.target as HTMLInputElement).value = '';
+                                                }
+                                            }
+                                        }} />
+                                </div>
+
+                                {/* Hashtags */}
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Hashtags</label>
+                                    <div className="flex flex-wrap gap-1.5 mb-2">
+                                        {config.hashtagSets.map((tag, i) => (
+                                            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                                {tag}
+                                                <button onClick={() => setConfig(prev => ({ ...prev, hashtagSets: prev.hashtagSets.filter((_, idx) => idx !== i) }))}
+                                                    className="hover:text-red-500 ml-0.5">
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <input type="text" placeholder="Type a hashtag and press Enter"
+                                        className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                let val = (e.target as HTMLInputElement).value.trim();
+                                                if (val && !val.startsWith('#')) val = '#' + val;
+                                                if (val && !config.hashtagSets.includes(val)) {
+                                                    setConfig(prev => ({ ...prev, hashtagSets: [...prev.hashtagSets, val] }));
+                                                    (e.target as HTMLInputElement).value = '';
+                                                }
+                                            }
+                                        }} />
+                                </div>
+
+                                {/* Save */}
+                                <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={handleSaveConfig} disabled={savingConfig}>
+                                    {savingConfig ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : 'Save Settings'}
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
         </div>
     );
 }

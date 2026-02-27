@@ -8,6 +8,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "../utils/firebase";
 import { getRecentPosts } from "../utils/facebookApi";
+import { generatePostImage } from "../utils/imagenApi";
 
 const API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -20,6 +21,10 @@ interface SocialConfig {
     topics: string[];
     hashtagSets: string[];
     enabled: boolean;
+    audienceMix?: {
+        client: number;      // percentage 0-100
+        contractor: number;  // percentage 0-100
+    };
 }
 
 const DAY_MAP: Record<string, number> = {
@@ -33,8 +38,38 @@ const DAY_MAP: Record<string, number> = {
 function buildPrompt(
     config: SocialConfig,
     engagementSummary: string,
-    recentPostSummaries: string[]
+    recentPostSummaries: string[],
+    audience: "client" | "contractor"
 ): string {
+    const audienceContext = audience === "client"
+        ? `## TARGET AUDIENCE: FACILITY CLIENTS (Medical Offices, Auto Dealerships, Commercial Buildings)
+This post should speak to building owners, office managers, or property managers who are frustrated with:
+- Managing multiple vendors, multiple invoices
+- Inconsistent cleaning/maintenance quality  
+- No accountability or audit trail
+- Being the "accidental facility manager"
+
+Key messaging for clients:
+- "One call, one invoice" — we handle everything
+- Nightly audits verify work quality (not just trust)
+- Medical-suite grade standards for every facility  
+- We are an extension of THEIR team, not another vendor
+- Consolidated billing = no more paperwork chaos`
+        : `## TARGET AUDIENCE: INDEPENDENT CONTRACTORS & SUB-CONTRACTORS
+This post should speak to cleaning crews, HVAC techs, maintenance workers, and specialty trade professionals looking for:
+- Steady, reliable contract work (no chasing leads)
+- Fast, predictable pay (10th of every month, no excuses)
+- Zero admin/sales hassle — we bring the accounts, you do the work
+- No franchise fees, no buy-ins
+- Professional support and accountability
+
+Key messaging for contractors:
+- We handle the sales, you handle the craft
+- Payout on the 10th, every month, guaranteed
+- Join a network of pros — not a faceless gig platform
+- We value quality work and long-term partnerships
+- Currently hiring in Queens, Nassau, Suffolk, Long Island`;
+
     return `You are the social media manager for XIRI Facility Solutions, a facility management company based in New York that services commercial and medical buildings across Queens, Nassau, and Suffolk County.
 
 ## BUSINESS CONTEXT
@@ -43,6 +78,8 @@ function buildPrompt(
 - For CLIENTS: We are their single point of contact for all facility maintenance — one call, one invoice, audit-ready standards.
 - Website: xiri.ai
 - Service Areas: Queens, Nassau County, Suffolk County, Long Island
+
+${audienceContext}
 
 ## ENGAGEMENT DATA (Last 20 Posts)
 ${engagementSummary}
@@ -56,7 +93,7 @@ ${recentPostSummaries.length > 0 ? recentPostSummaries.map((s, i) => `${i + 1}. 
 - Hashtags to include: ${config.hashtagSets.length > 0 ? config.hashtagSets.join(" ") : "#FacilityManagement #CommercialCleaning #LongIsland #Queens #NYContractors"}
 
 ## YOUR TASK
-Generate exactly 1 Facebook post for XIRI Facility Solutions. The post should:
+Generate exactly 1 Facebook post for XIRI Facility Solutions targeting ${audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS"}. The post should:
 
 1. Be formatted for Facebook (use emoji as paragraph-style bullets, not checkmarks)
 2. Be 100-250 words
@@ -64,10 +101,7 @@ Generate exactly 1 Facebook post for XIRI Facility Solutions. The post should:
 4. Include relevant hashtags at the end
 5. Be different from the recent posts listed above
 6. Drive engagement (likes, comments, shares) based on what performed well in the engagement data
-7. Alternate between targeting CONTRACTORS (recruitment) and CLIENTS (lead gen) — choose whichever was NOT the focus of the most recent posts
-8. Be written in a natural, human voice — not corporate jargon
-9. If targeting contractors, emphasize: steady work, fast pay, no admin hassle
-10. If targeting clients, emphasize: one-call solution, audit-ready, quality assurance, consolidated billing
+7. Be written in a natural, human voice — not corporate jargon
 
 Respond with ONLY the post text. No introductions, no explanations, just the ready-to-publish Facebook post.`;
 }
@@ -179,17 +213,25 @@ function getNextPostingDates(config: SocialConfig, count: number): Date[] {
 /**
  * Main function: Ensure 3 upcoming drafts are always queued
  */
-export async function generateSocialContent(): Promise<void> {
-    console.log("[SocialGenerator] Starting content generation...");
+export async function generateSocialContent(channel: string = "facebook_posts"): Promise<void> {
+    console.log(`[SocialGenerator] Starting content generation for channel: ${channel}...`);
 
-    // 1. Read config
-    const configDoc = await db.collection("social_config").doc("facebook").get();
+    // 1. Read config (per-channel)
+    const configDoc = await db.collection("social_config").doc(channel).get();
     if (!configDoc.exists) {
-        console.log("[SocialGenerator] No social config found. Skipping.");
-        return;
+        // Fallback to legacy "facebook" doc for backward compatibility
+        const legacyDoc = await db.collection("social_config").doc("facebook").get();
+        if (!legacyDoc.exists) {
+            console.log("[SocialGenerator] No social config found. Skipping.");
+            return;
+        }
+        // Migrate legacy config to new channel key
+        await db.collection("social_config").doc(channel).set(legacyDoc.data()!);
+        console.log(`[SocialGenerator] Migrated legacy config to ${channel}.`);
     }
 
-    const config = configDoc.data() as SocialConfig;
+    const freshConfig = await db.collection("social_config").doc(channel).get();
+    const config = freshConfig.data() as SocialConfig;
     if (!config.enabled) {
         console.log("[SocialGenerator] Social posting is disabled. Skipping.");
         return;
@@ -200,9 +242,10 @@ export async function generateSocialContent(): Promise<void> {
     const upcomingDates = getNextPostingDates(config, TARGET_QUEUE_SIZE);
     console.log(`[SocialGenerator] Next ${TARGET_QUEUE_SIZE} posting dates:`, upcomingDates.map(d => d.toISOString()));
 
-    // 3. Check which dates already have drafts
+    // 3. Check which dates already have drafts for this channel
     const now = new Date();
     const pendingDrafts = await db.collection("social_posts")
+        .where("channel", "==", channel)
         .where("status", "in", ["draft", "approved"])
         .where("scheduledFor", ">", now)
         .get();
@@ -237,14 +280,32 @@ export async function generateSocialContent(): Promise<void> {
     const recentPosts = await getRecentPosts(20);
     const { summary, themes, avgLikes, avgComments, avgShares } = summarizeEngagement(recentPosts);
 
-    // 5. Generate content for each missing slot
+    // 5. Determine audience rotation (client vs contractor)
+    const mix = config.audienceMix || { client: 50, contractor: 50 };
+    const clientRatio = mix.client / (mix.client + mix.contractor);
+
+    // Count existing drafts by audience to maintain balance
+    const existingClientDrafts = pendingDrafts.docs.filter(d => d.data().audience === "client").length;
+    const existingContractorDrafts = pendingDrafts.docs.filter(d => d.data().audience === "contractor").length;
+    const totalExisting = existingClientDrafts + existingContractorDrafts;
+    const currentClientRatio = totalExisting > 0 ? existingClientDrafts / totalExisting : 0.5;
+
+    // 6. Generate content for each missing slot
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
+    let slotIndex = 0;
     for (const scheduledFor of toGenerate) {
         try {
-            console.log(`[SocialGenerator] Generating draft for ${scheduledFor.toISOString()}...`);
-            const prompt = buildPrompt(config, summary, themes);
+            // Determine audience for this slot to maintain the desired mix
+            const audience: "client" | "contractor" =
+                currentClientRatio < clientRatio
+                    ? (slotIndex % 2 === 0 ? "client" : "contractor")
+                    : (slotIndex % 2 === 0 ? "contractor" : "client");
+            slotIndex++;
+
+            console.log(`[SocialGenerator] Generating ${audience} draft for ${scheduledFor.toISOString()}...`);
+            const prompt = buildPrompt(config, summary, themes, audience);
             const result = await model.generateContent(prompt);
             const generatedMessage = result.response.text().trim();
 
@@ -253,9 +314,21 @@ export async function generateSocialContent(): Promise<void> {
                 continue;
             }
 
+            // Generate a branded image for the post
+            let imageUrl: string | null = null;
+            try {
+                const imageResult = await generatePostImage(generatedMessage, audience);
+                imageUrl = imageResult?.imageUrl || null;
+            } catch (imgErr: any) {
+                console.warn("[SocialGenerator] Image generation failed, proceeding without image:", imgErr.message);
+            }
+
             await db.collection("social_posts").add({
-                platform: "facebook",
+                platform: channel.startsWith("facebook") ? "facebook" : "linkedin",
+                channel,
+                audience,
                 message: generatedMessage,
+                imageUrl,
                 status: "draft",
                 generatedBy: "ai",
                 scheduledFor,
@@ -274,7 +347,7 @@ export async function generateSocialContent(): Promise<void> {
             // Add the generated message to themes so the next draft in this batch avoids repeating it
             themes.push(generatedMessage.split("\n")[0].slice(0, 60));
 
-            console.log(`[SocialGenerator] Draft created for ${scheduledFor.toISOString()}`);
+            console.log(`[SocialGenerator] ${audience} draft created for ${scheduledFor.toISOString()} ${imageUrl ? "(with image)" : "(no image)"}`);
         } catch (err: any) {
             console.error(`[SocialGenerator] Error generating for ${scheduledFor.toISOString()}:`, err.message);
         }

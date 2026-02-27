@@ -108,6 +108,25 @@
                     "order": "ASCENDING"
                 }
             ]
+        },
+        {
+            "__comment": "Channel Drafts: fetches drafts per channel sorted by date — admin/social/page.tsx",
+            "collectionGroup": "social_posts",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "channel",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 360" width="820" height="360">
+  <!-- XIRI Facility Solutions — Facebook Cover Photo (820x360 safe zone) -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c4a6e"/>
+      <stop offset="40%" stop-color="#0369a1"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <!-- Subtle grid pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    </pattern>
+    <!-- Diagonal accent lines -->
+    <pattern id="diag" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
+      <line x1="0" y1="0" x2="0" y2="80" stroke="rgba(255,255,255,0.025)" stroke-width="30"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="820" height="360" fill="url(#bg)"/>
+  <rect width="820" height="360" fill="url(#grid)"/>
+  <rect width="820" height="360" fill="url(#diag)"/>
+
+  <!-- Accent glow -->
+  <ellipse cx="620" cy="180" rx="350" ry="220" fill="rgba(56,189,248,0.08)"/>
+  <ellipse cx="150" cy="310" rx="280" ry="140" fill="rgba(14,165,233,0.06)"/>
+
+  <!-- Bottom accent line -->
+  <rect x="0" y="352" width="820" height="8" fill="#38bdf8" opacity="0.6"/>
+
+  <!-- Logo Section (left side) -->
+  <text x="60" y="120" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="72" font-weight="800" fill="#ffffff" letter-spacing="-2">XIRI</text>
+  <line x1="60" y1="137" x2="270" y2="137" stroke="rgba(56,189,248,0.5)" stroke-width="2"/>
+  <text x="60" y="163" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="15" font-weight="500" fill="rgba(255,255,255,0.8)" letter-spacing="5">FACILITY SOLUTIONS</text>
+
+  <!-- Service pills (right side, top area) -->
+  <rect x="520" y="70" width="130" height="32" rx="16" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="585" y="91" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.8)" text-anchor="middle" letter-spacing="1">JANITORIAL</text>
+
+  <rect x="670" y="70" width="100" height="32" rx="16" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="720" y="91" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.8)" text-anchor="middle" letter-spacing="1">HVAC</text>
+
+  <rect x="520" y="114" width="120" height="32" rx="16" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="580" y="135" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.8)" text-anchor="middle" letter-spacing="1">PLUMBING</text>
+
+  <rect x="660" y="114" width="140" height="32" rx="16" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="730" y="135" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.8)" text-anchor="middle" letter-spacing="1">FLOOR CARE</text>
+
+  <rect x="520" y="158" width="130" height="32" rx="16" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="585" y="179" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.8)" text-anchor="middle" letter-spacing="1">ELECTRICAL</text>
+
+  <rect x="670" y="158" width="100" height="32" rx="16" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="720" y="179" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.8)" text-anchor="middle" letter-spacing="1">SNOW</text>
+
+  <!-- Tagline -->
+  <text x="60" y="240" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="300" fill="rgba(255,255,255,0.65)" letter-spacing="1">One Call. One Invoice. Total Facility Coverage.</text>
+
+  <!-- Quality badges -->
+  <rect x="60" y="265" width="420" height="42" rx="8" fill="rgba(255,255,255,0.06)"/>
+  <text x="76" y="291" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" fill="rgba(56,189,248,0.9)" letter-spacing="1">✓ NIGHTLY AUDITS</text>
+  <text x="216" y="291" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" fill="rgba(56,189,248,0.9)" letter-spacing="1">✓ WEEKLY VISITS</text>
+  <text x="356" y="291" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="600" fill="rgba(56,189,248,0.9)" letter-spacing="1">✓ HIPAA</text>
+
+  <!-- Website -->
+  <text x="770" y="335" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="400" fill="rgba(255,255,255,0.4)" text-anchor="end" letter-spacing="1">xiri.ai</text>
+</svg>

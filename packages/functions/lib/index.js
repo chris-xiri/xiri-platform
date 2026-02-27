@@ -559,9 +559,11 @@ __export(index_exports, {
   calculateNrr: () => calculateNrr,
   changeMyPassword: () => changeMyPassword,
   clearPipeline: () => clearPipeline,
+  deleteFacebookPost: () => deleteFacebookPost,
   enrichFromWebsite: () => enrichFromWebsite,
   generateLeads: () => generateLeads,
   generateMonthlyInvoices: () => generateMonthlyInvoices,
+  getFacebookPosts: () => getFacebookPosts,
   handleUnsubscribe: () => handleUnsubscribe,
   onAuditFailed: () => onAuditFailed,
   onAuditSubmitted: () => onAuditSubmitted,
@@ -584,14 +586,20 @@ __export(index_exports, {
   processCommissionPayouts: () => processCommissionPayouts,
   processMailQueue: () => processMailQueue,
   processOutreachQueue: () => processOutreachQueue,
+  publishFacebookPost: () => publishFacebookPost,
   resendWebhook: () => resendWebhook,
   respondToQuote: () => respondToQuote,
+  reviewSocialPost: () => reviewSocialPost,
   runRecruiterAgent: () => runRecruiterAgent,
+  runSocialContentGenerator: () => runSocialContentGenerator,
+  runSocialPublisher: () => runSocialPublisher,
   sendBookingConfirmation: () => sendBookingConfirmation,
   sendOnboardingInvite: () => sendOnboardingInvite,
   sendQuoteEmail: () => sendQuoteEmail,
   sourceProperties: () => sourceProperties,
   testSendEmail: () => testSendEmail,
+  triggerSocialContentGeneration: () => triggerSocialContentGeneration,
+  updateSocialConfig: () => updateSocialConfig,
   weeklyTemplateOptimizer: () => weeklyTemplateOptimizer
 });
 module.exports = __toCommonJS(index_exports);
@@ -614,6 +622,105 @@ try {
 // src/agents/recruiter.ts
 var import_generative_ai2 = require("@google/generative-ai");
 init_emailUtils();
+
+// src/utils/googlePlacesEnrichment.ts
+var PLACES_TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText";
+async function enrichVendorWithPlaces(vendorName, vendorAddress, apiKey) {
+  const key = apiKey || process.env.GOOGLE_MAPS_API_KEY || "";
+  if (!key) {
+    console.warn("GOOGLE_MAPS_API_KEY not set \u2014 skipping Places enrichment");
+    return null;
+  }
+  try {
+    const textQuery = vendorAddress ? `${vendorName} near ${vendorAddress}` : vendorName;
+    const response = await fetch(PLACES_TEXT_SEARCH_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": key,
+        "X-Goog-FieldMask": "places.id,places.displayName,places.rating,places.userRatingCount,places.internationalPhoneNumber,places.websiteUri,places.types,places.currentOpeningHours,places.googleMapsUri"
+      },
+      body: JSON.stringify({
+        textQuery,
+        maxResultCount: 1,
+        languageCode: "en"
+      })
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      console.warn(`Places API error for "${vendorName}": ${response.status} \u2014 ${errText}`);
+      return null;
+    }
+    const data = await response.json();
+    const place = data.places?.[0];
+    if (!place) return null;
+    const rating = place.rating || 0;
+    const ratingCount = place.userRatingCount || 0;
+    return {
+      placeId: place.id,
+      name: place.displayName?.text || vendorName,
+      rating,
+      ratingCount,
+      phone: place.internationalPhoneNumber || void 0,
+      website: place.websiteUri || void 0,
+      types: place.types || [],
+      openNow: place.currentOpeningHours?.openNow,
+      googleMapsUrl: place.googleMapsUri || void 0,
+      isEstablished: ratingCount >= 20,
+      isHighlyRated: rating >= 4
+    };
+  } catch (err) {
+    console.warn(`Places enrichment failed for "${vendorName}": ${err.message}`);
+    return null;
+  }
+}
+async function batchEnrichVendors(vendors, apiKey, concurrencyLimit = 5) {
+  const results = /* @__PURE__ */ new Map();
+  for (let i = 0; i < vendors.length; i += concurrencyLimit) {
+    const batch = vendors.slice(i, i + concurrencyLimit);
+    const batchResults = await Promise.all(
+      batch.map(async (v) => {
+        const result = await enrichVendorWithPlaces(v.name, v.address, apiKey);
+        return { index: v.index, result };
+      })
+    );
+    for (const { index, result } of batchResults) {
+      if (result) {
+        results.set(index, result);
+      }
+    }
+  }
+  console.log(`Places enrichment: ${results.size}/${vendors.length} vendors enriched.`);
+  return results;
+}
+function calculatePlacesSubScores(places) {
+  if (!places) {
+    return { googleReputation: 30, businessMaturity: 30, websiteQuality: 20 };
+  }
+  let googleReputation = 30;
+  if (places.rating) {
+    if (places.rating >= 4.5) googleReputation = 90;
+    else if (places.rating >= 4) googleReputation = 75;
+    else if (places.rating >= 3.5) googleReputation = 55;
+    else if (places.rating >= 3) googleReputation = 40;
+    else googleReputation = 25;
+  }
+  if (places.ratingCount && places.ratingCount >= 50) googleReputation = Math.min(100, googleReputation + 10);
+  else if (places.ratingCount && places.ratingCount >= 20) googleReputation = Math.min(100, googleReputation + 5);
+  let businessMaturity = 30;
+  if (places.ratingCount) {
+    if (places.ratingCount >= 100) businessMaturity = 95;
+    else if (places.ratingCount >= 50) businessMaturity = 80;
+    else if (places.ratingCount >= 20) businessMaturity = 65;
+    else if (places.ratingCount >= 5) businessMaturity = 45;
+  }
+  let websiteQuality = 20;
+  if (places.website) websiteQuality = 60;
+  if (places.website && places.ratingCount && places.ratingCount > 10) websiteQuality = 80;
+  return { googleReputation, businessMaturity, websiteQuality };
+}
+
+// src/agents/recruiter.ts
 function normalizeUrl(url) {
   if (!url) return "";
   return url.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "").trim();
@@ -701,20 +808,36 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
       return { analyzed, qualified, errors };
     }
     vendorsToAnalyze = vendorsToProcess;
-    const templateDoc = await db.collection("templates").doc("recruiter_analysis_prompt").get();
+    const templateDoc = await db.collection("prompts").doc("recruiter_analysis_prompt").get();
     if (!templateDoc.exists) {
-      throw new Error("Recruiter analysis prompt not found in database");
+      throw new Error("Recruiter analysis prompt not found in database (prompts/recruiter_analysis_prompt)");
     }
     const template = templateDoc.data();
-    const vendorList = JSON.stringify(vendorsToAnalyze.map((v, i) => ({
-      index: i,
-      name: v.name || v.companyName,
-      description: v.description || v.services,
-      address: v.location || v.address || v.vicinity,
-      // Google Places often uses 'vicinity'
-      website: v.website,
-      phone: v.phone
-    })));
+    const vendorsForEnrichment = vendorsToAnalyze.map((v, i) => ({
+      name: v.name || v.companyName || v.title || "",
+      address: v.location || v.address || v.vicinity || "",
+      index: i
+    }));
+    console.log(`Starting Google Places enrichment for ${vendorsForEnrichment.length} vendors...`);
+    const placesData = await batchEnrichVendors(vendorsForEnrichment);
+    console.log(`Google Places enrichment complete: ${placesData.size}/${vendorsForEnrichment.length} matched.`);
+    const vendorList = JSON.stringify(vendorsToAnalyze.map((v, i) => {
+      const places = placesData.get(i);
+      return {
+        index: i,
+        name: v.name || v.companyName,
+        description: v.description || v.services,
+        address: v.location || v.address || v.vicinity,
+        website: v.website,
+        phone: v.phone,
+        // Google Places enrichment
+        googleRating: places?.rating || null,
+        googleReviewCount: places?.ratingCount || null,
+        googleTypes: places?.types?.slice(0, 5) || [],
+        isEstablished: places?.isEstablished || false,
+        isHighlyRated: places?.isHighlyRated || false
+      };
+    }));
     prompt = template?.content.replace(/\{\{query\}\}/g, jobQuery).replace(/\{\{modeDescription\}\}/g, modeDescription).replace(/\{\{threshold\}\}/g, threshold.toString()).replace(/\{\{vendorList\}\}/g, vendorList);
     const result = await model.generateContent(prompt);
     const response = result.response;
@@ -735,6 +858,8 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
         const vendorRef = db.collection("vendors").doc();
         const rawAddr = originalVendor.location || item.address || "Unknown";
         const parsed = parseAddress(rawAddr);
+        const placesEnrichment = placesData.get(item.index);
+        const placesSubScores = calculatePlacesSubScores(placesEnrichment || null);
         const newVendor = {
           id: vendorRef.id,
           businessName: bName,
@@ -748,15 +873,38 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
           state: item.state || parsed.state || void 0,
           zip: item.zip || parsed.zip || void 0,
           country: item.country || "USA",
-          phone: originalVendor.phone || item.phone || void 0,
+          phone: placesEnrichment?.phone || originalVendor.phone || item.phone || void 0,
           email: originalVendor.email || item.email || void 0,
-          website: originalVendor.website || item.website || void 0,
+          website: placesEnrichment?.website || originalVendor.website || item.website || void 0,
           dcaCategory: originalVendor.dcaCategory || void 0,
           fitScore: item.fitScore,
           aiReasoning: item.reasoning || void 0,
           hasActiveContract,
           onboardingTrack: hasActiveContract ? "FAST_TRACK" : "STANDARD",
           status: "pending_review",
+          // Google Places enrichment (persisted)
+          googlePlaces: placesEnrichment ? {
+            placeId: placesEnrichment.placeId,
+            name: placesEnrichment.name,
+            rating: placesEnrichment.rating,
+            ratingCount: placesEnrichment.ratingCount,
+            phone: placesEnrichment.phone,
+            website: placesEnrichment.website,
+            types: placesEnrichment.types,
+            openNow: placesEnrichment.openNow,
+            googleMapsUrl: placesEnrichment.googleMapsUrl,
+            enrichedAt: admin.firestore.FieldValue.serverTimestamp()
+          } : void 0,
+          // Fit score breakdown
+          fitScoreBreakdown: {
+            googleReputation: placesSubScores.googleReputation,
+            serviceAlignment: item.serviceAlignmentScore || 50,
+            locationScore: item.locationScore || 50,
+            businessMaturity: placesSubScores.businessMaturity,
+            websiteQuality: placesSubScores.websiteQuality
+          },
+          rating: placesEnrichment?.rating || void 0,
+          totalRatings: placesEnrichment?.ratingCount || void 0,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp()
         };
@@ -5759,6 +5907,424 @@ Return ONLY valid JSON, no markdown fences.`;
 
 // src/index.ts
 var import_auth = require("firebase-admin/auth");
+
+// src/utils/facebookApi.ts
+var GRAPH_API_VERSION = "v21.0";
+var GRAPH_BASE_URL = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
+var PAGE_ID = "946781681862472";
+function getAccessToken() {
+  const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+  if (!token) {
+    throw new Error("FACEBOOK_PAGE_ACCESS_TOKEN not found in environment.");
+  }
+  return token;
+}
+async function publishPost(message, link, imageUrl) {
+  const token = getAccessToken();
+  try {
+    let endpoint = `${GRAPH_BASE_URL}/${PAGE_ID}/feed`;
+    const body = {
+      message,
+      access_token: token
+    };
+    if (link) {
+      body.link = link;
+    }
+    if (imageUrl) {
+      endpoint = `${GRAPH_BASE_URL}/${PAGE_ID}/photos`;
+      body.url = imageUrl;
+    }
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await response.json();
+    if (data.error) {
+      console.error("Facebook API error:", data.error);
+      return {
+        id: "",
+        success: false,
+        error: data.error.message || "Unknown Facebook API error"
+      };
+    }
+    const postId = data.id || data.post_id;
+    return {
+      id: postId,
+      success: true,
+      postUrl: `https://facebook.com/${postId}`
+    };
+  } catch (error11) {
+    console.error("Facebook publish error:", error11);
+    return {
+      id: "",
+      success: false,
+      error: error11.message || "Failed to publish to Facebook"
+    };
+  }
+}
+async function schedulePost(message, scheduledTime, link) {
+  const token = getAccessToken();
+  const unixTimestamp = Math.floor(scheduledTime.getTime() / 1e3);
+  try {
+    const body = {
+      message,
+      access_token: token,
+      published: false,
+      scheduled_publish_time: unixTimestamp
+    };
+    if (link) {
+      body.link = link;
+    }
+    const response = await fetch(`${GRAPH_BASE_URL}/${PAGE_ID}/feed`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await response.json();
+    if (data.error) {
+      console.error("Facebook schedule error:", data.error);
+      return {
+        id: "",
+        success: false,
+        error: data.error.message || "Failed to schedule post"
+      };
+    }
+    return {
+      id: data.id,
+      success: true
+    };
+  } catch (error11) {
+    console.error("Facebook schedule error:", error11);
+    return {
+      id: "",
+      success: false,
+      error: error11.message || "Failed to schedule post"
+    };
+  }
+}
+async function getRecentPosts(limit = 10) {
+  const token = getAccessToken();
+  try {
+    const fields = "id,message,created_time,full_picture,permalink_url,likes.summary(true),comments.summary(true),shares";
+    const response = await fetch(
+      `${GRAPH_BASE_URL}/${PAGE_ID}/feed?fields=${fields}&limit=${limit}&access_token=${token}`
+    );
+    const data = await response.json();
+    if (data.error) {
+      console.error("Facebook get posts error:", data.error);
+      return [];
+    }
+    return data.data || [];
+  } catch (error11) {
+    console.error("Facebook get posts error:", error11);
+    return [];
+  }
+}
+async function getPageInsights(period = "week") {
+  const token = getAccessToken();
+  try {
+    const metrics = "page_impressions,page_engaged_users,page_fans,page_post_engagements";
+    const response = await fetch(
+      `${GRAPH_BASE_URL}/${PAGE_ID}/insights?metric=${metrics}&period=${period}&access_token=${token}`
+    );
+    const data = await response.json();
+    if (data.error) {
+      console.error("Facebook insights error:", data.error);
+      return {};
+    }
+    const insights = {};
+    for (const metric of data.data || []) {
+      const key = metric.name;
+      const value = metric.values?.[0]?.value;
+      if (value !== void 0) {
+        insights[key] = value;
+      }
+    }
+    return insights;
+  } catch (error11) {
+    console.error("Facebook insights error:", error11);
+    return {};
+  }
+}
+async function deletePost(postId) {
+  const token = getAccessToken();
+  try {
+    const response = await fetch(
+      `${GRAPH_BASE_URL}/${postId}?access_token=${token}`,
+      { method: "DELETE" }
+    );
+    const data = await response.json();
+    return data.success === true;
+  } catch (error11) {
+    console.error("Facebook delete post error:", error11);
+    return false;
+  }
+}
+
+// src/triggers/socialContentGenerator.ts
+var import_scheduler5 = require("firebase-functions/v2/scheduler");
+var import_generative_ai7 = require("@google/generative-ai");
+var API_KEY4 = process.env.GEMINI_API_KEY || "";
+var DAY_MAP = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6
+};
+function buildPrompt(config2, engagementSummary, recentPostSummaries) {
+  return `You are the social media manager for XIRI Facility Solutions, a facility management company based in New York that services commercial and medical buildings across Queens, Nassau, and Suffolk County.
+
+## BUSINESS CONTEXT
+- XIRI hires independent sub-contractors (cleaning, HVAC, maintenance, specialty trades) to fulfill contracts XIRI holds with medical offices, urgent care clinics, auto dealerships, and commercial facilities.
+- For CONTRACTORS: We offer steady contract work, one point of contact, fast payouts (10th of the month), no franchise fees.
+- For CLIENTS: We are their single point of contact for all facility maintenance \u2014 one call, one invoice, audit-ready standards.
+- Website: xiri.ai
+- Service Areas: Queens, Nassau County, Suffolk County, Long Island
+
+## ENGAGEMENT DATA (Last 20 Posts)
+${engagementSummary}
+
+## RECENT POST THEMES (avoid repeating these)
+${recentPostSummaries.length > 0 ? recentPostSummaries.map((s, i) => `${i + 1}. ${s}`).join("\n") : "No recent posts yet."}
+
+## CONTENT PREFERENCES
+- Tone: ${config2.tone || "Professional, bold, blue-collar-friendly but executive-grade"}
+- Topics to focus on: ${config2.topics.length > 0 ? config2.topics.join(", ") : "contractor recruitment, client success, industry tips, behind-the-scenes, company culture"}
+- Hashtags to include: ${config2.hashtagSets.length > 0 ? config2.hashtagSets.join(" ") : "#FacilityManagement #CommercialCleaning #LongIsland #Queens #NYContractors"}
+
+## YOUR TASK
+Generate exactly 1 Facebook post for XIRI Facility Solutions. The post should:
+
+1. Be formatted for Facebook (use emoji as paragraph-style bullets, not checkmarks)
+2. Be 100-250 words
+3. Include a clear call-to-action
+4. Include relevant hashtags at the end
+5. Be different from the recent posts listed above
+6. Drive engagement (likes, comments, shares) based on what performed well in the engagement data
+7. Alternate between targeting CONTRACTORS (recruitment) and CLIENTS (lead gen) \u2014 choose whichever was NOT the focus of the most recent posts
+8. Be written in a natural, human voice \u2014 not corporate jargon
+9. If targeting contractors, emphasize: steady work, fast pay, no admin hassle
+10. If targeting clients, emphasize: one-call solution, audit-ready, quality assurance, consolidated billing
+
+Respond with ONLY the post text. No introductions, no explanations, just the ready-to-publish Facebook post.`;
+}
+function summarizeEngagement(posts) {
+  if (posts.length === 0) {
+    return {
+      summary: "No previous posts to analyze.",
+      themes: [],
+      avgLikes: 0,
+      avgComments: 0,
+      avgShares: 0
+    };
+  }
+  const totalLikes = posts.reduce(
+    (sum, p) => sum + (p.likes?.summary?.total_count || 0),
+    0
+  );
+  const totalComments = posts.reduce(
+    (sum, p) => sum + (p.comments?.summary?.total_count || 0),
+    0
+  );
+  const totalShares = posts.reduce(
+    (sum, p) => sum + (p.shares?.count || 0),
+    0
+  );
+  const avgLikes = Math.round(totalLikes / posts.length);
+  const avgComments = Math.round(totalComments / posts.length);
+  const avgShares = Math.round(totalShares / posts.length);
+  const sorted = [...posts].sort((a, b) => {
+    const aScore = (a.likes?.summary?.total_count || 0) + (a.comments?.summary?.total_count || 0) * 3 + (a.shares?.count || 0) * 5;
+    const bScore = (b.likes?.summary?.total_count || 0) + (b.comments?.summary?.total_count || 0) * 3 + (b.shares?.count || 0) * 5;
+    return bScore - aScore;
+  });
+  const topPost = sorted[0];
+  const topTheme = topPost?.message?.slice(0, 80) || "N/A";
+  const themes = posts.filter((p) => p.message).map((p) => p.message.split("\n")[0].slice(0, 60));
+  const summary = `
+- Total posts analyzed: ${posts.length}
+- Average likes per post: ${avgLikes}
+- Average comments per post: ${avgComments}
+- Average shares per post: ${avgShares}
+- Top performing post theme: "${topTheme}..."
+- Best engagement driver: ${avgShares > avgComments ? "Shares" : avgComments > avgLikes ? "Comments" : "Likes"}
+    `.trim();
+  return { summary, themes, avgLikes, avgComments, avgShares };
+}
+function getNextPostingDates(config2, count) {
+  const dates = [];
+  const [hours, minutes] = (config2.preferredTime || "10:00").split(":").map(Number);
+  const now = /* @__PURE__ */ new Date();
+  let cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayPost = new Date(cursor.getTime());
+  todayPost.setHours(hours, minutes, 0, 0);
+  if (now >= todayPost) {
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  let safety = 0;
+  while (dates.length < count && safety < 30) {
+    safety++;
+    const dayOfWeek = cursor.getDay();
+    let isPostingDay = false;
+    if (config2.cadence === "daily") {
+      isPostingDay = true;
+    } else {
+      isPostingDay = config2.preferredDays.some(
+        (day) => DAY_MAP[day.toLowerCase()] === dayOfWeek
+      );
+    }
+    if (isPostingDay) {
+      const postDate = new Date(cursor.getTime());
+      postDate.setHours(hours, minutes, 0, 0);
+      dates.push(postDate);
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+}
+async function generateSocialContent() {
+  console.log("[SocialGenerator] Starting content generation...");
+  const configDoc = await db.collection("social_config").doc("facebook").get();
+  if (!configDoc.exists) {
+    console.log("[SocialGenerator] No social config found. Skipping.");
+    return;
+  }
+  const config2 = configDoc.data();
+  if (!config2.enabled) {
+    console.log("[SocialGenerator] Social posting is disabled. Skipping.");
+    return;
+  }
+  const TARGET_QUEUE_SIZE = 3;
+  const upcomingDates = getNextPostingDates(config2, TARGET_QUEUE_SIZE);
+  console.log(`[SocialGenerator] Next ${TARGET_QUEUE_SIZE} posting dates:`, upcomingDates.map((d) => d.toISOString()));
+  const now = /* @__PURE__ */ new Date();
+  const pendingDrafts = await db.collection("social_posts").where("status", "in", ["draft", "approved"]).where("scheduledFor", ">", now).get();
+  const existingScheduledTimes = new Set(
+    pendingDrafts.docs.map((d) => {
+      const sf = d.data().scheduledFor;
+      return sf?.toDate ? sf.toDate().toISOString() : new Date(sf).toISOString();
+    })
+  );
+  const datesToGenerate = upcomingDates.filter(
+    (d) => !existingScheduledTimes.has(d.toISOString())
+  );
+  const currentQueueSize = pendingDrafts.size;
+  const slotsToFill = Math.max(0, TARGET_QUEUE_SIZE - currentQueueSize);
+  if (slotsToFill === 0) {
+    console.log(`[SocialGenerator] Queue is full (${currentQueueSize}/${TARGET_QUEUE_SIZE}). Skipping.`);
+    return;
+  }
+  const toGenerate = datesToGenerate.slice(0, slotsToFill);
+  if (toGenerate.length === 0) {
+    console.log("[SocialGenerator] All upcoming dates already have drafts. Skipping.");
+    return;
+  }
+  console.log("[SocialGenerator] Fetching recent posts for analysis...");
+  const recentPosts = await getRecentPosts(20);
+  const { summary, themes, avgLikes, avgComments, avgShares } = summarizeEngagement(recentPosts);
+  const genAI6 = new import_generative_ai7.GoogleGenerativeAI(API_KEY4);
+  const model4 = genAI6.getGenerativeModel({ model: "gemini-2.0-flash" });
+  for (const scheduledFor of toGenerate) {
+    try {
+      console.log(`[SocialGenerator] Generating draft for ${scheduledFor.toISOString()}...`);
+      const prompt = buildPrompt(config2, summary, themes);
+      const result = await model4.generateContent(prompt);
+      const generatedMessage = result.response.text().trim();
+      if (!generatedMessage) {
+        console.error("[SocialGenerator] Gemini returned empty response. Skipping slot.");
+        continue;
+      }
+      await db.collection("social_posts").add({
+        platform: "facebook",
+        message: generatedMessage,
+        status: "draft",
+        generatedBy: "ai",
+        scheduledFor,
+        engagementContext: {
+          avgLikes,
+          avgComments,
+          avgShares,
+          topPostThemes: themes.slice(0, 5)
+        },
+        reviewedBy: null,
+        reviewedAt: null,
+        rejectionReason: null,
+        createdAt: /* @__PURE__ */ new Date()
+      });
+      themes.push(generatedMessage.split("\n")[0].slice(0, 60));
+      console.log(`[SocialGenerator] Draft created for ${scheduledFor.toISOString()}`);
+    } catch (err) {
+      console.error(`[SocialGenerator] Error generating for ${scheduledFor.toISOString()}:`, err.message);
+    }
+  }
+  console.log(`[SocialGenerator] Done. Generated ${toGenerate.length} draft(s).`);
+}
+var runSocialContentGenerator = (0, import_scheduler5.onSchedule)({
+  schedule: "every day 11:00",
+  secrets: ["GEMINI_API_KEY", "FACEBOOK_PAGE_ACCESS_TOKEN"]
+}, async () => {
+  await generateSocialContent();
+});
+
+// src/triggers/socialPublisher.ts
+var import_scheduler6 = require("firebase-functions/v2/scheduler");
+async function publishScheduledPosts() {
+  console.log("[SocialPublisher] Checking for posts to publish...");
+  const now = /* @__PURE__ */ new Date();
+  const duePosts = await db.collection("social_posts").where("status", "in", ["approved", "draft"]).where("scheduledFor", "<=", now).limit(5).get();
+  if (duePosts.empty) {
+    console.log("[SocialPublisher] No posts due for publishing.");
+    return;
+  }
+  console.log(`[SocialPublisher] Found ${duePosts.size} post(s) to publish.`);
+  for (const doc of duePosts.docs) {
+    const post = doc.data();
+    const wasAutoPublished = post.status === "draft";
+    try {
+      const result = await publishPost(
+        post.message,
+        post.link || void 0,
+        post.imageUrl || void 0
+      );
+      if (result.success) {
+        await doc.ref.update({
+          status: "published",
+          facebookPostId: result.id,
+          postUrl: result.postUrl || null,
+          publishedAt: /* @__PURE__ */ new Date(),
+          autoPublished: wasAutoPublished
+        });
+        console.log(`[SocialPublisher] ${wasAutoPublished ? "AUTO-" : ""}Published post ${doc.id} -> FB ID: ${result.id}`);
+      } else {
+        await doc.ref.update({
+          status: "failed",
+          error: result.error || "Unknown publishing error",
+          failedAt: /* @__PURE__ */ new Date()
+        });
+        console.error(`[SocialPublisher] Failed to publish ${doc.id}: ${result.error}`);
+      }
+    } catch (error11) {
+      console.error(`[SocialPublisher] Error publishing ${doc.id}:`, error11);
+      await doc.ref.update({
+        status: "failed",
+        error: error11.message || "Unexpected error",
+        failedAt: /* @__PURE__ */ new Date()
+      });
+    }
+  }
+}
+var runSocialPublisher = (0, import_scheduler6.onSchedule)({
+  schedule: "every 30 minutes",
+  secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"]
+}, async () => {
+  await publishScheduledPosts();
+});
+
+// src/index.ts
 var DASHBOARD_CORS = [
   "http://localhost:3001",
   "http://localhost:3000",
@@ -5963,15 +6529,152 @@ var sourceProperties = (0, import_https6.onCall)({
     throw new import_https6.HttpsError("internal", error11.message || "Failed to source properties.");
   }
 });
+var publishFacebookPost = (0, import_https6.onCall)({
+  secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  if (!request.auth) throw new import_https6.HttpsError("unauthenticated", "Must be logged in");
+  const { message, link, imageUrl, scheduledTime } = request.data;
+  if (!message) {
+    throw new import_https6.HttpsError("invalid-argument", "Message is required");
+  }
+  try {
+    let result;
+    if (scheduledTime) {
+      result = await schedulePost(message, new Date(scheduledTime), link);
+      console.log(`[Facebook] Scheduled post for ${scheduledTime}:`, result);
+    } else {
+      result = await publishPost(message, link, imageUrl);
+      console.log(`[Facebook] Published post:`, result);
+    }
+    await db.collection("social_posts").add({
+      platform: "facebook",
+      message,
+      link: link || null,
+      imageUrl: imageUrl || null,
+      scheduledTime: scheduledTime || null,
+      facebookPostId: result.id,
+      postUrl: result.postUrl || null,
+      success: result.success,
+      error: result.error || null,
+      postedBy: request.auth.uid,
+      createdAt: /* @__PURE__ */ new Date()
+    });
+    return result;
+  } catch (error11) {
+    console.error("[Facebook] Publish error:", error11);
+    throw new import_https6.HttpsError("internal", error11.message || "Failed to publish to Facebook");
+  }
+});
+var getFacebookPosts = (0, import_https6.onCall)({
+  secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  if (!request.auth) throw new import_https6.HttpsError("unauthenticated", "Must be logged in");
+  const { limit } = request.data || {};
+  try {
+    const posts = await getRecentPosts(limit || 10);
+    const insights = await getPageInsights("week");
+    return { posts, insights };
+  } catch (error11) {
+    console.error("[Facebook] Get posts error:", error11);
+    throw new import_https6.HttpsError("internal", error11.message || "Failed to get Facebook posts");
+  }
+});
+var deleteFacebookPost = (0, import_https6.onCall)({
+  secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  if (!request.auth) throw new import_https6.HttpsError("unauthenticated", "Must be logged in");
+  const { postId } = request.data;
+  if (!postId) throw new import_https6.HttpsError("invalid-argument", "postId is required");
+  try {
+    const success = await deletePost(postId);
+    const snapshot = await db.collection("social_posts").where("facebookPostId", "==", postId).limit(1).get();
+    if (!snapshot.empty) {
+      await snapshot.docs[0].ref.update({
+        deleted: true,
+        deletedAt: /* @__PURE__ */ new Date(),
+        deletedBy: request.auth.uid
+      });
+    }
+    return { success };
+  } catch (error11) {
+    console.error("[Facebook] Delete error:", error11);
+    throw new import_https6.HttpsError("internal", error11.message || "Failed to delete Facebook post");
+  }
+});
+var triggerSocialContentGeneration = (0, import_https6.onCall)({
+  secrets: ["GEMINI_API_KEY", "FACEBOOK_PAGE_ACCESS_TOKEN"],
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  if (!request.auth) throw new import_https6.HttpsError("unauthenticated", "Must be logged in");
+  await generateSocialContent();
+  return { success: true };
+});
+var updateSocialConfig = (0, import_https6.onCall)({
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  if (!request.auth) throw new import_https6.HttpsError("unauthenticated", "Must be logged in");
+  const { cadence, preferredDays, preferredTime, tone, topics, hashtagSets, enabled } = request.data;
+  const config2 = { updatedAt: /* @__PURE__ */ new Date() };
+  if (cadence !== void 0) config2.cadence = cadence;
+  if (preferredDays !== void 0) config2.preferredDays = preferredDays;
+  if (preferredTime !== void 0) config2.preferredTime = preferredTime;
+  if (tone !== void 0) config2.tone = tone;
+  if (topics !== void 0) config2.topics = topics;
+  if (hashtagSets !== void 0) config2.hashtagSets = hashtagSets;
+  if (enabled !== void 0) config2.enabled = enabled;
+  config2.platform = "facebook";
+  await db.collection("social_config").doc("facebook").set(config2, { merge: true });
+  console.log("[Social] Config updated:", config2);
+  return { success: true };
+});
+var reviewSocialPost = (0, import_https6.onCall)({
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  if (!request.auth) throw new import_https6.HttpsError("unauthenticated", "Must be logged in");
+  const { postId, action, editedMessage, rejectionReason, scheduledFor } = request.data;
+  if (!postId || !action) {
+    throw new import_https6.HttpsError("invalid-argument", "postId and action are required");
+  }
+  const postRef = db.collection("social_posts").doc(postId);
+  const postDoc = await postRef.get();
+  if (!postDoc.exists) {
+    throw new import_https6.HttpsError("not-found", "Post not found");
+  }
+  const update = {
+    reviewedBy: request.auth.uid,
+    reviewedAt: /* @__PURE__ */ new Date()
+  };
+  switch (action) {
+    case "approve":
+      update.status = "approved";
+      if (editedMessage) update.message = editedMessage;
+      if (scheduledFor) update.scheduledFor = new Date(scheduledFor);
+      break;
+    case "reject":
+      update.status = "rejected";
+      update.rejectionReason = rejectionReason || null;
+      break;
+    default:
+      throw new import_https6.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
+  }
+  await postRef.update(update);
+  console.log(`[Social] Post ${postId} ${action}ed by ${request.auth.uid}`);
+  return { success: true, status: update.status };
+});
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   adminUpdateAuthUser,
   calculateNrr,
   changeMyPassword,
   clearPipeline,
+  deleteFacebookPost,
   enrichFromWebsite,
   generateLeads,
   generateMonthlyInvoices,
+  getFacebookPosts,
   handleUnsubscribe,
   onAuditFailed,
   onAuditSubmitted,
@@ -5994,14 +6697,20 @@ var sourceProperties = (0, import_https6.onCall)({
   processCommissionPayouts,
   processMailQueue,
   processOutreachQueue,
+  publishFacebookPost,
   resendWebhook,
   respondToQuote,
+  reviewSocialPost,
   runRecruiterAgent,
+  runSocialContentGenerator,
+  runSocialPublisher,
   sendBookingConfirmation,
   sendOnboardingInvite,
   sendQuoteEmail,
   sourceProperties,
   testSendEmail,
+  triggerSocialContentGeneration,
+  updateSocialConfig,
   weeklyTemplateOptimizer
 });
 //# sourceMappingURL=index.js.map

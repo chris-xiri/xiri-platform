@@ -400,7 +400,8 @@ export const triggerSocialContentGeneration = onCall({
     cors: DASHBOARD_CORS,
 }, async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
-    await generateSocialContent();
+    const channel = request.data?.channel || "facebook_posts";
+    await generateSocialContent(channel);
     return { success: true };
 });
 
@@ -410,7 +411,8 @@ export const updateSocialConfig = onCall({
 }, async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
 
-    const { cadence, preferredDays, preferredTime, tone, topics, hashtagSets, enabled } = request.data;
+    const { channel, cadence, preferredDays, preferredTime, tone, topics, hashtagSets, enabled, audienceMix } = request.data;
+    const channelId = channel || "facebook_posts";
 
     const config: Record<string, any> = { updatedAt: new Date() };
     if (cadence !== undefined) config.cadence = cadence;
@@ -420,10 +422,11 @@ export const updateSocialConfig = onCall({
     if (topics !== undefined) config.topics = topics;
     if (hashtagSets !== undefined) config.hashtagSets = hashtagSets;
     if (enabled !== undefined) config.enabled = enabled;
-    config.platform = "facebook";
+    if (audienceMix !== undefined) config.audienceMix = audienceMix;
+    config.platform = channelId.startsWith("facebook") ? "facebook" : "linkedin";
 
-    await db.collection("social_config").doc("facebook").set(config, { merge: true });
-    console.log("[Social] Config updated:", config);
+    await db.collection("social_config").doc(channelId).set(config, { merge: true });
+    console.log(`[Social] Config updated for ${channelId}:`, config);
 
     return { success: true };
 });
