@@ -233,6 +233,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 { label: 'Email Templates', href: '/admin/email-templates', icon: <Mail className="w-4 h-4" />, subGroup: 'Communications' },
                 { label: 'Legal Templates', href: '/admin/legal', icon: <Scale className="w-4 h-4" />, subGroup: 'Communications' },
                 { label: 'Social Media', href: '/admin/social', icon: <Share2 className="w-4 h-4" />, subGroup: 'Social Media' },
+                { label: 'Reports', href: '/admin/reports', icon: <BarChart3 className="w-4 h-4" />, subGroup: 'Reporting' },
                 { label: 'Template Analytics', href: '/admin/templates', icon: <BarChart3 className="w-4 h-4" />, subGroup: 'Reporting' },
                 { label: 'Commissions', href: '/admin/commissions', icon: <DollarSign className="w-4 h-4" />, subGroup: 'Reporting' },
             ],
