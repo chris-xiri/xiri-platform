@@ -639,12 +639,12 @@ export default function SocialMediaPage() {
                                 <Card><CardContent className="p-8 text-center text-muted-foreground">
                                     <Facebook className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>No posts yet.</p>
                                 </CardContent></Card>
-                            ) : (<div className="grid grid-cols-1 md:grid-cols-2 gap-4">{posts.map(post => (
+                            ) : (<div className="space-y-4">{posts.map(post => (
                                 <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
                                     <CardContent className="p-0">
                                         <div className="flex">
                                             {/* Left: Image thumbnail */}
-                                            <div className="w-40 shrink-0 bg-muted/30">
+                                            <div className="w-60 shrink-0 bg-muted/30">
                                                 {post.full_picture ? (
                                                     <img src={post.full_picture} alt="Post" className="w-full h-full object-cover min-h-[160px]" />
                                                 ) : (
@@ -722,7 +722,7 @@ export default function SocialMediaPage() {
                                 </CardContent>
                             </Card>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-4">
                                 {drafts.map(draft => (
                                     <Card key={draft.id} className={`overflow-hidden transition-shadow hover:shadow-md ${draft.status === 'draft' ? 'border-purple-200 dark:border-purple-800' :
                                         draft.status === 'rejected' ? 'opacity-50 border-dashed' : ''
@@ -730,7 +730,7 @@ export default function SocialMediaPage() {
                                         <CardContent className="p-0">
                                             <div className="flex">
                                                 {/* ── Left: Media Thumbnail ── */}
-                                                <div className="w-40 shrink-0 bg-muted/30 relative">
+                                                <div className="w-60 shrink-0 bg-muted/30 relative">
                                                     {activeChannel === 'facebook_reels' && (draft as any).videoUrl ? (
                                                         <video
                                                             src={(draft as any).videoUrl}
