@@ -125,6 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setProfile(userProfile);
             } else {
                 setProfile(null);
+                // If we're not already on the login page, redirect there
+                if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+                    router.push('/login');
+                }
             }
 
             setLoading(false);
