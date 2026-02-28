@@ -18098,6 +18098,7 @@ __export(index_exports, {
   onOnboardingComplete: () => onOnboardingComplete,
   onQuoteAccepted: () => onQuoteAccepted,
   onStaffUpdated: () => onStaffUpdated,
+  onVendorAdvancedPastOutreach: () => onVendorAdvancedPastOutreach,
   onVendorApproved: () => onVendorApproved,
   onVendorCreated: () => onVendorCreated,
   onVendorUpdated: () => onVendorUpdated,
@@ -21023,6 +21024,42 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
   }
   logger7.info(`Drip campaign scheduled for ${vendorId}: 4 follow-ups at days 3, 7, 14, 21`);
 });
+var STAGES_PAST_OUTREACH = /* @__PURE__ */ new Set([
+  "compliance_review",
+  "pending_verification",
+  "onboarding_scheduled",
+  "ready_for_assignment",
+  "active"
+]);
+var onVendorAdvancedPastOutreach = (0, import_firestore8.onDocumentUpdated)({
+  document: "vendors/{vendorId}"
+}, async (event) => {
+  const before = event.data?.before?.data();
+  const after = event.data?.after?.data();
+  if (!before || !after) return;
+  if (before.status === after.status) return;
+  const wasInOutreach = before.status === "awaiting_onboarding" || before.status === "qualified";
+  const nowPastOutreach = STAGES_PAST_OUTREACH.has(after.status);
+  if (!wasInOutreach || !nowPastOutreach) return;
+  const vendorId = event.params.vendorId;
+  const businessName = after.businessName || "Unknown";
+  logger7.info(`Vendor ${vendorId} (${businessName}) advanced to '${after.status}' \u2014 cancelling scheduled outreach emails.`);
+  const cancelledCount = await cancelVendorTasks(db10, vendorId);
+  if (cancelledCount > 0) {
+    await db10.collection("vendor_activities").add({
+      vendorId,
+      type: "DRIP_CANCELLED",
+      description: `${cancelledCount} scheduled follow-up email(s) cancelled \u2014 vendor advanced to ${after.status}.`,
+      createdAt: /* @__PURE__ */ new Date(),
+      metadata: {
+        previousStatus: before.status,
+        newStatus: after.status,
+        cancelledCount
+      }
+    });
+    logger7.info(`Cancelled ${cancelledCount} pending outreach tasks for vendor ${vendorId}.`);
+  }
+});
 
 // src/triggers/handleUnsubscribe.ts
 var import_https2 = require("firebase-functions/v2/https");
@@ -23541,8 +23578,146 @@ var import_generative_ai7 = require("@google/generative-ai");
 var import_google_auth_library = __toESM(require_src6());
 var import_storage = require("firebase-admin/storage");
 var import_uuid2 = require("uuid");
+
+// src/utils/brandOverlay.ts
+var import_sharp = __toESM(require("sharp"));
+function extractHeadline(postMessage) {
+  const cleaned = postMessage.replace(/#\w+/g, "").replace(/\n{2,}/g, "\n").trim();
+  const lines = cleaned.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return "Professional Facility Solutions";
+  let headline = lines[0];
+  headline = headline.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}\s]+/u, "");
+  if (headline.length > 70) {
+    headline = headline.slice(0, 70).replace(/\s+\S*$/, "") + "\u2026";
+  }
+  return headline || "Professional Facility Solutions";
+}
+function wrapText(text, maxChars) {
+  const words = text.split(/\s+/);
+  const lines = [];
+  let currentLine = "";
+  for (const word of words) {
+    if (currentLine.length + word.length + 1 <= maxChars) {
+      currentLine += (currentLine ? " " : "") + word;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  if (lines.length > 3) {
+    lines.length = 3;
+    lines[2] = lines[2].replace(/\s+\S*$/, "") + "\u2026";
+  }
+  return lines;
+}
+function escapeXml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+function createBrandOverlaySvg(width, height, headline) {
+  const headlineLines = wrapText(headline, 32);
+  const lineHeight = 38;
+  const headlineBlockHeight = headlineLines.length * lineHeight + 50;
+  const headlineY = height * 0.58;
+  const headlineTexts = headlineLines.map((line, i) => {
+    const y = headlineY + 45 + i * lineHeight;
+    return `<text x="${width * 0.08}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="30" fill="white" letter-spacing="0.5">${escapeXml(line)}</text>`;
+  }).join("\n        ");
+  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <!-- Top gradient: navy fading to transparent -->
+        <linearGradient id="topGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0c4a6e" stop-opacity="0.85"/>
+            <stop offset="70%" stop-color="#0c4a6e" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#0c4a6e" stop-opacity="0"/>
+        </linearGradient>
+        <!-- Bottom gradient: transparent fading to navy -->
+        <linearGradient id="bottomGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0c4a6e" stop-opacity="0"/>
+            <stop offset="30%" stop-color="#0c4a6e" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#0c4a6e" stop-opacity="0.95"/>
+        </linearGradient>
+        <!-- Brand gradient for accent elements -->
+        <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0284c7"/>
+            <stop offset="100%" stop-color="#0369a1"/>
+        </linearGradient>
+    </defs>
+
+    <!-- \u2550\u2550\u2550 TOP GRADIENT BAR \u2550\u2550\u2550 -->
+    <rect x="0" y="0" width="${width}" height="${Math.round(height * 0.18)}" fill="url(#topGrad)"/>
+
+    <!-- XIRI Icon Badge (simplified) -->
+    <rect x="${Math.round(width * 0.05)}" y="${Math.round(height * 0.03)}" width="42" height="42" rx="9" fill="url(#brandGrad)"/>
+    <text x="${Math.round(width * 0.05 + 21)}" y="${Math.round(height * 0.03 + 29)}" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="22" fill="white" text-anchor="middle" letter-spacing="-0.5">X</text>
+
+    <!-- XIRI Wordmark -->
+    <text x="${Math.round(width * 0.05 + 52)}" y="${Math.round(height * 0.03 + 22)}" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="24" fill="white" letter-spacing="-1">XIRI</text>
+    <text x="${Math.round(width * 0.05 + 52)}" y="${Math.round(height * 0.03 + 37)}" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8.5" fill="rgba(255,255,255,0.65)" letter-spacing="3">FACILITY SOLUTIONS</text>
+
+    <!-- \u2550\u2550\u2550 BOTTOM GRADIENT BAR \u2550\u2550\u2550 -->
+    <rect x="0" y="${Math.round(height * 0.55)}" width="${width}" height="${Math.round(height * 0.45)}" fill="url(#bottomGrad)"/>
+
+    <!-- Headline text box background -->
+    <rect x="${Math.round(width * 0.05)}" y="${Math.round(headlineY)}" width="${Math.round(width * 0.9)}" height="${headlineBlockHeight}" rx="12" fill="rgba(12, 74, 110, 0.65)" stroke="rgba(56, 189, 248, 0.25)" stroke-width="1"/>
+
+    <!-- Headline text lines -->
+    ${headlineTexts}
+
+    <!-- \u2550\u2550\u2550 BOTTOM BAR \u2550\u2550\u2550 -->
+    <!-- Accent stripe -->
+    <rect x="0" y="${height - 6}" width="${width}" height="6" fill="#38bdf8" opacity="0.85"/>
+
+    <!-- Website URL -->
+    <text x="${Math.round(width * 0.08)}" y="${height - 25}" font-family="Arial, Helvetica, sans-serif" font-weight="600" font-size="16" fill="rgba(255,255,255,0.9)" letter-spacing="0.5">xiri.ai</text>
+
+    <!-- Separator dot -->
+    <circle cx="${Math.round(width * 0.25)}" cy="${height - 30}" r="2.5" fill="rgba(56, 189, 248, 0.7)"/>
+
+    <!-- Tagline -->
+    <text x="${Math.round(width * 0.28)}" y="${height - 25}" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="13" fill="rgba(255,255,255,0.6)" letter-spacing="1">Facility Solutions</text>
+</svg>`;
+}
+async function compositeImage(photoBuffer, postMessage) {
+  const metadata = await (0, import_sharp.default)(photoBuffer).metadata();
+  const width = metadata.width || 1024;
+  const height = metadata.height || 1024;
+  const headline = extractHeadline(postMessage);
+  console.log(`[BrandOverlay] Compositing headline: "${headline}" onto ${width}x${height} photo`);
+  const overlaySvg = createBrandOverlaySvg(width, height, headline);
+  const svgBuffer = Buffer.from(overlaySvg);
+  const result = await (0, import_sharp.default)(photoBuffer).composite([
+    {
+      input: svgBuffer,
+      top: 0,
+      left: 0
+    }
+  ]).png({ quality: 90 }).toBuffer();
+  console.log(`[BrandOverlay] Composited image size: ${(result.length / 1024).toFixed(0)}KB`);
+  return result;
+}
+
+// src/utils/imagenApi.ts
 var PROJECT_ID = "xiri-facility-solutions";
 var LOCATION = "us-central1";
+var CLIENT_SCENES = [
+  "Pristine modern medical office lobby with clean tile floors, polished reception desk, bright overhead lighting, potted plants, empty waiting area chairs neatly arranged",
+  "Spotless auto dealership showroom floor, gleaming under bright lights, polished concrete, luxury vehicles visible in background, immaculate glass windows",
+  "Modern commercial building hallway freshly cleaned, shining floors reflecting overhead lights, crisp white walls, professional maintenance",
+  "Empty medical exam room, sanitized surfaces, organized supply cabinets, bright clinical lighting, freshly mopped floor",
+  "Corporate office break room after professional cleaning, spotless countertops, organized cabinets, fresh flowers on table, warm natural light",
+  "Aerial view of a well-maintained commercial building exterior, landscaped grounds, clean parking lot, blue sky",
+  "Modern daycare facility interior, colorful but immaculate, organized toy shelves, clean play mats, bright cheerful lighting"
+];
+var CONTRACTOR_SCENES = [
+  "Professional cleaning crew in matching blue uniforms working together in a commercial building hallway, pushing floor buffer machine, teamwork",
+  "Close-up of janitorial equipment arranged neatly \u2014 mop bucket, floor buffer, cleaning supplies \u2014 professional grade tools ready for work",
+  "Facility maintenance worker in blue safety gear inspecting HVAC system on commercial building rooftop, sunrise in background",
+  "Team of contractors in hard hats and safety vests doing a walk-through inspection of a clean commercial space, clipboards in hand",
+  "Professional floor technician operating an industrial floor scrubber in a large commercial space, shiny wet floor behind them",
+  "Maintenance worker in blue uniform restocking supply closet in a commercial building, organized shelves, professional demeanor",
+  "Night shift cleaning crew member vacuuming a darkened office space, overhead emergency lights creating dramatic lighting, dedication"
+];
 async function generatePostImage(postMessage, audience) {
   try {
     console.log(`[Imagen] Starting image generation for ${audience} post...`);
@@ -23550,13 +23725,9 @@ async function generatePostImage(postMessage, audience) {
       scopes: ["https://www.googleapis.com/auth/cloud-platform"]
     });
     const client = await auth.getClient();
-    const brandContext = audience === "client" ? "Clean, modern commercial building interior, professional medical office or auto dealership, well-maintained facility, bright lighting, organized workspace" : "Professional contractor team at work, commercial cleaning crew, facility maintenance, safety gear, blue-collar pride, teamwork";
-    const imagePrompt = `Professional social media graphic for a facility management company.
-Style: Modern, corporate, high-quality photography look. 
-Color palette: Deep navy blue (#075985), bright sky blue (#0ea5e9), white, with clean design.
-Scene: ${brandContext}.
-Context from post: ${postMessage.slice(0, 200)}
-Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 square aspect ratio. Professional, premium feel.`;
+    const scenes = audience === "client" ? CLIENT_SCENES : CONTRACTOR_SCENES;
+    const scene = scenes[Math.floor(Math.random() * scenes.length)];
+    const imagePrompt = `Editorial photograph, shot on Canon EOS R5 with 35mm lens. ${scene}. Color grading: cool blue tones with deep navy shadows and bright sky blue highlights. Clean, sharp, professional corporate photography. Shallow depth of field. 1:1 square composition.`;
     const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/imagen-3.0-generate-002:predict`;
     console.log(`[Imagen] Calling endpoint: ${endpoint}`);
     const response = await client.request({
@@ -23567,7 +23738,9 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
         parameters: {
           sampleCount: 1,
           aspectRatio: "1:1",
-          safetyFilterLevel: "block_few"
+          safetyFilterLevel: "block_few",
+          personGeneration: "allow_all",
+          negativePrompt: "text, letters, words, numbers, signs, signage, labels, captions, watermarks, logos, branding, graphic design, overlays, banners, typography, fonts, writing, handwriting, graffiti, posters, billboards, screen, monitor text, nametags, badges with text"
         }
       }
     });
@@ -23585,12 +23758,14 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
       console.error("[Imagen] Prediction keys:", JSON.stringify(Object.keys(predictions[0])));
       return null;
     }
-    const imageBuffer = Buffer.from(imageBase64, "base64");
+    const rawPhotoBuffer = Buffer.from(imageBase64, "base64");
+    console.log(`[Imagen] Compositing branded overlay...`);
+    const brandedBuffer = await compositeImage(rawPhotoBuffer, postMessage);
     const fileName = `social-images/${(0, import_uuid2.v4)()}.png`;
     const storageBucket = (0, import_storage.getStorage)().bucket();
     const bucketName = storageBucket.name;
     const file = storageBucket.file(fileName);
-    await file.save(imageBuffer, {
+    await file.save(brandedBuffer, {
       metadata: {
         contentType: "image/png",
         metadata: {
@@ -23600,7 +23775,7 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
     });
     await file.makePublic();
     const imageUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
-    console.log(`[Imagen] Image generated and uploaded: ${imageUrl}`);
+    console.log(`[Imagen] Branded image generated and uploaded: ${imageUrl}`);
     return { imageUrl, storagePath: fileName };
   } catch (err) {
     console.error("[Imagen] Error generating image:", err.message);
@@ -23633,23 +23808,16 @@ Details: Show before/after cleaning contrast, a clipboard check, or a manager sh
 Show them gearing up \u2014 putting on uniforms, loading equipment, working as a coordinated team.
 Mood: Blue-collar pride, teamwork, steady reliable work.
 Details: Show satisfying cleaning moments \u2014 buffing floors to a shine, organized supply carts, the team high-fiving after a job well done.`;
-    const videoPrompt = `Short-form vertical video for a facility management company's social media reel.
-
-Style: Cinematic, warm color grading, professional b-roll look. Vertical 9:16 format.
-Brand: XIRI Facility Solutions \u2014 professional facility management for medical offices, auto dealerships, and commercial buildings.
-Color palette: Navy blue (#075985) and sky blue (#0ea5e9) accents where natural (uniforms, signage, equipment).
+    const videoPrompt = `Cinematic short-form vertical video, shot on professional camera with smooth gimbal movement.
 
 ${audienceScene}
 
 ${locationContext}
 
-Audio: Upbeat, motivational background music suitable for a professional business reel. 
-Confident, modern feel \u2014 not generic stock music.
+Audio: Upbeat, motivational background music with a modern corporate feel. Include ambient sound effects matching the scene.
 
-Context from caption: ${caption.slice(0, 300)}
-
-Important: NO text overlays, NO watermarks, NO logos. Pure visual storytelling with audio.
-Duration: 8 seconds. Smooth camera movements. Professional quality.`;
+Style: Professional b-roll footage, warm color grading with cool blue shadows, clean and polished look. Vertical 9:16 format.
+Duration: 8 seconds. Smooth tracking shots. Professional quality. No text, no titles, no graphics \u2014 pure visual storytelling with audio.`;
     console.log(`[Veo] Starting video generation for ${audience} reel${location ? ` in ${location}` : ""}...`);
     let operation = await client.models.generateVideos({
       model: "veo-3.0-generate-001",
@@ -23765,7 +23933,7 @@ Key messaging for contractors:
   return `You are the social media manager for XIRI Facility Solutions, a facility management company based in New York that services commercial and medical buildings across Queens, Nassau, and Suffolk County.
 
 ## BRAND IDENTITY
-- Brand Name: XIRI (always uppercase, bold)
+- Brand Name: XIRI (always uppercase, never wrapped in asterisks or any formatting)
 - Full Name: XIRI Facility Solutions
 - Tagline: "One Call. One Invoice. Total Facility Coverage."
 - Brand Colors: Primary #0369a1, Accent #38bdf8, Dark #0c4a6e (Sky/Cyan family)
@@ -23804,6 +23972,14 @@ Generate exactly 1 Facebook post for XIRI Facility Solutions targeting ${audienc
 6. Drive engagement (likes, comments, shares) based on what performed well in the engagement data
 7. Be written in a natural, human voice \u2014 not corporate jargon
 
+CRITICAL FORMATTING RULES:
+- Facebook does NOT support any text formatting. Do NOT use Markdown.
+- NEVER use asterisks (*), double asterisks (**), underscores for emphasis, or any other Markdown syntax.
+- Use ONLY: emoji, line breaks, and hashtags for visual structure.
+- Write the brand name as XIRI in plain text, never **XIRI** or *XIRI*.
+- Use emoji at the start of lines as visual bullets (e.g., \u{1F449} \u{1F4B0} \u{1F527}), NOT asterisks.
+- Separate sections with blank lines for readability.
+
 Respond with ONLY the post text. No introductions, no explanations, just the ready-to-publish Facebook post.`;
 }
 function buildReelCaptionPrompt(config2, audience, location) {
@@ -23818,7 +23994,7 @@ Mention Long Island / Queens area naturally.`;
   return `You are writing a Facebook Reel caption for XIRI Facility Solutions \u2014 a facility management company in New York (Queens, Nassau, Suffolk County).
 
 ## BRAND IDENTITY
-- Brand Name: XIRI (always uppercase, bold)
+- Brand Name: XIRI (always uppercase, never wrapped in asterisks or any formatting)
 - Tagline: "One Call. One Invoice. Total Facility Coverage."
 - Brand Colors: Primary #0369a1 (Sky Blue), Accent #38bdf8
 - Tone: Professional, punchy, blue-collar-friendly but executive-grade
@@ -23834,13 +24010,19 @@ ${locationNote}
 ## YOUR TASK
 Generate a Facebook Reel caption (NOT a full post). A reel caption should be:
 
-1. **2-4 lines MAX** \u2014 short, punchy, scroll-stopping
+1. 2-4 lines MAX \u2014 short, punchy, scroll-stopping
 2. Start with a hook (question or bold statement)
 3. One key value prop
 4. Clear CTA
 5. Relevant hashtags at the end
 6. Use emoji sparingly (1-2 max)
 7. Written like a human, not a brand
+
+CRITICAL FORMATTING RULES:
+- Facebook does NOT support text formatting. Do NOT use Markdown.
+- NEVER use asterisks (*), double asterisks (**), underscores for emphasis, or any Markdown syntax.
+- Write XIRI in plain uppercase text, never **XIRI** or *XIRI*.
+- Use ONLY: emoji, line breaks, and hashtags.
 
 Example format:
 "Still managing 5 different vendors? \u{1F92F}
@@ -24499,6 +24681,7 @@ var reviewSocialPost = (0, import_https7.onCall)({
   onOnboardingComplete,
   onQuoteAccepted,
   onStaffUpdated,
+  onVendorAdvancedPastOutreach,
   onVendorApproved,
   onVendorCreated,
   onVendorUpdated,

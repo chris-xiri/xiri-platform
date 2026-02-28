@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { httpsCallable } from 'firebase/functions';
-import { doc, getDoc } from 'firebase/firestore';
-import { functions, db } from '@/lib/firebase';
+import { doc, getDoc, collection, addDoc, Timestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { functions, db, storage } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,7 @@ import {
     Send, Clock, Loader2, ThumbsUp, MessageCircle, Share2,
     Trash2, Calendar, Image as ImageIcon, Link2, RefreshCw, ExternalLink,
     Facebook, Settings, Sparkles, Check, X, Edit3, TrendingUp, Users, Eye,
-    Zap, AlertTriangle, Timer, Film, Linkedin, Video,
+    Zap, AlertTriangle, Timer, Film, Linkedin, Video, Upload,
 } from 'lucide-react';
 
 // ── Types ──
@@ -138,6 +139,10 @@ export default function SocialMediaPage() {
 
     // Lightbox state for image/video zoom
     const [lightboxMedia, setLightboxMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
+
+    // Video upload state
+    const [uploading, setUploading] = useState(false);
+    const videoInputRef = useRef<HTMLInputElement>(null);
 
     // Config state
     const [config, setConfig] = useState<SocialConfig>(DEFAULT_CONFIG);
@@ -332,6 +337,59 @@ export default function SocialMediaPage() {
         }
     };
 
+    // ── Video Upload for Reels ──
+    const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('video/')) {
+            setErrorMessage('Please select a video file (MP4, MOV, etc.)');
+            return;
+        }
+
+        // Validate file size (100MB max)
+        if (file.size > 100 * 1024 * 1024) {
+            setErrorMessage('Video must be under 100MB');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const fileId = `reel_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            const storageRef = ref(storage, `social-videos/${fileId}.mp4`);
+
+            // Upload to Firebase Storage
+            await uploadBytes(storageRef, file, { contentType: file.type });
+            const videoUrl = await getDownloadURL(storageRef);
+
+            // Create a draft in Firestore
+            await addDoc(collection(db, 'social_posts'), {
+                platform: 'facebook',
+                channel: 'facebook_reels',
+                audience: 'client',
+                message: '',
+                videoUrl,
+                videoStoragePath: `social-videos/${fileId}.mp4`,
+                videoDurationSeconds: null,
+                status: 'draft',
+                generatedBy: 'upload',
+                scheduledFor: Timestamp.fromDate(new Date()),
+                createdAt: Timestamp.now(),
+            });
+
+            setSuccessMessage('Video uploaded! Edit the caption in the Drafts tab.');
+            setActiveTab('drafts');
+            setTimeout(fetchDrafts, 1000);
+        } catch (err: any) {
+            setErrorMessage('Upload failed: ' + (err.message || 'Unknown error'));
+        } finally {
+            setUploading(false);
+            // Reset the file input
+            if (videoInputRef.current) videoInputRef.current.value = '';
+        }
+    };
+
     const handleSaveConfig = async () => {
         setSavingConfig(true);
         try {
@@ -400,6 +458,22 @@ export default function SocialMediaPage() {
                         </p>
                     </div>
                     <div className="flex gap-2">
+                        {/* Hidden file input for video uploads */}
+                        <input
+                            ref={videoInputRef}
+                            type="file"
+                            accept="video/*"
+                            className="hidden"
+                            onChange={handleVideoUpload}
+                        />
+                        {isReels && (
+                            <Button variant="outline" size="sm" onClick={() => videoInputRef.current?.click()} disabled={uploading}>
+                                {uploading
+                                    ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Uploading...</>
+                                    : <><Upload className="w-4 h-4 mr-1" /> Upload Video</>
+                                }
+                            </Button>
+                        )}
                         <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating || !CHANNELS.find(c => c.id === activeChannel)?.enabled}>
                             {generating
                                 ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> {isReels ? 'Generating Reel' : 'Generating'}... {generateElapsed > 0 && <span className="ml-1 text-xs text-muted-foreground">({generateElapsed}s)</span>}</>
@@ -721,8 +795,17 @@ export default function SocialMediaPage() {
                             ) : drafts.length === 0 ? (
                                 <Card>
                                     <CardContent className="p-8 text-center text-muted-foreground">
-                                        <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                        <p>No drafts yet. Click &quot;{activeChannel === 'facebook_reels' ? 'Generate Reel' : 'Generate Draft'}&quot; to create one.</p>
+                                        {activeChannel === 'facebook_reels' ? (
+                                            <>
+                                                <Upload className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                                <p>No reel drafts yet. Upload a video or generate one with AI.</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                                <p>No drafts yet. Click &quot;Generate Draft&quot; to create one.</p>
+                                            </>
+                                        )}
                                     </CardContent>
                                 </Card>
                             ) : (

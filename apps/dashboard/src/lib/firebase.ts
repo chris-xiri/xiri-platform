@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getStorage, connectStorageEmulator } from "firebase/storage";
 
 // Firebase configuration - use environment variables for production
 const firebaseConfig = {
@@ -18,6 +19,7 @@ export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const functions = getFunctions(app);
 export const auth = getAuth(app);
+export const storage = getStorage(app);
 
 // Connect to emulators in development
 if (process.env.NODE_ENV === "development") {
@@ -25,6 +27,7 @@ if (process.env.NODE_ENV === "development") {
     connectFirestoreEmulator(db, "127.0.0.1", 8085);
     connectFunctionsEmulator(functions, "127.0.0.1", 5001);
     connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+    connectStorageEmulator(storage, "127.0.0.1", 9199);
 } else {
     console.log("Connecting to Production Firebase");
 }
