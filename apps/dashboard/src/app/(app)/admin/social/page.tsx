@@ -639,47 +639,57 @@ export default function SocialMediaPage() {
                                 <Card><CardContent className="p-8 text-center text-muted-foreground">
                                     <Facebook className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>No posts yet.</p>
                                 </CardContent></Card>
-                            ) : posts.map(post => (
-                                <Card key={post.id} className="overflow-hidden">
-                                    <CardContent className="p-4">
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">X</div>
-                                                <div>
-                                                    <p className="text-sm font-semibold">XIRI Facility Solutions</p>
-                                                    <p className="text-xs text-muted-foreground">{formatDate(post.created_time)}</p>
+                            ) : (<div className="grid grid-cols-1 md:grid-cols-2 gap-4">{posts.map(post => (
+                                <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                                    <CardContent className="p-0">
+                                        <div className="flex">
+                                            {/* Left: Image thumbnail */}
+                                            <div className="w-40 shrink-0 bg-muted/30">
+                                                {post.full_picture ? (
+                                                    <img src={post.full_picture} alt="Post" className="w-full h-full object-cover min-h-[160px]" />
+                                                ) : (
+                                                    <div className="w-full h-full min-h-[160px] flex items-center justify-center">
+                                                        <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {/* Right: Content */}
+                                            <div className="flex-1 p-3 flex flex-col min-w-0">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-[10px]">X</div>
+                                                        <div>
+                                                            <p className="text-xs font-semibold">XIRI Facility Solutions</p>
+                                                            <p className="text-[10px] text-muted-foreground">{formatDate(post.created_time)}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-0.5">
+                                                        {post.permalink_url && (
+                                                            <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
+                                                                <a href={post.permalink_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3 h-3" /></a>
+                                                            </Button>
+                                                        )}
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                            onClick={() => handleDelete(post.id)} disabled={deleting === post.id}>
+                                                            {deleting === post.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                                {post.message && (
+                                                    <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed flex-1 mb-2">
+                                                        {post.message}
+                                                    </p>
+                                                )}
+                                                <div className="flex items-center gap-3 pt-2 border-t text-[10px] text-muted-foreground mt-auto">
+                                                    <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" />{post.likes?.summary?.total_count || 0}</span>
+                                                    <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{post.comments?.summary?.total_count || 0}</span>
+                                                    <span className="flex items-center gap-1"><Share2 className="w-3 h-3" />{post.shares?.count || 0}</span>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-1">
-                                                {post.permalink_url && (
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                                                        <a href={post.permalink_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4" /></a>
-                                                    </Button>
-                                                )}
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                    onClick={() => handleDelete(post.id)} disabled={deleting === post.id}>
-                                                    {deleting === post.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                        {post.message && (
-                                            <p className="text-sm whitespace-pre-wrap mb-3 leading-relaxed">
-                                                {post.message.length > 300 ? post.message.slice(0, 300) + '...' : post.message}
-                                            </p>
-                                        )}
-                                        {post.full_picture && (
-                                            <div className="rounded-lg overflow-hidden border mb-3">
-                                                <img src={post.full_picture} alt="Post" className="w-full max-h-[400px] object-cover" />
-                                            </div>
-                                        )}
-                                        <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
-                                            <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" />{post.likes?.summary?.total_count || 0}</span>
-                                            <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" />{post.comments?.summary?.total_count || 0}</span>
-                                            <span className="flex items-center gap-1"><Share2 className="w-3.5 h-3.5" />{post.shares?.count || 0}</span>
                                         </div>
                                     </CardContent>
                                 </Card>
-                            ))
+                            ))}</div>)
                         )}
                     </div>
                 )
@@ -715,7 +725,7 @@ export default function SocialMediaPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {drafts.map(draft => (
                                     <Card key={draft.id} className={`overflow-hidden transition-shadow hover:shadow-md ${draft.status === 'draft' ? 'border-purple-200 dark:border-purple-800' :
-                                            draft.status === 'rejected' ? 'opacity-50 border-dashed' : ''
+                                        draft.status === 'rejected' ? 'opacity-50 border-dashed' : ''
                                         }`}>
                                         <CardContent className="p-0">
                                             <div className="flex">
@@ -756,7 +766,7 @@ export default function SocialMediaPage() {
                                                                 draft.status === 'draft' ? 'secondary' :
                                                                     draft.status === 'approved' ? 'default' : 'destructive'
                                                             } className={`text-[10px] ${draft.status === 'draft' ? 'bg-purple-100 text-purple-700' :
-                                                                    draft.status === 'approved' ? 'bg-green-100 text-green-700' : ''
+                                                                draft.status === 'approved' ? 'bg-green-100 text-green-700' : ''
                                                                 }`}>
                                                                 {draft.status === 'draft' && <Sparkles className="w-2.5 h-2.5 mr-0.5" />}
                                                                 {draft.status === 'approved' && <Check className="w-2.5 h-2.5 mr-0.5" />}
@@ -764,8 +774,8 @@ export default function SocialMediaPage() {
                                                             </Badge>
                                                             {draft.audience && (
                                                                 <Badge variant="outline" className={`text-[10px] ${draft.audience === 'client'
-                                                                        ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300'
-                                                                        : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300'
+                                                                    ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300'
+                                                                    : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300'
                                                                     }`}>
                                                                     {draft.audience === 'client' ? '🏢 Client' : '🔧 Contractor'}
                                                                 </Badge>
@@ -796,13 +806,13 @@ export default function SocialMediaPage() {
                                                             className="w-full min-h-[80px] p-2 text-xs border rounded-lg bg-muted/20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
                                                         />
                                                     ) : (
-                                                        <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-4 mb-2 leading-relaxed flex-1">
+                                                        <p className="text-xs text-muted-foreground whitespace-pre-wrap mb-2 leading-relaxed flex-1">
                                                             {draft.message}
                                                         </p>
                                                     )}
 
-                                                    {/* Location tag */}
-                                                    {(draft as any).location && (
+                                                    {/* Location tag (reels only) */}
+                                                    {activeChannel === 'facebook_reels' && (draft as any).location && (
                                                         <p className="text-[10px] text-emerald-600 mb-2">📍 {(draft as any).location}</p>
                                                     )}
 
