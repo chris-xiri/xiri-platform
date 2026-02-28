@@ -644,11 +644,11 @@ export default function SocialMediaPage() {
                                     <CardContent className="p-0">
                                         <div className="flex">
                                             {/* Left: Image thumbnail */}
-                                            <div className="w-60 shrink-0 bg-muted/30">
+                                            <div className="w-80 shrink-0 bg-muted/30">
                                                 {post.full_picture ? (
-                                                    <img src={post.full_picture} alt="Post" className="w-full h-full object-cover min-h-[160px]" />
+                                                    <img src={post.full_picture} alt="Post" className="w-full aspect-square object-contain bg-muted/50" />
                                                 ) : (
-                                                    <div className="w-full h-full min-h-[160px] flex items-center justify-center">
+                                                    <div className="w-full aspect-square flex items-center justify-center">
                                                         <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
                                                     </div>
                                                 )}
@@ -730,19 +730,19 @@ export default function SocialMediaPage() {
                                         <CardContent className="p-0">
                                             <div className="flex">
                                                 {/* ── Left: Media Thumbnail ── */}
-                                                <div className="w-60 shrink-0 bg-muted/30 relative">
+                                                <div className="w-80 shrink-0 bg-muted/30 relative">
                                                     {activeChannel === 'facebook_reels' && (draft as any).videoUrl ? (
                                                         <video
                                                             src={(draft as any).videoUrl}
-                                                            className="w-full h-full object-cover min-h-[180px]"
+                                                            className="w-full aspect-square object-contain bg-muted/50"
                                                             preload="metadata"
                                                             poster={(draft as any).videoUrl + '#t=0.5'}
                                                             muted
                                                         />
                                                     ) : activeChannel === 'facebook_posts' && draft.imageUrl ? (
-                                                        <img src={draft.imageUrl} alt="Post image" className="w-full h-full object-cover min-h-[180px]" />
+                                                        <img src={draft.imageUrl} alt="Post image" className="w-full aspect-square object-contain bg-muted/50" />
                                                     ) : (
-                                                        <div className="w-full h-full min-h-[180px] flex items-center justify-center">
+                                                        <div className="w-full aspect-square flex items-center justify-center">
                                                             {activeChannel === 'facebook_reels'
                                                                 ? <Film className="w-8 h-8 text-muted-foreground/30" />
                                                                 : <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
