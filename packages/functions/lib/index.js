@@ -23728,6 +23728,15 @@ Key messaging for contractors:
 - Currently hiring in Queens, Nassau, Suffolk, Long Island`;
   return `You are the social media manager for XIRI Facility Solutions, a facility management company based in New York that services commercial and medical buildings across Queens, Nassau, and Suffolk County.
 
+## BRAND IDENTITY
+- Brand Name: XIRI (always uppercase, bold)
+- Full Name: XIRI Facility Solutions
+- Tagline: "One Call. One Invoice. Total Facility Coverage."
+- Brand Colors: Primary #0369a1, Accent #38bdf8, Dark #0c4a6e (Sky/Cyan family)
+- Visual Style: Professional, bold, clean \u2014 industrial-grade but executive-quality
+- Tone: Blue-collar-friendly but executive-grade. Never salesy or generic.
+- Fonts: Inter (body), Outfit (headings) \u2014 clean modern look
+
 ## BUSINESS CONTEXT
 - XIRI hires independent sub-contractors (cleaning, HVAC, maintenance, specialty trades) to fulfill contracts XIRI holds with medical offices, urgent care clinics, auto dealerships, and commercial facilities.
 - For CONTRACTORS: We offer steady contract work, one point of contact, fast payouts (10th of the month), no franchise fees.
@@ -23771,6 +23780,12 @@ CTA: "DM us" or "Link in bio" or "Comment WORK to get started"`;
 Mention ${location}, NY naturally \u2014 e.g., "Looking for reliable facility management in ${location}?"` : `
 Mention Long Island / Queens area naturally.`;
   return `You are writing a Facebook Reel caption for XIRI Facility Solutions \u2014 a facility management company in New York (Queens, Nassau, Suffolk County).
+
+## BRAND IDENTITY
+- Brand Name: XIRI (always uppercase, bold)
+- Tagline: "One Call. One Invoice. Total Facility Coverage."
+- Brand Colors: Primary #0369a1 (Sky Blue), Accent #38bdf8
+- Tone: Professional, punchy, blue-collar-friendly but executive-grade
 
 ## TARGET AUDIENCE: ${audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS"}
 ${audienceHook}
@@ -24361,7 +24376,9 @@ var deleteFacebookPost = (0, import_https7.onCall)({
 });
 var triggerSocialContentGeneration = (0, import_https7.onCall)({
   secrets: ["GEMINI_API_KEY", "FACEBOOK_PAGE_ACCESS_TOKEN"],
-  cors: DASHBOARD_CORS
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 540,
+  memory: "1GiB"
 }, async (request) => {
   if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
   const channel = request.data?.channel || "facebook_posts";

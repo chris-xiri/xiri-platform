@@ -32,6 +32,8 @@ export async function generatePostImage(
     audience: "client" | "contractor",
 ): Promise<ImagenResult | null> {
     try {
+        console.log(`[Imagen] Starting image generation for ${audience} post...`);
+
         const auth = new GoogleAuth({
             scopes: ["https://www.googleapis.com/auth/cloud-platform"],
         });
@@ -51,6 +53,8 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
 
         const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/imagen-3.0-generate-002:predict`;
 
+        console.log(`[Imagen] Calling endpoint: ${endpoint}`);
+
         const response = await client.request({
             url: endpoint,
             method: "POST",
@@ -64,15 +68,20 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
             },
         });
 
+        console.log(`[Imagen] API response status: ${(response as any).status}`);
         const predictions = (response.data as any)?.predictions;
+        console.log(`[Imagen] Predictions count: ${predictions?.length || 0}`);
+
         if (!predictions || predictions.length === 0) {
             console.error("[Imagen] No predictions returned");
+            console.error("[Imagen] Response data keys:", JSON.stringify(Object.keys(response.data as any || {})));
             return null;
         }
 
         const imageBase64 = predictions[0].bytesBase64Encoded;
         if (!imageBase64) {
-            console.error("[Imagen] No image data returned");
+            console.error("[Imagen] No image data in prediction");
+            console.error("[Imagen] Prediction keys:", JSON.stringify(Object.keys(predictions[0])));
             return null;
         }
 
@@ -99,6 +108,9 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
         return { imageUrl, storagePath: fileName };
     } catch (err: any) {
         console.error("[Imagen] Error generating image:", err.message);
+        if (err.response?.data) {
+            console.error("[Imagen] API error details:", JSON.stringify(err.response.data).slice(0, 1000));
+        }
         return null;
     }
 }

@@ -16,7 +16,6 @@ import { v4 as uuidv4 } from "uuid";
 const PROJECT_ID = "xiri-facility-solutions";
 const LOCATION = "us-central1";
 const BUCKET = `${PROJECT_ID}.firebasestorage.app`;
-const GCS_OUTPUT_PREFIX = `gs://${BUCKET}/social-videos`;
 
 interface VeoResult {
     videoUrl: string;           // Public HTTPS URL
@@ -75,25 +74,22 @@ Duration: 8 seconds. Smooth camera movements. Professional quality.`;
 
         console.log(`[Veo] Starting video generation for ${audience} reel${location ? ` in ${location}` : ""}...`);
 
-        const outputId = uuidv4();
-        const outputGcsUri = `${GCS_OUTPUT_PREFIX}/${outputId}`;
-
         // Start the video generation
         let operation = await client.models.generateVideos({
             model: "veo-3.0-generate-001",
             prompt: videoPrompt,
             config: {
                 aspectRatio: "9:16",
-                outputGcsUri: outputGcsUri,
+                numberOfVideos: 1,
             },
         });
 
-        // Poll until complete (Veo takes ~2-3 minutes)
+        // Poll until complete using the correct SDK method
         let pollCount = 0;
         const maxPolls = 30; // 30 * 15s = 7.5 min max wait
         while (!operation.done && pollCount < maxPolls) {
             await new Promise(resolve => setTimeout(resolve, 15000));
-            operation = await client.operations.get({ operation });
+            operation = await client.operations.getVideosOperation({ operation });
             pollCount++;
             console.log(`[Veo] Poll ${pollCount}/${maxPolls} — ${operation.done ? "DONE" : "generating..."}`);
         }
@@ -103,30 +99,85 @@ Duration: 8 seconds. Smooth camera movements. Professional quality.`;
             return null;
         }
 
-        if (!operation.response?.generatedVideos?.[0]?.video?.uri) {
+        // Debug: log the full response structure
+        console.log("[Veo] Response keys:", JSON.stringify(Object.keys(operation.response || {})));
+        const generatedVideos = operation.response?.generatedVideos;
+        console.log("[Veo] generatedVideos count:", generatedVideos?.length || 0);
+        if (generatedVideos?.[0]) {
+            console.log("[Veo] First video keys:", JSON.stringify(Object.keys(generatedVideos[0])));
+            if (generatedVideos[0].video) {
+                console.log("[Veo] Video object keys:", JSON.stringify(Object.keys(generatedVideos[0].video)));
+            }
+        }
+
+        if (!generatedVideos?.[0]?.video) {
             console.error("[Veo] No video generated in response");
+            console.error("[Veo] Full response:", JSON.stringify(operation.response, null, 2).slice(0, 2000));
             return null;
         }
 
-        const videoGcsUri = operation.response.generatedVideos[0].video.uri;
-        console.log(`[Veo] Video generated at: ${videoGcsUri}`);
+        const video = generatedVideos[0].video;
 
-        // The video is already in our GCS bucket — make it publicly accessible
-        const gcsPath = videoGcsUri.replace(`gs://${BUCKET}/`, "");
-        const bucket = getStorage().bucket(BUCKET);
-        const file = bucket.file(gcsPath);
+        // Try to get video via URI (Vertex AI with outputGcsUri)
+        if (video.uri) {
+            console.log(`[Veo] Video URI: ${video.uri}`);
+            const gcsPath = video.uri.replace(`gs://${BUCKET}/`, "");
+            const bucket = getStorage().bucket(BUCKET);
+            const file = bucket.file(gcsPath);
+            await file.makePublic();
+            const videoUrl = `https://storage.googleapis.com/${BUCKET}/${gcsPath}`;
+            console.log(`[Veo] Video publicly available at: ${videoUrl}`);
+            return { videoUrl, storagePath: gcsPath, durationSeconds: 8 };
+        }
 
-        await file.makePublic();
-        const videoUrl = `https://storage.googleapis.com/${BUCKET}/${gcsPath}`;
+        // Fallback: download via SDK and upload to our bucket
+        if (video.videoBytes) {
+            console.log("[Veo] Using videoBytes fallback (downloading from SDK)...");
+            const videoBuffer = Buffer.from(video.videoBytes, "base64");
+            const fileName = `social-videos/${uuidv4()}.mp4`;
+            const bucket = getStorage().bucket(BUCKET);
+            const file = bucket.file(fileName);
+            await file.save(videoBuffer, {
+                metadata: {
+                    contentType: "video/mp4",
+                    metadata: { firebaseStorageDownloadTokens: uuidv4() },
+                },
+            });
+            await file.makePublic();
+            const videoUrl = `https://storage.googleapis.com/${BUCKET}/${fileName}`;
+            console.log(`[Veo] Video uploaded via bytes fallback: ${videoUrl}`);
+            return { videoUrl, storagePath: fileName, durationSeconds: 8 };
+        }
 
-        console.log(`[Veo] Video publicly available at: ${videoUrl}`);
-        return {
-            videoUrl,
-            storagePath: gcsPath,
-            durationSeconds: 8, // Veo default
-        };
+        // Fallback: try using files.download from SDK
+        try {
+            console.log("[Veo] Trying files.download fallback...");
+            const downloaded = await client.files.download({ file: video });
+            if (downloaded) {
+                const videoBuffer = Buffer.from(await (downloaded as any).arrayBuffer());
+                const fileName = `social-videos/${uuidv4()}.mp4`;
+                const bucket = getStorage().bucket(BUCKET);
+                const file = bucket.file(fileName);
+                await file.save(videoBuffer, {
+                    metadata: {
+                        contentType: "video/mp4",
+                        metadata: { firebaseStorageDownloadTokens: uuidv4() },
+                    },
+                });
+                await file.makePublic();
+                const videoUrl = `https://storage.googleapis.com/${BUCKET}/${fileName}`;
+                console.log(`[Veo] Video uploaded via download fallback: ${videoUrl}`);
+                return { videoUrl, storagePath: fileName, durationSeconds: 8 };
+            }
+        } catch (dlErr: any) {
+            console.error("[Veo] files.download fallback failed:", dlErr.message);
+        }
+
+        console.error("[Veo] No usable video data found in response");
+        return null;
     } catch (err: any) {
         console.error("[Veo] Error generating video:", err.message);
+        console.error("[Veo] Full error:", JSON.stringify(err, null, 2).slice(0, 1000));
         return null;
     }
 }
