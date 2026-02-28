@@ -15,7 +15,6 @@ import { v4 as uuidv4 } from "uuid";
 
 const PROJECT_ID = "xiri-facility-solutions";
 const LOCATION = "us-central1";
-const BUCKET = `${PROJECT_ID}.appspot.com`;
 
 interface VeoResult {
     videoUrl: string;           // Public HTTPS URL
@@ -121,11 +120,12 @@ Duration: 8 seconds. Smooth camera movements. Professional quality.`;
         // Try to get video via URI (Vertex AI with outputGcsUri)
         if (video.uri) {
             console.log(`[Veo] Video URI: ${video.uri}`);
-            const gcsPath = video.uri.replace(`gs://${BUCKET}/`, "");
-            const bucket = getStorage().bucket(BUCKET);
-            const file = bucket.file(gcsPath);
+            const storageBucket = getStorage().bucket();
+            const bucketName = storageBucket.name;
+            const gcsPath = video.uri.replace(`gs://${bucketName}/`, "");
+            const file = storageBucket.file(gcsPath);
             await file.makePublic();
-            const videoUrl = `https://storage.googleapis.com/${BUCKET}/${gcsPath}`;
+            const videoUrl = `https://storage.googleapis.com/${bucketName}/${gcsPath}`;
             console.log(`[Veo] Video publicly available at: ${videoUrl}`);
             return { videoUrl, storagePath: gcsPath, durationSeconds: 8 };
         }
@@ -135,8 +135,9 @@ Duration: 8 seconds. Smooth camera movements. Professional quality.`;
             console.log("[Veo] Using videoBytes fallback (downloading from SDK)...");
             const videoBuffer = Buffer.from(video.videoBytes, "base64");
             const fileName = `social-videos/${uuidv4()}.mp4`;
-            const bucket = getStorage().bucket(BUCKET);
-            const file = bucket.file(fileName);
+            const storageBucket = getStorage().bucket();
+            const bucketName = storageBucket.name;
+            const file = storageBucket.file(fileName);
             await file.save(videoBuffer, {
                 metadata: {
                     contentType: "video/mp4",
@@ -144,7 +145,7 @@ Duration: 8 seconds. Smooth camera movements. Professional quality.`;
                 },
             });
             await file.makePublic();
-            const videoUrl = `https://storage.googleapis.com/${BUCKET}/${fileName}`;
+            const videoUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
             console.log(`[Veo] Video uploaded via bytes fallback: ${videoUrl}`);
             return { videoUrl, storagePath: fileName, durationSeconds: 8 };
         }

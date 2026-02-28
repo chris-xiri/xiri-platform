@@ -17,7 +17,6 @@ import { v4 as uuidv4 } from "uuid";
 
 const PROJECT_ID = "xiri-facility-solutions";
 const LOCATION = "us-central1";
-const BUCKET = `${PROJECT_ID}.appspot.com`;
 
 interface ImagenResult {
     imageUrl: string;        // Public URL
@@ -88,8 +87,9 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
         // Upload to Cloud Storage
         const imageBuffer = Buffer.from(imageBase64, "base64");
         const fileName = `social-images/${uuidv4()}.png`;
-        const bucket = getStorage().bucket(BUCKET);
-        const file = bucket.file(fileName);
+        const storageBucket = getStorage().bucket();
+        const bucketName = storageBucket.name;
+        const file = storageBucket.file(fileName);
 
         await file.save(imageBuffer, {
             metadata: {
@@ -102,7 +102,7 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
 
         // Make file publicly readable
         await file.makePublic();
-        const imageUrl = `https://storage.googleapis.com/${BUCKET}/${fileName}`;
+        const imageUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
 
         console.log(`[Imagen] Image generated and uploaded: ${imageUrl}`);
         return { imageUrl, storagePath: fileName };

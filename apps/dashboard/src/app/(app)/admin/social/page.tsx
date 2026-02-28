@@ -170,6 +170,13 @@ export default function SocialMediaPage() {
                 id: doc.id,
                 ...doc.data(),
             } as DraftPost));
+            // Sort: draft/approved first (by scheduledFor asc), rejected last
+            items.sort((a, b) => {
+                const aRejected = a.status === 'rejected' ? 1 : 0;
+                const bRejected = b.status === 'rejected' ? 1 : 0;
+                if (aRejected !== bRejected) return aRejected - bRejected;
+                return 0; // preserve Firestore ordering within each group
+            });
             setDrafts(items);
         } catch (err: any) {
             console.error('Error fetching drafts:', err);

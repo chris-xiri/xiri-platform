@@ -23541,7 +23541,7 @@ var import_storage = require("firebase-admin/storage");
 var import_uuid2 = require("uuid");
 var PROJECT_ID = "xiri-facility-solutions";
 var LOCATION = "us-central1";
-var BUCKET = `${PROJECT_ID}.firebasestorage.app`;
+var BUCKET = `${PROJECT_ID}.appspot.com`;
 async function generatePostImage(postMessage, audience) {
   try {
     console.log(`[Imagen] Starting image generation for ${audience} post...`);
@@ -23615,7 +23615,7 @@ var import_storage2 = require("firebase-admin/storage");
 var import_uuid3 = require("uuid");
 var PROJECT_ID2 = "xiri-facility-solutions";
 var LOCATION2 = "us-central1";
-var BUCKET2 = `${PROJECT_ID2}.firebasestorage.app`;
+var BUCKET2 = `${PROJECT_ID2}.appspot.com`;
 async function generateReelVideo(caption, audience, location) {
   try {
     const client = new import_genai.GoogleGenAI({
@@ -23712,29 +23712,7 @@ Duration: 8 seconds. Smooth camera movements. Professional quality.`;
       console.log(`[Veo] Video uploaded via bytes fallback: ${videoUrl}`);
       return { videoUrl, storagePath: fileName, durationSeconds: 8 };
     }
-    try {
-      console.log("[Veo] Trying files.download fallback...");
-      const downloaded = await client.files.download({ file: video });
-      if (downloaded) {
-        const videoBuffer = Buffer.from(await downloaded.arrayBuffer());
-        const fileName = `social-videos/${(0, import_uuid3.v4)()}.mp4`;
-        const bucket = (0, import_storage2.getStorage)().bucket(BUCKET2);
-        const file = bucket.file(fileName);
-        await file.save(videoBuffer, {
-          metadata: {
-            contentType: "video/mp4",
-            metadata: { firebaseStorageDownloadTokens: (0, import_uuid3.v4)() }
-          }
-        });
-        await file.makePublic();
-        const videoUrl = `https://storage.googleapis.com/${BUCKET2}/${fileName}`;
-        console.log(`[Veo] Video uploaded via download fallback: ${videoUrl}`);
-        return { videoUrl, storagePath: fileName, durationSeconds: 8 };
-      }
-    } catch (dlErr) {
-      console.error("[Veo] files.download fallback failed:", dlErr.message);
-    }
-    console.error("[Veo] No usable video data found in response");
+    console.error("[Veo] No usable video data found in response (no uri or videoBytes)");
     return null;
   } catch (err) {
     console.error("[Veo] Error generating video:", err.message);
