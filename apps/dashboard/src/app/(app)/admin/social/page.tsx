@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { httpsCallable } from 'firebase/functions';
 import { doc, getDoc } from 'firebase/firestore';
 import { functions, db } from '@/lib/firebase';
@@ -96,10 +97,28 @@ const CADENCE_OPTIONS = [
 // ── Main Page ──
 
 export default function SocialMediaPage() {
-    // Channel state
-    const [activeChannel, setActiveChannel] = useState<Channel>('facebook_posts');
-    // Tab state
-    const [activeTab, setActiveTab] = useState<'feed' | 'drafts' | 'settings'>('feed');
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+
+    // Helper to update URL query params without full navigation
+    const updateQueryParams = useCallback((updates: Record<string, string>) => {
+        const params = new URLSearchParams(searchParams.toString());
+        Object.entries(updates).forEach(([key, value]) => params.set(key, value));
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }, [searchParams, router, pathname]);
+
+    // Channel state — persisted in URL as ?channel=
+    const activeChannel = (searchParams.get('channel') as Channel) || 'facebook_posts';
+    const setActiveChannel = useCallback((ch: Channel) => {
+        updateQueryParams({ channel: ch });
+    }, [updateQueryParams]);
+
+    // Tab state — persisted in URL as ?subtab=
+    const activeTab = (searchParams.get('subtab') as 'feed' | 'drafts' | 'settings') || 'feed';
+    const setActiveTab = useCallback((tab: 'feed' | 'drafts' | 'settings') => {
+        updateQueryParams({ subtab: tab });
+    }, [updateQueryParams]);
 
     // Posts state
     const [posts, setPosts] = useState<FacebookPost[]>([]);
@@ -693,160 +712,146 @@ export default function SocialMediaPage() {
                                 </CardContent>
                             </Card>
                         ) : (
-                            <div className={activeChannel === 'facebook_reels' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-4'}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {drafts.map(draft => (
-                                    <Card key={draft.id} className={`overflow-hidden ${draft.status === 'draft' ? 'border-purple-200 dark:border-purple-800' : ''}`}>
-                                        <CardContent className="p-4">
-                                            {/* Header badges */}
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <Badge variant={
-                                                        draft.status === 'draft' ? 'secondary' :
-                                                            draft.status === 'approved' ? 'default' : 'destructive'
-                                                    } className={
-                                                        draft.status === 'draft' ? 'bg-purple-100 text-purple-700' :
-                                                            draft.status === 'approved' ? 'bg-green-100 text-green-700' : ''
-                                                    }>
-                                                        {draft.status === 'draft' && <Sparkles className="w-3 h-3 mr-1" />}
-                                                        {draft.status === 'approved' && <Check className="w-3 h-3 mr-1" />}
-                                                        {draft.status}
-                                                    </Badge>
-                                                    {draft.audience && (
-                                                        <Badge variant="outline" className={`text-[10px] ${draft.audience === 'client'
-                                                            ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300'
-                                                            : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300'
-                                                            }`}>
-                                                            {draft.audience === 'client' ? '🏢 Client' : '🔧 Contractor'}
-                                                        </Badge>
-                                                    )}
-                                                    {(draft as any).location && (
-                                                        <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300">
-                                                            📍 {(draft as any).location}
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                {/* Deadline countdown */}
-                                                {draft.status === 'draft' && draft.scheduledFor && (() => {
-                                                    const remaining = getTimeRemaining(draft.scheduledFor);
-                                                    if (!remaining) return null;
-                                                    return (
-                                                        <div className={`text-xs px-2 py-1 rounded-md flex items-center gap-1 font-medium shrink-0 ${remaining.urgent
-                                                            ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                                                            : remaining.hours < 12
-                                                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-                                                                : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300'
-                                                            }`}>
-                                                            <Timer className="w-3 h-3" />
-                                                            {remaining.text}
+                                    <Card key={draft.id} className={`overflow-hidden transition-shadow hover:shadow-md ${draft.status === 'draft' ? 'border-purple-200 dark:border-purple-800' :
+                                            draft.status === 'rejected' ? 'opacity-50 border-dashed' : ''
+                                        }`}>
+                                        <CardContent className="p-0">
+                                            <div className="flex">
+                                                {/* ── Left: Media Thumbnail ── */}
+                                                <div className="w-40 shrink-0 bg-muted/30 relative">
+                                                    {activeChannel === 'facebook_reels' && (draft as any).videoUrl ? (
+                                                        <video
+                                                            src={(draft as any).videoUrl}
+                                                            className="w-full h-full object-cover min-h-[180px]"
+                                                            preload="metadata"
+                                                            poster={(draft as any).videoUrl + '#t=0.5'}
+                                                            muted
+                                                        />
+                                                    ) : activeChannel === 'facebook_posts' && draft.imageUrl ? (
+                                                        <img src={draft.imageUrl} alt="Post image" className="w-full h-full object-cover min-h-[180px]" />
+                                                    ) : (
+                                                        <div className="w-full h-full min-h-[180px] flex items-center justify-center">
+                                                            {activeChannel === 'facebook_reels'
+                                                                ? <Film className="w-8 h-8 text-muted-foreground/30" />
+                                                                : <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
+                                                            }
                                                         </div>
-                                                    );
-                                                })()}
-                                            </div>
-
-                                            {/* Video Preview (Reels) */}
-                                            {activeChannel === 'facebook_reels' && (draft as any).videoUrl && (
-                                                <div className="mb-3 rounded-lg overflow-hidden border bg-black aspect-[9/16] max-h-[320px] relative group">
-                                                    <video
-                                                        src={(draft as any).videoUrl}
-                                                        className="w-full h-full object-cover"
-                                                        controls
-                                                        preload="metadata"
-                                                        poster={(draft as any).videoUrl + '#t=0.5'}
-                                                    />
+                                                    )}
+                                                    {/* Duration badge for reels */}
                                                     {(draft as any).videoDurationSeconds && (
-                                                        <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
+                                                        <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
                                                             {(draft as any).videoDurationSeconds}s
                                                         </span>
                                                     )}
                                                 </div>
-                                            )}
 
-                                            {/* Image Preview (Posts) */}
-                                            {activeChannel === 'facebook_posts' && draft.imageUrl && (
-                                                <div className="mb-3 rounded-lg overflow-hidden border">
-                                                    <img src={draft.imageUrl} alt="AI-generated post image" className="w-full h-48 object-cover" />
-                                                </div>
-                                            )}
+                                                {/* ── Right: Content + Actions ── */}
+                                                <div className="flex-1 p-3 flex flex-col min-w-0">
+                                                    {/* Top row: badges + countdown */}
+                                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <Badge variant={
+                                                                draft.status === 'draft' ? 'secondary' :
+                                                                    draft.status === 'approved' ? 'default' : 'destructive'
+                                                            } className={`text-[10px] ${draft.status === 'draft' ? 'bg-purple-100 text-purple-700' :
+                                                                    draft.status === 'approved' ? 'bg-green-100 text-green-700' : ''
+                                                                }`}>
+                                                                {draft.status === 'draft' && <Sparkles className="w-2.5 h-2.5 mr-0.5" />}
+                                                                {draft.status === 'approved' && <Check className="w-2.5 h-2.5 mr-0.5" />}
+                                                                {draft.status}
+                                                            </Badge>
+                                                            {draft.audience && (
+                                                                <Badge variant="outline" className={`text-[10px] ${draft.audience === 'client'
+                                                                        ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300'
+                                                                        : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300'
+                                                                    }`}>
+                                                                    {draft.audience === 'client' ? '🏢 Client' : '🔧 Contractor'}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        {draft.status === 'draft' && draft.scheduledFor && (() => {
+                                                            const remaining = getTimeRemaining(draft.scheduledFor);
+                                                            if (!remaining) return null;
+                                                            return (
+                                                                <div className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5 font-medium shrink-0 ${remaining.urgent
+                                                                    ? 'bg-red-100 text-red-700'
+                                                                    : remaining.hours < 12
+                                                                        ? 'bg-amber-100 text-amber-700'
+                                                                        : 'bg-blue-50 text-blue-600'
+                                                                    }`}>
+                                                                    <Timer className="w-2.5 h-2.5" />
+                                                                    {remaining.text}
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </div>
 
-                                            {/* Caption / Message */}
-                                            {editingDraft === draft.id ? (
-                                                <textarea
-                                                    value={editedMessage}
-                                                    onChange={(e) => setEditedMessage(e.target.value)}
-                                                    className="w-full min-h-[100px] p-3 text-sm border rounded-lg bg-muted/20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-                                                />
-                                            ) : (
-                                                <p className={`text-sm whitespace-pre-wrap mb-3 leading-relaxed ${activeChannel === 'facebook_reels' ? 'line-clamp-4' : ''}`}>
-                                                    {draft.message}
-                                                </p>
-                                            )}
-
-                                            {/* Location Tag Input */}
-                                            {draft.status === 'draft' && (
-                                                <div className="mb-3">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="📍 Add location (e.g. New Hyde Park)"
-                                                        defaultValue={(draft as any).location || ''}
-                                                        className="w-full px-3 py-1.5 text-xs border rounded-lg bg-muted/20 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                                        onBlur={async (e) => {
-                                                            const loc = e.target.value.trim();
-                                                            if (loc !== ((draft as any).location || '')) {
-                                                                const { doc, updateDoc } = await import('firebase/firestore');
-                                                                await updateDoc(doc(db, 'social_posts', draft.id), { location: loc || null });
-                                                                fetchDrafts();
-                                                            }
-                                                        }}
-                                                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {/* Actions */}
-                                            {draft.status === 'draft' && (
-                                                <div className="flex gap-2 pt-2 border-t flex-wrap">
-                                                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleReview(draft.id, 'approve')}
-                                                        disabled={reviewingId === draft.id}>
-                                                        {reviewingId === draft.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
-                                                        Approve
-                                                    </Button>
+                                                    {/* Message preview */}
                                                     {editingDraft === draft.id ? (
-                                                        <Button size="sm" variant="outline" onClick={() => { setEditingDraft(null); setEditedMessage(''); }}>
-                                                            Cancel
-                                                        </Button>
+                                                        <textarea
+                                                            value={editedMessage}
+                                                            onChange={(e) => setEditedMessage(e.target.value)}
+                                                            className="w-full min-h-[80px] p-2 text-xs border rounded-lg bg-muted/20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+                                                        />
                                                     ) : (
-                                                        <Button size="sm" variant="outline" onClick={() => { setEditingDraft(draft.id); setEditedMessage(draft.message); }}>
-                                                            <Edit3 className="w-4 h-4 mr-1" /> Edit
-                                                        </Button>
+                                                        <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-4 mb-2 leading-relaxed flex-1">
+                                                            {draft.message}
+                                                        </p>
                                                     )}
-                                                    <Button size="sm" variant="destructive" onClick={() => handleReview(draft.id, 'reject')}
-                                                        disabled={reviewingId === draft.id}>
-                                                        <X className="w-4 h-4 mr-1" /> Reject
-                                                    </Button>
-                                                    {/* Reuse Button (clone with new location) */}
-                                                    {(draft as any).videoUrl && (
-                                                        <Button size="sm" variant="outline" className="ml-auto text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                                                            onClick={async () => {
-                                                                const newLoc = prompt('Enter location for the reused reel (e.g. Great Neck, NY):');
-                                                                if (!newLoc) return;
-                                                                const { collection, addDoc } = await import('firebase/firestore');
-                                                                await addDoc(collection(db, 'social_posts'), {
-                                                                    ...draft,
-                                                                    id: undefined,
-                                                                    location: newLoc,
-                                                                    status: 'draft',
-                                                                    reusedFrom: draft.id,
-                                                                    reviewedBy: null,
-                                                                    reviewedAt: null,
-                                                                    createdAt: new Date(),
-                                                                });
-                                                                fetchDrafts();
-                                                            }}>
-                                                            ♻️ Reuse
-                                                        </Button>
+
+                                                    {/* Location tag */}
+                                                    {(draft as any).location && (
+                                                        <p className="text-[10px] text-emerald-600 mb-2">📍 {(draft as any).location}</p>
+                                                    )}
+
+                                                    {/* Actions */}
+                                                    {draft.status === 'draft' && (
+                                                        <div className="flex gap-1.5 pt-2 border-t mt-auto">
+                                                            <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 px-2" onClick={() => handleReview(draft.id, 'approve')}
+                                                                disabled={reviewingId === draft.id}>
+                                                                {reviewingId === draft.id ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <Check className="w-3 h-3 mr-0.5" />}
+                                                                Approve
+                                                            </Button>
+                                                            {editingDraft === draft.id ? (
+                                                                <Button size="sm" className="h-7 text-xs px-2" variant="outline" onClick={() => { setEditingDraft(null); setEditedMessage(''); }}>
+                                                                    Cancel
+                                                                </Button>
+                                                            ) : (
+                                                                <Button size="sm" className="h-7 text-xs px-2" variant="outline" onClick={() => { setEditingDraft(draft.id); setEditedMessage(draft.message); }}>
+                                                                    <Edit3 className="w-3 h-3 mr-0.5" /> Edit
+                                                                </Button>
+                                                            )}
+                                                            <Button size="sm" className="h-7 text-xs px-2" variant="destructive" onClick={() => handleReview(draft.id, 'reject')}
+                                                                disabled={reviewingId === draft.id}>
+                                                                <X className="w-3 h-3 mr-0.5" /> Reject
+                                                            </Button>
+                                                            {(draft as any).videoUrl && (
+                                                                <Button size="sm" className="h-7 text-xs px-2 ml-auto text-emerald-600 border-emerald-200 hover:bg-emerald-50" variant="outline"
+                                                                    onClick={async () => {
+                                                                        const newLoc = prompt('Enter location for the reused reel (e.g. Great Neck, NY):');
+                                                                        if (!newLoc) return;
+                                                                        const { collection, addDoc } = await import('firebase/firestore');
+                                                                        await addDoc(collection(db, 'social_posts'), {
+                                                                            ...draft,
+                                                                            id: undefined,
+                                                                            location: newLoc,
+                                                                            status: 'draft',
+                                                                            reusedFrom: draft.id,
+                                                                            reviewedBy: null,
+                                                                            reviewedAt: null,
+                                                                            createdAt: new Date(),
+                                                                        });
+                                                                        fetchDrafts();
+                                                                    }}>
+                                                                    ♻️ Reuse
+                                                                </Button>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </div>
-                                            )}
+                                            </div>
                                         </CardContent>
                                     </Card>
                                 ))}
