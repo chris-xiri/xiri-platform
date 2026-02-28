@@ -6,7 +6,7 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, X, Eye, Briefcase, Zap, Send, Phone, Mail, MousePointerClick, MailOpen, MailCheck, AlertTriangle, Ban } from "lucide-react";
+import { Check, X, Eye, Briefcase, Zap, Send, Phone, Mail, MousePointerClick, MailOpen, MailCheck, AlertTriangle, Ban, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { getStatusColor, getScoreColor, getStatusLabel } from "./utils";
 import { useState } from "react";
@@ -136,6 +136,13 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                 <Link href={detailLink} onClick={handleRowClick} className="block group cursor-pointer">
                     <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-1.5">
+                            {/* "New" badge for organic/SEO entries */}
+                            {((vendor.status || '').toLowerCase() === 'new_lead' ||
+                                ((vendor.status || 'pending_review').toLowerCase() === 'pending_review' && !vendor.outreachStatus)) && (
+                                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-emerald-200 px-1 py-0 h-4 text-[9px] gap-0.5 animate-pulse">
+                                        <Sparkles className="w-2.5 h-2.5" />New
+                                    </Badge>
+                                )}
                             {!isRecruitmentMode && vendor.preferredLanguage === 'es' ? (
                                 <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 px-1 py-0 h-4 text-[9px]">ES</Badge>
                             ) : null}

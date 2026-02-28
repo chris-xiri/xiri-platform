@@ -56,6 +56,7 @@ function pct(n: number, d: number): string { return d === 0 ? '—' : `${Math.ro
 
 const STATUS_TABS = [
     { key: 'all', label: 'All', icon: Users, color: '' },
+    { key: 'new_lead', label: 'New', icon: Star, color: 'text-emerald-600' },
     { key: 'pending_review', label: 'Sourced', icon: Users, color: 'text-sky-600' },
     { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-blue-600' },
     { key: 'awaiting_onboarding', label: 'Awaiting Form', icon: Mail, color: 'text-indigo-600' },
