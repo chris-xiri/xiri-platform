@@ -5,7 +5,9 @@ dotenv.config();
 
 // Initialize Admin only once
 if (!admin.apps.length) {
-    admin.initializeApp();
+    admin.initializeApp({
+        storageBucket: "xiri-facility-solutions.firebasestorage.app",
+    });
 }
 
 export const db = admin.firestore();

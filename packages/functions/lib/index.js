@@ -23541,7 +23541,6 @@ var import_storage = require("firebase-admin/storage");
 var import_uuid2 = require("uuid");
 var PROJECT_ID = "xiri-facility-solutions";
 var LOCATION = "us-central1";
-var BUCKET = `${PROJECT_ID}.appspot.com`;
 async function generatePostImage(postMessage, audience) {
   try {
     console.log(`[Imagen] Starting image generation for ${audience} post...`);
@@ -23586,8 +23585,9 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
     }
     const imageBuffer = Buffer.from(imageBase64, "base64");
     const fileName = `social-images/${(0, import_uuid2.v4)()}.png`;
-    const bucket = (0, import_storage.getStorage)().bucket(BUCKET);
-    const file = bucket.file(fileName);
+    const storageBucket = (0, import_storage.getStorage)().bucket();
+    const bucketName = storageBucket.name;
+    const file = storageBucket.file(fileName);
     await file.save(imageBuffer, {
       metadata: {
         contentType: "image/png",
@@ -23597,7 +23597,7 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
       }
     });
     await file.makePublic();
-    const imageUrl = `https://storage.googleapis.com/${BUCKET}/${fileName}`;
+    const imageUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
     console.log(`[Imagen] Image generated and uploaded: ${imageUrl}`);
     return { imageUrl, storagePath: fileName };
   } catch (err) {
@@ -23615,7 +23615,6 @@ var import_storage2 = require("firebase-admin/storage");
 var import_uuid3 = require("uuid");
 var PROJECT_ID2 = "xiri-facility-solutions";
 var LOCATION2 = "us-central1";
-var BUCKET2 = `${PROJECT_ID2}.appspot.com`;
 async function generateReelVideo(caption, audience, location) {
   try {
     const client = new import_genai.GoogleGenAI({
@@ -23687,11 +23686,12 @@ Duration: 8 seconds. Smooth camera movements. Professional quality.`;
     const video = generatedVideos[0].video;
     if (video.uri) {
       console.log(`[Veo] Video URI: ${video.uri}`);
-      const gcsPath = video.uri.replace(`gs://${BUCKET2}/`, "");
-      const bucket = (0, import_storage2.getStorage)().bucket(BUCKET2);
-      const file = bucket.file(gcsPath);
+      const storageBucket = (0, import_storage2.getStorage)().bucket();
+      const bucketName = storageBucket.name;
+      const gcsPath = video.uri.replace(`gs://${bucketName}/`, "");
+      const file = storageBucket.file(gcsPath);
       await file.makePublic();
-      const videoUrl = `https://storage.googleapis.com/${BUCKET2}/${gcsPath}`;
+      const videoUrl = `https://storage.googleapis.com/${bucketName}/${gcsPath}`;
       console.log(`[Veo] Video publicly available at: ${videoUrl}`);
       return { videoUrl, storagePath: gcsPath, durationSeconds: 8 };
     }
@@ -23699,8 +23699,9 @@ Duration: 8 seconds. Smooth camera movements. Professional quality.`;
       console.log("[Veo] Using videoBytes fallback (downloading from SDK)...");
       const videoBuffer = Buffer.from(video.videoBytes, "base64");
       const fileName = `social-videos/${(0, import_uuid3.v4)()}.mp4`;
-      const bucket = (0, import_storage2.getStorage)().bucket(BUCKET2);
-      const file = bucket.file(fileName);
+      const storageBucket = (0, import_storage2.getStorage)().bucket();
+      const bucketName = storageBucket.name;
+      const file = storageBucket.file(fileName);
       await file.save(videoBuffer, {
         metadata: {
           contentType: "video/mp4",
@@ -23708,7 +23709,7 @@ Duration: 8 seconds. Smooth camera movements. Professional quality.`;
         }
       });
       await file.makePublic();
-      const videoUrl = `https://storage.googleapis.com/${BUCKET2}/${fileName}`;
+      const videoUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
       console.log(`[Veo] Video uploaded via bytes fallback: ${videoUrl}`);
       return { videoUrl, storagePath: fileName, durationSeconds: 8 };
     }
