@@ -313,6 +313,18 @@ export default function SocialMediaPage() {
         }
     };
 
+    const handleDeleteDraft = async (postId: string) => {
+        if (!confirm('Delete this draft permanently?')) return;
+        try {
+            const { doc, deleteDoc } = await import('firebase/firestore');
+            await deleteDoc(doc(db, 'social_posts', postId));
+            setDrafts(prev => prev.filter(d => d.id !== postId));
+            setSuccessMessage('Draft deleted');
+        } catch (err: any) {
+            setErrorMessage('Failed to delete draft');
+        }
+    };
+
     const handleGenerate = async () => {
         setGenerating(true);
         setGenerateElapsed(0);
@@ -946,6 +958,15 @@ export default function SocialMediaPage() {
                                                                         ♻️ Reuse
                                                                     </Button>
                                                                 )}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Delete button for rejected drafts */}
+                                                        {draft.status === 'rejected' && (
+                                                            <div className="flex gap-1.5 pt-2 border-t mt-auto">
+                                                                <Button size="sm" className="h-7 text-xs px-2" variant="destructive" onClick={() => handleDeleteDraft(draft.id)}>
+                                                                    <Trash2 className="w-3 h-3 mr-0.5" /> Delete
+                                                                </Button>
                                                             </div>
                                                         )}
                                                     </div>
