@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "xiri-facility-solutions"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }
