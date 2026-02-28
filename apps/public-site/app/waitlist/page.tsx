@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -15,6 +15,21 @@ function WaitlistContent() {
     const [sqft, setSqft] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const visitLogged = useRef(false);
+
+    // Log the visit + zip code immediately on page load (before form submission)
+    useEffect(() => {
+        if (visitLogged.current) return;
+        visitLogged.current = true;
+
+        addDoc(collection(db, "waitlist_visits"), {
+            zipCode: zip || null,
+            referrer: typeof document !== 'undefined' ? document.referrer || null : null,
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+            url: typeof window !== 'undefined' ? window.location.href : null,
+            createdAt: serverTimestamp(),
+        }).catch((err) => console.error("Failed to log waitlist visit:", err));
+    }, [zip]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
