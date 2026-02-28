@@ -23600,6 +23600,94 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
   }
 }
 
+// src/utils/veoApi.ts
+var import_genai = require("@google/genai");
+var import_storage2 = require("firebase-admin/storage");
+var import_uuid3 = require("uuid");
+var PROJECT_ID2 = "xiri-facility-solutions";
+var LOCATION2 = "us-central1";
+var BUCKET2 = `${PROJECT_ID2}.firebasestorage.app`;
+var GCS_OUTPUT_PREFIX = `gs://${BUCKET2}/social-videos`;
+async function generateReelVideo(caption, audience, location) {
+  try {
+    const client = new import_genai.GoogleGenAI({
+      vertexai: true,
+      project: PROJECT_ID2,
+      location: LOCATION2
+    });
+    const locationContext = location ? `Location: ${location}, New York. Include visual cues of the local area \u2014 storefronts, streets, or building exteriors that feel authentic to ${location}.` : "Location: Long Island / Queens, New York. Include typical suburban commercial area visuals.";
+    const audienceScene = audience === "client" ? `Scene: A well-maintained commercial building or medical office. Show clean, bright interiors \u2014  
+polished floors, organized reception areas, spotless exam rooms or waiting areas.
+A confident facility manager walks through, inspecting the quality of work.
+Mood: Professional, reassuring, "everything is handled." 
+Details: Show before/after cleaning contrast, a clipboard check, or a manager shaking hands with a satisfied client.` : `Scene: A professional cleaning crew or maintenance team arriving at a commercial building at dawn or dusk.
+Show them gearing up \u2014 putting on uniforms, loading equipment, working as a coordinated team.
+Mood: Blue-collar pride, teamwork, steady reliable work.
+Details: Show satisfying cleaning moments \u2014 buffing floors to a shine, organized supply carts, the team high-fiving after a job well done.`;
+    const videoPrompt = `Short-form vertical video for a facility management company's social media reel.
+
+Style: Cinematic, warm color grading, professional b-roll look. Vertical 9:16 format.
+Brand: XIRI Facility Solutions \u2014 professional facility management for medical offices, auto dealerships, and commercial buildings.
+Color palette: Navy blue (#075985) and sky blue (#0ea5e9) accents where natural (uniforms, signage, equipment).
+
+${audienceScene}
+
+${locationContext}
+
+Audio: Upbeat, motivational background music suitable for a professional business reel. 
+Confident, modern feel \u2014 not generic stock music.
+
+Context from caption: ${caption.slice(0, 300)}
+
+Important: NO text overlays, NO watermarks, NO logos. Pure visual storytelling with audio.
+Duration: 8 seconds. Smooth camera movements. Professional quality.`;
+    console.log(`[Veo] Starting video generation for ${audience} reel${location ? ` in ${location}` : ""}...`);
+    const outputId = (0, import_uuid3.v4)();
+    const outputGcsUri = `${GCS_OUTPUT_PREFIX}/${outputId}`;
+    let operation = await client.models.generateVideos({
+      model: "veo-3.0-generate-001",
+      prompt: videoPrompt,
+      config: {
+        aspectRatio: "9:16",
+        outputGcsUri
+      }
+    });
+    let pollCount = 0;
+    const maxPolls = 30;
+    while (!operation.done && pollCount < maxPolls) {
+      await new Promise((resolve) => setTimeout(resolve, 15e3));
+      operation = await client.operations.get({ operation });
+      pollCount++;
+      console.log(`[Veo] Poll ${pollCount}/${maxPolls} \u2014 ${operation.done ? "DONE" : "generating..."}`);
+    }
+    if (!operation.done) {
+      console.error("[Veo] Video generation timed out after 7.5 minutes");
+      return null;
+    }
+    if (!operation.response?.generatedVideos?.[0]?.video?.uri) {
+      console.error("[Veo] No video generated in response");
+      return null;
+    }
+    const videoGcsUri = operation.response.generatedVideos[0].video.uri;
+    console.log(`[Veo] Video generated at: ${videoGcsUri}`);
+    const gcsPath = videoGcsUri.replace(`gs://${BUCKET2}/`, "");
+    const bucket = (0, import_storage2.getStorage)().bucket(BUCKET2);
+    const file = bucket.file(gcsPath);
+    await file.makePublic();
+    const videoUrl = `https://storage.googleapis.com/${BUCKET2}/${gcsPath}`;
+    console.log(`[Veo] Video publicly available at: ${videoUrl}`);
+    return {
+      videoUrl,
+      storagePath: gcsPath,
+      durationSeconds: 8
+      // Veo default
+    };
+  } catch (err) {
+    console.error("[Veo] Error generating video:", err.message);
+    return null;
+  }
+}
+
 // src/triggers/socialContentGenerator.ts
 var API_KEY4 = process.env.GEMINI_API_KEY || "";
 var DAY_MAP = {
@@ -23672,6 +23760,44 @@ Generate exactly 1 Facebook post for XIRI Facility Solutions targeting ${audienc
 7. Be written in a natural, human voice \u2014 not corporate jargon
 
 Respond with ONLY the post text. No introductions, no explanations, just the ready-to-publish Facebook post.`;
+}
+function buildReelCaptionPrompt(config2, audience, location) {
+  const audienceHook = audience === "client" ? `Hook angle: Speak to facility managers / building owners who are tired of managing 5+ vendors.
+Key points: one call, one invoice, nightly audits verify quality, medical-grade standards.
+CTA: "DM us" or "Link in bio" or "Comment CLEAN for a free site audit"` : `Hook angle: Speak to contractors / cleaning crews looking for steady, reliable work.
+Key points: guaranteed payout on the 10th, no franchise fees, we handle the sales.
+CTA: "DM us" or "Link in bio" or "Comment WORK to get started"`;
+  const locationNote = location ? `
+Mention ${location}, NY naturally \u2014 e.g., "Looking for reliable facility management in ${location}?"` : `
+Mention Long Island / Queens area naturally.`;
+  return `You are writing a Facebook Reel caption for XIRI Facility Solutions \u2014 a facility management company in New York (Queens, Nassau, Suffolk County).
+
+## TARGET AUDIENCE: ${audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS"}
+${audienceHook}
+${locationNote}
+
+## CONTENT PREFERENCES
+- Tone: ${config2.tone || "Professional, bold, punchy"}
+- Hashtags: ${config2.hashtagSets.length > 0 ? config2.hashtagSets.join(" ") : "#FacilityManagement #CommercialCleaning #LongIsland"}
+
+## YOUR TASK
+Generate a Facebook Reel caption (NOT a full post). A reel caption should be:
+
+1. **2-4 lines MAX** \u2014 short, punchy, scroll-stopping
+2. Start with a hook (question or bold statement)
+3. One key value prop
+4. Clear CTA
+5. Relevant hashtags at the end
+6. Use emoji sparingly (1-2 max)
+7. Written like a human, not a brand
+
+Example format:
+"Still managing 5 different vendors? \u{1F92F}
+One call. One invoice. Nightly verified.
+DM us for a free site audit \u{1F447}
+#FacilityManagement #LongIsland"
+
+Respond with ONLY the caption text. Nothing else.`;
 }
 function summarizeEngagement(posts) {
   if (posts.length === 0) {
@@ -23801,48 +23927,91 @@ async function generateSocialContent(channel = "facebook_posts") {
   const currentClientRatio = totalExisting > 0 ? existingClientDrafts / totalExisting : 0.5;
   const genAI6 = new import_generative_ai7.GoogleGenerativeAI(API_KEY4);
   const model4 = genAI6.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const isReels = channel === "facebook_reels";
   let slotIndex = 0;
   for (const scheduledFor of toGenerate) {
     try {
       const audience = currentClientRatio < clientRatio ? slotIndex % 2 === 0 ? "client" : "contractor" : slotIndex % 2 === 0 ? "contractor" : "client";
       slotIndex++;
-      console.log(`[SocialGenerator] Generating ${audience} draft for ${scheduledFor.toISOString()}...`);
-      const prompt = buildPrompt(config2, summary, themes, audience);
-      const result = await model4.generateContent(prompt);
-      const generatedMessage = result.response.text().trim();
-      if (!generatedMessage) {
-        console.error("[SocialGenerator] Gemini returned empty response. Skipping slot.");
-        continue;
+      if (isReels) {
+        console.log(`[SocialGenerator] Generating ${audience} reel for ${scheduledFor.toISOString()}...`);
+        const captionPrompt = buildReelCaptionPrompt(config2, audience);
+        const captionResult = await model4.generateContent(captionPrompt);
+        const caption = captionResult.response.text().trim();
+        if (!caption) {
+          console.error("[SocialGenerator] Gemini returned empty reel caption. Skipping.");
+          continue;
+        }
+        let videoUrl = null;
+        let videoStoragePath = null;
+        let videoDurationSeconds = 8;
+        try {
+          const videoResult = await generateReelVideo(caption, audience);
+          if (videoResult) {
+            videoUrl = videoResult.videoUrl;
+            videoStoragePath = videoResult.storagePath;
+            videoDurationSeconds = videoResult.durationSeconds;
+          }
+        } catch (vidErr) {
+          console.warn("[SocialGenerator] Video generation failed, saving caption-only draft:", vidErr.message);
+        }
+        await db.collection("social_posts").add({
+          platform: "facebook",
+          channel,
+          audience,
+          message: caption,
+          videoUrl,
+          videoStoragePath,
+          videoDurationSeconds,
+          status: "draft",
+          generatedBy: "ai",
+          scheduledFor,
+          reviewedBy: null,
+          reviewedAt: null,
+          rejectionReason: null,
+          createdAt: /* @__PURE__ */ new Date()
+        });
+        themes.push(caption.split("\n")[0].slice(0, 60));
+        console.log(`[SocialGenerator] ${audience} reel draft created ${videoUrl ? "(with video)" : "(caption only)"}`);
+      } else {
+        console.log(`[SocialGenerator] Generating ${audience} draft for ${scheduledFor.toISOString()}...`);
+        const prompt = buildPrompt(config2, summary, themes, audience);
+        const result = await model4.generateContent(prompt);
+        const generatedMessage = result.response.text().trim();
+        if (!generatedMessage) {
+          console.error("[SocialGenerator] Gemini returned empty response. Skipping slot.");
+          continue;
+        }
+        let imageUrl = null;
+        try {
+          const imageResult = await generatePostImage(generatedMessage, audience);
+          imageUrl = imageResult?.imageUrl || null;
+        } catch (imgErr) {
+          console.warn("[SocialGenerator] Image generation failed, proceeding without image:", imgErr.message);
+        }
+        await db.collection("social_posts").add({
+          platform: channel.startsWith("facebook") ? "facebook" : "linkedin",
+          channel,
+          audience,
+          message: generatedMessage,
+          imageUrl,
+          status: "draft",
+          generatedBy: "ai",
+          scheduledFor,
+          engagementContext: {
+            avgLikes,
+            avgComments,
+            avgShares,
+            topPostThemes: themes.slice(0, 5)
+          },
+          reviewedBy: null,
+          reviewedAt: null,
+          rejectionReason: null,
+          createdAt: /* @__PURE__ */ new Date()
+        });
+        themes.push(generatedMessage.split("\n")[0].slice(0, 60));
+        console.log(`[SocialGenerator] ${audience} draft created for ${scheduledFor.toISOString()} ${imageUrl ? "(with image)" : "(no image)"}`);
       }
-      let imageUrl = null;
-      try {
-        const imageResult = await generatePostImage(generatedMessage, audience);
-        imageUrl = imageResult?.imageUrl || null;
-      } catch (imgErr) {
-        console.warn("[SocialGenerator] Image generation failed, proceeding without image:", imgErr.message);
-      }
-      await db.collection("social_posts").add({
-        platform: channel.startsWith("facebook") ? "facebook" : "linkedin",
-        channel,
-        audience,
-        message: generatedMessage,
-        imageUrl,
-        status: "draft",
-        generatedBy: "ai",
-        scheduledFor,
-        engagementContext: {
-          avgLikes,
-          avgComments,
-          avgShares,
-          topPostThemes: themes.slice(0, 5)
-        },
-        reviewedBy: null,
-        reviewedAt: null,
-        rejectionReason: null,
-        createdAt: /* @__PURE__ */ new Date()
-      });
-      themes.push(generatedMessage.split("\n")[0].slice(0, 60));
-      console.log(`[SocialGenerator] ${audience} draft created for ${scheduledFor.toISOString()} ${imageUrl ? "(with image)" : "(no image)"}`);
     } catch (err) {
       console.error(`[SocialGenerator] Error generating for ${scheduledFor.toISOString()}:`, err.message);
     }

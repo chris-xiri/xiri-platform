@@ -115,13 +115,14 @@ export default function SocialMediaPage() {
     const [editedMessage, setEditedMessage] = useState('');
     const [reviewingId, setReviewingId] = useState<string | null>(null);
     const [generating, setGenerating] = useState(false);
+    const [generateElapsed, setGenerateElapsed] = useState(0);
 
     // Config state
     const [config, setConfig] = useState<SocialConfig>(DEFAULT_CONFIG);
     const [loadingConfig, setLoadingConfig] = useState(false);
     const [savingConfig, setSavingConfig] = useState(false);
 
-    // Compose state
+    // Compose state (kept for publish handler compatibility)
     const [message, setMessage] = useState('');
     const [link, setLink] = useState('');
     const [imageUrl, setImageUrl] = useState('');
@@ -280,15 +281,25 @@ export default function SocialMediaPage() {
 
     const handleGenerate = async () => {
         setGenerating(true);
+        setGenerateElapsed(0);
+        const startTime = Date.now();
+        const timer = setInterval(() => {
+            setGenerateElapsed(Math.floor((Date.now() - startTime) / 1000));
+        }, 1000);
         try {
-            const trigger = httpsCallable(functions, 'triggerSocialContentGeneration');
+            const trigger = httpsCallable(functions, 'triggerSocialContentGeneration', { timeout: 540000 });
             await trigger({ channel: activeChannel });
-            setSuccessMessage('AI draft generated! Check the Drafts tab.');
+            setSuccessMessage(activeChannel === 'facebook_reels'
+                ? 'Reel generated! Check the Drafts tab.'
+                : 'AI draft generated! Check the Drafts tab.');
+            setActiveTab('drafts');
             setTimeout(fetchDrafts, 2000);
         } catch (err: any) {
             setErrorMessage('Failed to generate: ' + (err.message || 'Unknown error'));
         } finally {
+            clearInterval(timer);
             setGenerating(false);
+            setGenerateElapsed(0);
         }
     };
 
@@ -342,6 +353,8 @@ export default function SocialMediaPage() {
     const avgComments = totalPosts > 0 ? Math.round(posts.reduce((s, p) => s + (p.comments?.summary?.total_count || 0), 0) / totalPosts) : 0;
     const avgShares = totalPosts > 0 ? Math.round(posts.reduce((s, p) => s + (p.shares?.count || 0), 0) / totalPosts) : 0;
     const pendingDrafts = drafts.filter(d => d.status === 'draft').length;
+    const totalReels = drafts.filter(d => d.status === 'approved' && d.channel === 'facebook_reels').length;
+    const isReels = activeChannel === 'facebook_reels';
 
     return (
         <div className="space-y-6">
@@ -359,8 +372,8 @@ export default function SocialMediaPage() {
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating || !CHANNELS.find(c => c.id === activeChannel)?.enabled}>
                         {generating
-                            ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Generating...</>
-                            : activeChannel === 'facebook_reels'
+                            ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> {isReels ? 'Generating Reel' : 'Generating'}... {generateElapsed > 0 && <span className="ml-1 text-xs text-muted-foreground">({generateElapsed}s)</span>}</>
+                            : isReels
                                 ? <><Video className="w-4 h-4 mr-1" /> Generate Reel</>
                                 : <><Sparkles className="w-4 h-4 mr-1" /> Generate Draft</>
                         }
@@ -412,37 +425,95 @@ export default function SocialMediaPage() {
             )}
 
             {/* Metrics Bar */}
+            {generating && (
+                <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/30">
+                    <CardContent className="p-4">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                            <span className="text-sm font-medium">
+                                {isReels ? '🎬 Generating Reel with Veo 3...' : '✨ Generating AI Draft...'}
+                            </span>
+                            <span className="ml-auto text-sm font-mono text-muted-foreground">{generateElapsed}s</span>
+                        </div>
+                        <div className="w-full bg-blue-200/50 dark:bg-blue-800/30 rounded-full h-1.5">
+                            <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-1000" style={{ width: `${Math.min((generateElapsed / (isReels ? 300 : 60)) * 100, 95)}%` }} />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1.5">
+                            {isReels
+                                ? 'Video generation can take 2-5 minutes. Generating video with audio, captions, and visuals...'
+                                : 'Generating post copy and branded image...'}
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <Card>
-                    <CardContent className="p-4 flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950"><Eye className="w-4 h-4 text-blue-600" /></div>
-                        <div><p className="text-xs text-muted-foreground">Posts</p><p className="text-xl font-bold">{totalPosts}</p></div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4 flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-950"><ThumbsUp className="w-4 h-4 text-pink-600" /></div>
-                        <div><p className="text-xs text-muted-foreground">Avg Likes</p><p className="text-xl font-bold">{avgLikes}</p></div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4 flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950"><MessageCircle className="w-4 h-4 text-amber-600" /></div>
-                        <div><p className="text-xs text-muted-foreground">Avg Comments</p><p className="text-xl font-bold">{avgComments}</p></div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4 flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-green-100 dark:bg-green-950"><Share2 className="w-4 h-4 text-green-600" /></div>
-                        <div><p className="text-xs text-muted-foreground">Avg Shares</p><p className="text-xl font-bold">{avgShares}</p></div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4 flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950"><Sparkles className="w-4 h-4 text-purple-600" /></div>
-                        <div><p className="text-xs text-muted-foreground">Pending Drafts</p><p className="text-xl font-bold">{pendingDrafts}</p></div>
-                    </CardContent>
-                </Card>
+                {isReels ? (
+                    <>
+                        <Card>
+                            <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950"><Film className="w-4 h-4 text-purple-600" /></div>
+                                <div><p className="text-xs text-muted-foreground">Total Reels</p><p className="text-xl font-bold">{totalReels}</p></div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950"><Eye className="w-4 h-4 text-blue-600" /></div>
+                                <div><p className="text-xs text-muted-foreground">Total Views</p><p className="text-xl font-bold">—</p></div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-950"><Video className="w-4 h-4 text-pink-600" /></div>
+                                <div><p className="text-xs text-muted-foreground">Avg Plays</p><p className="text-xl font-bold">—</p></div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-950"><Share2 className="w-4 h-4 text-green-600" /></div>
+                                <div><p className="text-xs text-muted-foreground">Avg Shares</p><p className="text-xl font-bold">—</p></div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950"><Sparkles className="w-4 h-4 text-amber-600" /></div>
+                                <div><p className="text-xs text-muted-foreground">Pending Drafts</p><p className="text-xl font-bold">{pendingDrafts}</p></div>
+                            </CardContent>
+                        </Card>
+                    </>
+                ) : (
+                    <>
+                        <Card>
+                            <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950"><Eye className="w-4 h-4 text-blue-600" /></div>
+                                <div><p className="text-xs text-muted-foreground">Posts</p><p className="text-xl font-bold">{totalPosts}</p></div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-950"><ThumbsUp className="w-4 h-4 text-pink-600" /></div>
+                                <div><p className="text-xs text-muted-foreground">Avg Likes</p><p className="text-xl font-bold">{avgLikes}</p></div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950"><MessageCircle className="w-4 h-4 text-amber-600" /></div>
+                                <div><p className="text-xs text-muted-foreground">Avg Comments</p><p className="text-xl font-bold">{avgComments}</p></div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-950"><Share2 className="w-4 h-4 text-green-600" /></div>
+                                <div><p className="text-xs text-muted-foreground">Avg Shares</p><p className="text-xl font-bold">{avgShares}</p></div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4 flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950"><Sparkles className="w-4 h-4 text-purple-600" /></div>
+                                <div><p className="text-xs text-muted-foreground">Pending Drafts</p><p className="text-xl font-bold">{pendingDrafts}</p></div>
+                            </CardContent>
+                        </Card>
+                    </>
+                )}
             </div>
 
             {/* Tabs */}
@@ -475,64 +546,115 @@ export default function SocialMediaPage() {
                         {/* Published Posts/Reels Feed */}
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-semibold">
-                                {activeChannel === 'facebook_reels' ? 'Published Reels' : 'Recent Posts'}
+                                {isReels ? '📽️ Published Reels' : 'Recent Posts'}
                             </h2>
-                            <Button variant="ghost" size="sm" onClick={fetchPosts} disabled={loading}>
+                            <Button variant="ghost" size="sm" onClick={isReels ? fetchDrafts : fetchPosts} disabled={loading}>
                                 <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
                             </Button>
                         </div>
 
-                        {loading ? (
-                            <div className="space-y-4">{[1, 2, 3].map(i => (
-                                <Card key={i}><CardContent className="p-4 space-y-3">
-                                    <Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-[200px] w-full rounded-lg" />
+                        {isReels ? (
+                            /* ── Reels Feed (from Firestore published reels) ── */
+                            (() => {
+                                const publishedReels = drafts.filter(d => d.status === 'approved' || d.status === 'published');
+                                return publishedReels.length === 0 ? (
+                                    <Card><CardContent className="p-8 text-center text-muted-foreground">
+                                        <Film className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                        <p>No published reels yet.</p>
+                                        <p className="text-xs mt-1">Generate a reel and approve it to see it here.</p>
+                                    </CardContent></Card>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {publishedReels.map(reel => (
+                                            <Card key={reel.id} className="overflow-hidden">
+                                                <CardContent className="p-0">
+                                                    {reel.videoUrl ? (
+                                                        <div className="relative aspect-[9/16] max-h-[320px] bg-black">
+                                                            <video src={reel.videoUrl} className="w-full h-full object-cover" controls muted />
+                                                            {reel.videoDurationSeconds && (
+                                                                <span className="absolute top-2 right-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
+                                                                    {reel.videoDurationSeconds}s
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="aspect-[9/16] max-h-[200px] bg-muted flex items-center justify-center">
+                                                            <Film className="w-10 h-10 text-muted-foreground opacity-30" />
+                                                        </div>
+                                                    )}
+                                                    <div className="p-3">
+                                                        <p className="text-sm line-clamp-2 mb-2">{reel.message}</p>
+                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                            {reel.audience && (
+                                                                <Badge variant="outline" className="text-[9px] h-4">
+                                                                    {reel.audience === 'client' ? '🏢 Client' : '🔧 Contractor'}
+                                                                </Badge>
+                                                            )}
+                                                            {reel.location && (
+                                                                <Badge variant="outline" className="text-[9px] h-4">📍 {reel.location}</Badge>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                );
+                            })()
+                        ) : (
+                            /* ── Posts Feed (from Facebook Graph API) ── */
+                            loading ? (
+                                <div className="space-y-4">{[1, 2, 3].map(i => (
+                                    <Card key={i}><CardContent className="p-4 space-y-3">
+                                        <Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-[200px] w-full rounded-lg" />
+                                    </CardContent></Card>
+                                ))}</div>
+                            ) : posts.length === 0 ? (
+                                <Card><CardContent className="p-8 text-center text-muted-foreground">
+                                    <Facebook className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>No posts yet.</p>
                                 </CardContent></Card>
-                            ))}</div>
-                        ) : posts.length === 0 ? (
-                            <Card><CardContent className="p-8 text-center text-muted-foreground">
-                                <Facebook className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>No posts yet.</p>
-                            </CardContent></Card>
-                        ) : posts.map(post => (
-                            <Card key={post.id} className="overflow-hidden">
-                                <CardContent className="p-4">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">X</div>
-                                            <div>
-                                                <p className="text-sm font-semibold">XIRI Facility Solutions</p>
-                                                <p className="text-xs text-muted-foreground">{formatDate(post.created_time)}</p>
+                            ) : posts.map(post => (
+                                <Card key={post.id} className="overflow-hidden">
+                                    <CardContent className="p-4">
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">X</div>
+                                                <div>
+                                                    <p className="text-sm font-semibold">XIRI Facility Solutions</p>
+                                                    <p className="text-xs text-muted-foreground">{formatDate(post.created_time)}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-1">
+                                                {post.permalink_url && (
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                                                        <a href={post.permalink_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4" /></a>
+                                                    </Button>
+                                                )}
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                    onClick={() => handleDelete(post.id)} disabled={deleting === post.id}>
+                                                    {deleting === post.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                                </Button>
                                             </div>
                                         </div>
-                                        <div className="flex gap-1">
-                                            {post.permalink_url && (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                                                    <a href={post.permalink_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4" /></a>
-                                                </Button>
-                                            )}
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                onClick={() => handleDelete(post.id)} disabled={deleting === post.id}>
-                                                {deleting === post.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                            </Button>
+                                        {post.message && (
+                                            <p className="text-sm whitespace-pre-wrap mb-3 leading-relaxed">
+                                                {post.message.length > 300 ? post.message.slice(0, 300) + '...' : post.message}
+                                            </p>
+                                        )}
+                                        {post.full_picture && (
+                                            <div className="rounded-lg overflow-hidden border mb-3">
+                                                <img src={post.full_picture} alt="Post" className="w-full max-h-[400px] object-cover" />
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
+                                            <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" />{post.likes?.summary?.total_count || 0}</span>
+                                            <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" />{post.comments?.summary?.total_count || 0}</span>
+                                            <span className="flex items-center gap-1"><Share2 className="w-3.5 h-3.5" />{post.shares?.count || 0}</span>
                                         </div>
-                                    </div>
-                                    {post.message && (
-                                        <p className="text-sm whitespace-pre-wrap mb-3 leading-relaxed">
-                                            {post.message.length > 300 ? post.message.slice(0, 300) + '...' : post.message}
-                                        </p>
-                                    )}
-                                    {post.full_picture && (
-                                        <div className="rounded-lg overflow-hidden border mb-3">
-                                            <img src={post.full_picture} alt="Post" className="w-full max-h-[400px] object-cover" />
-                                        </div>
-                                    )}
-                                    <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
-                                        <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" />{post.likes?.summary?.total_count || 0}</span>
-                                        <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" />{post.comments?.summary?.total_count || 0}</span>
-                                        <span className="flex items-center gap-1"><Share2 className="w-3.5 h-3.5" />{post.shares?.count || 0}</span>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                    </CardContent>
+                                </Card>
+                            ))
+                        )}
                     </div>
                 )
             }

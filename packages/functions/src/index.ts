@@ -398,6 +398,8 @@ export { runSocialContentGenerator, runSocialPublisher };
 export const triggerSocialContentGeneration = onCall({
     secrets: ["GEMINI_API_KEY", "FACEBOOK_PAGE_ACCESS_TOKEN"],
     cors: DASHBOARD_CORS,
+    timeoutSeconds: 540,
+    memory: "1GiB",
 }, async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
     const channel = request.data?.channel || "facebook_posts";

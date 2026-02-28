@@ -73,6 +73,15 @@ Key messaging for contractors:
 
     return `You are the social media manager for XIRI Facility Solutions, a facility management company based in New York that services commercial and medical buildings across Queens, Nassau, and Suffolk County.
 
+## BRAND IDENTITY
+- Brand Name: XIRI (always uppercase, bold)
+- Full Name: XIRI Facility Solutions
+- Tagline: "One Call. One Invoice. Total Facility Coverage."
+- Brand Colors: Primary #0369a1, Accent #38bdf8, Dark #0c4a6e (Sky/Cyan family)
+- Visual Style: Professional, bold, clean — industrial-grade but executive-quality
+- Tone: Blue-collar-friendly but executive-grade. Never salesy or generic.
+- Fonts: Inter (body), Outfit (headings) — clean modern look
+
 ## BUSINESS CONTEXT
 - XIRI hires independent sub-contractors (cleaning, HVAC, maintenance, specialty trades) to fulfill contracts XIRI holds with medical offices, urgent care clinics, auto dealerships, and commercial facilities.
 - For CONTRACTORS: We offer steady contract work, one point of contact, fast payouts (10th of the month), no franchise fees.
@@ -128,6 +137,12 @@ CTA: "DM us" or "Link in bio" or "Comment WORK to get started"`;
         : `\nMention Long Island / Queens area naturally.`;
 
     return `You are writing a Facebook Reel caption for XIRI Facility Solutions — a facility management company in New York (Queens, Nassau, Suffolk County).
+
+## BRAND IDENTITY
+- Brand Name: XIRI (always uppercase, bold)
+- Tagline: "One Call. One Invoice. Total Facility Coverage."
+- Brand Colors: Primary #0369a1 (Sky Blue), Accent #38bdf8
+- Tone: Professional, punchy, blue-collar-friendly but executive-grade
 
 ## TARGET AUDIENCE: ${audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS"}
 ${audienceHook}

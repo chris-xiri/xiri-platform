@@ -30,6 +30,7 @@
         "node": ">=22"
     },
     "dependencies": {
+        "@google/genai": "^1.43.0",
         "@google/generative-ai": "^0.24.1",
         "@radix-ui/react-label": "^2.1.8",
         "firebase": "^12.9.0",
