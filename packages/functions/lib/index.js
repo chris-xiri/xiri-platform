@@ -18131,7 +18131,9 @@ var admin = __toESM(require("firebase-admin"));
 var dotenv = __toESM(require("dotenv"));
 dotenv.config();
 if (!admin.apps.length) {
-  admin.initializeApp();
+  admin.initializeApp({
+    storageBucket: "xiri-facility-solutions.firebasestorage.app"
+  });
 }
 var db = admin.firestore();
 try {
