@@ -52,7 +52,8 @@ function getAccessToken(): string {
 export async function publishPost(
     message: string,
     link?: string,
-    imageUrl?: string
+    imageUrl?: string,
+    placeId?: string,
 ): Promise<FacebookPostResult> {
     const token = getAccessToken();
 
@@ -65,6 +66,11 @@ export async function publishPost(
 
         if (link) {
             body.link = link;
+        }
+
+        // Geo-tag the post with a Facebook Place
+        if (placeId) {
+            body.place = placeId;
         }
 
         // If image URL provided, use /photos endpoint instead
@@ -103,6 +109,130 @@ export async function publishPost(
             success: false,
             error: error.message || "Failed to publish to Facebook",
         };
+    }
+}
+
+/**
+ * Publish a video reel to the Facebook Page
+ * Uses the Video Reels API (start → upload → finish)
+ */
+export async function publishReel(
+    videoUrl: string,
+    description: string,
+    placeId?: string,
+): Promise<FacebookPostResult> {
+    const token = getAccessToken();
+
+    try {
+        // Step 1: Initialize the reel upload
+        const initResponse = await fetch(`${GRAPH_BASE_URL}/${PAGE_ID}/video_reels`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                upload_phase: "start",
+                access_token: token,
+            }),
+        });
+        const initData = await initResponse.json();
+        if (initData.error) {
+            console.error("[FB Reels] Init error:", initData.error);
+            return { id: "", success: false, error: initData.error.message };
+        }
+        const videoId = initData.video_id;
+        console.log(`[FB Reels] Initialized upload, video_id: ${videoId}`);
+
+        // Step 2: Upload the video binary via the upload URL
+        const videoResponse = await fetch(videoUrl);
+        const videoBuffer = await videoResponse.arrayBuffer();
+        const uploadResponse = await fetch(
+            `https://rupload.facebook.com/video-upload/${GRAPH_API_VERSION}/${videoId}`,
+            {
+                method: "POST",
+                headers: {
+                    "Authorization": `OAuth ${token}`,
+                    "offset": "0",
+                    "file_size": videoBuffer.byteLength.toString(),
+                    "Content-Type": "application/octet-stream",
+                },
+                body: videoBuffer,
+            }
+        );
+        const uploadData = await uploadResponse.json();
+        if (!uploadData.success) {
+            console.error("[FB Reels] Upload error:", uploadData);
+            return { id: "", success: false, error: "Video upload failed" };
+        }
+        console.log(`[FB Reels] Video uploaded successfully`);
+
+        // Step 3: Finish the reel with description and optional place
+        const finishBody: Record<string, string> = {
+            upload_phase: "finish",
+            video_id: videoId,
+            title: description.slice(0, 100),
+            description,
+            access_token: token,
+        };
+        if (placeId) {
+            finishBody.place_id = placeId;
+        }
+
+        const finishResponse = await fetch(`${GRAPH_BASE_URL}/${PAGE_ID}/video_reels`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(finishBody),
+        });
+        const finishData = await finishResponse.json();
+
+        if (finishData.error) {
+            console.error("[FB Reels] Finish error:", finishData.error);
+            return { id: "", success: false, error: finishData.error.message };
+        }
+
+        console.log(`[FB Reels] Reel published! ID: ${finishData.id || videoId}`);
+        return {
+            id: finishData.id || videoId,
+            success: true,
+            postUrl: `https://facebook.com/reel/${finishData.id || videoId}`,
+        };
+    } catch (error: any) {
+        console.error("[FB Reels] Publish error:", error);
+        return {
+            id: "",
+            success: false,
+            error: error.message || "Failed to publish reel",
+        };
+    }
+}
+
+/**
+ * Search for Facebook Places by location text (e.g., "Great Neck, NY")
+ * Returns an array of matching places with id, name, and location info.
+ */
+export async function searchFacebookPlaces(
+    query: string,
+    lat?: number,
+    lng?: number,
+): Promise<Array<{ id: string; name: string; location?: any }>> {
+    const token = getAccessToken();
+
+    try {
+        let url = `${GRAPH_BASE_URL}/search?type=place&q=${encodeURIComponent(query)}&fields=id,name,location&limit=5&access_token=${token}`;
+        if (lat && lng) {
+            url += `&center=${lat},${lng}&distance=50000`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.error) {
+            console.error("[FB Places] Search error:", data.error);
+            return [];
+        }
+
+        return data.data || [];
+    } catch (error: any) {
+        console.error("[FB Places] Search error:", error);
+        return [];
     }
 }
 

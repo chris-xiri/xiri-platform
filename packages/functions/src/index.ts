@@ -290,7 +290,7 @@ export const sourceProperties = onCall({
 });
 
 // ── Facebook Page Management ──
-import { publishPost, schedulePost, getRecentPosts, getPageInsights, deletePost } from "./utils/facebookApi";
+import { publishPost, publishReel, searchFacebookPlaces, schedulePost, getRecentPosts, getPageInsights, deletePost } from "./utils/facebookApi";
 
 export const publishFacebookPost = onCall({
     secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
@@ -475,4 +475,80 @@ export const reviewSocialPost = onCall({
     console.log(`[Social] Post ${postId} ${action}ed by ${request.auth.uid}`);
 
     return { success: true, status: update.status };
+});
+
+
+
+export const publishPostNow = onCall({
+    cors: DASHBOARD_CORS,
+    secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
+    timeoutSeconds: 120,
+}, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+
+    const { postId } = request.data;
+    if (!postId) throw new HttpsError("invalid-argument", "postId is required");
+
+    const postRef = db.collection("social_posts").doc(postId);
+    const postDoc = await postRef.get();
+    if (!postDoc.exists) throw new HttpsError("not-found", "Post not found");
+
+    const post = postDoc.data()!;
+
+    try {
+        let result;
+
+        if (post.channel === "facebook_reels" && post.videoUrl) {
+            console.log(`[PublishNow] Publishing reel ${postId}...`);
+            result = await publishReel(
+                post.videoUrl,
+                post.message || "",
+                post.facebookPlaceId || undefined,
+            );
+        } else {
+            console.log(`[PublishNow] Publishing post ${postId}...`);
+            result = await publishPost(
+                post.message,
+                post.link || undefined,
+                post.imageUrl || undefined,
+                post.facebookPlaceId || undefined,
+            );
+        }
+
+        if (result.success) {
+            await postRef.update({
+                status: "published",
+                facebookPostId: result.id,
+                postUrl: result.postUrl || null,
+                publishedAt: new Date(),
+                publishedBy: request.auth.uid,
+            });
+            console.log(`[PublishNow] Published ${postId} -> FB ID: ${result.id}`);
+            return { success: true, postUrl: result.postUrl };
+        } else {
+            await postRef.update({
+                status: "failed",
+                error: result.error || "Publishing failed",
+                failedAt: new Date(),
+            });
+            throw new HttpsError("internal", result.error || "Publishing failed");
+        }
+    } catch (err: any) {
+        console.error(`[PublishNow] Error:`, err.message);
+        throw new HttpsError("internal", err.message || "Publishing failed");
+    }
+});
+
+// ── Search Facebook Places ──
+export const searchPlaces = onCall({
+    cors: DASHBOARD_CORS,
+    secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
+}, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+
+    const { query } = request.data;
+    if (!query) throw new HttpsError("invalid-argument", "query is required");
+
+    const results = await searchFacebookPlaces(query);
+    return { places: results };
 });

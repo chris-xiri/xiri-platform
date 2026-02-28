@@ -144,6 +144,9 @@ export default function SocialMediaPage() {
     const [uploading, setUploading] = useState(false);
     const videoInputRef = useRef<HTMLInputElement>(null);
 
+    // Publish now state
+    const [publishingId, setPublishingId] = useState<string | null>(null);
+
     // Config state
     const [config, setConfig] = useState<SocialConfig>(DEFAULT_CONFIG);
     const [loadingConfig, setLoadingConfig] = useState(false);
@@ -322,6 +325,63 @@ export default function SocialMediaPage() {
             setSuccessMessage('Draft deleted');
         } catch (err: any) {
             setErrorMessage('Failed to delete draft');
+        }
+    };
+
+    const handlePublishNow = async (postId: string) => {
+        if (!confirm('Publish this post to Facebook right now?')) return;
+        setPublishingId(postId);
+        try {
+            const publishNow = httpsCallable(functions, 'publishPostNow', { timeout: 120000 });
+            const result: any = await publishNow({ postId });
+            setSuccessMessage(`Published! ${result.data?.postUrl ? `View: ${result.data.postUrl}` : ''}`);
+            fetchDrafts();
+        } catch (err: any) {
+            setErrorMessage('Publish failed: ' + (err.message || 'Unknown error'));
+        } finally {
+            setPublishingId(null);
+        }
+    };
+
+    const handleSetLocation = async (postId: string) => {
+        const locationText = prompt('Enter location (e.g., Great Neck, NY):');
+        if (!locationText) return;
+
+        try {
+            // Search for a Facebook Place
+            const searchFn = httpsCallable(functions, 'searchPlaces');
+            const result: any = await searchFn({ query: locationText });
+            const places = result.data?.places || [];
+
+            let selectedPlace = places[0]; // Default to first result
+            if (places.length > 1) {
+                const choices = places.map((p: any, i: number) => `${i + 1}. ${p.name}${p.location?.city ? ` (${p.location.city})` : ''}`).join('\n');
+                const pick = prompt(`Found ${places.length} places:\n${choices}\n\nEnter number (or press Cancel to use #1):`);
+                if (pick && parseInt(pick) > 0 && parseInt(pick) <= places.length) {
+                    selectedPlace = places[parseInt(pick) - 1];
+                }
+            }
+
+            if (selectedPlace) {
+                const { doc: docRef, updateDoc } = await import('firebase/firestore');
+                await updateDoc(docRef(db, 'social_posts', postId), {
+                    location: `${selectedPlace.name}${selectedPlace.location?.city ? `, ${selectedPlace.location.city}` : ''}`,
+                    facebookPlaceId: selectedPlace.id,
+                });
+                setSuccessMessage(`Location set: ${selectedPlace.name}`);
+                fetchDrafts();
+            } else {
+                // No Facebook Place found — save text only
+                const { doc: docRef, updateDoc } = await import('firebase/firestore');
+                await updateDoc(docRef(db, 'social_posts', postId), {
+                    location: locationText,
+                    facebookPlaceId: null,
+                });
+                setSuccessMessage(`Location saved (no Facebook Place match): ${locationText}`);
+                fetchDrafts();
+            }
+        } catch (err: any) {
+            setErrorMessage('Location search failed: ' + (err.message || 'Unknown error'));
         }
     };
 
@@ -911,18 +971,40 @@ export default function SocialMediaPage() {
                                                             </p>
                                                         )}
 
-                                                        {/* Location tag (reels only) */}
-                                                        {activeChannel === 'facebook_reels' && (draft as any).location && (
-                                                            <p className="text-[10px] text-emerald-600 mb-2">📍 {(draft as any).location}</p>
-                                                        )}
+                                                        {/* Location tag — editable */}
+                                                        <div className="flex items-center gap-1 mb-2">
+                                                            {(draft as any).location ? (
+                                                                <button
+                                                                    className="text-[10px] text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer flex items-center gap-0.5"
+                                                                    onClick={() => handleSetLocation(draft.id)}
+                                                                >
+                                                                    📍 {(draft as any).location}
+                                                                    {(draft as any).facebookPlaceId && (
+                                                                        <Badge variant="outline" className="text-[8px] h-3.5 px-1 ml-1 border-emerald-200 text-emerald-600">FB Tagged</Badge>
+                                                                    )}
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-0.5"
+                                                                    onClick={() => handleSetLocation(draft.id)}
+                                                                >
+                                                                    📍 Add Location
+                                                                </button>
+                                                            )}
+                                                        </div>
 
                                                         {/* Actions */}
                                                         {draft.status === 'draft' && (
-                                                            <div className="flex gap-1.5 pt-2 border-t mt-auto">
+                                                            <div className="flex gap-1.5 pt-2 border-t mt-auto flex-wrap">
                                                                 <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 px-2" onClick={() => handleReview(draft.id, 'approve')}
                                                                     disabled={reviewingId === draft.id}>
                                                                     {reviewingId === draft.id ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <Check className="w-3 h-3 mr-0.5" />}
                                                                     Approve
+                                                                </Button>
+                                                                <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2" onClick={() => handlePublishNow(draft.id)}
+                                                                    disabled={publishingId === draft.id}>
+                                                                    {publishingId === draft.id ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <Send className="w-3 h-3 mr-0.5" />}
+                                                                    Post Now
                                                                 </Button>
                                                                 {editingDraft === draft.id ? (
                                                                     <Button size="sm" className="h-7 text-xs px-2" variant="outline" onClick={() => { setEditingDraft(null); setEditedMessage(''); }}>

@@ -6,7 +6,7 @@
 
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { db } from "../utils/firebase";
-import { publishPost } from "../utils/facebookApi";
+import { publishPost, publishReel } from "../utils/facebookApi";
 
 /**
  * Find posts due for publishing:
@@ -37,11 +37,24 @@ export async function publishScheduledPosts(): Promise<void> {
         const wasAutoPublished = post.status === "draft"; // Not reviewed by the human
 
         try {
-            const result = await publishPost(
-                post.message,
-                post.link || undefined,
-                post.imageUrl || undefined
-            );
+            let result;
+
+            if (post.channel === "facebook_reels" && post.videoUrl) {
+                // Publish as a Reel via the Video Reels API
+                result = await publishReel(
+                    post.videoUrl,
+                    post.message || "",
+                    post.facebookPlaceId || undefined,
+                );
+            } else {
+                // Publish as a regular post
+                result = await publishPost(
+                    post.message,
+                    post.link || undefined,
+                    post.imageUrl || undefined,
+                    post.facebookPlaceId || undefined,
+                );
+            }
 
             if (result.success) {
                 await doc.ref.update({
