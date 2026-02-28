@@ -15,6 +15,7 @@
 import { GoogleAuth } from "google-auth-library";
 import { getStorage } from "firebase-admin/storage";
 import { v4 as uuidv4 } from "uuid";
+import { compositeImage } from "./brandOverlay";
 
 const PROJECT_ID = "xiri-facility-solutions";
 const LOCATION = "us-central1";
@@ -103,13 +104,18 @@ export async function generatePostImage(
         }
 
         // Upload to Cloud Storage
-        const imageBuffer = Buffer.from(imageBase64, "base64");
+        const rawPhotoBuffer = Buffer.from(imageBase64, "base64");
+
+        // Composite branded overlay onto the raw photo
+        console.log(`[Imagen] Compositing branded overlay...`);
+        const brandedBuffer = await compositeImage(rawPhotoBuffer, postMessage);
+
         const fileName = `social-images/${uuidv4()}.png`;
         const storageBucket = getStorage().bucket();
         const bucketName = storageBucket.name;
         const file = storageBucket.file(fileName);
 
-        await file.save(imageBuffer, {
+        await file.save(brandedBuffer, {
             metadata: {
                 contentType: "image/png",
                 metadata: {
@@ -122,7 +128,7 @@ export async function generatePostImage(
         await file.makePublic();
         const imageUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
 
-        console.log(`[Imagen] Image generated and uploaded: ${imageUrl}`);
+        console.log(`[Imagen] Branded image generated and uploaded: ${imageUrl}`);
         return { imageUrl, storagePath: fileName };
     } catch (err: any) {
         console.error("[Imagen] Error generating image:", err.message);

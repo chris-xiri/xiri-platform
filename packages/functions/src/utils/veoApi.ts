@@ -53,23 +53,16 @@ Show them gearing up — putting on uniforms, loading equipment, working as a co
 Mood: Blue-collar pride, teamwork, steady reliable work.
 Details: Show satisfying cleaning moments — buffing floors to a shine, organized supply carts, the team high-fiving after a job well done.`;
 
-        const videoPrompt = `Short-form vertical video for a facility management company's social media reel.
-
-Style: Cinematic, warm color grading, professional b-roll look. Vertical 9:16 format.
-Brand: XIRI Facility Solutions — professional facility management for medical offices, auto dealerships, and commercial buildings.
-Color palette: Navy blue (#075985) and sky blue (#0ea5e9) accents where natural (uniforms, signage, equipment).
+        const videoPrompt = `Cinematic short-form vertical video, shot on professional camera with smooth gimbal movement.
 
 ${audienceScene}
 
 ${locationContext}
 
-Audio: Upbeat, motivational background music suitable for a professional business reel. 
-Confident, modern feel — not generic stock music.
+Audio: Upbeat, motivational background music with a modern corporate feel. Include ambient sound effects matching the scene.
 
-Context from caption: ${caption.slice(0, 300)}
-
-Important: NO text overlays, NO watermarks, NO logos. Pure visual storytelling with audio.
-Duration: 8 seconds. Smooth camera movements. Professional quality.`;
+Style: Professional b-roll footage, warm color grading with cool blue shadows, clean and polished look. Vertical 9:16 format.
+Duration: 8 seconds. Smooth tracking shots. Professional quality. No text, no titles, no graphics — pure visual storytelling with audio.`;
 
         console.log(`[Veo] Starting video generation for ${audience} reel${location ? ` in ${location}` : ""}...`);
 
