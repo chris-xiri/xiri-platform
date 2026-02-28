@@ -4,11 +4,12 @@
  * Generates branded images using Google's Imagen model via Vertex AI.
  * Images are stored in Cloud Storage and the URL is attached to the post.
  * 
- * Brand Colors:
- *   - Primary: #075985 (sky-800)
- *   - Accent: #0ea5e9 (sky-500)  
- *   - Dark BG: #0C4A6E (sky-900)
- *   - White text on dark backgrounds
+ * Brand Colors (from BRAND_KIT.md):
+ *   - Primary: #0369a1 (sky-700)
+ *   - Primary Light: #0284c7 (sky-600)
+ *   - Primary Dark: #0c4a6e (sky-900)
+ *   - Accent: #38bdf8 (sky-400)
+ *   - Tone: Professional, industrial, premium
  */
 
 import { GoogleAuth } from "google-auth-library";
@@ -22,6 +23,27 @@ interface ImagenResult {
     imageUrl: string;        // Public URL
     storagePath: string;     // GCS path
 }
+
+// Diverse scene descriptions per audience — purely visual, no text references
+const CLIENT_SCENES = [
+    "Pristine modern medical office lobby with clean tile floors, polished reception desk, bright overhead lighting, potted plants, empty waiting area chairs neatly arranged",
+    "Spotless auto dealership showroom floor, gleaming under bright lights, polished concrete, luxury vehicles visible in background, immaculate glass windows",
+    "Modern commercial building hallway freshly cleaned, shining floors reflecting overhead lights, crisp white walls, professional maintenance",
+    "Empty medical exam room, sanitized surfaces, organized supply cabinets, bright clinical lighting, freshly mopped floor",
+    "Corporate office break room after professional cleaning, spotless countertops, organized cabinets, fresh flowers on table, warm natural light",
+    "Aerial view of a well-maintained commercial building exterior, landscaped grounds, clean parking lot, blue sky",
+    "Modern daycare facility interior, colorful but immaculate, organized toy shelves, clean play mats, bright cheerful lighting",
+];
+
+const CONTRACTOR_SCENES = [
+    "Professional cleaning crew in matching blue uniforms working together in a commercial building hallway, pushing floor buffer machine, teamwork",
+    "Close-up of janitorial equipment arranged neatly — mop bucket, floor buffer, cleaning supplies — professional grade tools ready for work",
+    "Facility maintenance worker in blue safety gear inspecting HVAC system on commercial building rooftop, sunrise in background",
+    "Team of contractors in hard hats and safety vests doing a walk-through inspection of a clean commercial space, clipboards in hand",
+    "Professional floor technician operating an industrial floor scrubber in a large commercial space, shiny wet floor behind them",
+    "Maintenance worker in blue uniform restocking supply closet in a commercial building, organized shelves, professional demeanor",
+    "Night shift cleaning crew member vacuuming a darkened office space, overhead emergency lights creating dramatic lighting, dedication",
+];
 
 /**
  * Generate a branded social media image using Imagen
@@ -38,17 +60,11 @@ export async function generatePostImage(
         });
         const client = await auth.getClient();
 
-        // Build the image prompt based on audience and post content
-        const brandContext = audience === "client"
-            ? "Clean, modern commercial building interior, professional medical office or auto dealership, well-maintained facility, bright lighting, organized workspace"
-            : "Professional contractor team at work, commercial cleaning crew, facility maintenance, safety gear, blue-collar pride, teamwork";
+        // Pick a random scene for variety
+        const scenes = audience === "client" ? CLIENT_SCENES : CONTRACTOR_SCENES;
+        const scene = scenes[Math.floor(Math.random() * scenes.length)];
 
-        const imagePrompt = `Professional social media photograph for a facility management company.
-Style: Modern, corporate, high-quality photography look. 
-Color palette: Deep navy blue (#075985), bright sky blue (#0ea5e9), white, with clean design.
-Scene: ${brandContext}.
-Context from post: ${postMessage.slice(0, 200)}
-CRITICAL: Absolutely NO text, NO letters, NO words, NO numbers, NO signs, NO signage, NO labels, NO captions, NO watermarks, NO logos anywhere in the image. The image must contain ZERO readable characters. Photorealistic, 1:1 square aspect ratio. Professional, premium feel.`;
+        const imagePrompt = `Editorial photograph, shot on Canon EOS R5 with 35mm lens. ${scene}. Color grading: cool blue tones with deep navy shadows and bright sky blue highlights. Clean, sharp, professional corporate photography. Shallow depth of field. 1:1 square composition.`;
 
         const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/imagen-3.0-generate-002:predict`;
 
@@ -63,6 +79,8 @@ CRITICAL: Absolutely NO text, NO letters, NO words, NO numbers, NO signs, NO sig
                     sampleCount: 1,
                     aspectRatio: "1:1",
                     safetyFilterLevel: "block_few",
+                    personGeneration: "allow_all",
+                    negativePrompt: "text, letters, words, numbers, signs, signage, labels, captions, watermarks, logos, branding, graphic design, overlays, banners, typography, fonts, writing, handwriting, graffiti, posters, billboards, screen, monitor text, nametags, badges with text",
                 },
             },
         });
