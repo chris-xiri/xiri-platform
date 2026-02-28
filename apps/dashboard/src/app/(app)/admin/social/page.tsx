@@ -961,9 +961,9 @@ export default function SocialMediaPage() {
                                                             </div>
                                                         )}
 
-                                                        {/* Delete button for rejected drafts */}
-                                                        {draft.status === 'rejected' && (
-                                                            <div className="flex gap-1.5 pt-2 border-t mt-auto">
+                                                        {/* Delete button for any draft */}
+                                                        {(draft.status === 'rejected' || draft.status === 'draft' || draft.status === 'approved') && (
+                                                            <div className={`flex gap-1.5 pt-2 border-t ${draft.status === 'draft' ? '' : 'mt-auto'}`}>
                                                                 <Button size="sm" className="h-7 text-xs px-2" variant="destructive" onClick={() => handleDeleteDraft(draft.id)}>
                                                                     <Trash2 className="w-3 h-3 mr-0.5" /> Delete
                                                                 </Button>
