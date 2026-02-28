@@ -11,7 +11,7 @@ import { onDocumentUploaded } from "./triggers/onDocumentUploaded";
 import { sendBookingConfirmation } from "./triggers/sendBookingConfirmation";
 import { enrichFromWebsite } from "./triggers/enrichFromWebsite";
 import { onOnboardingComplete } from "./triggers/onOnboardingComplete";
-import { onAwaitingOnboarding } from "./triggers/dripScheduler";
+import { onAwaitingOnboarding, onVendorAdvancedPastOutreach } from "./triggers/dripScheduler";
 import { handleUnsubscribe } from "./triggers/handleUnsubscribe";
 import { sendOnboardingInvite } from "./triggers/sendOnboardingInvite";
 import { sendQuoteEmail, respondToQuote } from "./triggers/sendQuoteEmail";
@@ -29,7 +29,7 @@ import { weeklyTemplateOptimizer, optimizeTemplate } from "./triggers/aiTemplate
 
 // Export Bot Functions (Telegram disabled for now)
 // export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };
-export { onVendorApproved, onVendorCreated, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete, onAwaitingOnboarding, handleUnsubscribe, sendOnboardingInvite, sendQuoteEmail, respondToQuote, processMailQueue, onWorkOrderAssigned, onLeadQualified, onQuoteAccepted, onInvoicePaid, onWorkOrderHandoff, onClientCancelled, processCommissionPayouts, calculateNrr, onAuditSubmitted, onAuditFailed, generateMonthlyInvoices, resendWebhook, onLeadUpdated, onVendorUpdated, onStaffUpdated, weeklyTemplateOptimizer, optimizeTemplate };
+export { onVendorApproved, onVendorCreated, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete, onAwaitingOnboarding, onVendorAdvancedPastOutreach, handleUnsubscribe, sendOnboardingInvite, sendQuoteEmail, respondToQuote, processMailQueue, onWorkOrderAssigned, onLeadQualified, onQuoteAccepted, onInvoicePaid, onWorkOrderHandoff, onClientCancelled, processCommissionPayouts, calculateNrr, onAuditSubmitted, onAuditFailed, generateMonthlyInvoices, resendWebhook, onLeadUpdated, onVendorUpdated, onStaffUpdated, weeklyTemplateOptimizer, optimizeTemplate };
 
 // ─── Admin: Sync Auth Email/Password ─────────────────────────────────────────
 import { getAuth } from "firebase-admin/auth";

@@ -1,7 +1,7 @@
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { enqueueTask } from "../utils/queueUtils";
+import { enqueueTask, cancelVendorTasks } from "../utils/queueUtils";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -81,4 +81,61 @@ export const onAwaitingOnboarding = onDocumentUpdated({
     }
 
     logger.info(`Drip campaign scheduled for ${vendorId}: 4 follow-ups at days 3, 7, 14, 21`);
+});
+
+/**
+ * Cancel Drip Emails on Status Advancement
+ * 
+ * When a vendor moves past 'awaiting_onboarding' to ANY later stage
+ * (e.g., compliance_review, pending_verification, active, etc.),
+ * immediately cancel all pending/retry outreach queue tasks.
+ * 
+ * This prevents vendors who are already in compliance or onboarded
+ * from continuing to receive recruitment follow-up emails.
+ */
+const STAGES_PAST_OUTREACH = new Set([
+    'compliance_review',
+    'pending_verification',
+    'onboarding_scheduled',
+    'ready_for_assignment',
+    'active',
+]);
+
+export const onVendorAdvancedPastOutreach = onDocumentUpdated({
+    document: "vendors/{vendorId}",
+}, async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+
+    // Only trigger on status change
+    if (before.status === after.status) return;
+
+    // Only act when moving FROM awaiting_onboarding (or qualified) TO a compliance+ stage
+    const wasInOutreach = before.status === 'awaiting_onboarding' || before.status === 'qualified';
+    const nowPastOutreach = STAGES_PAST_OUTREACH.has(after.status);
+
+    if (!wasInOutreach || !nowPastOutreach) return;
+
+    const vendorId = event.params.vendorId;
+    const businessName = after.businessName || 'Unknown';
+
+    logger.info(`Vendor ${vendorId} (${businessName}) advanced to '${after.status}' — cancelling scheduled outreach emails.`);
+
+    const cancelledCount = await cancelVendorTasks(db, vendorId);
+
+    if (cancelledCount > 0) {
+        await db.collection("vendor_activities").add({
+            vendorId,
+            type: "DRIP_CANCELLED",
+            description: `${cancelledCount} scheduled follow-up email(s) cancelled — vendor advanced to ${after.status}.`,
+            createdAt: new Date(),
+            metadata: {
+                previousStatus: before.status,
+                newStatus: after.status,
+                cancelledCount,
+            },
+        });
+        logger.info(`Cancelled ${cancelledCount} pending outreach tasks for vendor ${vendorId}.`);
+    }
 });
