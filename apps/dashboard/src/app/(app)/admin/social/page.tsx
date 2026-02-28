@@ -136,6 +136,9 @@ export default function SocialMediaPage() {
     const [generating, setGenerating] = useState(false);
     const [generateElapsed, setGenerateElapsed] = useState(0);
 
+    // Lightbox state for image/video zoom
+    const [lightboxMedia, setLightboxMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
+
     // Config state
     const [config, setConfig] = useState<SocialConfig>(DEFAULT_CONFIG);
     const [loadingConfig, setLoadingConfig] = useState(false);
@@ -383,666 +386,702 @@ export default function SocialMediaPage() {
     const isReels = activeChannel === 'facebook_reels';
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                        <Share2 className="w-6 h-6 text-blue-600" />
-                        Social Media
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        Manage content across platforms — post, schedule, and review AI-generated content
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating || !CHANNELS.find(c => c.id === activeChannel)?.enabled}>
-                        {generating
-                            ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> {isReels ? 'Generating Reel' : 'Generating'}... {generateElapsed > 0 && <span className="ml-1 text-xs text-muted-foreground">({generateElapsed}s)</span>}</>
-                            : isReels
-                                ? <><Video className="w-4 h-4 mr-1" /> Generate Reel</>
-                                : <><Sparkles className="w-4 h-4 mr-1" /> Generate Draft</>
-                        }
-                    </Button>
-                    {activeChannel.startsWith('facebook') && (
-                        <Button variant="outline" size="sm" asChild>
-                            <a href="https://facebook.com/profile.php?id=61586963125764" target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="w-4 h-4 mr-1" /> View Page
-                            </a>
-                        </Button>
-                    )}
-                </div>
-            </div>
-
-            {/* Channel Selector */}
-            <div className="flex gap-2">
-                {CHANNELS.map(ch => (
-                    <button
-                        key={ch.id}
-                        onClick={() => ch.enabled && setActiveChannel(ch.id)}
-                        disabled={!ch.enabled}
-                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all
-                            ${activeChannel === ch.id
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                : ch.enabled
-                                    ? 'bg-card hover:bg-muted border-border text-foreground'
-                                    : 'bg-muted/30 border-border text-muted-foreground cursor-not-allowed opacity-50'
-                            }`}
-                    >
-                        {ch.icon}
-                        {ch.label}
-                        {!ch.enabled && <Badge variant="outline" className="text-[9px] h-4 px-1">Soon</Badge>}
-                    </button>
-                ))}
-            </div>
-
-            {/* Feedback */}
-            {successMessage && (
-                <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg text-sm flex justify-between items-center">
-                    {successMessage}
-                    <button onClick={() => setSuccessMessage('')}>✕</button>
-                </div>
-            )}
-            {errorMessage && (
-                <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg text-sm flex justify-between items-center">
-                    {errorMessage}
-                    <button onClick={() => setErrorMessage('')}>✕</button>
-                </div>
-            )}
-
-            {/* Metrics Bar */}
-            {generating && (
-                <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/30">
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-                            <span className="text-sm font-medium">
-                                {isReels ? '🎬 Generating Reel with Veo 3...' : '✨ Generating AI Draft...'}
-                            </span>
-                            <span className="ml-auto text-sm font-mono text-muted-foreground">{generateElapsed}s</span>
-                        </div>
-                        <div className="w-full bg-blue-200/50 dark:bg-blue-800/30 rounded-full h-1.5">
-                            <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-1000" style={{ width: `${Math.min((generateElapsed / (isReels ? 300 : 60)) * 100, 95)}%` }} />
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1.5">
-                            {isReels
-                                ? 'Video generation can take 2-5 minutes. Generating video with audio, captions, and visuals...'
-                                : 'Generating post copy and branded image...'}
+        <>
+            <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                            <Share2 className="w-6 h-6 text-blue-600" />
+                            Social Media
+                        </h1>
+                        <p className="text-muted-foreground mt-1">
+                            Manage content across platforms — post, schedule, and review AI-generated content
                         </p>
-                    </CardContent>
-                </Card>
-            )}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                {isReels ? (
-                    <>
-                        <Card>
-                            <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950"><Film className="w-4 h-4 text-purple-600" /></div>
-                                <div><p className="text-xs text-muted-foreground">Total Reels</p><p className="text-xl font-bold">{totalReels}</p></div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950"><Eye className="w-4 h-4 text-blue-600" /></div>
-                                <div><p className="text-xs text-muted-foreground">Total Views</p><p className="text-xl font-bold">—</p></div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-950"><Video className="w-4 h-4 text-pink-600" /></div>
-                                <div><p className="text-xs text-muted-foreground">Avg Plays</p><p className="text-xl font-bold">—</p></div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-950"><Share2 className="w-4 h-4 text-green-600" /></div>
-                                <div><p className="text-xs text-muted-foreground">Avg Shares</p><p className="text-xl font-bold">—</p></div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950"><Sparkles className="w-4 h-4 text-amber-600" /></div>
-                                <div><p className="text-xs text-muted-foreground">Pending Drafts</p><p className="text-xl font-bold">{pendingDrafts}</p></div>
-                            </CardContent>
-                        </Card>
-                    </>
-                ) : (
-                    <>
-                        <Card>
-                            <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950"><Eye className="w-4 h-4 text-blue-600" /></div>
-                                <div><p className="text-xs text-muted-foreground">Posts</p><p className="text-xl font-bold">{totalPosts}</p></div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-950"><ThumbsUp className="w-4 h-4 text-pink-600" /></div>
-                                <div><p className="text-xs text-muted-foreground">Avg Likes</p><p className="text-xl font-bold">{avgLikes}</p></div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950"><MessageCircle className="w-4 h-4 text-amber-600" /></div>
-                                <div><p className="text-xs text-muted-foreground">Avg Comments</p><p className="text-xl font-bold">{avgComments}</p></div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-950"><Share2 className="w-4 h-4 text-green-600" /></div>
-                                <div><p className="text-xs text-muted-foreground">Avg Shares</p><p className="text-xl font-bold">{avgShares}</p></div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardContent className="p-4 flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950"><Sparkles className="w-4 h-4 text-purple-600" /></div>
-                                <div><p className="text-xs text-muted-foreground">Pending Drafts</p><p className="text-xl font-bold">{pendingDrafts}</p></div>
-                            </CardContent>
-                        </Card>
-                    </>
-                )}
-            </div>
-
-            {/* Tabs */}
-            <div className="flex gap-1 border-b">
-                {(['feed', 'drafts', 'settings'] as const).map(tab => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors capitalize
-                            ${activeTab === tab
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-muted-foreground hover:text-foreground'
-                            }`}
-                    >
-                        {tab === 'drafts' && pendingDrafts > 0 && (
-                            <Badge variant="secondary" className="mr-1.5 h-5 px-1.5 text-[10px] bg-purple-100 text-purple-700">{pendingDrafts}</Badge>
-                        )}
-                        {tab === 'feed' && <Send className="w-3.5 h-3.5 inline mr-1.5" />}
-                        {tab === 'drafts' && <Sparkles className="w-3.5 h-3.5 inline mr-1.5" />}
-                        {tab === 'settings' && <Settings className="w-3.5 h-3.5 inline mr-1.5" />}
-                        {tab}
-                    </button>
-                ))}
-            </div>
-
-            {/* ── Feed Tab ── */}
-            {
-                activeTab === 'feed' && (
-                    <div className="space-y-4">
-                        {/* Published Posts/Reels Feed */}
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold">
-                                {isReels ? '📽️ Published Reels' : 'Recent Posts'}
-                            </h2>
-                            <Button variant="ghost" size="sm" onClick={isReels ? fetchDrafts : fetchPosts} disabled={loading}>
-                                <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating || !CHANNELS.find(c => c.id === activeChannel)?.enabled}>
+                            {generating
+                                ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> {isReels ? 'Generating Reel' : 'Generating'}... {generateElapsed > 0 && <span className="ml-1 text-xs text-muted-foreground">({generateElapsed}s)</span>}</>
+                                : isReels
+                                    ? <><Video className="w-4 h-4 mr-1" /> Generate Reel</>
+                                    : <><Sparkles className="w-4 h-4 mr-1" /> Generate Draft</>
+                            }
+                        </Button>
+                        {activeChannel.startsWith('facebook') && (
+                            <Button variant="outline" size="sm" asChild>
+                                <a href="https://facebook.com/profile.php?id=61586963125764" target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="w-4 h-4 mr-1" /> View Page
+                                </a>
                             </Button>
-                        </div>
-
-                        {isReels ? (
-                            /* ── Reels Feed (from Firestore published reels) ── */
-                            (() => {
-                                const publishedReels = drafts.filter(d => d.status === 'approved' || d.status === 'published');
-                                return publishedReels.length === 0 ? (
-                                    <Card><CardContent className="p-8 text-center text-muted-foreground">
-                                        <Film className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                        <p>No published reels yet.</p>
-                                        <p className="text-xs mt-1">Generate a reel and approve it to see it here.</p>
-                                    </CardContent></Card>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {publishedReels.map(reel => (
-                                            <Card key={reel.id} className="overflow-hidden">
-                                                <CardContent className="p-0">
-                                                    {reel.videoUrl ? (
-                                                        <div className="relative aspect-[9/16] max-h-[320px] bg-black">
-                                                            <video src={reel.videoUrl} className="w-full h-full object-cover" controls muted />
-                                                            {reel.videoDurationSeconds && (
-                                                                <span className="absolute top-2 right-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
-                                                                    {reel.videoDurationSeconds}s
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="aspect-[9/16] max-h-[200px] bg-muted flex items-center justify-center">
-                                                            <Film className="w-10 h-10 text-muted-foreground opacity-30" />
-                                                        </div>
-                                                    )}
-                                                    <div className="p-3">
-                                                        <p className="text-sm line-clamp-2 mb-2">{reel.message}</p>
-                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                            {reel.audience && (
-                                                                <Badge variant="outline" className="text-[9px] h-4">
-                                                                    {reel.audience === 'client' ? '🏢 Client' : '🔧 Contractor'}
-                                                                </Badge>
-                                                            )}
-                                                            {reel.location && (
-                                                                <Badge variant="outline" className="text-[9px] h-4">📍 {reel.location}</Badge>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                );
-                            })()
-                        ) : (
-                            /* ── Posts Feed (from Facebook Graph API) ── */
-                            loading ? (
-                                <div className="space-y-4">{[1, 2, 3].map(i => (
-                                    <Card key={i}><CardContent className="p-4 space-y-3">
-                                        <Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-[200px] w-full rounded-lg" />
-                                    </CardContent></Card>
-                                ))}</div>
-                            ) : posts.length === 0 ? (
-                                <Card><CardContent className="p-8 text-center text-muted-foreground">
-                                    <Facebook className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>No posts yet.</p>
-                                </CardContent></Card>
-                            ) : (<div className="space-y-4">{posts.map(post => (
-                                <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                                    <CardContent className="p-0">
-                                        <div className="flex">
-                                            {/* Left: Image thumbnail */}
-                                            <div className="w-80 shrink-0 bg-muted/30">
-                                                {post.full_picture ? (
-                                                    <img src={post.full_picture} alt="Post" className="w-full aspect-square object-contain bg-muted/50" />
-                                                ) : (
-                                                    <div className="w-full aspect-square flex items-center justify-center">
-                                                        <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {/* Right: Content */}
-                                            <div className="flex-1 p-3 flex flex-col min-w-0">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-[10px]">X</div>
-                                                        <div>
-                                                            <p className="text-xs font-semibold">XIRI Facility Solutions</p>
-                                                            <p className="text-[10px] text-muted-foreground">{formatDate(post.created_time)}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-0.5">
-                                                        {post.permalink_url && (
-                                                            <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-                                                                <a href={post.permalink_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3 h-3" /></a>
-                                                            </Button>
-                                                        )}
-                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                            onClick={() => handleDelete(post.id)} disabled={deleting === post.id}>
-                                                            {deleting === post.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                                {post.message && (
-                                                    <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed flex-1 mb-2">
-                                                        {post.message}
-                                                    </p>
-                                                )}
-                                                <div className="flex items-center gap-3 pt-2 border-t text-[10px] text-muted-foreground mt-auto">
-                                                    <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" />{post.likes?.summary?.total_count || 0}</span>
-                                                    <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{post.comments?.summary?.total_count || 0}</span>
-                                                    <span className="flex items-center gap-1"><Share2 className="w-3 h-3" />{post.shares?.count || 0}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}</div>)
                         )}
                     </div>
-                )
-            }
+                </div>
 
-            {/* ── Drafts Tab ── */}
-            {
-                activeTab === 'drafts' && (
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold">
-                                {activeChannel === 'facebook_reels' ? 'Reel Drafts' : 'AI-Generated Drafts'}
-                            </h2>
-                            <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" onClick={fetchDrafts} disabled={loadingDrafts}>
-                                    <RefreshCw className={`w-4 h-4 mr-1 ${loadingDrafts ? 'animate-spin' : ''}`} /> Refresh
-                                </Button>
+                {/* Channel Selector */}
+                <div className="flex gap-2">
+                    {CHANNELS.map(ch => (
+                        <button
+                            key={ch.id}
+                            onClick={() => ch.enabled && setActiveChannel(ch.id)}
+                            disabled={!ch.enabled}
+                            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all
+                            ${activeChannel === ch.id
+                                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                    : ch.enabled
+                                        ? 'bg-card hover:bg-muted border-border text-foreground'
+                                        : 'bg-muted/30 border-border text-muted-foreground cursor-not-allowed opacity-50'
+                                }`}
+                        >
+                            {ch.icon}
+                            {ch.label}
+                            {!ch.enabled && <Badge variant="outline" className="text-[9px] h-4 px-1">Soon</Badge>}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Feedback */}
+                {successMessage && (
+                    <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg text-sm flex justify-between items-center">
+                        {successMessage}
+                        <button onClick={() => setSuccessMessage('')}>✕</button>
+                    </div>
+                )}
+                {errorMessage && (
+                    <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg text-sm flex justify-between items-center">
+                        {errorMessage}
+                        <button onClick={() => setErrorMessage('')}>✕</button>
+                    </div>
+                )}
+
+                {/* Metrics Bar */}
+                {generating && (
+                    <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/30">
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-3 mb-2">
+                                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                                <span className="text-sm font-medium">
+                                    {isReels ? '🎬 Generating Reel with Veo 3...' : '✨ Generating AI Draft...'}
+                                </span>
+                                <span className="ml-auto text-sm font-mono text-muted-foreground">{generateElapsed}s</span>
                             </div>
-                        </div>
-
-                        {loadingDrafts ? (
-                            <div className="space-y-4">{[1, 2].map(i => (
-                                <Card key={i}><CardContent className="p-4"><Skeleton className="h-24 w-full" /></CardContent></Card>
-                            ))}</div>
-                        ) : drafts.length === 0 ? (
+                            <div className="w-full bg-blue-200/50 dark:bg-blue-800/30 rounded-full h-1.5">
+                                <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-1000" style={{ width: `${Math.min((generateElapsed / (isReels ? 300 : 60)) * 100, 95)}%` }} />
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1.5">
+                                {isReels
+                                    ? 'Video generation can take 2-5 minutes. Generating video with audio, captions, and visuals...'
+                                    : 'Generating post copy and branded image...'}
+                            </p>
+                        </CardContent>
+                    </Card>
+                )}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {isReels ? (
+                        <>
                             <Card>
-                                <CardContent className="p-8 text-center text-muted-foreground">
-                                    <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                    <p>No drafts yet. Click &quot;{activeChannel === 'facebook_reels' ? 'Generate Reel' : 'Generate Draft'}&quot; to create one.</p>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950"><Film className="w-4 h-4 text-purple-600" /></div>
+                                    <div><p className="text-xs text-muted-foreground">Total Reels</p><p className="text-xl font-bold">{totalReels}</p></div>
                                 </CardContent>
                             </Card>
-                        ) : (
-                            <div className="space-y-4">
-                                {drafts.map(draft => (
-                                    <Card key={draft.id} className={`overflow-hidden transition-shadow hover:shadow-md ${draft.status === 'draft' ? 'border-purple-200 dark:border-purple-800' :
-                                        draft.status === 'rejected' ? 'opacity-50 border-dashed' : ''
-                                        }`}>
+                            <Card>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950"><Eye className="w-4 h-4 text-blue-600" /></div>
+                                    <div><p className="text-xs text-muted-foreground">Total Views</p><p className="text-xl font-bold">—</p></div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-950"><Video className="w-4 h-4 text-pink-600" /></div>
+                                    <div><p className="text-xs text-muted-foreground">Avg Plays</p><p className="text-xl font-bold">—</p></div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-green-100 dark:bg-green-950"><Share2 className="w-4 h-4 text-green-600" /></div>
+                                    <div><p className="text-xs text-muted-foreground">Avg Shares</p><p className="text-xl font-bold">—</p></div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950"><Sparkles className="w-4 h-4 text-amber-600" /></div>
+                                    <div><p className="text-xs text-muted-foreground">Pending Drafts</p><p className="text-xl font-bold">{pendingDrafts}</p></div>
+                                </CardContent>
+                            </Card>
+                        </>
+                    ) : (
+                        <>
+                            <Card>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950"><Eye className="w-4 h-4 text-blue-600" /></div>
+                                    <div><p className="text-xs text-muted-foreground">Posts</p><p className="text-xl font-bold">{totalPosts}</p></div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-950"><ThumbsUp className="w-4 h-4 text-pink-600" /></div>
+                                    <div><p className="text-xs text-muted-foreground">Avg Likes</p><p className="text-xl font-bold">{avgLikes}</p></div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950"><MessageCircle className="w-4 h-4 text-amber-600" /></div>
+                                    <div><p className="text-xs text-muted-foreground">Avg Comments</p><p className="text-xl font-bold">{avgComments}</p></div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-green-100 dark:bg-green-950"><Share2 className="w-4 h-4 text-green-600" /></div>
+                                    <div><p className="text-xs text-muted-foreground">Avg Shares</p><p className="text-xl font-bold">{avgShares}</p></div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950"><Sparkles className="w-4 h-4 text-purple-600" /></div>
+                                    <div><p className="text-xs text-muted-foreground">Pending Drafts</p><p className="text-xl font-bold">{pendingDrafts}</p></div>
+                                </CardContent>
+                            </Card>
+                        </>
+                    )}
+                </div>
+
+                {/* Tabs */}
+                <div className="flex gap-1 border-b">
+                    {(['feed', 'drafts', 'settings'] as const).map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors capitalize
+                            ${activeTab === tab
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            {tab === 'drafts' && pendingDrafts > 0 && (
+                                <Badge variant="secondary" className="mr-1.5 h-5 px-1.5 text-[10px] bg-purple-100 text-purple-700">{pendingDrafts}</Badge>
+                            )}
+                            {tab === 'feed' && <Send className="w-3.5 h-3.5 inline mr-1.5" />}
+                            {tab === 'drafts' && <Sparkles className="w-3.5 h-3.5 inline mr-1.5" />}
+                            {tab === 'settings' && <Settings className="w-3.5 h-3.5 inline mr-1.5" />}
+                            {tab}
+                        </button>
+                    ))}
+                </div>
+
+                {/* ── Feed Tab ── */}
+                {
+                    activeTab === 'feed' && (
+                        <div className="space-y-4">
+                            {/* Published Posts/Reels Feed */}
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-semibold">
+                                    {isReels ? '📽️ Published Reels' : 'Recent Posts'}
+                                </h2>
+                                <Button variant="ghost" size="sm" onClick={isReels ? fetchDrafts : fetchPosts} disabled={loading}>
+                                    <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                                </Button>
+                            </div>
+
+                            {isReels ? (
+                                /* ── Reels Feed (from Firestore published reels) ── */
+                                (() => {
+                                    const publishedReels = drafts.filter(d => d.status === 'approved' || d.status === 'published');
+                                    return publishedReels.length === 0 ? (
+                                        <Card><CardContent className="p-8 text-center text-muted-foreground">
+                                            <Film className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                            <p>No published reels yet.</p>
+                                            <p className="text-xs mt-1">Generate a reel and approve it to see it here.</p>
+                                        </CardContent></Card>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {publishedReels.map(reel => (
+                                                <Card key={reel.id} className="overflow-hidden">
+                                                    <CardContent className="p-0">
+                                                        {reel.videoUrl ? (
+                                                            <div className="relative aspect-[9/16] max-h-[320px] bg-black">
+                                                                <video src={reel.videoUrl} className="w-full h-full object-cover" controls muted />
+                                                                {reel.videoDurationSeconds && (
+                                                                    <span className="absolute top-2 right-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
+                                                                        {reel.videoDurationSeconds}s
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="aspect-[9/16] max-h-[200px] bg-muted flex items-center justify-center">
+                                                                <Film className="w-10 h-10 text-muted-foreground opacity-30" />
+                                                            </div>
+                                                        )}
+                                                        <div className="p-3">
+                                                            <p className="text-sm line-clamp-2 mb-2">{reel.message}</p>
+                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                {reel.audience && (
+                                                                    <Badge variant="outline" className="text-[9px] h-4">
+                                                                        {reel.audience === 'client' ? '🏢 Client' : '🔧 Contractor'}
+                                                                    </Badge>
+                                                                )}
+                                                                {reel.location && (
+                                                                    <Badge variant="outline" className="text-[9px] h-4">📍 {reel.location}</Badge>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    );
+                                })()
+                            ) : (
+                                /* ── Posts Feed (from Facebook Graph API) ── */
+                                loading ? (
+                                    <div className="space-y-4">{[1, 2, 3].map(i => (
+                                        <Card key={i}><CardContent className="p-4 space-y-3">
+                                            <Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-[200px] w-full rounded-lg" />
+                                        </CardContent></Card>
+                                    ))}</div>
+                                ) : posts.length === 0 ? (
+                                    <Card><CardContent className="p-8 text-center text-muted-foreground">
+                                        <Facebook className="w-12 h-12 mx-auto mb-3 opacity-20" /><p>No posts yet.</p>
+                                    </CardContent></Card>
+                                ) : (<div className="space-y-4">{posts.map(post => (
+                                    <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
                                         <CardContent className="p-0">
                                             <div className="flex">
-                                                {/* ── Left: Media Thumbnail ── */}
-                                                <div className="w-80 shrink-0 bg-muted/30 relative">
-                                                    {activeChannel === 'facebook_reels' && (draft as any).videoUrl ? (
-                                                        <video
-                                                            src={(draft as any).videoUrl}
-                                                            className="w-full aspect-square object-contain bg-muted/50"
-                                                            preload="metadata"
-                                                            poster={(draft as any).videoUrl + '#t=0.5'}
-                                                            muted
-                                                        />
-                                                    ) : activeChannel === 'facebook_posts' && draft.imageUrl ? (
-                                                        <img src={draft.imageUrl} alt="Post image" className="w-full aspect-square object-contain bg-muted/50" />
+                                                {/* Left: Image thumbnail */}
+                                                <div className="w-80 shrink-0 bg-muted/30">
+                                                    {post.full_picture ? (
+                                                        <img src={post.full_picture} alt="Post" className="w-full aspect-square object-contain bg-muted/50 cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => setLightboxMedia({ url: post.full_picture!, type: 'image' })} />
                                                     ) : (
                                                         <div className="w-full aspect-square flex items-center justify-center">
-                                                            {activeChannel === 'facebook_reels'
-                                                                ? <Film className="w-8 h-8 text-muted-foreground/30" />
-                                                                : <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
-                                                            }
+                                                            <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
                                                         </div>
-                                                    )}
-                                                    {/* Duration badge for reels */}
-                                                    {(draft as any).videoDurationSeconds && (
-                                                        <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
-                                                            {(draft as any).videoDurationSeconds}s
-                                                        </span>
                                                     )}
                                                 </div>
-
-                                                {/* ── Right: Content + Actions ── */}
+                                                {/* Right: Content */}
                                                 <div className="flex-1 p-3 flex flex-col min-w-0">
-                                                    {/* Top row: badges + countdown */}
-                                                    <div className="flex items-center justify-between gap-2 mb-2">
-                                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                                            <Badge variant={
-                                                                draft.status === 'draft' ? 'secondary' :
-                                                                    draft.status === 'approved' ? 'default' : 'destructive'
-                                                            } className={`text-[10px] ${draft.status === 'draft' ? 'bg-purple-100 text-purple-700' :
-                                                                draft.status === 'approved' ? 'bg-green-100 text-green-700' : ''
-                                                                }`}>
-                                                                {draft.status === 'draft' && <Sparkles className="w-2.5 h-2.5 mr-0.5" />}
-                                                                {draft.status === 'approved' && <Check className="w-2.5 h-2.5 mr-0.5" />}
-                                                                {draft.status}
-                                                            </Badge>
-                                                            {draft.audience && (
-                                                                <Badge variant="outline" className={`text-[10px] ${draft.audience === 'client'
-                                                                    ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300'
-                                                                    : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300'
-                                                                    }`}>
-                                                                    {draft.audience === 'client' ? '🏢 Client' : '🔧 Contractor'}
-                                                                </Badge>
-                                                            )}
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-[10px]">X</div>
+                                                            <div>
+                                                                <p className="text-xs font-semibold">XIRI Facility Solutions</p>
+                                                                <p className="text-[10px] text-muted-foreground">{formatDate(post.created_time)}</p>
+                                                            </div>
                                                         </div>
-                                                        {draft.status === 'draft' && draft.scheduledFor && (() => {
-                                                            const remaining = getTimeRemaining(draft.scheduledFor);
-                                                            if (!remaining) return null;
-                                                            return (
-                                                                <div className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5 font-medium shrink-0 ${remaining.urgent
-                                                                    ? 'bg-red-100 text-red-700'
-                                                                    : remaining.hours < 12
-                                                                        ? 'bg-amber-100 text-amber-700'
-                                                                        : 'bg-blue-50 text-blue-600'
-                                                                    }`}>
-                                                                    <Timer className="w-2.5 h-2.5" />
-                                                                    {remaining.text}
-                                                                </div>
-                                                            );
-                                                        })()}
+                                                        <div className="flex gap-0.5">
+                                                            {post.permalink_url && (
+                                                                <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
+                                                                    <a href={post.permalink_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3 h-3" /></a>
+                                                                </Button>
+                                                            )}
+                                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                onClick={() => handleDelete(post.id)} disabled={deleting === post.id}>
+                                                                {deleting === post.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                                                            </Button>
+                                                        </div>
                                                     </div>
-
-                                                    {/* Message preview */}
-                                                    {editingDraft === draft.id ? (
-                                                        <textarea
-                                                            value={editedMessage}
-                                                            onChange={(e) => setEditedMessage(e.target.value)}
-                                                            className="w-full min-h-[80px] p-2 text-xs border rounded-lg bg-muted/20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
-                                                        />
-                                                    ) : (
-                                                        <p className="text-xs text-muted-foreground whitespace-pre-wrap mb-2 leading-relaxed flex-1">
-                                                            {draft.message}
+                                                    {post.message && (
+                                                        <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed flex-1 mb-2">
+                                                            {post.message}
                                                         </p>
                                                     )}
-
-                                                    {/* Location tag (reels only) */}
-                                                    {activeChannel === 'facebook_reels' && (draft as any).location && (
-                                                        <p className="text-[10px] text-emerald-600 mb-2">📍 {(draft as any).location}</p>
-                                                    )}
-
-                                                    {/* Actions */}
-                                                    {draft.status === 'draft' && (
-                                                        <div className="flex gap-1.5 pt-2 border-t mt-auto">
-                                                            <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 px-2" onClick={() => handleReview(draft.id, 'approve')}
-                                                                disabled={reviewingId === draft.id}>
-                                                                {reviewingId === draft.id ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <Check className="w-3 h-3 mr-0.5" />}
-                                                                Approve
-                                                            </Button>
-                                                            {editingDraft === draft.id ? (
-                                                                <Button size="sm" className="h-7 text-xs px-2" variant="outline" onClick={() => { setEditingDraft(null); setEditedMessage(''); }}>
-                                                                    Cancel
-                                                                </Button>
-                                                            ) : (
-                                                                <Button size="sm" className="h-7 text-xs px-2" variant="outline" onClick={() => { setEditingDraft(draft.id); setEditedMessage(draft.message); }}>
-                                                                    <Edit3 className="w-3 h-3 mr-0.5" /> Edit
-                                                                </Button>
-                                                            )}
-                                                            <Button size="sm" className="h-7 text-xs px-2" variant="destructive" onClick={() => handleReview(draft.id, 'reject')}
-                                                                disabled={reviewingId === draft.id}>
-                                                                <X className="w-3 h-3 mr-0.5" /> Reject
-                                                            </Button>
-                                                            {(draft as any).videoUrl && (
-                                                                <Button size="sm" className="h-7 text-xs px-2 ml-auto text-emerald-600 border-emerald-200 hover:bg-emerald-50" variant="outline"
-                                                                    onClick={async () => {
-                                                                        const newLoc = prompt('Enter location for the reused reel (e.g. Great Neck, NY):');
-                                                                        if (!newLoc) return;
-                                                                        const { collection, addDoc } = await import('firebase/firestore');
-                                                                        await addDoc(collection(db, 'social_posts'), {
-                                                                            ...draft,
-                                                                            id: undefined,
-                                                                            location: newLoc,
-                                                                            status: 'draft',
-                                                                            reusedFrom: draft.id,
-                                                                            reviewedBy: null,
-                                                                            reviewedAt: null,
-                                                                            createdAt: new Date(),
-                                                                        });
-                                                                        fetchDrafts();
-                                                                    }}>
-                                                                    ♻️ Reuse
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                    <div className="flex items-center gap-3 pt-2 border-t text-[10px] text-muted-foreground mt-auto">
+                                                        <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" />{post.likes?.summary?.total_count || 0}</span>
+                                                        <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{post.comments?.summary?.total_count || 0}</span>
+                                                        <span className="flex items-center gap-1"><Share2 className="w-3 h-3" />{post.shares?.count || 0}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </CardContent>
                                     </Card>
-                                ))}
+                                ))}</div>)
+                            )}
+                        </div>
+                    )
+                }
+
+                {/* ── Drafts Tab ── */}
+                {
+                    activeTab === 'drafts' && (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-semibold">
+                                    {activeChannel === 'facebook_reels' ? 'Reel Drafts' : 'AI-Generated Drafts'}
+                                </h2>
+                                <div className="flex gap-2">
+                                    <Button variant="ghost" size="sm" onClick={fetchDrafts} disabled={loadingDrafts}>
+                                        <RefreshCw className={`w-4 h-4 mr-1 ${loadingDrafts ? 'animate-spin' : ''}`} /> Refresh
+                                    </Button>
+                                </div>
                             </div>
-                        )}
-                    </div>
-                )
-            }
 
-            {/* ── Settings Tab ── */}
-            {
-                activeTab === 'settings' && (
-                    <div className="max-w-2xl space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <Zap className="w-5 h-5 text-amber-500" /> AI Content Engine
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                {/* Enable/Disable */}
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                            {loadingDrafts ? (
+                                <div className="space-y-4">{[1, 2].map(i => (
+                                    <Card key={i}><CardContent className="p-4"><Skeleton className="h-24 w-full" /></CardContent></Card>
+                                ))}</div>
+                            ) : drafts.length === 0 ? (
+                                <Card>
+                                    <CardContent className="p-8 text-center text-muted-foreground">
+                                        <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                        <p>No drafts yet. Click &quot;{activeChannel === 'facebook_reels' ? 'Generate Reel' : 'Generate Draft'}&quot; to create one.</p>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <div className="space-y-4">
+                                    {drafts.map(draft => (
+                                        <Card key={draft.id} className={`overflow-hidden transition-shadow hover:shadow-md ${draft.status === 'draft' ? 'border-purple-200 dark:border-purple-800' :
+                                            draft.status === 'rejected' ? 'opacity-50 border-dashed' : ''
+                                            }`}>
+                                            <CardContent className="p-0">
+                                                <div className="flex">
+                                                    {/* ── Left: Media Thumbnail ── */}
+                                                    <div className="w-80 shrink-0 bg-muted/30 relative">
+                                                        {activeChannel === 'facebook_reels' && (draft as any).videoUrl ? (
+                                                            <video
+                                                                src={(draft as any).videoUrl}
+                                                                className="w-full aspect-square object-contain bg-muted/50 cursor-pointer"
+                                                                preload="metadata"
+                                                                controls
+                                                                muted
+                                                                onClick={(e) => { e.stopPropagation(); setLightboxMedia({ url: (draft as any).videoUrl, type: 'video' }); }}
+                                                            />
+                                                        ) : activeChannel === 'facebook_posts' && draft.imageUrl ? (
+                                                            <img src={draft.imageUrl} alt="Post image" className="w-full aspect-square object-contain bg-muted/50 cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => setLightboxMedia({ url: draft.imageUrl!, type: 'image' })} />
+                                                        ) : (
+                                                            <div className="w-full aspect-square flex items-center justify-center">
+                                                                {activeChannel === 'facebook_reels'
+                                                                    ? <Film className="w-8 h-8 text-muted-foreground/30" />
+                                                                    : <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
+                                                                }
+                                                            </div>
+                                                        )}
+                                                        {/* Duration badge for reels */}
+                                                        {(draft as any).videoDurationSeconds && (
+                                                            <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
+                                                                {(draft as any).videoDurationSeconds}s
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* ── Right: Content + Actions ── */}
+                                                    <div className="flex-1 p-3 flex flex-col min-w-0">
+                                                        {/* Top row: badges + countdown */}
+                                                        <div className="flex items-center justify-between gap-2 mb-2">
+                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                <Badge variant={
+                                                                    draft.status === 'draft' ? 'secondary' :
+                                                                        draft.status === 'approved' ? 'default' : 'destructive'
+                                                                } className={`text-[10px] ${draft.status === 'draft' ? 'bg-purple-100 text-purple-700' :
+                                                                    draft.status === 'approved' ? 'bg-green-100 text-green-700' : ''
+                                                                    }`}>
+                                                                    {draft.status === 'draft' && <Sparkles className="w-2.5 h-2.5 mr-0.5" />}
+                                                                    {draft.status === 'approved' && <Check className="w-2.5 h-2.5 mr-0.5" />}
+                                                                    {draft.status}
+                                                                </Badge>
+                                                                {draft.audience && (
+                                                                    <Badge variant="outline" className={`text-[10px] ${draft.audience === 'client'
+                                                                        ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300'
+                                                                        : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300'
+                                                                        }`}>
+                                                                        {draft.audience === 'client' ? '🏢 Client' : '🔧 Contractor'}
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            {draft.status === 'draft' && draft.scheduledFor && (() => {
+                                                                const remaining = getTimeRemaining(draft.scheduledFor);
+                                                                if (!remaining) return null;
+                                                                return (
+                                                                    <div className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5 font-medium shrink-0 ${remaining.urgent
+                                                                        ? 'bg-red-100 text-red-700'
+                                                                        : remaining.hours < 12
+                                                                            ? 'bg-amber-100 text-amber-700'
+                                                                            : 'bg-blue-50 text-blue-600'
+                                                                        }`}>
+                                                                        <Timer className="w-2.5 h-2.5" />
+                                                                        {remaining.text}
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </div>
+
+                                                        {/* Message preview */}
+                                                        {editingDraft === draft.id ? (
+                                                            <textarea
+                                                                value={editedMessage}
+                                                                onChange={(e) => setEditedMessage(e.target.value)}
+                                                                className="w-full min-h-[80px] p-2 text-xs border rounded-lg bg-muted/20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+                                                            />
+                                                        ) : (
+                                                            <p className="text-xs text-muted-foreground whitespace-pre-wrap mb-2 leading-relaxed flex-1">
+                                                                {draft.message}
+                                                            </p>
+                                                        )}
+
+                                                        {/* Location tag (reels only) */}
+                                                        {activeChannel === 'facebook_reels' && (draft as any).location && (
+                                                            <p className="text-[10px] text-emerald-600 mb-2">📍 {(draft as any).location}</p>
+                                                        )}
+
+                                                        {/* Actions */}
+                                                        {draft.status === 'draft' && (
+                                                            <div className="flex gap-1.5 pt-2 border-t mt-auto">
+                                                                <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 px-2" onClick={() => handleReview(draft.id, 'approve')}
+                                                                    disabled={reviewingId === draft.id}>
+                                                                    {reviewingId === draft.id ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <Check className="w-3 h-3 mr-0.5" />}
+                                                                    Approve
+                                                                </Button>
+                                                                {editingDraft === draft.id ? (
+                                                                    <Button size="sm" className="h-7 text-xs px-2" variant="outline" onClick={() => { setEditingDraft(null); setEditedMessage(''); }}>
+                                                                        Cancel
+                                                                    </Button>
+                                                                ) : (
+                                                                    <Button size="sm" className="h-7 text-xs px-2" variant="outline" onClick={() => { setEditingDraft(draft.id); setEditedMessage(draft.message); }}>
+                                                                        <Edit3 className="w-3 h-3 mr-0.5" /> Edit
+                                                                    </Button>
+                                                                )}
+                                                                <Button size="sm" className="h-7 text-xs px-2" variant="destructive" onClick={() => handleReview(draft.id, 'reject')}
+                                                                    disabled={reviewingId === draft.id}>
+                                                                    <X className="w-3 h-3 mr-0.5" /> Reject
+                                                                </Button>
+                                                                {(draft as any).videoUrl && (
+                                                                    <Button size="sm" className="h-7 text-xs px-2 ml-auto text-emerald-600 border-emerald-200 hover:bg-emerald-50" variant="outline"
+                                                                        onClick={async () => {
+                                                                            const newLoc = prompt('Enter location for the reused reel (e.g. Great Neck, NY):');
+                                                                            if (!newLoc) return;
+                                                                            const { collection, addDoc } = await import('firebase/firestore');
+                                                                            await addDoc(collection(db, 'social_posts'), {
+                                                                                ...draft,
+                                                                                id: undefined,
+                                                                                location: newLoc,
+                                                                                status: 'draft',
+                                                                                reusedFrom: draft.id,
+                                                                                reviewedBy: null,
+                                                                                reviewedAt: null,
+                                                                                createdAt: new Date(),
+                                                                            });
+                                                                            fetchDrafts();
+                                                                        }}>
+                                                                        ♻️ Reuse
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )
+                }
+
+                {/* ── Settings Tab ── */}
+                {
+                    activeTab === 'settings' && (
+                        <div className="max-w-2xl space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <Zap className="w-5 h-5 text-amber-500" /> AI Content Engine
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    {/* Enable/Disable */}
+                                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                                        <div>
+                                            <p className="font-medium text-sm">Auto-generate drafts</p>
+                                            <p className="text-xs text-muted-foreground">AI will create Facebook post drafts for your review</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config.enabled ? 'bg-blue-600' : 'bg-muted'}`}
+                                        >
+                                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                        </button>
+                                    </div>
+
+                                    {/* Cadence */}
                                     <div>
-                                        <p className="font-medium text-sm">Auto-generate drafts</p>
-                                        <p className="text-xs text-muted-foreground">AI will create Facebook post drafts for your review</p>
-                                    </div>
-                                    <button
-                                        onClick={() => setConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config.enabled ? 'bg-blue-600' : 'bg-muted'}`}
-                                    >
-                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${config.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                                    </button>
-                                </div>
-
-                                {/* Cadence */}
-                                <div>
-                                    <label className="text-sm font-medium mb-2 block">Posting Cadence</label>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {CADENCE_OPTIONS.map(opt => (
-                                            <button key={opt.value}
-                                                onClick={() => setConfig(prev => ({ ...prev, cadence: opt.value }))}
-                                                className={`px-3 py-2 text-sm rounded-lg border transition-colors
+                                        <label className="text-sm font-medium mb-2 block">Posting Cadence</label>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {CADENCE_OPTIONS.map(opt => (
+                                                <button key={opt.value}
+                                                    onClick={() => setConfig(prev => ({ ...prev, cadence: opt.value }))}
+                                                    className={`px-3 py-2 text-sm rounded-lg border transition-colors
                                                 ${config.cadence === opt.value
-                                                        ? 'bg-blue-600 text-white border-blue-600'
-                                                        : 'hover:bg-muted border-border'
-                                                    }`}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        ))}
+                                                            ? 'bg-blue-600 text-white border-blue-600'
+                                                            : 'hover:bg-muted border-border'
+                                                        }`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
 
-                                {/* Preferred Days */}
-                                <div>
-                                    <label className="text-sm font-medium mb-2 block">Preferred Days</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {DAYS.map(day => (
-                                            <button key={day}
-                                                onClick={() => toggleDay(day)}
-                                                className={`px-3 py-1.5 text-xs rounded-full border transition-colors capitalize
+                                    {/* Preferred Days */}
+                                    <div>
+                                        <label className="text-sm font-medium mb-2 block">Preferred Days</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {DAYS.map(day => (
+                                                <button key={day}
+                                                    onClick={() => toggleDay(day)}
+                                                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors capitalize
                                                 ${config.preferredDays.includes(day)
-                                                        ? 'bg-blue-600 text-white border-blue-600'
-                                                        : 'hover:bg-muted border-border'
-                                                    }`}
-                                            >
-                                                {day.slice(0, 3)}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Preferred Time */}
-                                <div>
-                                    <label className="text-sm font-medium mb-2 block">Posting Time (ET)</label>
-                                    <input type="time" value={config.preferredTime}
-                                        onChange={(e) => setConfig(prev => ({ ...prev, preferredTime: e.target.value }))}
-                                        className="px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-[140px]" />
-                                </div>
-
-                                {/* Tone */}
-                                <div>
-                                    <label className="text-sm font-medium mb-2 block">Tone</label>
-                                    <input type="text" value={config.tone}
-                                        onChange={(e) => setConfig(prev => ({ ...prev, tone: e.target.value }))}
-                                        placeholder="e.g. Professional, bold, blue-collar-friendly"
-                                        className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                </div>
-
-                                {/* Audience Mix */}
-                                <div>
-                                    <label className="text-sm font-medium mb-2 block">Audience Mix</label>
-                                    <p className="text-xs text-muted-foreground mb-3">Balance content between clients (lead gen) and contractors (recruitment)</p>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-xs font-medium text-sky-600 w-20">🏢 Client</span>
-                                        <input
-                                            type="range" min="0" max="100" step="10"
-                                            value={config.audienceMix?.client ?? 50}
-                                            onChange={(e) => {
-                                                const clientVal = Number(e.target.value);
-                                                setConfig(prev => ({
-                                                    ...prev,
-                                                    audienceMix: { client: clientVal, contractor: 100 - clientVal },
-                                                }));
-                                            }}
-                                            className="flex-1 accent-blue-600"
-                                        />
-                                        <span className="text-xs font-medium text-orange-600 w-24 text-right">🔧 Contractor</span>
-                                    </div>
-                                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                                        <span>{config.audienceMix?.client ?? 50}%</span>
-                                        <span>{config.audienceMix?.contractor ?? 50}%</span>
-                                    </div>
-                                </div>
-
-                                {/* Topics */}
-                                <div>
-                                    <label className="text-sm font-medium mb-2 block">Topics</label>
-                                    <div className="flex flex-wrap gap-1.5 mb-2">
-                                        {config.topics.map((topic, i) => (
-                                            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                                                {topic}
-                                                <button onClick={() => setConfig(prev => ({ ...prev, topics: prev.topics.filter((_, idx) => idx !== i) }))}
-                                                    className="hover:text-red-500 ml-0.5">
-                                                    <X className="w-3 h-3" />
+                                                            ? 'bg-blue-600 text-white border-blue-600'
+                                                            : 'hover:bg-muted border-border'
+                                                        }`}
+                                                >
+                                                    {day.slice(0, 3)}
                                                 </button>
-                                            </span>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
-                                    <input type="text" placeholder="Type a topic and press Enter"
-                                        className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                const val = (e.target as HTMLInputElement).value.trim();
-                                                if (val && !config.topics.includes(val)) {
-                                                    setConfig(prev => ({ ...prev, topics: [...prev.topics, val] }));
-                                                    (e.target as HTMLInputElement).value = '';
-                                                }
-                                            }
-                                        }} />
-                                </div>
 
-                                {/* Hashtags */}
-                                <div>
-                                    <label className="text-sm font-medium mb-2 block">Hashtags</label>
-                                    <div className="flex flex-wrap gap-1.5 mb-2">
-                                        {config.hashtagSets.map((tag, i) => (
-                                            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
-                                                {tag}
-                                                <button onClick={() => setConfig(prev => ({ ...prev, hashtagSets: prev.hashtagSets.filter((_, idx) => idx !== i) }))}
-                                                    className="hover:text-red-500 ml-0.5">
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </span>
-                                        ))}
+                                    {/* Preferred Time */}
+                                    <div>
+                                        <label className="text-sm font-medium mb-2 block">Posting Time (ET)</label>
+                                        <input type="time" value={config.preferredTime}
+                                            onChange={(e) => setConfig(prev => ({ ...prev, preferredTime: e.target.value }))}
+                                            className="px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-[140px]" />
                                     </div>
-                                    <input type="text" placeholder="Type a hashtag and press Enter"
-                                        className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                let val = (e.target as HTMLInputElement).value.trim();
-                                                if (val && !val.startsWith('#')) val = '#' + val;
-                                                if (val && !config.hashtagSets.includes(val)) {
-                                                    setConfig(prev => ({ ...prev, hashtagSets: [...prev.hashtagSets, val] }));
-                                                    (e.target as HTMLInputElement).value = '';
-                                                }
-                                            }
-                                        }} />
-                                </div>
 
-                                {/* Save */}
-                                <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={handleSaveConfig} disabled={savingConfig}>
-                                    {savingConfig ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : 'Save Settings'}
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )
-            }
-        </div >
+                                    {/* Tone */}
+                                    <div>
+                                        <label className="text-sm font-medium mb-2 block">Tone</label>
+                                        <input type="text" value={config.tone}
+                                            onChange={(e) => setConfig(prev => ({ ...prev, tone: e.target.value }))}
+                                            placeholder="e.g. Professional, bold, blue-collar-friendly"
+                                            className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    </div>
+
+                                    {/* Audience Mix */}
+                                    <div>
+                                        <label className="text-sm font-medium mb-2 block">Audience Mix</label>
+                                        <p className="text-xs text-muted-foreground mb-3">Balance content between clients (lead gen) and contractors (recruitment)</p>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xs font-medium text-sky-600 w-20">🏢 Client</span>
+                                            <input
+                                                type="range" min="0" max="100" step="10"
+                                                value={config.audienceMix?.client ?? 50}
+                                                onChange={(e) => {
+                                                    const clientVal = Number(e.target.value);
+                                                    setConfig(prev => ({
+                                                        ...prev,
+                                                        audienceMix: { client: clientVal, contractor: 100 - clientVal },
+                                                    }));
+                                                }}
+                                                className="flex-1 accent-blue-600"
+                                            />
+                                            <span className="text-xs font-medium text-orange-600 w-24 text-right">🔧 Contractor</span>
+                                        </div>
+                                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                                            <span>{config.audienceMix?.client ?? 50}%</span>
+                                            <span>{config.audienceMix?.contractor ?? 50}%</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Topics */}
+                                    <div>
+                                        <label className="text-sm font-medium mb-2 block">Topics</label>
+                                        <div className="flex flex-wrap gap-1.5 mb-2">
+                                            {config.topics.map((topic, i) => (
+                                                <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                                    {topic}
+                                                    <button onClick={() => setConfig(prev => ({ ...prev, topics: prev.topics.filter((_, idx) => idx !== i) }))}
+                                                        className="hover:text-red-500 ml-0.5">
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <input type="text" placeholder="Type a topic and press Enter"
+                                            className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    const val = (e.target as HTMLInputElement).value.trim();
+                                                    if (val && !config.topics.includes(val)) {
+                                                        setConfig(prev => ({ ...prev, topics: [...prev.topics, val] }));
+                                                        (e.target as HTMLInputElement).value = '';
+                                                    }
+                                                }
+                                            }} />
+                                    </div>
+
+                                    {/* Hashtags */}
+                                    <div>
+                                        <label className="text-sm font-medium mb-2 block">Hashtags</label>
+                                        <div className="flex flex-wrap gap-1.5 mb-2">
+                                            {config.hashtagSets.map((tag, i) => (
+                                                <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                                    {tag}
+                                                    <button onClick={() => setConfig(prev => ({ ...prev, hashtagSets: prev.hashtagSets.filter((_, idx) => idx !== i) }))}
+                                                        className="hover:text-red-500 ml-0.5">
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <input type="text" placeholder="Type a hashtag and press Enter"
+                                            className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    let val = (e.target as HTMLInputElement).value.trim();
+                                                    if (val && !val.startsWith('#')) val = '#' + val;
+                                                    if (val && !config.hashtagSets.includes(val)) {
+                                                        setConfig(prev => ({ ...prev, hashtagSets: [...prev.hashtagSets, val] }));
+                                                        (e.target as HTMLInputElement).value = '';
+                                                    }
+                                                }
+                                            }} />
+                                    </div>
+
+                                    {/* Save */}
+                                    <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={handleSaveConfig} disabled={savingConfig}>
+                                        {savingConfig ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : 'Save Settings'}
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )
+                }
+            </div >
+
+            {lightboxMedia && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 cursor-zoom-out"
+                    onClick={() => setLightboxMedia(null)}
+                    onKeyDown={(e) => { if (e.key === 'Escape') setLightboxMedia(null); }}
+                    role="dialog"
+                    tabIndex={0}
+                >
+                    <button
+                        className="absolute top-4 right-4 text-white/80 hover:text-white bg-black/50 rounded-full p-2 z-10"
+                        onClick={() => setLightboxMedia(null)}
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                    {lightboxMedia.type === 'image' ? (
+                        <img
+                            src={lightboxMedia.url}
+                            alt="Zoomed view"
+                            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg cursor-default"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    ) : (
+                        <video
+                            src={lightboxMedia.url}
+                            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg cursor-default"
+                            controls
+                            autoPlay
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    )}
+                </div>
+            )}
+        </>
     );
 }

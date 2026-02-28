@@ -43,12 +43,12 @@ export async function generatePostImage(
             ? "Clean, modern commercial building interior, professional medical office or auto dealership, well-maintained facility, bright lighting, organized workspace"
             : "Professional contractor team at work, commercial cleaning crew, facility maintenance, safety gear, blue-collar pride, teamwork";
 
-        const imagePrompt = `Professional social media graphic for a facility management company.
+        const imagePrompt = `Professional social media photograph for a facility management company.
 Style: Modern, corporate, high-quality photography look. 
 Color palette: Deep navy blue (#075985), bright sky blue (#0ea5e9), white, with clean design.
 Scene: ${brandContext}.
 Context from post: ${postMessage.slice(0, 200)}
-Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 square aspect ratio. Professional, premium feel.`;
+CRITICAL: Absolutely NO text, NO letters, NO words, NO numbers, NO signs, NO signage, NO labels, NO captions, NO watermarks, NO logos anywhere in the image. The image must contain ZERO readable characters. Photorealistic, 1:1 square aspect ratio. Professional, premium feel.`;
 
         const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/imagen-3.0-generate-002:predict`;
 
