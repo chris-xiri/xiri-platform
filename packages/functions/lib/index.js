@@ -18109,12 +18109,14 @@ __export(index_exports, {
   processMailQueue: () => processMailQueue,
   processOutreachQueue: () => processOutreachQueue,
   publishFacebookPost: () => publishFacebookPost,
+  publishPostNow: () => publishPostNow,
   resendWebhook: () => resendWebhook,
   respondToQuote: () => respondToQuote,
   reviewSocialPost: () => reviewSocialPost,
   runRecruiterAgent: () => runRecruiterAgent,
   runSocialContentGenerator: () => runSocialContentGenerator,
   runSocialPublisher: () => runSocialPublisher,
+  searchPlaces: () => searchPlaces,
   sendBookingConfirmation: () => sendBookingConfirmation,
   sendOnboardingInvite: () => sendOnboardingInvite,
   sendQuoteEmail: () => sendQuoteEmail,
@@ -23427,7 +23429,7 @@ function getAccessToken() {
   }
   return token;
 }
-async function publishPost(message, link, imageUrl) {
+async function publishPost(message, link, imageUrl, placeId) {
   const token = getAccessToken();
   try {
     let endpoint = `${GRAPH_BASE_URL}/${PAGE_ID}/feed`;
@@ -23437,6 +23439,9 @@ async function publishPost(message, link, imageUrl) {
     };
     if (link) {
       body.link = link;
+    }
+    if (placeId) {
+      body.place = placeId;
     }
     if (imageUrl) {
       endpoint = `${GRAPH_BASE_URL}/${PAGE_ID}/photos`;
@@ -23469,6 +23474,99 @@ async function publishPost(message, link, imageUrl) {
       success: false,
       error: error11.message || "Failed to publish to Facebook"
     };
+  }
+}
+async function publishReel(videoUrl, description, placeId) {
+  const token = getAccessToken();
+  try {
+    const initResponse = await fetch(`${GRAPH_BASE_URL}/${PAGE_ID}/video_reels`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        upload_phase: "start",
+        access_token: token
+      })
+    });
+    const initData = await initResponse.json();
+    if (initData.error) {
+      console.error("[FB Reels] Init error:", initData.error);
+      return { id: "", success: false, error: initData.error.message };
+    }
+    const videoId = initData.video_id;
+    console.log(`[FB Reels] Initialized upload, video_id: ${videoId}`);
+    const videoResponse = await fetch(videoUrl);
+    const videoBuffer = await videoResponse.arrayBuffer();
+    const uploadResponse = await fetch(
+      `https://rupload.facebook.com/video-upload/${GRAPH_API_VERSION}/${videoId}`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `OAuth ${token}`,
+          "offset": "0",
+          "file_size": videoBuffer.byteLength.toString(),
+          "Content-Type": "application/octet-stream"
+        },
+        body: videoBuffer
+      }
+    );
+    const uploadData = await uploadResponse.json();
+    if (!uploadData.success) {
+      console.error("[FB Reels] Upload error:", uploadData);
+      return { id: "", success: false, error: "Video upload failed" };
+    }
+    console.log(`[FB Reels] Video uploaded successfully`);
+    const finishBody = {
+      upload_phase: "finish",
+      video_id: videoId,
+      title: description.slice(0, 100),
+      description,
+      access_token: token
+    };
+    if (placeId) {
+      finishBody.place_id = placeId;
+    }
+    const finishResponse = await fetch(`${GRAPH_BASE_URL}/${PAGE_ID}/video_reels`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(finishBody)
+    });
+    const finishData = await finishResponse.json();
+    if (finishData.error) {
+      console.error("[FB Reels] Finish error:", finishData.error);
+      return { id: "", success: false, error: finishData.error.message };
+    }
+    console.log(`[FB Reels] Reel published! ID: ${finishData.id || videoId}`);
+    return {
+      id: finishData.id || videoId,
+      success: true,
+      postUrl: `https://facebook.com/reel/${finishData.id || videoId}`
+    };
+  } catch (error11) {
+    console.error("[FB Reels] Publish error:", error11);
+    return {
+      id: "",
+      success: false,
+      error: error11.message || "Failed to publish reel"
+    };
+  }
+}
+async function searchFacebookPlaces(query, lat, lng) {
+  const token = getAccessToken();
+  try {
+    let url = `${GRAPH_BASE_URL}/search?type=place&q=${encodeURIComponent(query)}&fields=id,name,location&limit=5&access_token=${token}`;
+    if (lat && lng) {
+      url += `&center=${lat},${lng}&distance=50000`;
+    }
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.error) {
+      console.error("[FB Places] Search error:", data.error);
+      return [];
+    }
+    return data.data || [];
+  } catch (error11) {
+    console.error("[FB Places] Search error:", error11);
+    return [];
   }
 }
 async function schedulePost(message, scheduledTime, link) {
@@ -24273,11 +24371,21 @@ async function publishScheduledPosts() {
     const post = doc.data();
     const wasAutoPublished = post.status === "draft";
     try {
-      const result = await publishPost(
-        post.message,
-        post.link || void 0,
-        post.imageUrl || void 0
-      );
+      let result;
+      if (post.channel === "facebook_reels" && post.videoUrl) {
+        result = await publishReel(
+          post.videoUrl,
+          post.message || "",
+          post.facebookPlaceId || void 0
+        );
+      } else {
+        result = await publishPost(
+          post.message,
+          post.link || void 0,
+          post.imageUrl || void 0,
+          post.facebookPlaceId || void 0
+        );
+      }
       if (result.success) {
         await doc.ref.update({
           status: "published",
@@ -24657,6 +24765,69 @@ var reviewSocialPost = (0, import_https7.onCall)({
   console.log(`[Social] Post ${postId} ${action}ed by ${request.auth.uid}`);
   return { success: true, status: update.status };
 });
+var publishPostNow = (0, import_https7.onCall)({
+  cors: DASHBOARD_CORS,
+  secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
+  timeoutSeconds: 120
+}, async (request) => {
+  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  const { postId } = request.data;
+  if (!postId) throw new import_https7.HttpsError("invalid-argument", "postId is required");
+  const postRef = db.collection("social_posts").doc(postId);
+  const postDoc = await postRef.get();
+  if (!postDoc.exists) throw new import_https7.HttpsError("not-found", "Post not found");
+  const post = postDoc.data();
+  try {
+    let result;
+    if (post.channel === "facebook_reels" && post.videoUrl) {
+      console.log(`[PublishNow] Publishing reel ${postId}...`);
+      result = await publishReel(
+        post.videoUrl,
+        post.message || "",
+        post.facebookPlaceId || void 0
+      );
+    } else {
+      console.log(`[PublishNow] Publishing post ${postId}...`);
+      result = await publishPost(
+        post.message,
+        post.link || void 0,
+        post.imageUrl || void 0,
+        post.facebookPlaceId || void 0
+      );
+    }
+    if (result.success) {
+      await postRef.update({
+        status: "published",
+        facebookPostId: result.id,
+        postUrl: result.postUrl || null,
+        publishedAt: /* @__PURE__ */ new Date(),
+        publishedBy: request.auth.uid
+      });
+      console.log(`[PublishNow] Published ${postId} -> FB ID: ${result.id}`);
+      return { success: true, postUrl: result.postUrl };
+    } else {
+      await postRef.update({
+        status: "failed",
+        error: result.error || "Publishing failed",
+        failedAt: /* @__PURE__ */ new Date()
+      });
+      throw new import_https7.HttpsError("internal", result.error || "Publishing failed");
+    }
+  } catch (err) {
+    console.error(`[PublishNow] Error:`, err.message);
+    throw new import_https7.HttpsError("internal", err.message || "Publishing failed");
+  }
+});
+var searchPlaces = (0, import_https7.onCall)({
+  cors: DASHBOARD_CORS,
+  secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"]
+}, async (request) => {
+  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  const { query } = request.data;
+  if (!query) throw new import_https7.HttpsError("invalid-argument", "query is required");
+  const results = await searchFacebookPlaces(query);
+  return { places: results };
+});
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   adminUpdateAuthUser,
@@ -24692,12 +24863,14 @@ var reviewSocialPost = (0, import_https7.onCall)({
   processMailQueue,
   processOutreachQueue,
   publishFacebookPost,
+  publishPostNow,
   resendWebhook,
   respondToQuote,
   reviewSocialPost,
   runRecruiterAgent,
   runSocialContentGenerator,
   runSocialPublisher,
+  searchPlaces,
   sendBookingConfirmation,
   sendOnboardingInvite,
   sendQuoteEmail,

@@ -1046,6 +1046,14 @@ export default function SocialMediaPage() {
                                                         {/* Delete button for any draft */}
                                                         {(draft.status === 'rejected' || draft.status === 'draft' || draft.status === 'approved') && (
                                                             <div className={`flex gap-1.5 pt-2 border-t ${draft.status === 'draft' ? '' : 'mt-auto'}`}>
+                                                                {/* Post Now for approved posts that haven't been published yet */}
+                                                                {draft.status === 'approved' && (
+                                                                    <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2" onClick={() => handlePublishNow(draft.id)}
+                                                                        disabled={publishingId === draft.id}>
+                                                                        {publishingId === draft.id ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <Send className="w-3 h-3 mr-0.5" />}
+                                                                        Post Now
+                                                                    </Button>
+                                                                )}
                                                                 <Button size="sm" className="h-7 text-xs px-2" variant="destructive" onClick={() => handleDeleteDraft(draft.id)}>
                                                                     <Trash2 className="w-3 h-3 mr-0.5" /> Delete
                                                                 </Button>
