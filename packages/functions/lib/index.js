@@ -23544,6 +23544,7 @@ var LOCATION = "us-central1";
 var BUCKET = `${PROJECT_ID}.firebasestorage.app`;
 async function generatePostImage(postMessage, audience) {
   try {
+    console.log(`[Imagen] Starting image generation for ${audience} post...`);
     const auth = new import_google_auth_library.GoogleAuth({
       scopes: ["https://www.googleapis.com/auth/cloud-platform"]
     });
@@ -23556,6 +23557,7 @@ Scene: ${brandContext}.
 Context from post: ${postMessage.slice(0, 200)}
 Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 square aspect ratio. Professional, premium feel.`;
     const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/imagen-3.0-generate-002:predict`;
+    console.log(`[Imagen] Calling endpoint: ${endpoint}`);
     const response = await client.request({
       url: endpoint,
       method: "POST",
@@ -23568,14 +23570,18 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
         }
       }
     });
+    console.log(`[Imagen] API response status: ${response.status}`);
     const predictions = response.data?.predictions;
+    console.log(`[Imagen] Predictions count: ${predictions?.length || 0}`);
     if (!predictions || predictions.length === 0) {
       console.error("[Imagen] No predictions returned");
+      console.error("[Imagen] Response data keys:", JSON.stringify(Object.keys(response.data || {})));
       return null;
     }
     const imageBase64 = predictions[0].bytesBase64Encoded;
     if (!imageBase64) {
-      console.error("[Imagen] No image data returned");
+      console.error("[Imagen] No image data in prediction");
+      console.error("[Imagen] Prediction keys:", JSON.stringify(Object.keys(predictions[0])));
       return null;
     }
     const imageBuffer = Buffer.from(imageBase64, "base64");
@@ -23596,6 +23602,9 @@ Requirements: NO text overlays, NO logos, NO watermarks. Photorealistic, 1:1 squ
     return { imageUrl, storagePath: fileName };
   } catch (err) {
     console.error("[Imagen] Error generating image:", err.message);
+    if (err.response?.data) {
+      console.error("[Imagen] API error details:", JSON.stringify(err.response.data).slice(0, 1e3));
+    }
     return null;
   }
 }
@@ -23607,7 +23616,6 @@ var import_uuid3 = require("uuid");
 var PROJECT_ID2 = "xiri-facility-solutions";
 var LOCATION2 = "us-central1";
 var BUCKET2 = `${PROJECT_ID2}.firebasestorage.app`;
-var GCS_OUTPUT_PREFIX = `gs://${BUCKET2}/social-videos`;
 async function generateReelVideo(caption, audience, location) {
   try {
     const client = new import_genai.GoogleGenAI({
@@ -23642,21 +23650,19 @@ Context from caption: ${caption.slice(0, 300)}
 Important: NO text overlays, NO watermarks, NO logos. Pure visual storytelling with audio.
 Duration: 8 seconds. Smooth camera movements. Professional quality.`;
     console.log(`[Veo] Starting video generation for ${audience} reel${location ? ` in ${location}` : ""}...`);
-    const outputId = (0, import_uuid3.v4)();
-    const outputGcsUri = `${GCS_OUTPUT_PREFIX}/${outputId}`;
     let operation = await client.models.generateVideos({
       model: "veo-3.0-generate-001",
       prompt: videoPrompt,
       config: {
         aspectRatio: "9:16",
-        outputGcsUri
+        numberOfVideos: 1
       }
     });
     let pollCount = 0;
     const maxPolls = 30;
     while (!operation.done && pollCount < maxPolls) {
       await new Promise((resolve) => setTimeout(resolve, 15e3));
-      operation = await client.operations.get({ operation });
+      operation = await client.operations.getVideosOperation({ operation });
       pollCount++;
       console.log(`[Veo] Poll ${pollCount}/${maxPolls} \u2014 ${operation.done ? "DONE" : "generating..."}`);
     }
@@ -23664,26 +23670,75 @@ Duration: 8 seconds. Smooth camera movements. Professional quality.`;
       console.error("[Veo] Video generation timed out after 7.5 minutes");
       return null;
     }
-    if (!operation.response?.generatedVideos?.[0]?.video?.uri) {
+    console.log("[Veo] Response keys:", JSON.stringify(Object.keys(operation.response || {})));
+    const generatedVideos = operation.response?.generatedVideos;
+    console.log("[Veo] generatedVideos count:", generatedVideos?.length || 0);
+    if (generatedVideos?.[0]) {
+      console.log("[Veo] First video keys:", JSON.stringify(Object.keys(generatedVideos[0])));
+      if (generatedVideos[0].video) {
+        console.log("[Veo] Video object keys:", JSON.stringify(Object.keys(generatedVideos[0].video)));
+      }
+    }
+    if (!generatedVideos?.[0]?.video) {
       console.error("[Veo] No video generated in response");
+      console.error("[Veo] Full response:", JSON.stringify(operation.response, null, 2).slice(0, 2e3));
       return null;
     }
-    const videoGcsUri = operation.response.generatedVideos[0].video.uri;
-    console.log(`[Veo] Video generated at: ${videoGcsUri}`);
-    const gcsPath = videoGcsUri.replace(`gs://${BUCKET2}/`, "");
-    const bucket = (0, import_storage2.getStorage)().bucket(BUCKET2);
-    const file = bucket.file(gcsPath);
-    await file.makePublic();
-    const videoUrl = `https://storage.googleapis.com/${BUCKET2}/${gcsPath}`;
-    console.log(`[Veo] Video publicly available at: ${videoUrl}`);
-    return {
-      videoUrl,
-      storagePath: gcsPath,
-      durationSeconds: 8
-      // Veo default
-    };
+    const video = generatedVideos[0].video;
+    if (video.uri) {
+      console.log(`[Veo] Video URI: ${video.uri}`);
+      const gcsPath = video.uri.replace(`gs://${BUCKET2}/`, "");
+      const bucket = (0, import_storage2.getStorage)().bucket(BUCKET2);
+      const file = bucket.file(gcsPath);
+      await file.makePublic();
+      const videoUrl = `https://storage.googleapis.com/${BUCKET2}/${gcsPath}`;
+      console.log(`[Veo] Video publicly available at: ${videoUrl}`);
+      return { videoUrl, storagePath: gcsPath, durationSeconds: 8 };
+    }
+    if (video.videoBytes) {
+      console.log("[Veo] Using videoBytes fallback (downloading from SDK)...");
+      const videoBuffer = Buffer.from(video.videoBytes, "base64");
+      const fileName = `social-videos/${(0, import_uuid3.v4)()}.mp4`;
+      const bucket = (0, import_storage2.getStorage)().bucket(BUCKET2);
+      const file = bucket.file(fileName);
+      await file.save(videoBuffer, {
+        metadata: {
+          contentType: "video/mp4",
+          metadata: { firebaseStorageDownloadTokens: (0, import_uuid3.v4)() }
+        }
+      });
+      await file.makePublic();
+      const videoUrl = `https://storage.googleapis.com/${BUCKET2}/${fileName}`;
+      console.log(`[Veo] Video uploaded via bytes fallback: ${videoUrl}`);
+      return { videoUrl, storagePath: fileName, durationSeconds: 8 };
+    }
+    try {
+      console.log("[Veo] Trying files.download fallback...");
+      const downloaded = await client.files.download({ file: video });
+      if (downloaded) {
+        const videoBuffer = Buffer.from(await downloaded.arrayBuffer());
+        const fileName = `social-videos/${(0, import_uuid3.v4)()}.mp4`;
+        const bucket = (0, import_storage2.getStorage)().bucket(BUCKET2);
+        const file = bucket.file(fileName);
+        await file.save(videoBuffer, {
+          metadata: {
+            contentType: "video/mp4",
+            metadata: { firebaseStorageDownloadTokens: (0, import_uuid3.v4)() }
+          }
+        });
+        await file.makePublic();
+        const videoUrl = `https://storage.googleapis.com/${BUCKET2}/${fileName}`;
+        console.log(`[Veo] Video uploaded via download fallback: ${videoUrl}`);
+        return { videoUrl, storagePath: fileName, durationSeconds: 8 };
+      }
+    } catch (dlErr) {
+      console.error("[Veo] files.download fallback failed:", dlErr.message);
+    }
+    console.error("[Veo] No usable video data found in response");
+    return null;
   } catch (err) {
     console.error("[Veo] Error generating video:", err.message);
+    console.error("[Veo] Full error:", JSON.stringify(err, null, 2).slice(0, 1e3));
     return null;
   }
 }

@@ -15,7 +15,7 @@ import { v4 as uuidv4 } from "uuid";
 
 const PROJECT_ID = "xiri-facility-solutions";
 const LOCATION = "us-central1";
-const BUCKET = `${PROJECT_ID}.firebasestorage.app`;
+const BUCKET = `${PROJECT_ID}.appspot.com`;
 
 interface VeoResult {
     videoUrl: string;           // Public HTTPS URL
@@ -149,31 +149,8 @@ Duration: 8 seconds. Smooth camera movements. Professional quality.`;
             return { videoUrl, storagePath: fileName, durationSeconds: 8 };
         }
 
-        // Fallback: try using files.download from SDK
-        try {
-            console.log("[Veo] Trying files.download fallback...");
-            const downloaded = await client.files.download({ file: video });
-            if (downloaded) {
-                const videoBuffer = Buffer.from(await (downloaded as any).arrayBuffer());
-                const fileName = `social-videos/${uuidv4()}.mp4`;
-                const bucket = getStorage().bucket(BUCKET);
-                const file = bucket.file(fileName);
-                await file.save(videoBuffer, {
-                    metadata: {
-                        contentType: "video/mp4",
-                        metadata: { firebaseStorageDownloadTokens: uuidv4() },
-                    },
-                });
-                await file.makePublic();
-                const videoUrl = `https://storage.googleapis.com/${BUCKET}/${fileName}`;
-                console.log(`[Veo] Video uploaded via download fallback: ${videoUrl}`);
-                return { videoUrl, storagePath: fileName, durationSeconds: 8 };
-            }
-        } catch (dlErr: any) {
-            console.error("[Veo] files.download fallback failed:", dlErr.message);
-        }
 
-        console.error("[Veo] No usable video data found in response");
+        console.error("[Veo] No usable video data found in response (no uri or videoBytes)");
         return null;
     } catch (err: any) {
         console.error("[Veo] Error generating video:", err.message);

@@ -17,7 +17,7 @@ import { v4 as uuidv4 } from "uuid";
 
 const PROJECT_ID = "xiri-facility-solutions";
 const LOCATION = "us-central1";
-const BUCKET = `${PROJECT_ID}.firebasestorage.app`;
+const BUCKET = `${PROJECT_ID}.appspot.com`;
 
 interface ImagenResult {
     imageUrl: string;        // Public URL
