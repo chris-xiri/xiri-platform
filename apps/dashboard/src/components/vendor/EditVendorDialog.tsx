@@ -1,6 +1,4 @@
-'use strict';
-
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Vendor } from '@xiri/shared';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -26,7 +24,9 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import ReactGoogleAutocomplete from 'react-google-autocomplete';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Loader2 } from 'lucide-react';
+
+const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
 interface EditVendorDialogProps {
     vendor: Vendor;
@@ -37,7 +37,9 @@ interface EditVendorDialogProps {
 export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVendorDialogProps) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [zipLoading, setZipLoading] = useState(false);
     const [capabilityInput, setCapabilityInput] = useState('');
+    const zipLookupTimer = useRef<NodeJS.Timeout | null>(null);
     const [formData, setFormData] = useState({
         businessName: vendor.businessName || '',
         contactName: vendor.contactName || '',
@@ -54,6 +56,57 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
         capabilities: [...(vendor.capabilities || [])],
         notes: (vendor as any).notes || (vendor as any).description || '',
     });
+
+    // Lookup city/state from ZIP code via Google Geocoding API
+    const lookupZip = useCallback(async (zip: string) => {
+        if (!MAPS_API_KEY || zip.length !== 5 || !/^\d{5}$/.test(zip)) return;
+        setZipLoading(true);
+        try {
+            const res = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?address=${zip}&components=country:US&key=${MAPS_API_KEY}`
+            );
+            const data = await res.json();
+            if (data.status === 'OK' && data.results?.[0]) {
+                const components = data.results[0].address_components;
+                let city = '';
+                let state = '';
+                for (const c of components) {
+                    if (c.types.includes('locality') || c.types.includes('sublocality_level_1')) {
+                        city = c.long_name;
+                    }
+                    // Fallback: use neighborhood or political area for NYC boroughs
+                    if (!city && (c.types.includes('neighborhood') || c.types.includes('political'))) {
+                        city = c.long_name;
+                    }
+                    if (c.types.includes('administrative_area_level_1')) {
+                        state = c.short_name;
+                    }
+                }
+                if (city || state) {
+                    setFormData(prev => ({
+                        ...prev,
+                        ...(city ? { city } : {}),
+                        ...(state ? { state } : {}),
+                    }));
+                }
+            }
+        } catch (err) {
+            console.error('ZIP lookup failed:', err);
+        } finally {
+            setZipLoading(false);
+        }
+    }, []);
+
+    const handleZipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const zip = e.target.value.replace(/\D/g, '').slice(0, 5);
+        setFormData(prev => ({ ...prev, zip }));
+
+        // Debounce: auto-lookup when user types a full 5-digit ZIP
+        if (zipLookupTimer.current) clearTimeout(zipLookupTimer.current);
+        if (zip.length === 5) {
+            zipLookupTimer.current = setTimeout(() => lookupZip(zip), 300);
+        }
+    };
 
     const handlePlaceSelected = (place: any) => {
         if (!place?.address_components) return;
@@ -244,7 +297,7 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                         <Label htmlFor="street" className="text-right text-xs">Street</Label>
                         <div className="col-span-3">
                             <ReactGoogleAutocomplete
-                                apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                                apiKey={MAPS_API_KEY}
                                 onPlaceSelected={handlePlaceSelected}
                                 options={{
                                     types: ['address'],
@@ -271,19 +324,24 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                         <Label className="text-right text-xs">State</Label>
                         <Input
                             value={formData.state}
-                            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                            onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase() })}
                             placeholder="NY"
                             className="col-span-1"
                             maxLength={2}
                         />
                         <Label className="text-right text-xs">ZIP</Label>
-                        <Input
-                            value={formData.zip}
-                            onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
-                            placeholder="10001"
-                            className="col-span-1"
-                            maxLength={5}
-                        />
+                        <div className="col-span-1 relative">
+                            <Input
+                                value={formData.zip}
+                                onChange={handleZipChange}
+                                placeholder="10001"
+                                maxLength={5}
+                                inputMode="numeric"
+                            />
+                            {zipLoading && (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                            )}
+                        </div>
                     </div>
 
                     {/* === SECTION: Capabilities === */}
