@@ -170,6 +170,7 @@ export async function publishReel(
             video_id: videoId,
             title: description.slice(0, 100),
             description,
+            published: "true",
             access_token: token,
         };
         if (placeId) {
