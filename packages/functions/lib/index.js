@@ -18073,6 +18073,417 @@ var require_src6 = __commonJS({
   }
 });
 
+// src/utils/brandOverlay.ts
+function extractHeadline(postMessage) {
+  const cleaned = postMessage.replace(/#\w+/g, "").replace(/\n{2,}/g, "\n").trim();
+  const lines = cleaned.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return "Professional Facility Solutions";
+  let headline = lines[0];
+  headline = headline.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}\s]+/u, "");
+  if (headline.length > 70) {
+    headline = headline.slice(0, 70).replace(/\s+\S*$/, "") + "\u2026";
+  }
+  return headline || "Professional Facility Solutions";
+}
+function wrapText(text, maxChars) {
+  const words = text.split(/\s+/);
+  const lines = [];
+  let currentLine = "";
+  for (const word of words) {
+    if (currentLine.length + word.length + 1 <= maxChars) {
+      currentLine += (currentLine ? " " : "") + word;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  if (lines.length > 3) {
+    lines.length = 3;
+    lines[2] = lines[2].replace(/\s+\S*$/, "") + "\u2026";
+  }
+  return lines;
+}
+function escapeXml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+function createBrandOverlaySvg(width, height, headline) {
+  const headlineLines = wrapText(headline, 32);
+  const lineHeight = 38;
+  const headlineBlockHeight = headlineLines.length * lineHeight + 50;
+  const headlineY = height * 0.58;
+  const headlineTexts = headlineLines.map((line, i) => {
+    const y = headlineY + 45 + i * lineHeight;
+    return `<text x="${width * 0.08}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="30" fill="white" letter-spacing="0.5">${escapeXml(line)}</text>`;
+  }).join("\n        ");
+  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <!-- Top gradient: navy fading to transparent -->
+        <linearGradient id="topGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0c4a6e" stop-opacity="0.85"/>
+            <stop offset="70%" stop-color="#0c4a6e" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#0c4a6e" stop-opacity="0"/>
+        </linearGradient>
+        <!-- Bottom gradient: transparent fading to navy -->
+        <linearGradient id="bottomGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0c4a6e" stop-opacity="0"/>
+            <stop offset="30%" stop-color="#0c4a6e" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#0c4a6e" stop-opacity="0.95"/>
+        </linearGradient>
+        <!-- Brand gradient for accent elements -->
+        <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0284c7"/>
+            <stop offset="100%" stop-color="#0369a1"/>
+        </linearGradient>
+    </defs>
+
+    <!-- \u2550\u2550\u2550 TOP GRADIENT BAR \u2550\u2550\u2550 -->
+    <rect x="0" y="0" width="${width}" height="${Math.round(height * 0.18)}" fill="url(#topGrad)"/>
+
+    <!-- XIRI Icon Badge (simplified) -->
+    <rect x="${Math.round(width * 0.05)}" y="${Math.round(height * 0.03)}" width="42" height="42" rx="9" fill="url(#brandGrad)"/>
+    <text x="${Math.round(width * 0.05 + 21)}" y="${Math.round(height * 0.03 + 29)}" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="22" fill="white" text-anchor="middle" letter-spacing="-0.5">X</text>
+
+    <!-- XIRI Wordmark -->
+    <text x="${Math.round(width * 0.05 + 52)}" y="${Math.round(height * 0.03 + 22)}" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="24" fill="white" letter-spacing="-1">XIRI</text>
+    <text x="${Math.round(width * 0.05 + 52)}" y="${Math.round(height * 0.03 + 37)}" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8.5" fill="rgba(255,255,255,0.65)" letter-spacing="3">FACILITY SOLUTIONS</text>
+
+    <!-- \u2550\u2550\u2550 BOTTOM GRADIENT BAR \u2550\u2550\u2550 -->
+    <rect x="0" y="${Math.round(height * 0.55)}" width="${width}" height="${Math.round(height * 0.45)}" fill="url(#bottomGrad)"/>
+
+    <!-- Headline text box background -->
+    <rect x="${Math.round(width * 0.05)}" y="${Math.round(headlineY)}" width="${Math.round(width * 0.9)}" height="${headlineBlockHeight}" rx="12" fill="rgba(12, 74, 110, 0.65)" stroke="rgba(56, 189, 248, 0.25)" stroke-width="1"/>
+
+    <!-- Headline text lines -->
+    ${headlineTexts}
+
+    <!-- \u2550\u2550\u2550 BOTTOM BAR \u2550\u2550\u2550 -->
+    <!-- Accent stripe -->
+    <rect x="0" y="${height - 6}" width="${width}" height="6" fill="#38bdf8" opacity="0.85"/>
+
+    <!-- Website URL -->
+    <text x="${Math.round(width * 0.08)}" y="${height - 25}" font-family="Arial, Helvetica, sans-serif" font-weight="600" font-size="16" fill="rgba(255,255,255,0.9)" letter-spacing="0.5">xiri.ai</text>
+
+    <!-- Separator dot -->
+    <circle cx="${Math.round(width * 0.25)}" cy="${height - 30}" r="2.5" fill="rgba(56, 189, 248, 0.7)"/>
+
+    <!-- Tagline -->
+    <text x="${Math.round(width * 0.28)}" y="${height - 25}" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="13" fill="rgba(255,255,255,0.6)" letter-spacing="1">Facility Solutions</text>
+</svg>`;
+}
+async function compositeImage(photoBuffer, postMessage) {
+  const metadata = await (0, import_sharp.default)(photoBuffer).metadata();
+  const width = metadata.width || 1024;
+  const height = metadata.height || 1024;
+  const headline = extractHeadline(postMessage);
+  console.log(`[BrandOverlay] Compositing headline: "${headline}" onto ${width}x${height} photo`);
+  const overlaySvg = createBrandOverlaySvg(width, height, headline);
+  const svgBuffer = Buffer.from(overlaySvg);
+  const result = await (0, import_sharp.default)(photoBuffer).composite([
+    {
+      input: svgBuffer,
+      top: 0,
+      left: 0
+    }
+  ]).png({ quality: 90 }).toBuffer();
+  console.log(`[BrandOverlay] Composited image size: ${(result.length / 1024).toFixed(0)}KB`);
+  return result;
+}
+var import_sharp;
+var init_brandOverlay = __esm({
+  "src/utils/brandOverlay.ts"() {
+    "use strict";
+    import_sharp = __toESM(require("sharp"));
+  }
+});
+
+// src/utils/imagenApi.ts
+var imagenApi_exports = {};
+__export(imagenApi_exports, {
+  generatePostImage: () => generatePostImage
+});
+async function generatePostImage(postMessage, audience, feedbackHint) {
+  try {
+    console.log(`[Imagen] Starting image generation for ${audience} post...`);
+    const auth = new import_google_auth_library.GoogleAuth({
+      scopes: ["https://www.googleapis.com/auth/cloud-platform"]
+    });
+    const client = await auth.getClient();
+    let scene;
+    if (feedbackHint) {
+      scene = `${feedbackHint}. Professional commercial/facility setting`;
+      console.log(`[Imagen] Using feedback hint: "${feedbackHint}"`);
+    } else {
+      const scenes = audience === "client" ? CLIENT_SCENES : CONTRACTOR_SCENES;
+      scene = scenes[Math.floor(Math.random() * scenes.length)];
+    }
+    const imagePrompt = `Editorial photograph, shot on Canon EOS R5 with 35mm lens. ${scene}. Color grading: cool blue tones with deep navy shadows and bright sky blue highlights. Clean, sharp, professional corporate photography. Shallow depth of field. 1:1 square composition.`;
+    const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/imagen-3.0-generate-002:predict`;
+    console.log(`[Imagen] Calling endpoint: ${endpoint}`);
+    const response = await client.request({
+      url: endpoint,
+      method: "POST",
+      data: {
+        instances: [{ prompt: imagePrompt }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: "1:1",
+          safetyFilterLevel: "block_few",
+          personGeneration: "allow_all",
+          negativePrompt: "text, letters, words, numbers, signs, signage, labels, captions, watermarks, logos, branding, graphic design, overlays, banners, typography, fonts, writing, handwriting, graffiti, posters, billboards, screen, monitor text, nametags, badges with text"
+        }
+      }
+    });
+    console.log(`[Imagen] API response status: ${response.status}`);
+    const predictions = response.data?.predictions;
+    console.log(`[Imagen] Predictions count: ${predictions?.length || 0}`);
+    if (!predictions || predictions.length === 0) {
+      console.error("[Imagen] No predictions returned");
+      console.error("[Imagen] Response data keys:", JSON.stringify(Object.keys(response.data || {})));
+      return null;
+    }
+    const imageBase64 = predictions[0].bytesBase64Encoded;
+    if (!imageBase64) {
+      console.error("[Imagen] No image data in prediction");
+      console.error("[Imagen] Prediction keys:", JSON.stringify(Object.keys(predictions[0])));
+      return null;
+    }
+    const rawPhotoBuffer = Buffer.from(imageBase64, "base64");
+    console.log(`[Imagen] Compositing branded overlay...`);
+    const brandedBuffer = await compositeImage(rawPhotoBuffer, postMessage);
+    const fileName = `social-images/${(0, import_uuid2.v4)()}.png`;
+    const storageBucket = (0, import_storage.getStorage)().bucket();
+    const bucketName = storageBucket.name;
+    const file = storageBucket.file(fileName);
+    await file.save(brandedBuffer, {
+      metadata: {
+        contentType: "image/png",
+        metadata: {
+          firebaseStorageDownloadTokens: (0, import_uuid2.v4)()
+        }
+      }
+    });
+    await file.makePublic();
+    const imageUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
+    console.log(`[Imagen] Branded image generated and uploaded: ${imageUrl}`);
+    return { imageUrl, storagePath: fileName };
+  } catch (err) {
+    console.error("[Imagen] Error generating image:", err.message);
+    if (err.response?.data) {
+      console.error("[Imagen] API error details:", JSON.stringify(err.response.data).slice(0, 1e3));
+    }
+    return null;
+  }
+}
+var import_google_auth_library, import_storage, import_uuid2, PROJECT_ID, LOCATION, CLIENT_SCENES, CONTRACTOR_SCENES;
+var init_imagenApi = __esm({
+  "src/utils/imagenApi.ts"() {
+    "use strict";
+    import_google_auth_library = __toESM(require_src6());
+    import_storage = require("firebase-admin/storage");
+    import_uuid2 = require("uuid");
+    init_brandOverlay();
+    PROJECT_ID = "xiri-facility-solutions";
+    LOCATION = "us-central1";
+    CLIENT_SCENES = [
+      "Pristine modern medical office lobby with clean tile floors, polished reception desk, bright overhead lighting, potted plants, empty waiting area chairs neatly arranged",
+      "Spotless auto dealership showroom floor, gleaming under bright lights, polished concrete, luxury vehicles visible in background, immaculate glass windows",
+      "Modern commercial building hallway freshly cleaned, shining floors reflecting overhead lights, crisp white walls, professional maintenance",
+      "Empty medical exam room, sanitized surfaces, organized supply cabinets, bright clinical lighting, freshly mopped floor",
+      "Corporate office break room after professional cleaning, spotless countertops, organized cabinets, fresh flowers on table, warm natural light",
+      "Aerial view of a well-maintained commercial building exterior, landscaped grounds, clean parking lot, blue sky",
+      "Modern daycare facility interior, colorful but immaculate, organized toy shelves, clean play mats, bright cheerful lighting"
+    ];
+    CONTRACTOR_SCENES = [
+      "Professional cleaning crew in matching blue uniforms working together in a commercial building hallway, pushing floor buffer machine, teamwork",
+      "Close-up of janitorial equipment arranged neatly \u2014 mop bucket, floor buffer, cleaning supplies \u2014 professional grade tools ready for work",
+      "Facility maintenance worker in blue safety gear inspecting HVAC system on commercial building rooftop, sunrise in background",
+      "Team of contractors in hard hats and safety vests doing a walk-through inspection of a clean commercial space, clipboards in hand",
+      "Professional floor technician operating an industrial floor scrubber in a large commercial space, shiny wet floor behind them",
+      "Maintenance worker in blue uniform restocking supply closet in a commercial building, organized shelves, professional demeanor",
+      "Night shift cleaning crew member vacuuming a darkened office space, overhead emergency lights creating dramatic lighting, dedication"
+    ];
+  }
+});
+
+// src/utils/reelOutroGenerator.ts
+var reelOutroGenerator_exports = {};
+__export(reelOutroGenerator_exports, {
+  OUTRO_PRESETS: () => OUTRO_PRESETS,
+  generateOutroFrame: () => generateOutroFrame,
+  getOrCreateOutroFrameUrl: () => getOrCreateOutroFrameUrl,
+  invalidateOutroCache: () => invalidateOutroCache
+});
+function escapeXml2(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+function createOutroSvg(preset) {
+  const cx = WIDTH / 2;
+  const accent = preset.accentColor || "#38bdf8";
+  return `<svg width="${WIDTH}" height="${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <!-- Three-stop brand gradient background -->
+        <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0c4a6e"/>
+            <stop offset="40%" stop-color="#0369a1"/>
+            <stop offset="100%" stop-color="#0284c7"/>
+        </linearGradient>
+        <!-- Icon badge gradient -->
+        <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0284c7"/>
+            <stop offset="100%" stop-color="#0369a1"/>
+        </linearGradient>
+        <!-- Frosted glass card -->
+        <linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="white" stop-opacity="0.10"/>
+            <stop offset="100%" stop-color="white" stop-opacity="0.04"/>
+        </linearGradient>
+    </defs>
+
+    <!-- \u2550\u2550\u2550 BACKGROUND \u2550\u2550\u2550 -->
+    <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#bgGrad)"/>
+
+    <!-- Subtle accent glow ellipses -->
+    <ellipse cx="${WIDTH * 0.3}" cy="${HEIGHT * 0.35}" rx="400" ry="300" fill="rgba(56,189,248,0.06)"/>
+    <ellipse cx="${WIDTH * 0.75}" cy="${HEIGHT * 0.65}" rx="350" ry="250" fill="rgba(56,189,248,0.05)"/>
+
+    <!-- Subtle grid lines (decorative) -->
+    <line x1="0" y1="${HEIGHT * 0.3}" x2="${WIDTH}" y2="${HEIGHT * 0.3}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    <line x1="0" y1="${HEIGHT * 0.5}" x2="${WIDTH}" y2="${HEIGHT * 0.5}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    <line x1="0" y1="${HEIGHT * 0.7}" x2="${WIDTH}" y2="${HEIGHT * 0.7}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    <line x1="${WIDTH * 0.25}" y1="0" x2="${WIDTH * 0.25}" y2="${HEIGHT}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+    <line x1="${WIDTH * 0.75}" y1="0" x2="${WIDTH * 0.75}" y2="${HEIGHT}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+
+    <!-- \u2550\u2550\u2550 CENTER CONTENT \u2550\u2550\u2550 -->
+
+    <!-- Frosted glass card -->
+    <rect x="${cx - 220}" y="${HEIGHT * 0.32}" width="440" height="400" rx="24" fill="url(#glassGrad)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+
+    <!-- XIRI Icon Badge (large, centered) -->
+    <rect x="${cx - 50}" y="${HEIGHT * 0.35}" width="100" height="100" rx="20" fill="url(#badgeGrad)"/>
+    <text x="${cx}" y="${HEIGHT * 0.35 + 70}" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="56" fill="white" text-anchor="middle" letter-spacing="-1">${escapeXml2("X")}</text>
+
+    <!-- XIRI Wordmark -->
+    <text x="${cx}" y="${HEIGHT * 0.35 + 150}" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="64" fill="white" text-anchor="middle" letter-spacing="-2">${escapeXml2("XIRI")}</text>
+
+    <!-- Tagline: FACILITY SOLUTIONS -->
+    <text x="${cx}" y="${HEIGHT * 0.35 + 185}" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="18" fill="rgba(255,255,255,0.65)" text-anchor="middle" letter-spacing="5">${escapeXml2("FACILITY SOLUTIONS")}</text>
+
+    <!-- Divider line -->
+    <line x1="${cx - 100}" y1="${HEIGHT * 0.35 + 215}" x2="${cx + 100}" y2="${HEIGHT * 0.35 + 215}" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+
+    <!-- Preset Headline -->
+    <text x="${cx}" y="${HEIGHT * 0.35 + 260}" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="30" fill="white" text-anchor="middle" letter-spacing="0.5">${escapeXml2(preset.headline)}</text>
+
+    <!-- Preset Subline -->
+    <text x="${cx}" y="${HEIGHT * 0.35 + 300}" font-family="Arial, Helvetica, sans-serif" font-weight="300" font-size="22" fill="rgba(255,255,255,0.8)" text-anchor="middle" letter-spacing="0.5">${escapeXml2(preset.subline)}</text>
+
+    <!-- \u2550\u2550\u2550 CTA SECTION \u2550\u2550\u2550 -->
+
+    <!-- CTA pill background -->
+    <rect x="${cx - 200}" y="${HEIGHT * 0.72}" width="400" height="60" rx="30" fill="${accent}" opacity="0.9"/>
+
+    <!-- CTA text -->
+    <text x="${cx}" y="${HEIGHT * 0.72 + 38}" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="24" fill="white" text-anchor="middle" letter-spacing="0.5">${escapeXml2(preset.ctaText)}</text>
+
+    <!-- \u2550\u2550\u2550 BOTTOM \u2550\u2550\u2550 -->
+    <!-- Accent stripe at bottom -->
+    <rect x="0" y="${HEIGHT - 8}" width="${WIDTH}" height="8" fill="${accent}" opacity="0.85"/>
+</svg>`;
+}
+async function generateOutroFrame(presetId = "brand") {
+  const preset = OUTRO_PRESETS.find((p) => p.id === presetId) || OUTRO_PRESETS[OUTRO_PRESETS.length - 1];
+  console.log(`[ReelOutro] Generating outro frame: "${preset.label}" (${preset.id})`);
+  const svg = createOutroSvg(preset);
+  const svgBuffer = Buffer.from(svg);
+  const pngBuffer = await (0, import_sharp2.default)(svgBuffer).resize(WIDTH, HEIGHT).png({ quality: 90 }).toBuffer();
+  console.log(`[ReelOutro] Outro frame generated: ${(pngBuffer.length / 1024).toFixed(0)}KB`);
+  return pngBuffer;
+}
+async function getOrCreateOutroFrameUrl(presetId = "brand") {
+  const storageBucket = (0, import_storage3.getStorage)().bucket();
+  const bucketName = storageBucket.name;
+  const outroPath = `social-assets/reel-outro-${presetId}.png`;
+  const file = storageBucket.file(outroPath);
+  const [exists] = await file.exists();
+  if (exists) {
+    console.log(`[ReelOutro] Using cached outro frame for preset: ${presetId}`);
+    return `https://storage.googleapis.com/${bucketName}/${outroPath}`;
+  }
+  const pngBuffer = await generateOutroFrame(presetId);
+  await file.save(pngBuffer, {
+    metadata: {
+      contentType: "image/png",
+      metadata: {
+        firebaseStorageDownloadTokens: (0, import_uuid4.v4)()
+      }
+    }
+  });
+  await file.makePublic();
+  const url = `https://storage.googleapis.com/${bucketName}/${outroPath}`;
+  console.log(`[ReelOutro] Outro frame uploaded: ${url}`);
+  return url;
+}
+async function invalidateOutroCache() {
+  const storageBucket = (0, import_storage3.getStorage)().bucket();
+  for (const preset of OUTRO_PRESETS) {
+    const file = storageBucket.file(`social-assets/reel-outro-${preset.id}.png`);
+    const [exists] = await file.exists();
+    if (exists) {
+      await file.delete();
+      console.log(`[ReelOutro] Deleted cached outro: ${preset.id}`);
+    }
+  }
+}
+var import_sharp2, import_storage3, import_uuid4, WIDTH, HEIGHT, OUTRO_PRESETS;
+var init_reelOutroGenerator = __esm({
+  "src/utils/reelOutroGenerator.ts"() {
+    "use strict";
+    import_sharp2 = __toESM(require("sharp"));
+    import_storage3 = require("firebase-admin/storage");
+    import_uuid4 = require("uuid");
+    WIDTH = 1080;
+    HEIGHT = 1920;
+    OUTRO_PRESETS = [
+      {
+        id: "hiring",
+        label: "\u{1F9F9} We're Hiring",
+        headline: "Join the XIRI Team",
+        subline: "Cleaning & Maintenance Contractors Needed",
+        ctaText: "Apply Now \u2192 xiri.ai/careers"
+      },
+      {
+        id: "quote",
+        label: "\u{1F4BC} Get a Quote",
+        headline: "Need Facility Services?",
+        subline: "One Call. One Invoice. Total Coverage.",
+        ctaText: "Free Quote \u2192 xiri.ai"
+      },
+      {
+        id: "coverage",
+        label: "\u{1F4CD} Service Areas",
+        headline: "Serving Queens \xB7 Nassau \xB7 Suffolk",
+        subline: "Medical \u2022 Dealerships \u2022 Daycare \u2022 Commercial",
+        ctaText: "Book Now \u2192 xiri.ai"
+      },
+      {
+        id: "partner",
+        label: "\u{1F91D} Become a Partner",
+        headline: "Grow Your Business with XIRI",
+        subline: "Steady Work \u2022 Weekly Pay \u2022 Full Support",
+        ctaText: "Sign Up \u2192 xiri.ai/partner"
+      },
+      {
+        id: "brand",
+        label: "\u2728 Brand Only",
+        headline: "XIRI Facility Solutions",
+        subline: "One Call. One Invoice. Total Facility Coverage.",
+        ctaText: "xiri.ai"
+      }
+    ];
+  }
+});
+
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
@@ -18110,6 +18521,8 @@ __export(index_exports, {
   processOutreachQueue: () => processOutreachQueue,
   publishFacebookPost: () => publishFacebookPost,
   publishPostNow: () => publishPostNow,
+  regeneratePostCaption: () => regeneratePostCaption,
+  regeneratePostImage: () => regeneratePostImage,
   resendWebhook: () => resendWebhook,
   respondToQuote: () => respondToQuote,
   reviewSocialPost: () => reviewSocialPost,
@@ -23672,218 +24085,7 @@ async function deletePost(postId) {
 // src/triggers/socialContentGenerator.ts
 var import_scheduler5 = require("firebase-functions/v2/scheduler");
 var import_generative_ai7 = require("@google/generative-ai");
-
-// src/utils/imagenApi.ts
-var import_google_auth_library = __toESM(require_src6());
-var import_storage = require("firebase-admin/storage");
-var import_uuid2 = require("uuid");
-
-// src/utils/brandOverlay.ts
-var import_sharp = __toESM(require("sharp"));
-function extractHeadline(postMessage) {
-  const cleaned = postMessage.replace(/#\w+/g, "").replace(/\n{2,}/g, "\n").trim();
-  const lines = cleaned.split("\n").map((l) => l.trim()).filter(Boolean);
-  if (lines.length === 0) return "Professional Facility Solutions";
-  let headline = lines[0];
-  headline = headline.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}\s]+/u, "");
-  if (headline.length > 70) {
-    headline = headline.slice(0, 70).replace(/\s+\S*$/, "") + "\u2026";
-  }
-  return headline || "Professional Facility Solutions";
-}
-function wrapText(text, maxChars) {
-  const words = text.split(/\s+/);
-  const lines = [];
-  let currentLine = "";
-  for (const word of words) {
-    if (currentLine.length + word.length + 1 <= maxChars) {
-      currentLine += (currentLine ? " " : "") + word;
-    } else {
-      if (currentLine) lines.push(currentLine);
-      currentLine = word;
-    }
-  }
-  if (currentLine) lines.push(currentLine);
-  if (lines.length > 3) {
-    lines.length = 3;
-    lines[2] = lines[2].replace(/\s+\S*$/, "") + "\u2026";
-  }
-  return lines;
-}
-function escapeXml(str) {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
-}
-function createBrandOverlaySvg(width, height, headline) {
-  const headlineLines = wrapText(headline, 32);
-  const lineHeight = 38;
-  const headlineBlockHeight = headlineLines.length * lineHeight + 50;
-  const headlineY = height * 0.58;
-  const headlineTexts = headlineLines.map((line, i) => {
-    const y = headlineY + 45 + i * lineHeight;
-    return `<text x="${width * 0.08}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="30" fill="white" letter-spacing="0.5">${escapeXml(line)}</text>`;
-  }).join("\n        ");
-  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-        <!-- Top gradient: navy fading to transparent -->
-        <linearGradient id="topGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#0c4a6e" stop-opacity="0.85"/>
-            <stop offset="70%" stop-color="#0c4a6e" stop-opacity="0.15"/>
-            <stop offset="100%" stop-color="#0c4a6e" stop-opacity="0"/>
-        </linearGradient>
-        <!-- Bottom gradient: transparent fading to navy -->
-        <linearGradient id="bottomGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#0c4a6e" stop-opacity="0"/>
-            <stop offset="30%" stop-color="#0c4a6e" stop-opacity="0.6"/>
-            <stop offset="100%" stop-color="#0c4a6e" stop-opacity="0.95"/>
-        </linearGradient>
-        <!-- Brand gradient for accent elements -->
-        <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#0284c7"/>
-            <stop offset="100%" stop-color="#0369a1"/>
-        </linearGradient>
-    </defs>
-
-    <!-- \u2550\u2550\u2550 TOP GRADIENT BAR \u2550\u2550\u2550 -->
-    <rect x="0" y="0" width="${width}" height="${Math.round(height * 0.18)}" fill="url(#topGrad)"/>
-
-    <!-- XIRI Icon Badge (simplified) -->
-    <rect x="${Math.round(width * 0.05)}" y="${Math.round(height * 0.03)}" width="42" height="42" rx="9" fill="url(#brandGrad)"/>
-    <text x="${Math.round(width * 0.05 + 21)}" y="${Math.round(height * 0.03 + 29)}" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="22" fill="white" text-anchor="middle" letter-spacing="-0.5">X</text>
-
-    <!-- XIRI Wordmark -->
-    <text x="${Math.round(width * 0.05 + 52)}" y="${Math.round(height * 0.03 + 22)}" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="24" fill="white" letter-spacing="-1">XIRI</text>
-    <text x="${Math.round(width * 0.05 + 52)}" y="${Math.round(height * 0.03 + 37)}" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8.5" fill="rgba(255,255,255,0.65)" letter-spacing="3">FACILITY SOLUTIONS</text>
-
-    <!-- \u2550\u2550\u2550 BOTTOM GRADIENT BAR \u2550\u2550\u2550 -->
-    <rect x="0" y="${Math.round(height * 0.55)}" width="${width}" height="${Math.round(height * 0.45)}" fill="url(#bottomGrad)"/>
-
-    <!-- Headline text box background -->
-    <rect x="${Math.round(width * 0.05)}" y="${Math.round(headlineY)}" width="${Math.round(width * 0.9)}" height="${headlineBlockHeight}" rx="12" fill="rgba(12, 74, 110, 0.65)" stroke="rgba(56, 189, 248, 0.25)" stroke-width="1"/>
-
-    <!-- Headline text lines -->
-    ${headlineTexts}
-
-    <!-- \u2550\u2550\u2550 BOTTOM BAR \u2550\u2550\u2550 -->
-    <!-- Accent stripe -->
-    <rect x="0" y="${height - 6}" width="${width}" height="6" fill="#38bdf8" opacity="0.85"/>
-
-    <!-- Website URL -->
-    <text x="${Math.round(width * 0.08)}" y="${height - 25}" font-family="Arial, Helvetica, sans-serif" font-weight="600" font-size="16" fill="rgba(255,255,255,0.9)" letter-spacing="0.5">xiri.ai</text>
-
-    <!-- Separator dot -->
-    <circle cx="${Math.round(width * 0.25)}" cy="${height - 30}" r="2.5" fill="rgba(56, 189, 248, 0.7)"/>
-
-    <!-- Tagline -->
-    <text x="${Math.round(width * 0.28)}" y="${height - 25}" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="13" fill="rgba(255,255,255,0.6)" letter-spacing="1">Facility Solutions</text>
-</svg>`;
-}
-async function compositeImage(photoBuffer, postMessage) {
-  const metadata = await (0, import_sharp.default)(photoBuffer).metadata();
-  const width = metadata.width || 1024;
-  const height = metadata.height || 1024;
-  const headline = extractHeadline(postMessage);
-  console.log(`[BrandOverlay] Compositing headline: "${headline}" onto ${width}x${height} photo`);
-  const overlaySvg = createBrandOverlaySvg(width, height, headline);
-  const svgBuffer = Buffer.from(overlaySvg);
-  const result = await (0, import_sharp.default)(photoBuffer).composite([
-    {
-      input: svgBuffer,
-      top: 0,
-      left: 0
-    }
-  ]).png({ quality: 90 }).toBuffer();
-  console.log(`[BrandOverlay] Composited image size: ${(result.length / 1024).toFixed(0)}KB`);
-  return result;
-}
-
-// src/utils/imagenApi.ts
-var PROJECT_ID = "xiri-facility-solutions";
-var LOCATION = "us-central1";
-var CLIENT_SCENES = [
-  "Pristine modern medical office lobby with clean tile floors, polished reception desk, bright overhead lighting, potted plants, empty waiting area chairs neatly arranged",
-  "Spotless auto dealership showroom floor, gleaming under bright lights, polished concrete, luxury vehicles visible in background, immaculate glass windows",
-  "Modern commercial building hallway freshly cleaned, shining floors reflecting overhead lights, crisp white walls, professional maintenance",
-  "Empty medical exam room, sanitized surfaces, organized supply cabinets, bright clinical lighting, freshly mopped floor",
-  "Corporate office break room after professional cleaning, spotless countertops, organized cabinets, fresh flowers on table, warm natural light",
-  "Aerial view of a well-maintained commercial building exterior, landscaped grounds, clean parking lot, blue sky",
-  "Modern daycare facility interior, colorful but immaculate, organized toy shelves, clean play mats, bright cheerful lighting"
-];
-var CONTRACTOR_SCENES = [
-  "Professional cleaning crew in matching blue uniforms working together in a commercial building hallway, pushing floor buffer machine, teamwork",
-  "Close-up of janitorial equipment arranged neatly \u2014 mop bucket, floor buffer, cleaning supplies \u2014 professional grade tools ready for work",
-  "Facility maintenance worker in blue safety gear inspecting HVAC system on commercial building rooftop, sunrise in background",
-  "Team of contractors in hard hats and safety vests doing a walk-through inspection of a clean commercial space, clipboards in hand",
-  "Professional floor technician operating an industrial floor scrubber in a large commercial space, shiny wet floor behind them",
-  "Maintenance worker in blue uniform restocking supply closet in a commercial building, organized shelves, professional demeanor",
-  "Night shift cleaning crew member vacuuming a darkened office space, overhead emergency lights creating dramatic lighting, dedication"
-];
-async function generatePostImage(postMessage, audience) {
-  try {
-    console.log(`[Imagen] Starting image generation for ${audience} post...`);
-    const auth = new import_google_auth_library.GoogleAuth({
-      scopes: ["https://www.googleapis.com/auth/cloud-platform"]
-    });
-    const client = await auth.getClient();
-    const scenes = audience === "client" ? CLIENT_SCENES : CONTRACTOR_SCENES;
-    const scene = scenes[Math.floor(Math.random() * scenes.length)];
-    const imagePrompt = `Editorial photograph, shot on Canon EOS R5 with 35mm lens. ${scene}. Color grading: cool blue tones with deep navy shadows and bright sky blue highlights. Clean, sharp, professional corporate photography. Shallow depth of field. 1:1 square composition.`;
-    const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/imagen-3.0-generate-002:predict`;
-    console.log(`[Imagen] Calling endpoint: ${endpoint}`);
-    const response = await client.request({
-      url: endpoint,
-      method: "POST",
-      data: {
-        instances: [{ prompt: imagePrompt }],
-        parameters: {
-          sampleCount: 1,
-          aspectRatio: "1:1",
-          safetyFilterLevel: "block_few",
-          personGeneration: "allow_all",
-          negativePrompt: "text, letters, words, numbers, signs, signage, labels, captions, watermarks, logos, branding, graphic design, overlays, banners, typography, fonts, writing, handwriting, graffiti, posters, billboards, screen, monitor text, nametags, badges with text"
-        }
-      }
-    });
-    console.log(`[Imagen] API response status: ${response.status}`);
-    const predictions = response.data?.predictions;
-    console.log(`[Imagen] Predictions count: ${predictions?.length || 0}`);
-    if (!predictions || predictions.length === 0) {
-      console.error("[Imagen] No predictions returned");
-      console.error("[Imagen] Response data keys:", JSON.stringify(Object.keys(response.data || {})));
-      return null;
-    }
-    const imageBase64 = predictions[0].bytesBase64Encoded;
-    if (!imageBase64) {
-      console.error("[Imagen] No image data in prediction");
-      console.error("[Imagen] Prediction keys:", JSON.stringify(Object.keys(predictions[0])));
-      return null;
-    }
-    const rawPhotoBuffer = Buffer.from(imageBase64, "base64");
-    console.log(`[Imagen] Compositing branded overlay...`);
-    const brandedBuffer = await compositeImage(rawPhotoBuffer, postMessage);
-    const fileName = `social-images/${(0, import_uuid2.v4)()}.png`;
-    const storageBucket = (0, import_storage.getStorage)().bucket();
-    const bucketName = storageBucket.name;
-    const file = storageBucket.file(fileName);
-    await file.save(brandedBuffer, {
-      metadata: {
-        contentType: "image/png",
-        metadata: {
-          firebaseStorageDownloadTokens: (0, import_uuid2.v4)()
-        }
-      }
-    });
-    await file.makePublic();
-    const imageUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
-    console.log(`[Imagen] Branded image generated and uploaded: ${imageUrl}`);
-    return { imageUrl, storagePath: fileName };
-  } catch (err) {
-    console.error("[Imagen] Error generating image:", err.message);
-    if (err.response?.data) {
-      console.error("[Imagen] API error details:", JSON.stringify(err.response.data).slice(0, 1e3));
-    }
-    return null;
-  }
-}
+init_imagenApi();
 
 // src/utils/veoApi.ts
 var import_genai = require("@google/genai");
@@ -24002,7 +24204,7 @@ var DAY_MAP = {
   friday: 5,
   saturday: 6
 };
-function buildPrompt(config2, engagementSummary, recentPostSummaries, audience) {
+function buildPrompt(config2, engagementSummary, recentPostSummaries, audience, campaignContext) {
   const audienceContext = audience === "client" ? `## TARGET AUDIENCE: FACILITY CLIENTS (Medical Offices, Auto Dealerships, Commercial Buildings)
 This post should speak to building owners, office managers, or property managers who are frustrated with:
 - Managing multiple vendors, multiple invoices
@@ -24048,7 +24250,10 @@ Key messaging for contractors:
 - Service Areas: Queens, Nassau County, Suffolk County, Long Island
 
 ${audienceContext}
-
+${campaignContext ? `
+## ACTIVE RECRUITMENT CAMPAIGN
+${campaignContext}
+` : ""}
 ## ENGAGEMENT DATA (Last 20 Posts)
 ${engagementSummary}
 
@@ -24081,7 +24286,7 @@ CRITICAL FORMATTING RULES:
 
 Respond with ONLY the post text. No introductions, no explanations, just the ready-to-publish Facebook post.`;
 }
-function buildReelCaptionPrompt(config2, audience, location) {
+function buildReelCaptionPrompt(config2, audience, location, campaignContext) {
   const audienceHook = audience === "client" ? `Hook angle: Speak to facility managers / building owners who are tired of managing 5+ vendors.
 Key points: one call, one invoice, nightly audits verify quality, medical-grade standards.
 CTA: "DM us" or "Link in bio" or "Comment CLEAN for a free site audit"` : `Hook angle: Speak to contractors / cleaning crews looking for steady, reliable work.
@@ -24101,6 +24306,10 @@ Mention Long Island / Queens area naturally.`;
 ## TARGET AUDIENCE: ${audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS"}
 ${audienceHook}
 ${locationNote}
+${campaignContext ? `
+## ACTIVE RECRUITMENT CAMPAIGN
+${campaignContext}
+` : ""}
 
 ## CONTENT PREFERENCES
 - Tone: ${config2.tone || "Professional, bold, punchy"}
@@ -24257,17 +24466,41 @@ async function generateSocialContent(channel = "facebook_posts") {
   const existingContractorDrafts = pendingDrafts.docs.filter((d) => d.data().audience === "contractor").length;
   const totalExisting = existingClientDrafts + existingContractorDrafts;
   const currentClientRatio = totalExisting > 0 ? existingClientDrafts / totalExisting : 0.5;
+  const activeCampaignsSnap = await db.collection("social_campaigns").where("channel", "==", channel).where("status", "==", "active").get();
+  const activeCampaigns = activeCampaignsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const genAI6 = new import_generative_ai7.GoogleGenerativeAI(API_KEY4);
   const model4 = genAI6.getGenerativeModel({ model: "gemini-2.0-flash" });
   const isReels = channel === "facebook_reels";
   let slotIndex = 0;
   for (const scheduledFor of toGenerate) {
     try {
-      const audience = currentClientRatio < clientRatio ? slotIndex % 2 === 0 ? "client" : "contractor" : slotIndex % 2 === 0 ? "contractor" : "client";
+      const campaign = activeCampaigns.find((c) => {
+        const start = c.startDate?.toDate ? c.startDate.toDate() : new Date(c.startDate);
+        const end = new Date(c.endDate?.toDate ? c.endDate.toDate() : new Date(c.endDate));
+        end.setDate(end.getDate() + 1);
+        return scheduledFor >= start && scheduledFor <= end;
+      });
+      let audience;
+      let campaignContext;
+      let facebookPlaceId;
+      let campaignId;
+      let locationName;
+      if (campaign) {
+        audience = campaign.audience === "client" ? "client" : "contractor";
+        campaignId = campaign.id;
+        facebookPlaceId = campaign.facebookPlaceId;
+        locationName = campaign.location;
+        campaignContext = `We are running a specific recruitment/lead drive for this post. Make sure the content is highly targeted to this campaign.
+Target Location/Region: ${campaign.location || "N/A"}.
+${campaign.hookOverride ? `Specific messaging angle/hook to use: "${campaign.hookOverride}"` : ""}
+`;
+      } else {
+        audience = currentClientRatio < clientRatio ? slotIndex % 2 === 0 ? "client" : "contractor" : slotIndex % 2 === 0 ? "contractor" : "client";
+      }
       slotIndex++;
       if (isReels) {
         console.log(`[SocialGenerator] Generating ${audience} reel for ${scheduledFor.toISOString()}...`);
-        const captionPrompt = buildReelCaptionPrompt(config2, audience);
+        const captionPrompt = buildReelCaptionPrompt(config2, audience, locationName, campaignContext);
         const captionResult = await model4.generateContent(captionPrompt);
         const caption = captionResult.response.text().trim();
         if (!caption) {
@@ -24298,6 +24531,8 @@ async function generateSocialContent(channel = "facebook_posts") {
           status: "draft",
           generatedBy: "ai",
           scheduledFor,
+          campaignId: campaignId || null,
+          facebookPlaceId: facebookPlaceId || null,
           reviewedBy: null,
           reviewedAt: null,
           rejectionReason: null,
@@ -24307,7 +24542,7 @@ async function generateSocialContent(channel = "facebook_posts") {
         console.log(`[SocialGenerator] ${audience} reel draft created ${videoUrl ? "(with video)" : "(caption only)"}`);
       } else {
         console.log(`[SocialGenerator] Generating ${audience} draft for ${scheduledFor.toISOString()}...`);
-        const prompt = buildPrompt(config2, summary, themes, audience);
+        const prompt = buildPrompt(config2, summary, themes, audience, campaignContext);
         const result = await model4.generateContent(prompt);
         const generatedMessage = result.response.text().trim();
         if (!generatedMessage) {
@@ -24330,6 +24565,8 @@ async function generateSocialContent(channel = "facebook_posts") {
           status: "draft",
           generatedBy: "ai",
           scheduledFor,
+          campaignId: campaignId || null,
+          facebookPlaceId: facebookPlaceId || null,
           engagementContext: {
             avgLikes,
             avgComments,
@@ -24782,8 +25019,60 @@ var publishPostNow = (0, import_https7.onCall)({
     let result;
     if (post.channel === "facebook_reels" && post.videoUrl) {
       console.log(`[PublishNow] Publishing reel ${postId}...`);
+      let finalVideoUrl = post.videoUrl;
+      const outroPresetId = post.outroPresetId;
+      if (outroPresetId) {
+        try {
+          const { generateOutroFrame: generateOutroFrame2 } = await Promise.resolve().then(() => (init_reelOutroGenerator(), reelOutroGenerator_exports));
+          const { writeFileSync, unlinkSync, existsSync } = await import("fs");
+          const { execSync } = await import("child_process");
+          const path = await import("path");
+          const os = await import("os");
+          const tmpDir = os.tmpdir();
+          const outroPng = path.join(tmpDir, `outro-${postId}.png`);
+          const outroMp4 = path.join(tmpDir, `outro-${postId}.mp4`);
+          const originalMp4 = path.join(tmpDir, `original-${postId}.mp4`);
+          const concatList = path.join(tmpDir, `concat-${postId}.txt`);
+          const finalMp4 = path.join(tmpDir, `final-${postId}.mp4`);
+          const outroPngBuffer = await generateOutroFrame2(outroPresetId);
+          writeFileSync(outroPng, outroPngBuffer);
+          const videoResp = await fetch(post.videoUrl);
+          const videoArrayBuf = await videoResp.arrayBuffer();
+          writeFileSync(originalMp4, Buffer.from(videoArrayBuf));
+          execSync(
+            `ffmpeg -y -loop 1 -i "${outroPng}" -c:v libx264 -t 3 -pix_fmt yuv420p -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2" -r 30 "${outroMp4}"`,
+            { timeout: 3e4 }
+          );
+          const normalizedMp4 = path.join(tmpDir, `norm-${postId}.mp4`);
+          execSync(
+            `ffmpeg -y -i "${originalMp4}" -c:v libx264 -pix_fmt yuv420p -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2" -r 30 -an "${normalizedMp4}"`,
+            { timeout: 6e4 }
+          );
+          writeFileSync(concatList, `file '${normalizedMp4}'
+file '${outroMp4}'
+`);
+          execSync(
+            `ffmpeg -y -f concat -safe 0 -i "${concatList}" -c copy "${finalMp4}"`,
+            { timeout: 3e4 }
+          );
+          const { readFileSync } = await import("fs");
+          const finalBuffer = readFileSync(finalMp4);
+          const storageBucket = (await import("firebase-admin/storage")).getStorage().bucket();
+          const fileName = `social-videos/reel-${postId}-with-outro.mp4`;
+          const file = storageBucket.file(fileName);
+          await file.save(finalBuffer, { metadata: { contentType: "video/mp4" } });
+          await file.makePublic();
+          finalVideoUrl = `https://storage.googleapis.com/${storageBucket.name}/${fileName}`;
+          console.log(`[PublishNow] Outro appended, final video: ${finalVideoUrl}`);
+          [outroPng, outroMp4, originalMp4, normalizedMp4, concatList, finalMp4].forEach((f) => {
+            if (existsSync(f)) unlinkSync(f);
+          });
+        } catch (outroErr) {
+          console.error(`[PublishNow] Outro append failed (publishing without):`, outroErr.message);
+        }
+      }
       result = await publishReel(
-        post.videoUrl,
+        finalVideoUrl,
         post.message || "",
         post.facebookPlaceId || void 0
       );
@@ -24836,6 +25125,84 @@ var searchPlaces = (0, import_https7.onCall)({
   const results = await searchFacebookPlaces(query);
   return { places: results };
 });
+var regeneratePostImage = (0, import_https7.onCall)({
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 300,
+  memory: "1GiB"
+}, async (request) => {
+  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  const { postId, feedback } = request.data;
+  if (!postId) throw new import_https7.HttpsError("invalid-argument", "postId is required");
+  const postRef = db.collection("social_posts").doc(postId);
+  const postDoc = await postRef.get();
+  if (!postDoc.exists) throw new import_https7.HttpsError("not-found", "Post not found");
+  const post = postDoc.data();
+  const audience = post.audience || "contractor";
+  console.log(`[RegenImage] Regenerating image for post ${postId} with feedback: "${feedback || "none"}"`);
+  const { generatePostImage: generatePostImage2 } = await Promise.resolve().then(() => (init_imagenApi(), imagenApi_exports));
+  const result = await generatePostImage2(post.message, audience, feedback || void 0);
+  if (!result) {
+    throw new import_https7.HttpsError("internal", "Image generation failed");
+  }
+  await postRef.update({
+    imageUrl: result.imageUrl,
+    imageRegenCount: (post.imageRegenCount || 0) + 1,
+    lastImageFeedback: feedback || null
+  });
+  console.log(`[RegenImage] New image: ${result.imageUrl}`);
+  return { success: true, imageUrl: result.imageUrl };
+});
+var regeneratePostCaption = (0, import_https7.onCall)({
+  cors: DASHBOARD_CORS,
+  secrets: ["GEMINI_API_KEY"],
+  timeoutSeconds: 120
+}, async (request) => {
+  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  const { postId, feedback } = request.data;
+  if (!postId) throw new import_https7.HttpsError("invalid-argument", "postId is required");
+  const postRef = db.collection("social_posts").doc(postId);
+  const postDoc = await postRef.get();
+  if (!postDoc.exists) throw new import_https7.HttpsError("not-found", "Post not found");
+  const post = postDoc.data();
+  const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
+  console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
+  const { GoogleGenerativeAI: GoogleGenerativeAI8 } = await import("@google/generative-ai");
+  const API_KEY5 = process.env.GEMINI_API_KEY || "";
+  const genAI6 = new GoogleGenerativeAI8(API_KEY5);
+  const model4 = genAI6.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const prompt = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for ${audience}:
+
+--- CURRENT POST ---
+${post.message}
+--- END ---
+
+The reviewer has provided this feedback:
+"${feedback || "Generate a different version"}"
+
+Write an improved version of this post incorporating the feedback. Keep the same target audience (${audience}).
+
+CRITICAL FORMATTING RULES:
+- Facebook does NOT support text formatting. Do NOT use Markdown.
+- NEVER use asterisks (*), double asterisks (**), underscores for emphasis, or any Markdown syntax.
+- Write XIRI in plain uppercase text, never **XIRI** or *XIRI*.
+- Use emoji as visual bullets, not asterisks.
+- Include relevant hashtags at the end.
+- 100-250 words.
+
+Respond with ONLY the post text. No introductions.`;
+  const result = await model4.generateContent(prompt);
+  const newCaption = result.response.text().trim();
+  if (!newCaption) {
+    throw new import_https7.HttpsError("internal", "Caption generation returned empty");
+  }
+  await postRef.update({
+    message: newCaption,
+    captionRegenCount: (post.captionRegenCount || 0) + 1,
+    lastCaptionFeedback: feedback || null
+  });
+  console.log(`[RegenCaption] New caption generated (${newCaption.length} chars)`);
+  return { success: true, message: newCaption };
+});
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   adminUpdateAuthUser,
@@ -24872,6 +25239,8 @@ var searchPlaces = (0, import_https7.onCall)({
   processOutreachQueue,
   publishFacebookPost,
   publishPostNow,
+  regeneratePostCaption,
+  regeneratePostImage,
   resendWebhook,
   respondToQuote,
   reviewSocialPost,

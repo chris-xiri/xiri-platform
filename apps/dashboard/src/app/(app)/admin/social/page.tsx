@@ -182,6 +182,13 @@ export default function SocialMediaPage() {
     const [regenFeedback, setRegenFeedback] = useState('');
     const [regenFeedbackTarget, setRegenFeedbackTarget] = useState<{ id: string; type: 'image' | 'caption' } | null>(null);
 
+    // Location picker state
+    const [locationPickerDraftId, setLocationPickerDraftId] = useState<string | null>(null);
+    const [locationQuery, setLocationQuery] = useState('');
+    const [locationResults, setLocationResults] = useState<any[]>([]);
+    const [searchingLocation, setSearchingLocation] = useState(false);
+    const locationDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     // Config state
     const [config, setConfig] = useState<SocialConfig>(DEFAULT_CONFIG);
     const [loadingConfig, setLoadingConfig] = useState(false);
@@ -448,45 +455,58 @@ export default function SocialMediaPage() {
         }
     };
 
-    const handleSetLocation = async (postId: string) => {
-        const locationText = prompt('Enter location (e.g., Great Neck, NY):');
-        if (!locationText) return;
-
+    const handleLocationSearch = useCallback(async (query: string) => {
+        if (!query || query.length < 2) {
+            setLocationResults([]);
+            return;
+        }
+        setSearchingLocation(true);
         try {
-            // Search for a Facebook Place
             const searchFn = httpsCallable(functions, 'searchPlaces');
-            const result: any = await searchFn({ query: locationText });
-            const places = result.data?.places || [];
-
-            let selectedPlace = places[0]; // Default to first result
-            if (places.length > 1) {
-                const choices = places.map((p: any, i: number) => `${i + 1}. ${p.name}${p.location?.city ? ` (${p.location.city})` : ''}`).join('\n');
-                const pick = prompt(`Found ${places.length} places:\n${choices}\n\nEnter number (or press Cancel to use #1):`);
-                if (pick && parseInt(pick) > 0 && parseInt(pick) <= places.length) {
-                    selectedPlace = places[parseInt(pick) - 1];
-                }
-            }
-
-            if (selectedPlace) {
-                const { doc: docRef, updateDoc } = await import('firebase/firestore');
-                await updateDoc(docRef(db, 'social_posts', postId), {
-                    location: `${selectedPlace.name}${selectedPlace.location?.city ? `, ${selectedPlace.location.city}` : ''}`,
-                    facebookPlaceId: selectedPlace.id,
-                });
-                setSuccessMessage(`Location set: ${selectedPlace.name}`);
-                fetchDrafts();
-            } else {
-                // No Facebook Place found — save text only
-                const { doc: docRef, updateDoc } = await import('firebase/firestore');
-                await updateDoc(docRef(db, 'social_posts', postId), {
-                    location: locationText,
-                    facebookPlaceId: null,
-                });
-                setSuccessMessage(`Location saved (no Facebook Place match): ${locationText}`);
-                fetchDrafts();
-            }
+            const result: any = await searchFn({ query });
+            setLocationResults(result.data?.places || []);
         } catch (err: any) {
-            setErrorMessage('Location search failed: ' + (err.message || 'Unknown error'));
+            console.error('Place search failed:', err);
+            setLocationResults([]);
+        } finally {
+            setSearchingLocation(false);
+        }
+    }, []);
+
+    const handleLocationQueryChange = useCallback((query: string) => {
+        setLocationQuery(query);
+        if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current);
+        locationDebounceRef.current = setTimeout(() => handleLocationSearch(query), 400);
+    }, [handleLocationSearch]);
+
+    const handleSelectPlace = async (postId: string, place: any) => {
+        try {
+            const { doc: docRef, updateDoc } = await import('firebase/firestore');
+            await updateDoc(docRef(db, 'social_posts', postId), {
+                location: `${place.name}${place.location?.city ? `, ${place.location.city}` : ''}`,
+                facebookPlaceId: place.id,
+            });
+            setSuccessMessage(`📍 Location set: ${place.name}`);
+            setLocationPickerDraftId(null);
+            setLocationQuery('');
+            setLocationResults([]);
+            fetchDrafts();
+        } catch (err: any) {
+            setErrorMessage('Failed to set location: ' + (err.message || 'Unknown error'));
+        }
+    };
+
+    const handleClearLocation = async (postId: string) => {
+        try {
+            const { doc: docRef, updateDoc } = await import('firebase/firestore');
+            await updateDoc(docRef(db, 'social_posts', postId), {
+                location: null,
+                facebookPlaceId: null,
+            });
+            setSuccessMessage('Location removed');
+            fetchDrafts();
+        } catch (err: any) {
+            setErrorMessage('Failed to clear location: ' + (err.message || 'Unknown error'));
         }
     };
 
@@ -1112,25 +1132,79 @@ export default function SocialMediaPage() {
                                                             </p>
                                                         )}
 
-                                                        {/* Location tag — editable */}
-                                                        <div className="flex items-center gap-1 mb-2">
-                                                            {(draft as any).location ? (
-                                                                <button
-                                                                    className="text-[10px] text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer flex items-center gap-0.5"
-                                                                    onClick={() => handleSetLocation(draft.id)}
-                                                                >
-                                                                    📍 {(draft as any).location}
-                                                                    {(draft as any).facebookPlaceId && (
-                                                                        <Badge variant="outline" className="text-[8px] h-3.5 px-1 ml-1 border-emerald-200 text-emerald-600">FB Tagged</Badge>
+                                                        {/* Location tag — inline picker */}
+                                                        <div className="mb-2">
+                                                            {locationPickerDraftId === draft.id ? (
+                                                                <div className="relative">
+                                                                    <div className="flex items-center gap-1">
+                                                                        <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
+                                                                        <input
+                                                                            type="text"
+                                                                            className="flex-1 h-7 text-xs px-2 border rounded-md bg-background dark:bg-neutral-900"
+                                                                            placeholder="Search Facebook Places (e.g. Great Neck, NY)"
+                                                                            value={locationQuery}
+                                                                            onChange={(e) => handleLocationQueryChange(e.target.value)}
+                                                                            autoFocus
+                                                                        />
+                                                                        {searchingLocation && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                                                                        <button className="text-muted-foreground hover:text-foreground" onClick={() => { setLocationPickerDraftId(null); setLocationQuery(''); setLocationResults([]); }}>
+                                                                            <X className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                    </div>
+                                                                    {locationResults.length > 0 && (
+                                                                        <div className="absolute z-20 left-0 right-0 mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                                                            {locationResults.map((place: any) => (
+                                                                                <button
+                                                                                    key={place.id}
+                                                                                    className="w-full text-left px-3 py-2 text-xs hover:bg-muted/50 flex items-center gap-2 border-b last:border-b-0"
+                                                                                    onClick={() => handleSelectPlace(draft.id, place)}
+                                                                                >
+                                                                                    <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
+                                                                                    <div>
+                                                                                        <div className="font-medium">{place.name}</div>
+                                                                                        {place.location?.city && (
+                                                                                            <div className="text-[10px] text-muted-foreground">
+                                                                                                {[place.location.city, place.location.state].filter(Boolean).join(', ')}
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <Badge variant="outline" className="text-[8px] h-3.5 px-1 ml-auto border-emerald-200 text-emerald-600 shrink-0">FB Place</Badge>
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
                                                                     )}
-                                                                </button>
+                                                                    {locationQuery.length >= 2 && !searchingLocation && locationResults.length === 0 && (
+                                                                        <div className="absolute z-20 left-0 right-0 mt-1 bg-background border rounded-md shadow-lg px-3 py-2 text-xs text-muted-foreground">
+                                                                            No Facebook Places found for "{locationQuery}"
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             ) : (
-                                                                <button
-                                                                    className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-0.5"
-                                                                    onClick={() => handleSetLocation(draft.id)}
-                                                                >
-                                                                    📍 Add Location
-                                                                </button>
+                                                                <div className="flex items-center gap-1">
+                                                                    {(draft as any).location ? (
+                                                                        <button
+                                                                            className="text-[10px] text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer flex items-center gap-0.5"
+                                                                            onClick={() => { setLocationPickerDraftId(draft.id); setLocationQuery(''); setLocationResults([]); }}
+                                                                        >
+                                                                            📍 {(draft as any).location}
+                                                                            {(draft as any).facebookPlaceId && (
+                                                                                <Badge variant="outline" className="text-[8px] h-3.5 px-1 ml-1 border-emerald-200 text-emerald-600">FB Tagged</Badge>
+                                                                            )}
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-0.5"
+                                                                            onClick={() => { setLocationPickerDraftId(draft.id); setLocationQuery(''); setLocationResults([]); }}
+                                                                        >
+                                                                            📍 Add Location
+                                                                        </button>
+                                                                    )}
+                                                                    {(draft as any).location && (
+                                                                        <button className="text-[10px] text-muted-foreground hover:text-red-500 ml-1" onClick={() => handleClearLocation(draft.id)} title="Remove location">
+                                                                            <X className="w-3 h-3" />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             )}
                                                         </div>
 
