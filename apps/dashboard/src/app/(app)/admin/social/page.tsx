@@ -146,6 +146,10 @@ export default function SocialMediaPage() {
     const [posting, setPosting] = useState(false);
     const [deleting, setDeleting] = useState<string | null>(null);
 
+    // Reels feed state (from Graph API)
+    const [reelsFeed, setReelsFeed] = useState<any[]>([]);
+    const [loadingReels, setLoadingReels] = useState(false);
+
     // Drafts state
     const [drafts, setDrafts] = useState<DraftPost[]>([]);
     const [loadingDrafts, setLoadingDrafts] = useState(false);
@@ -226,6 +230,21 @@ export default function SocialMediaPage() {
         }
     }, []);
 
+    const fetchReels = useCallback(async () => {
+        try {
+            setLoadingReels(true);
+            const getFacebookReels = httpsCallable(functions, 'getFacebookReels');
+            const result = await getFacebookReels({ limit: 20 });
+            const data = result.data as { reels: any[] };
+            setReelsFeed(data.reels || []);
+        } catch (err: any) {
+            console.error('Error fetching reels:', err);
+            setErrorMessage('Failed to load reels');
+        } finally {
+            setLoadingReels(false);
+        }
+    }, []);
+
     const fetchDrafts = useCallback(async () => {
         try {
             setLoadingDrafts(true);
@@ -291,10 +310,11 @@ export default function SocialMediaPage() {
 
     useEffect(() => {
         fetchPosts();
+        fetchReels();
         fetchDrafts();
         fetchCampaigns();
         fetchConfig();
-    }, [fetchPosts, fetchDrafts, fetchCampaigns, fetchConfig]);
+    }, [fetchPosts, fetchReels, fetchDrafts, fetchCampaigns, fetchConfig]);
 
     // Auto-clear feedback
     useEffect(() => {
@@ -883,59 +903,74 @@ export default function SocialMediaPage() {
                                 <h2 className="text-lg font-semibold">
                                     {isReels ? '📽️ Published Reels' : 'Recent Posts'}
                                 </h2>
-                                <Button variant="ghost" size="sm" onClick={isReels ? fetchDrafts : fetchPosts} disabled={loading}>
-                                    <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                                <Button variant="ghost" size="sm" onClick={isReels ? fetchReels : fetchPosts} disabled={loading || loadingReels}>
+                                    <RefreshCw className={`w-4 h-4 mr-1 ${(loading || loadingReels) ? 'animate-spin' : ''}`} /> Refresh
                                 </Button>
                             </div>
 
                             {isReels ? (
-                                /* ── Reels Feed (from Firestore published reels) ── */
-                                (() => {
-                                    const publishedReels = drafts.filter(d => d.status === 'approved' || d.status === 'published');
-                                    return publishedReels.length === 0 ? (
-                                        <Card><CardContent className="p-8 text-center text-muted-foreground">
-                                            <Film className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                            <p>No published reels yet.</p>
-                                            <p className="text-xs mt-1">Generate a reel and approve it to see it here.</p>
-                                        </CardContent></Card>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {publishedReels.map(reel => (
-                                                <Card key={reel.id} className="overflow-hidden">
-                                                    <CardContent className="p-0">
-                                                        {reel.videoUrl ? (
-                                                            <div className="relative aspect-[9/16] max-h-[320px] bg-black">
-                                                                <video src={reel.videoUrl} className="w-full h-full object-cover" controls muted />
-                                                                {reel.videoDurationSeconds && (
+                                /* ── Reels Feed (from Facebook Graph API) ── */
+                                loadingReels ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {[1, 2, 3].map(i => (
+                                            <Card key={i}><CardContent className="p-0">
+                                                <Skeleton className="aspect-[9/16] max-h-[320px] w-full" />
+                                                <div className="p-3 space-y-2"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-3 w-1/2" /></div>
+                                            </CardContent></Card>
+                                        ))}
+                                    </div>
+                                ) : reelsFeed.length === 0 ? (
+                                    <Card><CardContent className="p-8 text-center text-muted-foreground">
+                                        <Film className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                        <p>No published reels on the page yet.</p>
+                                        <p className="text-xs mt-1">Publish a reel to see it here.</p>
+                                    </CardContent></Card>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {reelsFeed.map(reel => (
+                                            <Card key={reel.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                                                <CardContent className="p-0">
+                                                    {reel.thumbnail ? (
+                                                        <a href={reel.permalink_url} target="_blank" rel="noopener noreferrer">
+                                                            <div className="relative aspect-[9/16] max-h-[320px] bg-black cursor-pointer">
+                                                                <img src={reel.thumbnail} alt="Reel thumbnail" className="w-full h-full object-cover hover:opacity-90 transition-opacity" />
+                                                                {reel.duration && (
                                                                     <span className="absolute top-2 right-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
-                                                                        {reel.videoDurationSeconds}s
+                                                                        {Math.round(reel.duration)}s
                                                                     </span>
                                                                 )}
+                                                                <div className="absolute bottom-2 left-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                                    <Film className="w-3 h-3" /> Reel
+                                                                </div>
                                                             </div>
-                                                        ) : (
-                                                            <div className="aspect-[9/16] max-h-[200px] bg-muted flex items-center justify-center">
-                                                                <Film className="w-10 h-10 text-muted-foreground opacity-30" />
-                                                            </div>
-                                                        )}
-                                                        <div className="p-3">
-                                                            <p className="text-sm line-clamp-2 mb-2">{reel.message}</p>
-                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                                {reel.audience && (
-                                                                    <Badge variant="outline" className="text-[9px] h-4">
-                                                                        {reel.audience === 'client' ? '🏢 Client' : '🔧 Contractor'}
-                                                                    </Badge>
-                                                                )}
-                                                                {reel.location && (
-                                                                    <Badge variant="outline" className="text-[9px] h-4">📍 {reel.location}</Badge>
-                                                                )}
-                                                            </div>
+                                                        </a>
+                                                    ) : (
+                                                        <div className="aspect-[9/16] max-h-[200px] bg-muted flex items-center justify-center">
+                                                            <Film className="w-10 h-10 text-muted-foreground opacity-30" />
                                                         </div>
-                                                    </CardContent>
-                                                </Card>
-                                            ))}
-                                        </div>
-                                    );
-                                })()
+                                                    )}
+                                                    <div className="p-3">
+                                                        <p className="text-sm line-clamp-2 mb-2">{reel.message || <span className="text-muted-foreground italic">No caption</span>}</p>
+                                                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                                            {reel.likes?.summary?.total_count !== undefined && (
+                                                                <span>👍 {reel.likes.summary.total_count}</span>
+                                                            )}
+                                                            {reel.comments?.summary?.total_count !== undefined && (
+                                                                <span>💬 {reel.comments.summary.total_count}</span>
+                                                            )}
+                                                            {reel.created_time && (
+                                                                <span className="ml-auto">{new Date(reel.created_time).toLocaleDateString()}</span>
+                                                            )}
+                                                        </div>
+                                                        <a href={reel.permalink_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline mt-1 block">
+                                                            View on Facebook →
+                                                        </a>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                )
                             ) : (
                                 /* ── Posts Feed (from Facebook Graph API) ── */
                                 loading ? (

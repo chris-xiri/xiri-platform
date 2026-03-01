@@ -355,6 +355,25 @@ export const getFacebookPosts = onCall({
     }
 });
 
+// ── Get Facebook Reels ──
+export const getFacebookReels = onCall({
+    secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
+    cors: DASHBOARD_CORS,
+}, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+
+    const { limit } = request.data || {};
+
+    try {
+        const { getRecentReels } = await import("./utils/facebookApi");
+        const reels = await getRecentReels(limit || 10);
+        return { reels };
+    } catch (error: any) {
+        console.error("[Facebook] Get reels error:", error);
+        throw new HttpsError("internal", error.message || "Failed to get Facebook reels");
+    }
+});
+
 export const deleteFacebookPost = onCall({
     secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
     cors: DASHBOARD_CORS,

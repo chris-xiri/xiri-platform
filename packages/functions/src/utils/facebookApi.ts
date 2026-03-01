@@ -321,6 +321,42 @@ export async function getRecentPosts(limit: number = 10): Promise<FacebookPost[]
 }
 
 /**
+ * Get recent published reels from the page
+ */
+export async function getRecentReels(limit: number = 10): Promise<any[]> {
+    const token = getAccessToken();
+
+    try {
+        const fields = "id,description,created_time,thumbnails,permalink_url,likes.summary(true),comments.summary(true),length";
+        const response = await fetch(
+            `${GRAPH_BASE_URL}/${PAGE_ID}/video_reels?fields=${fields}&limit=${limit}&access_token=${token}`
+        );
+
+        const data = await response.json();
+
+        if (data.error) {
+            console.error("Facebook get reels error:", data.error);
+            return [];
+        }
+
+        // Normalize the data to a consistent structure
+        return (data.data || []).map((reel: any) => ({
+            id: reel.id,
+            message: reel.description || "",
+            created_time: reel.created_time,
+            thumbnail: reel.thumbnails?.data?.[0]?.uri || null,
+            permalink_url: reel.permalink_url || `https://facebook.com/reel/${reel.id}`,
+            likes: reel.likes,
+            comments: reel.comments,
+            duration: reel.length,
+        }));
+    } catch (error: any) {
+        console.error("Facebook get reels error:", error);
+        return [];
+    }
+}
+
+/**
  * Get page insights for a given period
  */
 export async function getPageInsights(
