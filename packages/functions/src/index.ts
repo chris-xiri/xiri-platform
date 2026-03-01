@@ -729,3 +729,17 @@ Respond with ONLY the post text. No introductions.`;
     console.log(`[RegenCaption] New caption generated (${newCaption.length} chars)`);
     return { success: true, message: newCaption };
 });
+
+// ── Get Outro Preview Image ──
+export const getOutroPreview = onCall({
+    cors: DASHBOARD_CORS,
+}, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+
+    const { presetId } = request.data;
+    if (!presetId) throw new HttpsError("invalid-argument", "presetId is required");
+
+    const { getOrCreateOutroFrameUrl } = await import("./utils/reelOutroGenerator");
+    const url = await getOrCreateOutroFrameUrl(presetId);
+    return { url };
+});

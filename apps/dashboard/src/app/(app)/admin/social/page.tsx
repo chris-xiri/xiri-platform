@@ -1210,33 +1210,66 @@ export default function SocialMediaPage() {
 
                                                         {/* Outro CTA selector — only for reels */}
                                                         {(draft as any).videoUrl && draft.status === 'draft' && (
-                                                            <div className="flex items-center gap-1.5 mb-2">
-                                                                <span className="text-[10px] text-muted-foreground">🎬 Outro:</span>
-                                                                <select
-                                                                    className="text-[10px] h-6 px-1.5 border rounded bg-background dark:bg-neutral-900 cursor-pointer"
-                                                                    value={(draft as any).outroPresetId || ''}
-                                                                    onChange={async (e) => {
-                                                                        const newValue = e.target.value || null;
-                                                                        // Optimistic local update
-                                                                        setDrafts(prev => prev.map(d =>
-                                                                            d.id === draft.id ? { ...d, outroPresetId: newValue } as any : d
-                                                                        ));
-                                                                        // Persist to Firestore
-                                                                        const { doc: docRef, updateDoc } = await import('firebase/firestore');
-                                                                        await updateDoc(docRef(db, 'social_posts', draft.id), {
-                                                                            outroPresetId: newValue,
-                                                                        });
-                                                                    }}
-                                                                >
-                                                                    <option value="">None</option>
-                                                                    <option value="hiring">🧹 We're Hiring</option>
-                                                                    <option value="quote">💼 Get a Quote</option>
-                                                                    <option value="coverage">📍 Service Areas</option>
-                                                                    <option value="partner">🤝 Become a Partner</option>
-                                                                    <option value="brand">✨ Brand Only</option>
-                                                                </select>
+                                                            <div className="mb-2">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-[10px] text-muted-foreground">🎬 Outro:</span>
+                                                                    <select
+                                                                        className="text-[10px] h-6 px-1.5 border rounded bg-background dark:bg-neutral-900 cursor-pointer"
+                                                                        value={(draft as any).outroPresetId || ''}
+                                                                        onChange={async (e) => {
+                                                                            const newValue = e.target.value || null;
+                                                                            // Optimistic local update
+                                                                            setDrafts(prev => prev.map(d =>
+                                                                                d.id === draft.id ? { ...d, outroPresetId: newValue, outroPreviewUrl: null } as any : d
+                                                                            ));
+                                                                            // Persist to Firestore
+                                                                            const { doc: docRef, updateDoc } = await import('firebase/firestore');
+                                                                            await updateDoc(docRef(db, 'social_posts', draft.id), {
+                                                                                outroPresetId: newValue,
+                                                                            });
+                                                                            // Fetch preview
+                                                                            if (newValue) {
+                                                                                try {
+                                                                                    const getPreview = httpsCallable(functions, 'getOutroPreview');
+                                                                                    const result: any = await getPreview({ presetId: newValue });
+                                                                                    setDrafts(prev => prev.map(d =>
+                                                                                        d.id === draft.id ? { ...d, outroPreviewUrl: result.data?.url } as any : d
+                                                                                    ));
+                                                                                } catch (err) {
+                                                                                    console.error('Preview fetch failed:', err);
+                                                                                }
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <option value="">None</option>
+                                                                        <option value="hiring">🧹 We're Hiring</option>
+                                                                        <option value="quote">💼 Get a Quote</option>
+                                                                        <option value="coverage">📍 Service Areas</option>
+                                                                        <option value="partner">🤝 Become a Partner</option>
+                                                                        <option value="brand">✨ Brand Only</option>
+                                                                    </select>
+                                                                    {(draft as any).outroPresetId && (
+                                                                        <Badge variant="outline" className="text-[8px] h-3.5 px-1 border-sky-200 text-sky-600">+3s outro</Badge>
+                                                                    )}
+                                                                </div>
+                                                                {/* Outro preview image */}
                                                                 {(draft as any).outroPresetId && (
-                                                                    <Badge variant="outline" className="text-[8px] h-3.5 px-1 border-sky-200 text-sky-600">+3s outro</Badge>
+                                                                    <div className="mt-2 rounded-lg overflow-hidden border bg-black max-w-[160px]">
+                                                                        {(draft as any).outroPreviewUrl ? (
+                                                                            <img
+                                                                                src={(draft as any).outroPreviewUrl}
+                                                                                alt="Outro preview"
+                                                                                className="w-full aspect-[9/16] object-cover"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-full aspect-[9/16] flex items-center justify-center">
+                                                                                <Loader2 className="w-4 h-4 animate-spin text-white/40" />
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="text-[9px] text-center text-muted-foreground py-1 bg-muted/50">
+                                                                            Appended after video (3s)
+                                                                        </div>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         )}
