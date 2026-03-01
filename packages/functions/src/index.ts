@@ -482,7 +482,8 @@ export const reviewSocialPost = onCall({
 export const publishPostNow = onCall({
     cors: DASHBOARD_CORS,
     secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
-    timeoutSeconds: 120,
+    timeoutSeconds: 180,
+    memory: "512MiB",
 }, async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
 

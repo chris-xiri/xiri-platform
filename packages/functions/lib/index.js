@@ -18496,6 +18496,7 @@ __export(index_exports, {
   generateLeads: () => generateLeads,
   generateMonthlyInvoices: () => generateMonthlyInvoices,
   getFacebookPosts: () => getFacebookPosts,
+  getOutroPreview: () => getOutroPreview,
   handleUnsubscribe: () => handleUnsubscribe,
   onAuditFailed: () => onAuditFailed,
   onAuditSubmitted: () => onAuditSubmitted,
@@ -25203,6 +25204,16 @@ Respond with ONLY the post text. No introductions.`;
   console.log(`[RegenCaption] New caption generated (${newCaption.length} chars)`);
   return { success: true, message: newCaption };
 });
+var getOutroPreview = (0, import_https7.onCall)({
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  const { presetId } = request.data;
+  if (!presetId) throw new import_https7.HttpsError("invalid-argument", "presetId is required");
+  const { getOrCreateOutroFrameUrl: getOrCreateOutroFrameUrl2 } = await Promise.resolve().then(() => (init_reelOutroGenerator(), reelOutroGenerator_exports));
+  const url = await getOrCreateOutroFrameUrl2(presetId);
+  return { url };
+});
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   adminUpdateAuthUser,
@@ -25214,6 +25225,7 @@ Respond with ONLY the post text. No introductions.`;
   generateLeads,
   generateMonthlyInvoices,
   getFacebookPosts,
+  getOutroPreview,
   handleUnsubscribe,
   onAuditFailed,
   onAuditSubmitted,
