@@ -1299,8 +1299,8 @@ export default function SocialMediaPage() {
                                                                     </Button>
                                                                 </div>
 
-                                                                {/* Regen buttons row */}
-                                                                <div className="flex gap-1.5 flex-wrap">
+                                                                {/* Regen buttons row — only for posts, not reels */}
+                                                                {!(draft as any).videoUrl && <div className="flex gap-1.5 flex-wrap">
                                                                     <Button size="sm" className="h-7 text-xs px-2 text-amber-600 border-amber-200 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-950" variant="outline"
                                                                         disabled={regenImageId === draft.id}
                                                                         onClick={() => {
@@ -1354,9 +1354,9 @@ export default function SocialMediaPage() {
                                                                             ♻️ Reuse
                                                                         </Button>
                                                                     )}
-                                                                </div>
+                                                                </div>}
 
-                                                                {/* Feedback input for regen */}
+                                                                {/* Feedback input for regen — only for posts */}
                                                                 {regenFeedbackTarget?.id === draft.id && (
                                                                     <div className="flex gap-1.5 items-center">
                                                                         <input
