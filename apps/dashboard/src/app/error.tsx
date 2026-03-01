@@ -46,8 +46,9 @@ export default function Error({
                 );
                 keys.forEach(k => localStorage.removeItem(k));
             } catch { /* ignore */ }
+            // Hard redirect — router.push doesn't work inside error boundaries
+            window.location.href = '/login';
         }
-        router.push('/login');
     };
 
     return (

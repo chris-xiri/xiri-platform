@@ -24814,8 +24814,15 @@ var publishPostNow = (0, import_https7.onCall)({
       throw new import_https7.HttpsError("internal", result.error || "Publishing failed");
     }
   } catch (err) {
-    console.error(`[PublishNow] Error:`, err.message);
-    throw new import_https7.HttpsError("internal", err.message || "Publishing failed");
+    const errorMsg = err.message || "Publishing failed";
+    console.error(`[PublishNow] Error:`, errorMsg);
+    await postRef.update({
+      status: "failed",
+      error: errorMsg,
+      failedAt: /* @__PURE__ */ new Date()
+    }).catch(() => {
+    });
+    throw new import_https7.HttpsError("internal", errorMsg);
   }
 });
 var searchPlaces = (0, import_https7.onCall)({
