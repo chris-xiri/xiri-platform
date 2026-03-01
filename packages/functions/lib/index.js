@@ -25007,7 +25007,8 @@ var reviewSocialPost = (0, import_https7.onCall)({
 var publishPostNow = (0, import_https7.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
-  timeoutSeconds: 120
+  timeoutSeconds: 180,
+  memory: "512MiB"
 }, async (request) => {
   if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
