@@ -47,4 +47,27 @@ Maintained by: @architect-cto
 > - Rationale: All tabs, selectors, and sub-tabs across the dashboard MUST persist their active state via URL query parameters (e.g., `?channel=facebook_reels&subtab=drafts`). This ensures the user's view survives page refreshes, browser back/forward navigation, and shareable links. On the Social Media page this applies to: the channel selector (`?channel=facebook_posts|facebook_reels`) and the sub-tab (`?subtab=feed|drafts|settings`). Apply the same pattern to any page with tabs or selectors.
 > - Status: **Active**
 
+> - Date: 2026-03-01
+> - Decision: **Facebook Reels API: Use `video_state: "PUBLISHED"` in Finish Step**
+> - Rationale: The Reels API `finish` phase requires `video_state: "PUBLISHED"` (not `published: "true"`) for reels to appear on the page timeline and Reels tab. Without this, reels are accessible via direct link but hidden from the page. Stuck reels can be retroactively fixed via `POST /{video_id}` with `published=true`.
+> - Status: **Active**
 
+> - Date: 2026-03-01
+> - Decision: **Branded Outro Approach: Static PNG → 3s MP4 via ffmpeg**
+> - Rationale: Reel outros are generated as a branded 1080×1920 PNG frame (via `sharp` SVG rendering), converted to a 3-second H.264 MP4 clip with ffmpeg, then concatenated with the source video using ffmpeg `concat` demuxer. Frames are cached in Cloud Storage at `reel-outros/outro_{presetId}.png`. Five presets supported: hiring, quote, coverage, partner, brand.
+> - Status: **Active**
+
+> - Date: 2026-03-01
+> - Decision: **`publishPostNow` Memory: 512 MiB**
+> - Rationale: ffmpeg video concatenation (outro + reel) exceeded the default 256 MiB limit (341 MiB observed). Bumped to 512 MiB and timeout to 180s.
+> - Status: **Active**
+
+> - Date: 2026-03-01
+> - Decision: **Reels Feed Sourced from Facebook Graph API (not Firestore)**
+> - Rationale: The "feed" tab for FB Reels now calls `getFacebookReels` (which queries `/{page_id}/video_reels`) to show actual published reels on the page, with thumbnails, likes, comments, and "View on Facebook" links. Parallels how the Posts feed calls `getFacebookPosts` to display page posts. Firestore drafts are separate and shown only in the "drafts" tab.
+> - Status: **Active**
+
+> - Date: 2026-03-01
+> - Decision: **Firestore Rules Must Be Deployed After Local Changes**
+> - Rationale: The `social_campaigns` read/write rules were added locally to `firestore.rules` but never deployed, causing "Missing or insufficient permissions" errors. All Firestore rule changes must be deployed via `npx firebase deploy --only firestore:rules`.
+> - Status: **Active**
