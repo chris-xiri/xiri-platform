@@ -1216,11 +1216,16 @@ export default function SocialMediaPage() {
                                                                     className="text-[10px] h-6 px-1.5 border rounded bg-background dark:bg-neutral-900 cursor-pointer"
                                                                     value={(draft as any).outroPresetId || ''}
                                                                     onChange={async (e) => {
+                                                                        const newValue = e.target.value || null;
+                                                                        // Optimistic local update
+                                                                        setDrafts(prev => prev.map(d =>
+                                                                            d.id === draft.id ? { ...d, outroPresetId: newValue } as any : d
+                                                                        ));
+                                                                        // Persist to Firestore
                                                                         const { doc: docRef, updateDoc } = await import('firebase/firestore');
                                                                         await updateDoc(docRef(db, 'social_posts', draft.id), {
-                                                                            outroPresetId: e.target.value || null,
+                                                                            outroPresetId: newValue,
                                                                         });
-                                                                        fetchDrafts();
                                                                     }}
                                                                 >
                                                                     <option value="">None</option>
