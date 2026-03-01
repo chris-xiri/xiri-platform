@@ -165,6 +165,12 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if hasRole('admin');
     }
+
+    match /social_campaigns/{campaignId} {
+      allow read: if request.auth != null;
+      allow create, update: if hasRole('admin');
+      allow delete: if hasRole('admin');
+    }
     
     // Default deny
     match /{document=**} {

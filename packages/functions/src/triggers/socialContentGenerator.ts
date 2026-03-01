@@ -40,7 +40,8 @@ function buildPrompt(
     config: SocialConfig,
     engagementSummary: string,
     recentPostSummaries: string[],
-    audience: "client" | "contractor"
+    audience: "client" | "contractor",
+    campaignContext?: string
 ): string {
     const audienceContext = audience === "client"
         ? `## TARGET AUDIENCE: FACILITY CLIENTS (Medical Offices, Auto Dealerships, Commercial Buildings)
@@ -90,7 +91,7 @@ Key messaging for contractors:
 - Service Areas: Queens, Nassau County, Suffolk County, Long Island
 
 ${audienceContext}
-
+${campaignContext ? `\n## ACTIVE RECRUITMENT CAMPAIGN\n${campaignContext}\n` : ""}
 ## ENGAGEMENT DATA (Last 20 Posts)
 ${engagementSummary}
 
@@ -131,6 +132,7 @@ function buildReelCaptionPrompt(
     config: SocialConfig,
     audience: "client" | "contractor",
     location?: string,
+    campaignContext?: string
 ): string {
     const audienceHook = audience === "client"
         ? `Hook angle: Speak to facility managers / building owners who are tired of managing 5+ vendors.
@@ -155,6 +157,7 @@ CTA: "DM us" or "Link in bio" or "Comment WORK to get started"`;
 ## TARGET AUDIENCE: ${audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS"}
 ${audienceHook}
 ${locationNote}
+${campaignContext ? `\n## ACTIVE RECRUITMENT CAMPAIGN\n${campaignContext}\n` : ""}
 
 ## CONTENT PREFERENCES
 - Tone: ${config.tone || "Professional, bold, punchy"}
@@ -370,6 +373,14 @@ export async function generateSocialContent(channel: string = "facebook_posts"):
     const totalExisting = existingClientDrafts + existingContractorDrafts;
     const currentClientRatio = totalExisting > 0 ? existingClientDrafts / totalExisting : 0.5;
 
+    // 5.5 Fetch active campaigns for this channel
+    const activeCampaignsSnap = await db.collection("social_campaigns")
+        .where("channel", "==", channel)
+        .where("status", "==", "active")
+        .get();
+
+    const activeCampaigns: any[] = activeCampaignsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
     // 6. Generate content for each missing slot
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
@@ -378,11 +389,37 @@ export async function generateSocialContent(channel: string = "facebook_posts"):
     let slotIndex = 0;
     for (const scheduledFor of toGenerate) {
         try {
+            // Check if there is an active campaign for this date
+            const campaign = activeCampaigns.find(c => {
+                const start = c.startDate?.toDate ? c.startDate.toDate() : new Date(c.startDate);
+                // add one day to end date to make it inclusive
+                const end = new Date(c.endDate?.toDate ? c.endDate.toDate() : new Date(c.endDate));
+                end.setDate(end.getDate() + 1);
+                return scheduledFor >= start && scheduledFor <= end;
+            });
+
             // Determine audience for this slot to maintain the desired mix
-            const audience: "client" | "contractor" =
-                currentClientRatio < clientRatio
+            let audience: "client" | "contractor";
+            let campaignContext: string | undefined;
+            let facebookPlaceId: string | undefined;
+            let campaignId: string | undefined;
+            let locationName: string | undefined;
+
+            if (campaign) {
+                audience = campaign.audience === "client" ? "client" : "contractor";
+                campaignId = campaign.id;
+                facebookPlaceId = campaign.facebookPlaceId;
+                locationName = campaign.location;
+
+                campaignContext = `We are running a specific recruitment/lead drive for this post. Make sure the content is highly targeted to this campaign.
+Target Location/Region: ${campaign.location || "N/A"}.
+${campaign.hookOverride ? `Specific messaging angle/hook to use: "${campaign.hookOverride}"` : ""}
+`;
+            } else {
+                audience = currentClientRatio < clientRatio
                     ? (slotIndex % 2 === 0 ? "client" : "contractor")
                     : (slotIndex % 2 === 0 ? "contractor" : "client");
+            }
             slotIndex++;
 
             if (isReels) {
@@ -390,7 +427,7 @@ export async function generateSocialContent(channel: string = "facebook_posts"):
                 console.log(`[SocialGenerator] Generating ${audience} reel for ${scheduledFor.toISOString()}...`);
 
                 // 1. Generate reel caption via Gemini
-                const captionPrompt = buildReelCaptionPrompt(config, audience);
+                const captionPrompt = buildReelCaptionPrompt(config, audience, locationName, campaignContext);
                 const captionResult = await model.generateContent(captionPrompt);
                 const caption = captionResult.response.text().trim();
 
@@ -425,6 +462,8 @@ export async function generateSocialContent(channel: string = "facebook_posts"):
                     status: "draft",
                     generatedBy: "ai",
                     scheduledFor,
+                    campaignId: campaignId || null,
+                    facebookPlaceId: facebookPlaceId || null,
                     reviewedBy: null,
                     reviewedAt: null,
                     rejectionReason: null,
@@ -437,7 +476,7 @@ export async function generateSocialContent(channel: string = "facebook_posts"):
             } else {
                 // ── POSTS FLOW: Gemini post + Imagen image ──
                 console.log(`[SocialGenerator] Generating ${audience} draft for ${scheduledFor.toISOString()}...`);
-                const prompt = buildPrompt(config, summary, themes, audience);
+                const prompt = buildPrompt(config, summary, themes, audience, campaignContext);
                 const result = await model.generateContent(prompt);
                 const generatedMessage = result.response.text().trim();
 
@@ -464,6 +503,8 @@ export async function generateSocialContent(channel: string = "facebook_posts"):
                     status: "draft",
                     generatedBy: "ai",
                     scheduledFor,
+                    campaignId: campaignId || null,
+                    facebookPlaceId: facebookPlaceId || null,
                     engagementContext: {
                         avgLikes,
                         avgComments,

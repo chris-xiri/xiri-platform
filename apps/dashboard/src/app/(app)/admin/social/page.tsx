@@ -15,6 +15,7 @@ import {
     Trash2, Calendar, Image as ImageIcon, Link2, RefreshCw, ExternalLink,
     Facebook, Settings, Sparkles, Check, X, Edit3, TrendingUp, Users, Eye,
     Zap, AlertTriangle, Timer, Film, Linkedin, Video, Upload,
+    Plus, Search, MapPin
 } from 'lucide-react';
 
 // ── Types ──
@@ -70,6 +71,20 @@ interface DraftPost {
     createdAt: any;
 }
 
+interface SocialCampaign {
+    id: string;
+    name: string;
+    channel: string;
+    audience: 'client' | 'contractor';
+    location: string;
+    facebookPlaceId: string | null;
+    hookOverride?: string;
+    startDate: any; // Firestore Timestamp
+    endDate: any;   // Firestore Timestamp
+    status: 'active' | 'paused' | 'completed';
+    createdAt: any;
+}
+
 type Channel = 'facebook_posts' | 'facebook_reels' | 'linkedin';
 
 const CHANNELS: { id: Channel; label: string; icon: React.ReactNode; enabled: boolean }[] = [
@@ -119,8 +134,8 @@ export default function SocialMediaPage() {
     }, [updateQueryParams]);
 
     // Tab state — persisted in URL as ?subtab=
-    const activeTab = (searchParams.get('subtab') as 'feed' | 'drafts' | 'settings') || 'feed';
-    const setActiveTab = useCallback((tab: 'feed' | 'drafts' | 'settings') => {
+    const activeTab = (searchParams.get('subtab') as 'feed' | 'drafts' | 'campaigns' | 'settings') || 'feed';
+    const setActiveTab = useCallback((tab: 'feed' | 'drafts' | 'campaigns' | 'settings') => {
         updateQueryParams({ subtab: tab });
     }, [updateQueryParams]);
 
@@ -142,6 +157,17 @@ export default function SocialMediaPage() {
 
     // Lightbox state for image/video zoom
     const [lightboxMedia, setLightboxMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
+
+    // Campaigns state
+    const [campaigns, setCampaigns] = useState<SocialCampaign[]>([]);
+    const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+    const [showCampaignModal, setShowCampaignModal] = useState(false);
+    const [newCampaign, setNewCampaign] = useState<Partial<SocialCampaign>>({
+        status: 'active',
+        audience: 'contractor'
+    });
+    const [placeSearchResults, setPlaceSearchResults] = useState<any[]>([]);
+    const [searchingPlaces, setSearchingPlaces] = useState(false);
 
     // Video upload state
     const [uploading, setUploading] = useState(false);
@@ -216,6 +242,24 @@ export default function SocialMediaPage() {
         }
     }, [activeChannel]);
 
+    const fetchCampaigns = useCallback(async () => {
+        try {
+            setLoadingCampaigns(true);
+            const { collection, query, where, orderBy, getDocs } = await import('firebase/firestore');
+            const q = query(
+                collection(db, 'social_campaigns'),
+                where('channel', '==', activeChannel),
+                orderBy('createdAt', 'desc')
+            );
+            const snapshot = await getDocs(q);
+            setCampaigns(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SocialCampaign)));
+        } catch (err: any) {
+            console.error('Error fetching campaigns:', err);
+        } finally {
+            setLoadingCampaigns(false);
+        }
+    }, [activeChannel]);
+
     const fetchConfig = useCallback(async () => {
         try {
             setLoadingConfig(true);
@@ -235,8 +279,9 @@ export default function SocialMediaPage() {
     useEffect(() => {
         fetchPosts();
         fetchDrafts();
+        fetchCampaigns();
         fetchConfig();
-    }, [fetchPosts, fetchDrafts, fetchConfig]);
+    }, [fetchPosts, fetchDrafts, fetchCampaigns, fetchConfig]);
 
     // Auto-clear feedback
     useEffect(() => {
@@ -247,6 +292,59 @@ export default function SocialMediaPage() {
     }, [successMessage]);
 
     // ── Handlers ──
+
+    const handleSearchPlaces = async (query: string) => {
+        if (!query.trim()) {
+            setPlaceSearchResults([]);
+            return;
+        }
+        setSearchingPlaces(true);
+        try {
+            const searchFn = httpsCallable(functions, 'searchPlaces');
+            const result: any = await searchFn({ query });
+            setPlaceSearchResults(result.data?.places || []);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSearchingPlaces(false);
+        }
+    };
+
+    const handleSaveCampaign = async () => {
+        if (!newCampaign.name || !newCampaign.location || !newCampaign.facebookPlaceId || !newCampaign.startDate || !newCampaign.endDate) {
+            setErrorMessage('Please fill in all required fields and select a valid location');
+            return;
+        }
+        try {
+            const { collection, addDoc, Timestamp } = await import('firebase/firestore');
+            await addDoc(collection(db, 'social_campaigns'), {
+                ...newCampaign,
+                channel: activeChannel,
+                startDate: Timestamp.fromDate(new Date(`${newCampaign.startDate}T00:00:00`)),
+                endDate: Timestamp.fromDate(new Date(`${newCampaign.endDate}T23:59:59`)),
+                createdAt: Timestamp.now(),
+            });
+            setShowCampaignModal(false);
+            setNewCampaign({ status: 'active', audience: 'contractor' });
+            setPlaceSearchResults([]);
+            setSuccessMessage('Campaign created successfully!');
+            fetchCampaigns();
+        } catch (err: any) {
+            setErrorMessage('Failed to save campaign: ' + err.message);
+        }
+    };
+
+    const handleDeleteCampaign = async (id: string) => {
+        if (!confirm('Delete this campaign?')) return;
+        try {
+            const { doc, deleteDoc } = await import('firebase/firestore');
+            await deleteDoc(doc(db, 'social_campaigns', id));
+            setSuccessMessage('Campaign deleted');
+            fetchCampaigns();
+        } catch (err) {
+            setErrorMessage('Failed to delete campaign');
+        }
+    };
 
     const handlePublish = async () => {
         if (!message.trim()) return;
@@ -695,7 +793,7 @@ export default function SocialMediaPage() {
 
                 {/* Tabs */}
                 <div className="flex gap-1 border-b">
-                    {(['feed', 'drafts', 'settings'] as const).map(tab => (
+                    {(['feed', 'drafts', 'campaigns', 'settings'] as const).map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -710,6 +808,7 @@ export default function SocialMediaPage() {
                             )}
                             {tab === 'feed' && <Send className="w-3.5 h-3.5 inline mr-1.5" />}
                             {tab === 'drafts' && <Sparkles className="w-3.5 h-3.5 inline mr-1.5" />}
+                            {tab === 'campaigns' && <Zap className="w-3.5 h-3.5 inline mr-1.5" />}
                             {tab === 'settings' && <Settings className="w-3.5 h-3.5 inline mr-1.5" />}
                             {tab}
                         </button>
@@ -1102,6 +1201,85 @@ export default function SocialMediaPage() {
                     )
                 }
 
+                {/* ── Campaigns Tab ── */}
+                {
+                    activeTab === 'campaigns' && (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-lg font-semibold flex items-center gap-2"><Zap className="w-5 h-5 text-amber-500" /> Recruitment Drive Campaigns</h2>
+                                    <p className="text-sm text-muted-foreground">Active campaigns override standard AI generic generation to focus exclusively on specific recruitment goals and verified locations.</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button variant="ghost" size="sm" onClick={fetchCampaigns} disabled={loadingCampaigns}>
+                                        <RefreshCw className={`w-4 h-4 mr-1 ${loadingCampaigns ? 'animate-spin' : ''}`} /> Refresh
+                                    </Button>
+                                    <Button size="sm" onClick={() => setShowCampaignModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                        <Plus className="w-4 h-4 mr-1" /> New Campaign
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            {loadingCampaigns ? (
+                                <div className="space-y-4">{[1, 2].map(i => (
+                                    <Card key={i}><CardContent className="p-4"><Skeleton className="h-16 w-full" /></CardContent></Card>
+                                ))}</div>
+                            ) : campaigns.length === 0 ? (
+                                <Card>
+                                    <CardContent className="p-10 text-center text-muted-foreground bg-muted/20 border-dashed">
+                                        <Zap className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                        <p className="font-medium text-foreground">No active campaigns</p>
+                                        <p className="text-sm mb-4 mt-1">Create a targeted recruitment drive with specific locations to override the standard baseline AI content schedule.</p>
+                                        <Button size="sm" onClick={() => setShowCampaignModal(true)} variant="outline">Create Initial Campaign</Button>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <div className="space-y-4">
+                                    {campaigns.map(campaign => {
+                                        const now = new Date();
+                                        const startDt = campaign.startDate.toDate();
+                                        const endDt = campaign.endDate.toDate();
+                                        const isActive = campaign.status === 'active' && now >= startDt && now <= endDt;
+                                        const isUpcoming = campaign.status === 'active' && now < startDt;
+                                        const isCompleted = campaign.status === 'completed' || now > endDt;
+
+                                        return (
+                                            <Card key={campaign.id} className={isActive ? 'border-blue-200 dark:border-blue-800 bg-blue-50/20 dark:bg-blue-900/10' : ''}>
+                                                <CardContent className="p-4 flex items-center justify-between">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <h3 className="font-semibold text-lg">{campaign.name}</h3>
+                                                            {isActive && <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 pointer-events-none">Active Run</Badge>}
+                                                            {isUpcoming && <Badge variant="secondary" className="pointer-events-none">Upcoming</Badge>}
+                                                            {isCompleted && <Badge variant="outline" className="opacity-50 pointer-events-none">Completed</Badge>}
+                                                            {campaign.status === 'paused' && <Badge variant="destructive" className="pointer-events-none">Paused</Badge>}
+                                                        </div>
+                                                        <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground flex-wrap">
+                                                            <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-blue-500" /> {campaign.location} {campaign.facebookPlaceId && <Badge variant="outline" className="text-[9px] h-4 py-0 ml-1">FB ID</Badge>}</span>
+                                                            <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-amber-500" /> {startDt.toLocaleDateString()} to {endDt.toLocaleDateString()}</span>
+                                                            <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-orange-500" /> {campaign.audience === 'client' ? 'Client Target' : 'Contractor Target'}</span>
+                                                        </div>
+                                                        {campaign.hookOverride && (
+                                                            <p className="mt-2 text-xs text-muted-foreground border-l-2 border-muted pl-2 italic">
+                                                                "{campaign.hookOverride}"
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteCampaign(campaign.id)}>
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )
+                }
+
                 {/* ── Settings Tab ── */}
                 {
                     activeTab === 'settings' && (
@@ -1306,6 +1484,83 @@ export default function SocialMediaPage() {
                             onClick={(e) => e.stopPropagation()}
                         />
                     )}
+                </div>
+            )}
+
+            {showCampaignModal && (
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-background border rounded-xl shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh]">
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-xl font-bold flex items-center gap-2"><Zap className="w-5 h-5 text-amber-500"/> New Recruitment Drive</h2>
+                            <button onClick={() => setShowCampaignModal(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5"/></button>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-4">Launch a targeted time-bound campaign. All AI-generated content within this timeframe will focus strictly on this drive.</p>
+                        
+                        <div className="space-y-4 overflow-y-auto pr-2 flex-1">
+                            <div>
+                                <label className="text-sm font-semibold mb-1.5 block">Campaign internal name</label>
+                                <input type="text" className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Winter Queens Cleaning Partners" value={newCampaign.name || ''} onChange={e => setNewCampaign({...newCampaign, name: e.target.value})} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-semibold mb-1.5 block">Start Date</label>
+                                    <input type="date" className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={newCampaign.startDate || ''} onChange={e => setNewCampaign({...newCampaign, startDate: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-semibold mb-1.5 block">End Date</label>
+                                    <input type="date" className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={newCampaign.endDate || ''} onChange={e => setNewCampaign({...newCampaign, endDate: e.target.value})} />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-sm font-semibold mb-1.5 block">Target Audience</label>
+                                <select className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={newCampaign.audience || 'contractor'} onChange={e => setNewCampaign({...newCampaign, audience: e.target.value as 'client'|'contractor'})}>
+                                    <option value="contractor">Contractors (Service / Partner Recruitment)</option>
+                                    <option value="client">Clients (Buyer Lead Generation)</option>
+                                </select>
+                            </div>
+                            <div className="bg-blue-50/50 dark:bg-blue-950/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900 pointer-events-auto">
+                                <label className="text-sm font-semibold mb-1.5 block text-blue-900 dark:text-blue-100">Location Tag (Facebook Place)</label>
+                                <p className="text-xs text-blue-700/80 dark:text-blue-200/60 mb-2">Crucial for Reels. Search and explicitly select a tracked Facebook location. This fixes metadata tagging failures.</p>
+                                <div className="flex gap-2 mb-2">
+                                    <input type="text" className="flex-1 px-3 py-2 text-sm border bg-background rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Flushing, NY" value={newCampaign.location || ''} onChange={e => setNewCampaign({...newCampaign, location: e.target.value, facebookPlaceId: null})} onKeyDown={(e) => { if(e.key==='Enter') handleSearchPlaces(newCampaign.location || ''); }} />
+                                    <Button variant="secondary" onClick={() => handleSearchPlaces(newCampaign.location || '')} disabled={searchingPlaces} className="bg-white hover:bg-muted dark:bg-muted/50 border shadow-sm">
+                                        <Search className="w-4 h-4 mr-1"/> {searchingPlaces ? '...' : 'Search'}
+                                    </Button>
+                                </div>
+                                {placeSearchResults.length > 0 && !newCampaign.facebookPlaceId && (
+                                    <div className="border bg-background rounded-md max-h-[150px] overflow-y-auto mb-2 divide-y shadow-inner">
+                                        {placeSearchResults.map(place => (
+                                            <button key={place.id} className="w-full p-2.5 text-left hover:bg-muted text-sm flex flex-col items-start transition-colors" onClick={() => {
+                                                setNewCampaign({
+                                                    ...newCampaign,
+                                                    location: `${place.name}${place.location?.city ? `, ${place.location.city}` : ''}`,
+                                                    facebookPlaceId: place.id,
+                                                });
+                                                setPlaceSearchResults([]);
+                                            }}>
+                                                <span className="font-semibold text-blue-700 dark:text-blue-300">{place.name}</span>
+                                                {place.location && <span className="text-xs text-muted-foreground mt-0.5"><MapPin className="w-3 h-3 inline mr-0.5 opacity-50"/>{[place.location.city, place.location.state].filter(Boolean).join(', ')}</span>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                {newCampaign.facebookPlaceId && (
+                                    <div className="flex items-center gap-2 p-2.5 mt-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-md text-sm font-medium shadow-sm">
+                                        <Check className="w-4 h-4" /> Selected: Verified Facebook Place
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <label className="text-sm font-semibold mb-1.5 block">Custom Override Message (Optional)</label>
+                                <p className="text-xs text-muted-foreground mb-2">Provide explicit instructions to the AI on the main pain point/pitch to prioritize for this campaign.</p>
+                                <textarea className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px] resize-y" placeholder={`e.g. "We are urgently hiring cleaning crews in ${newCampaign.location || 'your area'}! Priority to experienced crews, fast onboarding."`} value={newCampaign.hookOverride || ''} onChange={e => setNewCampaign({...newCampaign, hookOverride: e.target.value})} />
+                            </div>
+                        </div>
+                        <div className="pt-4 border-t flex justify-end gap-2 mt-4 shrink-0 bg-background">
+                            <Button variant="ghost" onClick={() => setShowCampaignModal(false)}>Cancel</Button>
+                            <Button className="bg-blue-600 hover:bg-blue-700 font-semibold" onClick={handleSaveCampaign}>Deploy Campaign</Button>
+                        </div>
+                    </div>
                 </div>
             )}
         </>
