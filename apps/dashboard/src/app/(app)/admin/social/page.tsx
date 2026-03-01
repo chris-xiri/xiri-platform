@@ -233,18 +233,18 @@ export default function SocialMediaPage() {
             const q = query(
                 collection(db, 'social_posts'),
                 where('channel', '==', activeChannel),
-                where('status', 'in', ['draft', 'approved', 'rejected', 'failed']),
-                orderBy('scheduledFor', 'asc'),
-                limit(20)
+                where('status', 'in', ['draft', 'approved', 'rejected', 'failed', 'published']),
+                orderBy('scheduledFor', 'desc'),
+                limit(30)
             );
             const snapshot = await getDocs(q);
             const items: DraftPost[] = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
             } as DraftPost));
-            // Sort: draft/approved first, failed next, rejected last
+            // Sort: draft/approved first, then failed, rejected, published last
             items.sort((a, b) => {
-                const order: Record<string, number> = { draft: 0, approved: 1, failed: 2, rejected: 3 };
+                const order: Record<string, number> = { draft: 0, approved: 1, failed: 2, rejected: 3, published: 4 };
                 return (order[a.status] ?? 4) - (order[b.status] ?? 4);
             });
             setDrafts(items);
