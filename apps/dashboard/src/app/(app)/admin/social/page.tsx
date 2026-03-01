@@ -58,6 +58,9 @@ interface DraftPost {
     videoDurationSeconds?: number;
     location?: string;
     reusedFrom?: string;
+    error?: string;
+    failedAt?: any;
+    facebookPlaceId?: string;
     engagementContext?: {
         avgLikes: number;
         avgComments: number;
@@ -191,7 +194,7 @@ export default function SocialMediaPage() {
             const q = query(
                 collection(db, 'social_posts'),
                 where('channel', '==', activeChannel),
-                where('status', 'in', ['draft', 'approved', 'rejected']),
+                where('status', 'in', ['draft', 'approved', 'rejected', 'failed']),
                 orderBy('scheduledFor', 'asc'),
                 limit(20)
             );
@@ -200,12 +203,10 @@ export default function SocialMediaPage() {
                 id: doc.id,
                 ...doc.data(),
             } as DraftPost));
-            // Sort: draft/approved first (by scheduledFor asc), rejected last
+            // Sort: draft/approved first, failed next, rejected last
             items.sort((a, b) => {
-                const aRejected = a.status === 'rejected' ? 1 : 0;
-                const bRejected = b.status === 'rejected' ? 1 : 0;
-                if (aRejected !== bRejected) return aRejected - bRejected;
-                return 0; // preserve Firestore ordering within each group
+                const order: Record<string, number> = { draft: 0, approved: 1, failed: 2, rejected: 3 };
+                return (order[a.status] ?? 4) - (order[b.status] ?? 4);
             });
             setDrafts(items);
         } catch (err: any) {
@@ -926,10 +927,12 @@ export default function SocialMediaPage() {
                                                                     draft.status === 'draft' ? 'secondary' :
                                                                         draft.status === 'approved' ? 'default' : 'destructive'
                                                                 } className={`text-[10px] ${draft.status === 'draft' ? 'bg-purple-100 text-purple-700' :
-                                                                    draft.status === 'approved' ? 'bg-green-100 text-green-700' : ''
+                                                                    draft.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                                                        draft.status === 'failed' ? 'bg-red-100 text-red-700' : ''
                                                                     }`}>
                                                                     {draft.status === 'draft' && <Sparkles className="w-2.5 h-2.5 mr-0.5" />}
                                                                     {draft.status === 'approved' && <Check className="w-2.5 h-2.5 mr-0.5" />}
+                                                                    {draft.status === 'failed' && <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />}
                                                                     {draft.status}
                                                                 </Badge>
                                                                 {draft.audience && (
@@ -993,7 +996,36 @@ export default function SocialMediaPage() {
                                                             )}
                                                         </div>
 
-                                                        {/* Actions */}
+                                                        {/* Error display for failed posts */}
+                                                        {draft.status === 'failed' && draft.error && (
+                                                            <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-2.5 py-2 rounded-md text-[11px] mb-2 leading-relaxed">
+                                                                <span className="font-semibold">Error:</span> {draft.error}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Retry + Delete for failed posts */}
+                                                        {draft.status === 'failed' && (
+                                                            <div className="flex gap-1.5 pt-2 border-t mt-auto">
+                                                                <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2" onClick={async () => {
+                                                                    // Reset to approved so user can try Post Now
+                                                                    const { doc: docRef, updateDoc } = await import('firebase/firestore');
+                                                                    await updateDoc(docRef(db, 'social_posts', draft.id), {
+                                                                        status: 'approved',
+                                                                        error: null,
+                                                                        failedAt: null,
+                                                                    });
+                                                                    setSuccessMessage('Post reset — click Post Now to retry.');
+                                                                    fetchDrafts();
+                                                                }}>
+                                                                    <RefreshCw className="w-3 h-3 mr-0.5" /> Retry
+                                                                </Button>
+                                                                <Button size="sm" className="h-7 text-xs px-2" variant="destructive" onClick={() => handleDeleteDraft(draft.id)}>
+                                                                    <Trash2 className="w-3 h-3 mr-0.5" /> Delete
+                                                                </Button>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Actions for draft status */}
                                                         {draft.status === 'draft' && (
                                                             <div className="flex gap-1.5 pt-2 border-t mt-auto flex-wrap">
                                                                 <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 px-2" onClick={() => handleReview(draft.id, 'approve')}

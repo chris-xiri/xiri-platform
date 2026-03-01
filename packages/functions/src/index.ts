@@ -534,8 +534,15 @@ export const publishPostNow = onCall({
             throw new HttpsError("internal", result.error || "Publishing failed");
         }
     } catch (err: any) {
-        console.error(`[PublishNow] Error:`, err.message);
-        throw new HttpsError("internal", err.message || "Publishing failed");
+        const errorMsg = err.message || "Publishing failed";
+        console.error(`[PublishNow] Error:`, errorMsg);
+        // Persist the error on the document so the UI can display it
+        await postRef.update({
+            status: "failed",
+            error: errorMsg,
+            failedAt: new Date(),
+        }).catch(() => { }); // don't fail if this update fails
+        throw new HttpsError("internal", errorMsg);
     }
 });
 
