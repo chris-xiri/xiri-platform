@@ -176,6 +176,12 @@ export default function SocialMediaPage() {
     // Publish now state
     const [publishingId, setPublishingId] = useState<string | null>(null);
 
+    // Regeneration state
+    const [regenImageId, setRegenImageId] = useState<string | null>(null);
+    const [regenCaptionId, setRegenCaptionId] = useState<string | null>(null);
+    const [regenFeedback, setRegenFeedback] = useState('');
+    const [regenFeedbackTarget, setRegenFeedbackTarget] = useState<{ id: string; type: 'image' | 'caption' } | null>(null);
+
     // Config state
     const [config, setConfig] = useState<SocialConfig>(DEFAULT_CONFIG);
     const [loadingConfig, setLoadingConfig] = useState(false);
@@ -505,6 +511,39 @@ export default function SocialMediaPage() {
             clearInterval(timer);
             setGenerating(false);
             setGenerateElapsed(0);
+        }
+    };
+
+    // ── Regeneration Handlers ──
+    const handleRegenImage = async (postId: string, feedback: string) => {
+        setRegenImageId(postId);
+        setRegenFeedbackTarget(null);
+        setRegenFeedback('');
+        try {
+            const regenFn = httpsCallable(functions, 'regeneratePostImage', { timeout: 300000 });
+            await regenFn({ postId, feedback: feedback || undefined });
+            setSuccessMessage('Image regenerated!');
+            fetchDrafts();
+        } catch (err: any) {
+            setErrorMessage('Image regen failed: ' + (err.message || 'Unknown error'));
+        } finally {
+            setRegenImageId(null);
+        }
+    };
+
+    const handleRegenCaption = async (postId: string, feedback: string) => {
+        setRegenCaptionId(postId);
+        setRegenFeedbackTarget(null);
+        setRegenFeedback('');
+        try {
+            const regenFn = httpsCallable(functions, 'regeneratePostCaption', { timeout: 120000 });
+            await regenFn({ postId, feedback: feedback || undefined });
+            setSuccessMessage('Caption regenerated!');
+            fetchDrafts();
+        } catch (err: any) {
+            setErrorMessage('Caption regen failed: ' + (err.message || 'Unknown error'));
+        } finally {
+            setRegenCaptionId(null);
         }
     };
 
@@ -1095,6 +1134,34 @@ export default function SocialMediaPage() {
                                                             )}
                                                         </div>
 
+                                                        {/* Outro CTA selector — only for reels */}
+                                                        {(draft as any).videoUrl && draft.status === 'draft' && (
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="text-[10px] text-muted-foreground">🎬 Outro:</span>
+                                                                <select
+                                                                    className="text-[10px] h-6 px-1.5 border rounded bg-background dark:bg-neutral-900 cursor-pointer"
+                                                                    value={(draft as any).outroPresetId || ''}
+                                                                    onChange={async (e) => {
+                                                                        const { doc: docRef, updateDoc } = await import('firebase/firestore');
+                                                                        await updateDoc(docRef(db, 'social_posts', draft.id), {
+                                                                            outroPresetId: e.target.value || null,
+                                                                        });
+                                                                        fetchDrafts();
+                                                                    }}
+                                                                >
+                                                                    <option value="">None</option>
+                                                                    <option value="hiring">🧹 We're Hiring</option>
+                                                                    <option value="quote">💼 Get a Quote</option>
+                                                                    <option value="coverage">📍 Service Areas</option>
+                                                                    <option value="partner">🤝 Become a Partner</option>
+                                                                    <option value="brand">✨ Brand Only</option>
+                                                                </select>
+                                                                {(draft as any).outroPresetId && (
+                                                                    <Badge variant="outline" className="text-[8px] h-3.5 px-1 border-sky-200 text-sky-600">+3s outro</Badge>
+                                                                )}
+                                                            </div>
+                                                        )}
+
                                                         {/* Error display for failed posts */}
                                                         {draft.status === 'failed' && draft.error && (
                                                             <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-2.5 py-2 rounded-md text-[11px] mb-2 leading-relaxed">
@@ -1126,50 +1193,117 @@ export default function SocialMediaPage() {
 
                                                         {/* Actions for draft status */}
                                                         {draft.status === 'draft' && (
-                                                            <div className="flex gap-1.5 pt-2 border-t mt-auto flex-wrap">
-                                                                <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 px-2" onClick={() => handleReview(draft.id, 'approve')}
-                                                                    disabled={reviewingId === draft.id}>
-                                                                    {reviewingId === draft.id ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <Check className="w-3 h-3 mr-0.5" />}
-                                                                    Approve
-                                                                </Button>
-                                                                <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2" onClick={() => handlePublishNow(draft.id)}
-                                                                    disabled={publishingId === draft.id}>
-                                                                    {publishingId === draft.id ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <Send className="w-3 h-3 mr-0.5" />}
-                                                                    Post Now
-                                                                </Button>
-                                                                {editingDraft === draft.id ? (
-                                                                    <Button size="sm" className="h-7 text-xs px-2" variant="outline" onClick={() => { setEditingDraft(null); setEditedMessage(''); }}>
-                                                                        Cancel
+                                                            <div className="flex flex-col gap-2 pt-2 border-t mt-auto">
+                                                                <div className="flex gap-1.5 flex-wrap">
+                                                                    <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 px-2" onClick={() => handleReview(draft.id, 'approve')}
+                                                                        disabled={reviewingId === draft.id}>
+                                                                        {reviewingId === draft.id ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <Check className="w-3 h-3 mr-0.5" />}
+                                                                        Approve
                                                                     </Button>
-                                                                ) : (
-                                                                    <Button size="sm" className="h-7 text-xs px-2" variant="outline" onClick={() => { setEditingDraft(draft.id); setEditedMessage(draft.message); }}>
-                                                                        <Edit3 className="w-3 h-3 mr-0.5" /> Edit
+                                                                    <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2" onClick={() => handlePublishNow(draft.id)}
+                                                                        disabled={publishingId === draft.id}>
+                                                                        {publishingId === draft.id ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <Send className="w-3 h-3 mr-0.5" />}
+                                                                        Post Now
                                                                     </Button>
-                                                                )}
-                                                                <Button size="sm" className="h-7 text-xs px-2" variant="destructive" onClick={() => handleReview(draft.id, 'reject')}
-                                                                    disabled={reviewingId === draft.id}>
-                                                                    <X className="w-3 h-3 mr-0.5" /> Reject
-                                                                </Button>
-                                                                {(draft as any).videoUrl && (
-                                                                    <Button size="sm" className="h-7 text-xs px-2 ml-auto text-emerald-600 border-emerald-200 hover:bg-emerald-50" variant="outline"
-                                                                        onClick={async () => {
-                                                                            const newLoc = prompt('Enter location for the reused reel (e.g. Great Neck, NY):');
-                                                                            if (!newLoc) return;
-                                                                            const { collection, addDoc } = await import('firebase/firestore');
-                                                                            await addDoc(collection(db, 'social_posts'), {
-                                                                                ...draft,
-                                                                                id: undefined,
-                                                                                location: newLoc,
-                                                                                status: 'draft',
-                                                                                reusedFrom: draft.id,
-                                                                                reviewedBy: null,
-                                                                                reviewedAt: null,
-                                                                                createdAt: new Date(),
-                                                                            });
-                                                                            fetchDrafts();
+                                                                    {editingDraft === draft.id ? (
+                                                                        <Button size="sm" className="h-7 text-xs px-2" variant="outline" onClick={() => { setEditingDraft(null); setEditedMessage(''); }}>
+                                                                            Cancel
+                                                                        </Button>
+                                                                    ) : (
+                                                                        <Button size="sm" className="h-7 text-xs px-2" variant="outline" onClick={() => { setEditingDraft(draft.id); setEditedMessage(draft.message); }}>
+                                                                            <Edit3 className="w-3 h-3 mr-0.5" /> Edit
+                                                                        </Button>
+                                                                    )}
+                                                                    <Button size="sm" className="h-7 text-xs px-2" variant="destructive" onClick={() => handleReview(draft.id, 'reject')}
+                                                                        disabled={reviewingId === draft.id}>
+                                                                        <X className="w-3 h-3 mr-0.5" /> Reject
+                                                                    </Button>
+                                                                </div>
+
+                                                                {/* Regen buttons row */}
+                                                                <div className="flex gap-1.5 flex-wrap">
+                                                                    <Button size="sm" className="h-7 text-xs px-2 text-amber-600 border-amber-200 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-950" variant="outline"
+                                                                        disabled={regenImageId === draft.id}
+                                                                        onClick={() => {
+                                                                            if (regenFeedbackTarget?.id === draft.id && regenFeedbackTarget?.type === 'image') {
+                                                                                handleRegenImage(draft.id, regenFeedback);
+                                                                            } else {
+                                                                                setRegenFeedbackTarget({ id: draft.id, type: 'image' });
+                                                                                setRegenFeedback('');
+                                                                            }
                                                                         }}>
-                                                                        ♻️ Reuse
+                                                                        {regenImageId === draft.id ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <ImageIcon className="w-3 h-3 mr-0.5" />}
+                                                                        {regenFeedbackTarget?.id === draft.id && regenFeedbackTarget?.type === 'image' ? 'Go' : 'Regen Image'}
                                                                     </Button>
+                                                                    <Button size="sm" className="h-7 text-xs px-2 text-purple-600 border-purple-200 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-800 dark:hover:bg-purple-950" variant="outline"
+                                                                        disabled={regenCaptionId === draft.id}
+                                                                        onClick={() => {
+                                                                            if (regenFeedbackTarget?.id === draft.id && regenFeedbackTarget?.type === 'caption') {
+                                                                                handleRegenCaption(draft.id, regenFeedback);
+                                                                            } else {
+                                                                                setRegenFeedbackTarget({ id: draft.id, type: 'caption' });
+                                                                                setRegenFeedback('');
+                                                                            }
+                                                                        }}>
+                                                                        {regenCaptionId === draft.id ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <Sparkles className="w-3 h-3 mr-0.5" />}
+                                                                        {regenFeedbackTarget?.id === draft.id && regenFeedbackTarget?.type === 'caption' ? 'Go' : 'Regen Caption'}
+                                                                    </Button>
+                                                                    {regenFeedbackTarget?.id === draft.id && (
+                                                                        <Button size="sm" className="h-7 text-xs px-2" variant="ghost"
+                                                                            onClick={() => { setRegenFeedbackTarget(null); setRegenFeedback(''); }}>
+                                                                            <X className="w-3 h-3" />
+                                                                        </Button>
+                                                                    )}
+                                                                    {(draft as any).videoUrl && (
+                                                                        <Button size="sm" className="h-7 text-xs px-2 ml-auto text-emerald-600 border-emerald-200 hover:bg-emerald-50" variant="outline"
+                                                                            onClick={async () => {
+                                                                                const newLoc = prompt('Enter location for the reused reel (e.g. Great Neck, NY):');
+                                                                                if (!newLoc) return;
+                                                                                const { collection, addDoc } = await import('firebase/firestore');
+                                                                                await addDoc(collection(db, 'social_posts'), {
+                                                                                    ...draft,
+                                                                                    id: undefined,
+                                                                                    location: newLoc,
+                                                                                    status: 'draft',
+                                                                                    reusedFrom: draft.id,
+                                                                                    reviewedBy: null,
+                                                                                    reviewedAt: null,
+                                                                                    createdAt: new Date(),
+                                                                                });
+                                                                                fetchDrafts();
+                                                                            }}>
+                                                                            ♻️ Reuse
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Feedback input for regen */}
+                                                                {regenFeedbackTarget?.id === draft.id && (
+                                                                    <div className="flex gap-1.5 items-center">
+                                                                        <input
+                                                                            type="text"
+                                                                            className="flex-1 h-7 text-xs px-2 border rounded-md bg-background dark:bg-neutral-900"
+                                                                            placeholder={regenFeedbackTarget.type === 'image'
+                                                                                ? 'e.g. "show a medical office" or "brighter colors"'
+                                                                                : 'e.g. "more urgency" or "mention Queens"'}
+                                                                            value={regenFeedback}
+                                                                            onChange={(e) => setRegenFeedback(e.target.value)}
+                                                                            onKeyDown={(e) => {
+                                                                                if (e.key === 'Enter') {
+                                                                                    if (regenFeedbackTarget.type === 'image') handleRegenImage(draft.id, regenFeedback);
+                                                                                    else handleRegenCaption(draft.id, regenFeedback);
+                                                                                }
+                                                                            }}
+                                                                            autoFocus
+                                                                        />
+                                                                        <Button size="sm" className="h-7 text-xs px-2"
+                                                                            onClick={() => {
+                                                                                if (regenFeedbackTarget.type === 'image') handleRegenImage(draft.id, regenFeedback);
+                                                                                else handleRegenCaption(draft.id, regenFeedback);
+                                                                            }}>
+                                                                            <Send className="w-3 h-3" />
+                                                                        </Button>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         )}
@@ -1219,7 +1353,7 @@ export default function SocialMediaPage() {
                                     </Button>
                                 </div>
                             </div>
-                            
+
                             {loadingCampaigns ? (
                                 <div className="space-y-4">{[1, 2].map(i => (
                                     <Card key={i}><CardContent className="p-4"><Skeleton className="h-16 w-full" /></CardContent></Card>
@@ -1491,29 +1625,29 @@ export default function SocialMediaPage() {
                 <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-background border rounded-xl shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh]">
                         <div className="flex items-center justify-between mb-2">
-                            <h2 className="text-xl font-bold flex items-center gap-2"><Zap className="w-5 h-5 text-amber-500"/> New Recruitment Drive</h2>
-                            <button onClick={() => setShowCampaignModal(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5"/></button>
+                            <h2 className="text-xl font-bold flex items-center gap-2"><Zap className="w-5 h-5 text-amber-500" /> New Recruitment Drive</h2>
+                            <button onClick={() => setShowCampaignModal(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
                         </div>
                         <p className="text-sm text-muted-foreground mb-4">Launch a targeted time-bound campaign. All AI-generated content within this timeframe will focus strictly on this drive.</p>
-                        
+
                         <div className="space-y-4 overflow-y-auto pr-2 flex-1">
                             <div>
                                 <label className="text-sm font-semibold mb-1.5 block">Campaign internal name</label>
-                                <input type="text" className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Winter Queens Cleaning Partners" value={newCampaign.name || ''} onChange={e => setNewCampaign({...newCampaign, name: e.target.value})} />
+                                <input type="text" className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Winter Queens Cleaning Partners" value={newCampaign.name || ''} onChange={e => setNewCampaign({ ...newCampaign, name: e.target.value })} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-sm font-semibold mb-1.5 block">Start Date</label>
-                                    <input type="date" className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={newCampaign.startDate || ''} onChange={e => setNewCampaign({...newCampaign, startDate: e.target.value})} />
+                                    <input type="date" className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={newCampaign.startDate || ''} onChange={e => setNewCampaign({ ...newCampaign, startDate: e.target.value })} />
                                 </div>
                                 <div>
                                     <label className="text-sm font-semibold mb-1.5 block">End Date</label>
-                                    <input type="date" className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={newCampaign.endDate || ''} onChange={e => setNewCampaign({...newCampaign, endDate: e.target.value})} />
+                                    <input type="date" className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={newCampaign.endDate || ''} onChange={e => setNewCampaign({ ...newCampaign, endDate: e.target.value })} />
                                 </div>
                             </div>
                             <div>
                                 <label className="text-sm font-semibold mb-1.5 block">Target Audience</label>
-                                <select className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={newCampaign.audience || 'contractor'} onChange={e => setNewCampaign({...newCampaign, audience: e.target.value as 'client'|'contractor'})}>
+                                <select className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={newCampaign.audience || 'contractor'} onChange={e => setNewCampaign({ ...newCampaign, audience: e.target.value as 'client' | 'contractor' })}>
                                     <option value="contractor">Contractors (Service / Partner Recruitment)</option>
                                     <option value="client">Clients (Buyer Lead Generation)</option>
                                 </select>
@@ -1522,9 +1656,9 @@ export default function SocialMediaPage() {
                                 <label className="text-sm font-semibold mb-1.5 block text-blue-900 dark:text-blue-100">Location Tag (Facebook Place)</label>
                                 <p className="text-xs text-blue-700/80 dark:text-blue-200/60 mb-2">Crucial for Reels. Search and explicitly select a tracked Facebook location. This fixes metadata tagging failures.</p>
                                 <div className="flex gap-2 mb-2">
-                                    <input type="text" className="flex-1 px-3 py-2 text-sm border bg-background rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Flushing, NY" value={newCampaign.location || ''} onChange={e => setNewCampaign({...newCampaign, location: e.target.value, facebookPlaceId: null})} onKeyDown={(e) => { if(e.key==='Enter') handleSearchPlaces(newCampaign.location || ''); }} />
+                                    <input type="text" className="flex-1 px-3 py-2 text-sm border bg-background rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Flushing, NY" value={newCampaign.location || ''} onChange={e => setNewCampaign({ ...newCampaign, location: e.target.value, facebookPlaceId: null })} onKeyDown={(e) => { if (e.key === 'Enter') handleSearchPlaces(newCampaign.location || ''); }} />
                                     <Button variant="secondary" onClick={() => handleSearchPlaces(newCampaign.location || '')} disabled={searchingPlaces} className="bg-white hover:bg-muted dark:bg-muted/50 border shadow-sm">
-                                        <Search className="w-4 h-4 mr-1"/> {searchingPlaces ? '...' : 'Search'}
+                                        <Search className="w-4 h-4 mr-1" /> {searchingPlaces ? '...' : 'Search'}
                                     </Button>
                                 </div>
                                 {placeSearchResults.length > 0 && !newCampaign.facebookPlaceId && (
@@ -1539,7 +1673,7 @@ export default function SocialMediaPage() {
                                                 setPlaceSearchResults([]);
                                             }}>
                                                 <span className="font-semibold text-blue-700 dark:text-blue-300">{place.name}</span>
-                                                {place.location && <span className="text-xs text-muted-foreground mt-0.5"><MapPin className="w-3 h-3 inline mr-0.5 opacity-50"/>{[place.location.city, place.location.state].filter(Boolean).join(', ')}</span>}
+                                                {place.location && <span className="text-xs text-muted-foreground mt-0.5"><MapPin className="w-3 h-3 inline mr-0.5 opacity-50" />{[place.location.city, place.location.state].filter(Boolean).join(', ')}</span>}
                                             </button>
                                         ))}
                                     </div>
@@ -1553,7 +1687,7 @@ export default function SocialMediaPage() {
                             <div>
                                 <label className="text-sm font-semibold mb-1.5 block">Custom Override Message (Optional)</label>
                                 <p className="text-xs text-muted-foreground mb-2">Provide explicit instructions to the AI on the main pain point/pitch to prioritize for this campaign.</p>
-                                <textarea className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px] resize-y" placeholder={`e.g. "We are urgently hiring cleaning crews in ${newCampaign.location || 'your area'}! Priority to experienced crews, fast onboarding."`} value={newCampaign.hookOverride || ''} onChange={e => setNewCampaign({...newCampaign, hookOverride: e.target.value})} />
+                                <textarea className="w-full px-3 py-2 text-sm border bg-muted/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px] resize-y" placeholder={`e.g. "We are urgently hiring cleaning crews in ${newCampaign.location || 'your area'}! Priority to experienced crews, fast onboarding."`} value={newCampaign.hookOverride || ''} onChange={e => setNewCampaign({ ...newCampaign, hookOverride: e.target.value })} />
                             </div>
                         </div>
                         <div className="pt-4 border-t flex justify-end gap-2 mt-4 shrink-0 bg-background">

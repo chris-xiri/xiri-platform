@@ -23520,6 +23520,7 @@ async function publishReel(videoUrl, description, placeId) {
       video_id: videoId,
       title: description.slice(0, 100),
       description,
+      published: "true",
       access_token: token
     };
     if (placeId) {

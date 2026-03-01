@@ -500,8 +500,78 @@ export const publishPostNow = onCall({
 
         if (post.channel === "facebook_reels" && post.videoUrl) {
             console.log(`[PublishNow] Publishing reel ${postId}...`);
+
+            // Auto-append branded outro if preset is selected
+            let finalVideoUrl = post.videoUrl;
+            const outroPresetId = post.outroPresetId;
+            if (outroPresetId) {
+                try {
+                    const { generateOutroFrame } = await import("./utils/reelOutroGenerator");
+                    const { writeFileSync, unlinkSync, existsSync } = await import("fs");
+                    const { execSync } = await import("child_process");
+                    const path = await import("path");
+                    const os = await import("os");
+
+                    const tmpDir = os.tmpdir();
+                    const outroPng = path.join(tmpDir, `outro-${postId}.png`);
+                    const outroMp4 = path.join(tmpDir, `outro-${postId}.mp4`);
+                    const originalMp4 = path.join(tmpDir, `original-${postId}.mp4`);
+                    const concatList = path.join(tmpDir, `concat-${postId}.txt`);
+                    const finalMp4 = path.join(tmpDir, `final-${postId}.mp4`);
+
+                    // 1. Generate outro frame PNG
+                    const outroPngBuffer = await generateOutroFrame(outroPresetId);
+                    writeFileSync(outroPng, outroPngBuffer);
+
+                    // 2. Download original video
+                    const videoResp = await fetch(post.videoUrl);
+                    const videoArrayBuf = await videoResp.arrayBuffer();
+                    writeFileSync(originalMp4, Buffer.from(videoArrayBuf));
+
+                    // 3. Convert outro PNG to a 3-second video
+                    execSync(
+                        `ffmpeg -y -loop 1 -i "${outroPng}" -c:v libx264 -t 3 -pix_fmt yuv420p -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2" -r 30 "${outroMp4}"`,
+                        { timeout: 30000 }
+                    );
+
+                    // 4. Normalize original video to same specs then concatenate
+                    const normalizedMp4 = path.join(tmpDir, `norm-${postId}.mp4`);
+                    execSync(
+                        `ffmpeg -y -i "${originalMp4}" -c:v libx264 -pix_fmt yuv420p -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2" -r 30 -an "${normalizedMp4}"`,
+                        { timeout: 60000 }
+                    );
+
+                    // 5. Create concat list and concatenate
+                    writeFileSync(concatList, `file '${normalizedMp4}'\nfile '${outroMp4}'\n`);
+                    execSync(
+                        `ffmpeg -y -f concat -safe 0 -i "${concatList}" -c copy "${finalMp4}"`,
+                        { timeout: 30000 }
+                    );
+
+                    // 6. Upload final video to Cloud Storage
+                    const { readFileSync } = await import("fs");
+                    const finalBuffer = readFileSync(finalMp4);
+                    const storageBucket = (await import("firebase-admin/storage")).getStorage().bucket();
+                    const fileName = `social-videos/reel-${postId}-with-outro.mp4`;
+                    const file = storageBucket.file(fileName);
+                    await file.save(finalBuffer, { metadata: { contentType: "video/mp4" } });
+                    await file.makePublic();
+                    finalVideoUrl = `https://storage.googleapis.com/${storageBucket.name}/${fileName}`;
+
+                    console.log(`[PublishNow] Outro appended, final video: ${finalVideoUrl}`);
+
+                    // Cleanup temp files
+                    [outroPng, outroMp4, originalMp4, normalizedMp4, concatList, finalMp4].forEach(f => {
+                        if (existsSync(f)) unlinkSync(f);
+                    });
+                } catch (outroErr: any) {
+                    console.error(`[PublishNow] Outro append failed (publishing without):`, outroErr.message);
+                    // Fall back to original video — don't block publishing
+                }
+            }
+
             result = await publishReel(
-                post.videoUrl,
+                finalVideoUrl,
                 post.message || "",
                 post.facebookPlaceId || undefined,
             );
@@ -558,4 +628,104 @@ export const searchPlaces = onCall({
 
     const results = await searchFacebookPlaces(query);
     return { places: results };
+});
+
+// ── Regenerate Post Image ──
+export const regeneratePostImage = onCall({
+    cors: DASHBOARD_CORS,
+    timeoutSeconds: 300,
+    memory: "1GiB",
+}, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+
+    const { postId, feedback } = request.data;
+    if (!postId) throw new HttpsError("invalid-argument", "postId is required");
+
+    const postRef = db.collection("social_posts").doc(postId);
+    const postDoc = await postRef.get();
+    if (!postDoc.exists) throw new HttpsError("not-found", "Post not found");
+
+    const post = postDoc.data()!;
+    const audience = (post.audience || "contractor") as "client" | "contractor";
+
+    console.log(`[RegenImage] Regenerating image for post ${postId} with feedback: "${feedback || "none"}"`);
+
+    const { generatePostImage } = await import("./utils/imagenApi");
+    const result = await generatePostImage(post.message, audience, feedback || undefined);
+
+    if (!result) {
+        throw new HttpsError("internal", "Image generation failed");
+    }
+
+    await postRef.update({
+        imageUrl: result.imageUrl,
+        imageRegenCount: (post.imageRegenCount || 0) + 1,
+        lastImageFeedback: feedback || null,
+    });
+
+    console.log(`[RegenImage] New image: ${result.imageUrl}`);
+    return { success: true, imageUrl: result.imageUrl };
+});
+
+// ── Regenerate Post Caption ──
+export const regeneratePostCaption = onCall({
+    cors: DASHBOARD_CORS,
+    secrets: ["GEMINI_API_KEY"],
+    timeoutSeconds: 120,
+}, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+
+    const { postId, feedback } = request.data;
+    if (!postId) throw new HttpsError("invalid-argument", "postId is required");
+
+    const postRef = db.collection("social_posts").doc(postId);
+    const postDoc = await postRef.get();
+    if (!postDoc.exists) throw new HttpsError("not-found", "Post not found");
+
+    const post = postDoc.data()!;
+    const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
+
+    console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
+
+    const { GoogleGenerativeAI } = await import("@google/generative-ai");
+    const API_KEY = process.env.GEMINI_API_KEY || "";
+    const genAI = new GoogleGenerativeAI(API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    const prompt = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for ${audience}:
+
+--- CURRENT POST ---
+${post.message}
+--- END ---
+
+The reviewer has provided this feedback:
+"${feedback || "Generate a different version"}"
+
+Write an improved version of this post incorporating the feedback. Keep the same target audience (${audience}).
+
+CRITICAL FORMATTING RULES:
+- Facebook does NOT support text formatting. Do NOT use Markdown.
+- NEVER use asterisks (*), double asterisks (**), underscores for emphasis, or any Markdown syntax.
+- Write XIRI in plain uppercase text, never **XIRI** or *XIRI*.
+- Use emoji as visual bullets, not asterisks.
+- Include relevant hashtags at the end.
+- 100-250 words.
+
+Respond with ONLY the post text. No introductions.`;
+
+    const result = await model.generateContent(prompt);
+    const newCaption = result.response.text().trim();
+
+    if (!newCaption) {
+        throw new HttpsError("internal", "Caption generation returned empty");
+    }
+
+    await postRef.update({
+        message: newCaption,
+        captionRegenCount: (post.captionRegenCount || 0) + 1,
+        lastCaptionFeedback: feedback || null,
+    });
+
+    console.log(`[RegenCaption] New caption generated (${newCaption.length} chars)`);
+    return { success: true, message: newCaption };
 });

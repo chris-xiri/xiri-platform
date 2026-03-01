@@ -52,6 +52,7 @@ const CONTRACTOR_SCENES = [
 export async function generatePostImage(
     postMessage: string,
     audience: "client" | "contractor",
+    feedbackHint?: string,
 ): Promise<ImagenResult | null> {
     try {
         console.log(`[Imagen] Starting image generation for ${audience} post...`);
@@ -61,9 +62,15 @@ export async function generatePostImage(
         });
         const client = await auth.getClient();
 
-        // Pick a random scene for variety
-        const scenes = audience === "client" ? CLIENT_SCENES : CONTRACTOR_SCENES;
-        const scene = scenes[Math.floor(Math.random() * scenes.length)];
+        // Use feedback hint as scene description, or pick a random one
+        let scene: string;
+        if (feedbackHint) {
+            scene = `${feedbackHint}. Professional commercial/facility setting`;
+            console.log(`[Imagen] Using feedback hint: "${feedbackHint}"`);
+        } else {
+            const scenes = audience === "client" ? CLIENT_SCENES : CONTRACTOR_SCENES;
+            scene = scenes[Math.floor(Math.random() * scenes.length)];
+        }
 
         const imagePrompt = `Editorial photograph, shot on Canon EOS R5 with 35mm lens. ${scene}. Color grading: cool blue tones with deep navy shadows and bright sky blue highlights. Clean, sharp, professional corporate photography. Shallow depth of field. 1:1 square composition.`;
 
