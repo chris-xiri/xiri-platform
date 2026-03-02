@@ -361,7 +361,7 @@ export default function SocialMediaPage() {
     };
 
     const handleSaveCampaign = async () => {
-        if (!newCampaign.name || !newCampaign.location || !newCampaign.facebookPlaceId || !newCampaign.startDate || !newCampaign.endDate) {
+        if (!newCampaign.name || !newCampaign.location || !newCampaign.startDate || !newCampaign.endDate) {
             setErrorMessage('Please fill in all required fields and select a valid location');
             return;
         }
@@ -1780,7 +1780,10 @@ export default function SocialMediaPage() {
                                 <select
                                     className="w-full px-3 py-2 text-sm border bg-background rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     value={newCampaign.location || ''}
-                                    onChange={e => setNewCampaign({ ...newCampaign, location: e.target.value || undefined })}
+                                    onChange={e => {
+                                        const area = XIRI_SERVICE_AREAS.find(a => a.name === e.target.value);
+                                        setNewCampaign({ ...newCampaign, location: e.target.value || undefined, facebookPlaceId: area?.id || null });
+                                    }}
                                 >
                                     <option value="">Select service area...</option>
                                     {XIRI_SERVICE_AREAS.map(area => (
