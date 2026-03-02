@@ -155,6 +155,26 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
         setSavingAddress(false);
     };
 
+    const handleZipChange = async (zipVal: string) => {
+        setAddressDraft(prev => ({ ...prev, zip: zipVal }));
+        if (/^\d{5}$/.test(zipVal)) {
+            try {
+                const res = await fetch(`https://api.zippopotam.us/us/${zipVal}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const place = data.places?.[0];
+                    if (place) {
+                        setAddressDraft(prev => ({
+                            ...prev,
+                            city: prev.city || place['place name'] || '',
+                            state: prev.state || place['state abbreviation'] || '',
+                        }));
+                    }
+                }
+            } catch { /* ignore lookup errors */ }
+        }
+    };
+
     useEffect(() => {
         if (!vendorId || !open) { setVendor(null); setLoading(true); return; }
         setLoading(true);
@@ -344,7 +364,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-[10px] uppercase text-muted-foreground font-medium">Zip</label>
-                                                                    <Input className="h-7 text-sm" value={addressDraft.zip} onChange={e => setAddressDraft({ ...addressDraft, zip: e.target.value })} placeholder="10001" maxLength={5} />
+                                                                    <Input className="h-7 text-sm" value={addressDraft.zip} onChange={e => handleZipChange(e.target.value)} placeholder="10001" maxLength={5} />
                                                                 </div>
                                                             </div>
                                                             <div className="flex gap-2 pt-1">

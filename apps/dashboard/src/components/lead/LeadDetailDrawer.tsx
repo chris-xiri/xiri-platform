@@ -198,6 +198,26 @@ function EditableAddressField({
         }
     };
 
+    const handleZipChange = async (zipVal: string) => {
+        setDraft(prev => ({ ...prev, zip: zipVal }));
+        if (/^\d{5}$/.test(zipVal)) {
+            try {
+                const res = await fetch(`https://api.zippopotam.us/us/${zipVal}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const place = data.places?.[0];
+                    if (place) {
+                        setDraft(prev => ({
+                            ...prev,
+                            city: prev.city || place['place name'] || '',
+                            state: prev.state || place['state abbreviation'] || '',
+                        }));
+                    }
+                }
+            } catch { /* ignore lookup errors */ }
+        }
+    };
+
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -308,7 +328,7 @@ function EditableAddressField({
                         </div>
                         <div>
                             <label className="text-[10px] uppercase text-muted-foreground font-medium">ZIP</label>
-                            <Input className="h-7 text-sm" value={draft.zip} onChange={e => setDraft({ ...draft, zip: e.target.value })} placeholder="10001" maxLength={5} />
+                            <Input className="h-7 text-sm" value={draft.zip} onChange={e => handleZipChange(e.target.value)} placeholder="10001" maxLength={5} />
                         </div>
                     </div>
                 </div>
