@@ -209,8 +209,8 @@ function EditableAddressField({
                     if (place) {
                         setDraft(prev => ({
                             ...prev,
-                            city: prev.city || place['place name'] || '',
-                            state: prev.state || place['state abbreviation'] || '',
+                            city: place['place name'] || prev.city || '',
+                            state: place['state abbreviation'] || prev.state || '',
                         }));
                     }
                 }
@@ -285,6 +285,12 @@ function EditableAddressField({
                                     backgroundColor: 'hsl(var(--popover))',
                                     border: '1px solid hsl(var(--border))',
                                     zIndex: 50,
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                    opacity: 1,
+                                }),
+                                menuPortal: (base: any) => ({
+                                    ...base,
+                                    zIndex: 9999,
                                 }),
                                 menuList: (base: any) => ({
                                     ...base,
@@ -292,7 +298,7 @@ function EditableAddressField({
                                 }),
                                 option: (base: any, state: any) => ({
                                     ...base,
-                                    backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'transparent',
+                                    backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'hsl(var(--popover))',
                                     color: 'hsl(var(--foreground))',
                                     cursor: 'pointer',
                                     fontSize: '13px',

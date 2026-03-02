@@ -166,8 +166,8 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                     if (place) {
                         setAddressDraft(prev => ({
                             ...prev,
-                            city: prev.city || place['place name'] || '',
-                            state: prev.state || place['state abbreviation'] || '',
+                            city: place['place name'] || prev.city || '',
+                            state: place['state abbreviation'] || prev.state || '',
                         }));
                     }
                 }
@@ -340,9 +340,10 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                                             input: (base: any) => ({ ...base, margin: 0, padding: 0, color: 'hsl(var(--foreground))' }),
                                                                             singleValue: (base: any) => ({ ...base, color: 'hsl(var(--foreground))' }),
                                                                             placeholder: (base: any) => ({ ...base, color: 'hsl(var(--muted-foreground))' }),
-                                                                            menu: (base: any) => ({ ...base, backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', zIndex: 50 }),
+                                                                            menu: (base: any) => ({ ...base, backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', opacity: 1 }),
+                                                                            menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
                                                                             menuList: (base: any) => ({ ...base, padding: '4px' }),
-                                                                            option: (base: any, state: any) => ({ ...base, backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'transparent', color: 'hsl(var(--foreground))', cursor: 'pointer', fontSize: '13px', padding: '8px 12px', borderRadius: '4px', '&:active': { backgroundColor: 'hsl(var(--accent))' } }),
+                                                                            option: (base: any, state: any) => ({ ...base, backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'hsl(var(--popover))', color: 'hsl(var(--foreground))', cursor: 'pointer', fontSize: '13px', padding: '8px 12px', borderRadius: '4px', '&:active': { backgroundColor: 'hsl(var(--accent))' } }),
                                                                             noOptionsMessage: (base: any) => ({ ...base, color: 'hsl(var(--muted-foreground))' }),
                                                                             loadingMessage: (base: any) => ({ ...base, color: 'hsl(var(--muted-foreground))' }),
                                                                         },
