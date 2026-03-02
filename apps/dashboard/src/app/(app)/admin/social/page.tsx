@@ -269,7 +269,7 @@ export default function SocialMediaPage() {
             const q = query(
                 collection(db, 'social_posts'),
                 where('channel', '==', activeChannel),
-                where('status', 'in', ['draft', 'approved', 'rejected', 'failed', 'published']),
+                where('status', 'in', ['draft', 'approved', 'rejected', 'failed']),
                 orderBy('scheduledFor', 'desc'),
                 limit(30)
             );
