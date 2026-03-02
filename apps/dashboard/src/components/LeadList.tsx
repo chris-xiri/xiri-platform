@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight, ChevronDown, MapPin } from "lucide-react";
 import { collection, onSnapshot, query, orderBy, limit, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Lead, LeadStatus } from "@xiri/shared";
@@ -50,6 +50,8 @@ export default function LeadList({
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const PAGE_SIZE = 50;
+    const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+    const [groupByAddress, setGroupByAddress] = useState(true);
 
     const {
         searchQuery,
@@ -166,6 +168,37 @@ export default function LeadList({
     const paginatedLeads = filteredLeads.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     const startIdx = (currentPage - 1) * PAGE_SIZE + 1;
     const endIdx = Math.min(currentPage * PAGE_SIZE, filteredLeads.length);
+
+    // Group paginated leads by exact address
+    const addressGroups = useMemo(() => {
+        if (!groupByAddress) return null;
+        const groups: { key: string; label: string; sublabel: string; leads: { lead: Lead; globalIndex: number }[] }[] = [];
+        const groupMap = new Map<string, typeof groups[0]>();
+
+        paginatedLeads.forEach((lead, i) => {
+            const addr = (lead.address || '').trim();
+            const key = addr.toLowerCase() || `__no_address_${lead.id}`;
+            const cityState = [lead.city, lead.state].filter(Boolean).join(', ');
+            const sublabel = cityState + (lead.zip ? ` ${lead.zip}` : '');
+
+            if (!groupMap.has(key)) {
+                const group = { key, label: addr || 'No address', sublabel, leads: [] as { lead: Lead; globalIndex: number }[] };
+                groupMap.set(key, group);
+                groups.push(group);
+            }
+            groupMap.get(key)!.leads.push({ lead, globalIndex: startIdx + i - 1 });
+        });
+
+        return groups;
+    }, [paginatedLeads, groupByAddress, startIdx]);
+
+    const toggleGroup = (key: string) => {
+        setCollapsedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key); else next.add(key);
+            return next;
+        });
+    };
 
     if (loading) {
         return (
@@ -311,16 +344,54 @@ export default function LeadList({
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {paginatedLeads.map((lead, index) => (
-                                        <LeadRow
-                                            key={lead.id}
-                                            lead={lead}
-                                            index={startIdx + index - 1}
-                                            isSelected={selectedLeads.has(lead.id!)}
-                                            onSelect={(checked) => handleSelectLead(lead.id!, checked)}
-                                            onRowClick={onRowClick}
-                                        />
-                                    ))}
+                                    {groupByAddress && addressGroups ? (
+                                        addressGroups.map(group => (
+                                            <>
+                                                <TableRow
+                                                    key={`group-${group.key}`}
+                                                    className={`cursor-pointer hover:bg-muted/50 border-b ${group.leads.length > 1 ? 'bg-amber-500/5' : 'bg-muted/20'
+                                                        }`}
+                                                    onClick={() => toggleGroup(group.key)}
+                                                >
+                                                    <TableCell colSpan={9} className="py-1.5 px-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${collapsedGroups.has(group.key) ? '-rotate-90' : ''}`} />
+                                                            <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                                                            <span className="text-xs font-medium">{group.label}</span>
+                                                            {group.sublabel && (
+                                                                <span className="text-xs text-muted-foreground">— {group.sublabel}</span>
+                                                            )}
+                                                            <Badge variant={group.leads.length > 1 ? 'default' : 'secondary'}
+                                                                className={`text-[10px] px-1.5 py-0 h-4 ml-auto ${group.leads.length > 1 ? 'bg-amber-500 hover:bg-amber-600' : ''}`}>
+                                                                {group.leads.length}
+                                                            </Badge>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                                {!collapsedGroups.has(group.key) && group.leads.map(({ lead, globalIndex }) => (
+                                                    <LeadRow
+                                                        key={lead.id}
+                                                        lead={lead}
+                                                        index={globalIndex}
+                                                        isSelected={selectedLeads.has(lead.id!)}
+                                                        onSelect={(checked) => handleSelectLead(lead.id!, checked)}
+                                                        onRowClick={onRowClick}
+                                                    />
+                                                ))}
+                                            </>
+                                        ))
+                                    ) : (
+                                        paginatedLeads.map((lead, index) => (
+                                            <LeadRow
+                                                key={lead.id}
+                                                lead={lead}
+                                                index={startIdx + index - 1}
+                                                isSelected={selectedLeads.has(lead.id!)}
+                                                onSelect={(checked) => handleSelectLead(lead.id!, checked)}
+                                                onRowClick={onRowClick}
+                                            />
+                                        ))
+                                    )}
                                 </TableBody>
                             </table>
                         </div>
