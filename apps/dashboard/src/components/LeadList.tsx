@@ -24,7 +24,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, Loader2, X, Search, Trash2, Edit } from "lucide-react";
+import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight } from "lucide-react";
 import { collection, onSnapshot, query, orderBy, limit, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Lead, LeadStatus } from "@xiri/shared";
@@ -48,6 +48,8 @@ export default function LeadList({
     const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
     const [bulkStatus, setBulkStatus] = useState<LeadStatus | "">("");
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const PAGE_SIZE = 50;
 
     const {
         searchQuery,
@@ -62,8 +64,7 @@ export default function LeadList({
     useEffect(() => {
         const q = query(
             collection(db, "leads"),
-            orderBy("createdAt", "desc"),
-            limit(100)
+            orderBy("createdAt", "desc")
         );
 
         const unsubscribe = onSnapshot(
@@ -159,6 +160,12 @@ export default function LeadList({
 
     const allSelected = filteredLeads.length > 0 && selectedLeads.size === filteredLeads.length;
     const someSelected = selectedLeads.size > 0 && selectedLeads.size < filteredLeads.length;
+
+    // Pagination
+    const totalPages = Math.ceil(filteredLeads.length / PAGE_SIZE);
+    const paginatedLeads = filteredLeads.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const startIdx = (currentPage - 1) * PAGE_SIZE + 1;
+    const endIdx = Math.min(currentPage * PAGE_SIZE, filteredLeads.length);
 
     if (loading) {
         return (
@@ -304,11 +311,11 @@ export default function LeadList({
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredLeads.map((lead, index) => (
+                                    {paginatedLeads.map((lead, index) => (
                                         <LeadRow
                                             key={lead.id}
                                             lead={lead}
-                                            index={index}
+                                            index={startIdx + index - 1}
                                             isSelected={selectedLeads.has(lead.id!)}
                                             onSelect={(checked) => handleSelectLead(lead.id!, checked)}
                                             onRowClick={onRowClick}
@@ -320,17 +327,49 @@ export default function LeadList({
 
                         {/* Mobile Card View */}
                         <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-3 bg-muted/50">
-                            {filteredLeads.map((lead, index) => (
+                            {paginatedLeads.map((lead, index) => (
                                 <LeadCard
                                     key={lead.id}
                                     lead={lead}
-                                    index={index}
+                                    index={startIdx + index - 1}
                                     isSelected={selectedLeads.has(lead.id!)}
                                     onSelect={(checked) => handleSelectLead(lead.id!, checked)}
                                 />
                             ))}
                         </div>
                     </>
+                )}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t bg-card">
+                        <p className="text-sm text-muted-foreground">
+                            Showing {startIdx}–{endIdx} of {filteredLeads.length} leads
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="h-8"
+                            >
+                                <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                            </Button>
+                            <span className="text-sm font-medium px-2">
+                                Page {currentPage} of {totalPages}
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="h-8"
+                            >
+                                Next <ChevronRight className="w-4 h-4 ml-1" />
+                            </Button>
+                        </div>
+                    </div>
                 )}
             </CardContent>
 

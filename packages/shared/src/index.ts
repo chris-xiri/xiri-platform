@@ -32,7 +32,10 @@ export interface Lead {
     contactPhone: string;
     email: string;
     zipCode: string;
-    address?: string;      // Full address from Maps Autocomplete
+    address?: string;      // Street address
+    city?: string;         // City / Town
+    state?: string;        // 2-letter state abbrev
+    zip?: string;          // ZIP code (from parsed address)
     serviceInterest?: string; // e.g. "janitorial", "floor_care"
     preferredAuditTimes?: Date[]; // Array of 3 options
     notes?: string;

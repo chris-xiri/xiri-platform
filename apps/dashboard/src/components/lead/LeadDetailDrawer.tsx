@@ -17,6 +17,7 @@ import {
     FileText, ExternalLink, Plus, ChevronRight
 } from 'lucide-react';
 import { format } from 'date-fns';
+import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 
 function toDate(value: any): Date | null {
     if (!value) return null;
@@ -140,6 +141,153 @@ function EditableField({
                 <span className={value ? '' : 'text-muted-foreground italic'}>{value || `Add ${label.toLowerCase()}`}</span>
             )}
             <Pencil className="w-3 h-3 text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-opacity ml-auto flex-shrink-0" />
+        </div>
+    );
+}
+
+/* ─── Editable Address with Google Places Autocomplete ──────────── */
+
+function EditableAddressField({
+    address,
+    city,
+    state,
+    zip,
+    onSave,
+}: {
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+    onSave: (fields: { address: string; city: string; state: string; zip: string }) => Promise<void>;
+}) {
+    const [editing, setEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [draft, setDraft] = useState({ address, city, state, zip });
+    const [autocompleteValue, setAutocompleteValue] = useState<any>(null);
+
+    const handlePlaceSelect = (selected: any) => {
+        setAutocompleteValue(selected);
+        if (selected?.value?.place_id) {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ placeId: selected.value.place_id }, (results, status) => {
+                if (status === 'OK' && results && results[0]) {
+                    const components = results[0].address_components;
+                    let streetNumber = '';
+                    let route = '';
+                    let newCity = '';
+                    let newState = '';
+                    let newZip = '';
+
+                    components.forEach((c: any) => {
+                        if (c.types.includes('street_number')) streetNumber = c.long_name;
+                        if (c.types.includes('route')) route = c.long_name;
+                        if (c.types.includes('locality')) newCity = c.long_name;
+                        if (c.types.includes('sublocality_level_1') && !newCity) newCity = c.long_name;
+                        if (c.types.includes('administrative_area_level_1')) newState = c.short_name;
+                        if (c.types.includes('postal_code')) newZip = c.long_name;
+                    });
+
+                    setDraft({
+                        address: `${streetNumber} ${route}`.trim(),
+                        city: newCity,
+                        state: newState,
+                        zip: newZip,
+                    });
+                }
+            });
+        }
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await onSave(draft);
+            setEditing(false);
+        } catch (e) {
+            console.error('Address save failed:', e);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCancel = () => {
+        setDraft({ address, city, state, zip });
+        setAutocompleteValue(null);
+        setEditing(false);
+    };
+
+    const startEditing = () => {
+        setDraft({ address, city, state, zip });
+        setAutocompleteValue(null);
+        setEditing(true);
+    };
+
+    if (editing) {
+        return (
+            <div className="space-y-2.5 py-1">
+                <div>
+                    <label className="text-[10px] uppercase text-muted-foreground font-medium">Search Address</label>
+                    <GooglePlacesAutocomplete
+                        apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                        autocompletionRequest={{
+                            componentRestrictions: { country: ['us'] },
+                        }}
+                        selectProps={{
+                            value: autocompleteValue,
+                            onChange: handlePlaceSelect,
+                            placeholder: 'Start typing address...',
+                            className: 'react-select-container text-sm',
+                            classNamePrefix: 'react-select',
+                            styles: {
+                                control: (base: any) => ({ ...base, minHeight: '32px', fontSize: '14px' }),
+                                input: (base: any) => ({ ...base, margin: 0, padding: 0 }),
+                            },
+                        }}
+                    />
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                    <div>
+                        <label className="text-[10px] uppercase text-muted-foreground font-medium">Street Address</label>
+                        <Input className="h-7 text-sm" value={draft.address} onChange={e => setDraft({ ...draft, address: e.target.value })} placeholder="123 Main St" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div>
+                            <label className="text-[10px] uppercase text-muted-foreground font-medium">City</label>
+                            <Input className="h-7 text-sm" value={draft.city} onChange={e => setDraft({ ...draft, city: e.target.value })} placeholder="City" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] uppercase text-muted-foreground font-medium">State</label>
+                            <Input className="h-7 text-sm" value={draft.state} onChange={e => setDraft({ ...draft, state: e.target.value })} placeholder="NY" maxLength={2} />
+                        </div>
+                        <div>
+                            <label className="text-[10px] uppercase text-muted-foreground font-medium">ZIP</label>
+                            <Input className="h-7 text-sm" value={draft.zip} onChange={e => setDraft({ ...draft, zip: e.target.value })} placeholder="10001" maxLength={5} />
+                        </div>
+                    </div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                    <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={handleCancel}>Cancel</Button>
+                    <Button size="sm" className="h-6 text-xs gap-1" onClick={handleSave} disabled={saving}>
+                        {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                        Save
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm group cursor-pointer" onClick={startEditing}>
+                <MapPin className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                <span className={address ? '' : 'text-muted-foreground italic'}>{address || 'Add address'}</span>
+                <Pencil className="w-3 h-3 text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-opacity ml-auto flex-shrink-0" />
+            </div>
+            {(city || state || zip) && (
+                <div className="flex items-center gap-2 text-sm pl-[22px] text-muted-foreground cursor-pointer" onClick={startEditing}>
+                    {[city, state].filter(Boolean).join(', ')}{zip ? ` ${zip}` : ''}
+                </div>
+            )}
         </div>
     );
 }
@@ -302,17 +450,21 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                         linkPrefix="tel:"
                                         onSave={(v) => updateField('contactPhone', v)}
                                     />
-                                    <EditableField
-                                        label="Address"
-                                        value={lead.address || ''}
-                                        icon={MapPin}
-                                        onSave={(v) => updateField('address', v)}
-                                    />
-                                    <EditableField
-                                        label="ZIP code"
-                                        value={lead.zipCode || ''}
-                                        icon={MapPin}
-                                        onSave={(v) => updateField('zipCode', v)}
+                                    <EditableAddressField
+                                        address={lead.address || ''}
+                                        city={lead.city || ''}
+                                        state={lead.state || ''}
+                                        zip={lead.zip || lead.zipCode || ''}
+                                        onSave={async (fields) => {
+                                            if (!leadId) return;
+                                            await updateDoc(doc(db, 'leads', leadId), {
+                                                address: fields.address,
+                                                city: fields.city,
+                                                state: fields.state,
+                                                zip: fields.zip,
+                                                updatedAt: new Date(),
+                                            });
+                                        }}
                                     />
                                 </CardContent>
                             </Card>
