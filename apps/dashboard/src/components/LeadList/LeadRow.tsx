@@ -123,15 +123,21 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick }: LeadR
             </TableCell>
 
             <TableCell className="cursor-pointer" onClick={handleClick}>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-0.5">
                     {lead.address && (
                         <div className="text-xs flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-muted-foreground" />
-                            <span className="line-clamp-2">{lead.address}</span>
+                            <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                            <span className="line-clamp-1">{lead.address}</span>
                         </div>
                     )}
-                    {lead.zipCode && (
-                        <div className="text-xs text-muted-foreground">
+                    {(lead.city || lead.state || lead.zip) && (
+                        <div className="text-xs text-muted-foreground pl-4">
+                            {[lead.city, lead.state].filter(Boolean).join(', ')}{lead.zip ? ` ${lead.zip}` : ''}
+                        </div>
+                    )}
+                    {!lead.address && !lead.city && lead.zipCode && (
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
                             ZIP: {lead.zipCode}
                         </div>
                     )}

@@ -100,7 +100,7 @@ export default function SalesDashboardPage() {
 
         // Live listener on leads
         const leadsUnsub = onSnapshot(
-            query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(500)),
+            query(collection(db, 'leads'), orderBy('createdAt', 'desc')),
             (snap) => {
                 setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() })));
             }
@@ -195,7 +195,7 @@ export default function SalesDashboardPage() {
     // Status filter for LeadList
     const statusFilters = useMemo(() => {
         if (activeTab === 'all') return undefined;
-        return [activeTab];
+        return [activeTab] as import('@xiri/shared').LeadStatus[];
     }, [activeTab]);
 
     const typeLabel = (t: string) => {
