@@ -757,7 +757,7 @@ async function getRecentPosts(limit = 10) {
   try {
     const fields = "id,message,created_time,full_picture,permalink_url,likes.summary(true),comments.summary(true),shares";
     const response = await fetch(
-      `${GRAPH_BASE_URL}/${PAGE_ID}/feed?fields=${fields}&limit=${limit}&access_token=${token}`
+      `${GRAPH_BASE_URL}/${PAGE_ID}/posts?fields=${fields}&limit=${limit}&access_token=${token}`
     );
     const data = await response.json();
     if (data.error) {

@@ -296,14 +296,17 @@ export async function schedulePost(
 
 /**
  * Get recent posts from the page with engagement metrics
+ * Uses /feed and filters out reels (which have /reel/ or /videos/ in permalink)
  */
 export async function getRecentPosts(limit: number = 10): Promise<FacebookPost[]> {
     const token = getAccessToken();
 
     try {
         const fields = "id,message,created_time,full_picture,permalink_url,likes.summary(true),comments.summary(true),shares";
+        // Fetch extra to account for filtered-out reels
+        const fetchLimit = Math.min(limit * 3, 50);
         const response = await fetch(
-            `${GRAPH_BASE_URL}/${PAGE_ID}/posts?fields=${fields}&limit=${limit}&access_token=${token}`
+            `${GRAPH_BASE_URL}/${PAGE_ID}/feed?fields=${fields}&limit=${fetchLimit}&access_token=${token}`
         );
 
         const data = await response.json();
@@ -313,7 +316,13 @@ export async function getRecentPosts(limit: number = 10): Promise<FacebookPost[]
             return [];
         }
 
-        return data.data || [];
+        // Filter out reels — they have /reel/ or /videos/ in their permalink
+        const posts = (data.data || []).filter((post: any) => {
+            const url = post.permalink_url || "";
+            return !url.includes("/reel/") && !url.includes("/videos/");
+        });
+
+        return posts.slice(0, limit);
     } catch (error: any) {
         console.error("Facebook get posts error:", error);
         return [];
