@@ -236,11 +236,58 @@ function EditableAddressField({
                             value: autocompleteValue,
                             onChange: handlePlaceSelect,
                             placeholder: 'Start typing address...',
-                            className: 'react-select-container text-sm',
-                            classNamePrefix: 'react-select',
                             styles: {
-                                control: (base: any) => ({ ...base, minHeight: '32px', fontSize: '14px' }),
-                                input: (base: any) => ({ ...base, margin: 0, padding: 0 }),
+                                control: (base: any) => ({
+                                    ...base,
+                                    minHeight: '32px',
+                                    fontSize: '14px',
+                                    backgroundColor: 'hsl(var(--input))',
+                                    borderColor: 'hsl(var(--border))',
+                                    color: 'hsl(var(--foreground))',
+                                    '&:hover': { borderColor: 'hsl(var(--ring))' },
+                                }),
+                                input: (base: any) => ({
+                                    ...base,
+                                    margin: 0,
+                                    padding: 0,
+                                    color: 'hsl(var(--foreground))',
+                                }),
+                                singleValue: (base: any) => ({
+                                    ...base,
+                                    color: 'hsl(var(--foreground))',
+                                }),
+                                placeholder: (base: any) => ({
+                                    ...base,
+                                    color: 'hsl(var(--muted-foreground))',
+                                }),
+                                menu: (base: any) => ({
+                                    ...base,
+                                    backgroundColor: 'hsl(var(--popover))',
+                                    border: '1px solid hsl(var(--border))',
+                                    zIndex: 50,
+                                }),
+                                menuList: (base: any) => ({
+                                    ...base,
+                                    padding: '4px',
+                                }),
+                                option: (base: any, state: any) => ({
+                                    ...base,
+                                    backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'transparent',
+                                    color: 'hsl(var(--foreground))',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    padding: '8px 12px',
+                                    borderRadius: '4px',
+                                    '&:active': { backgroundColor: 'hsl(var(--accent))' },
+                                }),
+                                noOptionsMessage: (base: any) => ({
+                                    ...base,
+                                    color: 'hsl(var(--muted-foreground))',
+                                }),
+                                loadingMessage: (base: any) => ({
+                                    ...base,
+                                    color: 'hsl(var(--muted-foreground))',
+                                }),
                             },
                         }}
                     />
