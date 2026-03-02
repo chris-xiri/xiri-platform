@@ -71,3 +71,18 @@ Maintained by: @architect-cto
 > - Decision: **Firestore Rules Must Be Deployed After Local Changes**
 > - Rationale: The `social_campaigns` read/write rules were added locally to `firestore.rules` but never deployed, causing "Missing or insufficient permissions" errors. All Firestore rule changes must be deployed via `npx firebase deploy --only firestore:rules`.
 > - Status: **Active**
+
+> - Date: 2026-03-01
+> - Decision: **Hardcoded XIRI Service Areas (Facebook Place Search Deprecated)**
+> - Rationale: Facebook's `/search?type=place` API is fully deprecated for page tokens since Graph API v8.0. The `place_id` parameter is accepted in the Reels finish step but silently ignored (reels don't support place tagging via API — it's UI-only). Location selection now uses a hardcoded dropdown of 13 XIRI service areas (Nassau County, Queens, Long Island) stored in `XIRI_SERVICE_AREAS`. Location names are saved in Firestore for reference and can be included in hashtags.
+> - Status: **Active**
+
+> - Date: 2026-03-01
+> - Decision: **Drafts Tab: Only Unpublished Items**
+> - Rationale: The Firestore query for the Drafts tab filters by `status in ['draft', 'approved', 'rejected', 'failed']`, excluding `published`. Published items are already visible in the Feed tab via the Graph API, so showing them in Drafts was redundant and cluttered the view.
+> - Status: **Active**
+
+> - Date: 2026-03-01
+> - Decision: **Posts Feed: Filter Out Reels via `permalink_url`**
+> - Rationale: Facebook's `/feed` endpoint returns both posts and reels mixed together. The `/posts` endpoint is deprecated. To separate them, `getRecentPosts` fetches from `/feed` and filters out any item whose `permalink_url` contains `/reel/` or `/videos/`. Reels are fetched separately via `getRecentReels` using the dedicated `/video_reels` endpoint.
+> - Status: **Active**

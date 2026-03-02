@@ -756,15 +756,20 @@ async function getRecentPosts(limit = 10) {
   const token = getAccessToken();
   try {
     const fields = "id,message,created_time,full_picture,permalink_url,likes.summary(true),comments.summary(true),shares";
+    const fetchLimit = Math.min(limit * 3, 50);
     const response = await fetch(
-      `${GRAPH_BASE_URL}/${PAGE_ID}/posts?fields=${fields}&limit=${limit}&access_token=${token}`
+      `${GRAPH_BASE_URL}/${PAGE_ID}/feed?fields=${fields}&limit=${fetchLimit}&access_token=${token}`
     );
     const data = await response.json();
     if (data.error) {
       console.error("Facebook get posts error:", data.error);
       return [];
     }
-    return data.data || [];
+    const posts = (data.data || []).filter((post) => {
+      const url = post.permalink_url || "";
+      return !url.includes("/reel/") && !url.includes("/videos/");
+    });
+    return posts.slice(0, limit);
   } catch (error11) {
     console.error("Facebook get posts error:", error11);
     return [];
