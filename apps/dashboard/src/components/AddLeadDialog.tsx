@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, X, Sparkles } from "lucide-react";
+import { Loader2, X, Sparkles, Plus } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,18 +19,38 @@ interface AddLeadDialogProps {
     onOpenChange: (open: boolean) => void;
 }
 
-const FACILITY_TYPES = [
+const DEFAULT_FACILITY_TYPES = [
     { value: "medical_urgent_care", label: "Medical - Urgent Care" },
     { value: "medical_private", label: "Medical - Private Practice" },
     { value: "medical_surgery", label: "Medical - Surgery Center" },
     { value: "medical_dialysis", label: "Medical - Dialysis Center" },
+    { value: "medical_dental", label: "Medical - Dental" },
+    { value: "medical_veterinary", label: "Medical - Veterinary" },
     { value: "auto_dealer_showroom", label: "Auto - Dealership Showroom" },
     { value: "auto_service_center", label: "Auto - Service Center" },
     { value: "edu_daycare", label: "Education - Daycare" },
     { value: "edu_private_school", label: "Education - Private School" },
+    { value: "lab_cleanroom", label: "Lab - Cleanroom (ISO)" },
+    { value: "lab_bsl", label: "Lab - BSL-1/BSL-2" },
+    { value: "manufacturing_light", label: "Manufacturing - Light" },
     { value: "office_general", label: "Office - General" },
     { value: "fitness_gym", label: "Fitness - Gym" },
+    { value: "retail_storefront", label: "Retail - Storefront" },
+    { value: "other", label: "Other" },
 ];
+
+function loadCustomFacilityTypes(): { value: string; label: string }[] {
+    if (typeof window === 'undefined') return [];
+    return JSON.parse(localStorage.getItem('custom-facility-types') || '[]');
+}
+
+function saveCustomFacilityType(type: { value: string; label: string }) {
+    const existing = loadCustomFacilityTypes();
+    if (!existing.find(t => t.value === type.value)) {
+        existing.push(type);
+        localStorage.setItem('custom-facility-types', JSON.stringify(existing));
+    }
+}
 
 const ATTRIBUTION_SOURCES = [
     { value: "Referral", label: "Referral" },
@@ -39,6 +59,113 @@ const ATTRIBUTION_SOURCES = [
     { value: "Cold Outreach", label: "Cold Outreach" },
     { value: "Other", label: "Other" },
 ];
+
+function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+    const [search, setSearch] = useState("");
+    const [isOpen, setIsOpen] = useState(false);
+    const [customTypes, setCustomTypes] = useState<{ value: string; label: string }[]>(loadCustomFacilityTypes());
+    const wrapperRef = useRef<HTMLDivElement>(null);
+
+    const allTypes = [...DEFAULT_FACILITY_TYPES, ...customTypes];
+    const selectedLabel = allTypes.find(t => t.value === value)?.label || value || "";
+
+    const filtered = search
+        ? allTypes.filter(t => t.label.toLowerCase().includes(search.toLowerCase()))
+        : allTypes;
+
+    const exactMatch = allTypes.some(t => t.label.toLowerCase() === search.toLowerCase());
+    const showAddNew = search.length > 0 && !exactMatch;
+
+    // Close on outside click
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+                setIsOpen(false);
+                setSearch("");
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
+    const handleSelect = (val: string) => {
+        onChange(val);
+        setIsOpen(false);
+        setSearch("");
+    };
+
+    const handleAddNew = () => {
+        const slug = search.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        const newType = { value: slug, label: search };
+        saveCustomFacilityType(newType);
+        setCustomTypes([...customTypes, newType]);
+        onChange(slug);
+        setIsOpen(false);
+        setSearch("");
+    };
+
+    return (
+        <div ref={wrapperRef} className="relative">
+            <Label>Facility Type</Label>
+            <div
+                className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer hover:bg-accent/50 transition-colors"
+                onClick={() => { setIsOpen(true); setSearch(""); }}
+            >
+                {isOpen ? (
+                    <input
+                        autoFocus
+                        className="w-full bg-transparent outline-none placeholder:text-muted-foreground"
+                        placeholder="Search or type new..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Escape') { setIsOpen(false); setSearch(""); }
+                            if (e.key === 'Enter' && filtered.length === 1) {
+                                e.preventDefault();
+                                handleSelect(filtered[0].value);
+                            }
+                            if (e.key === 'Enter' && filtered.length === 0 && showAddNew) {
+                                e.preventDefault();
+                                handleAddNew();
+                            }
+                        }}
+                    />
+                ) : (
+                    <span className={selectedLabel ? "text-foreground" : "text-muted-foreground"}>
+                        {selectedLabel || "Select facility type"}
+                    </span>
+                )}
+            </div>
+
+            {isOpen && (
+                <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-md border bg-popover shadow-lg">
+                    {filtered.map((type) => (
+                        <button
+                            key={type.value}
+                            type="button"
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${type.value === value ? 'bg-accent font-medium' : ''}`}
+                            onClick={() => handleSelect(type.value)}
+                        >
+                            {type.label}
+                        </button>
+                    ))}
+                    {showAddNew && (
+                        <button
+                            type="button"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors text-primary font-medium flex items-center gap-1.5 border-t"
+                            onClick={handleAddNew}
+                        >
+                            <Plus className="w-3.5 h-3.5" /> Add &ldquo;{search}&rdquo; as new type
+                        </button>
+                    )}
+                    {filtered.length === 0 && !showAddNew && (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">No matches</div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
 
 export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     const { user } = useAuth();
@@ -281,22 +408,8 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                         </div>
                     </div>
 
-                    {/* Facility Type */}
-                    <div>
-                        <Label htmlFor="facilityType">Facility Type</Label>
-                        <Select value={facilityType} onValueChange={setFacilityType}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select facility type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {FACILITY_TYPES.map((type) => (
-                                    <SelectItem key={type.value} value={type.value}>
-                                        {type.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    {/* Facility Type — Creatable Combobox */}
+                    <FacilityTypeCombobox value={facilityType} onChange={setFacilityType} />
 
                     {/* Contact Details */}
                     <div className="space-y-4 pt-4 border-t">
