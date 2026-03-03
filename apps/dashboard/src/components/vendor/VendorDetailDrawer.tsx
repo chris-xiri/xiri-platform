@@ -27,6 +27,7 @@ import EditVendorDialog from '@/components/vendor/EditVendorDialog';
 import VendorStatusTimeline from '@/components/vendor/VendorStatusTimeline';
 import VendorActivityFeed from '@/components/vendor/VendorActivityFeed';
 import ScheduleFollowUpDialog from '@/components/vendor/ScheduleFollowUpDialog';
+import { formatCapability } from '@/components/VendorList/utils';
 
 const LanguageBadge = ({ lang }: { lang?: 'en' | 'es' }) => {
     if (lang === 'es') return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">🇪🇸 ES</Badge>;
@@ -421,7 +422,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                             updateDoc(doc(db, 'vendors', vendor.id!), { capabilities: vendor.capabilities!.filter((_, idx) => idx !== i), updatedAt: new Date() });
                                                         }
                                                     }}>
-                                                        {cap}
+                                                        {formatCapability(cap)}
                                                         <X className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
                                                     </Badge>
                                                 ))}

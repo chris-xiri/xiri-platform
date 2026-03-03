@@ -63,3 +63,21 @@ export const getStatusLabel = (status: string, outreachStatus?: string) => {
         default: return status.replace(/_/g, ' ');
     }
 };
+
+/**
+ * Title-case a capability string.
+ * Handles underscores, hyphens, and camelCase:
+ *   "janitorial"        → "Janitorial"
+ *   "floor-care"        → "Floor Care"
+ *   "post_construction" → "Post Construction"
+ *   "HVAC"              → "HVAC"
+ */
+export const formatCapability = (cap: string): string => {
+    if (!cap) return '';
+    // If it's all uppercase and short (like HVAC), keep as-is
+    if (cap === cap.toUpperCase() && cap.length <= 5) return cap;
+    return cap
+        .replace(/[_-]/g, ' ')          // underscores/hyphens → spaces
+        .replace(/([a-z])([A-Z])/g, '$1 $2')  // camelCase → spaces
+        .replace(/\b\w/g, c => c.toUpperCase()); // capitalize first letter of each word
+};

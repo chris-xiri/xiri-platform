@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check, X, Eye, Briefcase, Zap, Send, Phone, Mail, MousePointerClick, MailOpen, MailCheck, AlertTriangle, Ban, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { getStatusColor, getScoreColor, getStatusLabel } from "./utils";
+import { getStatusColor, getScoreColor, getStatusLabel, formatCapability } from "./utils";
 import { useState } from "react";
 
 interface VendorRowProps {
@@ -156,7 +156,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                             <div className="flex flex-wrap gap-0.5 mt-0.5">
                                 {vendor.capabilities.slice(0, 3).map((cap, i) => (
                                     <span key={i} className="text-[9px] text-muted-foreground bg-muted px-1 py-0 rounded">
-                                        {cap}
+                                        {formatCapability(cap)}
                                     </span>
                                 ))}
                                 {vendor.capabilities.length > 3 && (

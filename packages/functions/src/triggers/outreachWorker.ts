@@ -12,6 +12,16 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
+/** Title-case a capability/specialty string for professional emails. */
+function titleCase(s: string): string {
+    if (!s) return '';
+    if (s === s.toUpperCase() && s.length <= 5) return s; // acronyms like HVAC
+    return s
+        .replace(/[_-]/g, ' ')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/\b\w/g, c => c.toUpperCase());
+}
+
 // Run every minute to check for pending tasks
 // Region must match project config
 export const processOutreachQueue = onSchedule({
@@ -110,8 +120,8 @@ async function handleGenerate(task: QueueItem) {
 
     // Build merge variables from vendor data
     const services = Array.isArray(vendor?.capabilities) && vendor.capabilities.length > 0
-        ? vendor.capabilities.join(', ')
-        : vendor?.specialty || 'Facility Services';
+        ? vendor.capabilities.map(titleCase).join(', ')
+        : titleCase(vendor?.specialty || 'Facility Services');
     const contactName = vendor?.contactName || vendor?.businessName || 'there';
 
     const mergeVars: Record<string, string> = {
@@ -120,7 +130,7 @@ async function handleGenerate(task: QueueItem) {
         city: vendor?.city || 'your area',
         state: vendor?.state || '',
         services,
-        specialty: vendor?.specialty || vendor?.capabilities?.[0] || 'Services',
+        specialty: titleCase(vendor?.specialty || vendor?.capabilities?.[0] || 'Services'),
         onboardingUrl,
     };
 
@@ -351,8 +361,8 @@ async function handleFollowUp(task: QueueItem) {
 
     // Merge vendor data
     const services = Array.isArray(vendor.capabilities) && vendor.capabilities.length > 0
-        ? vendor.capabilities.join(', ')
-        : vendor.specialty || 'Facility Services';
+        ? vendor.capabilities.map(titleCase).join(', ')
+        : titleCase(vendor.specialty || 'Facility Services');
     const contactName = vendor.contactName || vendor.businessName || 'there';
 
     const mergeVars: Record<string, string> = {
@@ -361,7 +371,7 @@ async function handleFollowUp(task: QueueItem) {
         city: vendor.city || 'your area',
         state: vendor.state || '',
         services,
-        specialty: vendor.specialty || vendor.capabilities?.[0] || 'Services',
+        specialty: titleCase(vendor.specialty || vendor.capabilities?.[0] || 'Services'),
         onboardingUrl,
     };
 
