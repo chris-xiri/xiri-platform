@@ -24,13 +24,34 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight, ChevronDown, MapPin } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuCheckboxItem,
+    DropdownMenuTrigger,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight, ChevronDown, MapPin, Settings2, Tag } from "lucide-react";
 import { collection, onSnapshot, query, orderBy, limit, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Lead, LeadStatus } from "@xiri/shared";
+import { Lead, LeadStatus, LeadType } from "@xiri/shared";
 import { useLeadFilter } from "@/hooks/useLeadFilter";
-import { LeadRow } from "./LeadList/LeadRow";
+import { LeadRow, ColumnKey } from "./LeadList/LeadRow";
 import { LeadCard } from "./LeadList/LeadCard";
+
+const COLUMN_LABELS: Record<ColumnKey, string> = {
+    business: 'Business',
+    type: 'Lead Type',
+    contact: 'Contact',
+    location: 'Location',
+    auditTime: 'Audit Time',
+    status: 'Status',
+    source: 'Source',
+    created: 'Created',
+};
+
+const DEFAULT_VISIBLE: ColumnKey[] = ['business', 'type', 'contact', 'location', 'status'];
 
 interface LeadListProps {
     statusFilters?: LeadStatus[];
@@ -47,11 +68,13 @@ export default function LeadList({
     const [loading, setLoading] = useState(true);
     const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
     const [bulkStatus, setBulkStatus] = useState<LeadStatus | "">("");
+    const [bulkLeadType, setBulkLeadType] = useState<LeadType | "">("");
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const PAGE_SIZE = 50;
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
     const [groupByAddress, setGroupByAddress] = useState(true);
+    const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_VISIBLE));
 
     const {
         searchQuery,
@@ -160,6 +183,34 @@ export default function LeadList({
         }
     };
 
+    const handleBulkLeadTypeUpdate = async () => {
+        if (!bulkLeadType || selectedLeads.size === 0) return;
+        try {
+            const batch = writeBatch(db);
+            selectedLeads.forEach(leadId => {
+                const leadRef = doc(db, "leads", leadId);
+                batch.update(leadRef, { leadType: bulkLeadType });
+            });
+            await batch.commit();
+            setSelectedLeads(new Set());
+            setBulkLeadType("");
+        } catch (error) {
+            console.error("Error updating lead types:", error);
+        }
+    };
+
+    const toggleColumn = (col: ColumnKey) => {
+        setVisibleColumns(prev => {
+            const next = new Set(prev);
+            if (next.has(col)) {
+                next.delete(col);
+            } else {
+                next.add(col);
+            }
+            return next;
+        });
+    };
+
     const allSelected = filteredLeads.length > 0 && selectedLeads.size === filteredLeads.length;
     const someSelected = selectedLeads.size > 0 && selectedLeads.size < filteredLeads.length;
 
@@ -255,6 +306,28 @@ export default function LeadList({
                             <Edit className="w-3 h-3 mr-1" />
                             Update Status
                         </Button>
+
+                        <div className="w-px h-6 bg-blue-200 mx-1" />
+
+                        <Select value={bulkLeadType} onValueChange={(value: string) => setBulkLeadType(value as LeadType)}>
+                            <SelectTrigger className="w-[160px] h-8 text-sm">
+                                <SelectValue placeholder="Update type..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="direct">Direct</SelectItem>
+                                <SelectItem value="tenant">Tenant</SelectItem>
+                                <SelectItem value="referral_partnership">Referral Partnership</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            size="sm"
+                            onClick={handleBulkLeadTypeUpdate}
+                            disabled={!bulkLeadType}
+                            className="h-8"
+                        >
+                            <Tag className="w-3 h-3 mr-1" />
+                            Update Type
+                        </Button>
                     </div>
                     <Button
                         size="sm"
@@ -296,6 +369,28 @@ export default function LeadList({
                     )}
                 </div>
                 <div className="flex gap-2 items-center">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
+                                <Settings2 className="w-3.5 h-3.5" />
+                                Columns
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuLabel className="text-xs">Toggle columns</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {(Object.keys(COLUMN_LABELS) as ColumnKey[]).map(col => (
+                                <DropdownMenuCheckboxItem
+                                    key={col}
+                                    checked={visibleColumns.has(col)}
+                                    onCheckedChange={() => toggleColumn(col)}
+                                    className="text-xs"
+                                >
+                                    {COLUMN_LABELS[col]}
+                                </DropdownMenuCheckboxItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     {hasActiveFilters && (
                         <Button
                             variant="ghost"
@@ -334,13 +429,14 @@ export default function LeadList({
                                             />
                                         </TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 w-10 shadow-sm text-center text-xs">#</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Business</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Contact</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Location</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Audit Time</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Status</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Source</TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Created</TableHead>
+                                        {visibleColumns.has('business') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Business</TableHead>}
+                                        {visibleColumns.has('type') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Type</TableHead>}
+                                        {visibleColumns.has('contact') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Contact</TableHead>}
+                                        {visibleColumns.has('location') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Location</TableHead>}
+                                        {visibleColumns.has('auditTime') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Audit Time</TableHead>}
+                                        {visibleColumns.has('status') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Status</TableHead>}
+                                        {visibleColumns.has('source') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Source</TableHead>}
+                                        {visibleColumns.has('created') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Created</TableHead>}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -353,7 +449,7 @@ export default function LeadList({
                                                         }`}
                                                     onClick={() => toggleGroup(group.key)}
                                                 >
-                                                    <TableCell colSpan={9} className="py-1.5 px-3">
+                                                    <TableCell colSpan={visibleColumns.size + 2} className="py-1.5 px-3">
                                                         <div className="flex items-center gap-2">
                                                             <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${collapsedGroups.has(group.key) ? '-rotate-90' : ''}`} />
                                                             <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
@@ -376,6 +472,7 @@ export default function LeadList({
                                                         isSelected={selectedLeads.has(lead.id!)}
                                                         onSelect={(checked) => handleSelectLead(lead.id!, checked)}
                                                         onRowClick={onRowClick}
+                                                        visibleColumns={visibleColumns}
                                                     />
                                                 ))}
                                             </>
@@ -389,6 +486,7 @@ export default function LeadList({
                                                 isSelected={selectedLeads.has(lead.id!)}
                                                 onSelect={(checked) => handleSelectLead(lead.id!, checked)}
                                                 onRowClick={onRowClick}
+                                                visibleColumns={visibleColumns}
                                             />
                                         ))
                                     )}

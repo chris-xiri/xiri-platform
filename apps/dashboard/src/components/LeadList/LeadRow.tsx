@@ -14,12 +14,15 @@ import {
     MapPin
 } from 'lucide-react';
 
+export type ColumnKey = 'business' | 'type' | 'contact' | 'location' | 'auditTime' | 'status' | 'source' | 'created';
+
 interface LeadRowProps {
     lead: Lead;
     index: number;
     isSelected?: boolean;
     onSelect?: (checked: boolean) => void;
     onRowClick?: (id: string) => void;
+    visibleColumns?: Set<ColumnKey>;
 }
 
 const STATUS_COLORS: Record<LeadStatus, string> = {
@@ -48,11 +51,13 @@ const FACILITY_TYPE_LABELS: Record<string, string> = {
     'other': 'Other'
 };
 
-const LEAD_TYPE_BADGE: Record<LeadType, { color: string; label: string } | null> = {
-    'direct': null,  // default — no badge
+const LEAD_TYPE_CONFIG: Record<string, { color: string; label: string }> = {
+    'direct': { color: 'bg-slate-100 text-slate-700 border-slate-200', label: 'Direct' },
     'tenant': { color: 'bg-indigo-100 text-indigo-700 border-indigo-200', label: 'Tenant' },
     'referral_partnership': { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Referral' },
 };
+
+const ALL_COLUMNS = new Set<ColumnKey>(['business', 'type', 'contact', 'location', 'auditTime', 'status', 'source', 'created']);
 
 // Helper to safely convert Firestore Timestamp to Date
 function toDate(value: any): Date | null {
@@ -66,7 +71,7 @@ function toDate(value: any): Date | null {
     }
 }
 
-export function LeadRow({ lead, index, isSelected, onSelect, onRowClick }: LeadRowProps) {
+export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visibleColumns = ALL_COLUMNS }: LeadRowProps) {
     const router = useRouter();
 
     const handleClick = () => {
@@ -82,6 +87,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick }: LeadR
         : null;
 
     const createdDate = toDate(lead.createdAt);
+    const show = (col: ColumnKey) => visibleColumns.has(col);
 
     return (
         <TableRow className="hover:bg-muted/50 transition-colors">
@@ -102,95 +108,118 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick }: LeadR
                 {index + 1}
             </TableCell>
 
-            <TableCell className="cursor-pointer" onClick={handleClick}>
-                <div className="flex flex-col gap-1">
-                    <div className="font-semibold text-sm">{lead.businessName}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Building2 className="w-3 h-3" />
-                        {FACILITY_TYPE_LABELS[lead.facilityType] || lead.facilityType}
-                        {lead.leadType && LEAD_TYPE_BADGE[lead.leadType] && (
-                            <Badge variant="outline" className={`text-[10px] px-1 py-0 ml-1 ${LEAD_TYPE_BADGE[lead.leadType]!.color}`}>
-                                {LEAD_TYPE_BADGE[lead.leadType]!.label}
+            {show('business') && (
+                <TableCell className="cursor-pointer" onClick={handleClick}>
+                    <div className="flex flex-col gap-1">
+                        <div className="font-semibold text-sm">{lead.businessName}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Building2 className="w-3 h-3" />
+                            {FACILITY_TYPE_LABELS[lead.facilityType] || lead.facilityType}
+                        </div>
+                    </div>
+                </TableCell>
+            )}
+
+            {show('type') && (
+                <TableCell className="text-center cursor-pointer" onClick={handleClick}>
+                    {(() => {
+                        const lt = lead.leadType || 'direct';
+                        const cfg = LEAD_TYPE_CONFIG[lt] || LEAD_TYPE_CONFIG['direct'];
+                        return (
+                            <Badge variant="outline" className={`text-xs ${cfg.color}`}>
+                                {cfg.label}
                             </Badge>
+                        );
+                    })()}
+                </TableCell>
+            )}
+
+            {show('contact') && (
+                <TableCell className="cursor-pointer" onClick={handleClick}>
+                    <div className="flex flex-col gap-1">
+                        <div className="text-sm">{lead.contactName}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Mail className="w-3 h-3" />
+                            {lead.email}
+                        </div>
+                        {lead.contactPhone && (
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {lead.contactPhone}
+                            </div>
                         )}
                     </div>
-                </div>
-            </TableCell>
+                </TableCell>
+            )}
 
-            <TableCell className="cursor-pointer" onClick={handleClick}>
-                <div className="flex flex-col gap-1">
-                    <div className="text-sm">{lead.contactName}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        {lead.email}
+            {show('location') && (
+                <TableCell className="cursor-pointer" onClick={handleClick}>
+                    <div className="flex flex-col gap-0.5">
+                        {lead.address && (
+                            <div className="text-xs flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                <span className="line-clamp-1">{lead.address}</span>
+                            </div>
+                        )}
+                        {(lead.city || lead.state || lead.zip) && (
+                            <div className="text-xs text-muted-foreground pl-4">
+                                {[lead.city, lead.state].filter(Boolean).join(', ')}{lead.zip ? ` ${lead.zip}` : ''}
+                            </div>
+                        )}
+                        {!lead.address && !lead.city && lead.zipCode && (
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                ZIP: {lead.zipCode}
+                            </div>
+                        )}
                     </div>
-                    {lead.contactPhone && (
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Phone className="w-3 h-3" />
-                            {lead.contactPhone}
-                        </div>
-                    )}
-                </div>
-            </TableCell>
+                </TableCell>
+            )}
 
-            <TableCell className="cursor-pointer" onClick={handleClick}>
-                <div className="flex flex-col gap-0.5">
-                    {lead.address && (
-                        <div className="text-xs flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                            <span className="line-clamp-1">{lead.address}</span>
+            {show('auditTime') && (
+                <TableCell className="text-center cursor-pointer" onClick={handleClick}>
+                    {firstAuditTime ? (
+                        <div className="flex flex-col gap-1">
+                            <div className="text-xs font-medium flex items-center justify-center gap-1">
+                                <Calendar className="w-3 h-3 text-muted-foreground" />
+                                {format(firstAuditTime, 'MMM d')}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                                {format(firstAuditTime, 'h:mm a')}
+                            </div>
                         </div>
+                    ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
                     )}
-                    {(lead.city || lead.state || lead.zip) && (
-                        <div className="text-xs text-muted-foreground pl-4">
-                            {[lead.city, lead.state].filter(Boolean).join(', ')}{lead.zip ? ` ${lead.zip}` : ''}
-                        </div>
-                    )}
-                    {!lead.address && !lead.city && lead.zipCode && (
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            ZIP: {lead.zipCode}
-                        </div>
-                    )}
-                </div>
-            </TableCell>
+                </TableCell>
+            )}
 
-            <TableCell className="text-center cursor-pointer" onClick={handleClick}>
-                {firstAuditTime ? (
-                    <div className="flex flex-col gap-1">
-                        <div className="text-xs font-medium flex items-center justify-center gap-1">
-                            <Calendar className="w-3 h-3 text-muted-foreground" />
-                            {format(firstAuditTime, 'MMM d')}
-                        </div>
+            {show('status') && (
+                <TableCell className="text-center cursor-pointer" onClick={handleClick}>
+                    <Badge
+                        variant="outline"
+                        className={`text-xs font-medium ${STATUS_COLORS[lead.status]}`}
+                    >
+                        {lead.status}
+                    </Badge>
+                </TableCell>
+            )}
+
+            {show('source') && (
+                <TableCell className="text-center cursor-pointer" onClick={handleClick}>
+                    {lead.attribution?.source && (
                         <div className="text-xs text-muted-foreground">
-                            {format(firstAuditTime, 'h:mm a')}
+                            {lead.attribution.source}
                         </div>
-                    </div>
-                ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                )}
-            </TableCell>
+                    )}
+                </TableCell>
+            )}
 
-            <TableCell className="text-center cursor-pointer" onClick={handleClick}>
-                <Badge
-                    variant="outline"
-                    className={`text-xs font-medium ${STATUS_COLORS[lead.status]}`}
-                >
-                    {lead.status}
-                </Badge>
-            </TableCell>
-
-            <TableCell className="text-center cursor-pointer" onClick={handleClick}>
-                {lead.attribution?.source && (
-                    <div className="text-xs text-muted-foreground">
-                        {lead.attribution.source}
-                    </div>
-                )}
-            </TableCell>
-
-            <TableCell className="text-center text-xs text-muted-foreground cursor-pointer" onClick={handleClick}>
-                {createdDate && format(createdDate, 'MMM d, yyyy')}
-            </TableCell>
+            {show('created') && (
+                <TableCell className="text-center text-xs text-muted-foreground cursor-pointer" onClick={handleClick}>
+                    {createdDate && format(createdDate, 'MMM d, yyyy')}
+                </TableCell>
+            )}
         </TableRow>
     );
 }
