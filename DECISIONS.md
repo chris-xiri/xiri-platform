@@ -104,3 +104,7 @@ Maintained by: @architect-cto
 > - Rationale: The `/partners/[slug]` route (powered by `partnerMarkets.ts`) was a weaker duplicate of the `/contractors/[slug]` route (powered by `dlp-contractors.ts` + `seo-data.json`). The contractors system already generates trade pages, geo pages, keyword/guide pages, AND trade × location cross-product pages — all from the same `seo-data.json` locations array. Keeping both routes fragmented SEO signals and created maintenance overhead. **Deleted**: `/partners`, `/es/partners`, `partnerMarkets.ts`, `lib/seo.ts`. **All location data now lives in one place**: `seo-data.json → locations[]`.
 > - Status: **Active**
 
+> - Date: 2026-03-03
+> - Decision: **Sitemap Trim: ~3,400 → ~1,400 pages (crawl budget)**
+> - Rationale: With 64 locations × 19 services × 15 industries × 6 trades × 12 DLPs, the site generates ~3,400+ pages. Many cross-product pages (Industry×Location, DLP×Location, non-janitorial trade×location) are thin — they reuse the same template content with minimal location variation. To protect Google crawl budget, these ~2,000 pages are **excluded from the sitemap** but remain live and accessible. Google only gets ~1,400 high-quality pages: service×location (enriched), service hubs, industry hubs, janitorial×location, contractor DLPs, and guides.
+> - Status: **Active**

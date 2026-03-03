@@ -25,7 +25,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         sitemapEntries.push({ url: `${BASE_URL}/services/${item.slug}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 });
     });
 
-    // 4. Location Pages (Service × Location + Industry × Location)
+    // 4. Service × Location Pages (core money pages — enriched content)
     const locations = seoData.locations || [];
     services.forEach((service) => {
         locations.forEach((location) => {
@@ -35,14 +35,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
             sitemapEntries.push({ url: `${BASE_URL}/services/${service.slug}-in-${townSlug}-${countySlug}-${stateSlug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 });
         });
     });
-    (seoData.industries || []).forEach((industry) => {
-        locations.forEach((location) => {
-            const countySlug = toSlug(location.region);
-            const townSlug = toSlug(location.name.split(',')[0]);
-            const stateSlug = location.state.toLowerCase();
-            sitemapEntries.push({ url: `${BASE_URL}/services/${industry.slug}-in-${townSlug}-${countySlug}-${stateSlug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 });
-        });
-    });
+    // NOTE: Industry × Location pages (960) excluded from sitemap to protect crawl budget.
+    // Pages still exist and are accessible — just not submitted to Google.
 
     // 5. Solutions — Editorial + DLP + Spoke Hubs
     ['medical-facility-management', 'single-tenant-maintenance', 'vendor-management-alternative'].forEach((slug) => {
@@ -60,19 +54,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
         sitemapEntries.push({ url: `${BASE_URL}/contractors/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
     });
 
-    // 8. Solutions — Niche × Location cross-products
-    Object.keys(DLP_SOLUTIONS).forEach((nicheSlug) => {
-        locations.forEach((location) => {
-            sitemapEntries.push({ url: `${BASE_URL}/solutions/${nicheSlug}-in-${(location as any).slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 });
-        });
-    });
+    // NOTE: Solutions DLP × Location pages (768) excluded from sitemap — thin content.
+    // Pages still exist and are accessible — just not submitted to Google.
 
-    // 9. Contractor — Trade × Location cross-products
-    Object.keys(TRADES).forEach((tradeSlug) => {
+    // 9. Contractor — Janitorial × Location only (focus crawl budget)
+    const SITEMAP_TRADES = ['janitorial-subcontractor'];
+    SITEMAP_TRADES.forEach((tradeSlug) => {
         locations.forEach((location) => {
             sitemapEntries.push({ url: `${BASE_URL}/contractors/${tradeSlug}-in-${(location as any).slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 });
         });
     });
+    // NOTE: Other trades × location (320 pages) excluded from sitemap.
+    // Pages still live — just not submitted to Google.
 
     // 10. Guide Pages
     ['jcaho-cleaning-requirements', 'accreditation-360-preparation-guide', 'commercial-cleaning-cost-guide', 'inhouse-vs-outsourced-facility-management'].forEach((slug) => {
