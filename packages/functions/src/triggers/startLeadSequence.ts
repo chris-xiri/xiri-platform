@@ -118,8 +118,9 @@ export const startLeadSequence = onCall(async (request) => {
         });
     }
 
-    // Update lead
+    // Update lead — mark as contacted and set outreach status
     await db.collection("leads").doc(leadId).update({
+        status: lead.status === 'new' ? 'contacted' : lead.status,
         outreachStatus: 'PENDING',
         sequenceStartedAt: admin.firestore.FieldValue.serverTimestamp(),
         sequenceStartedBy: request.auth?.uid || 'manual',
