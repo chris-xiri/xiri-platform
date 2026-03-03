@@ -17,13 +17,31 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, Loader2, X, Search, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuCheckboxItem,
+    DropdownMenuTrigger,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Users, Loader2, X, Search, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Settings2 } from "lucide-react";
 import { collection, onSnapshot, query, orderBy, limit, doc, updateDoc, serverTimestamp, writeBatch, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Vendor } from "@xiri/shared";
 import { useVendorFilter } from "@/hooks/useVendorFilter";
-import { VendorRow } from "./VendorList/VendorRow";
+import { VendorRow, VendorColumnKey } from "./VendorList/VendorRow";
 import { VendorCard } from "./VendorList/VendorCard";
+
+const VENDOR_COLUMN_LABELS: Record<VendorColumnKey, string> = {
+    vendor: 'Vendor',
+    location: 'Location',
+    score: 'Score',
+    status: 'Status',
+    actions: 'Actions',
+};
+
+const VENDOR_DEFAULT_VISIBLE: VendorColumnKey[] = ['vendor', 'location', 'score', 'status', 'actions'];
 
 interface VendorListProps {
     statusFilters?: string[];
@@ -48,6 +66,15 @@ export default function VendorList({
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [sortField, setSortField] = useState<'name' | 'location' | 'score' | 'status' | null>('score');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+    const [visibleColumns, setVisibleColumns] = useState<Set<VendorColumnKey>>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('vendor-pipeline-columns');
+            if (saved) {
+                try { return new Set(JSON.parse(saved) as VendorColumnKey[]); } catch { }
+            }
+        }
+        return new Set(VENDOR_DEFAULT_VISIBLE);
+    });
 
     const [processedOpen, setProcessedOpen] = useState(false);
 
@@ -274,6 +301,19 @@ export default function VendorList({
     const allSelected = displayVendors.length > 0 && selectedVendors.size === displayVendors.length;
     const someSelected = selectedVendors.size > 0 && selectedVendors.size < displayVendors.length;
 
+    const toggleVendorColumn = (col: VendorColumnKey) => {
+        setVisibleColumns(prev => {
+            const next = new Set(prev);
+            if (next.has(col)) {
+                next.delete(col);
+            } else {
+                next.add(col);
+            }
+            localStorage.setItem('vendor-pipeline-columns', JSON.stringify([...next]));
+            return next;
+        });
+    };
+
     if (loading) {
         return (
             <Card className="shadow-sm h-full flex items-center justify-center border-border bg-card/50 backdrop-blur-sm">
@@ -318,6 +358,28 @@ export default function VendorList({
                     )}
                 </div>
                 <div className="flex gap-2 items-center">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
+                                <Settings2 className="w-3.5 h-3.5" />
+                                Columns
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuLabel className="text-xs">Toggle columns</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {(Object.keys(VENDOR_COLUMN_LABELS) as VendorColumnKey[]).map(col => (
+                                <DropdownMenuCheckboxItem
+                                    key={col}
+                                    checked={visibleColumns.has(col)}
+                                    onCheckedChange={() => toggleVendorColumn(col)}
+                                    className="text-xs"
+                                >
+                                    {VENDOR_COLUMN_LABELS[col]}
+                                </DropdownMenuCheckboxItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
 
 
                     {hasActiveFilters && (
@@ -384,19 +446,19 @@ export default function VendorList({
                                                 aria-label="Select all vendors"
                                             />
                                         </TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-xs cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('name')}>
+                                        {visibleColumns.has('vendor') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-xs cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('name')}>
                                             <span className="flex items-center">Vendor <SortIcon field="name" /></span>
-                                        </TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs hidden lg:table-cell cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('location')}>
+                                        </TableHead>}
+                                        {visibleColumns.has('location') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs hidden lg:table-cell cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('location')}>
                                             <span className="flex items-center justify-center">Location <SortIcon field="location" /></span>
-                                        </TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs w-16 cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('score')}>
+                                        </TableHead>}
+                                        {visibleColumns.has('score') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs w-16 cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('score')}>
                                             <span className="flex items-center justify-center">Score <SortIcon field="score" /></span>
-                                        </TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('status')}>
+                                        </TableHead>}
+                                        {visibleColumns.has('status') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('status')}>
                                             <span className="flex items-center justify-center">Status <SortIcon field="status" /></span>
-                                        </TableHead>
-                                        <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Actions</TableHead>
+                                        </TableHead>}
+                                        {visibleColumns.has('actions') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Actions</TableHead>}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -414,6 +476,7 @@ export default function VendorList({
                                             isActive={selectedVendorId === vendor.id}
                                             isSelected={selectedVendors.has(vendor.id!)}
                                             onSelectChange={(checked: boolean) => handleSelectVendor(vendor.id!, checked)}
+                                            visibleColumns={visibleColumns}
                                         />
                                     ))}
 
@@ -424,7 +487,7 @@ export default function VendorList({
                                                 className="bg-muted/50 hover:bg-muted/60 cursor-pointer border-y border-border"
                                                 onClick={() => setProcessedOpen(!processedOpen)}
                                             >
-                                                <TableCell colSpan={6} className="py-2 text-center text-xs font-medium text-muted-foreground">
+                                                <TableCell colSpan={visibleColumns.size + 1} className="py-2 text-center text-xs font-medium text-muted-foreground">
                                                     {processedOpen ? "Hide" : "Show"} {processedVendors.length} Processed Vendors
                                                 </TableCell>
                                             </TableRow>

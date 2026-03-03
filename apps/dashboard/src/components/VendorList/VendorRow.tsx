@@ -11,6 +11,10 @@ import Link from "next/link";
 import { getStatusColor, getScoreColor, getStatusLabel, formatCapability } from "./utils";
 import { useState } from "react";
 
+export type VendorColumnKey = 'vendor' | 'location' | 'score' | 'status' | 'actions';
+
+const ALL_VENDOR_COLUMNS = new Set<VendorColumnKey>(['vendor', 'location', 'score', 'status', 'actions']);
+
 interface VendorRowProps {
     vendor: Vendor;
     index: number;
@@ -23,6 +27,7 @@ interface VendorRowProps {
     onSelectChange?: (checked: boolean) => void;
     onAddEmailAndRetrigger?: (id: string, email: string) => void;
     onUpdateContact?: (id: string, data: { email?: string; phone?: string }) => void;
+    visibleColumns?: Set<VendorColumnKey>;
 }
 
 // ─── Engagement signal helpers ───
@@ -60,7 +65,7 @@ function timeAgo(timestamp: any): string {
     return `${diffDays}d ago`;
 }
 
-export function VendorRow({ vendor, index, showActions, isRecruitmentMode = false, onUpdateStatus, onSelect, isActive, isSelected, onSelectChange, onAddEmailAndRetrigger, onUpdateContact }: VendorRowProps) {
+export function VendorRow({ vendor, index, showActions, isRecruitmentMode = false, onUpdateStatus, onSelect, isActive, isSelected, onSelectChange, onAddEmailAndRetrigger, onUpdateContact, visibleColumns = ALL_VENDOR_COLUMNS }: VendorRowProps) {
     const isGrayedOut = isRecruitmentMode && (vendor.status || 'pending_review').toLowerCase() !== 'pending_review';
     const [emailInput, setEmailInput] = useState('');
     const [phoneInput, setPhoneInput] = useState('');
@@ -114,6 +119,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
     };
 
     const engagement = getEngagementSignal(vendor);
+    const show = (col: VendorColumnKey) => visibleColumns.has(col);
 
     return (
         <TableRow
@@ -132,177 +138,187 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                 </TableCell>
             )}
             {/* Vendor Name + Contact + Capabilities */}
-            <TableCell className="py-2">
-                <Link href={detailLink} onClick={handleRowClick} className="block group cursor-pointer">
-                    <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1.5">
-                            {/* "New" badge for organic/SEO entries */}
-                            {((vendor.status || '').toLowerCase() === 'new_lead' ||
-                                ((vendor.status || 'pending_review').toLowerCase() === 'pending_review' && !vendor.outreachStatus)) && (
-                                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-emerald-200 px-1 py-0 h-4 text-[9px] gap-0.5 animate-pulse">
-                                        <Sparkles className="w-2.5 h-2.5" />New
-                                    </Badge>
-                                )}
-                            {!isRecruitmentMode && vendor.preferredLanguage === 'es' ? (
-                                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 px-1 py-0 h-4 text-[9px]">ES</Badge>
-                            ) : null}
-                            <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{vendor.businessName}</span>
+            {show('vendor') && (
+                <TableCell className="py-2">
+                    <Link href={detailLink} onClick={handleRowClick} className="block group cursor-pointer">
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5">
+                                {/* "New" badge for organic/SEO entries */}
+                                {((vendor.status || '').toLowerCase() === 'new_lead' ||
+                                    ((vendor.status || 'pending_review').toLowerCase() === 'pending_review' && !vendor.outreachStatus)) && (
+                                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-emerald-200 px-1 py-0 h-4 text-[9px] gap-0.5 animate-pulse">
+                                            <Sparkles className="w-2.5 h-2.5" />New
+                                        </Badge>
+                                    )}
+                                {!isRecruitmentMode && vendor.preferredLanguage === 'es' ? (
+                                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 px-1 py-0 h-4 text-[9px]">ES</Badge>
+                                ) : null}
+                                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{vendor.businessName}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground truncate block">
+                                {vendor.contactName || vendor.email || "No contact info"}
+                            </span>
+                            {/* Inline capabilities */}
+                            {vendor.capabilities?.length > 0 && (
+                                <div className="flex flex-wrap gap-0.5 mt-0.5">
+                                    {vendor.capabilities.slice(0, 3).map((cap, i) => (
+                                        <span key={i} className="text-[9px] text-muted-foreground bg-muted px-1 py-0 rounded">
+                                            {formatCapability(cap)}
+                                        </span>
+                                    ))}
+                                    {vendor.capabilities.length > 3 && (
+                                        <span className="text-[9px] text-muted-foreground">+{vendor.capabilities.length - 3}</span>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                        <span className="text-xs text-muted-foreground truncate block">
-                            {vendor.contactName || vendor.email || "No contact info"}
-                        </span>
-                        {/* Inline capabilities */}
-                        {vendor.capabilities?.length > 0 && (
-                            <div className="flex flex-wrap gap-0.5 mt-0.5">
-                                {vendor.capabilities.slice(0, 3).map((cap, i) => (
-                                    <span key={i} className="text-[9px] text-muted-foreground bg-muted px-1 py-0 rounded">
-                                        {formatCapability(cap)}
-                                    </span>
-                                ))}
-                                {vendor.capabilities.length > 3 && (
-                                    <span className="text-[9px] text-muted-foreground">+{vendor.capabilities.length - 3}</span>
+                    </Link>
+                </TableCell>
+            )}
+            {/* Location (merged City, State, Zip) */}
+            {show('location') && (
+                <TableCell className="py-2 text-center hidden lg:table-cell">
+                    <span className="text-sm">{locationStr}</span>
+                </TableCell>
+            )}
+            {/* AI Score */}
+            {show('score') && (
+                <TableCell className="py-2 text-center w-16">
+                    <div className={`${getScoreColor(vendor.fitScore)} text-xs font-medium`}>
+                        {vendor.fitScore ? `${vendor.fitScore}` : "—"}
+                    </div>
+                </TableCell>
+            )}
+            {/* Status + Engagement Signal */}
+            {show('status') && (
+                <TableCell className="py-2 text-center">
+                    <div className="flex flex-col items-center gap-1">
+                        <Badge className={`${getStatusColor(vendor.status, vendor.outreachStatus)} shadow-none text-[10px] px-1.5 py-0 h-5`}>
+                            {getStatusLabel(vendor.status, vendor.outreachStatus)}
+                        </Badge>
+                        {/* Engagement signal badge */}
+                        {engagement && (
+                            <div className={`inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full border ${engagement.color}`}>
+                                <engagement.icon className="w-3 h-3" />
+                                {engagement.label}
+                                {vendor.emailEngagement?.lastEventAt && (
+                                    <span className="opacity-70">{timeAgo(vendor.emailEngagement.lastEventAt)}</span>
                                 )}
                             </div>
                         )}
                     </div>
-                </Link>
-            </TableCell>
-            {/* Location (merged City, State, Zip) */}
-            <TableCell className="py-2 text-center hidden lg:table-cell">
-                <span className="text-sm">{locationStr}</span>
-            </TableCell>
-            {/* AI Score */}
-            <TableCell className="py-2 text-center w-16">
-                <div className={`${getScoreColor(vendor.fitScore)} text-xs font-medium`}>
-                    {vendor.fitScore ? `${vendor.fitScore}` : "—"}
-                </div>
-            </TableCell>
-            {/* Status + Engagement Signal */}
-            <TableCell className="py-2 text-center">
-                <div className="flex flex-col items-center gap-1">
-                    <Badge className={`${getStatusColor(vendor.status, vendor.outreachStatus)} shadow-none text-[10px] px-1.5 py-0 h-5`}>
-                        {getStatusLabel(vendor.status, vendor.outreachStatus)}
-                    </Badge>
-                    {/* Engagement signal badge */}
-                    {engagement && (
-                        <div className={`inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full border ${engagement.color}`}>
-                            <engagement.icon className="w-3 h-3" />
-                            {engagement.label}
-                            {vendor.emailEngagement?.lastEventAt && (
-                                <span className="opacity-70">{timeAgo(vendor.emailEngagement.lastEventAt)}</span>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </TableCell>
+                </TableCell>
+            )}
             {/* Actions */}
-            <TableCell className="text-right py-2">
-                {isGrayedOut ? (
-                    <Badge variant="outline" className="text-[10px] text-muted-foreground border-slate-300">
-                        Already in CRM
-                    </Badge>
-                ) : showActions && (
-                    <div className="flex justify-end gap-1.5">
-                        {(vendor.status || 'pending_review').toLowerCase() === 'pending_review' ? (
-                            <>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => onUpdateStatus(vendor.id!, 'qualified', { onboardingTrack: 'STANDARD', hasActiveContract: false })}
-                                    className="h-7 px-2 border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white transition-all font-medium text-xs"
-                                    title="Standard Network Invite"
-                                >
-                                    <Check className="w-3 h-3 mr-1" /> Standard
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => onUpdateStatus(vendor.id!, 'qualified', { onboardingTrack: 'FAST_TRACK', hasActiveContract: true })}
-                                    className="h-7 px-2 border-purple-200 text-purple-700 hover:bg-purple-600 hover:text-white transition-all font-medium text-xs"
-                                    title="Urgent Contract Invite"
-                                >
-                                    <Zap className="w-3 h-3 mr-1" /> Urgent
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => onUpdateStatus(vendor.id!, 'rejected')}
-                                    className="h-7 px-2 border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition-all font-medium text-xs"
-                                    title="Reject Vendor"
-                                >
-                                    <X className="w-3 h-3" />
-                                </Button>
-                            </>
-                        ) : showEditEmail && !isRecruitmentMode ? (
-                            /* NEEDS_CONTACT or BOUNCED: show email + phone inputs */
-                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                {showContactInputs ? (
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-1">
-                                            <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                                            <input
-                                                type="email"
-                                                placeholder="email@company.com"
-                                                value={emailInput}
-                                                onChange={(e) => setEmailInput(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') handleSaveContact();
-                                                }}
-                                                className="h-7 px-2 text-xs border border-border rounded-md bg-background text-foreground w-[150px] focus:outline-none focus:ring-1 focus:ring-primary"
-                                                autoFocus
-                                            />
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                                            <input
-                                                type="tel"
-                                                placeholder="(555) 123-4567"
-                                                value={phoneInput}
-                                                onChange={(e) => setPhoneInput(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') handleSaveContact();
-                                                }}
-                                                className="h-7 px-2 text-xs border border-border rounded-md bg-background text-foreground w-[150px] focus:outline-none focus:ring-1 focus:ring-primary"
-                                            />
-                                        </div>
-                                        <div className="flex justify-end gap-1">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={!emailInput.includes('@') && !phoneInput.trim()}
-                                                onClick={handleSaveContact}
-                                                className="h-6 px-2 border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white text-[10px]"
-                                            >
-                                                <Send className="w-3 h-3 mr-0.5" /> Save
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => { setShowContactInputs(false); setEmailInput(''); setPhoneInput(''); }}
-                                                className="h-6 px-1.5 text-muted-foreground text-[10px]"
-                                            >
-                                                <X className="w-3 h-3" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ) : (
+            {show('actions') && (
+                <TableCell className="text-right py-2">
+                    {isGrayedOut ? (
+                        <Badge variant="outline" className="text-[10px] text-muted-foreground border-slate-300">
+                            Already in CRM
+                        </Badge>
+                    ) : showActions && (
+                        <div className="flex justify-end gap-1.5">
+                            {(vendor.status || 'pending_review').toLowerCase() === 'pending_review' ? (
+                                <>
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => setShowContactInputs(true)}
-                                        className={`h-7 px-2 text-xs font-medium ${isBounced
-                                            ? 'border-red-200 text-red-700 hover:bg-red-600 hover:text-white'
-                                            : 'border-amber-200 text-amber-700 hover:bg-amber-600 hover:text-white'
-                                            }`}
+                                        onClick={() => onUpdateStatus(vendor.id!, 'qualified', { onboardingTrack: 'STANDARD', hasActiveContract: false })}
+                                        className="h-7 px-2 border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white transition-all font-medium text-xs"
+                                        title="Standard Network Invite"
                                     >
-                                        <Send className="w-3 h-3 mr-1" /> {isBounced ? 'Fix Email' : 'Add Contact'}
+                                        <Check className="w-3 h-3 mr-1" /> Standard
                                     </Button>
-                                )}
-                            </div>
-                        ) : null}
-                    </div>
-                )}
-            </TableCell>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onUpdateStatus(vendor.id!, 'qualified', { onboardingTrack: 'FAST_TRACK', hasActiveContract: true })}
+                                        className="h-7 px-2 border-purple-200 text-purple-700 hover:bg-purple-600 hover:text-white transition-all font-medium text-xs"
+                                        title="Urgent Contract Invite"
+                                    >
+                                        <Zap className="w-3 h-3 mr-1" /> Urgent
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onUpdateStatus(vendor.id!, 'rejected')}
+                                        className="h-7 px-2 border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition-all font-medium text-xs"
+                                        title="Reject Vendor"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </Button>
+                                </>
+                            ) : showEditEmail && !isRecruitmentMode ? (
+                                /* NEEDS_CONTACT or BOUNCED: show email + phone inputs */
+                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                    {showContactInputs ? (
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-center gap-1">
+                                                <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                                <input
+                                                    type="email"
+                                                    placeholder="email@company.com"
+                                                    value={emailInput}
+                                                    onChange={(e) => setEmailInput(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') handleSaveContact();
+                                                    }}
+                                                    className="h-7 px-2 text-xs border border-border rounded-md bg-background text-foreground w-[150px] focus:outline-none focus:ring-1 focus:ring-primary"
+                                                    autoFocus
+                                                />
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                                <input
+                                                    type="tel"
+                                                    placeholder="(555) 123-4567"
+                                                    value={phoneInput}
+                                                    onChange={(e) => setPhoneInput(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') handleSaveContact();
+                                                    }}
+                                                    className="h-7 px-2 text-xs border border-border rounded-md bg-background text-foreground w-[150px] focus:outline-none focus:ring-1 focus:ring-primary"
+                                                />
+                                            </div>
+                                            <div className="flex justify-end gap-1">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={!emailInput.includes('@') && !phoneInput.trim()}
+                                                    onClick={handleSaveContact}
+                                                    className="h-6 px-2 border-blue-200 text-blue-700 hover:bg-blue-600 hover:text-white text-[10px]"
+                                                >
+                                                    <Send className="w-3 h-3 mr-0.5" /> Save
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => { setShowContactInputs(false); setEmailInput(''); setPhoneInput(''); }}
+                                                    className="h-6 px-1.5 text-muted-foreground text-[10px]"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setShowContactInputs(true)}
+                                            className={`h-7 px-2 text-xs font-medium ${isBounced
+                                                ? 'border-red-200 text-red-700 hover:bg-red-600 hover:text-white'
+                                                : 'border-amber-200 text-amber-700 hover:bg-amber-600 hover:text-white'
+                                                }`}
+                                        >
+                                            <Send className="w-3 h-3 mr-1" /> {isBounced ? 'Fix Email' : 'Add Contact'}
+                                        </Button>
+                                    )}
+                                </div>
+                            ) : null}
+                        </div>
+                    )}
+                </TableCell>
+            )}
         </TableRow>
     );
 }
