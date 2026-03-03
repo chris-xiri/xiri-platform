@@ -115,6 +115,11 @@ export default function TemplateAnalyticsPage() {
     const [loading, setLoading] = useState(true);
     const [optimizing, setOptimizing] = useState<string | null>(null);
     const [applying, setApplying] = useState<string | null>(null);
+    const [reordering, setReordering] = useState(false);
+    const [pipelineOrderKeys, setPipelineOrderKeys] = useState<string[]>(() => {
+        if (typeof window === 'undefined') return ['tenant', 'referral', 'enterprise'];
+        return JSON.parse(localStorage.getItem('lead-pipeline-order') || 'null') || ['tenant', 'referral', 'enterprise'];
+    });
 
     useEffect(() => { fetchTemplates(); }, []);
 
@@ -156,8 +161,7 @@ export default function TemplateAnalyticsPage() {
         await fetchTemplates();
     }
 
-    if (loading) return <div className="p-8 text-center text-muted-foreground">Loading templates...</div>;
-
+    // ── Build pipelines ──
     const vendorPipeline = buildPipeline(templates, 'vendor_outreach_');
     const tenantPipeline = buildPipeline(templates, 'tenant_lead_');
     const referralPipeline = buildPipeline(templates, 'referral_partnership_');
@@ -165,49 +169,38 @@ export default function TemplateAnalyticsPage() {
 
     const hasLeadTemplates = tenantPipeline.length > 0 || referralPipeline.length > 0 || enterprisePipeline.length > 0;
 
-    // ── Pipeline sections as data ──
     type PipelineItem = { key: string; title: string; icon: React.ReactNode; pipeline: StepGroup[]; emptyLabel?: string; emptyHint?: string; badge?: string };
 
-    const allLeadPipelines: PipelineItem[] = [
-        { key: 'tenant', title: 'Tenant Lead Outreach', icon: <Building2 className="w-5 h-5" />, pipeline: tenantPipeline },
-        { key: 'referral', title: 'Referral Partnerships', icon: <Handshake className="w-5 h-5" />, pipeline: referralPipeline },
-        { key: 'enterprise', title: 'Enterprise Outreach', icon: <Landmark className="w-5 h-5" />, pipeline: enterprisePipeline, emptyLabel: 'Enterprise Outreach', emptyHint: 'node scripts/seed-enterprise-lead-templates.js', badge: '5-step drip' },
-    ];
+    const pipelineMap: Record<string, PipelineItem> = {
+        tenant: { key: 'tenant', title: 'Tenant Lead Outreach', icon: <Building2 className="w-5 h-5" />, pipeline: tenantPipeline },
+        referral: { key: 'referral', title: 'Referral Partnerships', icon: <Handshake className="w-5 h-5" />, pipeline: referralPipeline },
+        enterprise: { key: 'enterprise', title: 'Enterprise Outreach', icon: <Landmark className="w-5 h-5" />, pipeline: enterprisePipeline, emptyLabel: 'Enterprise Outreach', emptyHint: 'node scripts/seed-enterprise-lead-templates.js', badge: '5-step drip' },
+    };
 
-    // Load persisted order
-    const savedOrder = typeof window !== 'undefined'
-        ? JSON.parse(localStorage.getItem('lead-pipeline-order') || 'null')
-        : null;
-
-    const orderedLeadPipelines = savedOrder
-        ? savedOrder
-            .map((key: string) => allLeadPipelines.find(p => p.key === key))
-            .filter(Boolean)
-            .concat(allLeadPipelines.filter(p => !savedOrder.includes(p.key)))
-        : allLeadPipelines;
-
-    // Reorder state
-    const [reordering, setReordering] = useState(false);
-    const [pipelineOrder, setPipelineOrder] = useState<PipelineItem[]>(orderedLeadPipelines);
+    const orderedPipelines = pipelineOrderKeys
+        .map(key => pipelineMap[key])
+        .filter(Boolean);
 
     const movePipeline = (index: number, direction: 'up' | 'down') => {
-        const newOrder = [...pipelineOrder];
+        const newOrder = [...pipelineOrderKeys];
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
         if (targetIndex < 0 || targetIndex >= newOrder.length) return;
         [newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]];
-        setPipelineOrder(newOrder);
+        setPipelineOrderKeys(newOrder);
     };
 
     const saveOrder = () => {
-        const keys = pipelineOrder.map(p => p.key);
-        localStorage.setItem('lead-pipeline-order', JSON.stringify(keys));
+        localStorage.setItem('lead-pipeline-order', JSON.stringify(pipelineOrderKeys));
         setReordering(false);
     };
 
     const cancelReorder = () => {
-        setPipelineOrder(orderedLeadPipelines);
+        const saved = JSON.parse(localStorage.getItem('lead-pipeline-order') || 'null') || ['tenant', 'referral', 'enterprise'];
+        setPipelineOrderKeys(saved);
         setReordering(false);
     };
+
+    if (loading) return <div className="p-8 text-center text-muted-foreground">Loading templates...</div>;
 
     return (
         <div className="space-y-6">
@@ -256,7 +249,7 @@ export default function TemplateAnalyticsPage() {
                     )}
 
                     {/* Pipeline Sections */}
-                    {pipelineOrder.map((item, index) => (
+                    {orderedPipelines.map((item: PipelineItem, index: number) => (
                         <div key={item.key} className={`relative ${reordering ? 'ring-1 ring-border rounded-lg p-1 transition-all' : ''}`}>
                             {reordering && (
                                 <div className="flex items-center justify-end gap-1 mb-2 pr-1">
@@ -273,7 +266,7 @@ export default function TemplateAnalyticsPage() {
                                         variant="ghost"
                                         size="icon"
                                         className="h-7 w-7"
-                                        disabled={index === pipelineOrder.length - 1}
+                                        disabled={index === orderedPipelines.length - 1}
                                         onClick={() => movePipeline(index, 'down')}
                                     >
                                         <ChevronDown className="w-4 h-4" />
