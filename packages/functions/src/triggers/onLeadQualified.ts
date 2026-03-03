@@ -57,22 +57,21 @@ export const onLeadQualified = onDocumentUpdated({
     const leadType = after.leadType || 'direct';
 
     // ── Different sequences per lead type ──
-    let steps: { dayOffset: number; sequence: number; subject: string; type: string }[];
+    // Subjects come from the Firestore `templates` collection at send time
+    let steps: { dayOffset: number; sequence: number }[];
 
     if (leadType === 'referral_partnership') {
-        // Static template sequence for CRE broker partnerships
         steps = [
-            { dayOffset: 0, sequence: 0, subject: 'Referral Partnership — XIRI Facility Solutions', type: 'SEND' },
-            { dayOffset: 4, sequence: 1, subject: 'Following up — Referral Partnership', type: 'SEND' },
-            { dayOffset: 10, sequence: 2, subject: 'Final check-in — Partnership Opportunity', type: 'SEND' },
+            { dayOffset: 0, sequence: 0 },
+            { dayOffset: 4, sequence: 1 },
+            { dayOffset: 10, sequence: 2 },
         ];
     } else {
-        // Static template sequence for direct/tenant leads
         steps = [
-            { dayOffset: 0, sequence: 0, subject: 'Facility Services for your practice', type: 'SEND' },
-            { dayOffset: 3, sequence: 1, subject: 'Quick follow-up — saving 15+ hours/month', type: 'SEND' },
-            { dayOffset: 7, sequence: 2, subject: 'How practices like yours made the switch', type: 'SEND' },
-            { dayOffset: 14, sequence: 3, subject: 'Last check-in — free walkthrough offer', type: 'SEND' },
+            { dayOffset: 0, sequence: 0 },
+            { dayOffset: 3, sequence: 1 },
+            { dayOffset: 7, sequence: 2 },
+            { dayOffset: 14, sequence: 3 },
         ];
     }
 
@@ -96,7 +95,6 @@ export const onLeadQualified = onDocumentUpdated({
             scheduledAt: admin.firestore.Timestamp.fromDate(sendAt),
             metadata: {
                 sequence: step.sequence,
-                subject: step.subject,
                 businessName,
                 email: contactEmail,
                 contactName: after.contactName || '',
