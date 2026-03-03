@@ -91,3 +91,12 @@ Maintained by: @architect-cto
 > - Decision: **Structured Address Fields with Google Places Autocomplete**
 > - Rationale: All addresses (Leads, Vendors, Locations) must be stored as **four separate fields**: `address` (street line, including suite/unit), `city`, `state` (2-letter abbreviation), and `zip`. A single concatenated address string is never acceptable. On input, use **Google Places Autocomplete** (`react-google-places-autocomplete` + `google.maps.Geocoder`) — selecting a place auto-fills all four fields, which remain individually editable. The `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` env var is required. For bulk/scraped data, use the ZIP code to look up city and state (via `zippopotam.us` or similar API) rather than regex-parsing concatenated strings.
 > - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **SEO Expansion: Programmatic Pages by County**
+> - Rationale: Programmatic SEO coverage is expanded county-by-county. To add a new county (e.g., Suffolk, Queens), update these **three files**:
+>   1. **`apps/public-site/data/validZips.ts`** — Add all ZIP codes for the county to `ALPHA_ZIPS`. This controls the geofence for the audit wizard lead form (`isValidZip()`). Nassau County has ~110 ZIPs.
+>   2. **`apps/public-site/data/partnerMarkets.ts`** — Add town entries to `NASSAU_HUBS` (rename to a generic array if multi-county). Each entry generates a `/partners/janitorial-in-{town}-{county}-ny` SSG page for contractor recruiting, plus a Spanish translation at `/es/partners/...`. Nassau County has ~95 towns.
+>   3. **`apps/public-site/data/seo-data.json`** → `locations[]` — Add location objects with `slug`, `name`, `latitude`, `longitude`, `population`, `medicalDensity`, `keyIntersection`, `localInsight`, `zipCodes`, `landmarks`, `nearbyCities`, `facilityTypes`, `complianceNote`, `serviceChallenges`, `whyXiri`, and `localFaqs`. These power the `/services/[slug]` location variants. The script `scripts/expand-nassau-locations.js` is the reference for bulk generation.
+>   The `PartnerMarket` interface in `@xiri/shared` supports `county: 'nassau' | 'suffolk' | 'queens'` — add new county values to the union type when expanding.
+> - Status: **Active (Nassau County complete)**

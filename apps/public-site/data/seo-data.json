@@ -1879,6 +1879,2763 @@
           "answer": "We work around your schedule. Many New Hyde Park practices run until 9pm — our teams arrive after close and complete their work before your first patient arrives the next morning."
         }
       ]
+    },
+    {
+      "slug": "albertson-ny",
+      "name": "Albertson, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7715,
+      "longitude": -73.6432,
+      "population": "5,000+",
+      "medicalDensity": "Medical offices along Willis Ave",
+      "keyIntersection": "Willis Ave & Roslyn Rd",
+      "localInsight": "A small but active village with professional offices and medical practices serving the Roslyn-Mineola corridor.",
+      "zipCodes": [
+        "11507"
+      ],
+      "landmarks": [
+        "Albertson LIRR Station",
+        "Searingtown Rd Shops"
+      ],
+      "nearbyCities": [
+        "Roslyn",
+        "Mineola",
+        "Williston Park"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Albertson area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Albertson?",
+          "answer": "Yes. We actively serve facilities in Albertson and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Albertson?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Albertson."
+        }
+      ]
+    },
+    {
+      "slug": "atlantic-beach-ny",
+      "name": "Atlantic Beach, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.5885,
+      "longitude": -73.7293,
+      "population": "1,900+",
+      "medicalDensity": "Small community practices",
+      "keyIntersection": "Park St & Atlantic Blvd",
+      "localInsight": "A barrier island community with seasonal population swings demanding flexible facility service schedules.",
+      "zipCodes": [
+        "11509"
+      ],
+      "landmarks": [
+        "Atlantic Beach Bridge",
+        "Oceanfront Boardwalk"
+      ],
+      "nearbyCities": [
+        "Long Beach",
+        "Island Park",
+        "Lawrence"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Atlantic Beach area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Atlantic Beach?",
+          "answer": "Yes. We actively serve facilities in Atlantic Beach and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Atlantic Beach?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Atlantic Beach."
+        }
+      ]
+    },
+    {
+      "slug": "baldwin-ny",
+      "name": "Baldwin, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6565,
+      "longitude": -73.6096,
+      "population": "24,000+",
+      "medicalDensity": "10+ medical offices along Grand Ave",
+      "keyIntersection": "Grand Ave & Sunrise Hwy",
+      "localInsight": "A large South Shore hamlet with a thriving Grand Ave commercial district and growing medical corridor.",
+      "zipCodes": [
+        "11510"
+      ],
+      "landmarks": [
+        "Baldwin LIRR Station",
+        "Grand Ave Shopping District"
+      ],
+      "nearbyCities": [
+        "Freeport",
+        "Oceanside",
+        "Roosevelt"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Baldwin area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Baldwin?",
+          "answer": "Yes. We actively serve facilities in Baldwin and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Baldwin?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Baldwin."
+        }
+      ]
+    },
+    {
+      "slug": "bayville-ny",
+      "name": "Bayville, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.9065,
+      "longitude": -73.5622,
+      "population": "6,700+",
+      "medicalDensity": "Village practices and waterfront businesses",
+      "keyIntersection": "Bayville Ave & School St",
+      "localInsight": "A North Shore waterfront village requiring specialized attention to salt-air building maintenance and seasonal tourism traffic.",
+      "zipCodes": [
+        "11709"
+      ],
+      "landmarks": [
+        "Bayville Waterfront District",
+        "Stehli Beach"
+      ],
+      "nearbyCities": [
+        "Locust Valley",
+        "Oyster Bay",
+        "Glen Cove"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Bayville area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Bayville?",
+          "answer": "Yes. We actively serve facilities in Bayville and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Bayville?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Bayville."
+        }
+      ]
+    },
+    {
+      "slug": "bellmore-ny",
+      "name": "Bellmore, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6687,
+      "longitude": -73.5268,
+      "population": "16,000+",
+      "medicalDensity": "Medical offices along Sunrise Hwy",
+      "keyIntersection": "Sunrise Hwy & Bedford Ave",
+      "localInsight": "A busy South Shore hamlet with a dense Sunrise Highway commercial strip and growing healthcare presence.",
+      "zipCodes": [
+        "11710"
+      ],
+      "landmarks": [
+        "Bellmore LIRR Station",
+        "Sunrise Highway Commercial"
+      ],
+      "nearbyCities": [
+        "Merrick",
+        "Wantagh",
+        "North Bellmore"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Bellmore area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Bellmore?",
+          "answer": "Yes. We actively serve facilities in Bellmore and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Bellmore?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Bellmore."
+        }
+      ]
+    },
+    {
+      "slug": "bethpage-ny",
+      "name": "Bethpage, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7443,
+      "longitude": -73.4837,
+      "population": "16,500+",
+      "medicalDensity": "Professional offices along Broadway",
+      "keyIntersection": "Broadway & Stewart Ave",
+      "localInsight": "Historic Grumman aviation hub now home to a mix of corporate offices, light manufacturing, and professional practices.",
+      "zipCodes": [
+        "11714"
+      ],
+      "landmarks": [
+        "Bethpage State Park",
+        "Grumman Heritage Site"
+      ],
+      "nearbyCities": [
+        "Hicksville",
+        "Farmingdale",
+        "Plainview"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Bethpage area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Bethpage?",
+          "answer": "Yes. We actively serve facilities in Bethpage and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Bethpage?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Bethpage."
+        }
+      ]
+    },
+    {
+      "slug": "carle-place-ny",
+      "name": "Carle Place, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7523,
+      "longitude": -73.6107,
+      "population": "5,200+",
+      "medicalDensity": "Offices near Roosevelt Field",
+      "keyIntersection": "Old Country Rd & Glen Cove Rd",
+      "localInsight": "Adjacent to Roosevelt Field Mall, Carle Place is a compact community with significant commercial and office space.",
+      "zipCodes": [
+        "11514"
+      ],
+      "landmarks": [
+        "Roosevelt Field Mall Vicinity",
+        "Carle Place LIRR"
+      ],
+      "nearbyCities": [
+        "Westbury",
+        "Garden City",
+        "Mineola"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Carle Place area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Carle Place?",
+          "answer": "Yes. We actively serve facilities in Carle Place and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Carle Place?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Carle Place."
+        }
+      ]
+    },
+    {
+      "slug": "cedarhurst-ny",
+      "name": "Cedarhurst, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.624,
+      "longitude": -73.7243,
+      "population": "6,600+",
+      "medicalDensity": "Five Towns medical corridor",
+      "keyIntersection": "Central Ave & Cedarhurst Ave",
+      "localInsight": "Heart of the Five Towns with a vibrant Central Ave shopping district and dense medical office presence.",
+      "zipCodes": [
+        "11516"
+      ],
+      "landmarks": [
+        "Cedarhurst Village Center",
+        "Central Ave Shopping"
+      ],
+      "nearbyCities": [
+        "Lawrence",
+        "Hewlett",
+        "Woodmere"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Cedarhurst area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Cedarhurst?",
+          "answer": "Yes. We actively serve facilities in Cedarhurst and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Cedarhurst?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Cedarhurst."
+        }
+      ]
+    },
+    {
+      "slug": "east-meadow-ny",
+      "name": "East Meadow, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7137,
+      "longitude": -73.559,
+      "population": "38,000+",
+      "medicalDensity": "15+ facilities near Nassau University Medical Center",
+      "keyIntersection": "Hempstead Tpke & Newbridge Rd",
+      "localInsight": "One of Nassau's largest hamlets anchored by Nassau University Medical Center and Eisenhower Park, with extensive medical and commercial activity.",
+      "zipCodes": [
+        "11518",
+        "11554"
+      ],
+      "landmarks": [
+        "Nassau University Medical Center",
+        "Eisenhower Park"
+      ],
+      "nearbyCities": [
+        "Uniondale",
+        "Levittown",
+        "Hempstead"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the East Meadow area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in East Meadow?",
+          "answer": "Yes. We actively serve facilities in East Meadow and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in East Meadow?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout East Meadow."
+        }
+      ]
+    },
+    {
+      "slug": "east-rockaway-ny",
+      "name": "East Rockaway, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6415,
+      "longitude": -73.6685,
+      "population": "10,000+",
+      "medicalDensity": "Local medical practices",
+      "keyIntersection": "Main St & Atlantic Ave",
+      "localInsight": "A compact village with professional services and proximity to larger medical hubs in Rockville Centre.",
+      "zipCodes": [
+        "11518"
+      ],
+      "landmarks": [
+        "East Rockaway LIRR Station",
+        "Atlantic Ave"
+      ],
+      "nearbyCities": [
+        "Lynbrook",
+        "Rockville Centre",
+        "Oceanside"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the East Rockaway area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in East Rockaway?",
+          "answer": "Yes. We actively serve facilities in East Rockaway and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in East Rockaway?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout East Rockaway."
+        }
+      ]
+    },
+    {
+      "slug": "elmont-ny",
+      "name": "Elmont, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7004,
+      "longitude": -73.7129,
+      "population": "36,000+",
+      "medicalDensity": "Medical offices along Hempstead Tpke",
+      "keyIntersection": "Hempstead Tpke & Elmont Rd",
+      "localInsight": "A large western Nassau hamlet home to Belmont Park and UBS Arena, with growing commercial and medical facility demand.",
+      "zipCodes": [
+        "11003"
+      ],
+      "landmarks": [
+        "Belmont Park / UBS Arena",
+        "Elmont Rd Corridor"
+      ],
+      "nearbyCities": [
+        "Franklin Square",
+        "Floral Park",
+        "Valley Stream"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Elmont area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Elmont?",
+          "answer": "Yes. We actively serve facilities in Elmont and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Elmont?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Elmont."
+        }
+      ]
+    },
+    {
+      "slug": "farmingdale-ny",
+      "name": "Farmingdale, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7326,
+      "longitude": -73.4454,
+      "population": "8,900+",
+      "medicalDensity": "Industrial and office parks on Rt 110",
+      "keyIntersection": "Route 110 & Conklin St",
+      "localInsight": "An eastern Nassau hub with the Route 110 industrial corridor, Republic Airport, and a revitalized Main Street village.",
+      "zipCodes": [
+        "11735",
+        "11736"
+      ],
+      "landmarks": [
+        "Republic Airport",
+        "Route 110 Industrial Corridor"
+      ],
+      "nearbyCities": [
+        "Bethpage",
+        "Massapequa",
+        "Plainview"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Farmingdale area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Farmingdale?",
+          "answer": "Yes. We actively serve facilities in Farmingdale and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Farmingdale?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Farmingdale."
+        }
+      ]
+    },
+    {
+      "slug": "floral-park-ny",
+      "name": "Floral Park, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7234,
+      "longitude": -73.7037,
+      "population": "16,000+",
+      "medicalDensity": "Medical offices along Jericho Tpke",
+      "keyIntersection": "Tulip Ave & Jericho Tpke",
+      "localInsight": "A charming western Nassau village where residential character meets a growing corridor along Jericho Turnpike.",
+      "zipCodes": [
+        "11001",
+        "11002",
+        "11005"
+      ],
+      "landmarks": [
+        "Floral Park LIRR Station",
+        "Tulip Ave Village"
+      ],
+      "nearbyCities": [
+        "New Hyde Park",
+        "Elmont",
+        "Franklin Square"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Floral Park area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Floral Park?",
+          "answer": "Yes. We actively serve facilities in Floral Park and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Floral Park?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Floral Park."
+        }
+      ]
+    },
+    {
+      "slug": "franklin-square-ny",
+      "name": "Franklin Square, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7068,
+      "longitude": -73.6754,
+      "population": "29,000+",
+      "medicalDensity": "10+ medical offices along Hempstead Tpke",
+      "keyIntersection": "Hempstead Tpke & Franklin Ave",
+      "localInsight": "A densely populated hamlet with significant commercial activity along Hempstead Turnpike.",
+      "zipCodes": [
+        "11010"
+      ],
+      "landmarks": [
+        "Hempstead Tpke Retail Corridor",
+        "Franklin Ave Commercial"
+      ],
+      "nearbyCities": [
+        "Elmont",
+        "Garden City",
+        "West Hempstead"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Franklin Square area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Franklin Square?",
+          "answer": "Yes. We actively serve facilities in Franklin Square and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Franklin Square?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Franklin Square."
+        }
+      ]
+    },
+    {
+      "slug": "freeport-ny",
+      "name": "Freeport, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6576,
+      "longitude": -73.5832,
+      "population": "43,000+",
+      "medicalDensity": "Medical offices and urgent care centers",
+      "keyIntersection": "Sunrise Hwy & Main St",
+      "localInsight": "A major South Shore village with the iconic Nautical Mile, extensive commercial districts, and large resident population.",
+      "zipCodes": [
+        "11520"
+      ],
+      "landmarks": [
+        "Nautical Mile",
+        "Freeport LIRR Station"
+      ],
+      "nearbyCities": [
+        "Baldwin",
+        "Merrick",
+        "Roosevelt"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Freeport area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Freeport?",
+          "answer": "Yes. We actively serve facilities in Freeport and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Freeport?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Freeport."
+        }
+      ]
+    },
+    {
+      "slug": "garden-city-ny",
+      "name": "Garden City, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7268,
+      "longitude": -73.6343,
+      "population": "22,000+",
+      "medicalDensity": "15+ medical offices along Franklin Ave",
+      "keyIntersection": "Franklin Ave & Old Country Rd",
+      "localInsight": "An affluent planned village with Roosevelt Field Mall, Adelphi University, and a prestigious Franklin Ave business district.",
+      "zipCodes": [
+        "11530",
+        "11535",
+        "11536"
+      ],
+      "landmarks": [
+        "Roosevelt Field Mall",
+        "Adelphi University",
+        "Garden City Hotel"
+      ],
+      "nearbyCities": [
+        "Mineola",
+        "Hempstead",
+        "Westbury"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Garden City area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Garden City?",
+          "answer": "Yes. We actively serve facilities in Garden City and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Garden City?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Garden City."
+        }
+      ]
+    },
+    {
+      "slug": "glen-cove-ny",
+      "name": "Glen Cove, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.8623,
+      "longitude": -73.6337,
+      "population": "27,000+",
+      "medicalDensity": "10+ medical facilities downtown",
+      "keyIntersection": "Glen Cove Ave & Glen St",
+      "localInsight": "One of two cities in Nassau County, Glen Cove has a revitalized waterfront and diverse facility service needs.",
+      "zipCodes": [
+        "11542"
+      ],
+      "landmarks": [
+        "Glen Cove Downtown",
+        "Morgan Park",
+        "Garvies Point"
+      ],
+      "nearbyCities": [
+        "Sea Cliff",
+        "Locust Valley",
+        "Glen Head"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Glen Cove area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Glen Cove?",
+          "answer": "Yes. We actively serve facilities in Glen Cove and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Glen Cove?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Glen Cove."
+        }
+      ]
+    },
+    {
+      "slug": "glen-head-ny",
+      "name": "Glen Head, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.8348,
+      "longitude": -73.6249,
+      "population": "4,700+",
+      "medicalDensity": "Professional offices along Glen Cove Rd",
+      "keyIntersection": "Glen Cove Rd & Railroad Ave",
+      "localInsight": "A North Shore hamlet with professional offices and proximity to Glen Cove and Greenvale business centers.",
+      "zipCodes": [
+        "11545"
+      ],
+      "landmarks": [
+        "Glen Head LIRR Station",
+        "Glen Cove Rd Shops"
+      ],
+      "nearbyCities": [
+        "Glen Cove",
+        "Greenvale",
+        "Roslyn"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Glen Head area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Glen Head?",
+          "answer": "Yes. We actively serve facilities in Glen Head and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Glen Head?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Glen Head."
+        }
+      ]
+    },
+    {
+      "slug": "greenvale-ny",
+      "name": "Greenvale, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.8104,
+      "longitude": -73.6282,
+      "population": "2,100+",
+      "medicalDensity": "Campus-adjacent offices",
+      "keyIntersection": "Northern Blvd & Glen Cove Rd",
+      "localInsight": "Home to LIU Post campus, Greenvale has a mix of academic, professional, and commercial facility needs.",
+      "zipCodes": [
+        "11548"
+      ],
+      "landmarks": [
+        "LIU Post Campus",
+        "Northern Blvd Shops"
+      ],
+      "nearbyCities": [
+        "Glen Head",
+        "Roslyn",
+        "Brookville"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Greenvale area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Greenvale?",
+          "answer": "Yes. We actively serve facilities in Greenvale and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Greenvale?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Greenvale."
+        }
+      ]
+    },
+    {
+      "slug": "hempstead-ny",
+      "name": "Hempstead, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7062,
+      "longitude": -73.6187,
+      "population": "55,000+",
+      "medicalDensity": "20+ medical facilities near Hofstra",
+      "keyIntersection": "Fulton Ave & Main St",
+      "localInsight": "The largest village in Nassau and one of the most populous in the US, Hempstead is a major commercial and transportation hub.",
+      "zipCodes": [
+        "11550",
+        "11551",
+        "11549"
+      ],
+      "landmarks": [
+        "Hofstra University",
+        "Hempstead Village Center",
+        "Hempstead Transit Hub"
+      ],
+      "nearbyCities": [
+        "West Hempstead",
+        "Uniondale",
+        "Garden City"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Hempstead area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Hempstead?",
+          "answer": "Yes. We actively serve facilities in Hempstead and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Hempstead?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Hempstead."
+        }
+      ]
+    },
+    {
+      "slug": "hewlett-ny",
+      "name": "Hewlett, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.639,
+      "longitude": -73.6935,
+      "population": "7,000+",
+      "medicalDensity": "Five Towns medical practices",
+      "keyIntersection": "Broadway & Franklin Ave",
+      "localInsight": "Part of the Five Towns with upscale professional and medical offices serving the South Shore corridor.",
+      "zipCodes": [
+        "11557"
+      ],
+      "landmarks": [
+        "Hewlett LIRR Station",
+        "Broadway Shopping"
+      ],
+      "nearbyCities": [
+        "Woodmere",
+        "Cedarhurst",
+        "Lawrence"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Hewlett area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Hewlett?",
+          "answer": "Yes. We actively serve facilities in Hewlett and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Hewlett?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Hewlett."
+        }
+      ]
+    },
+    {
+      "slug": "hicksville-ny",
+      "name": "Hicksville, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7687,
+      "longitude": -73.5251,
+      "population": "41,000+",
+      "medicalDensity": "15+ medical offices along Broadway",
+      "keyIntersection": "Broadway & Old Country Rd",
+      "localInsight": "A major transportation hub with one of the busiest LIRR stations, surrounded by extensive commercial and medical office space.",
+      "zipCodes": [
+        "11801",
+        "11802",
+        "11815",
+        "11819"
+      ],
+      "landmarks": [
+        "Broadway Mall",
+        "Hicksville LIRR Hub"
+      ],
+      "nearbyCities": [
+        "Plainview",
+        "Bethpage",
+        "Jericho"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Hicksville area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Hicksville?",
+          "answer": "Yes. We actively serve facilities in Hicksville and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Hicksville?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Hicksville."
+        }
+      ]
+    },
+    {
+      "slug": "island-park-ny",
+      "name": "Island Park, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6043,
+      "longitude": -73.6554,
+      "population": "4,700+",
+      "medicalDensity": "Small community practices",
+      "keyIntersection": "Long Beach Rd & Warwick Rd",
+      "localInsight": "A barrier island village serving as a gateway to Long Beach with commercial activity along Long Beach Road.",
+      "zipCodes": [
+        "11558"
+      ],
+      "landmarks": [
+        "Long Beach Rd Commercial",
+        "Island Park LIRR"
+      ],
+      "nearbyCities": [
+        "Long Beach",
+        "Oceanside",
+        "Point Lookout"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Island Park area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Island Park?",
+          "answer": "Yes. We actively serve facilities in Island Park and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Island Park?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Island Park."
+        }
+      ]
+    },
+    {
+      "slug": "jericho-ny",
+      "name": "Jericho, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7912,
+      "longitude": -73.5418,
+      "population": "13,500+",
+      "medicalDensity": "Corporate offices and medical suites",
+      "keyIntersection": "Jericho Tpke & Route 106",
+      "localInsight": "A prosperous hamlet with significant office parks along Jericho Turnpike and a strong corporate presence.",
+      "zipCodes": [
+        "11753",
+        "11853",
+        "11854",
+        "11855"
+      ],
+      "landmarks": [
+        "Jericho Tpke Office Corridor",
+        "Milleridge Inn"
+      ],
+      "nearbyCities": [
+        "Hicksville",
+        "Syosset",
+        "Woodbury"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Jericho area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Jericho?",
+          "answer": "Yes. We actively serve facilities in Jericho and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Jericho?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Jericho."
+        }
+      ]
+    },
+    {
+      "slug": "lake-success-ny",
+      "name": "Lake Success, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7718,
+      "longitude": -73.7171,
+      "population": "3,000+",
+      "medicalDensity": "Corporate headquarters and medical offices",
+      "keyIntersection": "Marcus Ave & New Hyde Park Rd",
+      "localInsight": "Home to major corporate headquarters and the Lake Success Business Park, a key commercial node in western Nassau.",
+      "zipCodes": [
+        "11042"
+      ],
+      "landmarks": [
+        "Lake Success Business Park",
+        "North Shore Towers"
+      ],
+      "nearbyCities": [
+        "New Hyde Park",
+        "Great Neck",
+        "Manhasset"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Lake Success area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Lake Success?",
+          "answer": "Yes. We actively serve facilities in Lake Success and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Lake Success?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Lake Success."
+        }
+      ]
+    },
+    {
+      "slug": "lawrence-ny",
+      "name": "Lawrence, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6157,
+      "longitude": -73.729,
+      "population": "6,500+",
+      "medicalDensity": "Five Towns professional offices",
+      "keyIntersection": "Central Ave & Broadway",
+      "localInsight": "An upscale Five Towns village with professional services and medical practices requiring premium maintenance.",
+      "zipCodes": [
+        "11559",
+        "11096"
+      ],
+      "landmarks": [
+        "Central Ave Shopping",
+        "Lawrence Country Club"
+      ],
+      "nearbyCities": [
+        "Cedarhurst",
+        "Inwood",
+        "Woodmere"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Lawrence area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Lawrence?",
+          "answer": "Yes. We actively serve facilities in Lawrence and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Lawrence?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Lawrence."
+        }
+      ]
+    },
+    {
+      "slug": "levittown-ny",
+      "name": "Levittown, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7259,
+      "longitude": -73.5143,
+      "population": "51,000+",
+      "medicalDensity": "Medical offices along Hempstead Tpke",
+      "keyIntersection": "Hempstead Tpke & Wantagh Ave",
+      "localInsight": "America's most famous planned community and one of Nassau's largest hamlets, with dense commercial and healthcare facilities.",
+      "zipCodes": [
+        "11756"
+      ],
+      "landmarks": [
+        "Levittown Hall",
+        "Hempstead Tpke Retail"
+      ],
+      "nearbyCities": [
+        "Hicksville",
+        "East Meadow",
+        "Wantagh"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Levittown area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Levittown?",
+          "answer": "Yes. We actively serve facilities in Levittown and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Levittown?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Levittown."
+        }
+      ]
+    },
+    {
+      "slug": "locust-valley-ny",
+      "name": "Locust Valley, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.8757,
+      "longitude": -73.5968,
+      "population": "3,400+",
+      "medicalDensity": "Village professional offices",
+      "keyIntersection": "Birch Hill Rd & Forest Ave",
+      "localInsight": "An affluent Gold Coast village with upscale shops and professional offices demanding exceptional facility presentation.",
+      "zipCodes": [
+        "11560"
+      ],
+      "landmarks": [
+        "Birch Hill Rd Village",
+        "Forest Ave Shops"
+      ],
+      "nearbyCities": [
+        "Bayville",
+        "Glen Cove",
+        "Oyster Bay"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Locust Valley area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Locust Valley?",
+          "answer": "Yes. We actively serve facilities in Locust Valley and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Locust Valley?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Locust Valley."
+        }
+      ]
+    },
+    {
+      "slug": "long-beach-ny",
+      "name": "Long Beach, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.5884,
+      "longitude": -73.6579,
+      "population": "33,000+",
+      "medicalDensity": "10+ medical practices downtown",
+      "keyIntersection": "Park Ave & National Blvd",
+      "localInsight": "One of two cities in Nassau County, Long Beach is a barrier island city with year-round residents and seasonal tourism.",
+      "zipCodes": [
+        "11561"
+      ],
+      "landmarks": [
+        "Long Beach Boardwalk",
+        "Park Ave District"
+      ],
+      "nearbyCities": [
+        "Island Park",
+        "Lido Beach",
+        "Point Lookout"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Long Beach area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Long Beach?",
+          "answer": "Yes. We actively serve facilities in Long Beach and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Long Beach?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Long Beach."
+        }
+      ]
+    },
+    {
+      "slug": "lynbrook-ny",
+      "name": "Lynbrook, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6548,
+      "longitude": -73.6718,
+      "population": "19,500+",
+      "medicalDensity": "Medical offices on Atlantic Ave",
+      "keyIntersection": "Sunrise Hwy & Atlantic Ave",
+      "localInsight": "A well-established village with a vibrant downtown and significant medical and professional office presence.",
+      "zipCodes": [
+        "11563"
+      ],
+      "landmarks": [
+        "Lynbrook LIRR Station",
+        "Atlantic Ave Commercial"
+      ],
+      "nearbyCities": [
+        "Rockville Centre",
+        "East Rockaway",
+        "Malverne"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Lynbrook area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Lynbrook?",
+          "answer": "Yes. We actively serve facilities in Lynbrook and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Lynbrook?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Lynbrook."
+        }
+      ]
+    },
+    {
+      "slug": "malverne-ny",
+      "name": "Malverne, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6776,
+      "longitude": -73.6735,
+      "population": "8,500+",
+      "medicalDensity": "Village professional offices",
+      "keyIntersection": "Hempstead Ave & Ocean Ave",
+      "localInsight": "A compact residential village with a growing commercial center and proximity to larger medical hubs.",
+      "zipCodes": [
+        "11565"
+      ],
+      "landmarks": [
+        "Hempstead Ave Village Center",
+        "Malverne LIRR"
+      ],
+      "nearbyCities": [
+        "Lynbrook",
+        "West Hempstead",
+        "Valley Stream"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Malverne area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Malverne?",
+          "answer": "Yes. We actively serve facilities in Malverne and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Malverne?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Malverne."
+        }
+      ]
+    },
+    {
+      "slug": "manhasset-ny",
+      "name": "Manhasset, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7979,
+      "longitude": -73.7001,
+      "population": "8,000+",
+      "medicalDensity": "15+ medical offices along Northern Blvd",
+      "keyIntersection": "Northern Blvd & Plandome Rd",
+      "localInsight": "Home to the Miracle Mile shopping strip and Northwell Health's Manhasset campus, demanding premium facility management.",
+      "zipCodes": [
+        "11030"
+      ],
+      "landmarks": [
+        "Miracle Mile Shopping",
+        "Manhasset LIRR",
+        "Northwell Manhasset"
+      ],
+      "nearbyCities": [
+        "Great Neck",
+        "Port Washington",
+        "Roslyn"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Manhasset area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Manhasset?",
+          "answer": "Yes. We actively serve facilities in Manhasset and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Manhasset?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Manhasset."
+        }
+      ]
+    },
+    {
+      "slug": "massapequa-ny",
+      "name": "Massapequa, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6807,
+      "longitude": -73.4737,
+      "population": "21,000+",
+      "medicalDensity": "Medical offices along Sunrise Hwy",
+      "keyIntersection": "Sunrise Hwy & Broadway",
+      "localInsight": "An eastern South Shore hamlet with extensive retail and medical facilities along Sunrise Highway.",
+      "zipCodes": [
+        "11758"
+      ],
+      "landmarks": [
+        "Sunrise Highway Retail",
+        "Massapequa LIRR Station"
+      ],
+      "nearbyCities": [
+        "Massapequa Park",
+        "Seaford",
+        "Farmingdale"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Massapequa area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Massapequa?",
+          "answer": "Yes. We actively serve facilities in Massapequa and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Massapequa?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Massapequa."
+        }
+      ]
+    },
+    {
+      "slug": "massapequa-park-ny",
+      "name": "Massapequa Park, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6804,
+      "longitude": -73.4554,
+      "population": "17,000+",
+      "medicalDensity": "Village professional offices",
+      "keyIntersection": "Park Blvd & Sunrise Hwy",
+      "localInsight": "A family-oriented village with a downtown commercial district and growing professional office presence.",
+      "zipCodes": [
+        "11762"
+      ],
+      "landmarks": [
+        "Park Blvd Village Center",
+        "Brady Park"
+      ],
+      "nearbyCities": [
+        "Massapequa",
+        "Seaford",
+        "Wantagh"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Massapequa Park area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Massapequa Park?",
+          "answer": "Yes. We actively serve facilities in Massapequa Park and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Massapequa Park?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Massapequa Park."
+        }
+      ]
+    },
+    {
+      "slug": "merrick-ny",
+      "name": "Merrick, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6629,
+      "longitude": -73.551,
+      "population": "22,000+",
+      "medicalDensity": "Medical offices along Merrick Rd",
+      "keyIntersection": "Merrick Rd & Sunrise Hwy",
+      "localInsight": "A South Shore hamlet with a strong commercial district along Merrick Road.",
+      "zipCodes": [
+        "11566"
+      ],
+      "landmarks": [
+        "Merrick Rd Shopping",
+        "Merrick LIRR Station"
+      ],
+      "nearbyCities": [
+        "Bellmore",
+        "Freeport",
+        "Wantagh"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Merrick area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Merrick?",
+          "answer": "Yes. We actively serve facilities in Merrick and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Merrick?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Merrick."
+        }
+      ]
+    },
+    {
+      "slug": "mineola-ny",
+      "name": "Mineola, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.749,
+      "longitude": -73.6407,
+      "population": "19,000+",
+      "medicalDensity": "20+ medical facilities around NYU Langone",
+      "keyIntersection": "Mineola Blvd & Old Country Rd",
+      "localInsight": "Nassau County's governmental hub, anchored by NYU Langone Hospital and the county courthouse complex.",
+      "zipCodes": [
+        "11501"
+      ],
+      "landmarks": [
+        "NYU Langone Hospital",
+        "Nassau County Courts Complex"
+      ],
+      "nearbyCities": [
+        "Garden City",
+        "Carle Place",
+        "Westbury"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Mineola area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Mineola?",
+          "answer": "Yes. We actively serve facilities in Mineola and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Mineola?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Mineola."
+        }
+      ]
+    },
+    {
+      "slug": "north-bellmore-ny",
+      "name": "North Bellmore, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6854,
+      "longitude": -73.5337,
+      "population": "20,000+",
+      "medicalDensity": "Medical offices along Newbridge Rd",
+      "keyIntersection": "Newbridge Rd & Bellmore Ave",
+      "localInsight": "A large hamlet with commercial activity along Newbridge Road and growing medical office demand.",
+      "zipCodes": [
+        "11710"
+      ],
+      "landmarks": [
+        "Newbridge Rd Shopping",
+        "North Bellmore LIRR"
+      ],
+      "nearbyCities": [
+        "Bellmore",
+        "East Meadow",
+        "Wantagh"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the North Bellmore area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in North Bellmore?",
+          "answer": "Yes. We actively serve facilities in North Bellmore and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in North Bellmore?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout North Bellmore."
+        }
+      ]
+    },
+    {
+      "slug": "oceanside-ny",
+      "name": "Oceanside, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6387,
+      "longitude": -73.6401,
+      "population": "32,000+",
+      "medicalDensity": "10+ medical offices along Long Beach Rd",
+      "keyIntersection": "Long Beach Rd & Atlantic Ave",
+      "localInsight": "One of Nassau's largest hamlets with a thriving Long Beach Road commercial corridor.",
+      "zipCodes": [
+        "11572"
+      ],
+      "landmarks": [
+        "Long Beach Rd Shops",
+        "Oceanside LIRR Station"
+      ],
+      "nearbyCities": [
+        "Rockville Centre",
+        "Island Park",
+        "Baldwin"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Oceanside area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Oceanside?",
+          "answer": "Yes. We actively serve facilities in Oceanside and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Oceanside?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Oceanside."
+        }
+      ]
+    },
+    {
+      "slug": "old-bethpage-ny",
+      "name": "Old Bethpage, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7632,
+      "longitude": -73.4527,
+      "population": "5,400+",
+      "medicalDensity": "Professional offices along Round Swamp Rd",
+      "keyIntersection": "Round Swamp Rd & Bethpage Rd",
+      "localInsight": "A quiet hamlet with corporate offices and proximity to Bethpage and Plainview commercial corridors.",
+      "zipCodes": [
+        "11804"
+      ],
+      "landmarks": [
+        "Old Bethpage Village Restoration",
+        "Round Swamp Rd Offices"
+      ],
+      "nearbyCities": [
+        "Plainview",
+        "Bethpage",
+        "Farmingdale"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Old Bethpage area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Old Bethpage?",
+          "answer": "Yes. We actively serve facilities in Old Bethpage and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Old Bethpage?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Old Bethpage."
+        }
+      ]
+    },
+    {
+      "slug": "old-westbury-ny",
+      "name": "Old Westbury, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7887,
+      "longitude": -73.5982,
+      "population": "4,700+",
+      "medicalDensity": "Campus and estate-related facilities",
+      "keyIntersection": "Jericho Tpke & Glen Cove Rd",
+      "localInsight": "An affluent Gold Coast village home to NYIT, Old Westbury Gardens, and estate properties.",
+      "zipCodes": [
+        "11568"
+      ],
+      "landmarks": [
+        "NYIT Campus",
+        "Old Westbury Gardens"
+      ],
+      "nearbyCities": [
+        "Westbury",
+        "Jericho",
+        "Brookville"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Old Westbury area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Old Westbury?",
+          "answer": "Yes. We actively serve facilities in Old Westbury and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Old Westbury?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Old Westbury."
+        }
+      ]
+    },
+    {
+      "slug": "oyster-bay-ny",
+      "name": "Oyster Bay, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.8715,
+      "longitude": -73.5318,
+      "population": "6,800+",
+      "medicalDensity": "Village professional offices",
+      "keyIntersection": "South St & Audrey Ave",
+      "localInsight": "A historic waterfront hamlet, home to Sagamore Hill and a charming downtown.",
+      "zipCodes": [
+        "11771",
+        "11773",
+        "11774"
+      ],
+      "landmarks": [
+        "Sagamore Hill NHS",
+        "Oyster Bay Harbor"
+      ],
+      "nearbyCities": [
+        "East Norwich",
+        "Bayville",
+        "Locust Valley"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Oyster Bay area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Oyster Bay?",
+          "answer": "Yes. We actively serve facilities in Oyster Bay and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Oyster Bay?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Oyster Bay."
+        }
+      ]
+    },
+    {
+      "slug": "plainview-ny",
+      "name": "Plainview, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7765,
+      "longitude": -73.4675,
+      "population": "26,000+",
+      "medicalDensity": "Corporate parks and medical offices",
+      "keyIntersection": "Old Country Rd & Manetto Hill Rd",
+      "localInsight": "An eastern Nassau hamlet with extensive corporate office parks along Old Country Road.",
+      "zipCodes": [
+        "11803"
+      ],
+      "landmarks": [
+        "Old Country Rd Corporate Parks",
+        "Plainview-OB Library"
+      ],
+      "nearbyCities": [
+        "Hicksville",
+        "Old Bethpage",
+        "Bethpage"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Plainview area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Plainview?",
+          "answer": "Yes. We actively serve facilities in Plainview and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Plainview?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Plainview."
+        }
+      ]
+    },
+    {
+      "slug": "point-lookout-ny",
+      "name": "Point Lookout, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.5929,
+      "longitude": -73.5813,
+      "population": "1,200+",
+      "medicalDensity": "Seasonal community",
+      "keyIntersection": "Lido Blvd & Freeport Ave",
+      "localInsight": "A small barrier island community with seasonal facilities requiring flexible maintenance.",
+      "zipCodes": [
+        "11569"
+      ],
+      "landmarks": [
+        "Point Lookout Beach",
+        "Town Park"
+      ],
+      "nearbyCities": [
+        "Long Beach",
+        "Lido Beach",
+        "Island Park"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Point Lookout area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Point Lookout?",
+          "answer": "Yes. We actively serve facilities in Point Lookout and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Point Lookout?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Point Lookout."
+        }
+      ]
+    },
+    {
+      "slug": "port-washington-ny",
+      "name": "Port Washington, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.8257,
+      "longitude": -73.6982,
+      "population": "15,800+",
+      "medicalDensity": "10+ medical offices along Main St",
+      "keyIntersection": "Main St & Shore Rd",
+      "localInsight": "An affluent North Shore waterfront hamlet with a vibrant Main Street and significant medical offices.",
+      "zipCodes": [
+        "11050",
+        "11051"
+      ],
+      "landmarks": [
+        "Main St Waterfront District",
+        "Port Washington LIRR"
+      ],
+      "nearbyCities": [
+        "Manhasset",
+        "Sands Point",
+        "Roslyn"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Port Washington area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Port Washington?",
+          "answer": "Yes. We actively serve facilities in Port Washington and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Port Washington?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Port Washington."
+        }
+      ]
+    },
+    {
+      "slug": "rockville-centre-ny",
+      "name": "Rockville Centre, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6587,
+      "longitude": -73.6432,
+      "population": "24,000+",
+      "medicalDensity": "15+ medical offices near Mercy Hospital",
+      "keyIntersection": "Sunrise Hwy & Village Ave",
+      "localInsight": "An established village with Mercy Medical Center and significant medical and professional office density.",
+      "zipCodes": [
+        "11570",
+        "11571"
+      ],
+      "landmarks": [
+        "Mercy Medical Center",
+        "Village Green",
+        "Sunrise Hwy Shops"
+      ],
+      "nearbyCities": [
+        "Lynbrook",
+        "Oceanside",
+        "Baldwin"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Rockville Centre area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Rockville Centre?",
+          "answer": "Yes. We actively serve facilities in Rockville Centre and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Rockville Centre?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Rockville Centre."
+        }
+      ]
+    },
+    {
+      "slug": "roosevelt-ny",
+      "name": "Roosevelt, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6787,
+      "longitude": -73.589,
+      "population": "16,000+",
+      "medicalDensity": "Community health centers",
+      "keyIntersection": "Nassau Rd & Babylon Tpke",
+      "localInsight": "A hamlet with growing commercial activity and community health facilities.",
+      "zipCodes": [
+        "11575"
+      ],
+      "landmarks": [
+        "Nassau Rd Commercial",
+        "Roosevelt LIRR Station"
+      ],
+      "nearbyCities": [
+        "Freeport",
+        "Hempstead",
+        "Baldwin"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Roosevelt area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Roosevelt?",
+          "answer": "Yes. We actively serve facilities in Roosevelt and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Roosevelt?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Roosevelt."
+        }
+      ]
+    },
+    {
+      "slug": "roslyn-ny",
+      "name": "Roslyn, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.801,
+      "longitude": -73.6501,
+      "population": "2,800+",
+      "medicalDensity": "Professional offices in historic district",
+      "keyIntersection": "Old Northern Blvd & Roslyn Rd",
+      "localInsight": "A historic North Shore village with a charming downtown and professional offices.",
+      "zipCodes": [
+        "11576"
+      ],
+      "landmarks": [
+        "Old Northern Blvd Historic District",
+        "Roslyn Duck Pond"
+      ],
+      "nearbyCities": [
+        "Roslyn Heights",
+        "Greenvale",
+        "Manhasset"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Roslyn area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Roslyn?",
+          "answer": "Yes. We actively serve facilities in Roslyn and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Roslyn?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Roslyn."
+        }
+      ]
+    },
+    {
+      "slug": "roslyn-heights-ny",
+      "name": "Roslyn Heights, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7887,
+      "longitude": -73.644,
+      "population": "6,500+",
+      "medicalDensity": "Medical offices along Warner Ave",
+      "keyIntersection": "Warner Ave & Mineola Ave",
+      "localInsight": "A residential hamlet with a commercial center serving the greater Roslyn area.",
+      "zipCodes": [
+        "11577"
+      ],
+      "landmarks": [
+        "Warner Ave Shopping",
+        "Roslyn Country Club"
+      ],
+      "nearbyCities": [
+        "Roslyn",
+        "Albertson",
+        "Mineola"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Roslyn Heights area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Roslyn Heights?",
+          "answer": "Yes. We actively serve facilities in Roslyn Heights and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Roslyn Heights?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Roslyn Heights."
+        }
+      ]
+    },
+    {
+      "slug": "sea-cliff-ny",
+      "name": "Sea Cliff, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.849,
+      "longitude": -73.6451,
+      "population": "5,000+",
+      "medicalDensity": "Village practices",
+      "keyIntersection": "Sea Cliff Ave & Glen Cove Ave",
+      "localInsight": "A charming hillside village with Victorian architecture and professional offices.",
+      "zipCodes": [
+        "11579"
+      ],
+      "landmarks": [
+        "Sea Cliff Ave Village",
+        "Memorial Park"
+      ],
+      "nearbyCities": [
+        "Glen Cove",
+        "Glen Head",
+        "Locust Valley"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Sea Cliff area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Sea Cliff?",
+          "answer": "Yes. We actively serve facilities in Sea Cliff and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Sea Cliff?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Sea Cliff."
+        }
+      ]
+    },
+    {
+      "slug": "seaford-ny",
+      "name": "Seaford, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6654,
+      "longitude": -73.4893,
+      "population": "15,000+",
+      "medicalDensity": "Medical offices along Sunrise Hwy",
+      "keyIntersection": "Sunrise Hwy & Seaford-Oyster Bay Expy",
+      "localInsight": "A South Shore hamlet with Sunrise Highway commercial activity and Jones Beach access.",
+      "zipCodes": [
+        "11783"
+      ],
+      "landmarks": [
+        "Sunrise Highway Retail",
+        "Seaford LIRR Station"
+      ],
+      "nearbyCities": [
+        "Wantagh",
+        "Massapequa",
+        "Bellmore"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Seaford area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Seaford?",
+          "answer": "Yes. We actively serve facilities in Seaford and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Seaford?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Seaford."
+        }
+      ]
+    },
+    {
+      "slug": "syosset-ny",
+      "name": "Syosset, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.8165,
+      "longitude": -73.5018,
+      "population": "19,000+",
+      "medicalDensity": "10+ medical suites along Jericho Tpke",
+      "keyIntersection": "Jericho Tpke & Cold Spring Rd",
+      "localInsight": "An affluent hamlet with extensive office parks along Jericho Turnpike.",
+      "zipCodes": [
+        "11791"
+      ],
+      "landmarks": [
+        "Jericho Tpke Office Parks",
+        "Cold Spring Harbor Rd"
+      ],
+      "nearbyCities": [
+        "Jericho",
+        "Woodbury",
+        "Oyster Bay"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Syosset area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Syosset?",
+          "answer": "Yes. We actively serve facilities in Syosset and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Syosset?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Syosset."
+        }
+      ]
+    },
+    {
+      "slug": "uniondale-ny",
+      "name": "Uniondale, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7001,
+      "longitude": -73.5935,
+      "population": "24,000+",
+      "medicalDensity": "Medical offices along Hempstead Tpke",
+      "keyIntersection": "Hempstead Tpke & Front St",
+      "localInsight": "Formerly home to the Nassau Coliseum, Uniondale is undergoing redevelopment with growing commercial demand.",
+      "zipCodes": [
+        "11553",
+        "11549"
+      ],
+      "landmarks": [
+        "Nassau Hub Redevelopment",
+        "Hempstead Tpke Commercial"
+      ],
+      "nearbyCities": [
+        "Hempstead",
+        "East Meadow",
+        "Garden City"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Uniondale area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Uniondale?",
+          "answer": "Yes. We actively serve facilities in Uniondale and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Uniondale?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Uniondale."
+        }
+      ]
+    },
+    {
+      "slug": "valley-stream-ny",
+      "name": "Valley Stream, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.664,
+      "longitude": -73.7068,
+      "population": "37,000+",
+      "medicalDensity": "10+ medical offices near Green Acres Mall",
+      "keyIntersection": "Sunrise Hwy & Rockaway Ave",
+      "localInsight": "A large South Shore community with Green Acres Mall and heavy Sunrise Highway commercial activity.",
+      "zipCodes": [
+        "11580",
+        "11581",
+        "11582"
+      ],
+      "landmarks": [
+        "Green Acres Mall",
+        "Valley Stream LIRR",
+        "Sunrise Highway Hub"
+      ],
+      "nearbyCities": [
+        "Elmont",
+        "Lynbrook",
+        "Malverne"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Valley Stream area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Valley Stream?",
+          "answer": "Yes. We actively serve facilities in Valley Stream and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Valley Stream?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Valley Stream."
+        }
+      ]
+    },
+    {
+      "slug": "wantagh-ny",
+      "name": "Wantagh, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6837,
+      "longitude": -73.5107,
+      "population": "18,000+",
+      "medicalDensity": "Medical offices along Wantagh Ave",
+      "keyIntersection": "Wantagh Ave & Sunrise Hwy",
+      "localInsight": "Gateway to Jones Beach via the Wantagh Parkway, with a busy commercial corridor.",
+      "zipCodes": [
+        "11793"
+      ],
+      "landmarks": [
+        "Jones Beach State Park Access",
+        "Wantagh LIRR Station"
+      ],
+      "nearbyCities": [
+        "Seaford",
+        "Bellmore",
+        "Levittown"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Wantagh area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Wantagh?",
+          "answer": "Yes. We actively serve facilities in Wantagh and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Wantagh?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Wantagh."
+        }
+      ]
+    },
+    {
+      "slug": "west-hempstead-ny",
+      "name": "West Hempstead, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6976,
+      "longitude": -73.6504,
+      "population": "18,900+",
+      "medicalDensity": "Medical offices along Hempstead Tpke",
+      "keyIntersection": "Hempstead Tpke & Woodfield Rd",
+      "localInsight": "A centrally located hamlet with commercial activity along Hempstead Turnpike.",
+      "zipCodes": [
+        "11552"
+      ],
+      "landmarks": [
+        "Hempstead Tpke Shops",
+        "West Hempstead LIRR"
+      ],
+      "nearbyCities": [
+        "Hempstead",
+        "Franklin Square",
+        "Garden City"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the West Hempstead area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in West Hempstead?",
+          "answer": "Yes. We actively serve facilities in West Hempstead and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in West Hempstead?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout West Hempstead."
+        }
+      ]
+    },
+    {
+      "slug": "westbury-ny",
+      "name": "Westbury, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7565,
+      "longitude": -73.5879,
+      "population": "15,000+",
+      "medicalDensity": "Medical offices along Post Ave",
+      "keyIntersection": "Post Ave & Old Country Rd",
+      "localInsight": "A vibrant village with The Space at Westbury, a revitalized Post Ave downtown, and significant office space.",
+      "zipCodes": [
+        "11590",
+        "11597"
+      ],
+      "landmarks": [
+        "The Space at Westbury",
+        "Post Ave Village"
+      ],
+      "nearbyCities": [
+        "Carle Place",
+        "Old Westbury",
+        "Mineola"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Westbury area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Westbury?",
+          "answer": "Yes. We actively serve facilities in Westbury and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Westbury?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Westbury."
+        }
+      ]
+    },
+    {
+      "slug": "williston-park-ny",
+      "name": "Williston Park, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.7568,
+      "longitude": -73.6462,
+      "population": "7,300+",
+      "medicalDensity": "Professional offices along Hillside Ave",
+      "keyIntersection": "Hillside Ave & Willis Ave",
+      "localInsight": "A small, walkable village with a charming downtown and professional offices.",
+      "zipCodes": [
+        "11596"
+      ],
+      "landmarks": [
+        "Hillside Ave Village",
+        "Williston Park LIRR"
+      ],
+      "nearbyCities": [
+        "Mineola",
+        "Albertson",
+        "East Williston"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Williston Park area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Williston Park?",
+          "answer": "Yes. We actively serve facilities in Williston Park and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Williston Park?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Williston Park."
+        }
+      ]
+    },
+    {
+      "slug": "woodbury-ny",
+      "name": "Woodbury, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.8176,
+      "longitude": -73.4704,
+      "population": "8,900+",
+      "medicalDensity": "Office parks along Jericho Tpke",
+      "keyIntersection": "Jericho Tpke & Woodbury Rd",
+      "localInsight": "An affluent hamlet with significant office park space and proximity to the Syosset-Jericho corridor.",
+      "zipCodes": [
+        "11797"
+      ],
+      "landmarks": [
+        "Woodbury Rd Office Parks",
+        "Syosset-Woodbury Park"
+      ],
+      "nearbyCities": [
+        "Syosset",
+        "Jericho",
+        "Plainview"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Woodbury area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Woodbury?",
+          "answer": "Yes. We actively serve facilities in Woodbury and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Woodbury?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Woodbury."
+        }
+      ]
+    },
+    {
+      "slug": "woodmere-ny",
+      "name": "Woodmere, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.6326,
+      "longitude": -73.7135,
+      "population": "17,100+",
+      "medicalDensity": "Five Towns medical practices",
+      "keyIntersection": "Broadway & Peninsula Blvd",
+      "localInsight": "Part of the Five Towns with a busy Broadway commercial corridor and significant professional office presence.",
+      "zipCodes": [
+        "11598"
+      ],
+      "landmarks": [
+        "Broadway Shopping District",
+        "Peninsula Blvd"
+      ],
+      "nearbyCities": [
+        "Hewlett",
+        "Cedarhurst",
+        "Lawrence"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Woodmere area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Woodmere?",
+          "answer": "Yes. We actively serve facilities in Woodmere and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Woodmere?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Woodmere."
+        }
+      ]
+    },
+    {
+      "slug": "inwood-ny",
+      "name": "Inwood, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.619,
+      "longitude": -73.749,
+      "population": "9,800+",
+      "medicalDensity": "Community medical offices",
+      "keyIntersection": "Doughty Blvd & Bayview Ave",
+      "localInsight": "A Five Towns community with commercial activity along Doughty Boulevard and waterfront business.",
+      "zipCodes": [
+        "11096"
+      ],
+      "landmarks": [
+        "Doughty Blvd Shopping",
+        "Bayview Ave Waterfront"
+      ],
+      "nearbyCities": [
+        "Lawrence",
+        "Cedarhurst",
+        "Far Rockaway"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Inwood area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Inwood?",
+          "answer": "Yes. We actively serve facilities in Inwood and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Inwood?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Inwood."
+        }
+      ]
+    },
+    {
+      "slug": "north-woodmere-ny",
+      "name": "North Woodmere, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.654,
+      "longitude": -73.731,
+      "population": "3,200+",
+      "medicalDensity": "Community practices",
+      "keyIntersection": "Hungry Harbor Rd & Peninsula Blvd",
+      "localInsight": "A small hamlet with proximity to the Five Towns medical corridor.",
+      "zipCodes": [
+        "11581"
+      ],
+      "landmarks": [
+        "Hungry Harbor Rd",
+        "Peninsula Blvd"
+      ],
+      "nearbyCities": [
+        "Woodmere",
+        "Hewlett",
+        "Valley Stream"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the North Woodmere area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in North Woodmere?",
+          "answer": "Yes. We actively serve facilities in North Woodmere and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in North Woodmere?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout North Woodmere."
+        }
+      ]
+    },
+    {
+      "slug": "lido-beach-ny",
+      "name": "Lido Beach, NY",
+      "state": "NY",
+      "region": "Nassau County",
+      "latitude": 40.5884,
+      "longitude": -73.6241,
+      "population": "2,900+",
+      "medicalDensity": "Seasonal community",
+      "keyIntersection": "Lido Blvd & Regent Dr",
+      "localInsight": "A barrier island community adjacent to Long Beach with seasonal facility demands.",
+      "zipCodes": [
+        "11561"
+      ],
+      "landmarks": [
+        "Lido Beach Oceanfront",
+        "Town Park"
+      ],
+      "nearbyCities": [
+        "Long Beach",
+        "Point Lookout",
+        "Oceanside"
+      ],
+      "facilityTypes": [
+        "Medical offices",
+        "Professional offices",
+        "Retail storefronts",
+        "Dental practices",
+        "Commercial spaces"
+      ],
+      "complianceNote": "Nassau County enforces strict hazardous waste storage regulations (Local Law 12-2019) affecting medical waste handling. Our FSMs ensure your facility stays compliant.",
+      "serviceChallenges": "Our cleaning crews work around your operating hours with flexible scheduling options.",
+      "whyXiri": "Our route density in the Lido Beach area means faster response times and seamless service additions to our nightly routes.",
+      "localFaqs": [
+        {
+          "question": "Do you currently service facilities in Lido Beach?",
+          "answer": "Yes. We actively serve facilities in Lido Beach and throughout Nassau County. Our teams are already in the area nightly."
+        },
+        {
+          "question": "What types of facilities do you clean in Lido Beach?",
+          "answer": "We serve medical offices, dental practices, professional offices, retail locations, and commercial spaces throughout Lido Beach."
+        }
+      ]
     }
   ]
 }
