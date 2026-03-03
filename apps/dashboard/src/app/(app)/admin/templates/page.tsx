@@ -7,7 +7,7 @@ import { db, functions } from '@/lib/firebase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sparkles, CheckCircle, RefreshCw, Mail, MousePointerClick, Eye, AlertTriangle, ChevronDown, ChevronRight, ArrowRight, HardHat, Building2 } from 'lucide-react';
+import { Sparkles, CheckCircle, RefreshCw, Mail, MousePointerClick, Eye, AlertTriangle, ChevronDown, ChevronRight, ArrowRight, HardHat, Building2, Handshake, Pencil, Save } from 'lucide-react';
 
 interface TemplateStats {
     sent: number;
@@ -119,7 +119,7 @@ export default function TemplateAnalyticsPage() {
         const snap = await getDocs(collection(db, 'templates'));
         const data = snap.docs
             .map(d => ({ id: d.id, ...d.data() } as Template))
-            .filter(t => t.id.startsWith('vendor_outreach_') || t.id.startsWith('sales_outreach_'));
+            .filter(t => t.id.startsWith('vendor_outreach_') || t.id.startsWith('sales_outreach_') || t.id.startsWith('referral_partnership_'));
         setTemplates(data);
         setLoading(false);
     }
@@ -156,6 +156,7 @@ export default function TemplateAnalyticsPage() {
 
     const vendorPipeline = buildPipeline(templates, 'vendor_outreach_');
     const salesPipeline = buildPipeline(templates, 'sales_outreach_');
+    const referralPipeline = buildPipeline(templates, 'referral_partnership_');
 
     return (
         <div className="space-y-8">
@@ -199,7 +200,21 @@ export default function TemplateAnalyticsPage() {
                 />
             )}
 
-            {vendorPipeline.length === 0 && salesPipeline.length === 0 && (
+            {/* Referral Partnership Pipeline */}
+            {referralPipeline.length > 0 && (
+                <PipelineSection
+                    title="Referral Partnerships"
+                    icon={<Handshake className="w-5 h-5" />}
+                    pipeline={referralPipeline}
+                    optimizing={optimizing}
+                    applying={applying}
+                    onOptimize={handleOptimize}
+                    onApply={handleApply}
+                    onDismiss={handleDismiss}
+                />
+            )}
+
+            {vendorPipeline.length === 0 && salesPipeline.length === 0 && referralPipeline.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
                     <Mail className="w-12 h-12 mx-auto mb-3 opacity-50" />
                     <p>No email templates found. Seed templates to get started.</p>
@@ -366,7 +381,7 @@ function PipelineSection({ title, icon, pipeline, optimizing, applying, onOptimi
 }
 
 /* ═══════════════════════════════════════════════════
-   TEMPLATE DETAIL — individual template card
+   TEMPLATE DETAIL — individual template card with inline editing
    ═══════════════════════════════════════════════════ */
 function TemplateDetail({ template: t, onOptimize, onApply, onDismiss, optimizing, applying }: {
     template: Template;
@@ -383,6 +398,31 @@ function TemplateDetail({ template: t, onOptimize, onApply, onDismiss, optimizin
     const latestAI = hasAI ? t.aiSuggestions![t.aiSuggestions!.length - 1] : null;
     const [showBody, setShowBody] = useState(false);
     const [showAI, setShowAI] = useState(false);
+    const [editing, setEditing] = useState(false);
+    const [editSubject, setEditSubject] = useState(t.subject);
+    const [editBody, setEditBody] = useState(t.body);
+    const [saving, setSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await updateDoc(doc(db, 'templates', t.id), {
+                subject: editSubject,
+                body: editBody,
+                updatedAt: new Date(),
+            });
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 2000);
+        } catch (err) {
+            console.error('Save failed:', err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const mergeFields = (t.subject + t.body).match(/\{\{(\w+)\}\}/g);
+    const uniqueFields = mergeFields ? [...new Set(mergeFields.map(m => m.replace(/[{}]/g, '')))] : [];
 
     return (
         <div className={`rounded-lg border p-4 space-y-3 ${colors.bg} ${colors.border}`}>
@@ -396,6 +436,31 @@ function TemplateDetail({ template: t, onOptimize, onApply, onDismiss, optimizin
                     <code className="text-[9px] text-muted-foreground bg-muted px-1 rounded hidden sm:inline">{t.id}</code>
                 </div>
                 <div className="flex items-center gap-1">
+                    {/* Edit toggle */}
+                    <Button
+                        variant={editing ? 'default' : 'outline'}
+                        size="sm"
+                        className="text-xs h-7 gap-1"
+                        onClick={() => {
+                            if (!editing) {
+                                setEditSubject(t.subject);
+                                setEditBody(t.body);
+                                setShowBody(true);
+                            }
+                            setEditing(!editing);
+                        }}
+                    >
+                        <Pencil className="w-3 h-3" />
+                        {editing ? 'Cancel' : 'Edit'}
+                    </Button>
+                    {editing && (
+                        <Button size="sm" className="text-xs h-7 gap-1" onClick={handleSave} disabled={saving}>
+                            {saving ? <RefreshCw className="w-3 h-3 animate-spin" /> :
+                                saveSuccess ? <CheckCircle className="w-3 h-3" /> :
+                                    <Save className="w-3 h-3" />}
+                            {saveSuccess ? 'Saved!' : 'Save'}
+                        </Button>
+                    )}
                     {hasAI && (
                         <Button variant="ghost" size="sm" className="text-xs gap-1 text-purple-600" onClick={() => setShowAI(!showAI)}>
                             <Sparkles className="w-3 h-3" /> {showAI ? 'Hide' : 'View'} AI
@@ -409,22 +474,47 @@ function TemplateDetail({ template: t, onOptimize, onApply, onDismiss, optimizin
                 </div>
             </div>
 
+            {/* Merge fields badge row */}
+            {editing && uniqueFields.length > 0 && (
+                <div className="flex gap-1 flex-wrap">
+                    {uniqueFields.map(f => (
+                        <Badge key={f} variant="secondary" className="text-[9px] px-1 h-5 font-mono">{`{{${f}}}`}</Badge>
+                    ))}
+                </div>
+            )}
+
             {/* Subject */}
             <div className="text-xs">
                 <span className="font-medium text-foreground">Subject:</span>{' '}
-                <span className="text-muted-foreground">{t.subject}</span>
+                {editing ? (
+                    <input
+                        value={editSubject}
+                        onChange={e => setEditSubject(e.target.value)}
+                        className="w-full mt-1 px-2 py-1.5 text-sm rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                ) : (
+                    <span className="text-muted-foreground">{t.subject}</span>
+                )}
             </div>
 
-            {/* Body toggle */}
+            {/* Body toggle / edit */}
             <div>
                 <button onClick={() => setShowBody(!showBody)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
                     {showBody ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                     {showBody ? 'Hide email body' : 'Show full email body'}
                 </button>
                 {showBody && (
-                    <div className="mt-2 p-3 bg-muted/50 rounded-md border text-xs text-foreground whitespace-pre-wrap font-mono leading-relaxed overflow-y-auto">
-                        {t.body || 'No body content'}
-                    </div>
+                    editing ? (
+                        <textarea
+                            value={editBody}
+                            onChange={e => setEditBody(e.target.value)}
+                            className="mt-2 w-full p-3 text-sm rounded-md border bg-background font-mono leading-relaxed min-h-[250px] focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                    ) : (
+                        <div className="mt-2 p-3 bg-muted/50 rounded-md border text-xs text-foreground whitespace-pre-wrap font-mono leading-relaxed overflow-y-auto max-h-96">
+                            {t.body || 'No body content'}
+                        </div>
+                    )
                 )}
             </div>
 
