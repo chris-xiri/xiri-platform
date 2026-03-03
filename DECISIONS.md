@@ -94,9 +94,13 @@ Maintained by: @architect-cto
 
 > - Date: 2026-03-03
 > - Decision: **SEO Expansion: Programmatic Pages by County**
-> - Rationale: Programmatic SEO coverage is expanded county-by-county. To add a new county (e.g., Suffolk, Queens), update these **three files**:
+> - Rationale: Programmatic SEO coverage is expanded county-by-county. To add a new county (e.g., Suffolk, Queens), update these **two files**:
 >   1. **`apps/public-site/data/validZips.ts`** — Add all ZIP codes for the county to `ALPHA_ZIPS`. This controls the geofence for the audit wizard lead form (`isValidZip()`). Nassau County has ~110 ZIPs.
->   2. **`apps/public-site/data/partnerMarkets.ts`** — Add town entries to `NASSAU_HUBS` (rename to a generic array if multi-county). Each entry generates a `/partners/janitorial-in-{town}-{county}-ny` SSG page for contractor recruiting, plus a Spanish translation at `/es/partners/...`. Nassau County has ~95 towns.
->   3. **`apps/public-site/data/seo-data.json`** → `locations[]` — Add location objects with `slug`, `name`, `latitude`, `longitude`, `population`, `medicalDensity`, `keyIntersection`, `localInsight`, `zipCodes`, `landmarks`, `nearbyCities`, `facilityTypes`, `complianceNote`, `serviceChallenges`, `whyXiri`, and `localFaqs`. These power the `/services/[slug]` location variants. The script `scripts/expand-nassau-locations.js` is the reference for bulk generation.
->   The `PartnerMarket` interface in `@xiri/shared` supports `county: 'nassau' | 'suffolk' | 'queens'` — add new county values to the union type when expanding.
+>   2. **`apps/public-site/data/seo-data.json`** → `locations[]` — Add location objects with `slug`, `name`, `latitude`, `longitude`, `population`, `medicalDensity`, `keyIntersection`, `localInsight`, `zipCodes`, `landmarks`, `nearbyCities`, `facilityTypes`, `complianceNote`, `serviceChallenges`, `whyXiri`, and `localFaqs`. These power THREE systems: `/services/[slug]-in-{town}` (service × location), `/contractors/[slug]-in-{location}` (trade × location cross-products), and geo pages. The script `scripts/expand-nassau-locations.js` is the reference for bulk generation.
 > - Status: **Active (Nassau County complete)**
+
+> - Date: 2026-03-03
+> - Decision: **Consolidated `/partners` into `/contractors` (Single Route)**
+> - Rationale: The `/partners/[slug]` route (powered by `partnerMarkets.ts`) was a weaker duplicate of the `/contractors/[slug]` route (powered by `dlp-contractors.ts` + `seo-data.json`). The contractors system already generates trade pages, geo pages, keyword/guide pages, AND trade × location cross-product pages — all from the same `seo-data.json` locations array. Keeping both routes fragmented SEO signals and created maintenance overhead. **Deleted**: `/partners`, `/es/partners`, `partnerMarkets.ts`, `lib/seo.ts`. **All location data now lives in one place**: `seo-data.json → locations[]`.
+> - Status: **Active**
+

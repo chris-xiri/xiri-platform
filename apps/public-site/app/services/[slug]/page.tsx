@@ -9,7 +9,6 @@ import { JsonLd } from '@/components/JsonLd';
 import { FAQ } from '@/components/FAQ';
 import { NearbyAreas } from '@/components/NearbyAreas';
 import seoData from '@/data/seo-data.json';
-import { PARTNER_MARKETS } from '@/data/partnerMarkets';
 import { SeoService } from '@xiri/shared';
 // FIX: Add Lucide imports
 import { MapPin, Eye } from 'lucide-react';
@@ -492,74 +491,64 @@ export default async function ServicePage({ params }: Props) {
                 </section>
             )}
 
-            {/* ═══ LOCAL MARKET PULSE (from partner data) ═══ */}
-            {(() => {
-                const market = PARTNER_MARKETS.find(m =>
-                    m.geography.town.toLowerCase() === townName.toLowerCase()
-                );
-
-                if (!market || !market.localContext) return null;
-
-                return (
-                    <section className="py-20 bg-white border-b border-slate-200">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <div className="grid md:grid-cols-2 gap-12 items-center">
-                                <div className="order-2 md:order-1 relative h-96 rounded-2xl overflow-hidden shadow-xl bg-white border border-slate-100">
-                                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#0ea5e9_1px,transparent_1px)] [background-size:16px_16px]"></div>
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className="text-center">
-                                            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                <MapPin className="w-8 h-8" />
-                                            </div>
-                                            <p className="font-bold text-slate-400">Active Service Area</p>
+            {/* ═══ LOCAL MARKET PULSE (from location data) ═══ */}
+            {location.keyIntersection && (
+                <section className="py-20 bg-white border-b border-slate-200">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="grid md:grid-cols-2 gap-12 items-center">
+                            <div className="order-2 md:order-1 relative h-96 rounded-2xl overflow-hidden shadow-xl bg-white border border-slate-100">
+                                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#0ea5e9_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="text-center">
+                                        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <MapPin className="w-8 h-8" />
                                         </div>
-                                    </div>
-                                    <div className="absolute top-8 left-8 bg-white p-3 rounded-lg shadow-lg border border-slate-100 max-w-[200px]">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                            <span className="text-xs font-bold text-slate-700">Live Coverage</span>
-                                        </div>
-                                        <p className="text-xs text-slate-500">{location.name}</p>
+                                        <p className="font-bold text-slate-400">Active Service Area</p>
                                     </div>
                                 </div>
+                                <div className="absolute top-8 left-8 bg-white p-3 rounded-lg shadow-lg border border-slate-100 max-w-[200px]">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                        <span className="text-xs font-bold text-slate-700">Live Coverage</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500">{location.name}</p>
+                                </div>
+                            </div>
 
-                                <div className="order-1 md:order-2">
-                                    <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold mb-6">
-                                        Local Operations
+                            <div className="order-1 md:order-2">
+                                <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold mb-6">
+                                    Local Operations
+                                </div>
+                                <h2 className="text-3xl font-bold font-heading text-slate-900 mb-6">
+                                    Already Operating in {townName}
+                                </h2>
+                                <div className="space-y-6 text-lg text-slate-600">
+                                    <div className="flex gap-4">
+                                        <div className="w-12 h-12 flex-shrink-0 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 shadow-sm">
+                                            <MapPin className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900 mb-1">Active Routes</h3>
+                                            <p>Our teams are active along <strong className="text-slate-900">{location.keyIntersection}</strong>.</p>
+                                        </div>
                                     </div>
-                                    <h2 className="text-3xl font-bold font-heading text-slate-900 mb-6">
-                                        Already Operating in {townName}
-                                    </h2>
-                                    <div className="space-y-6 text-lg text-slate-600">
-                                        {market.localContext.corridor && (
-                                            <div className="flex gap-4">
-                                                <div className="w-12 h-12 flex-shrink-0 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 shadow-sm">
-                                                    <MapPin className="w-6 h-6" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-bold text-slate-900 mb-1">Active Routes</h3>
-                                                    <p>Our teams are active along <strong className="text-slate-900">{market.localContext.corridor}</strong>.</p>
-                                                </div>
+                                    {location.landmarks && location.landmarks.length > 0 && (
+                                        <div className="flex gap-4">
+                                            <div className="w-12 h-12 flex-shrink-0 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 shadow-sm">
+                                                <Eye className="w-6 h-6" />
                                             </div>
-                                        )}
-                                        {market.localContext.painPoints && market.localContext.painPoints.length > 0 && (
-                                            <div className="flex gap-4">
-                                                <div className="w-12 h-12 flex-shrink-0 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 shadow-sm">
-                                                    <Eye className="w-6 h-6" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-bold text-slate-900 mb-1">Problem Solvers</h3>
-                                                    <p>Specialized in solving <strong className="text-slate-900">{market.localContext.painPoints[0]}</strong>.</p>
-                                                </div>
+                                            <div>
+                                                <h3 className="font-bold text-slate-900 mb-1">Nearby Landmarks</h3>
+                                                <p>Serving facilities near <strong className="text-slate-900">{location.landmarks.slice(0, 2).join(' & ')}</strong>.</p>
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
-                    </section>
-                );
-            })()}
+                    </div>
+                </section>
+            )}
 
             <ValuePropsSection title={`Our Standard for ${townName}`} />
 

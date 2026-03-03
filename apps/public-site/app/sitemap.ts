@@ -1,5 +1,4 @@
 import { MetadataRoute } from 'next';
-import { PARTNER_MARKETS } from '@/data/partnerMarkets';
 import seoData from '@/data/seo-data.json';
 import { DLP_SOLUTIONS, SPOKE_HUBS } from '@/data/dlp-solutions';
 import { TRADES, KEYWORD_PAGES, GUIDE_PAGES, getGeoPages } from '@/data/dlp-contractors';
@@ -45,13 +44,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         });
     });
 
-    // 5. Partner Pages
-    PARTNER_MARKETS.forEach((market) => {
-        sitemapEntries.push({ url: `${BASE_URL}/partners/${market.slug}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8, alternates: { languages: { es: `${BASE_URL}/es/partners/${market.slug}` } } });
-        sitemapEntries.push({ url: `${BASE_URL}/es/partners/${market.slug}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8, alternates: { languages: { en: `${BASE_URL}/partners/${market.slug}` } } });
-    });
-
-    // 6. Solutions — Editorial + DLP + Spoke Hubs
+    // 5. Solutions — Editorial + DLP + Spoke Hubs
     ['medical-facility-management', 'single-tenant-maintenance', 'vendor-management-alternative'].forEach((slug) => {
         sitemapEntries.push({ url: `${BASE_URL}/solutions/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 });
     });
