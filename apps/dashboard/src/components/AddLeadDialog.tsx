@@ -196,7 +196,16 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                 if (status === 'OK' && results && results[0]) {
                     const components = results[0].address_components;
 
+                    let streetNumber = '';
+                    let streetName = '';
+
                     components.forEach((component: any) => {
+                        if (component.types.includes('street_number')) {
+                            streetNumber = component.long_name;
+                        }
+                        if (component.types.includes('route')) {
+                            streetName = component.long_name;
+                        }
                         if (component.types.includes('locality')) {
                             setCity(component.long_name);
                         }
@@ -207,6 +216,12 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                             setZip(component.long_name);
                         }
                     });
+
+                    // Show only street number + name in the address field
+                    const streetOnly = [streetNumber, streetName].filter(Boolean).join(' ');
+                    if (streetOnly) {
+                        setAddress({ ...selected, label: streetOnly });
+                    }
 
                     // Infer facility type from place types
                     const types = results[0].types;
