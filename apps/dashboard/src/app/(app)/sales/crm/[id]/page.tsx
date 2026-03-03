@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db } from '@/lib/firebase';
 import { functions } from '@/lib/firebase';
@@ -43,7 +43,10 @@ import {
     Tag,
     CheckCircle2,
     AlertTriangle,
-    Send
+    Send,
+    Rocket,
+    XCircle,
+    Activity,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -111,6 +114,7 @@ export default function LeadDetailPage() {
     const [startingSequence, setStartingSequence] = useState(false);
     const [sequenceMessage, setSequenceMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [updatingStatus, setUpdatingStatus] = useState(false);
+    const [activities, setActivities] = useState<{ id: string; type: string; description: string; createdAt: any; metadata?: any }[]>([]);
 
     const fetchLead = async () => {
         try {
@@ -135,8 +139,23 @@ export default function LeadDetailPage() {
         }
     };
 
+    const fetchActivities = async () => {
+        try {
+            const q = query(
+                collection(db, 'lead_activities'),
+                where('leadId', '==', leadId),
+                orderBy('createdAt', 'desc')
+            );
+            const snap = await getDocs(q);
+            setActivities(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+        } catch (err) {
+            console.error('Error fetching activities:', err);
+        }
+    };
+
     useEffect(() => {
         fetchLead();
+        fetchActivities();
     }, [leadId]);
 
     const handleStatusChange = async (newStatus: string) => {
@@ -501,6 +520,57 @@ export default function LeadDetailPage() {
                         </Card>
                     </div>
                 </div>
+
+                {/* ── Activity Timeline ── */}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                            <Activity className="w-4 h-4" /> Activity Timeline
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {activities.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-6">No activity yet</p>
+                        ) : (
+                            <div className="space-y-0">
+                                {activities.map((act, i) => {
+                                    const date = toDate(act.createdAt);
+                                    const isLast = i === activities.length - 1;
+                                    return (
+                                        <div key={act.id} className="flex gap-3">
+                                            <div className="flex flex-col items-center">
+                                                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${act.type === 'OUTREACH_SENT' ? 'bg-green-100 text-green-600' :
+                                                    act.type === 'OUTREACH_FAILED' ? 'bg-red-100 text-red-600' :
+                                                        act.type === 'SEQUENCE_STARTED' ? 'bg-blue-100 text-blue-600' :
+                                                            act.type === 'OUTREACH_QUEUED' ? 'bg-amber-100 text-amber-600' :
+                                                                'bg-muted text-muted-foreground'
+                                                    }`}>
+                                                    {act.type === 'OUTREACH_SENT' ? <Send className="w-3.5 h-3.5" /> :
+                                                        act.type === 'OUTREACH_FAILED' ? <XCircle className="w-3.5 h-3.5" /> :
+                                                            act.type === 'SEQUENCE_STARTED' ? <Rocket className="w-3.5 h-3.5" /> :
+                                                                act.type === 'OUTREACH_QUEUED' ? <Clock className="w-3.5 h-3.5" /> :
+                                                                    <Activity className="w-3.5 h-3.5" />}
+                                                </div>
+                                                {!isLast && <div className="w-px flex-1 bg-border min-h-[24px]" />}
+                                            </div>
+                                            <div className={`pb-4 ${isLast ? '' : ''}`}>
+                                                <p className="text-sm font-medium leading-tight">
+                                                    {act.type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-0.5">{act.description}</p>
+                                                {date && (
+                                                    <p className="text-[10px] text-muted-foreground mt-1">
+                                                        {format(date, 'MMM d, yyyy h:mm a')}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Start Sequence Confirmation Dialog */}
