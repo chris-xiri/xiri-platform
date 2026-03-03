@@ -22537,7 +22537,15 @@ var onLeadQualified = (0, import_firestore11.onDocumentUpdated)({
   const now = /* @__PURE__ */ new Date();
   const leadType = after.leadType || "direct";
   let steps;
-  if (leadType === "referral_partnership") {
+  if (leadType === "enterprise") {
+    steps = [
+      { dayOffset: 0, sequence: 0 },
+      { dayOffset: 4, sequence: 1 },
+      { dayOffset: 8, sequence: 2 },
+      { dayOffset: 14, sequence: 3 },
+      { dayOffset: 21, sequence: 4 }
+    ];
+  } else if (leadType === "referral_partnership") {
     steps = [
       { dayOffset: 0, sequence: 0 },
       { dayOffset: 4, sequence: 1 },
@@ -22556,7 +22564,7 @@ var onLeadQualified = (0, import_firestore11.onDocumentUpdated)({
     scheduledDate.setDate(scheduledDate.getDate() + step.dayOffset);
     scheduledDate.setHours(14, 0, 0, 0);
     const sendAt = step.dayOffset === 0 ? now : scheduledDate;
-    const templatePrefix = leadType === "referral_partnership" ? "referral_partnership_" : "tenant_lead_";
+    const templatePrefix = leadType === "enterprise" ? "enterprise_lead_" : leadType === "referral_partnership" ? "referral_partnership_" : "tenant_lead_";
     await enqueueTask(db12, {
       leadId,
       type: "SEND",
@@ -23866,21 +23874,34 @@ var optimizeTemplate = (0, import_https5.onCall)({
 });
 var MIN_SENDS_FOR_ANALYSIS = 10;
 var LOW_OPEN_RATE_THRESHOLD = 0.3;
+var OPTIMIZABLE_CATEGORIES = ["vendor", "tenant_lead", "referral_partnership", "enterprise_lead"];
 async function optimizeUnderperformingTemplates() {
-  const templatesSnap = await db19.collection("templates").where("category", "==", "vendor").get();
   const optimized = [];
-  for (const doc of templatesSnap.docs) {
-    const template = doc.data();
-    const stats = template.stats;
-    if (!stats || stats.sent < MIN_SENDS_FOR_ANALYSIS) continue;
-    const openRate = stats.sent > 0 ? stats.opened / stats.sent : 0;
-    if (openRate < LOW_OPEN_RATE_THRESHOLD) {
-      logger19.info(`Template ${doc.id}: ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
-      await optimizeSingleTemplate(doc.id);
-      optimized.push(doc.id);
+  for (const category of OPTIMIZABLE_CATEGORIES) {
+    const templatesSnap = await db19.collection("templates").where("category", "==", category).get();
+    for (const doc of templatesSnap.docs) {
+      const template = doc.data();
+      const stats = template.stats;
+      if (!stats || stats.sent < MIN_SENDS_FOR_ANALYSIS) continue;
+      const openRate = stats.sent > 0 ? stats.opened / stats.sent : 0;
+      if (openRate < LOW_OPEN_RATE_THRESHOLD) {
+        logger19.info(`Template ${doc.id} (${category}): ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
+        await optimizeSingleTemplate(doc.id);
+        optimized.push(doc.id);
+      }
     }
   }
-  if (optimized.length === 0) {
+  if (optimized.length > 0) {
+    await db19.collection("notifications").add({
+      type: "AI_TEMPLATE_OPTIMIZATION",
+      title: `AI optimized ${optimized.length} template${optimized.length > 1 ? "s" : ""}`,
+      message: `${optimized.length} underperforming template${optimized.length > 1 ? "s have" : " has"} new AI suggestions ready for your review.`,
+      templateIds: optimized,
+      read: false,
+      createdAt: /* @__PURE__ */ new Date()
+    });
+    logger19.info(`Notification created for ${optimized.length} optimized templates.`);
+  } else {
     logger19.info("No underperforming templates found.");
   }
   return optimized;
@@ -24017,7 +24038,15 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
   logger20.info(`[StartSequence] Manually starting ${leadType} sequence for lead ${leadId} (${businessName})`);
   const now = /* @__PURE__ */ new Date();
   let steps;
-  if (leadType === "referral_partnership") {
+  if (leadType === "enterprise") {
+    steps = [
+      { dayOffset: 0, sequence: 0 },
+      { dayOffset: 4, sequence: 1 },
+      { dayOffset: 8, sequence: 2 },
+      { dayOffset: 14, sequence: 3 },
+      { dayOffset: 21, sequence: 4 }
+    ];
+  } else if (leadType === "referral_partnership") {
     steps = [
       { dayOffset: 0, sequence: 0 },
       { dayOffset: 4, sequence: 1 },
@@ -24031,7 +24060,7 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
       { dayOffset: 14, sequence: 3 }
     ];
   }
-  const templatePrefix = leadType === "referral_partnership" ? "referral_partnership_" : "tenant_lead_";
+  const templatePrefix = leadType === "enterprise" ? "enterprise_lead_" : leadType === "referral_partnership" ? "referral_partnership_" : "tenant_lead_";
   for (const step of steps) {
     const scheduledDate = new Date(now);
     scheduledDate.setDate(scheduledDate.getDate() + step.dayOffset);
@@ -24060,7 +24089,7 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     sequenceStartedAt: admin24.firestore.FieldValue.serverTimestamp(),
     sequenceStartedBy: request.auth?.uid || "manual"
   });
-  const schedule = leadType === "referral_partnership" ? "Day 0/4/10" : "Day 0/3/7/14";
+  const schedule = leadType === "enterprise" ? "Day 0/4/8/14/21" : leadType === "referral_partnership" ? "Day 0/4/10" : "Day 0/3/7/14";
   await db20.collection("lead_activities").add({
     leadId,
     type: "SEQUENCE_STARTED",
