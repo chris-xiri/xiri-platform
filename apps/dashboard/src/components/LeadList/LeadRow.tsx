@@ -1,6 +1,6 @@
 "use client";
 
-import { Lead, LeadStatus } from '@xiri/shared';
+import { Lead, LeadStatus, LeadType } from '@xiri/shared';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -46,6 +46,12 @@ const FACILITY_TYPE_LABELS: Record<string, string> = {
     'office_general': 'Office',
     'fitness_gym': 'Gym',
     'other': 'Other'
+};
+
+const LEAD_TYPE_BADGE: Record<LeadType, { color: string; label: string } | null> = {
+    'direct': null,  // default — no badge
+    'tenant': { color: 'bg-indigo-100 text-indigo-700 border-indigo-200', label: 'Tenant' },
+    'referral_partnership': { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Referral' },
 };
 
 // Helper to safely convert Firestore Timestamp to Date
@@ -102,6 +108,11 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick }: LeadR
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
                         <Building2 className="w-3 h-3" />
                         {FACILITY_TYPE_LABELS[lead.facilityType] || lead.facilityType}
+                        {lead.leadType && LEAD_TYPE_BADGE[lead.leadType] && (
+                            <Badge variant="outline" className={`text-[10px] px-1 py-0 ml-1 ${LEAD_TYPE_BADGE[lead.leadType]!.color}`}>
+                                {LEAD_TYPE_BADGE[lead.leadType]!.label}
+                            </Badge>
+                        )}
                     </div>
                 </div>
             </TableCell>

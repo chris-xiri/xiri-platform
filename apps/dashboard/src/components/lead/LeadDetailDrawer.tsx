@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Lead } from '@xiri/shared';
+import { Lead, LeadType } from '@xiri/shared';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,12 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_ORDER = ['new', 'contacted', 'qualified', 'walkthrough', 'proposal', 'quoted', 'won', 'lost', 'churned'] as const;
+
+const LEAD_TYPE_LABELS: Record<LeadType, string> = {
+    'direct': 'Direct',
+    'tenant': 'Tenant',
+    'referral_partnership': 'Referral Partnership',
+};
 
 const FACILITY_TYPE_LABELS: Record<string, string> = {
     'medical_urgent_care': 'Urgent Care',
@@ -483,6 +489,15 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                             className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground"
                                         >
                                             {Object.entries(FACILITY_TYPE_LABELS).map(([key, label]) => (
+                                                <option key={key} value={key}>{label}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            value={lead.leadType || 'direct'}
+                                            onChange={(e) => updateField('leadType', e.target.value)}
+                                            className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground"
+                                        >
+                                            {Object.entries(LEAD_TYPE_LABELS).map(([key, label]) => (
                                                 <option key={key} value={key}>{label}</option>
                                             ))}
                                         </select>

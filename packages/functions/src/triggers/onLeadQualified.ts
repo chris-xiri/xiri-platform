@@ -54,14 +54,27 @@ export const onLeadQualified = onDocumentUpdated({
     logger.info(`[SalesOutreach] Scheduling drip campaign for lead ${leadId} (${businessName})`);
 
     const now = new Date();
+    const leadType = after.leadType || 'direct';
 
-    // Schedule 4-step drip: Day 0, Day 3, Day 7, Day 14
-    const steps = [
-        { dayOffset: 0, sequence: 0, subject: 'Simplify your facility management' },
-        { dayOffset: 3, sequence: 1, subject: 'How we save you 15+ hours/month' },
-        { dayOffset: 7, sequence: 2, subject: 'How practices like yours made the switch' },
-        { dayOffset: 14, sequence: 3, subject: 'Last check in — free walkthrough offer' },
-    ];
+    // ── Different sequences per lead type ──
+    let steps: { dayOffset: number; sequence: number; subject: string; type: string }[];
+
+    if (leadType === 'referral_partnership') {
+        // Static template sequence for CRE broker partnerships
+        steps = [
+            { dayOffset: 0, sequence: 0, subject: 'Referral Partnership — XIRI Facility Solutions', type: 'SEND' },
+            { dayOffset: 4, sequence: 1, subject: 'Following up — Referral Partnership', type: 'SEND' },
+            { dayOffset: 10, sequence: 2, subject: 'Final check-in — Partnership Opportunity', type: 'SEND' },
+        ];
+    } else {
+        // Gemini-generated drip for direct/tenant leads
+        steps = [
+            { dayOffset: 0, sequence: 0, subject: 'Simplify your facility management', type: 'GENERATE' },
+            { dayOffset: 3, sequence: 1, subject: 'How we save you 15+ hours/month', type: 'GENERATE' },
+            { dayOffset: 7, sequence: 2, subject: 'How practices like yours made the switch', type: 'GENERATE' },
+            { dayOffset: 14, sequence: 3, subject: 'Last check in — free walkthrough offer', type: 'GENERATE' },
+        ];
+    }
 
     for (const step of steps) {
         const scheduledDate = new Date(now);
@@ -74,7 +87,7 @@ export const onLeadQualified = onDocumentUpdated({
 
         await enqueueTask(db, {
             leadId,
-            type: step.sequence === 0 ? 'GENERATE' : 'FOLLOW_UP',
+            type: step.type === 'SEND' ? 'SEND' : (step.sequence === 0 ? 'GENERATE' : 'FOLLOW_UP'),
             scheduledAt: admin.firestore.Timestamp.fromDate(sendAt),
             metadata: {
                 sequence: step.sequence,
@@ -85,6 +98,11 @@ export const onLeadQualified = onDocumentUpdated({
                 facilityType: after.facilityType || '',
                 address: after.address || '',
                 propertySourcing: after.propertySourcing || null,
+                leadType,
+                // For referral_partnership, point to the static template
+                ...(leadType === 'referral_partnership' ? {
+                    templateId: `referral_partnership_${step.sequence + 1}`,
+                } : {}),
             }
         });
     }

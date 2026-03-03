@@ -108,3 +108,17 @@ Maintained by: @architect-cto
 > - Decision: **Sitemap Trim: ~3,400 → ~1,400 pages (crawl budget)**
 > - Rationale: With 64 locations × 19 services × 15 industries × 6 trades × 12 DLPs, the site generates ~3,400+ pages. Many cross-product pages (Industry×Location, DLP×Location, non-janitorial trade×location) are thin — they reuse the same template content with minimal location variation. To protect Google crawl budget, these ~2,000 pages are **excluded from the sitemap** but remain live and accessible. Google only gets ~1,400 high-quality pages: service×location (enriched), service hubs, industry hubs, janitorial×location, contractor DLPs, and guides.
 > - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **Templates vs Prompts — Two Distinct Patterns**
+> - Rationale: The Firestore `templates` collection stores two fundamentally different things that should not be confused:
+>   - **Templates** — Static email HTML/text with `{{variable}}` placeholders (e.g. `vendor_outreach_1`, `vendor_outreach_2`). Variables are filled from Firestore data at send time. No AI involved. Used for: vendor outreach sequences, booking confirmations, onboarding invites, and now **referral partnership sequences**.
+>   - **Prompts** — Instructions fed to Gemini to generate dynamic content (e.g. `sales_outreach_prompt`, `sales_followup_prompt`). The AI model writes the email body. Used for: sales lead outreach where personalization per facility type matters.
+>   - **When to use which**: Use **templates** when the message is standard with known variables (partnership pitches, operational emails). Use **prompts** when each email needs to be meaningfully different based on context (consultative B2B sales by facility type).
+>   - Both currently live in the `templates` Firestore collection. Convention: prompts end in `_prompt`, templates are named by sequence (e.g. `vendor_outreach_1`, `referral_partnership_1`).
+> - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **Lead Type Classification (`leadType` field)**
+> - Rationale: Leads need different outreach sequences based on their type. Added `LeadType` union type to `@xiri/shared`: `'direct'` (standard leads from audit wizard or manual entry), `'tenant'` (Northwell physician affiliate tenants from scraping), `'referral_partnership'` (CRE brokers for referral partnerships). The `leadType` field on `Lead` is optional and defaults to `'direct'`. The `onLeadQualified` trigger reads `leadType` to route to the correct sequence: direct/tenant → Gemini-generated drip (4 emails, Day 0/3/7/14), referral_partnership → static templates (3 emails, Day 0/4/10).
+> - Status: **Active**
