@@ -50,8 +50,11 @@ function getVariantType(id: string): 'warm' | 'cold' | 'base' {
 }
 
 // Parse sequence step number from template ID
+// Handles: vendor_outreach_1, tenant_lead_2_warm, referral_partnership_3_cold, etc.
 function getStepNumber(id: string): number {
-    const match = id.match(/outreach_(\d+)/);
+    // Strip variant suffix, then grab the trailing number
+    const base = id.replace(/_(warm|cold)$/, '');
+    const match = base.match(/(\d+)$/);
     return match ? parseInt(match[1]) : 0;
 }
 
