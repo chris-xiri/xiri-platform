@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sparkles, CheckCircle, RefreshCw, Mail, MousePointerClick, Eye, AlertTriangle, ChevronDown, ChevronRight, ArrowRight, HardHat, Building2, Handshake, Landmark, Pencil, Save } from 'lucide-react';
+import { Sparkles, CheckCircle, RefreshCw, Mail, MousePointerClick, Eye, AlertTriangle, ChevronDown, ChevronUp, ChevronRight, ArrowRight, ArrowUpDown, HardHat, Building2, Handshake, Landmark, Pencil, Save, X } from 'lucide-react';
 
 interface TemplateStats {
     sent: number;
@@ -164,7 +164,50 @@ export default function TemplateAnalyticsPage() {
     const enterprisePipeline = buildPipeline(templates, 'enterprise_lead_');
 
     const hasLeadTemplates = tenantPipeline.length > 0 || referralPipeline.length > 0 || enterprisePipeline.length > 0;
-    const hasContractorTemplates = vendorPipeline.length > 0;
+
+    // ── Pipeline sections as data ──
+    type PipelineItem = { key: string; title: string; icon: React.ReactNode; pipeline: StepGroup[]; emptyLabel?: string; emptyHint?: string; badge?: string };
+
+    const allLeadPipelines: PipelineItem[] = [
+        { key: 'tenant', title: 'Tenant Lead Outreach', icon: <Building2 className="w-5 h-5" />, pipeline: tenantPipeline },
+        { key: 'referral', title: 'Referral Partnerships', icon: <Handshake className="w-5 h-5" />, pipeline: referralPipeline },
+        { key: 'enterprise', title: 'Enterprise Outreach', icon: <Landmark className="w-5 h-5" />, pipeline: enterprisePipeline, emptyLabel: 'Enterprise Outreach', emptyHint: 'node scripts/seed-enterprise-lead-templates.js', badge: '5-step drip' },
+    ];
+
+    // Load persisted order
+    const savedOrder = typeof window !== 'undefined'
+        ? JSON.parse(localStorage.getItem('lead-pipeline-order') || 'null')
+        : null;
+
+    const orderedLeadPipelines = savedOrder
+        ? savedOrder
+            .map((key: string) => allLeadPipelines.find(p => p.key === key))
+            .filter(Boolean)
+            .concat(allLeadPipelines.filter(p => !savedOrder.includes(p.key)))
+        : allLeadPipelines;
+
+    // Reorder state
+    const [reordering, setReordering] = useState(false);
+    const [pipelineOrder, setPipelineOrder] = useState<PipelineItem[]>(orderedLeadPipelines);
+
+    const movePipeline = (index: number, direction: 'up' | 'down') => {
+        const newOrder = [...pipelineOrder];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= newOrder.length) return;
+        [newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]];
+        setPipelineOrder(newOrder);
+    };
+
+    const saveOrder = () => {
+        const keys = pipelineOrder.map(p => p.key);
+        localStorage.setItem('lead-pipeline-order', JSON.stringify(keys));
+        setReordering(false);
+    };
+
+    const cancelReorder = () => {
+        setPipelineOrder(orderedLeadPipelines);
+        setReordering(false);
+    };
 
     return (
         <div className="space-y-6">
@@ -191,63 +234,81 @@ export default function TemplateAnalyticsPage() {
                 </TabsList>
 
                 {/* ─── Lead Templates Tab ─── */}
-                <TabsContent value="leads" className="space-y-8 mt-6">
-                    {/* Tenant Lead Pipeline */}
-                    {tenantPipeline.length > 0 && (
-                        <PipelineSection
-                            title="Tenant Lead Outreach"
-                            icon={<Building2 className="w-5 h-5" />}
-                            pipeline={tenantPipeline}
-                            optimizing={optimizing}
-                            applying={applying}
-                            onOptimize={handleOptimize}
-                            onApply={handleApply}
-                            onDismiss={handleDismiss}
-                        />
+                <TabsContent value="leads" className="space-y-6 mt-6">
+                    {/* Reorder Controls */}
+                    {hasLeadTemplates && (
+                        <div className="flex items-center justify-end gap-2">
+                            {reordering ? (
+                                <>
+                                    <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={cancelReorder}>
+                                        <X className="w-3.5 h-3.5" /> Cancel
+                                    </Button>
+                                    <Button size="sm" className="gap-1.5" onClick={saveOrder}>
+                                        <Save className="w-3.5 h-3.5" /> Save Order
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setReordering(true)}>
+                                    <ArrowUpDown className="w-3.5 h-3.5" /> Reorder
+                                </Button>
+                            )}
+                        </div>
                     )}
 
-                    {/* Referral Partnership Pipeline */}
-                    {referralPipeline.length > 0 && (
-                        <PipelineSection
-                            title="Referral Partnerships"
-                            icon={<Handshake className="w-5 h-5" />}
-                            pipeline={referralPipeline}
-                            optimizing={optimizing}
-                            applying={applying}
-                            onOptimize={handleOptimize}
-                            onApply={handleApply}
-                            onDismiss={handleDismiss}
-                        />
-                    )}
-
-                    {/* Enterprise Lead Pipeline */}
-                    {enterprisePipeline.length > 0 ? (
-                        <PipelineSection
-                            title="Enterprise Outreach"
-                            icon={<Landmark className="w-5 h-5" />}
-                            pipeline={enterprisePipeline}
-                            optimizing={optimizing}
-                            applying={applying}
-                            onOptimize={handleOptimize}
-                            onApply={handleApply}
-                            onDismiss={handleDismiss}
-                        />
-                    ) : (
-                        <Card>
-                            <CardContent className="py-6">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <Landmark className="w-5 h-5" />
-                                    <h3 className="font-semibold text-sm">Enterprise Outreach</h3>
-                                    <Badge variant="secondary" className="text-[10px]">5-step drip</Badge>
+                    {/* Pipeline Sections */}
+                    {pipelineOrder.map((item, index) => (
+                        <div key={item.key} className={`relative ${reordering ? 'ring-1 ring-border rounded-lg p-1 transition-all' : ''}`}>
+                            {reordering && (
+                                <div className="flex items-center justify-end gap-1 mb-2 pr-1">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        disabled={index === 0}
+                                        onClick={() => movePipeline(index, 'up')}
+                                    >
+                                        <ChevronUp className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        disabled={index === pipelineOrder.length - 1}
+                                        onClick={() => movePipeline(index, 'down')}
+                                    >
+                                        <ChevronDown className="w-4 h-4" />
+                                    </Button>
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                    No enterprise lead templates found. Run{' '}
-                                    <code className="bg-muted px-1 rounded">node scripts/seed-enterprise-lead-templates.js</code>{' '}
-                                    to create the 5-step outreach sequence.
-                                </p>
-                            </CardContent>
-                        </Card>
-                    )}
+                            )}
+                            {item.pipeline.length > 0 ? (
+                                <PipelineSection
+                                    title={item.title}
+                                    icon={item.icon}
+                                    pipeline={item.pipeline}
+                                    optimizing={optimizing}
+                                    applying={applying}
+                                    onOptimize={handleOptimize}
+                                    onApply={handleApply}
+                                    onDismiss={handleDismiss}
+                                />
+                            ) : item.emptyLabel ? (
+                                <Card>
+                                    <CardContent className="py-6">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            {item.icon}
+                                            <h3 className="font-semibold text-sm">{item.emptyLabel}</h3>
+                                            {item.badge && <Badge variant="secondary" className="text-[10px]">{item.badge}</Badge>}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            No templates found. Run{' '}
+                                            <code className="bg-muted px-1 rounded">{item.emptyHint}</code>{' '}
+                                            to create the outreach sequence.
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            ) : null}
+                        </div>
+                    ))}
 
                     {!hasLeadTemplates && (
                         <div className="text-center py-12 text-muted-foreground">
