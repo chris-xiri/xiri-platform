@@ -79,16 +79,6 @@ export default function LoginPage() {
                         <Button type="submit" className="w-full" disabled={loading}>
                             {loading ? 'Signing in...' : 'Sign In'}
                         </Button>
-
-                        <div className="mt-6 p-4 bg-muted rounded-lg text-sm">
-                            <p className="font-semibold mb-2">Test Credentials:</p>
-                            <div className="space-y-1 text-muted-foreground">
-                                <p><strong>Admin:</strong> admin@xiri.ai / Admin123!</p>
-                                <p><strong>Sales:</strong> sales1@xiri.ai / Sales123!</p>
-                                <p><strong>FSM:</strong> fsm1@xiri.ai / Fsm123!</p>
-                                <p><strong>Night Mgr:</strong> night1@xiri.ai / Night123!</p>
-                            </div>
-                        </div>
                     </form>
                 </CardContent>
             </Card>
