@@ -25,9 +25,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
         sitemapEntries.push({ url: `${BASE_URL}/services/${item.slug}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 });
     });
 
-    // 4. Service × Location Pages (core money pages — enriched content)
+    // 4. Service × Location Pages — core cleaning services only (crawl budget)
+    const SITEMAP_SERVICES = [
+        'medical-office-cleaning',
+        'urgent-care-cleaning',
+        'janitorial-services',
+        'commercial-cleaning',
+        'day-porter',
+    ];
     const locations = seoData.locations || [];
-    services.forEach((service) => {
+    services.filter((s) => SITEMAP_SERVICES.includes(s.slug)).forEach((service) => {
         locations.forEach((location) => {
             const countySlug = toSlug(location.region);
             const townSlug = toSlug(location.name.split(',')[0]);
@@ -35,8 +42,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
             sitemapEntries.push({ url: `${BASE_URL}/services/${service.slug}-in-${townSlug}-${countySlug}-${stateSlug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 });
         });
     });
-    // NOTE: Industry × Location pages (960) excluded from sitemap to protect crawl budget.
-    // Pages still exist and are accessible — just not submitted to Google.
+    // NOTE: Other 14 services × location (896 pages) excluded from sitemap.
+    // Industry × Location (960 pages) also excluded.
+    // All pages remain live — just not submitted to Google.
 
     // 5. Solutions — Editorial + DLP + Spoke Hubs
     ['medical-facility-management', 'single-tenant-maintenance', 'vendor-management-alternative'].forEach((slug) => {
