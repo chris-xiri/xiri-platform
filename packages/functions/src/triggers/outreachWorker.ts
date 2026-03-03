@@ -474,41 +474,92 @@ async function handleLeadGenerate(task: QueueItem) {
 }
 
 async function handleLeadSend(task: QueueItem) {
-    logger.info(`[SalesOutreach] Sending email for lead ${task.leadId}`);
+    logger.info(`[LeadOutreach] Sending template email for lead ${task.leadId}`);
 
-    const toEmail = task.metadata?.toEmail;
+    const toEmail = task.metadata?.email;
     if (!toEmail) {
-        logger.warn(`[SalesOutreach] No email for lead ${task.leadId}, skipping.`);
+        logger.warn(`[LeadOutreach] No email for lead ${task.leadId}, skipping.`);
         await updateTaskStatus(db, task.id!, 'COMPLETED');
         return;
     }
 
-    const emailData = task.metadata.email;
-    const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${(emailData?.body || '').replace(/\n/g, '<br/>')}</div>`;
+    const templateId = task.metadata?.templateId;
+    if (!templateId) {
+        logger.error(`[LeadOutreach] No templateId for lead ${task.leadId} task ${task.id}.`);
+        await updateTaskStatus(db, task.id!, 'FAILED');
+        return;
+    }
 
-    const sendSuccess = await sendEmail(
-        toEmail,
-        emailData?.subject || 'Xiri Facility Solutions — Simplify Your Facility Management',
-        htmlBody
+    // Fetch template
+    const templateDoc = await db.collection('templates').doc(templateId).get();
+    if (!templateDoc.exists) {
+        logger.error(`[LeadOutreach] Template ${templateId} not found. Run the seed script.`);
+        await updateTaskStatus(db, task.id!, 'FAILED');
+        return;
+    }
+
+    const template = templateDoc.data()!;
+
+    // Build merge variables from task metadata
+    const mergeVars: Record<string, string> = {
+        contactName: task.metadata.contactName || 'there',
+        businessName: task.metadata.businessName || 'your practice',
+        facilityType: titleCase(task.metadata.facilityType || 'Medical Office'),
+        address: task.metadata.address || '',
+        squareFootage: task.metadata.squareFootage || '',
+    };
+
+    // Merge template
+    let subject = template.subject || task.metadata.subject || '';
+    let body = template.body || '';
+    for (const [key, value] of Object.entries(mergeVars)) {
+        const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+        subject = subject.replace(regex, value);
+        body = body.replace(regex, value);
+    }
+
+    const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${body.replace(/\n/g, '<br/>')}</div>`;
+
+    const sendResult = await sendEmail(
+        toEmail, subject, htmlBody,
+        undefined, undefined, task.leadId ?? undefined, templateId
     );
 
     await db.collection("lead_activities").add({
         leadId: task.leadId,
-        type: sendSuccess ? "OUTREACH_SENT" : "OUTREACH_FAILED",
-        description: sendSuccess
-            ? `Sales email sent to ${toEmail}.`
-            : `Failed to send sales email to ${toEmail}.`,
+        type: sendResult.success ? "OUTREACH_SENT" : "OUTREACH_FAILED",
+        description: sendResult.success
+            ? `Lead email sent to ${toEmail} (template: ${templateId}).`
+            : `Failed to send lead email to ${toEmail}.`,
         createdAt: new Date(),
-        metadata: { to: toEmail, subject: emailData?.subject },
+        metadata: {
+            to: toEmail,
+            subject,
+            body,
+            html: htmlBody,
+            templateId,
+            sequence: task.metadata.sequence,
+            resendId: sendResult.resendId || null,
+        },
     });
 
-    await updateTaskStatus(db, task.id!, sendSuccess ? 'COMPLETED' : 'FAILED');
+    await updateTaskStatus(db, task.id!, sendResult.success ? 'COMPLETED' : 'FAILED');
 
-    if (sendSuccess) {
+    if (sendResult.success) {
         await db.collection("leads").doc(task.leadId!).update({
             outreachStatus: 'SENT',
             outreachSentAt: new Date(),
         });
+
+        // Increment template stats.sent
+        try {
+            await db.collection('templates').doc(templateId).update({
+                'stats.sent': admin.firestore.FieldValue.increment(1),
+                'stats.lastUpdated': new Date(),
+            });
+        } catch (statsErr) {
+            logger.warn('Template stats.sent update failed:', statsErr);
+        }
     }
 }
 

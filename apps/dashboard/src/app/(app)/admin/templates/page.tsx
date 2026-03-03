@@ -119,7 +119,7 @@ export default function TemplateAnalyticsPage() {
         const snap = await getDocs(collection(db, 'templates'));
         const data = snap.docs
             .map(d => ({ id: d.id, ...d.data() } as Template))
-            .filter(t => t.id.startsWith('vendor_outreach_') || t.id.startsWith('sales_outreach_') || t.id.startsWith('referral_partnership_'));
+            .filter(t => t.id.startsWith('vendor_outreach_') || t.id.startsWith('tenant_lead_') || t.id.startsWith('referral_partnership_'));
         setTemplates(data);
         setLoading(false);
     }
@@ -155,16 +155,16 @@ export default function TemplateAnalyticsPage() {
     if (loading) return <div className="p-8 text-center text-muted-foreground">Loading templates...</div>;
 
     const vendorPipeline = buildPipeline(templates, 'vendor_outreach_');
-    const salesPipeline = buildPipeline(templates, 'sales_outreach_');
+    const tenantPipeline = buildPipeline(templates, 'tenant_lead_');
     const referralPipeline = buildPipeline(templates, 'referral_partnership_');
 
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold">Template Analytics</h2>
+                    <h2 className="text-2xl font-bold">Email Analytics</h2>
                     <p className="text-sm text-muted-foreground">
-                        Outreach sequence performance — see at which step prospects convert
+                        Outreach sequence performance by funnel — edit templates and see where prospects convert
                     </p>
                 </div>
                 <Button variant="outline" size="sm" onClick={fetchTemplates} className="gap-2">
@@ -186,18 +186,33 @@ export default function TemplateAnalyticsPage() {
                 />
             )}
 
-            {/* Sales Lead Pipeline */}
-            {salesPipeline.length > 0 && (
+            {/* Tenant Lead Outreach Pipeline (AI-generated) */}
+            {tenantPipeline.length > 0 ? (
                 <PipelineSection
-                    title="Sales Lead Outreach"
+                    title="Tenant Lead Outreach"
                     icon={<Building2 className="w-5 h-5" />}
-                    pipeline={salesPipeline}
+                    pipeline={tenantPipeline}
                     optimizing={optimizing}
                     applying={applying}
                     onOptimize={handleOptimize}
                     onApply={handleApply}
                     onDismiss={handleDismiss}
                 />
+            ) : (
+                <Card>
+                    <CardContent className="py-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Building2 className="w-5 h-5" />
+                            <h3 className="font-semibold text-sm">Tenant Lead Outreach</h3>
+                            <Badge variant="secondary" className="text-[10px]">4-step drip</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            No tenant lead templates found. Run{' '}
+                            <code className="bg-muted px-1 rounded">node scripts/seed-tenant-lead-templates.js</code>{' '}
+                            to create the 4-step outreach sequence.
+                        </p>
+                    </CardContent>
+                </Card>
             )}
 
             {/* Referral Partnership Pipeline */}
@@ -214,7 +229,7 @@ export default function TemplateAnalyticsPage() {
                 />
             )}
 
-            {vendorPipeline.length === 0 && salesPipeline.length === 0 && referralPipeline.length === 0 && (
+            {vendorPipeline.length === 0 && tenantPipeline.length === 0 && referralPipeline.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
                     <Mail className="w-12 h-12 mx-auto mb-3 opacity-50" />
                     <p>No email templates found. Seed templates to get started.</p>

@@ -67,12 +67,12 @@ export const onLeadQualified = onDocumentUpdated({
             { dayOffset: 10, sequence: 2, subject: 'Final check-in — Partnership Opportunity', type: 'SEND' },
         ];
     } else {
-        // Gemini-generated drip for direct/tenant leads
+        // Static template sequence for direct/tenant leads
         steps = [
-            { dayOffset: 0, sequence: 0, subject: 'Simplify your facility management', type: 'GENERATE' },
-            { dayOffset: 3, sequence: 1, subject: 'How we save you 15+ hours/month', type: 'GENERATE' },
-            { dayOffset: 7, sequence: 2, subject: 'How practices like yours made the switch', type: 'GENERATE' },
-            { dayOffset: 14, sequence: 3, subject: 'Last check in — free walkthrough offer', type: 'GENERATE' },
+            { dayOffset: 0, sequence: 0, subject: 'Facility Services for your practice', type: 'SEND' },
+            { dayOffset: 3, sequence: 1, subject: 'Quick follow-up — saving 15+ hours/month', type: 'SEND' },
+            { dayOffset: 7, sequence: 2, subject: 'How practices like yours made the switch', type: 'SEND' },
+            { dayOffset: 14, sequence: 3, subject: 'Last check-in — free walkthrough offer', type: 'SEND' },
         ];
     }
 
@@ -85,9 +85,14 @@ export const onLeadQualified = onDocumentUpdated({
         // Day 0 sends immediately (or at next 9am if past)
         const sendAt = step.dayOffset === 0 ? now : scheduledDate;
 
+        // Determine template prefix by lead type
+        const templatePrefix = leadType === 'referral_partnership'
+            ? 'referral_partnership_'
+            : 'tenant_lead_';
+
         await enqueueTask(db, {
             leadId,
-            type: step.type === 'SEND' ? 'SEND' : (step.sequence === 0 ? 'GENERATE' : 'FOLLOW_UP'),
+            type: 'SEND',
             scheduledAt: admin.firestore.Timestamp.fromDate(sendAt),
             metadata: {
                 sequence: step.sequence,
@@ -97,12 +102,10 @@ export const onLeadQualified = onDocumentUpdated({
                 contactName: after.contactName || '',
                 facilityType: after.facilityType || '',
                 address: after.address || '',
+                squareFootage: after.squareFootage || '',
                 propertySourcing: after.propertySourcing || null,
                 leadType,
-                // For referral_partnership, point to the static template
-                ...(leadType === 'referral_partnership' ? {
-                    templateId: `referral_partnership_${step.sequence + 1}`,
-                } : {}),
+                templateId: `${templatePrefix}${step.sequence + 1}`,
             }
         });
     }
