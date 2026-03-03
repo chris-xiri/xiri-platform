@@ -6,13 +6,6 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { httpsCallable } from 'firebase/functions';
@@ -23,9 +16,7 @@ import {
     Phone,
     Mail,
     MapPin,
-    MoreHorizontal,
     Rocket,
-    ExternalLink,
     Loader2,
 } from 'lucide-react';
 
@@ -256,38 +247,22 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
 
             {show('actions') && (
                 <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                                <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem
-                                onClick={handleClick}
-                                className="flex items-center gap-2 cursor-pointer"
-                            >
-                                <ExternalLink className="w-3.5 h-3.5" /> View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {lead.email ? (
-                                <DropdownMenuItem
-                                    onClick={handleStartSequence}
-                                    disabled={startingSequence}
-                                    className="flex items-center gap-2 cursor-pointer"
-                                >
-                                    {startingSequence
-                                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                        : <Rocket className="w-3.5 h-3.5" />}
-                                    {startingSequence ? 'Starting...' : 'Start Sequence'}
-                                </DropdownMenuItem>
-                            ) : (
-                                <DropdownMenuItem disabled className="flex items-center gap-2 text-muted-foreground">
-                                    <Rocket className="w-3.5 h-3.5" /> No email — add to start
-                                </DropdownMenuItem>
-                            )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {lead.email ? (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1.5 text-xs"
+                            disabled={startingSequence}
+                            onClick={handleStartSequence}
+                        >
+                            {startingSequence
+                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                : <Rocket className="w-3 h-3" />}
+                            {startingSequence ? 'Starting…' : 'Start Sequence'}
+                        </Button>
+                    ) : (
+                        <span className="text-[10px] text-muted-foreground">No email</span>
+                    )}
                 </TableCell>
             )}
         </TableRow>
