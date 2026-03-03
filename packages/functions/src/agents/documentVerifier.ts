@@ -1,10 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import * as https from "https";
+import { getPrompt } from "../utils/promptUtils";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const db = admin.firestore();
 
 // ─── Download file from URL as Buffer (native Node.js, no deps) ───
 function downloadFileAsBuffer(url: string): Promise<Buffer> {
@@ -92,22 +91,33 @@ export async function verifyDocument(docType: 'COI' | 'W9', vendorName: string, 
     }
 
     try {
-        const templateDoc = await db.collection("templates").doc("document_verifier_prompt").get();
-        if (!templateDoc.exists) {
-            throw new Error("Document verifier prompt not found in database");
-        }
+        const FALLBACK = `You are a document verification agent for Xiri Facility Solutions.
 
-        const template = templateDoc.data();
+Analyze this {{documentType}} for {{vendorName}} (specialty: {{specialty}}).
+
+Requirements: {{requirements}}
+
+Document content:
+{{ocrText}}
+
+Verify compliance and extract key data. Return JSON:
+{
+    "valid": true/false,
+    "reasoning": "Brief explanation",
+    "extracted": {}
+}`;
+
         const requirements = docType === 'COI'
             ? 'Must have General Liability > $1,000,000 and valid dates.'
             : 'Must be signed and have a TIN.';
 
-        const prompt = template?.content
-            .replace(/\{\{documentType\}\}/g, docType)
-            .replace(/\{\{vendorName\}\}/g, vendorName)
-            .replace(/\{\{specialty\}\}/g, specialty)
-            .replace(/\{\{requirements\}\}/g, requirements)
-            .replace(/\{\{ocrText\}\}/g, simulatedOcrText);
+        const prompt = await getPrompt('document_verifier_legacy', FALLBACK, {
+            documentType: docType,
+            vendorName,
+            specialty,
+            requirements,
+            ocrText: simulatedOcrText,
+        });
 
         const result = await model.generateContent({
             contents: [{ role: "user", parts: [{ text: prompt }] }]
@@ -153,49 +163,23 @@ export async function verifyAcord25(
         const base64Data = buffer.toString('base64');
 
         // 2. Build the structured extraction prompt
-        const prompt = `You are an insurance compliance verification agent for Xiri Facility Solutions.
+        const ACORD_FALLBACK = `You are an insurance compliance verification agent for Xiri Facility Solutions.
 
-Analyze this ACORD 25 Certificate of Liability Insurance and extract the following data in JSON format.
+Analyze this ACORD 25 Certificate of Liability Insurance and extract data in JSON format.
+Vendor: "{{vendorName}}"
+GL: {{hasGL}}, WC: {{hasWC}}, Auto: {{hasAuto}}, Entity: {{hasEntity}}
+Today: {{todayDate}}
 
-**The vendor's name on file is: "${vendorName}"**
+Return JSON with valid, reasoning, flags, and extracted fields.`;
 
-**The vendor attested to having the following coverage:**
-- General Liability: ${attestations.hasGL ? 'YES' : 'NO'}
-- Workers' Compensation: ${attestations.hasWC ? 'YES' : 'NO'}
-- Auto Insurance: ${attestations.hasAuto ? 'YES' : 'NO'}
-- Business Entity (LLC/Corp): ${attestations.hasEntity ? 'YES' : 'NO'}
-
-**Minimum requirements to PASS:**
-- General Liability: ≥ $1,000,000 per occurrence AND ≥ $2,000,000 aggregate
-- Workers' Compensation: Must have active policy if attested
-- Auto Insurance: Must have active policy if attested
-- All policies must NOT be expired (check against today's date: ${new Date().toISOString().split('T')[0]})
-- Insured name should reasonably match vendor name on file
-
-**Cross-reference the vendor's attestations against the actual document.**
-If the vendor attested to having coverage but the document does NOT show it, flag it.
-If limits are below minimums, flag it.
-If any policy is expired, flag it.
-
-Return ONLY valid JSON in this exact format:
-{
-    "valid": true/false,
-    "reasoning": "Brief explanation of the verification result",
-    "flags": ["list of specific issues found, empty array if none"],
-    "extracted": {
-        "insuredName": "Name as shown on certificate",
-        "glPerOccurrence": 1000000,
-        "glAggregate": 2000000,
-        "wcActive": true/false,
-        "wcPolicyNumber": "policy number or null",
-        "autoActive": true/false,
-        "expirationDates": [
-            { "policy": "General Liability", "expires": "2025-01-15" },
-            { "policy": "Workers Comp", "expires": "2025-06-30" }
-        ],
-        "certificateHolder": "Name if listed, or null"
-    }
-}`;
+        const prompt = await getPrompt('acord25_verifier', ACORD_FALLBACK, {
+            vendorName,
+            hasGL: attestations.hasGL ? 'YES' : 'NO',
+            hasWC: attestations.hasWC ? 'YES' : 'NO',
+            hasAuto: attestations.hasAuto ? 'YES' : 'NO',
+            hasEntity: attestations.hasEntity ? 'YES' : 'NO',
+            todayDate: new Date().toISOString().split('T')[0],
+        });
 
         // 3. Send to Gemini with the file as inline data
         const result = await model.generateContent({

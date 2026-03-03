@@ -1,12 +1,12 @@
 import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import { db } from "./utils/firebase";
+import { getPrompt } from "./utils/promptUtils";
 import { analyzeVendorLeads } from "./agents/recruiter";
 import { searchVendors } from "./agents/sourcer";
 import { searchProperties } from "./agents/propertySourcer";
 // import { telegramWebhook, autoApproveVendor, notifyHumanReview, onVendorCreated } from "./triggers/telegramBot";
 import { onVendorApproved, onVendorCreated } from "./triggers/onVendorApproved";
 import { processOutreachQueue } from "./triggers/outreachWorker";
-import { onIncomingMessage } from "./triggers/onIncomingMessage";
 import { onDocumentUploaded } from "./triggers/onDocumentUploaded";
 import { sendBookingConfirmation } from "./triggers/sendBookingConfirmation";
 import { enrichFromWebsite } from "./triggers/enrichFromWebsite";
@@ -29,7 +29,7 @@ import { weeklyTemplateOptimizer, optimizeTemplate } from "./triggers/aiTemplate
 
 // Export Bot Functions (Telegram disabled for now)
 // export { telegramWebhook, autoApproveVendor, onVendorCreated, onVendorApproved, processOutreachQueue, onIncomingMessage, onDocumentUploaded };
-export { onVendorApproved, onVendorCreated, processOutreachQueue, onIncomingMessage, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete, onAwaitingOnboarding, onVendorAdvancedPastOutreach, handleUnsubscribe, sendOnboardingInvite, sendQuoteEmail, respondToQuote, processMailQueue, onWorkOrderAssigned, onLeadQualified, onQuoteAccepted, onInvoicePaid, onWorkOrderHandoff, onClientCancelled, processCommissionPayouts, calculateNrr, onAuditSubmitted, onAuditFailed, generateMonthlyInvoices, resendWebhook, onLeadUpdated, onVendorUpdated, onStaffUpdated, weeklyTemplateOptimizer, optimizeTemplate };
+export { onVendorApproved, onVendorCreated, processOutreachQueue, onDocumentUploaded, sendBookingConfirmation, enrichFromWebsite, onOnboardingComplete, onAwaitingOnboarding, onVendorAdvancedPastOutreach, handleUnsubscribe, sendOnboardingInvite, sendQuoteEmail, respondToQuote, processMailQueue, onWorkOrderAssigned, onLeadQualified, onQuoteAccepted, onInvoicePaid, onWorkOrderHandoff, onClientCancelled, processCommissionPayouts, calculateNrr, onAuditSubmitted, onAuditFailed, generateMonthlyInvoices, resendWebhook, onLeadUpdated, onVendorUpdated, onStaffUpdated, weeklyTemplateOptimizer, optimizeTemplate };
 
 // ─── Admin: Sync Auth Email/Password ─────────────────────────────────────────
 import { getAuth } from "firebase-admin/auth";
@@ -712,16 +712,16 @@ export const regeneratePostCaption = onCall({
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const prompt = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for ${audience}:
+    const FALLBACK = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for {{audience}}:
 
 --- CURRENT POST ---
-${post.message}
+{{currentPost}}
 --- END ---
 
 The reviewer has provided this feedback:
-"${feedback || "Generate a different version"}"
+"{{feedback}}"
 
-Write an improved version of this post incorporating the feedback. Keep the same target audience (${audience}).
+Write an improved version of this post incorporating the feedback. Keep the same target audience ({{audience}}).
 
 CRITICAL FORMATTING RULES:
 - Facebook does NOT support text formatting. Do NOT use Markdown.
@@ -732,6 +732,12 @@ CRITICAL FORMATTING RULES:
 - 100-250 words.
 
 Respond with ONLY the post text. No introductions.`;
+
+    const prompt = await getPrompt('social_caption_regenerator', FALLBACK, {
+        audience,
+        currentPost: post.message,
+        feedback: feedback || 'Generate a different version',
+    });
 
     const result = await model.generateContent(prompt);
     const newCaption = result.response.text().trim();

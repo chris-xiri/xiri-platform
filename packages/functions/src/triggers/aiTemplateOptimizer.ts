@@ -2,6 +2,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import { getPrompt } from "../utils/promptUtils";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -105,48 +106,41 @@ async function optimizeSingleTemplate(templateId: string) {
         throw new HttpsError('failed-precondition', 'GEMINI_API_KEY not set');
     }
 
-    const prompt = `You are an email marketing expert specializing in B2B contractor outreach for facility management companies.
+    const FALLBACK = `You are an email marketing expert specializing in B2B contractor outreach for facility management companies.
 
 ## Current Template Performance
-- Template: "${template.name}" (${templateId})
-- Sent: ${stats.sent} | Delivered: ${stats.delivered} | Opened: ${stats.opened} | Clicked: ${stats.clicked}
-- Open Rate: ${openRate}% | Click Rate: ${clickRate}% | Bounce Rate: ${bounceRate}%
+- Template: "{{templateName}}" ({{templateId}})
+- Sent: {{statsSent}} | Delivered: {{statsDelivered}} | Opened: {{statsOpened}} | Clicked: {{statsClicked}}
+- Open Rate: {{openRate}}% | Click Rate: {{clickRate}}% | Bounce Rate: {{bounceRate}}%
 
 ## Current Subject Line
-"${template.subject}"
+"{{currentSubject}}"
 
 ## Current Email Body
-${template.body}
+{{currentBody}}
 
 ## Context
-This email targets independent contractors (janitorial, HVAC, cleaning, etc.) to join a facility management network. The CTA is to click a link and complete an onboarding profile. These are small business owners or independent operators — keep tone professional but blue-collar-friendly.
+This email targets independent contractors to join a facility management network. Keep tone professional but blue-collar-friendly.
 
 ## Available Merge Variables
 {{vendorName}}, {{contactName}}, {{city}}, {{state}}, {{services}}, {{specialty}}, {{onboardingUrl}}
 
 ## Instructions
-Based on the performance data, suggest improvements. Return your response as JSON:
-{
-  "analysis": "Brief analysis of why this template may be underperforming",
-  "suggestions": [
-    {
-      "subject": "Improved subject line option 1",
-      "body": "Improved email body option 1 (keep merge variables, keep it concise)",
-      "rationale": "Why this version should perform better"
-    },
-    {
-      "subject": "Improved subject line option 2",
-      "body": "Improved email body option 2",
-      "rationale": "Why this version should perform better"
-    }
-  ],
-  "shortUrlTest": {
-    "recommendation": "Whether to test short vs long onboarding URL display",
-    "shortVariant": "Suggested short CTA text and link format if applicable"
-  }
-}
+Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Return ONLY valid JSON, no markdown fences.`;
 
-Return ONLY valid JSON, no markdown fences.`;
+    const prompt = await getPrompt('template_optimizer', FALLBACK, {
+        templateName: template.name,
+        templateId,
+        statsSent: String(stats.sent),
+        statsDelivered: String(stats.delivered),
+        statsOpened: String(stats.opened),
+        statsClicked: String(stats.clicked),
+        openRate: String(openRate),
+        clickRate: String(clickRate),
+        bounceRate: String(bounceRate),
+        currentSubject: template.subject,
+        currentBody: template.body,
+    });
 
     try {
         const response = await fetch(

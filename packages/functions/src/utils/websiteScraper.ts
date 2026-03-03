@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getPrompt } from './promptUtils';
 
 interface ScrapedData {
     email?: string;
@@ -370,7 +371,7 @@ async function extractWithAI(html: string, geminiApiKey: string): Promise<Partia
         // Strip HTML to plain text and limit size (use more content for better results)
         const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').substring(0, 15000);
 
-        const prompt = `Extract business contact information from this website content. 
+        const FALLBACK = `Extract business contact information from this website content. 
 This is a commercial cleaning or janitorial company. Find the owner/manager's direct contact info if possible.
 
 Return ONLY a JSON object with these fields (use null if not found):
@@ -382,7 +383,11 @@ Return ONLY a JSON object with these fields (use null if not found):
 }
 
 Website content:
-${text}`;
+{{websiteText}}`;
+
+        const prompt = await getPrompt('website_contact_extractor', FALLBACK, {
+            websiteText: text,
+        });
 
         const result = await model.generateContent(prompt);
         const response = result.response.text();

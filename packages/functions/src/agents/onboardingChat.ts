@@ -2,6 +2,7 @@
 import * as admin from 'firebase-admin';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Vendor } from '../utils/types';
+import { getPrompt } from '../utils/promptUtils';
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -115,12 +116,15 @@ async function saveMessage(vendorId: string, sender: 'user' | 'ai', text: string
 }
 
 async function classifyResponse(text: string, instructions: string): Promise<string> {
-    const prompt = `
-    Analyze this user response: "${text}".
-    Instruction: ${instructions}
+    const FALLBACK = `Analyze this user response: "{{userMessage}}".
+    Instruction: {{classificationInstruction}}
     
-    Return ONLY the classification label (e.g., YES, NO, YES_CORRECT_ENTITY).
-    `;
+    Return ONLY the classification label (e.g., YES, NO, YES_CORRECT_ENTITY).`;
+
+    const prompt = await getPrompt('onboarding_classifier', FALLBACK, {
+        userMessage: text,
+        classificationInstruction: instructions,
+    });
 
     try {
         const result = await model.generateContent(prompt);

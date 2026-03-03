@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Resend } from 'resend';
+import { getPrompt } from './promptUtils';
 
 const db = admin.firestore();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -49,25 +50,31 @@ export async function generatePersonalizedEmail(
 
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-        const prompt = `You are a professional email writer for Xiri Facility Solutions.
+        const FALLBACK = `You are a professional email writer for Xiri Facility Solutions.
 
 Take this email template and personalize it while maintaining the core message:
 
-Subject: ${template.subject}
+Subject: {{templateSubject}}
 Body:
-${template.content}
+{{templateBody}}
 
 Variables to use:
-${Object.entries(variables).map(([key, val]) => `- ${key}: ${val}`).join('\n')}
+{{variablesList}}
 
 Instructions:
-1. Replace all {{variables}} with the actual values
+1. Replace all variables with the actual values
 2. Make the tone warm and professional
 3. Keep it concise (under 150 words)
 4. Output ONLY the email in this format:
 SUBJECT: [subject line]
 BODY:
 [email body]`;
+
+        const prompt = await getPrompt('email_personalizer', FALLBACK, {
+            templateSubject: template.subject,
+            templateBody: template.content,
+            variablesList: Object.entries(variables).map(([key, val]) => `- ${key}: ${val}`).join('\n'),
+        });
 
         const result = await model.generateContent({
             contents: [{ role: "user", parts: [{ text: prompt }] }]
