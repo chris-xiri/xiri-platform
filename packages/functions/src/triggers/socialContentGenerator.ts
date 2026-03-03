@@ -10,6 +10,7 @@ import { db } from "../utils/firebase";
 import { getRecentPosts } from "../utils/facebookApi";
 import { generatePostImage } from "../utils/imagenApi";
 import { generateReelVideo } from "../utils/veoApi";
+import { getPrompt } from "../utils/promptUtils";
 
 const API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -36,13 +37,13 @@ const DAY_MAP: Record<string, number> = {
 /**
  * Build the Gemini prompt using engagement data and config
  */
-function buildPrompt(
+async function buildPrompt(
     config: SocialConfig,
     engagementSummary: string,
     recentPostSummaries: string[],
     audience: "client" | "contractor",
     campaignContext?: string
-): string {
+): Promise<string> {
     const audienceContext = audience === "client"
         ? `## TARGET AUDIENCE: FACILITY CLIENTS (Medical Offices, Auto Dealerships, Commercial Buildings)
 This post should speak to building owners, office managers, or property managers who are frustrated with:
@@ -72,68 +73,41 @@ Key messaging for contractors:
 - We value quality work and long-term partnerships
 - Currently hiring in Queens, Nassau, Suffolk, Long Island`;
 
-    return `You are the social media manager for XIRI Facility Solutions, a facility management company based in New York that services commercial and medical buildings across Queens, Nassau, and Suffolk County.
+    const FALLBACK = `You are the social media manager for XIRI Facility Solutions.
 
-## BRAND IDENTITY
-- Brand Name: XIRI (always uppercase, never wrapped in asterisks or any formatting)
-- Full Name: XIRI Facility Solutions
-- Tagline: "One Call. One Invoice. Total Facility Coverage."
-- Brand Colors: Primary #0369a1, Accent #38bdf8, Dark #0c4a6e (Sky/Cyan family)
-- Visual Style: Professional, bold, clean — industrial-grade but executive-quality
-- Tone: Blue-collar-friendly but executive-grade. Never salesy or generic.
-- Fonts: Inter (body), Outfit (headings) — clean modern look
+{{audienceContext}}
+{{campaignContext}}
 
-## BUSINESS CONTEXT
-- XIRI hires independent sub-contractors (cleaning, HVAC, maintenance, specialty trades) to fulfill contracts XIRI holds with medical offices, urgent care clinics, auto dealerships, and commercial facilities.
-- For CONTRACTORS: We offer steady contract work, one point of contact, fast payouts (10th of the month), no franchise fees.
-- For CLIENTS: We are their single point of contact for all facility maintenance — one call, one invoice, audit-ready standards.
-- Website: xiri.ai
-- Service Areas: Queens, Nassau County, Suffolk County, Long Island
+## ENGAGEMENT DATA
+{{engagementSummary}}
 
-${audienceContext}
-${campaignContext ? `\n## ACTIVE RECRUITMENT CAMPAIGN\n${campaignContext}\n` : ""}
-## ENGAGEMENT DATA (Last 20 Posts)
-${engagementSummary}
+## RECENT THEMES (avoid repeats)
+{{recentThemes}}
 
-## RECENT POST THEMES (avoid repeating these)
-${recentPostSummaries.length > 0 ? recentPostSummaries.map((s, i) => `${i + 1}. ${s}`).join("\n") : "No recent posts yet."}
+Generate 1 Facebook post for {{audienceLabel}}. 100-250 words, emoji bullets, hashtags. No Markdown.
+Respond with ONLY the post text.`;
 
-## CONTENT PREFERENCES
-- Tone: ${config.tone || "Professional, bold, blue-collar-friendly but executive-grade"}
-- Topics to focus on: ${config.topics.length > 0 ? config.topics.join(", ") : "contractor recruitment, client success, industry tips, behind-the-scenes, company culture"}
-- Hashtags to include: ${config.hashtagSets.length > 0 ? config.hashtagSets.join(" ") : "#FacilityManagement #CommercialCleaning #LongIsland #Queens #NYContractors"}
-
-## YOUR TASK
-Generate exactly 1 Facebook post for XIRI Facility Solutions targeting ${audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS"}. The post should:
-
-1. Be formatted for Facebook (use emoji as paragraph-style bullets, not checkmarks)
-2. Be 100-250 words
-3. Include a clear call-to-action
-4. Include relevant hashtags at the end
-5. Be different from the recent posts listed above
-6. Drive engagement (likes, comments, shares) based on what performed well in the engagement data
-7. Be written in a natural, human voice — not corporate jargon
-
-CRITICAL FORMATTING RULES:
-- Facebook does NOT support any text formatting. Do NOT use Markdown.
-- NEVER use asterisks (*), double asterisks (**), underscores for emphasis, or any other Markdown syntax.
-- Use ONLY: emoji, line breaks, and hashtags for visual structure.
-- Write the brand name as XIRI in plain text, never **XIRI** or *XIRI*.
-- Use emoji at the start of lines as visual bullets (e.g., 👉 💰 🔧), NOT asterisks.
-- Separate sections with blank lines for readability.
-
-Respond with ONLY the post text. No introductions, no explanations, just the ready-to-publish Facebook post.`;
+    return getPrompt('social_post_generator', FALLBACK, {
+        audienceContext,
+        campaignContext: campaignContext ? `\n## ACTIVE RECRUITMENT CAMPAIGN\n${campaignContext}\n` : '',
+        engagementSummary,
+        recentThemes: recentPostSummaries.length > 0 ? recentPostSummaries.map((s, i) => `${i + 1}. ${s}`).join('\n') : 'No recent posts yet.',
+        tone: config.tone || 'Professional, bold, blue-collar-friendly but executive-grade',
+        topics: config.topics.length > 0 ? config.topics.join(', ') : 'contractor recruitment, client success, industry tips, behind-the-scenes, company culture',
+        hashtags: config.hashtagSets.length > 0 ? config.hashtagSets.join(' ') : '#FacilityManagement #CommercialCleaning #LongIsland #Queens #NYContractors',
+        audienceLabel: audience === 'client' ? 'FACILITY CLIENTS' : 'CONTRACTORS/VENDORS',
+    });
 }
 
 /**
  * Build Gemini prompt for Reel captions (shorter, punchier, hook-driven)
  */
-function buildReelCaptionPrompt(
+async function buildReelCaptionPrompt(
     config: SocialConfig,
     audience: "client" | "contractor",
     location?: string,
     campaignContext?: string
-): string {
+): Promise<string> {
     const audienceHook = audience === "client"
         ? `Hook angle: Speak to facility managers / building owners who are tired of managing 5+ vendors.
 Key points: one call, one invoice, nightly audits verify quality, medical-grade standards.
@@ -146,47 +120,24 @@ CTA: "DM us" or "Link in bio" or "Comment WORK to get started"`;
         ? `\nMention ${location}, NY naturally — e.g., "Looking for reliable facility management in ${location}?"`
         : `\nMention Long Island / Queens area naturally.`;
 
-    return `You are writing a Facebook Reel caption for XIRI Facility Solutions — a facility management company in New York (Queens, Nassau, Suffolk County).
+    const REEL_FALLBACK = `You are writing a Facebook Reel caption for XIRI Facility Solutions.
 
-## BRAND IDENTITY
-- Brand Name: XIRI (always uppercase, never wrapped in asterisks or any formatting)
-- Tagline: "One Call. One Invoice. Total Facility Coverage."
-- Brand Colors: Primary #0369a1 (Sky Blue), Accent #38bdf8
-- Tone: Professional, punchy, blue-collar-friendly but executive-grade
+## TARGET AUDIENCE: {{audienceLabel}}
+{{audienceHook}}
+{{locationNote}}
+{{campaignContext}}
 
-## TARGET AUDIENCE: ${audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS"}
-${audienceHook}
-${locationNote}
-${campaignContext ? `\n## ACTIVE RECRUITMENT CAMPAIGN\n${campaignContext}\n` : ""}
+Generate a Reel caption: 2-4 lines, hook + value prop + CTA + hashtags. No Markdown.
+Respond with ONLY the caption text.`;
 
-## CONTENT PREFERENCES
-- Tone: ${config.tone || "Professional, bold, punchy"}
-- Hashtags: ${config.hashtagSets.length > 0 ? config.hashtagSets.join(" ") : "#FacilityManagement #CommercialCleaning #LongIsland"}
-
-## YOUR TASK
-Generate a Facebook Reel caption (NOT a full post). A reel caption should be:
-
-1. 2-4 lines MAX — short, punchy, scroll-stopping
-2. Start with a hook (question or bold statement)
-3. One key value prop
-4. Clear CTA
-5. Relevant hashtags at the end
-6. Use emoji sparingly (1-2 max)
-7. Written like a human, not a brand
-
-CRITICAL FORMATTING RULES:
-- Facebook does NOT support text formatting. Do NOT use Markdown.
-- NEVER use asterisks (*), double asterisks (**), underscores for emphasis, or any Markdown syntax.
-- Write XIRI in plain uppercase text, never **XIRI** or *XIRI*.
-- Use ONLY: emoji, line breaks, and hashtags.
-
-Example format:
-"Still managing 5 different vendors? 🤯
-One call. One invoice. Nightly verified.
-DM us for a free site audit 👇
-#FacilityManagement #LongIsland"
-
-Respond with ONLY the caption text. Nothing else.`;
+    return getPrompt('social_reel_caption', REEL_FALLBACK, {
+        audienceLabel: audience === 'client' ? 'FACILITY CLIENTS' : 'CONTRACTORS/VENDORS',
+        audienceHook,
+        locationNote,
+        campaignContext: campaignContext ? `\n## ACTIVE RECRUITMENT CAMPAIGN\n${campaignContext}\n` : '',
+        tone: config.tone || 'Professional, bold, punchy',
+        hashtags: config.hashtagSets.length > 0 ? config.hashtagSets.join(' ') : '#FacilityManagement #CommercialCleaning #LongIsland',
+    });
 }
 
 /**
@@ -427,7 +378,7 @@ ${campaign.hookOverride ? `Specific messaging angle/hook to use: "${campaign.hoo
                 console.log(`[SocialGenerator] Generating ${audience} reel for ${scheduledFor.toISOString()}...`);
 
                 // 1. Generate reel caption via Gemini
-                const captionPrompt = buildReelCaptionPrompt(config, audience, locationName, campaignContext);
+                const captionPrompt = await buildReelCaptionPrompt(config, audience, locationName, campaignContext);
                 const captionResult = await model.generateContent(captionPrompt);
                 const caption = captionResult.response.text().trim();
 
@@ -476,7 +427,7 @@ ${campaign.hookOverride ? `Specific messaging angle/hook to use: "${campaign.hoo
             } else {
                 // ── POSTS FLOW: Gemini post + Imagen image ──
                 console.log(`[SocialGenerator] Generating ${audience} draft for ${scheduledFor.toISOString()}...`);
-                const prompt = buildPrompt(config, summary, themes, audience, campaignContext);
+                const prompt = await buildPrompt(config, summary, themes, audience, campaignContext);
                 const result = await model.generateContent(prompt);
                 const generatedMessage = result.response.text().trim();
 
