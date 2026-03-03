@@ -90,6 +90,7 @@ const LEAD_TYPE_CONFIG: Record<string, { color: string; label: string; sequence:
     'direct': { color: 'bg-slate-100 text-slate-700 border-slate-200', label: 'Direct', sequence: '4 emails over 14 days (Day 0, 3, 7, 14)' },
     'tenant': { color: 'bg-indigo-100 text-indigo-700 border-indigo-200', label: 'Tenant', sequence: '4 emails over 14 days (Day 0, 3, 7, 14)' },
     'referral_partnership': { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Referral Partnership', sequence: '3 emails over 10 days (Day 0, 4, 10)' },
+    'enterprise': { color: 'bg-violet-100 text-violet-700 border-violet-200', label: 'Enterprise', sequence: '5 emails over 21 days (Day 0, 4, 8, 14, 21)' },
 };
 
 const OUTREACH_STATUS_CONFIG: Record<string, { color: string; label: string }> = {
@@ -276,8 +277,8 @@ export default function LeadDetailPage() {
                 {/* Feedback Messages */}
                 {sequenceMessage && (
                     <div className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm ${sequenceMessage.type === 'success'
-                            ? 'bg-green-50 text-green-700 border border-green-200'
-                            : 'bg-red-50 text-red-700 border border-red-200'
+                        ? 'bg-green-50 text-green-700 border border-green-200'
+                        : 'bg-red-50 text-red-700 border border-red-200'
                         }`}>
                         {sequenceMessage.type === 'success' ? (
                             <CheckCircle2 className="w-4 h-4" />
@@ -435,6 +436,7 @@ export default function LeadDetailPage() {
                                         <SelectItem value="direct">Direct</SelectItem>
                                         <SelectItem value="tenant">Tenant</SelectItem>
                                         <SelectItem value="referral_partnership">Referral Partnership</SelectItem>
+                                        <SelectItem value="enterprise">Enterprise</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <p className="text-xs text-muted-foreground">

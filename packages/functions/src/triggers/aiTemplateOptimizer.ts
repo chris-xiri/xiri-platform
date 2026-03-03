@@ -60,29 +60,45 @@ export const optimizeTemplate = onCall({
 const MIN_SENDS_FOR_ANALYSIS = 10; // Need at least 10 sends for meaningful data
 const LOW_OPEN_RATE_THRESHOLD = 0.30; // < 30% = underperforming
 
-async function optimizeUnderperformingTemplates(): Promise<string[]> {
-    const templatesSnap = await db.collection('templates')
-        .where('category', '==', 'vendor')
-        .get();
+// All template categories the optimizer should check
+const OPTIMIZABLE_CATEGORIES = ['vendor', 'tenant_lead', 'referral_partnership', 'enterprise_lead'];
 
+async function optimizeUnderperformingTemplates(): Promise<string[]> {
     const optimized: string[] = [];
 
-    for (const doc of templatesSnap.docs) {
-        const template = doc.data();
-        const stats = template.stats;
+    for (const category of OPTIMIZABLE_CATEGORIES) {
+        const templatesSnap = await db.collection('templates')
+            .where('category', '==', category)
+            .get();
 
-        if (!stats || stats.sent < MIN_SENDS_FOR_ANALYSIS) continue;
+        for (const doc of templatesSnap.docs) {
+            const template = doc.data();
+            const stats = template.stats;
 
-        const openRate = stats.sent > 0 ? stats.opened / stats.sent : 0;
+            if (!stats || stats.sent < MIN_SENDS_FOR_ANALYSIS) continue;
 
-        if (openRate < LOW_OPEN_RATE_THRESHOLD) {
-            logger.info(`Template ${doc.id}: ${(openRate * 100).toFixed(1)}% open rate — optimizing`);
-            await optimizeSingleTemplate(doc.id);
-            optimized.push(doc.id);
+            const openRate = stats.sent > 0 ? stats.opened / stats.sent : 0;
+
+            if (openRate < LOW_OPEN_RATE_THRESHOLD) {
+                logger.info(`Template ${doc.id} (${category}): ${(openRate * 100).toFixed(1)}% open rate — optimizing`);
+                await optimizeSingleTemplate(doc.id);
+                optimized.push(doc.id);
+            }
         }
     }
 
-    if (optimized.length === 0) {
+    // Write notification if any templates were optimized
+    if (optimized.length > 0) {
+        await db.collection('notifications').add({
+            type: 'AI_TEMPLATE_OPTIMIZATION',
+            title: `AI optimized ${optimized.length} template${optimized.length > 1 ? 's' : ''}`,
+            message: `${optimized.length} underperforming template${optimized.length > 1 ? 's have' : ' has'} new AI suggestions ready for your review.`,
+            templateIds: optimized,
+            read: false,
+            createdAt: new Date(),
+        });
+        logger.info(`Notification created for ${optimized.length} optimized templates.`);
+    } else {
         logger.info("No underperforming templates found.");
     }
 

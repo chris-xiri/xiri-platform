@@ -326,6 +326,7 @@ export default function LeadList({
                                 <SelectItem value="direct">Direct</SelectItem>
                                 <SelectItem value="tenant">Tenant</SelectItem>
                                 <SelectItem value="referral_partnership">Referral Partnership</SelectItem>
+                                <SelectItem value="enterprise">Enterprise</SelectItem>
                             </SelectContent>
                         </Select>
                         <Button

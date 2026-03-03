@@ -7,7 +7,8 @@ import { db, functions } from '@/lib/firebase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sparkles, CheckCircle, RefreshCw, Mail, MousePointerClick, Eye, AlertTriangle, ChevronDown, ChevronRight, ArrowRight, HardHat, Building2, Handshake, Pencil, Save } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sparkles, CheckCircle, RefreshCw, Mail, MousePointerClick, Eye, AlertTriangle, ChevronDown, ChevronRight, ArrowRight, HardHat, Building2, Handshake, Landmark, Pencil, Save } from 'lucide-react';
 
 interface TemplateStats {
     sent: number;
@@ -160,9 +161,13 @@ export default function TemplateAnalyticsPage() {
     const vendorPipeline = buildPipeline(templates, 'vendor_outreach_');
     const tenantPipeline = buildPipeline(templates, 'tenant_lead_');
     const referralPipeline = buildPipeline(templates, 'referral_partnership_');
+    const enterprisePipeline = buildPipeline(templates, 'enterprise_lead_');
+
+    const hasLeadTemplates = tenantPipeline.length > 0 || referralPipeline.length > 0 || enterprisePipeline.length > 0;
+    const hasContractorTemplates = vendorPipeline.length > 0;
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-bold">Email Analytics</h2>
@@ -175,69 +180,104 @@ export default function TemplateAnalyticsPage() {
                 </Button>
             </div>
 
-            {/* Contractor Outreach Pipeline */}
-            {vendorPipeline.length > 0 && (
-                <PipelineSection
-                    title="Contractor Outreach"
-                    icon={<HardHat className="w-5 h-5" />}
-                    pipeline={vendorPipeline}
-                    optimizing={optimizing}
-                    applying={applying}
-                    onOptimize={handleOptimize}
-                    onApply={handleApply}
-                    onDismiss={handleDismiss}
-                />
-            )}
+            <Tabs defaultValue="leads" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 max-w-md">
+                    <TabsTrigger value="leads" className="gap-2">
+                        <Building2 className="w-4 h-4" /> Lead Templates
+                    </TabsTrigger>
+                    <TabsTrigger value="contractors" className="gap-2">
+                        <HardHat className="w-4 h-4" /> Contractor Templates
+                    </TabsTrigger>
+                </TabsList>
 
-            {/* Tenant Lead Outreach Pipeline (AI-generated) */}
-            {tenantPipeline.length > 0 ? (
-                <PipelineSection
-                    title="Tenant Lead Outreach"
-                    icon={<Building2 className="w-5 h-5" />}
-                    pipeline={tenantPipeline}
-                    optimizing={optimizing}
-                    applying={applying}
-                    onOptimize={handleOptimize}
-                    onApply={handleApply}
-                    onDismiss={handleDismiss}
-                />
-            ) : (
-                <Card>
-                    <CardContent className="py-6">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Building2 className="w-5 h-5" />
-                            <h3 className="font-semibold text-sm">Tenant Lead Outreach</h3>
-                            <Badge variant="secondary" className="text-[10px]">4-step drip</Badge>
+                {/* ─── Lead Templates Tab ─── */}
+                <TabsContent value="leads" className="space-y-8 mt-6">
+                    {/* Tenant Lead Pipeline */}
+                    {tenantPipeline.length > 0 && (
+                        <PipelineSection
+                            title="Tenant Lead Outreach"
+                            icon={<Building2 className="w-5 h-5" />}
+                            pipeline={tenantPipeline}
+                            optimizing={optimizing}
+                            applying={applying}
+                            onOptimize={handleOptimize}
+                            onApply={handleApply}
+                            onDismiss={handleDismiss}
+                        />
+                    )}
+
+                    {/* Referral Partnership Pipeline */}
+                    {referralPipeline.length > 0 && (
+                        <PipelineSection
+                            title="Referral Partnerships"
+                            icon={<Handshake className="w-5 h-5" />}
+                            pipeline={referralPipeline}
+                            optimizing={optimizing}
+                            applying={applying}
+                            onOptimize={handleOptimize}
+                            onApply={handleApply}
+                            onDismiss={handleDismiss}
+                        />
+                    )}
+
+                    {/* Enterprise Lead Pipeline */}
+                    {enterprisePipeline.length > 0 ? (
+                        <PipelineSection
+                            title="Enterprise Outreach"
+                            icon={<Landmark className="w-5 h-5" />}
+                            pipeline={enterprisePipeline}
+                            optimizing={optimizing}
+                            applying={applying}
+                            onOptimize={handleOptimize}
+                            onApply={handleApply}
+                            onDismiss={handleDismiss}
+                        />
+                    ) : (
+                        <Card>
+                            <CardContent className="py-6">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Landmark className="w-5 h-5" />
+                                    <h3 className="font-semibold text-sm">Enterprise Outreach</h3>
+                                    <Badge variant="secondary" className="text-[10px]">5-step drip</Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    No enterprise lead templates found. Run{' '}
+                                    <code className="bg-muted px-1 rounded">node scripts/seed-enterprise-lead-templates.js</code>{' '}
+                                    to create the 5-step outreach sequence.
+                                </p>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {!hasLeadTemplates && (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <Mail className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                            <p>No lead templates found. Seed templates to get started.</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            No tenant lead templates found. Run{' '}
-                            <code className="bg-muted px-1 rounded">node scripts/seed-tenant-lead-templates.js</code>{' '}
-                            to create the 4-step outreach sequence.
-                        </p>
-                    </CardContent>
-                </Card>
-            )}
+                    )}
+                </TabsContent>
 
-            {/* Referral Partnership Pipeline */}
-            {referralPipeline.length > 0 && (
-                <PipelineSection
-                    title="Referral Partnerships"
-                    icon={<Handshake className="w-5 h-5" />}
-                    pipeline={referralPipeline}
-                    optimizing={optimizing}
-                    applying={applying}
-                    onOptimize={handleOptimize}
-                    onApply={handleApply}
-                    onDismiss={handleDismiss}
-                />
-            )}
-
-            {vendorPipeline.length === 0 && tenantPipeline.length === 0 && referralPipeline.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                    <Mail className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>No email templates found. Seed templates to get started.</p>
-                </div>
-            )}
+                {/* ─── Contractor Templates Tab ─── */}
+                <TabsContent value="contractors" className="space-y-8 mt-6">
+                    {vendorPipeline.length > 0 ? (
+                        <PipelineSection
+                            title="Contractor Outreach"
+                            icon={<HardHat className="w-5 h-5" />}
+                            pipeline={vendorPipeline}
+                            optimizing={optimizing}
+                            applying={applying}
+                            onOptimize={handleOptimize}
+                            onApply={handleApply}
+                            onDismiss={handleDismiss}
+                        />
+                    ) : (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <HardHat className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                            <p>No contractor templates found.</p>
+                        </div>
+                    )}
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

@@ -24,7 +24,7 @@ export type FacilityType =
 
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'walkthrough' | 'proposal' | 'quoted' | 'won' | 'lost' | 'churned';
 
-export type LeadType = 'direct' | 'tenant' | 'referral_partnership';
+export type LeadType = 'direct' | 'tenant' | 'referral_partnership' | 'enterprise';
 
 export interface Lead {
     id?: string;
@@ -52,7 +52,7 @@ export interface Lead {
 
     createdAt: Date;
     status: LeadStatus;
-    leadType?: LeadType;   // 'direct' (default) | 'tenant' | 'referral_partnership'
+    leadType?: LeadType;   // 'direct' (default) | 'tenant' | 'referral_partnership' | 'enterprise'
 
     // Operations linkage
     locations?: ClientLocation[];

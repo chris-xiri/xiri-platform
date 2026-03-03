@@ -61,7 +61,15 @@ export const startLeadSequence = onCall(async (request) => {
     // ── Different sequences per lead type ──
     let steps: { dayOffset: number; sequence: number }[];
 
-    if (leadType === 'referral_partnership') {
+    if (leadType === 'enterprise') {
+        steps = [
+            { dayOffset: 0, sequence: 0 },
+            { dayOffset: 4, sequence: 1 },
+            { dayOffset: 8, sequence: 2 },
+            { dayOffset: 14, sequence: 3 },
+            { dayOffset: 21, sequence: 4 },
+        ];
+    } else if (leadType === 'referral_partnership') {
         steps = [
             { dayOffset: 0, sequence: 0 },
             { dayOffset: 4, sequence: 1 },
@@ -78,9 +86,11 @@ export const startLeadSequence = onCall(async (request) => {
     }
 
     // Determine template prefix by lead type
-    const templatePrefix = leadType === 'referral_partnership'
-        ? 'referral_partnership_'
-        : 'tenant_lead_';
+    const templatePrefix = leadType === 'enterprise'
+        ? 'enterprise_lead_'
+        : leadType === 'referral_partnership'
+            ? 'referral_partnership_'
+            : 'tenant_lead_';
 
     for (const step of steps) {
         const scheduledDate = new Date(now);
@@ -116,7 +126,8 @@ export const startLeadSequence = onCall(async (request) => {
     });
 
     // Log activity
-    const schedule = leadType === 'referral_partnership' ? 'Day 0/4/10' : 'Day 0/3/7/14';
+    const schedule = leadType === 'enterprise' ? 'Day 0/4/8/14/21'
+        : leadType === 'referral_partnership' ? 'Day 0/4/10' : 'Day 0/3/7/14';
     await db.collection("lead_activities").add({
         leadId,
         type: "SEQUENCE_STARTED",

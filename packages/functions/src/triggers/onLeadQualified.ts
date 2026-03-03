@@ -60,7 +60,15 @@ export const onLeadQualified = onDocumentUpdated({
     // Subjects come from the Firestore `templates` collection at send time
     let steps: { dayOffset: number; sequence: number }[];
 
-    if (leadType === 'referral_partnership') {
+    if (leadType === 'enterprise') {
+        steps = [
+            { dayOffset: 0, sequence: 0 },
+            { dayOffset: 4, sequence: 1 },
+            { dayOffset: 8, sequence: 2 },
+            { dayOffset: 14, sequence: 3 },
+            { dayOffset: 21, sequence: 4 },
+        ];
+    } else if (leadType === 'referral_partnership') {
         steps = [
             { dayOffset: 0, sequence: 0 },
             { dayOffset: 4, sequence: 1 },
@@ -85,9 +93,11 @@ export const onLeadQualified = onDocumentUpdated({
         const sendAt = step.dayOffset === 0 ? now : scheduledDate;
 
         // Determine template prefix by lead type
-        const templatePrefix = leadType === 'referral_partnership'
-            ? 'referral_partnership_'
-            : 'tenant_lead_';
+        const templatePrefix = leadType === 'enterprise'
+            ? 'enterprise_lead_'
+            : leadType === 'referral_partnership'
+                ? 'referral_partnership_'
+                : 'tenant_lead_';
 
         await enqueueTask(db, {
             leadId,

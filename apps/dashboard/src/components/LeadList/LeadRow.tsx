@@ -55,6 +55,7 @@ const LEAD_TYPE_CONFIG: Record<string, { color: string; label: string }> = {
     'direct': { color: 'bg-slate-100 text-slate-700 border-slate-200', label: 'Direct' },
     'tenant': { color: 'bg-indigo-100 text-indigo-700 border-indigo-200', label: 'Tenant' },
     'referral_partnership': { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Referral' },
+    'enterprise': { color: 'bg-violet-100 text-violet-700 border-violet-200', label: 'Enterprise' },
 };
 
 const ALL_COLUMNS = new Set<ColumnKey>(['business', 'type', 'contact', 'location', 'auditTime', 'status', 'source', 'created']);
