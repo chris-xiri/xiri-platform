@@ -123,7 +123,7 @@ export default function TemplateAnalyticsPage() {
         const snap = await getDocs(collection(db, 'templates'));
         const data = snap.docs
             .map(d => ({ id: d.id, ...d.data() } as Template))
-            .filter(t => t.id.startsWith('vendor_outreach_') || t.id.startsWith('tenant_lead_') || t.id.startsWith('referral_partnership_'));
+            .filter(t => t.id.startsWith('vendor_outreach_') || t.id.startsWith('tenant_lead_') || t.id.startsWith('referral_partnership_') || t.id.startsWith('enterprise_lead_'));
         setTemplates(data);
         setLoading(false);
     }

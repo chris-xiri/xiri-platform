@@ -44,45 +44,6 @@ Chris Leung
 XIRI Facility Solutions
 chris@xiri.ai`,
     },
-    {
-        id: 'enterprise_lead_1_warm',
-        name: 'Executive Introduction — Warm',
-        sequence: 1,
-        variant: 'warm',
-        subject: 'Quick question about {{businessName}} facility operations',
-        body: `Hi {{contactName}},
-
-Thanks for taking a look at my previous note. I wanted to follow up with a direct question:
-
-Is {{businessName}} currently managing facility services through a single provider, or coordinating between multiple vendors across your locations?
-
-We've helped organizations like yours consolidate to a single enterprise partner — bringing consistency, compliance documentation, and centralized reporting under one contract.
-
-Would a brief 15-minute call with our enterprise team make sense? I'm flexible this week.
-
-Best,
-Chris Leung
-XIRI Facility Solutions`,
-    },
-    {
-        id: 'enterprise_lead_1_cold',
-        name: 'Executive Introduction — Cold',
-        sequence: 1,
-        variant: 'cold',
-        subject: 'One point of contact for all {{businessName}} facility needs',
-        body: `Hi {{contactName}},
-
-I know your inbox is busy, so I'll be direct.
-
-XIRI Facility Solutions provides enterprise-grade facility management for multi-location organizations — one contract, one point of contact, full compliance documentation.
-
-If {{businessName}} is ever evaluating facility partners, I'd welcome a brief conversation. Just reply to this email.
-
-Best,
-Chris Leung
-XIRI Facility Solutions
-chris@xiri.ai`,
-    },
 
     // ══════════════════════════════════════════════════════
     // Step 2: Multi-Site Value Proposition (Day 4)

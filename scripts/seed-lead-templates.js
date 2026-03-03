@@ -42,47 +42,6 @@ Chris Leung
 XIRI Facility Solutions
 chris@xiri.ai`,
     },
-    {
-        id: 'tenant_lead_1_warm',
-        name: 'Introduction — Warm (opened/clicked previous)',
-        sequence: 1,
-        variant: 'warm',
-        subject: 'Quick question about {{businessName}} facility needs',
-        body: `Hi {{contactName}},
-
-Thanks for taking a look at my previous note. I wanted to follow up with a quick question:
-
-Is {{businessName}} currently handling facility management in-house, or working with multiple vendors?
-
-Either way, we've helped practices like yours consolidate to a single provider — saving 15+ hours/month on coordination alone.
-
-Happy to share how in a quick 10-minute call. Would this week work?
-
-Best,
-Chris Leung
-XIRI Facility Solutions`,
-    },
-    {
-        id: 'tenant_lead_1_cold',
-        name: 'Introduction — Cold (no engagement)',
-        sequence: 1,
-        variant: 'cold',
-        subject: 'Simplify facility management at {{businessName}}',
-        body: `Hi {{contactName}},
-
-I know your inbox is busy, so I'll keep this brief.
-
-XIRI Facility Solutions provides single-source facility management for medical practices — one point of contact for janitorial, deep cleaning, and day porter services.
-
-If {{businessName}} is ever looking to simplify facility operations, I'd love to chat for 5 minutes.
-
-No pressure at all — just reply to this email.
-
-Best,
-Chris Leung
-XIRI Facility Solutions
-chris@xiri.ai`,
-    },
 
     // ── Step 2: Value Proposition ──
     {
@@ -261,46 +220,6 @@ Kind Regards,
 Chris Leung
 XIRI Facility Solutions
 chris@xiri.ai`,
-    },
-    {
-        id: 'referral_partnership_1_warm',
-        name: 'Partnership Intro — Warm',
-        sequence: 1,
-        variant: 'warm',
-        subject: 'Re: Referral partnership details',
-        body: `Hi {{contactName}},
-
-Thanks for taking a look at my previous email. I wanted to share a few more details on how our referral partnerships work:
-
-1. You refer a tenant who needs facility services
-2. We handle the proposal, onboarding, and service delivery
-3. You receive a referral fee for every converted recurring contract
-
-It's completely hands-off after the intro. Several brokers in Nassau County are already in the program.
-
-Want to hop on a quick call to discuss? I'm flexible this week.
-
-Best,
-Chris Leung
-XIRI Facility Solutions`,
-    },
-    {
-        id: 'referral_partnership_1_cold',
-        name: 'Partnership Intro — Cold',
-        sequence: 1,
-        variant: 'cold',
-        subject: 'Quick note — facility referral program',
-        body: `Hi {{contactName}},
-
-Short version: XIRI Facility Solutions pays referral fees to CRE brokers who introduce us to commercial tenants needing cleaning/janitorial services.
-
-Move-in cleans, move-out cleans, recurring janitorial — we handle everything.
-
-If this is something you'd consider, just reply "interested" and I'll send details.
-
-Best,
-Chris Leung
-XIRI Facility Solutions`,
     },
 
     // ── Step 2: Follow-up ──
