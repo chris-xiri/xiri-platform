@@ -49,9 +49,10 @@ const COLUMN_LABELS: Record<ColumnKey, string> = {
     status: 'Status',
     source: 'Source',
     created: 'Created',
+    actions: 'Actions',
 };
 
-const DEFAULT_VISIBLE: ColumnKey[] = ['business', 'type', 'contact', 'location', 'status'];
+const DEFAULT_VISIBLE: ColumnKey[] = ['business', 'type', 'contact', 'location', 'status', 'actions'];
 
 interface LeadListProps {
     statusFilters?: LeadStatus[];
@@ -447,6 +448,7 @@ export default function LeadList({
                                         {visibleColumns.has('status') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Status</TableHead>}
                                         {visibleColumns.has('source') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Source</TableHead>}
                                         {visibleColumns.has('created') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Created</TableHead>}
+                                        {visibleColumns.has('actions') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs w-12"></TableHead>}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

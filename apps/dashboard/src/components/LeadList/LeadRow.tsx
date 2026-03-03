@@ -1,20 +1,35 @@
 "use client";
 
+import { useState } from 'react';
 import { Lead, LeadStatus, LeadType } from '@xiri/shared';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '@/lib/firebase';
 import {
     Building2,
     Calendar,
     Phone,
     Mail,
-    MapPin
+    MapPin,
+    MoreHorizontal,
+    Rocket,
+    ExternalLink,
+    Loader2,
 } from 'lucide-react';
 
-export type ColumnKey = 'business' | 'type' | 'contact' | 'location' | 'auditTime' | 'status' | 'source' | 'created';
+export type ColumnKey = 'business' | 'type' | 'contact' | 'location' | 'auditTime' | 'status' | 'source' | 'created' | 'actions';
 
 interface LeadRowProps {
     lead: Lead;
@@ -58,7 +73,7 @@ const LEAD_TYPE_CONFIG: Record<string, { color: string; label: string }> = {
     'enterprise': { color: 'bg-violet-100 text-violet-700 border-violet-200', label: 'Enterprise' },
 };
 
-const ALL_COLUMNS = new Set<ColumnKey>(['business', 'type', 'contact', 'location', 'auditTime', 'status', 'source', 'created']);
+const ALL_COLUMNS = new Set<ColumnKey>(['business', 'type', 'contact', 'location', 'auditTime', 'status', 'source', 'created', 'actions']);
 
 // Helper to safely convert Firestore Timestamp to Date
 function toDate(value: any): Date | null {
@@ -74,6 +89,7 @@ function toDate(value: any): Date | null {
 
 export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visibleColumns = ALL_COLUMNS }: LeadRowProps) {
     const router = useRouter();
+    const [startingSequence, setStartingSequence] = useState(false);
 
     const handleClick = () => {
         if (onRowClick && lead.id) {
@@ -82,6 +98,22 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
             router.push(`/sales/crm/${lead.id}`);
         }
     };
+
+    const handleStartSequence = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!lead.email || !lead.id) return;
+        setStartingSequence(true);
+        try {
+            const startSequence = httpsCallable(functions, 'startLeadSequence');
+            await startSequence({ leadId: lead.id });
+        } catch (err) {
+            console.error('Failed to start sequence:', err);
+        } finally {
+            setStartingSequence(false);
+        }
+    };
+
+    const hasActiveSequence = !!(lead as any).sequenceStatus === true || (lead as any).sequenceStep > 0;
 
     const firstAuditTime = lead.preferredAuditTimes && lead.preferredAuditTimes.length > 0
         ? toDate(lead.preferredAuditTimes[0])
@@ -219,6 +251,43 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
             {show('created') && (
                 <TableCell className="text-center text-xs text-muted-foreground cursor-pointer" onClick={handleClick}>
                     {createdDate && format(createdDate, 'MMM d, yyyy')}
+                </TableCell>
+            )}
+
+            {show('actions') && (
+                <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                                <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                                onClick={handleClick}
+                                className="flex items-center gap-2 cursor-pointer"
+                            >
+                                <ExternalLink className="w-3.5 h-3.5" /> View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {lead.email ? (
+                                <DropdownMenuItem
+                                    onClick={handleStartSequence}
+                                    disabled={startingSequence}
+                                    className="flex items-center gap-2 cursor-pointer"
+                                >
+                                    {startingSequence
+                                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        : <Rocket className="w-3.5 h-3.5" />}
+                                    {startingSequence ? 'Starting...' : 'Start Sequence'}
+                                </DropdownMenuItem>
+                            ) : (
+                                <DropdownMenuItem disabled className="flex items-center gap-2 text-muted-foreground">
+                                    <Rocket className="w-3.5 h-3.5" /> No email — add to start
+                                </DropdownMenuItem>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </TableCell>
             )}
         </TableRow>
