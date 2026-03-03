@@ -33,6 +33,43 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
+// src/utils/promptUtils.ts
+async function getPrompt(promptId, fallback, variables) {
+  try {
+    const doc = await db2.collection("prompts").doc(promptId).get();
+    if (!doc.exists) {
+      logger.warn(`[getPrompt] Prompt "${promptId}" not found in Firestore, using fallback.`);
+      return applyVariables(fallback, variables);
+    }
+    const content = doc.data()?.content;
+    if (!content) {
+      logger.warn(`[getPrompt] Prompt "${promptId}" has no content field, using fallback.`);
+      return applyVariables(fallback, variables);
+    }
+    return applyVariables(content, variables);
+  } catch (err) {
+    logger.error(`[getPrompt] Error fetching prompt "${promptId}":`, err);
+    return applyVariables(fallback, variables);
+  }
+}
+function applyVariables(content, variables) {
+  if (!variables) return content;
+  let result = content;
+  for (const [key, value] of Object.entries(variables)) {
+    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
+  }
+  return result;
+}
+var admin2, logger, db2;
+var init_promptUtils = __esm({
+  "src/utils/promptUtils.ts"() {
+    "use strict";
+    admin2 = __toESM(require("firebase-admin"));
+    logger = __toESM(require("firebase-functions/logger"));
+    db2 = admin2.firestore();
+  }
+});
+
 // src/utils/emailUtils.ts
 var emailUtils_exports = {};
 __export(emailUtils_exports, {
@@ -45,7 +82,7 @@ __export(emailUtils_exports, {
 });
 async function getTemplate(templateId) {
   try {
-    const doc = await db2.collection("templates").doc(templateId).get();
+    const doc = await db3.collection("templates").doc(templateId).get();
     if (!doc.exists) {
       console.error(`Template ${templateId} not found`);
       return null;
@@ -63,27 +100,32 @@ async function generatePersonalizedEmail(templateId, variables) {
   try {
     const template = await getTemplate(templateId);
     if (!template) return null;
-    const model4 = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const prompt = `You are a professional email writer for Xiri Facility Solutions.
+    const model2 = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const FALLBACK = `You are a professional email writer for Xiri Facility Solutions.
 
 Take this email template and personalize it while maintaining the core message:
 
-Subject: ${template.subject}
+Subject: {{templateSubject}}
 Body:
-${template.content}
+{{templateBody}}
 
 Variables to use:
-${Object.entries(variables).map(([key, val]) => `- ${key}: ${val}`).join("\n")}
+{{variablesList}}
 
 Instructions:
-1. Replace all {{variables}} with the actual values
+1. Replace all variables with the actual values
 2. Make the tone warm and professional
 3. Keep it concise (under 150 words)
 4. Output ONLY the email in this format:
 SUBJECT: [subject line]
 BODY:
 [email body]`;
-    const result = await model4.generateContent({
+    const prompt = await getPrompt("email_personalizer", FALLBACK, {
+      templateSubject: template.subject,
+      templateBody: template.content,
+      variablesList: Object.entries(variables).map(([key, val]) => `- ${key}: ${val}`).join("\n")
+    });
+    const result = await model2.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }]
     });
     const response = result.response.text();
@@ -139,7 +181,7 @@ function extractZipFromAddress(address) {
 }
 async function sendTemplatedEmail(vendorId, templateId, customVariables) {
   try {
-    const vendorDoc = await db2.collection("vendors").doc(vendorId).get();
+    const vendorDoc = await db3.collection("vendors").doc(vendorId).get();
     if (!vendorDoc.exists) {
       console.error(`Vendor ${vendorId} not found`);
       return;
@@ -170,11 +212,11 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
       console.log(`\u2705 Email sent to ${vendor?.companyName}: ${email.subject} (Resend ID: ${data?.id})`);
     } catch (error11) {
       console.error("\u274C Resend API error:", error11);
-      await db2.collection("vendor_activities").add({
+      await db3.collection("vendor_activities").add({
         vendorId,
         type: "EMAIL_FAILED",
         description: `Failed to send email: ${email.subject}`,
-        createdAt: admin2.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin3.firestore.FieldValue.serverTimestamp(),
         metadata: {
           templateId,
           subject: email.subject,
@@ -184,11 +226,11 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
       });
       return;
     }
-    await db2.collection("vendor_activities").add({
+    await db3.collection("vendor_activities").add({
       vendorId,
       type: "EMAIL_SENT",
       description: `Email sent: ${email.subject}`,
-      createdAt: admin2.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin3.firestore.FieldValue.serverTimestamp(),
       metadata: {
         templateId,
         subject: email.subject,
@@ -229,14 +271,15 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
     return { success: false };
   }
 }
-var admin2, import_generative_ai, import_resend, db2, genAI, resend;
+var admin3, import_generative_ai, import_resend, db3, genAI, resend;
 var init_emailUtils = __esm({
   "src/utils/emailUtils.ts"() {
     "use strict";
-    admin2 = __toESM(require("firebase-admin"));
+    admin3 = __toESM(require("firebase-admin"));
     import_generative_ai = require("@google/generative-ai");
     import_resend = require("resend");
-    db2 = admin2.firestore();
+    init_promptUtils();
+    db3 = admin3.firestore();
     genAI = new import_generative_ai.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     resend = new import_resend.Resend(process.env.RESEND_API_KEY || "re_dummy_key");
   }
@@ -376,48 +419,48 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db23, task) {
-  return db23.collection(COLLECTION).add({
+async function enqueueTask(db21, task) {
+  return db21.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db23) {
-  const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db23.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+async function fetchPendingTasks(db21) {
+  const now = admin4.firestore.Timestamp.now();
+  const snapshot = await db21.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function updateTaskStatus(db23, taskId, status, updates = {}) {
-  await db23.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db21, taskId, status, updates = {}) {
+  await db21.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db23, vendorId) {
-  const snapshot = await db23.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db23.batch();
+async function cancelVendorTasks(db21, vendorId) {
+  const snapshot = await db21.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db21.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadTasks(db23, leadId) {
-  const snapshot = await db23.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db23.batch();
+async function cancelLeadTasks(db21, leadId) {
+  const snapshot = await db21.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db21.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-var admin3, COLLECTION;
+var admin4, COLLECTION;
 var init_queueUtils = __esm({
   "src/utils/queueUtils.ts"() {
     "use strict";
-    admin3 = __toESM(require("firebase-admin"));
+    admin4 = __toESM(require("firebase-admin"));
     COLLECTION = "outreach_queue";
   }
 });
@@ -6774,7 +6817,7 @@ function fetch2(url, opts) {
   return new fetch2.Promise(function(resolve, reject) {
     const request = new Request(url, opts);
     const options = getNodeRequestOptions(request);
-    const send = (options.protocol === "https:" ? import_https6.default : import_http.default).request;
+    const send = (options.protocol === "https:" ? import_https7.default : import_http.default).request;
     const signal = request.signal;
     let response = null;
     const abort = function abort2() {
@@ -6996,7 +7039,7 @@ function destroyStream(stream, err) {
     stream.end();
   }
 }
-var import_stream, import_http, import_url, import_whatwg_url, import_https6, import_zlib, Readable, BUFFER, TYPE, Blob, convert, INTERNALS, PassThrough, invalidTokenRegex, invalidHeaderCharRegex, MAP, Headers, INTERNAL, HeadersIteratorPrototype, INTERNALS$1, STATUS_CODES, Response, INTERNALS$2, URL2, parse_url, format_url, streamDestructionSupported, Request, URL$1, PassThrough$1, isDomainOrSubdomain, isSameProtocol, lib_default;
+var import_stream, import_http, import_url, import_whatwg_url, import_https7, import_zlib, Readable, BUFFER, TYPE, Blob, convert, INTERNALS, PassThrough, invalidTokenRegex, invalidHeaderCharRegex, MAP, Headers, INTERNAL, HeadersIteratorPrototype, INTERNALS$1, STATUS_CODES, Response, INTERNALS$2, URL2, parse_url, format_url, streamDestructionSupported, Request, URL$1, PassThrough$1, isDomainOrSubdomain, isSameProtocol, lib_default;
 var init_lib = __esm({
   "../../node_modules/node-fetch/lib/index.mjs"() {
     "use strict";
@@ -7004,7 +7047,7 @@ var init_lib = __esm({
     import_http = __toESM(require("http"), 1);
     import_url = __toESM(require("url"), 1);
     import_whatwg_url = __toESM(require_public_api(), 1);
-    import_https6 = __toESM(require("https"), 1);
+    import_https7 = __toESM(require("https"), 1);
     import_zlib = __toESM(require("zlib"), 1);
     Readable = import_stream.default.Readable;
     BUFFER = /* @__PURE__ */ Symbol("buffer");
@@ -11701,12 +11744,12 @@ var require_logging_utils = __commonJS({
             this.setFilters();
             this.filtersSet = true;
           }
-          let logger20 = this.cached.get(namespace);
-          if (!logger20) {
-            logger20 = this.makeLogger(namespace);
-            this.cached.set(namespace, logger20);
+          let logger21 = this.cached.get(namespace);
+          if (!logger21) {
+            logger21 = this.makeLogger(namespace);
+            this.cached.set(namespace, logger21);
           }
-          logger20(fields, ...args);
+          logger21(fields, ...args);
         } catch (e) {
           console.error(e);
         }
@@ -11843,7 +11886,7 @@ var require_logging_utils = __commonJS({
       } else if (cachedBackend === void 0) {
         cachedBackend = getNodeBackend();
       }
-      const logger20 = (() => {
+      const logger21 = (() => {
         let previousBackend = void 0;
         const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
           if (previousBackend !== cachedBackend) {
@@ -11858,8 +11901,8 @@ var require_logging_utils = __commonJS({
         });
         return newLogger;
       })();
-      loggerCache.set(namespace, logger20);
-      return logger20.func;
+      loggerCache.set(namespace, logger21);
+      return logger21.func;
     }
   }
 });
@@ -11923,14 +11966,14 @@ var require_src4 = __commonJS({
     var gaxios_1 = require_src2();
     var jsonBigint = require_json_bigint();
     var gcp_residency_1 = require_gcp_residency();
-    var logger20 = require_src3();
+    var logger21 = require_src3();
     exports2.BASE_PATH = "/computeMetadata/v1";
     exports2.HOST_ADDRESS = "http://169.254.169.254";
     exports2.SECONDARY_HOST_ADDRESS = "http://metadata.google.internal.";
     exports2.HEADER_NAME = "Metadata-Flavor";
     exports2.HEADER_VALUE = "Google";
     exports2.HEADERS = Object.freeze({ [exports2.HEADER_NAME]: exports2.HEADER_VALUE });
-    var log = logger20.log("gcp metadata");
+    var log = logger21.log("gcp metadata");
     exports2.METADATA_SERVER_DETECTION = Object.freeze({
       "assume-present": "don't try to ping the metadata server, but assume it's present",
       none: "don't try to ping the metadata server, but don't try to use it either",
@@ -18804,7 +18847,6 @@ __export(index_exports, {
   onAwaitingOnboarding: () => onAwaitingOnboarding,
   onClientCancelled: () => onClientCancelled,
   onDocumentUploaded: () => onDocumentUploaded,
-  onIncomingMessage: () => onIncomingMessage,
   onInvoicePaid: () => onInvoicePaid,
   onLeadQualified: () => onLeadQualified,
   onLeadUpdated: () => onLeadUpdated,
@@ -18836,13 +18878,14 @@ __export(index_exports, {
   sendOnboardingInvite: () => sendOnboardingInvite,
   sendQuoteEmail: () => sendQuoteEmail,
   sourceProperties: () => sourceProperties,
+  startLeadSequence: () => startLeadSequence,
   testSendEmail: () => testSendEmail,
   triggerSocialContentGeneration: () => triggerSocialContentGeneration,
   updateSocialConfig: () => updateSocialConfig,
   weeklyTemplateOptimizer: () => weeklyTemplateOptimizer
 });
 module.exports = __toCommonJS(index_exports);
-var import_https7 = require("firebase-functions/v2/https");
+var import_https8 = require("firebase-functions/v2/https");
 
 // src/utils/firebase.ts
 var admin = __toESM(require("firebase-admin"));
@@ -18859,6 +18902,9 @@ try {
 } catch (error11) {
   console.log("Firestore settings usage note:", error11);
 }
+
+// src/index.ts
+init_promptUtils();
 
 // src/agents/recruiter.ts
 var import_generative_ai2 = require("@google/generative-ai");
@@ -19464,12 +19510,13 @@ var searchProperties = async (query, location, providerName = "mock") => {
 var import_firestore = require("firebase-functions/v2/firestore");
 var import_firestore2 = require("firebase-functions/v2/firestore");
 var import_params = require("firebase-functions/params");
-var admin4 = __toESM(require("firebase-admin"));
-var logger = __toESM(require("firebase-functions/logger"));
+var admin5 = __toESM(require("firebase-admin"));
+var logger2 = __toESM(require("firebase-functions/logger"));
 
 // src/utils/websiteScraper.ts
 var cheerio = __toESM(require("cheerio"));
 var import_generative_ai3 = require("@google/generative-ai");
+init_promptUtils();
 var TIMEOUT_MS = 15e3;
 var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 async function fetchPage(url) {
@@ -19702,10 +19749,10 @@ function mergeContactPages(pages) {
 }
 async function extractWithAI(html, geminiApiKey) {
   try {
-    const genAI6 = new import_generative_ai3.GoogleGenerativeAI(geminiApiKey);
-    const model4 = genAI6.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const genAI4 = new import_generative_ai3.GoogleGenerativeAI(geminiApiKey);
+    const model2 = genAI4.getGenerativeModel({ model: "gemini-1.5-flash" });
     const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 15e3);
-    const prompt = `Extract business contact information from this website content. 
+    const FALLBACK = `Extract business contact information from this website content. 
 This is a commercial cleaning or janitorial company. Find the owner/manager's direct contact info if possible.
 
 Return ONLY a JSON object with these fields (use null if not found):
@@ -19717,8 +19764,11 @@ Return ONLY a JSON object with these fields (use null if not found):
 }
 
 Website content:
-${text}`;
-    const result = await model4.generateContent(prompt);
+{{websiteText}}`;
+    const prompt = await getPrompt("website_contact_extractor", FALLBACK, {
+      websiteText: text
+    });
+    const result = await model2.generateContent(prompt);
     const response = result.response.text();
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
@@ -19962,8 +20012,8 @@ function determinePhoneType(digits) {
 }
 
 // src/triggers/onVendorApproved.ts
-if (!admin4.apps.length) {
-  admin4.initializeApp();
+if (!admin5.apps.length) {
+  admin5.initializeApp();
 }
 var GEMINI_API_KEY = (0, import_params.defineSecret)("GEMINI_API_KEY");
 var SERPER_API_KEY = (0, import_params.defineSecret)("SERPER_API_KEY");
@@ -19978,7 +20028,7 @@ var onVendorApproved = (0, import_firestore.onDocumentUpdated)({
   const vendorId = event.params.vendorId;
   if (!newData || !oldData) return;
   if (newData.status !== "qualified" || oldData.status === "qualified") return;
-  logger.info(`[UPDATE] Vendor ${vendorId} status changed to qualified.`);
+  logger2.info(`[UPDATE] Vendor ${vendorId} status changed to qualified.`);
   await runEnrichPipeline(vendorId, newData, oldData.status);
 });
 var onVendorCreated = (0, import_firestore2.onDocumentCreated)({
@@ -19990,7 +20040,7 @@ var onVendorCreated = (0, import_firestore2.onDocumentCreated)({
   const vendorId = event.params.vendorId;
   if (!data) return;
   if (data.status !== "qualified") return;
-  logger.info(`[CREATE] Vendor ${vendorId} created with status qualified.`);
+  logger2.info(`[CREATE] Vendor ${vendorId} created with status qualified.`);
   await runEnrichPipeline(vendorId, data, "new");
 });
 async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
@@ -20009,12 +20059,12 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
     const vendorEmail = vendorData.email?.trim();
     const vendorWebsite = vendorData.website?.trim();
     if (vendorEmail) {
-      logger.info(`Vendor ${vendorId} has email (${vendorEmail}). Proceeding to outreach.`);
+      logger2.info(`Vendor ${vendorId} has email (${vendorEmail}). Proceeding to outreach.`);
       await setOutreachPending(vendorId, vendorData);
       return;
     }
     if (vendorWebsite) {
-      logger.info(`Vendor ${vendorId} has no email but has website. Enriching...`);
+      logger2.info(`Vendor ${vendorId} has no email but has website. Enriching...`);
       await db.collection("vendors").doc(vendorId).update({
         outreachStatus: "ENRICHING",
         enrichmentStartedAt: /* @__PURE__ */ new Date(),
@@ -20029,12 +20079,12 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
       try {
         const scrapedResult = await scrapeWebsite(vendorWebsite, GEMINI_API_KEY.value());
         if (!scrapedResult.success || !scrapedResult.data) {
-          logger.warn(`Enrichment failed for ${vendorId}: ${scrapedResult.error}`);
+          logger2.warn(`Enrichment failed for ${vendorId}: ${scrapedResult.error}`);
           await markNeedsContact(vendorId, "Website scrape failed");
           return;
         }
         const scrapedData = scrapedResult.data;
-        const updateData = { updatedAt: admin4.firestore.FieldValue.serverTimestamp() };
+        const updateData = { updatedAt: admin5.firestore.FieldValue.serverTimestamp() };
         const enrichedFields = [];
         let foundEmail;
         if (scrapedData.email) {
@@ -20044,7 +20094,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
             updateData.email = foundEmail;
             enrichedFields.push("email");
           } else {
-            logger.info(`Scraped email ${scrapedData.email} failed verification.`);
+            logger2.info(`Scraped email ${scrapedData.email} failed verification.`);
           }
         }
         if (scrapedData.phone && !vendorData.phone) {
@@ -20079,7 +20129,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           enrichedFields.push("contactFormUrl");
         }
         updateData.enrichment = {
-          lastEnriched: admin4.firestore.FieldValue.serverTimestamp(),
+          lastEnriched: admin5.firestore.FieldValue.serverTimestamp(),
           enrichedFields,
           enrichmentSource: "auto_onboarding",
           scrapedWebsite: vendorWebsite,
@@ -20096,21 +20146,21 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           metadata: { enrichedFields, confidence: scrapedData.confidence }
         });
         if (foundEmail) {
-          logger.info(`Found email ${foundEmail} for vendor ${vendorId} via website scrape. Proceeding to outreach.`);
+          logger2.info(`Found email ${foundEmail} for vendor ${vendorId} via website scrape. Proceeding to outreach.`);
           const updatedDoc = await db.collection("vendors").doc(vendorId).get();
           await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
           return;
         }
-        logger.info(`No email from scrape for ${vendorId}. Trying deep mailto scan...`);
+        logger2.info(`No email from scrape for ${vendorId}. Trying deep mailto scan...`);
         const mailtoResult = await deepMailtoScan(vendorWebsite);
         if (mailtoResult.email) {
           const mailtoVerification = await verifyEmail(mailtoResult.email);
           if (mailtoVerification.valid && mailtoVerification.deliverable) {
             await db.collection("vendors").doc(vendorId).update({
               email: mailtoResult.email,
-              "enrichment.enrichedFields": admin4.firestore.FieldValue.arrayUnion("email"),
+              "enrichment.enrichedFields": admin5.firestore.FieldValue.arrayUnion("email"),
               "enrichment.enrichmentSource": "deep_mailto_scan",
-              updatedAt: admin4.firestore.FieldValue.serverTimestamp()
+              updatedAt: admin5.firestore.FieldValue.serverTimestamp()
             });
             await db.collection("vendor_activities").add({
               vendorId,
@@ -20119,7 +20169,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
               createdAt: /* @__PURE__ */ new Date(),
               metadata: { email: mailtoResult.email, pagesScanned: mailtoResult.pagesScanned }
             });
-            logger.info(`Found email ${mailtoResult.email} via deep mailto for ${vendorId}.`);
+            logger2.info(`Found email ${mailtoResult.email} via deep mailto for ${vendorId}.`);
             const updatedDoc = await db.collection("vendors").doc(vendorId).get();
             await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
             return;
@@ -20132,16 +20182,16 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           domain = new URL(vendorWebsite).hostname;
         } catch {
         }
-        logger.info(`No email from mailto scan for ${vendorId}. Trying Serper web search...`);
+        logger2.info(`No email from mailto scan for ${vendorId}. Trying Serper web search...`);
         const webResult = await searchWebForEmail(vendorName2, vendorLocation2, domain, SERPER_API_KEY.value());
         if (webResult.email) {
           const webVerification = await verifyEmail(webResult.email);
           if (webVerification.valid && webVerification.deliverable) {
             await db.collection("vendors").doc(vendorId).update({
               email: webResult.email,
-              "enrichment.enrichedFields": admin4.firestore.FieldValue.arrayUnion("email"),
+              "enrichment.enrichedFields": admin5.firestore.FieldValue.arrayUnion("email"),
               "enrichment.enrichmentSource": webResult.source,
-              updatedAt: admin4.firestore.FieldValue.serverTimestamp()
+              updatedAt: admin5.firestore.FieldValue.serverTimestamp()
             });
             await db.collection("vendor_activities").add({
               vendorId,
@@ -20150,14 +20200,14 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
               createdAt: /* @__PURE__ */ new Date(),
               metadata: { email: webResult.email, source: webResult.source }
             });
-            logger.info(`Found email ${webResult.email} via ${webResult.source} for ${vendorId}.`);
+            logger2.info(`Found email ${webResult.email} via ${webResult.source} for ${vendorId}.`);
             const updatedDoc = await db.collection("vendors").doc(vendorId).get();
             await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
             return;
           }
         }
         if (scrapedData.contactFormUrl) {
-          logger.info(`All enrichment failed for ${vendorId}, but found contact form: ${scrapedData.contactFormUrl}`);
+          logger2.info(`All enrichment failed for ${vendorId}, but found contact form: ${scrapedData.contactFormUrl}`);
           await db.collection("vendors").doc(vendorId).update({
             outreachStatus: "NEEDS_MANUAL_OUTREACH",
             statusUpdatedAt: /* @__PURE__ */ new Date(),
@@ -20179,12 +20229,12 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           await markNeedsContact(vendorId, "No email found after 3-layer enrichment (scrape \u2192 mailto \u2192 web search)");
         }
       } catch (enrichError) {
-        logger.error(`Enrichment error for ${vendorId}:`, enrichError);
+        logger2.error(`Enrichment error for ${vendorId}:`, enrichError);
         await markNeedsContact(vendorId, `Enrichment error: ${enrichError.message}`);
       }
       return;
     }
-    logger.info(`Vendor ${vendorId} has no email and no website. Trying Serper web search...`);
+    logger2.info(`Vendor ${vendorId} has no email and no website. Trying Serper web search...`);
     const vendorName = vendorData.businessName || vendorData.name || "";
     const vendorLocation = vendorData.address || vendorData.location || "";
     if (vendorName) {
@@ -20195,11 +20245,11 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           await db.collection("vendors").doc(vendorId).update({
             email: webResult.email,
             enrichment: {
-              lastEnriched: admin4.firestore.FieldValue.serverTimestamp(),
+              lastEnriched: admin5.firestore.FieldValue.serverTimestamp(),
               enrichedFields: ["email"],
               enrichmentSource: webResult.source
             },
-            updatedAt: admin4.firestore.FieldValue.serverTimestamp()
+            updatedAt: admin5.firestore.FieldValue.serverTimestamp()
           });
           await db.collection("vendor_activities").add({
             vendorId,
@@ -20208,7 +20258,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
             createdAt: /* @__PURE__ */ new Date(),
             metadata: { email: webResult.email, source: webResult.source }
           });
-          logger.info(`Found email ${webResult.email} via web search for ${vendorId} (no website).`);
+          logger2.info(`Found email ${webResult.email} via web search for ${vendorId} (no website).`);
           const updatedDoc = await db.collection("vendors").doc(vendorId).get();
           await setOutreachPending(vendorId, updatedDoc.data() || vendorData);
           return;
@@ -20224,7 +20274,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
       vendorName ? "No email found \u2014 web search exhausted, no website on file" : "No email, no website, no business name \u2014 cannot enrich"
     );
   } catch (error11) {
-    logger.error("Error in enrich pipeline:", error11);
+    logger2.error("Error in enrich pipeline:", error11);
   }
 }
 async function checkProfileCompleteness(vendorId, vendorData) {
@@ -20239,7 +20289,7 @@ async function checkProfileCompleteness(vendorId, vendorData) {
 async function setOutreachPending(vendorId, vendorData) {
   const missingFields = await checkProfileCompleteness(vendorId, vendorData);
   if (missingFields.length > 0) {
-    logger.warn(`Vendor ${vendorId} profile incomplete. Missing: ${missingFields.join(", ")}. Blocking outreach.`);
+    logger2.warn(`Vendor ${vendorId} profile incomplete. Missing: ${missingFields.join(", ")}. Blocking outreach.`);
     await db.collection("vendors").doc(vendorId).update({
       outreachStatus: "PROFILE_INCOMPLETE",
       statusUpdatedAt: /* @__PURE__ */ new Date()
@@ -20275,7 +20325,7 @@ async function setOutreachPending(vendorId, vendorData) {
       status: vendorData.status
     }
   });
-  logger.info(`Outreach GENERATE task enqueued for vendor ${vendorId}`);
+  logger2.info(`Outreach GENERATE task enqueued for vendor ${vendorId}`);
 }
 async function markNeedsContact(vendorId, reason) {
   await db.collection("vendors").doc(vendorId).update({
@@ -20288,83 +20338,40 @@ async function markNeedsContact(vendorId, reason) {
     description: `Manual outreach required: ${reason}`,
     createdAt: /* @__PURE__ */ new Date()
   });
-  logger.info(`Vendor ${vendorId} marked NEEDS_CONTACT: ${reason}`);
+  logger2.info(`Vendor ${vendorId} marked NEEDS_CONTACT: ${reason}`);
 }
 
 // src/triggers/outreachWorker.ts
 var import_scheduler = require("firebase-functions/v2/scheduler");
 var admin6 = __toESM(require("firebase-admin"));
-var logger2 = __toESM(require("firebase-functions/logger"));
+var logger3 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
-
-// src/agents/salesOutreach.ts
-var import_generative_ai4 = require("@google/generative-ai");
-var admin5 = __toESM(require("firebase-admin"));
-var API_KEY2 = process.env.GEMINI_API_KEY || "";
-var genAI3 = new import_generative_ai4.GoogleGenerativeAI(API_KEY2);
-var model2 = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
-var db3 = admin5.firestore();
-var generateSalesOutreachContent = async (lead, sequence = 0) => {
-  try {
-    const templateId = sequence === 0 ? "sales_outreach_prompt" : "sales_followup_prompt";
-    const templateDoc = await db3.collection("templates").doc(templateId).get();
-    if (!templateDoc.exists) {
-      throw new Error(`Template '${templateId}' not found in database`);
-    }
-    const template = templateDoc.data();
-    const facilityType = lead.facilityType || "commercial facility";
-    const prettyFacilityType = facilityType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    const sqft = lead.propertySourcing?.squareFootage;
-    const sqftStr = sqft ? `${sqft.toLocaleString()} sq ft` : "N/A";
-    const prompt = template?.content.replace(/\{\{businessName\}\}/g, lead.businessName || "your practice").replace(/\{\{contactName\}\}/g, lead.contactName || "there").replace(/\{\{facilityType\}\}/g, prettyFacilityType).replace(/\{\{squareFootage\}\}/g, sqftStr).replace(/\{\{address\}\}/g, lead.address || "").replace(/\{\{sequence\}\}/g, String(sequence)).replace(/\{\{tenantName\}\}/g, lead.propertySourcing?.tenantName || lead.businessName || "").replace(/\{\{ownerName\}\}/g, lead.propertySourcing?.ownerName || "");
-    const result = await model2.generateContent(prompt);
-    let text = result.response.text();
-    text = text.replace(/^```json/gm, "").replace(/^```/gm, "").trim();
-    const jsonContent = JSON.parse(text);
-    return {
-      email: jsonContent.email,
-      generatedAt: /* @__PURE__ */ new Date()
-    };
-  } catch (error11) {
-    console.error("[SalesOutreach] Error generating content:", error11);
-    return {
-      email: {
-        subject: "Error",
-        body: "Error generating content. Please draft manually."
-      },
-      error: true
-    };
-  }
-};
-
-// src/triggers/outreachWorker.ts
 init_emailUtils();
 if (!admin6.apps.length) {
   admin6.initializeApp();
 }
 var db4 = admin6.firestore();
+function titleCase2(s) {
+  if (!s) return "";
+  if (s === s.toUpperCase() && s.length <= 5) return s;
+  return s.replace(/[_-]/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 var processOutreachQueue = (0, import_scheduler.onSchedule)({
   schedule: "every 1 minutes",
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"]
 }, async (event) => {
-  logger2.info("Processing outreach queue...");
+  logger3.info("Processing outreach queue...");
   try {
     const tasks = await fetchPendingTasks(db4);
     if (tasks.length === 0) {
-      logger2.info("No pending tasks found.");
+      logger3.info("No pending tasks found.");
       return;
     }
-    logger2.info(`Found ${tasks.length} tasks to process.`);
+    logger3.info(`Found ${tasks.length} tasks to process.`);
     for (const task of tasks) {
       try {
         if (task.leadId) {
-          if (task.type === "GENERATE") {
-            await handleLeadGenerate(task);
-          } else if (task.type === "FOLLOW_UP") {
-            await handleLeadFollowUp(task);
-          } else if (task.type === "SEND") {
-            await handleLeadSend(task);
-          }
+          await handleLeadSend(task);
         } else {
           if (task.type === "GENERATE") {
             await handleGenerate(task);
@@ -20375,7 +20382,7 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
           }
         }
       } catch (err) {
-        logger2.error(`Error processing task ${task.id}:`, err);
+        logger3.error(`Error processing task ${task.id}:`, err);
         const newRetryCount = (task.retryCount || 0) + 1;
         const status = newRetryCount > 5 ? "FAILED" : "RETRY";
         const nextAttempt = /* @__PURE__ */ new Date();
@@ -20401,11 +20408,11 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
       }
     }
   } catch (error11) {
-    logger2.error("Fatal error in queue processor:", error11);
+    logger3.error("Fatal error in queue processor:", error11);
   }
 });
 async function handleGenerate(task) {
-  logger2.info(`Generating content for task ${task.id}`);
+  logger3.info(`Generating content for task ${task.id}`);
   const vendorDoc = await db4.collection("vendors").doc(task.vendorId).get();
   const vendor = vendorDoc.exists ? vendorDoc.data() : task.metadata;
   const sequence = task.metadata?.sequence || 1;
@@ -20416,7 +20423,7 @@ async function handleGenerate(task) {
   }
   const template = templateDoc.data();
   const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
-  const services = Array.isArray(vendor?.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.join(", ") : vendor?.specialty || "Facility Services";
+  const services = Array.isArray(vendor?.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.map(titleCase2).join(", ") : titleCase2(vendor?.specialty || "Facility Services");
   const contactName = vendor?.contactName || vendor?.businessName || "there";
   const mergeVars = {
     vendorName: vendor?.companyName || vendor?.businessName || "your company",
@@ -20424,7 +20431,7 @@ async function handleGenerate(task) {
     city: vendor?.city || "your area",
     state: vendor?.state || "",
     services,
-    specialty: vendor?.specialty || vendor?.capabilities?.[0] || "Services",
+    specialty: titleCase2(vendor?.specialty || vendor?.capabilities?.[0] || "Services"),
     onboardingUrl
   };
   let subject = template.subject || "";
@@ -20461,10 +20468,10 @@ async function handleGenerate(task) {
     }
   });
   await updateTaskStatus(db4, task.id, "COMPLETED");
-  logger2.info(`Task ${task.id} completed (template: ${templateId}). Send scheduled.`);
+  logger3.info(`Task ${task.id} completed (template: ${templateId}). Send scheduled.`);
 }
 async function handleSend(task) {
-  logger2.info(`Executing SEND for task ${task.id}`);
+  logger3.info(`Executing SEND for task ${task.id}`);
   const vendorDoc = await db4.collection("vendors").doc(task.vendorId).get();
   const vendor = vendorDoc.exists ? vendorDoc.data() : null;
   const vendorEmail = vendor?.email || task.metadata?.email?.to;
@@ -20490,11 +20497,11 @@ async function handleSend(task) {
     sendSuccess = result.success;
     resendId = result.resendId;
     if (!sendSuccess) {
-      logger2.error(`Failed to send email to ${vendorEmail} for task ${task.id}`);
+      logger3.error(`Failed to send email to ${vendorEmail} for task ${task.id}`);
       throw new Error(`Resend email failed for vendor ${task.vendorId}`);
     }
   } else {
-    logger2.warn(`No email for task ${task.id}. Channel: ${task.metadata.channel}`);
+    logger3.warn(`No email for task ${task.id}. Channel: ${task.metadata.channel}`);
     sendSuccess = false;
   }
   await db4.collection("vendor_activities").add({
@@ -20530,9 +20537,9 @@ async function handleSend(task) {
           "stats.sent": admin6.firestore.FieldValue.increment(1),
           "stats.lastUpdated": /* @__PURE__ */ new Date()
         });
-        logger2.info(`Template ${task.metadata.templateId}: stats.sent incremented`);
+        logger3.info(`Template ${task.metadata.templateId}: stats.sent incremented`);
       } catch (statsErr) {
-        logger2.warn("Template stats.sent update failed:", statsErr);
+        logger3.warn("Template stats.sent update failed:", statsErr);
       }
     }
     await db4.collection("vendor_activities").add({
@@ -20551,22 +20558,22 @@ async function handleSend(task) {
   }
 }
 async function handleFollowUp(task) {
-  logger2.info(`Processing FOLLOW_UP task ${task.id} (sequence ${task.metadata?.sequence})`);
+  logger3.info(`Processing FOLLOW_UP task ${task.id} (sequence ${task.metadata?.sequence})`);
   const vendorDoc = await db4.collection("vendors").doc(task.vendorId).get();
   const vendor = vendorDoc.exists ? vendorDoc.data() : null;
   if (!vendor) {
-    logger2.warn(`Vendor ${task.vendorId} not found, marking task completed.`);
+    logger3.warn(`Vendor ${task.vendorId} not found, marking task completed.`);
     await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
   if (vendor.status !== "awaiting_onboarding") {
-    logger2.info(`Vendor ${task.vendorId} is now '${vendor.status}', skipping follow-up.`);
+    logger3.info(`Vendor ${task.vendorId} is now '${vendor.status}', skipping follow-up.`);
     await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
   const vendorEmail = vendor.email || task.metadata?.email;
   if (!vendorEmail) {
-    logger2.warn(`No email for vendor ${task.vendorId}, skipping follow-up.`);
+    logger3.warn(`No email for vendor ${task.vendorId}, skipping follow-up.`);
     await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
@@ -20575,7 +20582,7 @@ async function handleFollowUp(task) {
   let variantSuffix = "";
   let variantId = "standard";
   if (engagement === "bounced") {
-    logger2.info(`Vendor ${task.vendorId} email bounced, flagging for manual outreach.`);
+    logger3.info(`Vendor ${task.vendorId} email bounced, flagging for manual outreach.`);
     await db4.collection("vendors").doc(task.vendorId).update({
       outreachStatus: "NEEDS_MANUAL",
       statusUpdatedAt: /* @__PURE__ */ new Date()
@@ -20605,13 +20612,13 @@ async function handleFollowUp(task) {
     templateDoc = await db4.collection("templates").doc(templateId).get();
   }
   if (!templateDoc.exists) {
-    logger2.info(`No template ${templateId} found. Follow-up sequence complete for vendor ${task.vendorId}.`);
+    logger3.info(`No template ${templateId} found. Follow-up sequence complete for vendor ${task.vendorId}.`);
     await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
   const template = templateDoc.data();
   const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
-  const services = Array.isArray(vendor.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.join(", ") : vendor.specialty || "Facility Services";
+  const services = Array.isArray(vendor.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.map(titleCase2).join(", ") : titleCase2(vendor.specialty || "Facility Services");
   const contactName = vendor.contactName || vendor.businessName || "there";
   const mergeVars = {
     vendorName: vendor.companyName || vendor.businessName || "your company",
@@ -20619,7 +20626,7 @@ async function handleFollowUp(task) {
     city: vendor.city || "your area",
     state: vendor.state || "",
     services,
-    specialty: vendor.specialty || vendor.capabilities?.[0] || "Services",
+    specialty: titleCase2(vendor.specialty || vendor.capabilities?.[0] || "Services"),
     onboardingUrl
   };
   let subject = template.subject || "";
@@ -20660,263 +20667,108 @@ async function handleFollowUp(task) {
   });
   if (sendSuccess) {
     await updateTaskStatus(db4, task.id, "COMPLETED");
-    logger2.info(`Follow-up #${sequence} sent to ${vendorEmail} (template: ${templateId})`);
+    logger3.info(`Follow-up #${sequence} sent to ${vendorEmail} (template: ${templateId})`);
     try {
       await db4.collection("templates").doc(templateId).update({
         "stats.sent": admin6.firestore.FieldValue.increment(1),
         "stats.lastUpdated": /* @__PURE__ */ new Date()
       });
-      logger2.info(`Template ${templateId}: stats.sent incremented`);
+      logger3.info(`Template ${templateId}: stats.sent incremented`);
     } catch (statsErr) {
-      logger2.warn("Template stats.sent update failed:", statsErr);
+      logger3.warn("Template stats.sent update failed:", statsErr);
     }
   } else {
     throw new Error(`Failed to send follow-up #${sequence} to ${vendorEmail}`);
   }
 }
-async function handleLeadGenerate(task) {
-  logger2.info(`[SalesOutreach] Generating intro email for lead ${task.leadId}`);
-  const leadData = task.metadata;
-  const outreachResult = await generateSalesOutreachContent(leadData, 0);
-  if (outreachResult.error) {
-    throw new Error("AI Generation Failed for sales outreach");
-  }
-  await db4.collection("lead_activities").add({
-    leadId: task.leadId,
-    type: "OUTREACH_QUEUED",
-    description: `Sales outreach email generated for ${leadData.businessName || "lead"}.`,
-    createdAt: /* @__PURE__ */ new Date(),
-    metadata: { email: outreachResult.email }
-  });
-  await enqueueTask(db4, {
-    leadId: task.leadId,
-    type: "SEND",
-    scheduledAt: admin6.firestore.Timestamp.fromDate(/* @__PURE__ */ new Date()),
-    metadata: {
-      email: outreachResult.email,
-      toEmail: leadData.email,
-      businessName: leadData.businessName
-    }
-  });
-  await updateTaskStatus(db4, task.id, "COMPLETED");
-  logger2.info(`[SalesOutreach] Lead ${task.leadId} intro email generated, SEND queued.`);
-}
 async function handleLeadSend(task) {
-  logger2.info(`[SalesOutreach] Sending email for lead ${task.leadId}`);
-  const toEmail = task.metadata?.toEmail;
+  logger3.info(`[LeadOutreach] Sending template email for lead ${task.leadId}`);
+  const toEmail = task.metadata?.email;
   if (!toEmail) {
-    logger2.warn(`[SalesOutreach] No email for lead ${task.leadId}, skipping.`);
+    logger3.warn(`[LeadOutreach] No email for lead ${task.leadId}, skipping.`);
     await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
-  const emailData = task.metadata.email;
-  const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${(emailData?.body || "").replace(/\n/g, "<br/>")}</div>`;
-  const sendSuccess = await sendEmail(
+  const templateId = task.metadata?.templateId;
+  if (!templateId) {
+    logger3.error(`[LeadOutreach] No templateId for lead ${task.leadId} task ${task.id}.`);
+    await updateTaskStatus(db4, task.id, "FAILED");
+    return;
+  }
+  const templateDoc = await db4.collection("templates").doc(templateId).get();
+  if (!templateDoc.exists) {
+    logger3.error(`[LeadOutreach] Template ${templateId} not found. Run the seed script.`);
+    await updateTaskStatus(db4, task.id, "FAILED");
+    return;
+  }
+  const template = templateDoc.data();
+  const mergeVars = {
+    contactName: task.metadata.contactName || "there",
+    businessName: task.metadata.businessName || "your practice",
+    facilityType: titleCase2(task.metadata.facilityType || "Medical Office"),
+    address: task.metadata.address || "",
+    squareFootage: task.metadata.squareFootage || ""
+  };
+  let subject = template.subject || task.metadata.subject || "";
+  let body = template.body || "";
+  for (const [key, value] of Object.entries(mergeVars)) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g");
+    subject = subject.replace(regex, value);
+    body = body.replace(regex, value);
+  }
+  const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${body.replace(/\n/g, "<br/>")}</div>`;
+  const sendResult = await sendEmail(
     toEmail,
-    emailData?.subject || "Xiri Facility Solutions \u2014 Simplify Your Facility Management",
-    htmlBody
+    subject,
+    htmlBody,
+    void 0,
+    void 0,
+    task.leadId ?? void 0,
+    templateId
   );
   await db4.collection("lead_activities").add({
     leadId: task.leadId,
-    type: sendSuccess ? "OUTREACH_SENT" : "OUTREACH_FAILED",
-    description: sendSuccess ? `Sales email sent to ${toEmail}.` : `Failed to send sales email to ${toEmail}.`,
+    type: sendResult.success ? "OUTREACH_SENT" : "OUTREACH_FAILED",
+    description: sendResult.success ? `Lead email sent to ${toEmail} (template: ${templateId}).` : `Failed to send lead email to ${toEmail}.`,
     createdAt: /* @__PURE__ */ new Date(),
-    metadata: { to: toEmail, subject: emailData?.subject }
+    metadata: {
+      to: toEmail,
+      subject,
+      body,
+      html: htmlBody,
+      templateId,
+      sequence: task.metadata.sequence,
+      resendId: sendResult.resendId || null
+    }
   });
-  await updateTaskStatus(db4, task.id, sendSuccess ? "COMPLETED" : "FAILED");
-  if (sendSuccess) {
+  await updateTaskStatus(db4, task.id, sendResult.success ? "COMPLETED" : "FAILED");
+  if (sendResult.success) {
     await db4.collection("leads").doc(task.leadId).update({
       outreachStatus: "SENT",
       outreachSentAt: /* @__PURE__ */ new Date()
     });
-  }
-}
-async function handleLeadFollowUp(task) {
-  const sequence = task.metadata?.sequence || 1;
-  logger2.info(`[SalesOutreach] Processing follow-up #${sequence} for lead ${task.leadId}`);
-  const leadDoc = await db4.collection("leads").doc(task.leadId).get();
-  const leadData = leadDoc.exists ? leadDoc.data() : null;
-  if (!leadData) {
-    logger2.warn(`[SalesOutreach] Lead ${task.leadId} not found, skipping.`);
-    await updateTaskStatus(db4, task.id, "COMPLETED");
-    return;
-  }
-  if (leadData.outreachStatus === "REPLIED" || leadData.status === "lost") {
-    logger2.info(`[SalesOutreach] Lead ${task.leadId} status is '${leadData.outreachStatus || leadData.status}', skipping follow-up.`);
-    await updateTaskStatus(db4, task.id, "COMPLETED");
-    return;
-  }
-  const toEmail = task.metadata?.email || leadData.email;
-  if (!toEmail) {
-    logger2.warn(`[SalesOutreach] No email for lead ${task.leadId}, skipping.`);
-    await updateTaskStatus(db4, task.id, "COMPLETED");
-    return;
-  }
-  const outreachResult = await generateSalesOutreachContent({
-    ...leadData,
-    ...task.metadata
-  }, sequence);
-  if (outreachResult.error) {
-    throw new Error(`AI generation failed for sales follow-up #${sequence}`);
-  }
-  const emailData = outreachResult.email;
-  const htmlBody = buildSalesFollowUpEmail(
-    sequence,
-    task.metadata?.businessName || leadData.businessName || "there",
-    task.metadata?.contactName || leadData.contactName || "",
-    emailData?.body || ""
-  );
-  const subject = emailData?.subject || task.metadata?.subject || `Follow-up: ${task.metadata?.businessName || "Your facility"}`;
-  const sendSuccess = await sendEmail(toEmail, subject, htmlBody);
-  if (sendSuccess) {
-    await db4.collection("lead_activities").add({
-      leadId: task.leadId,
-      type: "FOLLOW_UP_SENT",
-      description: `Sales follow-up #${sequence} sent to ${toEmail}`,
-      createdAt: /* @__PURE__ */ new Date(),
-      metadata: { sequence, email: toEmail }
-    });
-    await updateTaskStatus(db4, task.id, "COMPLETED");
-    logger2.info(`[SalesOutreach] Follow-up #${sequence} sent to ${toEmail} for lead ${task.leadId}`);
-  } else {
-    throw new Error(`Failed to send sales follow-up #${sequence} to ${toEmail}`);
-  }
-}
-function buildSalesFollowUpEmail(sequence, businessName, contactName, aiBody) {
-  const greeting = contactName ? `Hi ${contactName},` : `Hello,`;
-  const signoff = sequence >= 3 ? "Best regards" : "Best";
-  return `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
-        <div style="background: linear-gradient(135deg, #0c4a6e, #0369a1); padding: 24px 32px; border-radius: 12px 12px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 20px;">Xiri Facility Solutions</h1>
-            <p style="color: #bae6fd; margin: 4px 0 0; font-size: 13px;">Your Single-Source Facility Partner</p>
-        </div>
-        <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
-            <p style="font-size: 15px;">${greeting}</p>
-            <div style="font-size: 15px; line-height: 1.7;">${aiBody.replace(/\n/g, "<br/>")}</div>
-            <div style="text-align: center; margin: 32px 0;">
-                <a href="https://xiri.ai/contact?ref=outreach" style="display: inline-block; padding: 14px 32px; background: #0369a1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">
-                    Schedule a Free Walkthrough
-                </a>
-            </div>
-            <p style="font-size: 14px; color: #64748b;">Have questions? Simply reply to this email.</p>
-            <p style="margin-top: 24px; font-size: 14px;">${signoff},<br/><strong>Xiri Facility Solutions</strong></p>
-        </div>
-    </div>`;
-}
-
-// src/triggers/onIncomingMessage.ts
-var import_firestore3 = require("firebase-functions/v2/firestore");
-var admin8 = __toESM(require("firebase-admin"));
-var logger3 = __toESM(require("firebase-functions/logger"));
-
-// src/agents/outreach.ts
-var import_generative_ai5 = require("@google/generative-ai");
-var admin7 = __toESM(require("firebase-admin"));
-var API_KEY3 = process.env.GEMINI_API_KEY || "";
-var genAI4 = new import_generative_ai5.GoogleGenerativeAI(API_KEY3);
-var model3 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
-var db5 = admin7.firestore();
-var analyzeIncomingMessage = async (vendor, messageContent, previousContext) => {
-  try {
-    const templateDoc = await db5.collection("templates").doc("message_analysis_prompt").get();
-    if (!templateDoc.exists) {
-      throw new Error("Message analysis prompt not found in database");
-    }
-    const template = templateDoc.data();
-    const prompt = template?.content.replace(/\{\{vendorName\}\}/g, vendor.companyName).replace(/\{\{messageContent\}\}/g, messageContent).replace(/\{\{previousContext\}\}/g, previousContext).replace(/\{\{vendorId\}\}/g, vendor.id);
-    const result = await model3.generateContent(prompt);
-    let text = result.response.text();
-    text = text.replace(/^```json/gm, "").replace(/^```/gm, "").trim();
-    const jsonContent = JSON.parse(text);
-    return jsonContent;
-  } catch (error11) {
-    console.error("Error analyzing message:", error11);
-    return { intent: "OTHER", reply: "Error analyzing message." };
-  }
-};
-
-// src/triggers/onIncomingMessage.ts
-if (!admin8.apps.length) {
-  admin8.initializeApp();
-}
-var db6 = admin8.firestore();
-var onIncomingMessage = (0, import_firestore3.onDocumentCreated)("vendor_activities/{activityId}", async (event) => {
-  if (!event.data) return;
-  const activity = event.data.data();
-  const vendorId = activity.vendorId;
-  if (activity.type !== "INBOUND_REPLY") return;
-  logger3.info(`Processing inbound message from vendor ${vendorId}`);
-  try {
-    const vendorDoc = await db6.collection("vendors").doc(vendorId).get();
-    if (!vendorDoc.exists) {
-      logger3.error(`Vendor ${vendorId} not found`);
-      return;
-    }
-    const vendor = vendorDoc.data();
-    const lastOutreachSnapshot = await db6.collection("vendor_activities").where("vendorId", "==", vendorId).where("type", "==", "OUTREACH_SENT").orderBy("createdAt", "desc").limit(1).get();
-    const previousContext = !lastOutreachSnapshot.empty ? lastOutreachSnapshot.docs[0].data().description : "Initial outreach sent.";
-    const analysis = await analyzeIncomingMessage(vendor, activity.description, previousContext);
-    logger3.info(`Analysis result for ${vendorId}: ${JSON.stringify(analysis)}`);
-    let newStatus = vendor?.status;
-    let actionDescription = "";
-    if (analysis.intent === "INTERESTED") {
-      newStatus = "NEGOTIATING";
-      actionDescription = "Vendor expressed interest. Status updated to NEGOTIATING.";
-    } else if (analysis.intent === "NOT_INTERESTED") {
-      newStatus = "REJECTED";
-      actionDescription = "Vendor not interested. Status updated to REJECTED.";
-    } else if (analysis.intent === "QUESTION") {
-      newStatus = "NEGOTIATING";
-      actionDescription = "Vendor has a question.";
-    } else {
-      actionDescription = "AI could not determine clear intent.";
-    }
-    if (newStatus && newStatus !== vendor?.status) {
-      await db6.collection("vendors").doc(vendorId).update({
-        status: newStatus,
-        statusUpdatedAt: /* @__PURE__ */ new Date()
+    try {
+      await db4.collection("templates").doc(templateId).update({
+        "stats.sent": admin6.firestore.FieldValue.increment(1),
+        "stats.lastUpdated": /* @__PURE__ */ new Date()
       });
-      await db6.collection("vendor_activities").add({
-        vendorId,
-        type: "STATUS_CHANGE",
-        description: actionDescription,
-        createdAt: /* @__PURE__ */ new Date(),
-        metadata: {
-          oldStatus: vendor?.status,
-          newStatus,
-          aiIntent: analysis.intent
-        }
-      });
+    } catch (statsErr) {
+      logger3.warn("Template stats.sent update failed:", statsErr);
     }
-    await db6.collection("vendor_activities").add({
-      vendorId,
-      type: "AI_REPLY",
-      description: analysis.reply,
-      createdAt: /* @__PURE__ */ new Date(),
-      // Slightly after the inbound
-      metadata: {
-        intent: analysis.intent,
-        inReplyTo: event.params.activityId
-      }
-    });
-  } catch (error11) {
-    logger3.error("Error processing inbound message:", error11);
   }
-});
+}
 
 // src/triggers/onDocumentUploaded.ts
-var import_firestore4 = require("firebase-functions/v2/firestore");
-var admin10 = __toESM(require("firebase-admin"));
+var import_firestore3 = require("firebase-functions/v2/firestore");
+var admin7 = __toESM(require("firebase-admin"));
 var logger5 = __toESM(require("firebase-functions/logger"));
 
 // src/agents/documentVerifier.ts
-var import_generative_ai6 = require("@google/generative-ai");
-var admin9 = __toESM(require("firebase-admin"));
+var import_generative_ai4 = require("@google/generative-ai");
 var logger4 = __toESM(require("firebase-functions/logger"));
 var https = __toESM(require("https"));
-var genAI5 = new import_generative_ai6.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-var db7 = admin9.firestore();
+init_promptUtils();
+var genAI3 = new import_generative_ai4.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 function downloadFileAsBuffer(url) {
   return new Promise((resolve, reject) => {
     https.get(url, (res) => {
@@ -20934,7 +20786,7 @@ function downloadFileAsBuffer(url) {
   });
 }
 async function verifyDocument(docType, vendorName, specialty) {
-  const model4 = genAI5.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model2 = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
   let simulatedOcrText = "";
   if (docType === "COI") {
     const today = /* @__PURE__ */ new Date();
@@ -20969,14 +20821,30 @@ async function verifyDocument(docType, vendorName, specialty) {
         `;
   }
   try {
-    const templateDoc = await db7.collection("templates").doc("document_verifier_prompt").get();
-    if (!templateDoc.exists) {
-      throw new Error("Document verifier prompt not found in database");
-    }
-    const template = templateDoc.data();
+    const FALLBACK = `You are a document verification agent for Xiri Facility Solutions.
+
+Analyze this {{documentType}} for {{vendorName}} (specialty: {{specialty}}).
+
+Requirements: {{requirements}}
+
+Document content:
+{{ocrText}}
+
+Verify compliance and extract key data. Return JSON:
+{
+    "valid": true/false,
+    "reasoning": "Brief explanation",
+    "extracted": {}
+}`;
     const requirements = docType === "COI" ? "Must have General Liability > $1,000,000 and valid dates." : "Must be signed and have a TIN.";
-    const prompt = template?.content.replace(/\{\{documentType\}\}/g, docType).replace(/\{\{vendorName\}\}/g, vendorName).replace(/\{\{specialty\}\}/g, specialty).replace(/\{\{requirements\}\}/g, requirements).replace(/\{\{ocrText\}\}/g, simulatedOcrText);
-    const result = await model4.generateContent({
+    const prompt = await getPrompt("document_verifier_legacy", FALLBACK, {
+      documentType: docType,
+      vendorName,
+      specialty,
+      requirements,
+      ocrText: simulatedOcrText
+    });
+    const result = await model2.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }]
     });
     const responseText = result.response.text();
@@ -20993,7 +20861,7 @@ async function verifyDocument(docType, vendorName, specialty) {
   }
 }
 async function verifyAcord25(fileUrl, vendorName, attestations) {
-  const model4 = genAI5.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model2 = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
   try {
     logger4.info(`Downloading ACORD 25 from: ${fileUrl}`);
     const buffer = await downloadFileAsBuffer(fileUrl);
@@ -21002,50 +20870,23 @@ async function verifyAcord25(fileUrl, vendorName, attestations) {
     const isPng = fileUrl.toLowerCase().includes(".png");
     const contentType = isPdf ? "application/pdf" : isJpg ? "image/jpeg" : isPng ? "image/png" : "application/pdf";
     const base64Data = buffer.toString("base64");
-    const prompt = `You are an insurance compliance verification agent for Xiri Facility Solutions.
+    const ACORD_FALLBACK = `You are an insurance compliance verification agent for Xiri Facility Solutions.
 
-Analyze this ACORD 25 Certificate of Liability Insurance and extract the following data in JSON format.
+Analyze this ACORD 25 Certificate of Liability Insurance and extract data in JSON format.
+Vendor: "{{vendorName}}"
+GL: {{hasGL}}, WC: {{hasWC}}, Auto: {{hasAuto}}, Entity: {{hasEntity}}
+Today: {{todayDate}}
 
-**The vendor's name on file is: "${vendorName}"**
-
-**The vendor attested to having the following coverage:**
-- General Liability: ${attestations.hasGL ? "YES" : "NO"}
-- Workers' Compensation: ${attestations.hasWC ? "YES" : "NO"}
-- Auto Insurance: ${attestations.hasAuto ? "YES" : "NO"}
-- Business Entity (LLC/Corp): ${attestations.hasEntity ? "YES" : "NO"}
-
-**Minimum requirements to PASS:**
-- General Liability: \u2265 $1,000,000 per occurrence AND \u2265 $2,000,000 aggregate
-- Workers' Compensation: Must have active policy if attested
-- Auto Insurance: Must have active policy if attested
-- All policies must NOT be expired (check against today's date: ${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]})
-- Insured name should reasonably match vendor name on file
-
-**Cross-reference the vendor's attestations against the actual document.**
-If the vendor attested to having coverage but the document does NOT show it, flag it.
-If limits are below minimums, flag it.
-If any policy is expired, flag it.
-
-Return ONLY valid JSON in this exact format:
-{
-    "valid": true/false,
-    "reasoning": "Brief explanation of the verification result",
-    "flags": ["list of specific issues found, empty array if none"],
-    "extracted": {
-        "insuredName": "Name as shown on certificate",
-        "glPerOccurrence": 1000000,
-        "glAggregate": 2000000,
-        "wcActive": true/false,
-        "wcPolicyNumber": "policy number or null",
-        "autoActive": true/false,
-        "expirationDates": [
-            { "policy": "General Liability", "expires": "2025-01-15" },
-            { "policy": "Workers Comp", "expires": "2025-06-30" }
-        ],
-        "certificateHolder": "Name if listed, or null"
-    }
-}`;
-    const result = await model4.generateContent({
+Return JSON with valid, reasoning, flags, and extracted fields.`;
+    const prompt = await getPrompt("acord25_verifier", ACORD_FALLBACK, {
+      vendorName,
+      hasGL: attestations.hasGL ? "YES" : "NO",
+      hasWC: attestations.hasWC ? "YES" : "NO",
+      hasAuto: attestations.hasAuto ? "YES" : "NO",
+      hasEntity: attestations.hasEntity ? "YES" : "NO",
+      todayDate: (/* @__PURE__ */ new Date()).toISOString().split("T")[0]
+    });
+    const result = await model2.generateContent({
       contents: [{
         role: "user",
         parts: [
@@ -21083,8 +20924,8 @@ Return ONLY valid JSON in this exact format:
 }
 
 // src/triggers/onDocumentUploaded.ts
-var db8 = admin10.firestore();
-var onDocumentUploaded = (0, import_firestore4.onDocumentUpdated)({
+var db5 = admin7.firestore();
+var onDocumentUploaded = (0, import_firestore3.onDocumentUpdated)({
   document: "vendors/{vendorId}",
   secrets: ["GEMINI_API_KEY", "RESEND_API_KEY"]
 }, async (event) => {
@@ -21111,22 +20952,22 @@ var onDocumentUploaded = (0, import_firestore4.onDocumentUpdated)({
     try {
       const result = await verifyAcord25(fileUrl, vendorName, attestations);
       const status = result.valid ? "VERIFIED" : result.flags.length > 0 ? "FLAGGED" : "REJECTED";
-      await db8.doc(`vendors/${vendorId}`).update({
+      await db5.doc(`vendors/${vendorId}`).update({
         "compliance.acord25.status": status,
-        "compliance.acord25.verifiedAt": admin10.firestore.FieldValue.serverTimestamp(),
+        "compliance.acord25.verifiedAt": admin7.firestore.FieldValue.serverTimestamp(),
         "compliance.acord25.aiAnalysis": {
           valid: result.valid,
           reasoning: result.reasoning,
           extracted: result.extracted
         },
         "compliance.acord25.extractedData": result.extracted,
-        updatedAt: admin10.firestore.FieldValue.serverTimestamp()
+        updatedAt: admin7.firestore.FieldValue.serverTimestamp()
       });
-      await db8.collection("vendor_activities").add({
+      await db5.collection("vendor_activities").add({
         vendorId,
         type: "AI_VERIFICATION",
         description: `AI ${status === "VERIFIED" ? "Verified" : "Flagged"} ACORD 25: ${result.reasoning}`,
-        createdAt: admin10.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin7.firestore.FieldValue.serverTimestamp(),
         metadata: {
           docType: "ACORD_25",
           status,
@@ -21141,14 +20982,14 @@ var onDocumentUploaded = (0, import_firestore4.onDocumentUpdated)({
       }
     } catch (error11) {
       logger5.error(`ACORD 25 verification failed for ${vendorId}:`, error11);
-      await db8.doc(`vendors/${vendorId}`).update({
+      await db5.doc(`vendors/${vendorId}`).update({
         "compliance.acord25.status": "FLAGGED",
         "compliance.acord25.aiAnalysis": {
           valid: false,
           reasoning: `Verification error: ${error11}`,
           extracted: {}
         },
-        updatedAt: admin10.firestore.FieldValue.serverTimestamp()
+        updatedAt: admin7.firestore.FieldValue.serverTimestamp()
       });
     }
     return;
@@ -21166,20 +21007,20 @@ async function runLegacyVerification(vendorId, docType, vendorData) {
   try {
     const result = await verifyDocument(docType, vendorData.companyName || "Vendor", vendorData.specialty || "General");
     const fieldPath = docType === "COI" ? "compliance.coi" : "compliance.w9";
-    await db8.doc(`vendors/${vendorId}`).update({
+    await db5.doc(`vendors/${vendorId}`).update({
       [`${fieldPath}.status`]: result.valid ? "VERIFIED" : "REJECTED",
       [`${fieldPath}.aiAnalysis`]: {
         valid: result.valid,
         reasoning: result.reasoning,
         extracted: result.extracted
       },
-      [`${fieldPath}.verifiedAt`]: admin10.firestore.FieldValue.serverTimestamp()
+      [`${fieldPath}.verifiedAt`]: admin7.firestore.FieldValue.serverTimestamp()
     });
-    await db8.collection("vendor_activities").add({
+    await db5.collection("vendor_activities").add({
       vendorId,
       type: "AI_VERIFICATION",
       description: `AI ${result.valid ? "Verified" : "Rejected"} ${docType}: ${result.reasoning}`,
-      createdAt: admin10.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin7.firestore.FieldValue.serverTimestamp(),
       metadata: {
         docType,
         valid: result.valid,
@@ -21234,13 +21075,13 @@ async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
 }
 
 // src/triggers/sendBookingConfirmation.ts
-var import_firestore5 = require("firebase-functions/v2/firestore");
+var import_firestore4 = require("firebase-functions/v2/firestore");
 init_emailUtils();
 var import_date_fns = require("date-fns");
-var admin11 = __toESM(require("firebase-admin"));
-var db9 = admin11.firestore();
+var admin8 = __toESM(require("firebase-admin"));
+var db6 = admin8.firestore();
 var TIMEOUT_SECONDS = 300;
-var sendBookingConfirmation = (0, import_firestore5.onDocumentWritten)({
+var sendBookingConfirmation = (0, import_firestore4.onDocumentWritten)({
   document: "leads/{leadId}",
   secrets: ["RESEND_API_KEY"],
   timeoutSeconds: TIMEOUT_SECONDS
@@ -21297,12 +21138,12 @@ Power to the Facilities!`,
       content: icsContent
     }
   ]);
-  await db9.collection("activity_logs").add({
+  await db6.collection("activity_logs").add({
     entityType: "lead",
     entityId: event.params.leadId,
     type: sendSuccess ? "EMAIL_SENT" : "EMAIL_FAILED",
     description: `Booking confirmation ${sendSuccess ? "sent" : "failed"}: ${subject}`,
-    createdAt: admin11.firestore.FieldValue.serverTimestamp(),
+    createdAt: admin8.firestore.FieldValue.serverTimestamp(),
     metadata: {
       to: email,
       subject,
@@ -21336,7 +21177,7 @@ END:VCALENDAR`;
 
 // src/triggers/enrichFromWebsite.ts
 var import_https = require("firebase-functions/v2/https");
-var import_firestore6 = require("firebase-admin/firestore");
+var import_firestore5 = require("firebase-admin/firestore");
 var import_params2 = require("firebase-functions/params");
 var GEMINI_API_KEY2 = (0, import_params2.defineSecret)("GEMINI_API_KEY");
 var enrichFromWebsite = (0, import_https.onCall)({
@@ -21414,8 +21255,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db23 = (0, import_firestore6.getFirestore)();
-    const docRef = db23.collection(collection).doc(documentId);
+    const db21 = (0, import_firestore5.getFirestore)();
+    const docRef = db21.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -21423,7 +21264,7 @@ var enrichFromWebsite = (0, import_https.onCall)({
     const existingData = docSnap.data();
     const enrichedFields = [];
     const updateData = {
-      updatedAt: import_firestore6.FieldValue.serverTimestamp()
+      updatedAt: import_firestore5.FieldValue.serverTimestamp()
     };
     if (verifiedEmail && !existingData.email) {
       updateData.email = verifiedEmail;
@@ -21460,7 +21301,7 @@ var enrichFromWebsite = (0, import_https.onCall)({
       }
     }
     updateData.enrichment = {
-      lastEnriched: import_firestore6.FieldValue.serverTimestamp(),
+      lastEnriched: import_firestore5.FieldValue.serverTimestamp(),
       enrichedFields,
       enrichmentSource: "manual",
       scrapedWebsite: website,
@@ -21494,14 +21335,14 @@ var enrichFromWebsite = (0, import_https.onCall)({
 });
 
 // src/triggers/onOnboardingComplete.ts
-var import_firestore7 = require("firebase-functions/v2/firestore");
-var admin12 = __toESM(require("firebase-admin"));
+var import_firestore6 = require("firebase-functions/v2/firestore");
+var admin9 = __toESM(require("firebase-admin"));
 var logger6 = __toESM(require("firebase-functions/logger"));
 var import_resend2 = require("resend");
-if (!admin12.apps.length) {
-  admin12.initializeApp();
+if (!admin9.apps.length) {
+  admin9.initializeApp();
 }
-var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
+var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
   document: "vendors/{vendorId}",
   secrets: ["RESEND_API_KEY"]
 }, async (event) => {
@@ -21644,7 +21485,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger6.error("Error sending vendor confirmation:", err);
     }
   }
-  const db23 = admin12.firestore();
+  const db21 = admin9.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -21671,9 +21512,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db23.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db21.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger6.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db23.collection("vendor_activities").add({
+  await db21.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -21683,15 +21524,15 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
 });
 
 // src/triggers/dripScheduler.ts
-var import_firestore8 = require("firebase-functions/v2/firestore");
-var admin13 = __toESM(require("firebase-admin"));
+var import_firestore7 = require("firebase-functions/v2/firestore");
+var admin10 = __toESM(require("firebase-admin"));
 var logger7 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
-if (!admin13.apps.length) {
-  admin13.initializeApp();
+if (!admin10.apps.length) {
+  admin10.initializeApp();
 }
-var db10 = admin13.firestore();
-var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
+var db7 = admin10.firestore();
+var onAwaitingOnboarding = (0, import_firestore7.onDocumentUpdated)({
   document: "vendors/{vendorId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -21713,10 +21554,10 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
     const scheduledDate = new Date(now);
     scheduledDate.setDate(scheduledDate.getDate() + fu.dayOffset);
     scheduledDate.setHours(15, 0, 0, 0);
-    await enqueueTask(db10, {
+    await enqueueTask(db7, {
       vendorId,
       type: "FOLLOW_UP",
-      scheduledAt: admin13.firestore.Timestamp.fromDate(scheduledDate),
+      scheduledAt: admin10.firestore.Timestamp.fromDate(scheduledDate),
       metadata: {
         sequence: fu.sequence,
         subject: fu.subject,
@@ -21730,7 +21571,7 @@ var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
     const scheduledDate = new Date(now);
     scheduledDate.setDate(scheduledDate.getDate() + fu.dayOffset);
     scheduledDate.setHours(15, 0, 0, 0);
-    await db10.collection("vendor_activities").add({
+    await db7.collection("vendor_activities").add({
       vendorId,
       type: "DRIP_SCHEDULED",
       description: `Follow-up #${fu.sequence} scheduled: "${fu.subject}"`,
@@ -21748,7 +21589,7 @@ var STAGES_PAST_OUTREACH = /* @__PURE__ */ new Set([
   "ready_for_assignment",
   "active"
 ]);
-var onVendorAdvancedPastOutreach = (0, import_firestore8.onDocumentUpdated)({
+var onVendorAdvancedPastOutreach = (0, import_firestore7.onDocumentUpdated)({
   document: "vendors/{vendorId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -21761,9 +21602,9 @@ var onVendorAdvancedPastOutreach = (0, import_firestore8.onDocumentUpdated)({
   const vendorId = event.params.vendorId;
   const businessName = after.businessName || "Unknown";
   logger7.info(`Vendor ${vendorId} (${businessName}) advanced to '${after.status}' \u2014 cancelling scheduled outreach emails.`);
-  const cancelledCount = await cancelVendorTasks(db10, vendorId);
+  const cancelledCount = await cancelVendorTasks(db7, vendorId);
   if (cancelledCount > 0) {
-    await db10.collection("vendor_activities").add({
+    await db7.collection("vendor_activities").add({
       vendorId,
       type: "DRIP_CANCELLED",
       description: `${cancelledCount} scheduled follow-up email(s) cancelled \u2014 vendor advanced to ${after.status}.`,
@@ -21780,13 +21621,13 @@ var onVendorAdvancedPastOutreach = (0, import_firestore8.onDocumentUpdated)({
 
 // src/triggers/handleUnsubscribe.ts
 var import_https2 = require("firebase-functions/v2/https");
-var admin14 = __toESM(require("firebase-admin"));
+var admin11 = __toESM(require("firebase-admin"));
 var logger8 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
-if (!admin14.apps.length) {
-  admin14.initializeApp();
+if (!admin11.apps.length) {
+  admin11.initializeApp();
 }
-var db11 = admin14.firestore();
+var db8 = admin11.firestore();
 var handleUnsubscribe = (0, import_https2.onRequest)({
   cors: true
 }, async (req, res) => {
@@ -21800,7 +21641,7 @@ var handleUnsubscribe = (0, import_https2.onRequest)({
     return;
   }
   try {
-    const vendorDoc = await db11.collection("vendors").doc(vendorId).get();
+    const vendorDoc = await db8.collection("vendors").doc(vendorId).get();
     if (!vendorDoc.exists) {
       res.status(404).send(renderPage(
         "Not Found",
@@ -21819,14 +21660,14 @@ var handleUnsubscribe = (0, import_https2.onRequest)({
       ));
       return;
     }
-    await db11.collection("vendors").doc(vendorId).update({
+    await db8.collection("vendors").doc(vendorId).update({
       status: "dismissed",
       statusUpdatedAt: /* @__PURE__ */ new Date(),
       dismissReason: "unsubscribed",
       unsubscribedAt: /* @__PURE__ */ new Date()
     });
-    const cancelledCount = await cancelVendorTasks(db11, vendorId);
-    await db11.collection("vendor_activities").add({
+    const cancelledCount = await cancelVendorTasks(db8, vendorId);
+    await db8.collection("vendor_activities").add({
       vendorId,
       type: "STATUS_CHANGE",
       description: `${businessName} unsubscribed via email link. ${cancelledCount} pending tasks cancelled.`,
@@ -21883,19 +21724,19 @@ function renderPage(title, message, success) {
 }
 
 // src/triggers/sendOnboardingInvite.ts
-var import_firestore9 = require("firebase-functions/v2/firestore");
-var admin15 = __toESM(require("firebase-admin"));
+var import_firestore8 = require("firebase-functions/v2/firestore");
+var admin12 = __toESM(require("firebase-admin"));
 var logger9 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
 var import_date_fns2 = require("date-fns");
 var import_date_fns_tz = require("date-fns-tz");
-if (!admin15.apps.length) {
-  admin15.initializeApp();
+if (!admin12.apps.length) {
+  admin12.initializeApp();
 }
-var db12 = admin15.firestore();
+var db9 = admin12.firestore();
 var ADMIN_EMAIL = "chris@xiri.ai";
 var EASTERN_TZ = "America/New_York";
-var sendOnboardingInvite = (0, import_firestore9.onDocumentUpdated)({
+var sendOnboardingInvite = (0, import_firestore8.onDocumentUpdated)({
   document: "vendors/{vendorId}",
   secrets: ["RESEND_API_KEY"]
 }, async (event) => {
@@ -21980,7 +21821,7 @@ Power to the Facilities!`,
   await sendEmail(ADMIN_EMAIL, `Onboarding Call: ${businessName} \u2014 ${formattedTime}`, adminHtml, [
     { filename: "onboarding-call.ics", content: icsContent }
   ]);
-  await db12.collection("vendor_activities").add({
+  await db9.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_CALL_SCHEDULED",
     description: `Onboarding call scheduled for ${formattedTime}`,
@@ -22023,10 +21864,10 @@ END:VCALENDAR`;
 
 // src/triggers/sendQuoteEmail.ts
 var import_https3 = require("firebase-functions/v2/https");
-var admin16 = __toESM(require("firebase-admin"));
+var admin13 = __toESM(require("firebase-admin"));
 init_emailUtils();
 var import_uuid = require("uuid");
-var db13 = admin16.firestore();
+var db10 = admin13.firestore();
 var sendQuoteEmail = (0, import_https3.onCall)({
   secrets: ["RESEND_API_KEY"],
   cors: [
@@ -22049,7 +21890,7 @@ var sendQuoteEmail = (0, import_https3.onCall)({
   if (!quoteId || !clientEmail) {
     throw new import_https3.HttpsError("invalid-argument", "Missing quoteId or clientEmail");
   }
-  const quoteRef = db13.collection("quotes").doc(quoteId);
+  const quoteRef = db10.collection("quotes").doc(quoteId);
   const quoteSnap = await quoteRef.get();
   if (!quoteSnap.exists) {
     throw new import_https3.HttpsError("not-found", "Quote not found");
@@ -22060,8 +21901,8 @@ var sendQuoteEmail = (0, import_https3.onCall)({
     reviewToken,
     clientEmail,
     status: "sent",
-    sentAt: admin16.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin16.firestore.FieldValue.serverTimestamp()
+    sentAt: admin13.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin13.firestore.FieldValue.serverTimestamp()
   });
   const reviewUrl = `https://xiri.ai/quote/review/${reviewToken}`;
   const formatCurrency = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n);
@@ -22154,13 +21995,13 @@ var sendQuoteEmail = (0, import_https3.onCall)({
   if (!sent) {
     throw new import_https3.HttpsError("internal", "Failed to send email");
   }
-  await db13.collection("activity_logs").add({
+  await db10.collection("activity_logs").add({
     type: "QUOTE_SENT",
     quoteId,
     leadId: quote.leadId,
     clientEmail,
     sentBy: request.auth.uid,
-    createdAt: admin16.firestore.FieldValue.serverTimestamp()
+    createdAt: admin13.firestore.FieldValue.serverTimestamp()
   });
   return { success: true, reviewToken };
 });
@@ -22179,7 +22020,7 @@ var respondToQuote = (0, import_https3.onCall)({
   if (!["accept", "request_changes"].includes(action)) {
     throw new import_https3.HttpsError("invalid-argument", "Invalid action");
   }
-  const quotesSnap = await db13.collection("quotes").where("reviewToken", "==", reviewToken).limit(1).get();
+  const quotesSnap = await db10.collection("quotes").where("reviewToken", "==", reviewToken).limit(1).get();
   if (quotesSnap.empty) {
     throw new import_https3.HttpsError("not-found", "Invalid or expired quote link");
   }
@@ -22188,9 +22029,9 @@ var respondToQuote = (0, import_https3.onCall)({
   if (quote.status !== "sent") {
     throw new import_https3.HttpsError("failed-precondition", `This quote has already been ${quote.status}`);
   }
-  const now = admin16.firestore.FieldValue.serverTimestamp();
+  const now = admin13.firestore.FieldValue.serverTimestamp();
   if (action === "accept") {
-    const contractRef = await db13.collection("contracts").add({
+    const contractRef = await db10.collection("contracts").add({
       leadId: quote.leadId,
       quoteId: quoteDoc.id,
       clientBusinessName: quote.leadBusinessName,
@@ -22209,7 +22050,7 @@ var respondToQuote = (0, import_https3.onCall)({
       updatedAt: now
     });
     for (const item of quote.lineItems || []) {
-      await db13.collection("work_orders").add({
+      await db10.collection("work_orders").add({
         leadId: quote.leadId,
         contractId: contractRef.id,
         quoteLineItemId: item.id,
@@ -22244,7 +22085,7 @@ var respondToQuote = (0, import_https3.onCall)({
       clientResponseNotes: notes || null,
       updatedAt: now
     });
-    await db13.collection("leads").doc(quote.leadId).update({
+    await db10.collection("leads").doc(quote.leadId).update({
       status: "won",
       contractId: contractRef.id,
       wonAt: now
@@ -22261,7 +22102,7 @@ var respondToQuote = (0, import_https3.onCall)({
                 </div>`
       );
     }
-    await db13.collection("activity_logs").add({
+    await db10.collection("activity_logs").add({
       type: "QUOTE_ACCEPTED_BY_CLIENT",
       quoteId: quoteDoc.id,
       leadId: quote.leadId,
@@ -22276,7 +22117,7 @@ var respondToQuote = (0, import_https3.onCall)({
       clientResponseNotes: notes || "Client requested changes",
       updatedAt: now
     });
-    await db13.collection("activity_logs").add({
+    await db10.collection("activity_logs").add({
       type: "QUOTE_CHANGES_REQUESTED",
       quoteId: quoteDoc.id,
       leadId: quote.leadId,
@@ -22289,11 +22130,11 @@ var respondToQuote = (0, import_https3.onCall)({
 });
 
 // src/triggers/processMailQueue.ts
-var import_firestore10 = require("firebase-functions/v2/firestore");
-var admin17 = __toESM(require("firebase-admin"));
+var import_firestore9 = require("firebase-functions/v2/firestore");
+var admin14 = __toESM(require("firebase-admin"));
 init_emailUtils();
-var db14 = admin17.firestore();
-var processMailQueue = (0, import_firestore10.onDocumentCreated)({
+var db11 = admin14.firestore();
+var processMailQueue = (0, import_firestore9.onDocumentCreated)({
   document: "mail_queue/{docId}",
   secrets: ["RESEND_API_KEY"]
 }, async (event) => {
@@ -22305,7 +22146,7 @@ var processMailQueue = (0, import_firestore10.onDocumentCreated)({
   const data = snap.data();
   const docRef = snap.ref;
   try {
-    await docRef.update({ status: "processing", processedAt: admin17.firestore.FieldValue.serverTimestamp() });
+    await docRef.update({ status: "processing", processedAt: admin14.firestore.FieldValue.serverTimestamp() });
     const { to, subject, templateType, templateData } = data;
     if (!to || !subject) {
       throw new Error("Missing 'to' or 'subject' in mail_queue document");
@@ -22331,7 +22172,7 @@ var processMailQueue = (0, import_firestore10.onDocumentCreated)({
       "Xiri Facility Solutions <billing@xiri.ai>"
     );
     if (success) {
-      await docRef.update({ status: "sent", sentAt: admin17.firestore.FieldValue.serverTimestamp() });
+      await docRef.update({ status: "sent", sentAt: admin14.firestore.FieldValue.serverTimestamp() });
       console.log(`\u2705 Mail sent: ${templateType} \u2192 ${to}`);
     } else {
       await docRef.update({ status: "failed", error: "Resend API returned failure" });
@@ -22342,7 +22183,7 @@ var processMailQueue = (0, import_firestore10.onDocumentCreated)({
     await docRef.update({
       status: "failed",
       error: error11.message || "Unknown error",
-      failedAt: admin17.firestore.FieldValue.serverTimestamp()
+      failedAt: admin14.firestore.FieldValue.serverTimestamp()
     });
   }
 });
@@ -22475,15 +22316,15 @@ function buildVendorRemittanceEmail(data) {
 }
 
 // src/triggers/onVendorReady.ts
-var import_firestore11 = require("firebase-functions/v2/firestore");
-var admin18 = __toESM(require("firebase-admin"));
+var import_firestore10 = require("firebase-functions/v2/firestore");
+var admin15 = __toESM(require("firebase-admin"));
 var logger10 = __toESM(require("firebase-functions/logger"));
 var import_TaxCertificateService = __toESM(require_TaxCertificateService());
-if (!admin18.apps.length) {
-  admin18.initializeApp();
+if (!admin15.apps.length) {
+  admin15.initializeApp();
 }
 var STORAGE_PATH = "tax-certificates/st-120-1";
-var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
+var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
   document: "work_orders/{workOrderId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -22494,10 +22335,10 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
   logger10.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
-  const db23 = admin18.firestore();
+  const db21 = admin15.firestore();
   let vendorData;
   try {
-    const vendorSnap = await db23.collection("vendors").doc(newVendorId).get();
+    const vendorSnap = await db21.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
       logger10.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
@@ -22510,7 +22351,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const salesTaxId = vendorData.compliance?.salesTaxId?.trim();
   if (!salesTaxId) {
     logger10.info(`[ST-120.1] Vendor ${newVendorId} has no salesTaxId \u2014 skipping certificate.`);
-    await db23.collection("vendor_activities").add({
+    await db21.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_SKIPPED",
       description: `ST-120.1 not generated for WO ${workOrderId} \u2014 vendor has no Sales Tax ID on file.`,
@@ -22522,7 +22363,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   let leadData = {};
   if (after.leadId) {
     try {
-      const leadSnap = await db23.collection("leads").doc(after.leadId).get();
+      const leadSnap = await db21.collection("leads").doc(after.leadId).get();
       if (leadSnap.exists) {
         leadData = leadSnap.data();
       }
@@ -22532,7 +22373,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   }
   let xiriData;
   try {
-    const settingsSnap = await db23.collection("settings").doc("corporate").get();
+    const settingsSnap = await db21.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
       logger10.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
@@ -22578,7 +22419,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const result = await (0, import_TaxCertificateService.generateST1201)(vendorCertData, xiriData, projectDataInput);
   if (!result.success || !result.pdfBytes) {
     logger10.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
-    await db23.collection("vendor_activities").add({
+    await db21.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
       description: `ST-120.1 generation failed for WO ${workOrderId}: ${result.error}`,
@@ -22589,7 +22430,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   }
   let pdfUrl;
   try {
-    const bucket = admin18.storage().bucket();
+    const bucket = admin15.storage().bucket();
     const fileName = `${STORAGE_PATH}/${workOrderId}_${newVendorId}_${result.issueDate}.pdf`;
     const file = bucket.file(fileName);
     await file.save(Buffer.from(result.pdfBytes), {
@@ -22612,16 +22453,16 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     logger10.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err);
     return;
   }
-  await db23.collection("work_orders").doc(workOrderId).update({
+  await db21.collection("work_orders").doc(workOrderId).update({
     st1201CertificateUrl: pdfUrl,
     st1201IssueDate: result.issueDate,
     st1201ExpiryDate: result.expiryDate,
-    updatedAt: admin18.firestore.FieldValue.serverTimestamp()
+    updatedAt: admin15.firestore.FieldValue.serverTimestamp()
   });
   if (vendorCertData.email) {
     const vendorName = vendorCertData.businessName;
     const projectName = projectDataInput.projectName;
-    await db23.collection("mail_queue").add({
+    await db21.collection("mail_queue").add({
       to: vendorCertData.email,
       subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${projectName}`,
       templateType: "st_120_1_certificate",
@@ -22638,10 +22479,10 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
         path: pdfUrl
       }],
       status: "pending",
-      createdAt: admin18.firestore.FieldValue.serverTimestamp()
+      createdAt: admin15.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db23.collection("vendor_activities").add({
+  await db21.collection("vendor_activities").add({
     vendorId: newVendorId,
     type: "TAX_CERTIFICATE_ISSUED",
     description: `ST-120.1 generated for project "${projectDataInput.projectName}" (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
@@ -22660,15 +22501,15 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
 });
 
 // src/triggers/onLeadQualified.ts
-var import_firestore12 = require("firebase-functions/v2/firestore");
-var admin19 = __toESM(require("firebase-admin"));
+var import_firestore11 = require("firebase-functions/v2/firestore");
+var admin16 = __toESM(require("firebase-admin"));
 var logger11 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
-if (!admin19.apps.length) {
-  admin19.initializeApp();
+if (!admin16.apps.length) {
+  admin16.initializeApp();
 }
-var db15 = admin19.firestore();
-var onLeadQualified = (0, import_firestore12.onDocumentUpdated)({
+var db12 = admin16.firestore();
+var onLeadQualified = (0, import_firestore11.onDocumentUpdated)({
   document: "leads/{leadId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -22681,10 +22522,10 @@ var onLeadQualified = (0, import_firestore12.onDocumentUpdated)({
   const contactEmail = after.email;
   if (!contactEmail || contactEmail.trim().length === 0) {
     logger11.warn(`[SalesOutreach] Lead ${leadId} (${businessName}) has no email \u2014 marking NEEDS_MANUAL.`);
-    await db15.collection("leads").doc(leadId).update({
+    await db12.collection("leads").doc(leadId).update({
       outreachStatus: "NEEDS_MANUAL"
     });
-    await db15.collection("lead_activities").add({
+    await db12.collection("lead_activities").add({
       leadId,
       type: "OUTREACH_NEEDS_MANUAL",
       description: `No email found for ${businessName}. Manual outreach required.`,
@@ -22694,37 +22535,50 @@ var onLeadQualified = (0, import_firestore12.onDocumentUpdated)({
   }
   logger11.info(`[SalesOutreach] Scheduling drip campaign for lead ${leadId} (${businessName})`);
   const now = /* @__PURE__ */ new Date();
-  const steps = [
-    { dayOffset: 0, sequence: 0, subject: "Simplify your facility management" },
-    { dayOffset: 3, sequence: 1, subject: "How we save you 15+ hours/month" },
-    { dayOffset: 7, sequence: 2, subject: "How practices like yours made the switch" },
-    { dayOffset: 14, sequence: 3, subject: "Last check in \u2014 free walkthrough offer" }
-  ];
+  const leadType = after.leadType || "direct";
+  let steps;
+  if (leadType === "referral_partnership") {
+    steps = [
+      { dayOffset: 0, sequence: 0 },
+      { dayOffset: 4, sequence: 1 },
+      { dayOffset: 10, sequence: 2 }
+    ];
+  } else {
+    steps = [
+      { dayOffset: 0, sequence: 0 },
+      { dayOffset: 3, sequence: 1 },
+      { dayOffset: 7, sequence: 2 },
+      { dayOffset: 14, sequence: 3 }
+    ];
+  }
   for (const step of steps) {
     const scheduledDate = new Date(now);
     scheduledDate.setDate(scheduledDate.getDate() + step.dayOffset);
     scheduledDate.setHours(14, 0, 0, 0);
     const sendAt = step.dayOffset === 0 ? now : scheduledDate;
-    await enqueueTask(db15, {
+    const templatePrefix = leadType === "referral_partnership" ? "referral_partnership_" : "tenant_lead_";
+    await enqueueTask(db12, {
       leadId,
-      type: step.sequence === 0 ? "GENERATE" : "FOLLOW_UP",
-      scheduledAt: admin19.firestore.Timestamp.fromDate(sendAt),
+      type: "SEND",
+      scheduledAt: admin16.firestore.Timestamp.fromDate(sendAt),
       metadata: {
         sequence: step.sequence,
-        subject: step.subject,
         businessName,
         email: contactEmail,
         contactName: after.contactName || "",
         facilityType: after.facilityType || "",
         address: after.address || "",
-        propertySourcing: after.propertySourcing || null
+        squareFootage: after.squareFootage || "",
+        propertySourcing: after.propertySourcing || null,
+        leadType,
+        templateId: `${templatePrefix}${step.sequence + 1}`
       }
     });
   }
-  await db15.collection("leads").doc(leadId).update({
+  await db12.collection("leads").doc(leadId).update({
     outreachStatus: "PENDING"
   });
-  await db15.collection("lead_activities").add({
+  await db12.collection("lead_activities").add({
     leadId,
     type: "DRIP_SCHEDULED",
     description: `Sales drip campaign scheduled: 4 emails over 14 days for ${businessName}.`,
@@ -22735,13 +22589,13 @@ var onLeadQualified = (0, import_firestore12.onDocumentUpdated)({
 });
 
 // src/triggers/commissionTriggers.ts
-var import_firestore13 = require("firebase-functions/v2/firestore");
-var admin20 = __toESM(require("firebase-admin"));
+var import_firestore12 = require("firebase-functions/v2/firestore");
+var admin17 = __toESM(require("firebase-admin"));
 var logger12 = __toESM(require("firebase-functions/logger"));
-if (!admin20.apps.length) {
-  admin20.initializeApp();
+if (!admin17.apps.length) {
+  admin17.initializeApp();
 }
-var db16 = admin20.firestore();
+var db13 = admin17.firestore();
 var DEFAULTS = {
   mrrThreshold: 3e3,
   rateStandard: 0.05,
@@ -22751,7 +22605,7 @@ var DEFAULTS = {
   payoutSplit: [50, 25, 25]
 };
 async function getCommissionConfig() {
-  const snap = await db16.collection("settings").doc("commissions").get();
+  const snap = await db13.collection("settings").doc("commissions").get();
   if (snap.exists) {
     const data = snap.data();
     return {
@@ -22765,7 +22619,7 @@ async function getCommissionConfig() {
   }
   return DEFAULTS;
 }
-var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
+var onQuoteAccepted = (0, import_firestore12.onDocumentUpdated)({
   document: "quotes/{quoteId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -22774,7 +22628,7 @@ var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
   if (before.status === after.status) return;
   if (after.status !== "accepted") return;
   const quoteId = event.params.quoteId;
-  const existingComm = await db16.collection("commissions").where("quoteId", "==", quoteId).limit(1).get();
+  const existingComm = await db13.collection("commissions").where("quoteId", "==", quoteId).limit(1).get();
   if (!existingComm.empty) {
     logger12.info(`[Commission] Commission already exists for quote ${quoteId} \u2014 skipping duplicate`);
     return;
@@ -22815,7 +22669,7 @@ var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
   const clawbackEnd = new Date(now);
   clawbackEnd.setMonth(clawbackEnd.getMonth() + cfg.clawbackMonths);
   const staffRole = isUpsell ? "fsm" : "sales";
-  const commissionRef = await db16.collection("commissions").add({
+  const commissionRef = await db13.collection("commissions").add({
     staffId: assignedTo,
     staffRole,
     quoteId,
@@ -22832,7 +22686,7 @@ var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
     createdAt: now,
     updatedAt: now
   });
-  await db16.collection("commission_ledger").add({
+  await db13.collection("commission_ledger").add({
     commissionId: commissionRef.id,
     type: "PAYOUT_SCHEDULED",
     amount: totalCommission,
@@ -22840,7 +22694,7 @@ var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
     description: `${type === "FSM_UPSELL" ? "Upsell" : "New deal"} commission: ${(rate * 100).toFixed(0)}% of $${acv.toLocaleString()} ACV = $${totalCommission.toLocaleString()}`,
     createdAt: now
   });
-  await db16.collection("activity_logs").add({
+  await db13.collection("activity_logs").add({
     type: "COMMISSION_CREATED",
     quoteId,
     leadId,
@@ -22851,11 +22705,11 @@ var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
     acv,
     mrr,
     commissionType: type,
-    createdAt: admin20.firestore.FieldValue.serverTimestamp()
+    createdAt: admin17.firestore.FieldValue.serverTimestamp()
   });
   logger12.info(`[Commission] Created ${type} commission for staff ${assignedTo}: $${totalCommission} (${(rate * 100).toFixed(0)}% of $${acv} ACV) \u2014 quote ${quoteId}`);
 });
-var onInvoicePaid = (0, import_firestore13.onDocumentUpdated)({
+var onInvoicePaid = (0, import_firestore12.onDocumentUpdated)({
   document: "invoices/{invoiceId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -22865,12 +22719,12 @@ var onInvoicePaid = (0, import_firestore13.onDocumentUpdated)({
   if (after.status !== "paid") return;
   const quoteId = after.quoteId;
   if (!quoteId) return;
-  const commSnap = await db16.collection("commissions").where("quoteId", "==", quoteId).where("status", "==", "PENDING").get();
+  const commSnap = await db13.collection("commissions").where("quoteId", "==", quoteId).where("status", "==", "PENDING").get();
   if (commSnap.empty) return;
   const now = /* @__PURE__ */ new Date();
   for (const commDoc of commSnap.docs) {
     try {
-      await db16.runTransaction(async (txn) => {
+      await db13.runTransaction(async (txn) => {
         const freshDoc = await txn.get(commDoc.ref);
         const freshData = freshDoc.data();
         if (!freshData || freshData.status !== "PENDING") {
@@ -22893,7 +22747,7 @@ var onInvoicePaid = (0, import_firestore13.onDocumentUpdated)({
       });
       const commission = commDoc.data();
       const schedule = commission.payoutSchedule;
-      await db16.collection("commission_ledger").add({
+      await db13.collection("commission_ledger").add({
         commissionId: commDoc.id,
         type: "PAYOUT_PAID",
         amount: schedule[0].amount,
@@ -22907,7 +22761,7 @@ var onInvoicePaid = (0, import_firestore13.onDocumentUpdated)({
     }
   }
 });
-var onWorkOrderHandoff = (0, import_firestore13.onDocumentUpdated)({
+var onWorkOrderHandoff = (0, import_firestore12.onDocumentUpdated)({
   document: "work_orders/{workOrderId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -22919,25 +22773,25 @@ var onWorkOrderHandoff = (0, import_firestore13.onDocumentUpdated)({
   const leadId = after.leadId;
   const fsmId = after.assignedFsmId || after.createdBy;
   if (!leadId) return;
-  const leadDoc = await db16.collection("leads").doc(leadId).get();
+  const leadDoc = await db13.collection("leads").doc(leadId).get();
   if (!leadDoc.exists) return;
   const leadData = leadDoc.data();
   if (leadData?.handedOffToFsm) return;
-  await db16.collection("leads").doc(leadId).update({
+  await db13.collection("leads").doc(leadId).update({
     handedOffToFsm: fsmId,
     handoffDate: /* @__PURE__ */ new Date()
   });
-  await db16.collection("activity_logs").add({
+  await db13.collection("activity_logs").add({
     type: "SALES_TO_FSM_HANDOFF",
     leadId,
     fsmId,
     workOrderId: event.params.workOrderId,
     description: `Account handed off from Sales to FSM (first work order assigned)`,
-    createdAt: admin20.firestore.FieldValue.serverTimestamp()
+    createdAt: admin17.firestore.FieldValue.serverTimestamp()
   });
   logger12.info(`[Handoff] Lead ${leadId} handed off to FSM ${fsmId} via work order ${event.params.workOrderId}`);
   try {
-    const fsmDoc = await db16.collection("users").doc(fsmId).get();
+    const fsmDoc = await db13.collection("users").doc(fsmId).get();
     const fsmEmail = fsmDoc.data()?.email || "chris@xiri.ai";
     const fsmName = fsmDoc.data()?.displayName || "FSM";
     const clientName = leadData?.businessName || leadData?.companyName || leadData?.name || "New Client";
@@ -22945,7 +22799,7 @@ var onWorkOrderHandoff = (0, import_firestore13.onDocumentUpdated)({
     const clientPhone = leadData?.phone || leadData?.contactPhone || "";
     const clientAddress = leadData?.address || leadData?.location || "";
     const services = after.serviceType || after.description || "Facility Maintenance";
-    await db16.collection("mail_queue").add({
+    await db13.collection("mail_queue").add({
       to: fsmEmail,
       subject: `\u{1F4CB} New Client Assigned: ${clientName}`,
       templateType: "fsm_handoff",
@@ -22982,14 +22836,14 @@ var onWorkOrderHandoff = (0, import_firestore13.onDocumentUpdated)({
 </html>`
       },
       status: "pending",
-      createdAt: admin20.firestore.FieldValue.serverTimestamp()
+      createdAt: admin17.firestore.FieldValue.serverTimestamp()
     });
     logger12.info(`[Handoff] FSM notification email queued to ${fsmEmail} for client ${clientName}`);
   } catch (emailErr) {
     logger12.error(`[Handoff] Failed to send FSM email:`, emailErr.message);
   }
 });
-var onClientCancelled = (0, import_firestore13.onDocumentUpdated)({
+var onClientCancelled = (0, import_firestore12.onDocumentUpdated)({
   document: "leads/{leadId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -22999,7 +22853,7 @@ var onClientCancelled = (0, import_firestore13.onDocumentUpdated)({
   if (after.status !== "churned") return;
   const leadId = event.params.leadId;
   const now = /* @__PURE__ */ new Date();
-  const commSnap = await db16.collection("commissions").where("leadId", "==", leadId).where("status", "in", ["PENDING", "ACTIVE"]).get();
+  const commSnap = await db13.collection("commissions").where("leadId", "==", leadId).where("status", "in", ["PENDING", "ACTIVE"]).get();
   if (commSnap.empty) return;
   for (const commDoc of commSnap.docs) {
     const commission = commDoc.data();
@@ -23022,7 +22876,7 @@ var onClientCancelled = (0, import_firestore13.onDocumentUpdated)({
       payoutSchedule: schedule,
       updatedAt: now
     });
-    await db16.collection("commission_ledger").add({
+    await db13.collection("commission_ledger").add({
       commissionId: commDoc.id,
       type: "CLAWBACK",
       amount: -cancelledAmount,
@@ -23036,12 +22890,12 @@ var onClientCancelled = (0, import_firestore13.onDocumentUpdated)({
 
 // src/triggers/commissionScheduled.ts
 var import_scheduler2 = require("firebase-functions/v2/scheduler");
-var admin21 = __toESM(require("firebase-admin"));
+var admin18 = __toESM(require("firebase-admin"));
 var logger13 = __toESM(require("firebase-functions/logger"));
-if (!admin21.apps.length) {
-  admin21.initializeApp();
+if (!admin18.apps.length) {
+  admin18.initializeApp();
 }
-var db17 = admin21.firestore();
+var db14 = admin18.firestore();
 var NRR_TIERS = [
   { min: 1.1, rate: 0.02 },
   // > 110% NRR → 2% of portfolio ACV
@@ -23059,7 +22913,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
 }, async () => {
   const now = /* @__PURE__ */ new Date();
   logger13.info(`[CommissionPayouts] Processing scheduled payouts for ${now.toISOString()}`);
-  const commSnap = await db17.collection("commissions").where("status", "==", "ACTIVE").get();
+  const commSnap = await db14.collection("commissions").where("status", "==", "ACTIVE").get();
   let processed = 0;
   let paid = 0;
   for (const commDoc of commSnap.docs) {
@@ -23070,7 +22924,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
       if (entry.status !== "PENDING") continue;
       const scheduledAt = entry.scheduledAt?.toDate?.() || new Date(entry.scheduledAt);
       if (scheduledAt > now) continue;
-      const leadDoc = await db17.collection("leads").doc(commission.leadId).get();
+      const leadDoc = await db14.collection("leads").doc(commission.leadId).get();
       const leadData = leadDoc.data();
       if (leadData?.status === "churned" || leadData?.status === "lost") {
         entry.status = "CANCELLED";
@@ -23082,7 +22936,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
       entry.paidAt = now;
       changed2 = true;
       paid++;
-      await db17.collection("commission_ledger").add({
+      await db14.collection("commission_ledger").add({
         commissionId: commDoc.id,
         type: "PAYOUT_PAID",
         amount: entry.amount,
@@ -23132,7 +22986,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
   };
   const quarter = quarterMap[currentMonth] || `${currentYear}-Q${Math.ceil((currentMonth + 1) / 3)}`;
   logger13.info(`[NRR] Calculating Net Revenue Retention for ${quarter}`);
-  const leadsSnap = await db17.collection("leads").where("handedOffToFsm", "!=", null).get();
+  const leadsSnap = await db14.collection("leads").where("handedOffToFsm", "!=", null).get();
   const fsmPortfolios = /* @__PURE__ */ new Map();
   for (const leadDoc of leadsSnap.docs) {
     const lead = leadDoc.data();
@@ -23150,7 +23004,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
     }
     const portfolio = fsmPortfolios.get(fsmId);
     portfolio.leadIds.push(leadDoc.id);
-    const quotesSnap = await db17.collection("quotes").where("leadId", "==", leadDoc.id).where("status", "==", "accepted").get();
+    const quotesSnap = await db14.collection("quotes").where("leadId", "==", leadDoc.id).where("status", "==", "accepted").get();
     let leadMrr = 0;
     for (const quoteDoc of quotesSnap.docs) {
       leadMrr += quoteDoc.data().totalMonthlyRate || 0;
@@ -23160,7 +23014,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
     } else {
       portfolio.currentMrr += leadMrr;
     }
-    const upsellSnap = await db17.collection("quotes").where("leadId", "==", leadDoc.id).where("isUpsell", "==", true).where("status", "==", "accepted").get();
+    const upsellSnap = await db14.collection("quotes").where("leadId", "==", leadDoc.id).where("isUpsell", "==", true).where("status", "==", "accepted").get();
     for (const upsellDoc of upsellSnap.docs) {
       portfolio.upsells += upsellDoc.data().totalMonthlyRate || 0;
     }
@@ -23178,7 +23032,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
     }
     const portfolioAcv = portfolio.currentMrr * 12;
     const bonusAmount = Math.round(portfolioAcv * bonusRate / 4 * 100) / 100;
-    await db17.collection("nrr_snapshots").add({
+    await db14.collection("nrr_snapshots").add({
       fsmId,
       quarter,
       startingMrr,
@@ -23193,7 +23047,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
       calculatedAt: now
     });
     if (bonusAmount > 0) {
-      const commRef = await db17.collection("commissions").add({
+      const commRef = await db14.collection("commissions").add({
         staffId: fsmId,
         staffRole: "fsm",
         quoteId: "",
@@ -23219,7 +23073,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
         createdAt: now,
         updatedAt: now
       });
-      await db17.collection("commission_ledger").add({
+      await db14.collection("commission_ledger").add({
         commissionId: commRef.id,
         type: "PAYOUT_SCHEDULED",
         amount: bonusAmount,
@@ -23234,15 +23088,15 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
 });
 
 // src/triggers/onAuditSubmitted.ts
-var import_firestore14 = require("firebase-functions/v2/firestore");
-var admin22 = __toESM(require("firebase-admin"));
+var import_firestore13 = require("firebase-functions/v2/firestore");
+var admin19 = __toESM(require("firebase-admin"));
 var logger14 = __toESM(require("firebase-functions/logger"));
-if (!admin22.apps.length) {
-  admin22.initializeApp();
+if (!admin19.apps.length) {
+  admin19.initializeApp();
 }
-var db18 = admin22.firestore();
+var db15 = admin19.firestore();
 var INTERNAL_NOTIFY_EMAIL = "chris@xiri.ai";
-var onAuditSubmitted = (0, import_firestore14.onDocumentCreated)({
+var onAuditSubmitted = (0, import_firestore13.onDocumentCreated)({
   document: "leads/{leadId}"
 }, async (event) => {
   const snap = event.data;
@@ -23258,7 +23112,7 @@ var onAuditSubmitted = (0, import_firestore14.onDocumentCreated)({
     logger14.warn(`[AuditSubmitted] Lead ${leadId} has no email \u2014 skipping confirmation`);
     return;
   }
-  await db18.collection("mail_queue").add({
+  await db15.collection("mail_queue").add({
     to: contactEmail,
     subject: `We received your audit request \u2014 ${businessName}`,
     templateType: "audit_confirmation",
@@ -23266,9 +23120,9 @@ var onAuditSubmitted = (0, import_firestore14.onDocumentCreated)({
       html: buildAuditConfirmationEmail(contactName, businessName)
     },
     status: "pending",
-    createdAt: admin22.firestore.FieldValue.serverTimestamp()
+    createdAt: admin19.firestore.FieldValue.serverTimestamp()
   });
-  await db18.collection("mail_queue").add({
+  await db15.collection("mail_queue").add({
     to: INTERNAL_NOTIFY_EMAIL,
     subject: `\u{1F514} New Audit Lead: ${businessName}`,
     templateType: "internal_notification",
@@ -23276,15 +23130,15 @@ var onAuditSubmitted = (0, import_firestore14.onDocumentCreated)({
       html: buildInternalNotificationEmail(leadId, contactName, contactEmail, businessName, address, data)
     },
     status: "pending",
-    createdAt: admin22.firestore.FieldValue.serverTimestamp()
+    createdAt: admin19.firestore.FieldValue.serverTimestamp()
   });
-  await db18.collection("activity_logs").add({
+  await db15.collection("activity_logs").add({
     type: "AUDIT_SUBMITTED",
     leadId,
     email: contactEmail,
     businessName,
     description: `New audit lead from ${businessName} (${contactEmail})`,
-    createdAt: admin22.firestore.FieldValue.serverTimestamp()
+    createdAt: admin19.firestore.FieldValue.serverTimestamp()
   });
   logger14.info(`[AuditSubmitted] Confirmation + internal alert sent for lead ${leadId} (${businessName})`);
 });
@@ -23368,17 +23222,17 @@ function buildInternalNotificationEmail(leadId, contactName, contactEmail, busin
 }
 
 // src/triggers/onAuditFailed.ts
-var import_firestore15 = require("firebase-functions/v2/firestore");
-var admin23 = __toESM(require("firebase-admin"));
+var import_firestore14 = require("firebase-functions/v2/firestore");
+var admin20 = __toESM(require("firebase-admin"));
 var logger15 = __toESM(require("firebase-functions/logger"));
-if (!admin23.apps.length) {
-  admin23.initializeApp();
+if (!admin20.apps.length) {
+  admin20.initializeApp();
 }
-var db19 = admin23.firestore();
+var db16 = admin20.firestore();
 var FAIL_THRESHOLD = 70;
 var SUSPENSION_THRESHOLD = 3;
 var INTERNAL_NOTIFY_EMAIL2 = "chris@xiri.ai";
-var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
+var onAuditFailed = (0, import_firestore14.onDocumentCreated)({
   document: "audits/{auditId}"
 }, async (event) => {
   const snap = event.data;
@@ -23393,18 +23247,18 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
   const clientName = data.clientName || data.businessName || "";
   logger15.info(`[AuditFailed] Audit ${auditId} scored ${overallScore}% (threshold: ${FAIL_THRESHOLD}%)`);
   if (workOrderId) {
-    await db19.collection("work_orders").doc(workOrderId).update({
+    await db16.collection("work_orders").doc(workOrderId).update({
       status: "needs_remediation",
       failedAuditId: auditId,
       failedAuditScore: overallScore,
-      updatedAt: admin23.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin20.firestore.FieldValue.serverTimestamp()
     });
   }
   let remediationId = null;
   if (workOrderId) {
-    const woDoc = await db19.collection("work_orders").doc(workOrderId).get();
+    const woDoc = await db16.collection("work_orders").doc(workOrderId).get();
     const woData = woDoc.exists ? woDoc.data() : null;
-    const remRef = await db19.collection("work_orders").add({
+    const remRef = await db16.collection("work_orders").add({
       type: "remediation",
       originalWorkOrderId: workOrderId,
       auditId,
@@ -23415,7 +23269,7 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
       description: `Remediation required: Audit scored ${overallScore}% at ${locationName}. Issues: ${data.failureNotes || data.notes || "See audit report."}`,
       status: "pending",
       priority: "high",
-      createdAt: admin23.firestore.FieldValue.serverTimestamp()
+      createdAt: admin20.firestore.FieldValue.serverTimestamp()
     });
     remediationId = remRef.id;
   }
@@ -23423,7 +23277,7 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
   let vendorName = "Unknown Vendor";
   let vendorSuspended = false;
   if (vendorId) {
-    const vendorRef = db19.collection("vendors").doc(vendorId);
+    const vendorRef = db16.collection("vendors").doc(vendorId);
     const vendorDoc = await vendorRef.get();
     if (vendorDoc.exists) {
       const vendorData = vendorDoc.data();
@@ -23432,8 +23286,8 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
       const updateData = {
         failedAuditCount: vendorFailCount,
         lastFailedAuditId: auditId,
-        lastFailedAuditDate: admin23.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin23.firestore.FieldValue.serverTimestamp()
+        lastFailedAuditDate: admin20.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin20.firestore.FieldValue.serverTimestamp()
       };
       if (vendorFailCount >= SUSPENSION_THRESHOLD) {
         updateData.status = "suspended";
@@ -23445,14 +23299,14 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
   }
   let fsmEmail = INTERNAL_NOTIFY_EMAIL2;
   if (workOrderId) {
-    const woDoc = await db19.collection("work_orders").doc(workOrderId).get();
+    const woDoc = await db16.collection("work_orders").doc(workOrderId).get();
     const fsmId = woDoc.data()?.assignedFsmId;
     if (fsmId) {
-      const fsmDoc = await db19.collection("users").doc(fsmId).get();
+      const fsmDoc = await db16.collection("users").doc(fsmId).get();
       fsmEmail = fsmDoc.data()?.email || INTERNAL_NOTIFY_EMAIL2;
     }
   }
-  await db19.collection("mail_queue").add({
+  await db16.collection("mail_queue").add({
     to: fsmEmail,
     subject: `\u26A0\uFE0F Audit Failed: ${locationName} \u2014 ${overallScore}%`,
     templateType: "audit_failed",
@@ -23468,10 +23322,10 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
       })
     },
     status: "pending",
-    createdAt: admin23.firestore.FieldValue.serverTimestamp()
+    createdAt: admin20.firestore.FieldValue.serverTimestamp()
   });
   if (vendorSuspended) {
-    await db19.collection("mail_queue").add({
+    await db16.collection("mail_queue").add({
       to: INTERNAL_NOTIFY_EMAIL2,
       subject: `\u{1F6AB} Vendor Suspended: ${vendorName} (${vendorFailCount} failed audits)`,
       templateType: "vendor_suspended",
@@ -23486,10 +23340,10 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
                 </div>`
       },
       status: "pending",
-      createdAt: admin23.firestore.FieldValue.serverTimestamp()
+      createdAt: admin20.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db19.collection("activity_logs").add({
+  await db16.collection("activity_logs").add({
     type: "AUDIT_FAILED",
     auditId,
     workOrderId: workOrderId || null,
@@ -23499,7 +23353,7 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
     vendorFailCount,
     vendorSuspended,
     description: `Audit failed at ${locationName} (${overallScore}%). Vendor: ${vendorName}. ${vendorSuspended ? "VENDOR AUTO-SUSPENDED." : ""}`,
-    createdAt: admin23.firestore.FieldValue.serverTimestamp()
+    createdAt: admin20.firestore.FieldValue.serverTimestamp()
   });
   logger15.info(`[AuditFailed] Escalation complete: audit ${auditId}, score ${overallScore}%, vendor ${vendorName} (failures: ${vendorFailCount})${vendorSuspended ? " \u2014 SUSPENDED" : ""}`);
 });
@@ -23549,12 +23403,12 @@ function buildAuditFailedEmail(data) {
 
 // src/triggers/generateMonthlyInvoices.ts
 var import_scheduler3 = require("firebase-functions/v2/scheduler");
-var admin24 = __toESM(require("firebase-admin"));
+var admin21 = __toESM(require("firebase-admin"));
 var logger16 = __toESM(require("firebase-functions/logger"));
-if (!admin24.apps.length) {
-  admin24.initializeApp();
+if (!admin21.apps.length) {
+  admin21.initializeApp();
 }
-var db20 = admin24.firestore();
+var db17 = admin21.firestore();
 var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
   schedule: "0 6 1 * *",
   // 6 AM on 1st of every month
@@ -23565,7 +23419,7 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
   const periodEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   const periodStart = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), 1);
   const periodLabel = periodStart.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const contractsSnap = await db20.collection("contracts").where("status", "==", "active").get();
+  const contractsSnap = await db17.collection("contracts").where("status", "==", "active").get();
   if (contractsSnap.empty) {
     logger16.info("[MonthlyInvoices] No active contracts found. Done.");
     return;
@@ -23580,7 +23434,7 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
     const clientName = contract.clientBusinessName || contract.clientName || contract.businessName || "Client";
     const clientEmail = contract.contactEmail || contract.clientEmail || "";
     const contractLineItems = contract.lineItems || [];
-    let workOrdersQuery = db20.collection("work_orders").where("status", "==", "completed");
+    let workOrdersQuery = db17.collection("work_orders").where("status", "==", "completed");
     if (contract.leadId) {
       workOrdersQuery = workOrdersQuery.where("leadId", "==", contract.leadId);
     }
@@ -23636,7 +23490,7 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
     const totalAmount = invoiceLineItems.reduce((sum, li) => sum + li.rate, 0);
     const dueDate = new Date(now);
     dueDate.setDate(dueDate.getDate() + 30);
-    const invoiceRef = await db20.collection("invoices").add({
+    const invoiceRef = await db17.collection("invoices").add({
       contractId,
       leadId: leadId || null,
       clientName,
@@ -23653,10 +23507,10 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
       oneTimeItemCount: invoiceLineItems.filter((i) => i.billingType === "one_time").length,
       status: "draft",
       dueDate,
-      createdAt: admin24.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin24.firestore.FieldValue.serverTimestamp()
+      createdAt: admin21.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin21.firestore.FieldValue.serverTimestamp()
     });
-    await db20.collection("activity_logs").add({
+    await db17.collection("activity_logs").add({
       type: "INVOICE_AUTO_GENERATED",
       invoiceId: invoiceRef.id,
       contractId,
@@ -23666,7 +23520,7 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
       billingPeriod: periodLabel,
       workOrderCount: periodWOs.length,
       description: `Auto-generated draft invoice for ${clientName}: $${totalAmount.toLocaleString()} (${periodLabel}, ${invoiceLineItems.length} items)`,
-      createdAt: admin24.firestore.FieldValue.serverTimestamp()
+      createdAt: admin21.firestore.FieldValue.serverTimestamp()
     });
     invoicesCreated++;
     logger16.info(`[MonthlyInvoices] Created invoice ${invoiceRef.id} for ${clientName}: $${totalAmount} (${invoiceLineItems.length} items: ${invoiceLineItems.filter((i) => i.billingType === "recurring").length} recurring, ${invoiceLineItems.filter((i) => i.billingType === "one_time").length} one-time)`);
@@ -23676,9 +23530,9 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
 
 // src/triggers/resendWebhook.ts
 var import_https4 = require("firebase-functions/v2/https");
-var admin25 = __toESM(require("firebase-admin"));
+var admin22 = __toESM(require("firebase-admin"));
 var import_v2 = require("firebase-functions/v2");
-var db21 = admin25.firestore();
+var db18 = admin22.firestore();
 var resendWebhook = (0, import_https4.onRequest)({
   cors: true,
   timeoutSeconds: 30,
@@ -23745,7 +23599,7 @@ var resendWebhook = (0, import_https4.onRequest)({
       }
     }
     if (!vendorId) {
-      const activitiesSnapshot = await db21.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
+      const activitiesSnapshot = await db18.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
       if (!activitiesSnapshot.empty) {
         vendorId = activitiesSnapshot.docs[0].data().vendorId;
         import_v2.logger.info(`Resend webhook: resolved vendorId=${vendorId} from activity lookup`);
@@ -23756,7 +23610,7 @@ var resendWebhook = (0, import_https4.onRequest)({
       res.status(200).json({ ok: true, notFound: true });
       return;
     }
-    await db21.collection("vendor_activities").add({
+    await db18.collection("vendor_activities").add({
       vendorId,
       type: mapping.activityType,
       description: mapping.description,
@@ -23774,9 +23628,9 @@ var resendWebhook = (0, import_https4.onRequest)({
         "emailEngagement.lastEventAt": /* @__PURE__ */ new Date()
       };
       if (eventType === "email.opened") {
-        engagementUpdate["emailEngagement.openCount"] = admin25.firestore.FieldValue.increment(1);
+        engagementUpdate["emailEngagement.openCount"] = admin22.firestore.FieldValue.increment(1);
       } else if (eventType === "email.clicked") {
-        engagementUpdate["emailEngagement.clickCount"] = admin25.firestore.FieldValue.increment(1);
+        engagementUpdate["emailEngagement.clickCount"] = admin22.firestore.FieldValue.increment(1);
       }
       if (eventType === "email.bounced") {
         engagementUpdate["outreachStatus"] = "FAILED";
@@ -23785,7 +23639,7 @@ var resendWebhook = (0, import_https4.onRequest)({
         engagementUpdate["outreachMeta.bounceError"] = event?.data?.error_message || "Email bounced";
       }
       engagementUpdate["updatedAt"] = /* @__PURE__ */ new Date();
-      await db21.collection("vendors").doc(vendorId).update(engagementUpdate);
+      await db18.collection("vendors").doc(vendorId).update(engagementUpdate);
       import_v2.logger.info(`Vendor ${vendorId}: emailEngagement updated (${mapping.deliveryStatus})`);
     }
     try {
@@ -23799,15 +23653,15 @@ var resendWebhook = (0, import_https4.onRequest)({
         }
       }
       if (!templateId) {
-        const sentActivity = await db21.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
+        const sentActivity = await db18.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
         if (!sentActivity.empty) {
           templateId = sentActivity.docs[0].data().metadata?.templateId || null;
         }
       }
       if (templateId) {
         const statsField = mapping.deliveryStatus;
-        await db21.collection("templates").doc(templateId).update({
-          [`stats.${statsField}`]: admin25.firestore.FieldValue.increment(1),
+        await db18.collection("templates").doc(templateId).update({
+          [`stats.${statsField}`]: admin22.firestore.FieldValue.increment(1),
           "stats.lastUpdated": /* @__PURE__ */ new Date()
         });
         import_v2.logger.info(`Template ${templateId}: stats.${statsField} incremented`);
@@ -23824,10 +23678,10 @@ var resendWebhook = (0, import_https4.onRequest)({
 });
 
 // src/triggers/onLeadUpdated.ts
-var import_firestore16 = require("firebase-functions/v2/firestore");
+var import_firestore15 = require("firebase-functions/v2/firestore");
 var import_v22 = require("firebase-functions/v2");
 var changed = (before, after, field) => after[field] && before[field] !== after[field];
-var onLeadUpdated = (0, import_firestore16.onDocumentUpdated)("leads/{leadId}", async (event) => {
+var onLeadUpdated = (0, import_firestore15.onDocumentUpdated)("leads/{leadId}", async (event) => {
   const before = event.data?.before?.data();
   const after = event.data?.after?.data();
   if (!before || !after) return;
@@ -23885,7 +23739,7 @@ var onLeadUpdated = (0, import_firestore16.onDocumentUpdated)("leads/{leadId}", 
     import_v22.logger.info(`[Cascade:Lead] Updated ${count} docs for "${after.businessName}"`);
   }
 });
-var onVendorUpdated = (0, import_firestore16.onDocumentUpdated)("vendors/{vendorId}", async (event) => {
+var onVendorUpdated = (0, import_firestore15.onDocumentUpdated)("vendors/{vendorId}", async (event) => {
   const before = event.data?.before?.data();
   const after = event.data?.after?.data();
   if (!before || !after) return;
@@ -23933,7 +23787,7 @@ var onVendorUpdated = (0, import_firestore16.onDocumentUpdated)("vendors/{vendor
     import_v22.logger.info(`[Cascade:Vendor] Updated ${count} docs for "${after.businessName}"`);
   }
 });
-var onStaffUpdated = (0, import_firestore16.onDocumentUpdated)("users/{userId}", async (event) => {
+var onStaffUpdated = (0, import_firestore15.onDocumentUpdated)("users/{userId}", async (event) => {
   const before = event.data?.before?.data();
   const after = event.data?.after?.data();
   if (!before || !after) return;
@@ -23978,12 +23832,13 @@ var onStaffUpdated = (0, import_firestore16.onDocumentUpdated)("users/{userId}",
 // src/triggers/aiTemplateOptimizer.ts
 var import_scheduler4 = require("firebase-functions/v2/scheduler");
 var import_https5 = require("firebase-functions/v2/https");
-var admin26 = __toESM(require("firebase-admin"));
+var admin23 = __toESM(require("firebase-admin"));
 var logger19 = __toESM(require("firebase-functions/logger"));
-if (!admin26.apps.length) {
-  admin26.initializeApp();
+init_promptUtils();
+if (!admin23.apps.length) {
+  admin23.initializeApp();
 }
-var db22 = admin26.firestore();
+var db19 = admin23.firestore();
 var weeklyTemplateOptimizer = (0, import_scheduler4.onSchedule)({
   schedule: "every monday 09:00",
   timeZone: "America/New_York",
@@ -24012,7 +23867,7 @@ var optimizeTemplate = (0, import_https5.onCall)({
 var MIN_SENDS_FOR_ANALYSIS = 10;
 var LOW_OPEN_RATE_THRESHOLD = 0.3;
 async function optimizeUnderperformingTemplates() {
-  const templatesSnap = await db22.collection("templates").where("category", "==", "vendor").get();
+  const templatesSnap = await db19.collection("templates").where("category", "==", "vendor").get();
   const optimized = [];
   for (const doc of templatesSnap.docs) {
     const template = doc.data();
@@ -24031,7 +23886,7 @@ async function optimizeUnderperformingTemplates() {
   return optimized;
 }
 async function optimizeSingleTemplate(templateId) {
-  const templateDoc = await db22.collection("templates").doc(templateId).get();
+  const templateDoc = await db19.collection("templates").doc(templateId).get();
   if (!templateDoc.exists) {
     throw new import_https5.HttpsError("not-found", `Template ${templateId} not found`);
   }
@@ -24044,48 +23899,40 @@ async function optimizeSingleTemplate(templateId) {
   if (!apiKey) {
     throw new import_https5.HttpsError("failed-precondition", "GEMINI_API_KEY not set");
   }
-  const prompt = `You are an email marketing expert specializing in B2B contractor outreach for facility management companies.
+  const FALLBACK = `You are an email marketing expert specializing in B2B contractor outreach for facility management companies.
 
 ## Current Template Performance
-- Template: "${template.name}" (${templateId})
-- Sent: ${stats.sent} | Delivered: ${stats.delivered} | Opened: ${stats.opened} | Clicked: ${stats.clicked}
-- Open Rate: ${openRate}% | Click Rate: ${clickRate}% | Bounce Rate: ${bounceRate}%
+- Template: "{{templateName}}" ({{templateId}})
+- Sent: {{statsSent}} | Delivered: {{statsDelivered}} | Opened: {{statsOpened}} | Clicked: {{statsClicked}}
+- Open Rate: {{openRate}}% | Click Rate: {{clickRate}}% | Bounce Rate: {{bounceRate}}%
 
 ## Current Subject Line
-"${template.subject}"
+"{{currentSubject}}"
 
 ## Current Email Body
-${template.body}
+{{currentBody}}
 
 ## Context
-This email targets independent contractors (janitorial, HVAC, cleaning, etc.) to join a facility management network. The CTA is to click a link and complete an onboarding profile. These are small business owners or independent operators \u2014 keep tone professional but blue-collar-friendly.
+This email targets independent contractors to join a facility management network. Keep tone professional but blue-collar-friendly.
 
 ## Available Merge Variables
 {{vendorName}}, {{contactName}}, {{city}}, {{state}}, {{services}}, {{specialty}}, {{onboardingUrl}}
 
 ## Instructions
-Based on the performance data, suggest improvements. Return your response as JSON:
-{
-  "analysis": "Brief analysis of why this template may be underperforming",
-  "suggestions": [
-    {
-      "subject": "Improved subject line option 1",
-      "body": "Improved email body option 1 (keep merge variables, keep it concise)",
-      "rationale": "Why this version should perform better"
-    },
-    {
-      "subject": "Improved subject line option 2",
-      "body": "Improved email body option 2",
-      "rationale": "Why this version should perform better"
-    }
-  ],
-  "shortUrlTest": {
-    "recommendation": "Whether to test short vs long onboarding URL display",
-    "shortVariant": "Suggested short CTA text and link format if applicable"
-  }
-}
-
-Return ONLY valid JSON, no markdown fences.`;
+Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Return ONLY valid JSON, no markdown fences.`;
+  const prompt = await getPrompt("template_optimizer", FALLBACK, {
+    templateName: template.name,
+    templateId,
+    statsSent: String(stats.sent),
+    statsDelivered: String(stats.delivered),
+    statsOpened: String(stats.opened),
+    statsClicked: String(stats.clicked),
+    openRate: String(openRate),
+    clickRate: String(clickRate),
+    bounceRate: String(bounceRate),
+    currentSubject: template.subject,
+    currentBody: template.body
+  });
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -24109,8 +23956,8 @@ Return ONLY valid JSON, no markdown fences.`;
     }
     const cleanText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const suggestions = JSON.parse(cleanText);
-    await db22.collection("templates").doc(templateId).update({
-      aiSuggestions: admin26.firestore.FieldValue.arrayUnion({
+    await db19.collection("templates").doc(templateId).update({
+      aiSuggestions: admin23.firestore.FieldValue.arrayUnion({
         ...suggestions,
         generatedAt: /* @__PURE__ */ new Date(),
         performanceSnapshot: stats
@@ -24130,13 +23977,114 @@ Return ONLY valid JSON, no markdown fences.`;
   }
 }
 
+// src/triggers/startLeadSequence.ts
+var import_https6 = require("firebase-functions/v2/https");
+var admin24 = __toESM(require("firebase-admin"));
+var logger20 = __toESM(require("firebase-functions/logger"));
+init_queueUtils();
+if (!admin24.apps.length) {
+  admin24.initializeApp();
+}
+var db20 = admin24.firestore();
+var startLeadSequence = (0, import_https6.onCall)(async (request) => {
+  const { leadId } = request.data;
+  if (!leadId) {
+    throw new import_https6.HttpsError("invalid-argument", "leadId is required");
+  }
+  const leadDoc = await db20.collection("leads").doc(leadId).get();
+  if (!leadDoc.exists) {
+    throw new import_https6.HttpsError("not-found", `Lead ${leadId} not found`);
+  }
+  const lead = leadDoc.data();
+  const businessName = lead.businessName || "Unknown";
+  const contactEmail = lead.email;
+  if (!contactEmail || contactEmail.trim().length === 0) {
+    await db20.collection("leads").doc(leadId).update({
+      outreachStatus: "NEEDS_MANUAL"
+    });
+    throw new import_https6.HttpsError(
+      "failed-precondition",
+      `Lead ${businessName} has no email \u2014 manual outreach required.`
+    );
+  }
+  if (lead.outreachStatus === "PENDING" || lead.outreachStatus === "IN_PROGRESS") {
+    throw new import_https6.HttpsError(
+      "already-exists",
+      `Lead ${businessName} already has an active outreach sequence (status: ${lead.outreachStatus}).`
+    );
+  }
+  const leadType = lead.leadType || "direct";
+  logger20.info(`[StartSequence] Manually starting ${leadType} sequence for lead ${leadId} (${businessName})`);
+  const now = /* @__PURE__ */ new Date();
+  let steps;
+  if (leadType === "referral_partnership") {
+    steps = [
+      { dayOffset: 0, sequence: 0 },
+      { dayOffset: 4, sequence: 1 },
+      { dayOffset: 10, sequence: 2 }
+    ];
+  } else {
+    steps = [
+      { dayOffset: 0, sequence: 0 },
+      { dayOffset: 3, sequence: 1 },
+      { dayOffset: 7, sequence: 2 },
+      { dayOffset: 14, sequence: 3 }
+    ];
+  }
+  const templatePrefix = leadType === "referral_partnership" ? "referral_partnership_" : "tenant_lead_";
+  for (const step of steps) {
+    const scheduledDate = new Date(now);
+    scheduledDate.setDate(scheduledDate.getDate() + step.dayOffset);
+    scheduledDate.setHours(14, 0, 0, 0);
+    const sendAt = step.dayOffset === 0 ? now : scheduledDate;
+    await enqueueTask(db20, {
+      leadId,
+      type: "SEND",
+      scheduledAt: admin24.firestore.Timestamp.fromDate(sendAt),
+      metadata: {
+        sequence: step.sequence,
+        businessName,
+        email: contactEmail,
+        contactName: lead.contactName || "",
+        facilityType: lead.facilityType || "",
+        address: lead.address || "",
+        squareFootage: lead.squareFootage || "",
+        propertySourcing: lead.propertySourcing || null,
+        leadType,
+        templateId: `${templatePrefix}${step.sequence + 1}`
+      }
+    });
+  }
+  await db20.collection("leads").doc(leadId).update({
+    outreachStatus: "PENDING",
+    sequenceStartedAt: admin24.firestore.FieldValue.serverTimestamp(),
+    sequenceStartedBy: request.auth?.uid || "manual"
+  });
+  const schedule = leadType === "referral_partnership" ? "Day 0/4/10" : "Day 0/3/7/14";
+  await db20.collection("lead_activities").add({
+    leadId,
+    type: "SEQUENCE_STARTED",
+    description: `${leadType} email sequence manually started for ${businessName}. Schedule: ${schedule}`,
+    createdAt: /* @__PURE__ */ new Date(),
+    startedBy: request.auth?.uid || "manual",
+    metadata: { leadType, stepCount: steps.length, schedule }
+  });
+  logger20.info(`[StartSequence] ${leadType} sequence started for ${leadId}: ${steps.length} emails`);
+  return {
+    success: true,
+    message: `${leadType} sequence started for ${businessName}`,
+    stepCount: steps.length,
+    schedule
+  };
+});
+
 // src/index.ts
 var import_auth = require("firebase-admin/auth");
 init_facebookApi();
 
 // src/triggers/socialContentGenerator.ts
 var import_scheduler5 = require("firebase-functions/v2/scheduler");
-var import_generative_ai7 = require("@google/generative-ai");
+var import_generative_ai5 = require("@google/generative-ai");
 init_facebookApi();
 init_imagenApi();
 
@@ -24247,7 +24195,8 @@ Duration: 8 seconds. Smooth tracking shots. Professional quality. No text, no ti
 }
 
 // src/triggers/socialContentGenerator.ts
-var API_KEY4 = process.env.GEMINI_API_KEY || "";
+init_promptUtils();
+var API_KEY2 = process.env.GEMINI_API_KEY || "";
 var DAY_MAP = {
   sunday: 0,
   monday: 1,
@@ -24257,7 +24206,7 @@ var DAY_MAP = {
   friday: 5,
   saturday: 6
 };
-function buildPrompt(config2, engagementSummary, recentPostSummaries, audience, campaignContext) {
+async function buildPrompt(config2, engagementSummary, recentPostSummaries, audience, campaignContext) {
   const audienceContext = audience === "client" ? `## TARGET AUDIENCE: FACILITY CLIENTS (Medical Offices, Auto Dealerships, Commercial Buildings)
 This post should speak to building owners, office managers, or property managers who are frustrated with:
 - Managing multiple vendors, multiple invoices
@@ -24284,62 +24233,34 @@ Key messaging for contractors:
 - Join a network of pros \u2014 not a faceless gig platform
 - We value quality work and long-term partnerships
 - Currently hiring in Queens, Nassau, Suffolk, Long Island`;
-  return `You are the social media manager for XIRI Facility Solutions, a facility management company based in New York that services commercial and medical buildings across Queens, Nassau, and Suffolk County.
+  const FALLBACK = `You are the social media manager for XIRI Facility Solutions.
 
-## BRAND IDENTITY
-- Brand Name: XIRI (always uppercase, never wrapped in asterisks or any formatting)
-- Full Name: XIRI Facility Solutions
-- Tagline: "One Call. One Invoice. Total Facility Coverage."
-- Brand Colors: Primary #0369a1, Accent #38bdf8, Dark #0c4a6e (Sky/Cyan family)
-- Visual Style: Professional, bold, clean \u2014 industrial-grade but executive-quality
-- Tone: Blue-collar-friendly but executive-grade. Never salesy or generic.
-- Fonts: Inter (body), Outfit (headings) \u2014 clean modern look
+{{audienceContext}}
+{{campaignContext}}
 
-## BUSINESS CONTEXT
-- XIRI hires independent sub-contractors (cleaning, HVAC, maintenance, specialty trades) to fulfill contracts XIRI holds with medical offices, urgent care clinics, auto dealerships, and commercial facilities.
-- For CONTRACTORS: We offer steady contract work, one point of contact, fast payouts (10th of the month), no franchise fees.
-- For CLIENTS: We are their single point of contact for all facility maintenance \u2014 one call, one invoice, audit-ready standards.
-- Website: xiri.ai
-- Service Areas: Queens, Nassau County, Suffolk County, Long Island
+## ENGAGEMENT DATA
+{{engagementSummary}}
 
-${audienceContext}
-${campaignContext ? `
+## RECENT THEMES (avoid repeats)
+{{recentThemes}}
+
+Generate 1 Facebook post for {{audienceLabel}}. 100-250 words, emoji bullets, hashtags. No Markdown.
+Respond with ONLY the post text.`;
+  return getPrompt("social_post_generator", FALLBACK, {
+    audienceContext,
+    campaignContext: campaignContext ? `
 ## ACTIVE RECRUITMENT CAMPAIGN
 ${campaignContext}
-` : ""}
-## ENGAGEMENT DATA (Last 20 Posts)
-${engagementSummary}
-
-## RECENT POST THEMES (avoid repeating these)
-${recentPostSummaries.length > 0 ? recentPostSummaries.map((s, i) => `${i + 1}. ${s}`).join("\n") : "No recent posts yet."}
-
-## CONTENT PREFERENCES
-- Tone: ${config2.tone || "Professional, bold, blue-collar-friendly but executive-grade"}
-- Topics to focus on: ${config2.topics.length > 0 ? config2.topics.join(", ") : "contractor recruitment, client success, industry tips, behind-the-scenes, company culture"}
-- Hashtags to include: ${config2.hashtagSets.length > 0 ? config2.hashtagSets.join(" ") : "#FacilityManagement #CommercialCleaning #LongIsland #Queens #NYContractors"}
-
-## YOUR TASK
-Generate exactly 1 Facebook post for XIRI Facility Solutions targeting ${audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS"}. The post should:
-
-1. Be formatted for Facebook (use emoji as paragraph-style bullets, not checkmarks)
-2. Be 100-250 words
-3. Include a clear call-to-action
-4. Include relevant hashtags at the end
-5. Be different from the recent posts listed above
-6. Drive engagement (likes, comments, shares) based on what performed well in the engagement data
-7. Be written in a natural, human voice \u2014 not corporate jargon
-
-CRITICAL FORMATTING RULES:
-- Facebook does NOT support any text formatting. Do NOT use Markdown.
-- NEVER use asterisks (*), double asterisks (**), underscores for emphasis, or any other Markdown syntax.
-- Use ONLY: emoji, line breaks, and hashtags for visual structure.
-- Write the brand name as XIRI in plain text, never **XIRI** or *XIRI*.
-- Use emoji at the start of lines as visual bullets (e.g., \u{1F449} \u{1F4B0} \u{1F527}), NOT asterisks.
-- Separate sections with blank lines for readability.
-
-Respond with ONLY the post text. No introductions, no explanations, just the ready-to-publish Facebook post.`;
+` : "",
+    engagementSummary,
+    recentThemes: recentPostSummaries.length > 0 ? recentPostSummaries.map((s, i) => `${i + 1}. ${s}`).join("\n") : "No recent posts yet.",
+    tone: config2.tone || "Professional, bold, blue-collar-friendly but executive-grade",
+    topics: config2.topics.length > 0 ? config2.topics.join(", ") : "contractor recruitment, client success, industry tips, behind-the-scenes, company culture",
+    hashtags: config2.hashtagSets.length > 0 ? config2.hashtagSets.join(" ") : "#FacilityManagement #CommercialCleaning #LongIsland #Queens #NYContractors",
+    audienceLabel: audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS"
+  });
 }
-function buildReelCaptionPrompt(config2, audience, location, campaignContext) {
+async function buildReelCaptionPrompt(config2, audience, location, campaignContext) {
   const audienceHook = audience === "client" ? `Hook angle: Speak to facility managers / building owners who are tired of managing 5+ vendors.
 Key points: one call, one invoice, nightly audits verify quality, medical-grade standards.
 CTA: "DM us" or "Link in bio" or "Comment CLEAN for a free site audit"` : `Hook angle: Speak to contractors / cleaning crews looking for steady, reliable work.
@@ -24348,50 +24269,26 @@ CTA: "DM us" or "Link in bio" or "Comment WORK to get started"`;
   const locationNote = location ? `
 Mention ${location}, NY naturally \u2014 e.g., "Looking for reliable facility management in ${location}?"` : `
 Mention Long Island / Queens area naturally.`;
-  return `You are writing a Facebook Reel caption for XIRI Facility Solutions \u2014 a facility management company in New York (Queens, Nassau, Suffolk County).
+  const REEL_FALLBACK = `You are writing a Facebook Reel caption for XIRI Facility Solutions.
 
-## BRAND IDENTITY
-- Brand Name: XIRI (always uppercase, never wrapped in asterisks or any formatting)
-- Tagline: "One Call. One Invoice. Total Facility Coverage."
-- Brand Colors: Primary #0369a1 (Sky Blue), Accent #38bdf8
-- Tone: Professional, punchy, blue-collar-friendly but executive-grade
+## TARGET AUDIENCE: {{audienceLabel}}
+{{audienceHook}}
+{{locationNote}}
+{{campaignContext}}
 
-## TARGET AUDIENCE: ${audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS"}
-${audienceHook}
-${locationNote}
-${campaignContext ? `
+Generate a Reel caption: 2-4 lines, hook + value prop + CTA + hashtags. No Markdown.
+Respond with ONLY the caption text.`;
+  return getPrompt("social_reel_caption", REEL_FALLBACK, {
+    audienceLabel: audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS",
+    audienceHook,
+    locationNote,
+    campaignContext: campaignContext ? `
 ## ACTIVE RECRUITMENT CAMPAIGN
 ${campaignContext}
-` : ""}
-
-## CONTENT PREFERENCES
-- Tone: ${config2.tone || "Professional, bold, punchy"}
-- Hashtags: ${config2.hashtagSets.length > 0 ? config2.hashtagSets.join(" ") : "#FacilityManagement #CommercialCleaning #LongIsland"}
-
-## YOUR TASK
-Generate a Facebook Reel caption (NOT a full post). A reel caption should be:
-
-1. 2-4 lines MAX \u2014 short, punchy, scroll-stopping
-2. Start with a hook (question or bold statement)
-3. One key value prop
-4. Clear CTA
-5. Relevant hashtags at the end
-6. Use emoji sparingly (1-2 max)
-7. Written like a human, not a brand
-
-CRITICAL FORMATTING RULES:
-- Facebook does NOT support text formatting. Do NOT use Markdown.
-- NEVER use asterisks (*), double asterisks (**), underscores for emphasis, or any Markdown syntax.
-- Write XIRI in plain uppercase text, never **XIRI** or *XIRI*.
-- Use ONLY: emoji, line breaks, and hashtags.
-
-Example format:
-"Still managing 5 different vendors? \u{1F92F}
-One call. One invoice. Nightly verified.
-DM us for a free site audit \u{1F447}
-#FacilityManagement #LongIsland"
-
-Respond with ONLY the caption text. Nothing else.`;
+` : "",
+    tone: config2.tone || "Professional, bold, punchy",
+    hashtags: config2.hashtagSets.length > 0 ? config2.hashtagSets.join(" ") : "#FacilityManagement #CommercialCleaning #LongIsland"
+  });
 }
 function summarizeEngagement(posts) {
   if (posts.length === 0) {
@@ -24521,8 +24418,8 @@ async function generateSocialContent(channel = "facebook_posts") {
   const currentClientRatio = totalExisting > 0 ? existingClientDrafts / totalExisting : 0.5;
   const activeCampaignsSnap = await db.collection("social_campaigns").where("channel", "==", channel).where("status", "==", "active").get();
   const activeCampaigns = activeCampaignsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  const genAI6 = new import_generative_ai7.GoogleGenerativeAI(API_KEY4);
-  const model4 = genAI6.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const genAI4 = new import_generative_ai5.GoogleGenerativeAI(API_KEY2);
+  const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
   const isReels = channel === "facebook_reels";
   let slotIndex = 0;
   for (const scheduledFor of toGenerate) {
@@ -24553,8 +24450,8 @@ ${campaign.hookOverride ? `Specific messaging angle/hook to use: "${campaign.hoo
       slotIndex++;
       if (isReels) {
         console.log(`[SocialGenerator] Generating ${audience} reel for ${scheduledFor.toISOString()}...`);
-        const captionPrompt = buildReelCaptionPrompt(config2, audience, locationName, campaignContext);
-        const captionResult = await model4.generateContent(captionPrompt);
+        const captionPrompt = await buildReelCaptionPrompt(config2, audience, locationName, campaignContext);
+        const captionResult = await model2.generateContent(captionPrompt);
         const caption = captionResult.response.text().trim();
         if (!caption) {
           console.error("[SocialGenerator] Gemini returned empty reel caption. Skipping.");
@@ -24595,8 +24492,8 @@ ${campaign.hookOverride ? `Specific messaging angle/hook to use: "${campaign.hoo
         console.log(`[SocialGenerator] ${audience} reel draft created ${videoUrl ? "(with video)" : "(caption only)"}`);
       } else {
         console.log(`[SocialGenerator] Generating ${audience} draft for ${scheduledFor.toISOString()}...`);
-        const prompt = buildPrompt(config2, summary, themes, audience, campaignContext);
-        const result = await model4.generateContent(prompt);
+        const prompt = await buildPrompt(config2, summary, themes, audience, campaignContext);
+        const result = await model2.generateContent(prompt);
         const generatedMessage = result.response.text().trim();
         if (!generatedMessage) {
           console.error("[SocialGenerator] Gemini returned empty response. Skipping slot.");
@@ -24725,47 +24622,47 @@ var DASHBOARD_CORS = [
   "https://xiri-facility-solutions.web.app",
   "https://xiri-facility-solutions.firebaseapp.com"
 ];
-var adminUpdateAuthUser = (0, import_https7.onCall)({
+var adminUpdateAuthUser = (0, import_https8.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const callerDoc = await db.collection("users").doc(request.auth.uid).get();
   const callerRoles = callerDoc.data()?.roles || [];
-  if (!callerRoles.includes("admin")) throw new import_https7.HttpsError("permission-denied", "Admin only");
+  if (!callerRoles.includes("admin")) throw new import_https8.HttpsError("permission-denied", "Admin only");
   const { uid, email, password, displayName } = request.data;
-  if (!uid) throw new import_https7.HttpsError("invalid-argument", "uid is required");
+  if (!uid) throw new import_https8.HttpsError("invalid-argument", "uid is required");
   const updatePayload = {};
   if (email) updatePayload.email = email;
   if (password) updatePayload.password = password;
   if (displayName) updatePayload.displayName = displayName;
   if (Object.keys(updatePayload).length === 0) {
-    throw new import_https7.HttpsError("invalid-argument", "Nothing to update");
+    throw new import_https8.HttpsError("invalid-argument", "Nothing to update");
   }
   try {
     await (0, import_auth.getAuth)().updateUser(uid, updatePayload);
     return { success: true, message: `Auth updated for ${uid}` };
   } catch (error11) {
     console.error("adminUpdateAuthUser error:", error11);
-    throw new import_https7.HttpsError("internal", error11.message || "Failed to update Auth user");
+    throw new import_https8.HttpsError("internal", error11.message || "Failed to update Auth user");
   }
 });
-var changeMyPassword = (0, import_https7.onCall)({
+var changeMyPassword = (0, import_https8.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const { newPassword } = request.data;
   if (!newPassword || newPassword.length < 6) {
-    throw new import_https7.HttpsError("invalid-argument", "Password must be at least 6 characters");
+    throw new import_https8.HttpsError("invalid-argument", "Password must be at least 6 characters");
   }
   try {
     await (0, import_auth.getAuth)().updateUser(request.auth.uid, { password: newPassword });
     return { success: true, message: "Password updated" };
   } catch (error11) {
     console.error("changeMyPassword error:", error11);
-    throw new import_https7.HttpsError("internal", error11.message || "Failed to change password");
+    throw new import_https8.HttpsError("internal", error11.message || "Failed to change password");
   }
 });
-var generateLeads = (0, import_https7.onCall)({
+var generateLeads = (0, import_https8.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: [
     "http://localhost:3001",
@@ -24798,7 +24695,7 @@ var generateLeads = (0, import_https7.onCall)({
   const provider = data.provider || "google_maps";
   const dcaCategory = data.dcaCategory;
   if (provider === "google_maps" && !query || !location) {
-    throw new import_https7.HttpsError("invalid-argument", "Missing required fields in request.");
+    throw new import_https8.HttpsError("invalid-argument", "Missing required fields in request.");
   }
   try {
     console.log(`Analyzing leads for query: ${query}, location: ${location}, provider: ${provider}, category: ${dcaCategory}${previewOnly ? " (PREVIEW MODE)" : ""}`);
@@ -24814,10 +24711,10 @@ var generateLeads = (0, import_https7.onCall)({
     };
   } catch (error11) {
     console.error("Error in generateLeads:", error11);
-    throw new import_https7.HttpsError("internal", error11.message || "An internal error occurred.");
+    throw new import_https8.HttpsError("internal", error11.message || "An internal error occurred.");
   }
 });
-var clearPipeline = (0, import_https7.onCall)({
+var clearPipeline = (0, import_https8.onCall)({
   cors: [
     "http://localhost:3001",
     "http://localhost:3000",
@@ -24847,10 +24744,10 @@ var clearPipeline = (0, import_https7.onCall)({
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
   } catch (error11) {
-    throw new import_https7.HttpsError("internal", error11.message);
+    throw new import_https8.HttpsError("internal", error11.message);
   }
 });
-var runRecruiterAgent = (0, import_https7.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
+var runRecruiterAgent = (0, import_https8.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
   const rawVendors = req.body.vendors || [
     { name: "ABC Cleaning", services: "We do medical office cleaning and terminal cleaning." },
     { name: "Joe's Pizza", services: "Best pizza in town" },
@@ -24859,7 +24756,7 @@ var runRecruiterAgent = (0, import_https7.onRequest)({ secrets: ["GEMINI_API_KEY
   const result = await analyzeVendorLeads(rawVendors, "Commercial Cleaning");
   res.json(result);
 });
-var testSendEmail = (0, import_https7.onCall)({
+var testSendEmail = (0, import_https8.onCall)({
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
   cors: [
     "http://localhost:3001",
@@ -24873,17 +24770,17 @@ var testSendEmail = (0, import_https7.onCall)({
   const { sendTemplatedEmail: sendTemplatedEmail2 } = await Promise.resolve().then(() => (init_emailUtils(), emailUtils_exports));
   const { vendorId, templateId } = request.data;
   if (!vendorId || !templateId) {
-    throw new import_https7.HttpsError("invalid-argument", "Missing vendorId or templateId");
+    throw new import_https8.HttpsError("invalid-argument", "Missing vendorId or templateId");
   }
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
   } catch (error11) {
     console.error("Error sending test email:", error11);
-    throw new import_https7.HttpsError("internal", error11.message || "Failed to send email");
+    throw new import_https8.HttpsError("internal", error11.message || "Failed to send email");
   }
 });
-var sourceProperties = (0, import_https7.onCall)({
+var sourceProperties = (0, import_https8.onCall)({
   cors: [
     "http://localhost:3001",
     "http://localhost:3000",
@@ -24902,7 +24799,7 @@ var sourceProperties = (0, import_https7.onCall)({
   const location = data.location;
   const providerName = data.provider || "mock";
   if (!query || !location) {
-    throw new import_https7.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https8.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`[sourceProperties] query="${query}", location="${location}", provider=${providerName}`);
@@ -24914,17 +24811,17 @@ var sourceProperties = (0, import_https7.onCall)({
     };
   } catch (error11) {
     console.error("[sourceProperties] Error:", error11);
-    throw new import_https7.HttpsError("internal", error11.message || "Failed to source properties.");
+    throw new import_https8.HttpsError("internal", error11.message || "Failed to source properties.");
   }
 });
-var publishFacebookPost = (0, import_https7.onCall)({
+var publishFacebookPost = (0, import_https8.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const { message, link, imageUrl, scheduledTime } = request.data;
   if (!message) {
-    throw new import_https7.HttpsError("invalid-argument", "Message is required");
+    throw new import_https8.HttpsError("invalid-argument", "Message is required");
   }
   try {
     let result;
@@ -24951,14 +24848,14 @@ var publishFacebookPost = (0, import_https7.onCall)({
     return result;
   } catch (error11) {
     console.error("[Facebook] Publish error:", error11);
-    throw new import_https7.HttpsError("internal", error11.message || "Failed to publish to Facebook");
+    throw new import_https8.HttpsError("internal", error11.message || "Failed to publish to Facebook");
   }
 });
-var getFacebookPosts = (0, import_https7.onCall)({
+var getFacebookPosts = (0, import_https8.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const posts = await getRecentPosts(limit || 10);
@@ -24966,14 +24863,14 @@ var getFacebookPosts = (0, import_https7.onCall)({
     return { posts, insights };
   } catch (error11) {
     console.error("[Facebook] Get posts error:", error11);
-    throw new import_https7.HttpsError("internal", error11.message || "Failed to get Facebook posts");
+    throw new import_https8.HttpsError("internal", error11.message || "Failed to get Facebook posts");
   }
 });
-var getFacebookReels = (0, import_https7.onCall)({
+var getFacebookReels = (0, import_https8.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const { getRecentReels: getRecentReels2 } = await Promise.resolve().then(() => (init_facebookApi(), facebookApi_exports));
@@ -24981,16 +24878,16 @@ var getFacebookReels = (0, import_https7.onCall)({
     return { reels };
   } catch (error11) {
     console.error("[Facebook] Get reels error:", error11);
-    throw new import_https7.HttpsError("internal", error11.message || "Failed to get Facebook reels");
+    throw new import_https8.HttpsError("internal", error11.message || "Failed to get Facebook reels");
   }
 });
-var deleteFacebookPost = (0, import_https7.onCall)({
+var deleteFacebookPost = (0, import_https8.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https7.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https8.HttpsError("invalid-argument", "postId is required");
   try {
     const success = await deletePost(postId);
     const snapshot = await db.collection("social_posts").where("facebookPostId", "==", postId).limit(1).get();
@@ -25004,24 +24901,24 @@ var deleteFacebookPost = (0, import_https7.onCall)({
     return { success };
   } catch (error11) {
     console.error("[Facebook] Delete error:", error11);
-    throw new import_https7.HttpsError("internal", error11.message || "Failed to delete Facebook post");
+    throw new import_https8.HttpsError("internal", error11.message || "Failed to delete Facebook post");
   }
 });
-var triggerSocialContentGeneration = (0, import_https7.onCall)({
+var triggerSocialContentGeneration = (0, import_https8.onCall)({
   secrets: ["GEMINI_API_KEY", "FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const channel = request.data?.channel || "facebook_posts";
   await generateSocialContent(channel);
   return { success: true };
 });
-var updateSocialConfig = (0, import_https7.onCall)({
+var updateSocialConfig = (0, import_https8.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const { channel, cadence, preferredDays, preferredTime, tone, topics, hashtagSets, enabled, audienceMix } = request.data;
   const channelId = channel || "facebook_posts";
   const config2 = { updatedAt: /* @__PURE__ */ new Date() };
@@ -25038,18 +24935,18 @@ var updateSocialConfig = (0, import_https7.onCall)({
   console.log(`[Social] Config updated for ${channelId}:`, config2);
   return { success: true };
 });
-var reviewSocialPost = (0, import_https7.onCall)({
+var reviewSocialPost = (0, import_https8.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const { postId, action, editedMessage, rejectionReason, scheduledFor } = request.data;
   if (!postId || !action) {
-    throw new import_https7.HttpsError("invalid-argument", "postId and action are required");
+    throw new import_https8.HttpsError("invalid-argument", "postId and action are required");
   }
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
   if (!postDoc.exists) {
-    throw new import_https7.HttpsError("not-found", "Post not found");
+    throw new import_https8.HttpsError("not-found", "Post not found");
   }
   const update = {
     reviewedBy: request.auth.uid,
@@ -25066,24 +24963,24 @@ var reviewSocialPost = (0, import_https7.onCall)({
       update.rejectionReason = rejectionReason || null;
       break;
     default:
-      throw new import_https7.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
+      throw new import_https8.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
   }
   await postRef.update(update);
   console.log(`[Social] Post ${postId} ${action}ed by ${request.auth.uid}`);
   return { success: true, status: update.status };
 });
-var publishPostNow = (0, import_https7.onCall)({
+var publishPostNow = (0, import_https8.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   timeoutSeconds: 180,
   memory: "512MiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https7.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https8.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https7.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https8.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   try {
     let result;
@@ -25171,7 +25068,7 @@ file '${outroMp4}'
         error: result.error || "Publishing failed",
         failedAt: /* @__PURE__ */ new Date()
       });
-      throw new import_https7.HttpsError("internal", result.error || "Publishing failed");
+      throw new import_https8.HttpsError("internal", result.error || "Publishing failed");
     }
   } catch (err) {
     const errorMsg = err.message || "Publishing failed";
@@ -25182,37 +25079,37 @@ file '${outroMp4}'
       failedAt: /* @__PURE__ */ new Date()
     }).catch(() => {
     });
-    throw new import_https7.HttpsError("internal", errorMsg);
+    throw new import_https8.HttpsError("internal", errorMsg);
   }
 });
-var searchPlaces = (0, import_https7.onCall)({
+var searchPlaces = (0, import_https8.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"]
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const { query } = request.data;
-  if (!query) throw new import_https7.HttpsError("invalid-argument", "query is required");
+  if (!query) throw new import_https8.HttpsError("invalid-argument", "query is required");
   const results = await searchFacebookPlaces(query);
   return { places: results };
 });
-var regeneratePostImage = (0, import_https7.onCall)({
+var regeneratePostImage = (0, import_https8.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 300,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https7.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https8.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https7.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https8.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience || "contractor";
   console.log(`[RegenImage] Regenerating image for post ${postId} with feedback: "${feedback || "none"}"`);
   const { generatePostImage: generatePostImage2 } = await Promise.resolve().then(() => (init_imagenApi(), imagenApi_exports));
   const result = await generatePostImage2(post.message, audience, feedback || void 0);
   if (!result) {
-    throw new import_https7.HttpsError("internal", "Image generation failed");
+    throw new import_https8.HttpsError("internal", "Image generation failed");
   }
   await postRef.update({
     imageUrl: result.imageUrl,
@@ -25222,34 +25119,34 @@ var regeneratePostImage = (0, import_https7.onCall)({
   console.log(`[RegenImage] New image: ${result.imageUrl}`);
   return { success: true, imageUrl: result.imageUrl };
 });
-var regeneratePostCaption = (0, import_https7.onCall)({
+var regeneratePostCaption = (0, import_https8.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["GEMINI_API_KEY"],
   timeoutSeconds: 120
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https7.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https8.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https7.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https8.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
   console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
-  const { GoogleGenerativeAI: GoogleGenerativeAI8 } = await import("@google/generative-ai");
-  const API_KEY5 = process.env.GEMINI_API_KEY || "";
-  const genAI6 = new GoogleGenerativeAI8(API_KEY5);
-  const model4 = genAI6.getGenerativeModel({ model: "gemini-2.0-flash" });
-  const prompt = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for ${audience}:
+  const { GoogleGenerativeAI: GoogleGenerativeAI6 } = await import("@google/generative-ai");
+  const API_KEY3 = process.env.GEMINI_API_KEY || "";
+  const genAI4 = new GoogleGenerativeAI6(API_KEY3);
+  const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const FALLBACK = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for {{audience}}:
 
 --- CURRENT POST ---
-${post.message}
+{{currentPost}}
 --- END ---
 
 The reviewer has provided this feedback:
-"${feedback || "Generate a different version"}"
+"{{feedback}}"
 
-Write an improved version of this post incorporating the feedback. Keep the same target audience (${audience}).
+Write an improved version of this post incorporating the feedback. Keep the same target audience ({{audience}}).
 
 CRITICAL FORMATTING RULES:
 - Facebook does NOT support text formatting. Do NOT use Markdown.
@@ -25260,10 +25157,15 @@ CRITICAL FORMATTING RULES:
 - 100-250 words.
 
 Respond with ONLY the post text. No introductions.`;
-  const result = await model4.generateContent(prompt);
+  const prompt = await getPrompt("social_caption_regenerator", FALLBACK, {
+    audience,
+    currentPost: post.message,
+    feedback: feedback || "Generate a different version"
+  });
+  const result = await model2.generateContent(prompt);
   const newCaption = result.response.text().trim();
   if (!newCaption) {
-    throw new import_https7.HttpsError("internal", "Caption generation returned empty");
+    throw new import_https8.HttpsError("internal", "Caption generation returned empty");
   }
   await postRef.update({
     message: newCaption,
@@ -25273,12 +25175,12 @@ Respond with ONLY the post text. No introductions.`;
   console.log(`[RegenCaption] New caption generated (${newCaption.length} chars)`);
   return { success: true, message: newCaption };
 });
-var getOutroPreview = (0, import_https7.onCall)({
+var getOutroPreview = (0, import_https8.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
   const { presetId } = request.data;
-  if (!presetId) throw new import_https7.HttpsError("invalid-argument", "presetId is required");
+  if (!presetId) throw new import_https8.HttpsError("invalid-argument", "presetId is required");
   const { getOrCreateOutroFrameUrl: getOrCreateOutroFrameUrl2 } = await Promise.resolve().then(() => (init_reelOutroGenerator(), reelOutroGenerator_exports));
   const url = await getOrCreateOutroFrameUrl2(presetId);
   return { url };
@@ -25302,7 +25204,6 @@ var getOutroPreview = (0, import_https7.onCall)({
   onAwaitingOnboarding,
   onClientCancelled,
   onDocumentUploaded,
-  onIncomingMessage,
   onInvoicePaid,
   onLeadQualified,
   onLeadUpdated,
@@ -25334,6 +25235,7 @@ var getOutroPreview = (0, import_https7.onCall)({
   sendOnboardingInvite,
   sendQuoteEmail,
   sourceProperties,
+  startLeadSequence,
   testSendEmail,
   triggerSocialContentGeneration,
   updateSocialConfig,

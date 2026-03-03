@@ -74,7 +74,15 @@ export default function LeadList({
     const PAGE_SIZE = 50;
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
     const [groupByAddress, setGroupByAddress] = useState(true);
-    const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_VISIBLE));
+    const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('pipeline-columns');
+            if (saved) {
+                try { return new Set(JSON.parse(saved) as ColumnKey[]); } catch { }
+            }
+        }
+        return new Set(DEFAULT_VISIBLE);
+    });
 
     const {
         searchQuery,
@@ -207,6 +215,7 @@ export default function LeadList({
             } else {
                 next.add(col);
             }
+            localStorage.setItem('pipeline-columns', JSON.stringify([...next]));
             return next;
         });
     };
