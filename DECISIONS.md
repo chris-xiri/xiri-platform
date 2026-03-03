@@ -122,3 +122,48 @@ Maintained by: @architect-cto
 > - Decision: **Lead Type Classification (`leadType` field)**
 > - Rationale: Leads need different outreach sequences based on their type. Added `LeadType` union type to `@xiri/shared`: `'direct'` (standard leads from audit wizard or manual entry), `'tenant'` (Northwell physician affiliate tenants from scraping), `'referral_partnership'` (CRE brokers for referral partnerships). The `leadType` field on `Lead` is optional and defaults to `'direct'`. The `onLeadQualified` trigger reads `leadType` to route to the correct sequence: direct/tenant → Gemini-generated drip (4 emails, Day 0/3/7/14), referral_partnership → static templates (3 emails, Day 0/4/10).
 > - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **Enterprise Lead Type — 5-Step Sequence**
+> - Rationale: Added `'enterprise'` to the `LeadType` union for large multi-location clients (e.g., Flagstar Bank). Enterprise leads use a 5-step email sequence scheduled over 21 days (Day 0, 4, 8, 14, 21) with the `enterprise_lead_` template prefix. Seed script: `scripts/seed-enterprise-lead-templates.js`. Templates emphasize compliance, multi-site consolidation, and enterprise SLAs. Cloud Functions `onLeadQualified` and `startLeadSequence` both handle the `enterprise` case.
+> - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **Template Admin: Leads vs Contractors Tabs**
+> - Rationale: The template analytics page (`/admin/templates`) was restructured into two tabs: "Lead Templates" (Tenant, Referral, Enterprise pipelines) and "Contractor Templates" (Vendor outreach). This separates concerns and scales cleanly as new lead types are added. Uses `shadcn/ui` `Tabs` component.
+> - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **AI Template Optimization: Supervised Only + Notifications**
+> - Rationale: The weekly AI optimizer (`aiTemplateOptimizer.ts`) now covers all template categories (`vendor`, `tenant_lead`, `referral_partnership`, `enterprise_lead`). AI optimizations are **suggestions only** — they are stored in `aiSuggestions` on the template doc and require the user to click "Apply" manually. When suggestions are created, a notification is written to the `notifications` Firestore collection. A `NotificationBell` component in the dashboard top bar shows unread counts and links to the template admin page. AI must never auto-apply changes.
+> - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **No Warm/Cold Variants for Step 1 Outreach**
+> - Rationale: Step 1 (initial outreach) templates should not have warm/cold variants because there are no prior engagement signals at first contact. Warm/cold variants only make sense for follow-up steps (Step 2+) where open/click data exists. Removed Step 1 warm/cold variants from all seed scripts (`seed-lead-templates.js`, `seed-enterprise-lead-templates.js`) and deleted the 6 orphan Firestore documents (`tenant_lead_1_warm/cold`, `referral_partnership_1_warm/cold`, `enterprise_lead_1_warm/cold`). Step 1 templates only have a `standard` variant.
+> - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **Pipeline Reorder (LinkedIn-style) — localStorage Persisted**
+> - Rationale: Lead pipeline sections on the template admin page can be reordered via up/down arrows (triggered by a "Reorder" button). The order is stored as a key array in `localStorage` under `lead-pipeline-order`. The reorder state uses a string key array (`pipelineOrderKeys`) initialized via `useState` lazy initializer to avoid React hooks-rules violations — all hooks must be called before any early returns.
+> - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **Creatable Facility Type Combobox**
+> - Rationale: The Facility Type field in the Add Lead dialog is a searchable, creatable combobox (not a static `Select`). Users can type to filter existing types or add new custom types on the fly. Custom types are slugified and persisted to `localStorage` under `custom-facility-types`. The default list includes all 17 types from the `FacilityType` union in `@xiri/shared`. The component (`FacilityTypeCombobox`) is defined inline in `AddLeadDialog.tsx`.
+> - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **Address Field: Street Only (No City/State/Country)**
+> - Rationale: When a Google Places suggestion is selected in the Add Lead dialog, the address field now displays only the street number + street name (e.g., "9 Lahey Street") extracted from `street_number` and `route` address components. City, state, and ZIP are auto-filled into their own separate fields. Previously the field showed the full Google Places label (e.g., "9 Lahey Street, New Hyde Park, NY, USA") which was redundant. The `address.label` is overwritten with the street-only string after geocoding.
+> - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **Start Sequence Action in CRM List (Three-Dot Menu)**
+> - Rationale: Each lead row in the CRM list (`LeadRow.tsx`) now has a three-dot actions menu (`DropdownMenu`) with "View Details" (navigates to `/sales/crm/[id]`) and "Start Sequence" (calls the `startLeadSequence` Cloud Function directly). If the lead has no email, the Start Sequence option is disabled with a "No email — add to start" message. The `actions` column is included in `DEFAULT_VISIBLE` columns. Previously, starting a sequence required navigating into the lead detail page first.
+> - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **Firestore Rules: `notifications` and `lead_activities` Collections**
+> - Rationale: Added security rules for two new collections. `notifications`: authenticated users can read and update (mark as read), only Cloud Functions can create (via admin SDK). `lead_activities`: authenticated users can read and create, but documents are immutable (no updates or deletes) to maintain an audit trail.
+> - Status: **Active**
