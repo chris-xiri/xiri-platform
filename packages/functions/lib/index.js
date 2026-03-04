@@ -265,7 +265,10 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
     const footer = buildEmailFooter(entityId, entityType);
     const htmlWithFooter = footer ? html + footer : html;
     const tags = [];
-    if (vendorId) tags.push({ name: "vendorId", value: vendorId });
+    if (vendorId) {
+      const tagName = entityType === "lead" ? "leadId" : "vendorId";
+      tags.push({ name: tagName, value: vendorId });
+    }
     if (templateId) tags.push({ name: "templateId", value: templateId });
     const headers = {};
     if (entityId && entityType) {

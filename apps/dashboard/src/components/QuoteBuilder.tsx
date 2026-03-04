@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Lead, QuoteLineItem, getTaxRate, calculateTax } from '@xiri/shared';
 import { SCOPE_TEMPLATES } from '@/data/scopeTemplates';
 import { XIRI_SERVICES, SERVICE_CATEGORIES, ServiceCategory } from '@/data/serviceTypes';
+import JanitorialPricingCalc from '@/components/JanitorialPricingCalc';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 
 import { Button } from '@/components/ui/button';
@@ -593,6 +594,9 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                 <p className="text-xs text-muted-foreground">
                                                     {loc.address}{loc.city ? `, ${loc.city}` : ''}{loc.state ? `, ${loc.state}` : ''} {loc.zip}
                                                 </p>
+                                                {loc.id.startsWith('loc_') && parseInt(loc.id.split('_')[1]) < 100 && (
+                                                    <p className="text-[10px] text-primary/70">📍 Pre-filled from {selectedLead?.businessName}</p>
+                                                )}
                                             </div>
                                         </div>
                                         <Button variant="ghost" size="icon" onClick={() => removeLocation(loc.id)}>
@@ -822,6 +826,16 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
                                                                         />
                                                                     </div>
                                                                 </div>
+                                                                {/* Janitorial Pricing Calculator */}
+                                                                {item.serviceCategory === 'janitorial' && (
+                                                                    <div className="col-span-12">
+                                                                        <JanitorialPricingCalc
+                                                                            facilityType={selectedLead?.facilityType}
+                                                                            initialSqft={item.sqft || selectedLead?.propertySourcing?.squareFootage}
+                                                                            onApplyRate={(rate, sqft) => updateLineItem(item.id, { clientRate: rate, sqft })}
+                                                                        />
+                                                                    </div>
+                                                                )}
                                                                 {/* Tax info */}
                                                                 {item.locationZip && item.taxRate && !item.taxExempt && (
                                                                     <div className="col-span-12">
