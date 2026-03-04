@@ -24085,6 +24085,7 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     });
   }
   await db20.collection("leads").doc(leadId).update({
+    status: lead.status === "new" ? "contacted" : lead.status,
     outreachStatus: "PENDING",
     sequenceStartedAt: admin24.firestore.FieldValue.serverTimestamp(),
     sequenceStartedBy: request.auth?.uid || "manual"

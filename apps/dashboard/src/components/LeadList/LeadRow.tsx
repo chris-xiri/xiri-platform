@@ -18,6 +18,7 @@ import {
     MapPin,
     Rocket,
     Loader2,
+    CheckCircle2,
 } from 'lucide-react';
 
 export type ColumnKey = 'business' | 'type' | 'contact' | 'location' | 'auditTime' | 'status' | 'source' | 'created' | 'actions';
@@ -247,7 +248,11 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
 
             {show('actions') && (
                 <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                    {lead.email ? (
+                    {(lead as any).outreachStatus && ['PENDING', 'IN_PROGRESS', 'SENT', 'COMPLETED'].includes((lead as any).outreachStatus) ? (
+                        <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">
+                            <CheckCircle2 className="w-3 h-3 mr-1" /> Sequence Active
+                        </Badge>
+                    ) : lead.email ? (
                         <Button
                             variant="outline"
                             size="sm"
