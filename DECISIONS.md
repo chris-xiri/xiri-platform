@@ -178,3 +178,9 @@ Maintained by: @architect-cto
 >   5. **Activity Logging**: Unsubscribe events are logged to `vendor_activities` or `lead_activities` with full metadata.
 > - **RULE: Any new email sequence, template, or outbound email feature MUST use `sendEmail()` with the `entityType` parameter to ensure CAN-SPAM compliance. Never bypass the footer.**
 > - Status: **Active — Regulatory Requirement**
+
+> - Date: 2026-03-03
+> - Decision: **XIRI Brand Name — Always Full Caps**
+> - Rationale: The brand name is **XIRI**, never "Xiri" or "xiri". This applies to ALL marketing, sales outreach, branding, email sender names, email footers, photos, social media, templates, and any customer-facing text. Examples: "XIRI Facility Solutions", "XIRI Partnerships", "Chris Leung — XIRI". The only exception is the domain `xiri.ai` which is lowercase by convention.
+> - **RULE: Any new email, template, UI text, or branding material MUST use "XIRI" (full caps). Never "Xiri".**
+> - Status: **Active — Brand Guideline**
