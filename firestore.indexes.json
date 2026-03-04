@@ -127,6 +127,21 @@
                     "order": "ASCENDING"
                 }
             ]
+        },
+        {
+            "__comment": "Lead Activity Timeline: loads timeline for a lead — /sales/crm/[id]/page.tsx",
+            "collectionGroup": "lead_activities",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "leadId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []
