@@ -87,7 +87,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
         if (onRowClick && lead.id) {
             onRowClick(lead.id);
         } else {
-            router.push(`/sales/crm/${lead.id}`);
+            router.push(`/sales/dashboard/${lead.id}`);
         }
     };
 

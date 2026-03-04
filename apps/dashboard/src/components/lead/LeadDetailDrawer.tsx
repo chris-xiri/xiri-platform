@@ -514,7 +514,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                     variant="ghost"
                                     size="sm"
                                     className="h-7 text-xs gap-1 text-muted-foreground"
-                                    onClick={() => router.push(`/sales/crm/${leadId}`)}
+                                    onClick={() => router.push(`/sales/dashboard/${leadId}`)}
                                 >
                                     <ExternalLink className="w-3 h-3" />
                                     Full Page

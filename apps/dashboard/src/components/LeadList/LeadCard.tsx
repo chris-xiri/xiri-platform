@@ -62,7 +62,7 @@ export function LeadCard({ lead, index, isSelected, onSelect }: LeadCardProps) {
     const router = useRouter();
 
     const handleClick = () => {
-        router.push(`/sales/crm/${lead.id}`);
+        router.push(`/sales/dashboard/${lead.id}`);
     };
 
     const firstAuditTime = lead.preferredAuditTimes && lead.preferredAuditTimes.length > 0
