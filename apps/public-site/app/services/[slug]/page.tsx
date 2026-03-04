@@ -251,7 +251,24 @@ export default async function ServicePage({ params }: Props) {
                 {/* FAQs */}
                 <FAQ items={service.faqs || []} />
 
-                {/* ═══ OTHER SERVICES (cross-link) ═══ */}
+                {/* ═══ CALCULATOR CTA ═══ */}
+                <section className="py-12 bg-sky-50 border-y border-sky-100">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <h2 className="text-2xl font-bold text-slate-900 mb-3">
+                            💰 How Much Does {service.name} Cost?
+                        </h2>
+                        <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
+                            Get an instant estimate with our free janitorial cleaning cost calculator. Enter your square footage, facility type, and state — results in seconds.
+                        </p>
+                        <Link
+                            href="/calculator"
+                            className="inline-block bg-sky-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-200"
+                        >
+                            Try the Cost Calculator →
+                        </Link>
+                    </div>
+                </section>
+
                 {(() => {
                     const otherServices = seoData.services.filter(s => s.slug !== service.slug).slice(0, 6);
                     if (otherServices.length === 0) return null;
@@ -609,6 +626,24 @@ export default async function ServicePage({ params }: Props) {
                     </div>
                 </section>
             )}
+
+            {/* ═══ CALCULATOR CTA ═══ */}
+            <section className="py-12 bg-sky-50 border-y border-sky-100">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h2 className="text-2xl font-bold text-slate-900 mb-3">
+                        💰 Estimate Your {service.name} Cost in {townName}
+                    </h2>
+                    <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
+                        Use our free commercial cleaning cost calculator to see what janitorial services should cost for your facility size and type.
+                    </p>
+                    <Link
+                        href="/calculator"
+                        className="inline-block bg-sky-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-200"
+                    >
+                        Try the Cost Calculator →
+                    </Link>
+                </div>
+            </section>
 
             {/* ═══ FINAL CTA ═══ */}
             <section className="py-16 bg-gray-50 border-b border-gray-200">
