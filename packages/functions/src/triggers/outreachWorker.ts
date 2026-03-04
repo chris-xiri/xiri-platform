@@ -198,10 +198,10 @@ async function handleSend(task: QueueItem) {
 
         const result = await sendEmail(
             vendorEmail,
-            emailData?.subject || 'Xiri Facility Solutions — Partnership Opportunity',
+            emailData?.subject || 'XIRI Facility Solutions — Partnership Opportunity',
             htmlBody,
             undefined,   // no attachments
-            'Xiri Partnerships <partnerships@xiri.ai>',
+            'XIRI Partnerships <partnerships@xiri.ai>',
             task.vendorId ?? undefined,  // tag email with vendorId for webhook tracking
             task.metadata.templateId ?? undefined,  // tag with templateId for stats tracking
             'vendor', // entityType for unsubscribe footer
@@ -228,7 +228,7 @@ async function handleSend(task: QueueItem) {
         metadata: {
             channel: task.metadata.channel,
             to: vendorEmail || 'unknown',
-            from: 'Xiri Partnerships <partnerships@xiri.ai>',
+            from: 'XIRI Partnerships <partnerships@xiri.ai>',
             replyTo: 'chris@xiri.ai',
             // Full email fields for activity feed preview
             subject: task.metadata.channel === 'SMS' ? null : task.metadata.email?.subject,
@@ -387,7 +387,7 @@ async function handleFollowUp(task: QueueItem) {
 
     const { success: sendSuccess, resendId } = await sendEmail(
         vendorEmail, subject, htmlBody,
-        undefined, 'Xiri Partnerships <partnerships@xiri.ai>', task.vendorId ?? undefined, templateId,
+        undefined, 'XIRI Partnerships <partnerships@xiri.ai>', task.vendorId ?? undefined, templateId,
         'vendor',
     );
 
@@ -402,7 +402,7 @@ async function handleFollowUp(task: QueueItem) {
             sequence,
             channel: 'EMAIL',
             to: vendorEmail,
-            from: 'Xiri Partnerships <partnerships@xiri.ai>',
+            from: 'XIRI Partnerships <partnerships@xiri.ai>',
             subject,
             body,
             html: htmlBody,
@@ -495,7 +495,7 @@ async function handleLeadSend(task: QueueItem) {
     const sendResult = await sendEmail(
         toEmail, subject, htmlBody,
         undefined,
-        'Chris Leung — Xiri <chris@xiri.ai>',  // Sales outreach from Chris
+        'Chris Leung — XIRI <chris@xiri.ai>',  // Sales outreach from Chris
         task.leadId ?? undefined, templateId,
         'lead', // entityType for unsubscribe footer
     );

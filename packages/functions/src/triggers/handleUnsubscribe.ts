@@ -108,7 +108,7 @@ async function handleVendorUnsubscribe(vendorId: string, res: any) {
 
     res.status(200).send(renderPage(
         'Unsubscribed Successfully',
-        `${businessName} has been removed from our outreach list. You won't receive any more emails from Xiri Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
+        `${businessName} has been removed from our outreach list. You won't receive any more emails from XIRI Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
         true
     ));
 }
@@ -168,7 +168,7 @@ async function handleLeadUnsubscribe(leadId: string, res: any) {
 
     res.status(200).send(renderPage(
         'Unsubscribed Successfully',
-        `${businessName} has been removed from our outreach list. You won't receive any more emails from Xiri Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
+        `${businessName} has been removed from our outreach list. You won't receive any more emails from XIRI Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
         true
     ));
 }
@@ -184,7 +184,7 @@ function renderPage(title: string, message: string, success: boolean): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title} — Xiri Facility Solutions</title>
+    <title>${title} — XIRI Facility Solutions</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f8fafc; }
         .card { background: white; border-radius: 16px; padding: 48px; max-width: 480px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
@@ -199,7 +199,7 @@ function renderPage(title: string, message: string, success: boolean): string {
         <div class="icon">${icon}</div>
         <h1>${title}</h1>
         <p>${message}</p>
-        <div class="footer">Xiri Facility Solutions · 1225 Franklin Ave, Suite 325 · Garden City, NY 11530</div>
+        <div class="footer">XIRI Facility Solutions · 1225 Franklin Ave, Suite 325 · Garden City, NY 11530</div>
     </div>
 </body>
 </html>`;

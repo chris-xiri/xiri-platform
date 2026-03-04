@@ -20516,8 +20516,7 @@ async function handleSend(task) {
       htmlBody,
       void 0,
       // no attachments
-      void 0,
-      // default from
+      "Xiri Partnerships <partnerships@xiri.ai>",
       task.vendorId ?? void 0,
       // tag email with vendorId for webhook tracking
       task.metadata.templateId ?? void 0,
@@ -20543,7 +20542,7 @@ async function handleSend(task) {
     metadata: {
       channel: task.metadata.channel,
       to: vendorEmail || "unknown",
-      from: "Xiri Facility Solutions <onboarding@xiri.ai>",
+      from: "Xiri Partnerships <partnerships@xiri.ai>",
       replyTo: "chris@xiri.ai",
       // Full email fields for activity feed preview
       subject: task.metadata.channel === "SMS" ? null : task.metadata.email?.subject,
@@ -20674,9 +20673,10 @@ async function handleFollowUp(task) {
     subject,
     htmlBody,
     void 0,
-    void 0,
+    "Xiri Partnerships <partnerships@xiri.ai>",
     task.vendorId ?? void 0,
-    templateId
+    templateId,
+    "vendor"
   );
   await db4.collection("vendor_activities").add({
     vendorId: task.vendorId,
@@ -20687,7 +20687,7 @@ async function handleFollowUp(task) {
       sequence,
       channel: "EMAIL",
       to: vendorEmail,
-      from: "Xiri Facility Solutions <onboarding@xiri.ai>",
+      from: "Xiri Partnerships <partnerships@xiri.ai>",
       subject,
       body,
       html: htmlBody,
@@ -20762,7 +20762,8 @@ async function handleLeadSend(task) {
     subject,
     htmlBody,
     void 0,
-    void 0,
+    "Chris Leung \u2014 Xiri <chris@xiri.ai>",
+    // Sales outreach from Chris
     task.leadId ?? void 0,
     templateId,
     "lead"

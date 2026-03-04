@@ -50,7 +50,7 @@ export async function generatePersonalizedEmail(
 
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-        const FALLBACK = `You are a professional email writer for Xiri Facility Solutions.
+        const FALLBACK = `You are a professional email writer for XIRI Facility Solutions.
 
 Take this email template and personalize it while maintaining the core message:
 
@@ -203,7 +203,7 @@ export async function sendTemplatedEmail(
         let resendId: string | undefined;
         try {
             const { data } = await resend.emails.send({
-                from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+                from: 'XIRI Facility Solutions <onboarding@xiri.ai>',
                 replyTo: 'chris@xiri.ai',
                 to: vendor?.email || '',
                 subject: email.subject,
@@ -240,7 +240,7 @@ export async function sendTemplatedEmail(
                 subject: email.subject,
                 body: email.body,
                 to: vendor?.email || "unknown",
-                from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+                from: 'XIRI Facility Solutions <onboarding@xiri.ai>',
                 replyTo: 'chris@xiri.ai',
                 resendId // NEW: Track Resend email ID
             }
@@ -262,7 +262,7 @@ function buildEmailFooter(entityId?: string, entityType?: 'vendor' | 'lead'): st
 
     return `
 <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
-    <p style="margin: 0;">Xiri Facility Solutions · 1225 Franklin Ave, Suite 325 · Garden City, NY 11530</p>
+    <p style="margin: 0;">XIRI Facility Solutions · 1225 Franklin Ave, Suite 325 · Garden City, NY 11530</p>
     <p style="margin: 8px 0 0 0;">
         <a href="${unsubscribeUrl}" style="color: #64748b; text-decoration: underline;">Unsubscribe</a>
         &nbsp;·&nbsp;
@@ -307,7 +307,7 @@ export async function sendEmail(
         }
 
         const { data, error } = await resend.emails.send({
-            from: from || 'Xiri Facility Solutions <onboarding@xiri.ai>',
+            from: from || 'XIRI Facility Solutions <onboarding@xiri.ai>',
             replyTo: 'chris@xiri.ai',
             to,
             subject,
