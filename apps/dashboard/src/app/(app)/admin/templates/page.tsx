@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc, deleteField } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteField, setDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '@/lib/firebase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sparkles, CheckCircle, RefreshCw, Mail, MousePointerClick, Eye, AlertTriangle, ChevronDown, ChevronUp, ChevronRight, ArrowRight, ArrowUpDown, HardHat, Building2, Handshake, Landmark, Pencil, Save, X } from 'lucide-react';
+import { Sparkles, CheckCircle, RefreshCw, Mail, MousePointerClick, Eye, AlertTriangle, ChevronDown, ChevronUp, ChevronRight, ArrowRight, ArrowUpDown, HardHat, Building2, Handshake, Landmark, Pencil, Save, X, Send } from 'lucide-react';
 
 interface TemplateStats {
     sent: number;
@@ -35,6 +35,14 @@ interface Template {
     sequence?: number;
     stats?: TemplateStats;
     aiSuggestions?: AISuggestion[];
+}
+
+interface EmailSender {
+    id: string;
+    name: string;
+    email: string;
+    description: string;
+    context: string;
 }
 
 // ─── Variant color schemes ───
@@ -116,12 +124,46 @@ export default function TemplateAnalyticsPage() {
     const [optimizing, setOptimizing] = useState<string | null>(null);
     const [applying, setApplying] = useState<string | null>(null);
     const [reordering, setReordering] = useState(false);
+    const [senders, setSenders] = useState<EmailSender[]>([]);
+    const [pipelineSenders, setPipelineSenders] = useState<Record<string, string>>({
+        vendor: 'partnerships',
+        tenant: 'sales',
+        referral: 'sales',
+        enterprise: 'sales',
+    });
     const [pipelineOrderKeys, setPipelineOrderKeys] = useState<string[]>(() => {
         if (typeof window === 'undefined') return ['tenant', 'referral', 'enterprise'];
         return JSON.parse(localStorage.getItem('lead-pipeline-order') || 'null') || ['tenant', 'referral', 'enterprise'];
     });
 
-    useEffect(() => { fetchTemplates(); }, []);
+    useEffect(() => {
+        fetchTemplates();
+        fetchSenders();
+    }, []);
+
+    async function fetchSenders() {
+        const snap = await getDocs(collection(db, 'email_senders'));
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as EmailSender));
+        setSenders(data);
+
+        // Load saved pipeline-sender mapping from Firestore
+        try {
+            const { getDoc } = await import('firebase/firestore');
+            const configDoc = await getDoc(doc(db, 'config', 'pipeline_senders'));
+            if (configDoc.exists()) {
+                setPipelineSenders(prev => ({ ...prev, ...configDoc.data() }));
+            }
+        } catch (err) {
+            console.warn('No pipeline_senders config found, using defaults');
+        }
+    }
+
+    async function handleSenderChange(pipelineKey: string, senderId: string) {
+        const updated = { ...pipelineSenders, [pipelineKey]: senderId };
+        setPipelineSenders(updated);
+        // Persist to Firestore
+        await setDoc(doc(db, 'config', 'pipeline_senders'), updated, { merge: true });
+    }
 
     async function fetchTemplates() {
         setLoading(true);
@@ -169,12 +211,12 @@ export default function TemplateAnalyticsPage() {
 
     const hasLeadTemplates = tenantPipeline.length > 0 || referralPipeline.length > 0 || enterprisePipeline.length > 0;
 
-    type PipelineItem = { key: string; title: string; icon: React.ReactNode; pipeline: StepGroup[]; emptyLabel?: string; emptyHint?: string; badge?: string };
+    type PipelineItem = { key: string; title: string; icon: React.ReactNode; pipeline: StepGroup[]; emptyLabel?: string; emptyHint?: string; badge?: string; defaultSenderId: string };
 
     const pipelineMap: Record<string, PipelineItem> = {
-        tenant: { key: 'tenant', title: 'Tenant Lead Outreach', icon: <Building2 className="w-5 h-5" />, pipeline: tenantPipeline },
-        referral: { key: 'referral', title: 'Referral Partnerships', icon: <Handshake className="w-5 h-5" />, pipeline: referralPipeline },
-        enterprise: { key: 'enterprise', title: 'Enterprise Outreach', icon: <Landmark className="w-5 h-5" />, pipeline: enterprisePipeline, emptyLabel: 'Enterprise Outreach', emptyHint: 'node scripts/seed-enterprise-lead-templates.js', badge: '5-step drip' },
+        tenant: { key: 'tenant', title: 'Tenant Lead Outreach', icon: <Building2 className="w-5 h-5" />, pipeline: tenantPipeline, defaultSenderId: 'sales' },
+        referral: { key: 'referral', title: 'Referral Partnerships', icon: <Handshake className="w-5 h-5" />, pipeline: referralPipeline, defaultSenderId: 'sales' },
+        enterprise: { key: 'enterprise', title: 'Enterprise Outreach', icon: <Landmark className="w-5 h-5" />, pipeline: enterprisePipeline, emptyLabel: 'Enterprise Outreach', emptyHint: 'node scripts/seed-enterprise-lead-templates.js', badge: '5-step drip', defaultSenderId: 'sales' },
     };
 
     const orderedPipelines = pipelineOrderKeys
@@ -283,6 +325,9 @@ export default function TemplateAnalyticsPage() {
                                     onOptimize={handleOptimize}
                                     onApply={handleApply}
                                     onDismiss={handleDismiss}
+                                    senders={senders}
+                                    senderId={pipelineSenders[item.key] || item.defaultSenderId}
+                                    onSenderChange={(id) => handleSenderChange(item.key, id)}
                                 />
                             ) : item.emptyLabel ? (
                                 <Card>
@@ -323,6 +368,9 @@ export default function TemplateAnalyticsPage() {
                             onOptimize={handleOptimize}
                             onApply={handleApply}
                             onDismiss={handleDismiss}
+                            senders={senders}
+                            senderId={pipelineSenders['vendor'] || 'partnerships'}
+                            onSenderChange={(id) => handleSenderChange('vendor', id)}
                         />
                     ) : (
                         <div className="text-center py-12 text-muted-foreground">
@@ -339,7 +387,7 @@ export default function TemplateAnalyticsPage() {
 /* ═══════════════════════════════════════════════════
    PIPELINE SECTION — horizontal sequence funnel
    ═══════════════════════════════════════════════════ */
-function PipelineSection({ title, icon, pipeline, optimizing, applying, onOptimize, onApply, onDismiss }: {
+function PipelineSection({ title, icon, pipeline, optimizing, applying, onOptimize, onApply, onDismiss, senders, senderId, onSenderChange }: {
     title: string;
     icon: React.ReactNode;
     pipeline: StepGroup[];
@@ -348,8 +396,13 @@ function PipelineSection({ title, icon, pipeline, optimizing, applying, onOptimi
     onOptimize: (id: string) => void;
     onApply: (id: string, sug: { subject: string; body: string }) => void;
     onDismiss: (id: string) => void;
+    senders: EmailSender[];
+    senderId: string;
+    onSenderChange: (id: string) => void;
 }) {
     const [expandedStep, setExpandedStep] = useState<number | null>(null);
+
+    const currentSender = senders.find(s => s.id === senderId);
 
     // Summary totals for the pipeline
     const totals = pipeline.reduce((acc, s) => ({
@@ -367,6 +420,21 @@ function PipelineSection({ title, icon, pipeline, optimizing, applying, onOptimi
                 {icon}
                 <h3 className="text-lg font-semibold">{title}</h3>
                 <div className="flex items-center gap-3 ml-auto text-xs text-muted-foreground">
+                    {/* Sender selector */}
+                    <div className="flex items-center gap-1.5 bg-muted/50 rounded-md px-2 py-1 border">
+                        <Send className="w-3 h-3 text-muted-foreground" />
+                        <select
+                            value={senderId}
+                            onChange={(e) => onSenderChange(e.target.value)}
+                            className="bg-transparent text-xs font-medium border-none outline-none cursor-pointer pr-4"
+                        >
+                            {senders.map(s => (
+                                <option key={s.id} value={s.id}>
+                                    {s.name} &lt;{s.email}&gt;
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                     <span><strong className="text-foreground">{totals.sent}</strong> total sent</span>
                     <span className={rateColor(totals.opened, totals.sent, 0.3)}>
                         {rate(totals.opened, totals.sent)} opens

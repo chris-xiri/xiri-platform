@@ -9,6 +9,55 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
+// ── Sender resolution from email_senders collection ──────
+interface SenderProfile {
+    name: string;
+    email: string;
+    replyTo: string;
+}
+
+const SENDER_DEFAULTS: Record<string, SenderProfile> = {
+    partnerships: { name: 'XIRI Partnerships', email: 'partnerships@xiri.ai', replyTo: 'chris@xiri.ai' },
+    sales: { name: 'Chris Leung — XIRI', email: 'chris@xiri.ai', replyTo: 'chris@xiri.ai' },
+    onboarding: { name: 'XIRI Facility Solutions', email: 'onboarding@xiri.ai', replyTo: 'chris@xiri.ai' },
+    compliance: { name: 'XIRI Compliance', email: 'compliance@xiri.ai', replyTo: 'chris@xiri.ai' },
+};
+
+// In-memory cache to avoid re-reading within a single queue run
+const senderCache: Record<string, SenderProfile> = {};
+
+/**
+ * Resolve sender profile from email_senders collection.
+ * Falls back to hardcoded defaults if collection doc is missing.
+ */
+async function getSenderFrom(senderId: string): Promise<string> {
+    if (senderCache[senderId]) {
+        const s = senderCache[senderId];
+        return `${s.name} <${s.email}>`;
+    }
+
+    try {
+        const doc = await db.collection('email_senders').doc(senderId).get();
+        if (doc.exists) {
+            const data = doc.data()!;
+            const profile: SenderProfile = {
+                name: data.name,
+                email: data.email,
+                replyTo: data.replyTo || 'chris@xiri.ai',
+            };
+            senderCache[senderId] = profile;
+            return `${profile.name} <${profile.email}>`;
+        }
+    } catch (err) {
+        logger.warn(`Failed to read email_senders/${senderId}, using default`, err);
+    }
+
+    // Fallback
+    const fallback = SENDER_DEFAULTS[senderId] || SENDER_DEFAULTS.onboarding;
+    senderCache[senderId] = fallback;
+    return `${fallback.name} <${fallback.email}>`;
+}
+
 /** Title-case a capability/specialty string for professional emails. */
 function titleCase(s: string): string {
     if (!s) return '';
@@ -191,6 +240,10 @@ async function handleSend(task: QueueItem) {
     let resendId: string | undefined;
     let htmlBody = '';
 
+    // Resolve sender from email_senders collection (outside if block for activity log)
+    const senderId = task.metadata?.senderId || 'partnerships';
+    const senderFrom = await getSenderFrom(senderId);
+
     if (vendorEmail) {
         // ─── Always send via Email until Twilio SMS is integrated ───
         const emailData = task.metadata.email;
@@ -201,7 +254,7 @@ async function handleSend(task: QueueItem) {
             emailData?.subject || 'XIRI Facility Solutions — Partnership Opportunity',
             htmlBody,
             undefined,   // no attachments
-            'XIRI Partnerships <partnerships@xiri.ai>',
+            senderFrom,
             task.vendorId ?? undefined,  // tag email with vendorId for webhook tracking
             task.metadata.templateId ?? undefined,  // tag with templateId for stats tracking
             'vendor', // entityType for unsubscribe footer
@@ -228,7 +281,7 @@ async function handleSend(task: QueueItem) {
         metadata: {
             channel: task.metadata.channel,
             to: vendorEmail || 'unknown',
-            from: 'XIRI Partnerships <partnerships@xiri.ai>',
+            from: senderFrom,
             replyTo: 'chris@xiri.ai',
             // Full email fields for activity feed preview
             subject: task.metadata.channel === 'SMS' ? null : task.metadata.email?.subject,
@@ -385,9 +438,13 @@ async function handleFollowUp(task: QueueItem) {
 
     const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${body.replace(/\n/g, '<br/>')}</div>`;
 
+    // Resolve sender from email_senders collection
+    const followUpSenderId = task.metadata?.senderId || 'partnerships';
+    const followUpSenderFrom = await getSenderFrom(followUpSenderId);
+
     const { success: sendSuccess, resendId } = await sendEmail(
         vendorEmail, subject, htmlBody,
-        undefined, 'XIRI Partnerships <partnerships@xiri.ai>', task.vendorId ?? undefined, templateId,
+        undefined, followUpSenderFrom, task.vendorId ?? undefined, templateId,
         'vendor',
     );
 
@@ -402,7 +459,7 @@ async function handleFollowUp(task: QueueItem) {
             sequence,
             channel: 'EMAIL',
             to: vendorEmail,
-            from: 'XIRI Partnerships <partnerships@xiri.ai>',
+            from: followUpSenderFrom,
             subject,
             body,
             html: htmlBody,
@@ -492,10 +549,14 @@ async function handleLeadSend(task: QueueItem) {
 
     const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${body.replace(/\n/g, '<br/>')}</div>`;
 
+    // Resolve sender from email_senders collection
+    const leadSenderId = task.metadata?.senderId || 'sales';
+    const leadSenderFrom = await getSenderFrom(leadSenderId);
+
     const sendResult = await sendEmail(
         toEmail, subject, htmlBody,
         undefined,
-        'Chris Leung — XIRI <chris@xiri.ai>',  // Sales outreach from Chris
+        leadSenderFrom,
         task.leadId ?? undefined, templateId,
         'lead', // entityType for unsubscribe footer
     );

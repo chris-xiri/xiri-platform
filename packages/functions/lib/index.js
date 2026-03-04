@@ -101,7 +101,7 @@ async function generatePersonalizedEmail(templateId, variables) {
     const template = await getTemplate(templateId);
     if (!template) return null;
     const model2 = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const FALLBACK = `You are a professional email writer for Xiri Facility Solutions.
+    const FALLBACK = `You are a professional email writer for XIRI Facility Solutions.
 
 Take this email template and personalize it while maintaining the core message:
 
@@ -202,7 +202,7 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
     let resendId;
     try {
       const { data } = await resend.emails.send({
-        from: "Xiri Facility Solutions <onboarding@xiri.ai>",
+        from: "XIRI Facility Solutions <onboarding@xiri.ai>",
         replyTo: "chris@xiri.ai",
         to: vendor?.email || "",
         subject: email.subject,
@@ -236,7 +236,7 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
         subject: email.subject,
         body: email.body,
         to: vendor?.email || "unknown",
-        from: "Xiri Facility Solutions <onboarding@xiri.ai>",
+        from: "XIRI Facility Solutions <onboarding@xiri.ai>",
         replyTo: "chris@xiri.ai",
         resendId
         // NEW: Track Resend email ID
@@ -251,7 +251,7 @@ function buildEmailFooter(entityId, entityType) {
   const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${entityId}&type=${entityType}`;
   return `
 <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
-    <p style="margin: 0;">Xiri Facility Solutions \xB7 1225 Franklin Ave, Suite 325 \xB7 Garden City, NY 11530</p>
+    <p style="margin: 0;">XIRI Facility Solutions \xB7 1225 Franklin Ave, Suite 325 \xB7 Garden City, NY 11530</p>
     <p style="margin: 8px 0 0 0;">
         <a href="${unsubscribeUrl}" style="color: #64748b; text-decoration: underline;">Unsubscribe</a>
         &nbsp;\xB7&nbsp;
@@ -274,7 +274,7 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
       headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
     }
     const { data, error: error11 } = await resend.emails.send({
-      from: from || "Xiri Facility Solutions <onboarding@xiri.ai>",
+      from: from || "XIRI Facility Solutions <onboarding@xiri.ai>",
       replyTo: "chris@xiri.ai",
       to,
       subject,
@@ -20375,6 +20375,37 @@ if (!admin6.apps.length) {
   admin6.initializeApp();
 }
 var db4 = admin6.firestore();
+var SENDER_DEFAULTS = {
+  partnerships: { name: "XIRI Partnerships", email: "partnerships@xiri.ai", replyTo: "chris@xiri.ai" },
+  sales: { name: "Chris Leung \u2014 XIRI", email: "chris@xiri.ai", replyTo: "chris@xiri.ai" },
+  onboarding: { name: "XIRI Facility Solutions", email: "onboarding@xiri.ai", replyTo: "chris@xiri.ai" },
+  compliance: { name: "XIRI Compliance", email: "compliance@xiri.ai", replyTo: "chris@xiri.ai" }
+};
+var senderCache = {};
+async function getSenderFrom(senderId) {
+  if (senderCache[senderId]) {
+    const s = senderCache[senderId];
+    return `${s.name} <${s.email}>`;
+  }
+  try {
+    const doc = await db4.collection("email_senders").doc(senderId).get();
+    if (doc.exists) {
+      const data = doc.data();
+      const profile = {
+        name: data.name,
+        email: data.email,
+        replyTo: data.replyTo || "chris@xiri.ai"
+      };
+      senderCache[senderId] = profile;
+      return `${profile.name} <${profile.email}>`;
+    }
+  } catch (err) {
+    logger3.warn(`Failed to read email_senders/${senderId}, using default`, err);
+  }
+  const fallback = SENDER_DEFAULTS[senderId] || SENDER_DEFAULTS.onboarding;
+  senderCache[senderId] = fallback;
+  return `${fallback.name} <${fallback.email}>`;
+}
 function titleCase2(s) {
   if (!s) return "";
   if (s === s.toUpperCase() && s.length <= 5) return s;
@@ -20507,16 +20538,18 @@ async function handleSend(task) {
   let sendSuccess = false;
   let resendId;
   let htmlBody = "";
+  const senderId = task.metadata?.senderId || "partnerships";
+  const senderFrom = await getSenderFrom(senderId);
   if (vendorEmail) {
     const emailData = task.metadata.email;
     htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${(emailData?.body || "").replace(/\n/g, "<br/>")}</div>`;
     const result = await sendEmail(
       vendorEmail,
-      emailData?.subject || "Xiri Facility Solutions \u2014 Partnership Opportunity",
+      emailData?.subject || "XIRI Facility Solutions \u2014 Partnership Opportunity",
       htmlBody,
       void 0,
       // no attachments
-      "Xiri Partnerships <partnerships@xiri.ai>",
+      senderFrom,
       task.vendorId ?? void 0,
       // tag email with vendorId for webhook tracking
       task.metadata.templateId ?? void 0,
@@ -20542,7 +20575,7 @@ async function handleSend(task) {
     metadata: {
       channel: task.metadata.channel,
       to: vendorEmail || "unknown",
-      from: "Xiri Partnerships <partnerships@xiri.ai>",
+      from: senderFrom,
       replyTo: "chris@xiri.ai",
       // Full email fields for activity feed preview
       subject: task.metadata.channel === "SMS" ? null : task.metadata.email?.subject,
@@ -20668,12 +20701,14 @@ async function handleFollowUp(task) {
   }
   body = body.replace(/\[ONBOARDING_LINK\]/g, onboardingUrl);
   const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${body.replace(/\n/g, "<br/>")}</div>`;
+  const followUpSenderId = task.metadata?.senderId || "partnerships";
+  const followUpSenderFrom = await getSenderFrom(followUpSenderId);
   const { success: sendSuccess, resendId } = await sendEmail(
     vendorEmail,
     subject,
     htmlBody,
     void 0,
-    "Xiri Partnerships <partnerships@xiri.ai>",
+    followUpSenderFrom,
     task.vendorId ?? void 0,
     templateId,
     "vendor"
@@ -20687,7 +20722,7 @@ async function handleFollowUp(task) {
       sequence,
       channel: "EMAIL",
       to: vendorEmail,
-      from: "Xiri Partnerships <partnerships@xiri.ai>",
+      from: followUpSenderFrom,
       subject,
       body,
       html: htmlBody,
@@ -20757,13 +20792,14 @@ async function handleLeadSend(task) {
     body = body.replace(regex, value);
   }
   const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${body.replace(/\n/g, "<br/>")}</div>`;
+  const leadSenderId = task.metadata?.senderId || "sales";
+  const leadSenderFrom = await getSenderFrom(leadSenderId);
   const sendResult = await sendEmail(
     toEmail,
     subject,
     htmlBody,
     void 0,
-    "Chris Leung \u2014 Xiri <chris@xiri.ai>",
-    // Sales outreach from Chris
+    leadSenderFrom,
     task.leadId ?? void 0,
     templateId,
     "lead"
@@ -21741,7 +21777,7 @@ async function handleVendorUnsubscribe(vendorId, res) {
   logger8.info(`Vendor ${vendorId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
   res.status(200).send(renderPage(
     "Unsubscribed Successfully",
-    `${businessName} has been removed from our outreach list. You won't receive any more emails from Xiri Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
+    `${businessName} has been removed from our outreach list. You won't receive any more emails from XIRI Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
     true
   ));
 }
@@ -21788,7 +21824,7 @@ async function handleLeadUnsubscribe(leadId, res) {
   logger8.info(`Lead ${leadId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
   res.status(200).send(renderPage(
     "Unsubscribed Successfully",
-    `${businessName} has been removed from our outreach list. You won't receive any more emails from Xiri Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
+    `${businessName} has been removed from our outreach list. You won't receive any more emails from XIRI Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
     true
   ));
 }
@@ -21800,7 +21836,7 @@ function renderPage(title, message, success) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title} \u2014 Xiri Facility Solutions</title>
+    <title>${title} \u2014 XIRI Facility Solutions</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f8fafc; }
         .card { background: white; border-radius: 16px; padding: 48px; max-width: 480px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
@@ -21815,7 +21851,7 @@ function renderPage(title, message, success) {
         <div class="icon">${icon}</div>
         <h1>${title}</h1>
         <p>${message}</p>
-        <div class="footer">Xiri Facility Solutions \xB7 1225 Franklin Ave, Suite 325 \xB7 Garden City, NY 11530</div>
+        <div class="footer">XIRI Facility Solutions \xB7 1225 Franklin Ave, Suite 325 \xB7 Garden City, NY 11530</div>
     </div>
 </body>
 </html>`;
