@@ -357,7 +357,25 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                                 <span className="text-lg">🏗️</span> Floor Breakdown
                             </h3>
                             <button
-                                onClick={() => setFloorMode(floorMode === 'percent' ? 'sqft' : 'percent')}
+                                onClick={() => {
+                                    if (floorMode === 'percent' && sqft > 0) {
+                                        // Convert % → sqft
+                                        setFloorBreakdown(prev => prev.map(f => ({
+                                            ...f,
+                                            percent: Math.round(f.percent * sqft / 100),
+                                        })));
+                                    } else if (floorMode === 'sqft') {
+                                        // Convert sqft → %
+                                        const totalSqft = floorBreakdown.reduce((s, f) => s + f.percent, 0);
+                                        if (totalSqft > 0) {
+                                            setFloorBreakdown(prev => prev.map(f => ({
+                                                ...f,
+                                                percent: Math.round((f.percent / totalSqft) * 100),
+                                            })));
+                                        }
+                                    }
+                                    setFloorMode(floorMode === 'percent' ? 'sqft' : 'percent');
+                                }}
                                 className="text-xs text-sky-600 hover:underline font-medium"
                             >
                                 {floorMode === 'percent' ? 'Switch to sqft' : 'Switch to %'}
@@ -386,21 +404,30 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                                             </div>
                                         </div>
                                         {isActive && (
-                                            <input
-                                                type="number"
-                                                className="w-full h-9 rounded-xl border border-slate-300 bg-white px-2 text-xs text-center focus:ring-2 focus:ring-sky-500"
-                                                value={entry!.percent || ''}
-                                                onChange={(e) => updateFloor(ft.key, parseInt(e.target.value) || 0)}
-                                                placeholder={floorMode === 'percent' ? '%' : 'sqft'}
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    className="w-full h-9 rounded-xl border border-slate-300 bg-white pl-2 pr-8 text-xs text-center focus:ring-2 focus:ring-sky-500"
+                                                    value={entry!.percent || ''}
+                                                    onChange={(e) => updateFloor(ft.key, parseInt(e.target.value) || 0)}
+                                                    placeholder={floorMode === 'percent' ? '0' : '0'}
+                                                />
+                                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-medium pointer-events-none">
+                                                    {floorMode === 'percent' ? '%' : 'sqft'}
+                                                </span>
+                                            </div>
                                         )}
                                     </div>
                                 );
                             })}
                         </div>
-                        {floorMode === 'percent' && (
+                        {floorMode === 'percent' ? (
                             <p className={`text-xs mt-2 ${totalPct === 100 ? 'text-green-600' : 'text-amber-600'}`}>
                                 Total: {totalPct}%{totalPct !== 100 && ' (should equal 100%)'}
+                            </p>
+                        ) : (
+                            <p className={`text-xs mt-2 ${totalPct === sqft ? 'text-green-600' : totalPct > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                                Total: {totalPct.toLocaleString()} sqft{sqft > 0 && totalPct !== sqft && ` of ${sqft.toLocaleString()} sqft`}{sqft > 0 && totalPct === sqft && ' ✓'}
                             </p>
                         )}
                     </div>
@@ -458,8 +485,8 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                             {ADDON_OPTIONS.map(a => (
                                 <button key={a.key} onClick={() => setAddOns(prev => ({ ...prev, [a.key]: !prev[a.key] }))}
                                     className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${addOns[a.key]
-                                            ? 'bg-sky-100 text-sky-700 border-sky-300 shadow-sm'
-                                            : 'bg-slate-100 text-slate-600 border-transparent hover:border-slate-300'
+                                        ? 'bg-sky-100 text-sky-700 border-sky-300 shadow-sm'
+                                        : 'bg-slate-100 text-slate-600 border-transparent hover:border-slate-300'
                                         }`}>
                                     {addOns[a.key] ? '✓ ' : ''}{a.label}
                                     <span className="opacity-60 ml-1">+{Math.round(a.modifier * 100)}%</span>
@@ -473,8 +500,8 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
             {/* ═══ ESTIMATE RESULT ═══ */}
             {estimate && sqft > 0 ? (
                 <div className={`rounded-2xl p-8 text-white shadow-xl ${isContractor
-                        ? 'bg-gradient-to-br from-emerald-600 to-emerald-800'
-                        : 'bg-gradient-to-br from-sky-600 to-sky-800'
+                    ? 'bg-gradient-to-br from-emerald-600 to-emerald-800'
+                    : 'bg-gradient-to-br from-sky-600 to-sky-800'
                     }`}>
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-lg font-bold">
@@ -537,8 +564,8 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                                 trackEvent('calculator_cta_click', { cta: 'email_breakdown', calculator_type: mode });
                             }}
                             className={`inline-block px-8 py-3.5 rounded-xl font-bold text-sm transition-colors shadow-lg ${isContractor
-                                    ? 'bg-white text-emerald-700 hover:bg-emerald-50'
-                                    : 'bg-white text-sky-700 hover:bg-sky-50'
+                                ? 'bg-white text-emerald-700 hover:bg-emerald-50'
+                                : 'bg-white text-sky-700 hover:bg-sky-50'
                                 }`}
                         >
                             📧 Email Me a Detailed Breakdown

@@ -225,7 +225,17 @@ export default function PricingCalculatorPage() {
                         <div className="flex items-center justify-between mb-2">
                             <Label className="text-xs text-muted-foreground">Floor Breakdown</Label>
                             <button
-                                onClick={() => setFloorMode(floorMode === 'percent' ? 'sqft' : 'percent')}
+                                onClick={() => {
+                                    if (floorMode === 'percent' && sqft > 0) {
+                                        setFloorBreakdown(prev => prev.map(f => ({ ...f, percent: Math.round(f.percent * sqft / 100) })));
+                                    } else if (floorMode === 'sqft') {
+                                        const totalSqft = floorBreakdown.reduce((s, f) => s + f.percent, 0);
+                                        if (totalSqft > 0) {
+                                            setFloorBreakdown(prev => prev.map(f => ({ ...f, percent: Math.round((f.percent / totalSqft) * 100) })));
+                                        }
+                                    }
+                                    setFloorMode(floorMode === 'percent' ? 'sqft' : 'percent');
+                                }}
                                 className="text-xs text-primary hover:underline font-medium print:hidden"
                             >
                                 {floorMode === 'percent' ? 'Switch to sqft' : 'Switch to %'}
@@ -256,25 +266,39 @@ export default function PricingCalculatorPage() {
                                             )}
                                         </div>
                                         {isActive && (
-                                            <Input
-                                                type="number"
-                                                className="h-7 text-xs text-center px-1"
-                                                value={entry!.percent || ''}
-                                                onChange={(e) => updateFloorType(type, parseInt(e.target.value) || 0)}
-                                                placeholder={floorMode === 'percent' ? '%' : 'sqft'}
-                                            />
+                                            <div className="relative">
+                                                <Input
+                                                    type="number"
+                                                    className="h-7 text-xs text-center pl-1 pr-8"
+                                                    value={entry!.percent || ''}
+                                                    onChange={(e) => updateFloorType(type, parseInt(e.target.value) || 0)}
+                                                    placeholder="0"
+                                                />
+                                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
+                                                    {floorMode === 'percent' ? '%' : 'sqft'}
+                                                </span>
+                                            </div>
                                         )}
                                     </div>
                                 );
                             })}
                         </div>
-                        {floorMode === 'percent' && (
+                        {floorMode === 'percent' ? (
                             <p className={`text-xs mt-1 ${floorBreakdown.reduce((s, f) => s + f.percent, 0) === 100
                                 ? 'text-green-600'
                                 : 'text-amber-600'
                                 }`}>
                                 Total: {floorBreakdown.reduce((s, f) => s + f.percent, 0)}%
                                 {floorBreakdown.reduce((s, f) => s + f.percent, 0) !== 100 && ' (should be 100%)'}
+                            </p>
+                        ) : (
+                            <p className={`text-xs mt-1 ${floorBreakdown.reduce((s, f) => s + f.percent, 0) === sqft
+                                ? 'text-green-600'
+                                : floorBreakdown.reduce((s, f) => s + f.percent, 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'
+                                }`}>
+                                Total: {floorBreakdown.reduce((s, f) => s + f.percent, 0).toLocaleString()} sqft
+                                {sqft > 0 && floorBreakdown.reduce((s, f) => s + f.percent, 0) !== sqft && ` of ${sqft.toLocaleString()} sqft`}
+                                {sqft > 0 && floorBreakdown.reduce((s, f) => s + f.percent, 0) === sqft && ' ✓'}
                             </p>
                         )}
                     </div>
