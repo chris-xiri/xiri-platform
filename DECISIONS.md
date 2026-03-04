@@ -184,3 +184,20 @@ Maintained by: @architect-cto
 > - Rationale: The brand name is **XIRI**, never "Xiri" or "xiri". This applies to ALL marketing, sales outreach, branding, email sender names, email footers, photos, social media, templates, and any customer-facing text. Examples: "XIRI Facility Solutions", "XIRI Partnerships", "Chris Leung — XIRI". The only exception is the domain `xiri.ai` which is lowercase by convention.
 > - **RULE: Any new email, template, UI text, or branding material MUST use "XIRI" (full caps). Never "Xiri".**
 > - Status: **Active — Brand Guideline**
+
+> - Date: 2026-03-03
+> - Decision: **Configurable Sender Emails via `email_senders` Collection**
+> - Rationale: Email sender names and addresses are stored in the `email_senders` Firestore collection (not hardcoded). Each pipeline (Vendor, Tenant Lead, Referral, Enterprise) can be assigned a different sender from the admin Templates page. The outreach worker reads the sender dynamically at send time via `getSenderFrom()` with in-memory caching. Pipeline-sender mapping is persisted in `config/pipeline_senders`. Current defaults: `partnerships@xiri.ai` for vendor outreach, `chris@xiri.ai` for lead/sales outreach, `onboarding@xiri.ai` for onboarding, `compliance@xiri.ai` for compliance docs. `replyTo` is always `chris@xiri.ai`.
+> - **RULE: To add a new sender, create a doc in `email_senders`. To change a pipeline's sender, use the admin Templates page or update `config/pipeline_senders`.**
+> - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **Resend Webhook Handles Both Vendors AND Leads**
+> - Rationale: `resendWebhook.ts` resolves entity type (vendor or lead) from Resend tags (`vendorId` or `leadId`) with fallback to querying both `vendor_activities` and `lead_activities`. Activities are logged to the correct collection, engagement is updated on the correct entity doc, and template stats are incremented for both. `sendEmail()` tags emails with `leadId` for leads and `vendorId` for vendors.
+> - **RULE: Any new email flow must pass `entityType` to `sendEmail()` so the Resend tag correctly identifies the entity for webhook tracking.**
+> - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **Lead Detail Drawer: 4-Tab Layout**
+> - Rationale: The `LeadDetailDrawer.tsx` uses a tabbed layout: **Overview** (Contact, Notes, Quotes, Meta), **Audit** (Audit Booking + Service Interest), **Attribution** (Source/Medium/Campaign/Landing Page), **Activity** (LeadActivityFeed). This separation keeps the drawer organized and prevents information overload.
+> - Status: **Active**
