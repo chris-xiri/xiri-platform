@@ -295,7 +295,11 @@ export async function sendEmail(
 
         // Build tags array for webhook tracking
         const tags: { name: string; value: string }[] = [];
-        if (vendorId) tags.push({ name: 'vendorId', value: vendorId });
+        if (vendorId) {
+            // Tag with correct entity type for webhook resolution
+            const tagName = entityType === 'lead' ? 'leadId' : 'vendorId';
+            tags.push({ name: tagName, value: vendorId });
+        }
         if (templateId) tags.push({ name: 'templateId', value: templateId });
 
         // Build Resend List-Unsubscribe header for one-click unsubscribe

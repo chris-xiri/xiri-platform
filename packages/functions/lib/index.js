@@ -23727,33 +23727,55 @@ var resendWebhook = (0, import_https4.onRequest)({
       res.status(200).json({ ok: true, skipped: true });
       return;
     }
-    let vendorId = null;
+    let entityId = null;
+    let entityType = null;
     const tags = event?.data?.tags;
     if (tags) {
-      if (typeof tags === "object" && !Array.isArray(tags) && tags.vendorId) {
-        vendorId = tags.vendorId;
-      } else if (Array.isArray(tags)) {
-        const vendorTag = tags.find((t) => t.name === "vendorId");
-        if (vendorTag?.value) vendorId = vendorTag.value;
-      }
+      const getTag = (key) => {
+        if (typeof tags === "object" && !Array.isArray(tags) && tags[key]) return tags[key];
+        if (Array.isArray(tags)) {
+          const found = tags.find((t) => t.name === key);
+          return found?.value || null;
+        }
+        return null;
+      };
+      const vendorId = getTag("vendorId");
+      const leadId = getTag("leadId");
       if (vendorId) {
-        import_v2.logger.info(`Resend webhook: resolved vendorId=${vendorId} from tag`);
+        entityId = vendorId;
+        entityType = "vendor";
+      } else if (leadId) {
+        entityId = leadId;
+        entityType = "lead";
+      }
+      if (entityId) {
+        import_v2.logger.info(`Resend webhook: resolved ${entityType}Id=${entityId} from tag`);
       }
     }
-    if (!vendorId) {
-      const activitiesSnapshot = await db18.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
-      if (!activitiesSnapshot.empty) {
-        vendorId = activitiesSnapshot.docs[0].data().vendorId;
-        import_v2.logger.info(`Resend webhook: resolved vendorId=${vendorId} from activity lookup`);
+    if (!entityId) {
+      const vendorSnap = await db18.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
+      if (!vendorSnap.empty) {
+        entityId = vendorSnap.docs[0].data().vendorId;
+        entityType = "vendor";
+        import_v2.logger.info(`Resend webhook: resolved vendorId=${entityId} from vendor_activities lookup`);
+      } else {
+        const leadSnap = await db18.collection("lead_activities").where("metadata.resendId", "==", emailId).limit(1).get();
+        if (!leadSnap.empty) {
+          entityId = leadSnap.docs[0].data().leadId;
+          entityType = "lead";
+          import_v2.logger.info(`Resend webhook: resolved leadId=${entityId} from lead_activities lookup`);
+        }
       }
     }
-    if (!vendorId) {
-      import_v2.logger.warn(`Resend webhook: could not resolve vendorId for emailId ${emailId}`);
+    if (!entityId || !entityType) {
+      import_v2.logger.warn(`Resend webhook: could not resolve entity for emailId ${emailId}`);
       res.status(200).json({ ok: true, notFound: true });
       return;
     }
-    await db18.collection("vendor_activities").add({
-      vendorId,
+    const activitiesCollection = entityType === "vendor" ? "vendor_activities" : "lead_activities";
+    const idField = entityType === "vendor" ? "vendorId" : "leadId";
+    await db18.collection(activitiesCollection).add({
+      [idField]: entityId,
       type: mapping.activityType,
       description: mapping.description,
       createdAt: /* @__PURE__ */ new Date(),
@@ -23764,38 +23786,44 @@ var resendWebhook = (0, import_https4.onRequest)({
         to: event?.data?.to?.[0] || void 0
       }
     });
-    if (vendorId) {
-      const engagementUpdate = {
-        "emailEngagement.lastEvent": mapping.deliveryStatus,
-        "emailEngagement.lastEventAt": /* @__PURE__ */ new Date()
-      };
-      if (eventType === "email.opened") {
-        engagementUpdate["emailEngagement.openCount"] = admin22.firestore.FieldValue.increment(1);
-      } else if (eventType === "email.clicked") {
-        engagementUpdate["emailEngagement.clickCount"] = admin22.firestore.FieldValue.increment(1);
-      }
-      if (eventType === "email.bounced") {
-        engagementUpdate["outreachStatus"] = "FAILED";
-        engagementUpdate["outreachMeta.bounced"] = true;
-        engagementUpdate["outreachMeta.bounceType"] = event?.data?.bounce_type || "unknown";
-        engagementUpdate["outreachMeta.bounceError"] = event?.data?.error_message || "Email bounced";
-      }
-      engagementUpdate["updatedAt"] = /* @__PURE__ */ new Date();
-      await db18.collection("vendors").doc(vendorId).update(engagementUpdate);
-      import_v2.logger.info(`Vendor ${vendorId}: emailEngagement updated (${mapping.deliveryStatus})`);
+    const entityCollection = entityType === "vendor" ? "vendors" : "leads";
+    const engagementUpdate = {
+      "emailEngagement.lastEvent": mapping.deliveryStatus,
+      "emailEngagement.lastEventAt": /* @__PURE__ */ new Date()
+    };
+    if (eventType === "email.opened") {
+      engagementUpdate["emailEngagement.openCount"] = admin22.firestore.FieldValue.increment(1);
+    } else if (eventType === "email.clicked") {
+      engagementUpdate["emailEngagement.clickCount"] = admin22.firestore.FieldValue.increment(1);
+    }
+    if (eventType === "email.bounced") {
+      engagementUpdate["outreachStatus"] = "FAILED";
+      engagementUpdate["outreachMeta.bounced"] = true;
+      engagementUpdate["outreachMeta.bounceType"] = event?.data?.bounce_type || "unknown";
+      engagementUpdate["outreachMeta.bounceError"] = event?.data?.error_message || "Email bounced";
+    }
+    engagementUpdate["updatedAt"] = /* @__PURE__ */ new Date();
+    try {
+      await db18.collection(entityCollection).doc(entityId).update(engagementUpdate);
+      import_v2.logger.info(`${entityType} ${entityId}: emailEngagement updated (${mapping.deliveryStatus})`);
+    } catch (engErr) {
+      import_v2.logger.warn(`Failed to update ${entityType} engagement:`, engErr);
     }
     try {
       let templateId = null;
       if (tags) {
-        if (typeof tags === "object" && !Array.isArray(tags) && tags.templateId) {
-          templateId = tags.templateId;
-        } else if (Array.isArray(tags)) {
-          const templateTag = tags.find((t) => t.name === "templateId");
-          if (templateTag?.value) templateId = templateTag.value;
-        }
+        const getTag = (key) => {
+          if (typeof tags === "object" && !Array.isArray(tags) && tags[key]) return tags[key];
+          if (Array.isArray(tags)) {
+            const found = tags.find((t) => t.name === key);
+            return found?.value || null;
+          }
+          return null;
+        };
+        templateId = getTag("templateId");
       }
       if (!templateId) {
-        const sentActivity = await db18.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
+        const sentActivity = await db18.collection(activitiesCollection).where("metadata.resendId", "==", emailId).limit(1).get();
         if (!sentActivity.empty) {
           templateId = sentActivity.docs[0].data().metadata?.templateId || null;
         }
@@ -23811,7 +23839,7 @@ var resendWebhook = (0, import_https4.onRequest)({
     } catch (statsErr) {
       import_v2.logger.warn("Template stats update failed:", statsErr);
     }
-    import_v2.logger.info(`Resend webhook: processed ${eventType} for vendor ${vendorId}`);
+    import_v2.logger.info(`Resend webhook: processed ${eventType} for ${entityType} ${entityId}`);
     res.status(200).json({ ok: true, processed: eventType });
   } catch (error11) {
     import_v2.logger.error("Resend webhook error:", error11);
