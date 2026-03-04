@@ -231,6 +231,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             items: [
                 { label: 'User Manager', href: '/admin/users', icon: <Users className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'AI Agents', href: '/admin/agents', icon: <Bot className="w-4 h-4" />, subGroup: 'Settings' },
+                { label: 'Pricing', href: '/admin/pricing', icon: <DollarSign className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'Email Analytics', href: '/admin/templates', icon: <Mail className="w-4 h-4" />, subGroup: 'Reporting' },
                 { label: 'Legal Templates', href: '/admin/legal', icon: <Scale className="w-4 h-4" />, subGroup: 'Communications' },
                 { label: 'Social Media', href: '/admin/social', icon: <Share2 className="w-4 h-4" />, subGroup: 'Social Media' },
