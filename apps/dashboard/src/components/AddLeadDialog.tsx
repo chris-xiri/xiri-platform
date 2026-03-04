@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, X, Sparkles, Plus } from "lucide-react";
+import { Loader2, X, Sparkles, Plus, User, ChevronDown, ChevronUp } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -186,6 +186,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     const [phone, setPhone] = useState("");
     const [notes, setNotes] = useState("");
     const [attributionSource, setAttributionSource] = useState("Referral");
+    const [showContact, setShowContact] = useState(false);
 
     const handleAddressSelect = (selected: any) => {
         setAddress(selected);
@@ -265,9 +266,15 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
 
         setSubmitting(true);
         try {
+            // Normalize website URL
+            let normalizedWebsite = website?.trim() || null;
+            if (normalizedWebsite && !/^https?:\/\//i.test(normalizedWebsite)) {
+                normalizedWebsite = `https://${normalizedWebsite}`;
+            }
+
             const leadData = {
                 businessName,
-                website: website || null,
+                website: normalizedWebsite,
                 address: address.label,
                 city,
                 state,
@@ -365,10 +372,10 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                         </div>
                         <Input
                             id="website"
-                            type="url"
+                            type="text"
                             value={website}
                             onChange={(e) => setWebsite(e.target.value)}
-                            placeholder="https://example.com"
+                            placeholder="example.com"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
                             {website ? 'Click "Enrich" to auto-fill contact details' : 'Enter website to enable auto-fill'}
@@ -445,42 +452,69 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                         </Select>
                     </div>
 
-                    {/* Contact Details */}
-                    <div className="space-y-4 pt-4 border-t">
-                        <h4 className="font-medium">Contact Information (Optional)</h4>
+                    {/* Contact Details — Collapsible */}
+                    <div className="pt-4 border-t">
+                        {!showContact ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-full gap-2 text-sm"
+                                onClick={() => setShowContact(true)}
+                            >
+                                <User className="w-3.5 h-3.5" />
+                                Add Contact Info
+                                <ChevronDown className="w-3.5 h-3.5 ml-auto" />
+                            </Button>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-medium text-sm">Contact Information</h4>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={() => setShowContact(false)}
+                                    >
+                                        <ChevronUp className="w-3.5 h-3.5" />
+                                    </Button>
+                                </div>
 
-                        <div>
-                            <Label htmlFor="contactName">Contact Name</Label>
-                            <Input
-                                id="contactName"
-                                value={contactName}
-                                onChange={(e) => setContactName(e.target.value)}
-                                placeholder="John Smith"
-                            />
-                        </div>
+                                <div>
+                                    <Label htmlFor="contactName">Contact Name</Label>
+                                    <Input
+                                        id="contactName"
+                                        value={contactName}
+                                        onChange={(e) => setContactName(e.target.value)}
+                                        placeholder="John Smith"
+                                    />
+                                </div>
 
-                        <div>
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="john@example.com"
-                            />
-                        </div>
+                                <div>
+                                    <Label htmlFor="email">Email</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="john@example.com"
+                                    />
+                                </div>
 
-                        <div>
-                            <Label htmlFor="phone">Phone</Label>
-                            <Input
-                                id="phone"
-                                type="tel"
-                                value={phone}
-                                onChange={(e) => handlePhoneChange(e.target.value)}
-                                placeholder="(555) 123-4567"
-                                maxLength={14}
-                            />
-                        </div>
+                                <div>
+                                    <Label htmlFor="phone">Phone</Label>
+                                    <Input
+                                        id="phone"
+                                        type="tel"
+                                        value={phone}
+                                        onChange={(e) => handlePhoneChange(e.target.value)}
+                                        placeholder="(555) 123-4567"
+                                        maxLength={14}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Attribution */}
