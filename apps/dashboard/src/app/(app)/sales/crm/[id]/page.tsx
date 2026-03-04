@@ -237,7 +237,7 @@ export default function LeadDetailPage() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => router.push('/sales/crm')}
+                            onClick={() => router.push('/sales/dashboard')}
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Back to CRM

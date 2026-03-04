@@ -24028,11 +24028,10 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
       `Lead ${businessName} has no email \u2014 manual outreach required.`
     );
   }
-  if (lead.outreachStatus === "PENDING" || lead.outreachStatus === "IN_PROGRESS") {
-    throw new import_https6.HttpsError(
-      "already-exists",
-      `Lead ${businessName} already has an active outreach sequence (status: ${lead.outreachStatus}).`
-    );
+  const { cancelLeadTasks: cancelLeadTasks2 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
+  const cancelledCount = await cancelLeadTasks2(db20, leadId);
+  if (cancelledCount > 0) {
+    logger20.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
   }
   const leadType = lead.leadType || "direct";
   logger20.info(`[StartSequence] Manually starting ${leadType} sequence for lead ${leadId} (${businessName})`);
