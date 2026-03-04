@@ -195,10 +195,14 @@ export function calculateJanitorialEstimate(
     const rawHours = (baseHours + fixtureHours) * addOnMultiplier * shiftMultiplier;
     const hoursPerVisit = Math.max(costStack.minHours, Math.round(rawHours * 10) / 10); // round to 0.1
 
-    // 8. Per-visit cost
-    const perVisit = hoursPerVisit * costStack.clientRate;
+    // 8. Frequency multiplier — lower frequency = more work per visit
+    const frequencyMultipliers: Record<number, number> = { 5: 1.0, 3: 1.10, 2: 1.15, 1: 1.25 };
+    const freqMult = frequencyMultipliers[daysPerWeek] ?? 1.0;
 
-    // 9. Monthly projection
+    // 9. Per-visit cost
+    const perVisit = hoursPerVisit * costStack.clientRate * freqMult;
+
+    // 10. Monthly projection
     const daysPerMonth = Math.round(daysPerWeek * 4.33 * 10) / 10;
     const mid = Math.round(perVisit * daysPerMonth);
     const low = Math.round(mid * 0.8);

@@ -71,6 +71,14 @@ const ADDON_OPTIONS = [
 
 const FIXTURE_MINUTES = { restroom: 3, trash: 1 };
 const MIN_HOURS = 1;
+
+// Lower frequency = more work per visit (facility gets dirtier in between)
+const FREQUENCY_MULTIPLIERS: Record<number, number> = {
+    5: 1.0,   // baseline
+    3: 1.10,  // +10% per visit
+    2: 1.15,  // +15% per visit
+    1: 1.25,  // +25% per visit
+};
 const DEFAULT_FLOORS: FloorBreakdown[] = [
     { type: 'carpet', percent: 50 },
     { type: 'resilient', percent: 40 },
@@ -114,7 +122,8 @@ function calculate(
     const shiftMult = SHIFT_OPTIONS.find(s => s.key === shift)?.modifier || 1.0;
     const rawHours = (baseHours + fixtureHours) * addOnMult * shiftMult;
     const hours = Math.max(MIN_HOURS, Math.round(rawHours * 10) / 10);
-    const perVisit = Math.round(hours * hourlyRate);
+    const freqMult = FREQUENCY_MULTIPLIERS[daysPerWeek] ?? 1.0;
+    const perVisit = Math.round(hours * hourlyRate * freqMult);
     const daysPerMonth = Math.round(daysPerWeek * 4.33 * 10) / 10;
     const mid = Math.round(perVisit * daysPerMonth);
     return { perVisit, daysPerMonth, monthly: { low: Math.round(mid * 0.8), mid, high: Math.round(mid * 1.2) } };
