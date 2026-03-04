@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
     Building2, User, Mail, Phone, MapPin, Calendar, Clock,
     Briefcase, TrendingUp, Pencil, Check, X, Save, Loader2,
-    FileText, ExternalLink, Plus, ChevronRight
+    FileText, ExternalLink, Plus, ChevronRight, Rocket, Send
 } from 'lucide-react';
 import { format } from 'date-fns';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
@@ -40,10 +40,11 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_ORDER = ['new', 'contacted', 'qualified', 'walkthrough', 'proposal', 'quoted', 'won', 'lost', 'churned'] as const;
 
-const LEAD_TYPE_LABELS: Record<LeadType, string> = {
+const LEAD_TYPE_LABELS: Record<string, string> = {
     'direct': 'Direct',
     'tenant': 'Tenant',
     'referral_partnership': 'Referral Partnership',
+    'enterprise': 'Enterprise',
 };
 
 const FACILITY_TYPE_LABELS: Record<string, string> = {
@@ -432,6 +433,11 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
         }
     };
 
+    const handleLeadTypeChange = async (newType: string) => {
+        if (!leadId || newType === lead?.leadType) return;
+        await updateField('leadType', newType);
+    };
+
     const handleNotesSave = async () => {
         setNotesSaving(true);
         try {
@@ -494,7 +500,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                         </select>
                                         <select
                                             value={lead.leadType || 'direct'}
-                                            onChange={(e) => updateField('leadType', e.target.value)}
+                                            onChange={(e) => handleLeadTypeChange(e.target.value)}
                                             className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground"
                                         >
                                             {Object.entries(LEAD_TYPE_LABELS).map(([key, label]) => (
