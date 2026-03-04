@@ -69,15 +69,26 @@ export const STATE_WAGES: StateWage[] = [
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 /**
+ * Wage premium above state minimum wage.
+ * Cleaners typically earn 20–30% above min wage in most markets.
+ * This premium is applied before all rate scaling.
+ */
+export const WAGE_PREMIUM = 1.20; // 20% above min wage
+
+/**
  * Scale rates based on state min wage vs NY baseline.
- * Preserves the COGS ratios:
- *   cleaner = minWage × 1.25
+ * Applies wage premium first, then preserves COGS ratios:
+ *   cleaner = effectiveWage × 1.25
  *   sub = cleaner × 2
  *   client = sub × 1.54
+ *
+ * @param premium - Optional override for WAGE_PREMIUM (e.g. from dashboard settings)
  */
-export function scaleRates(stateMinWage: number) {
-    const scale = stateMinWage / NY_MIN_WAGE;
-    const cleanerRate = Math.round(25 * scale * 100) / 100;
+export function scaleRates(stateMinWage: number, premium?: number) {
+    const wp = premium ?? WAGE_PREMIUM;
+    const effectiveWage = stateMinWage * wp;
+    const scale = effectiveWage / (NY_MIN_WAGE * wp);
+    const cleanerRate = Math.round(25 * wp * scale * 100) / 100;
     const subRate = Math.round(cleanerRate * 2 * 100) / 100;
     const clientRate = Math.round(subRate * 1.54 * 100) / 100;
     return { cleanerRate, subRate, clientRate, scale };

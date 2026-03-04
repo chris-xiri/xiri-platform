@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { trackEvent } from '@/lib/tracking';
 import { STATE_WAGES, scaleRates, NY_MIN_WAGE } from '@/data/state-wages';
@@ -74,7 +74,10 @@ const MIN_HOURS = 1;
 
 // Lower frequency = more work per visit (facility gets dirtier in between)
 const FREQUENCY_MULTIPLIERS: Record<number, number> = {
+    7: 0.95,  // -5% per visit (nightly, less buildup)
+    6: 0.97,  // -3% per visit
     5: 1.0,   // baseline
+    4: 1.05,  // +5% per visit
     3: 1.10,  // +10% per visit
     2: 1.15,  // +15% per visit
     1: 1.25,  // +25% per visit
@@ -164,10 +167,44 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
         }
     }, [mode]);
 
+    // ─── Pricing from dashboard settings ──────────────────────────────
+    const [configClientRate, setConfigClientRate] = useState<number | null>(null);
+    const [configWagePremium, setConfigWagePremium] = useState<number | null>(null);
+    useEffect(() => {
+        async function loadPricingConfig() {
+            try {
+                const snap = await getDoc(doc(db, 'pricing_config', 'janitorial'));
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data?.costStack?.clientRate) {
+                        setConfigClientRate(data.costStack.clientRate);
+                    }
+                    if (data?.wagePremium) {
+                        setConfigWagePremium(data.wagePremium);
+                    }
+                }
+            } catch {
+                // Fall back to hardcoded rates — no-op
+            }
+        }
+        loadPricingConfig();
+    }, []);
+
     // ─── Rate calculation ─────────────────────────────────────────────
     const stateWage = STATE_WAGES.find(s => s.code === stateCode)?.minWage || NY_MIN_WAGE;
-    const scaledRates = scaleRates(stateWage);
-    const hourlyRate = isContractor ? scaledRates.subRate : scaledRates.clientRate;
+    // Use dashboard wage premium if available, otherwise fall back to hardcoded
+    const effectivePremium = configWagePremium || undefined;
+    const scaledRates = scaleRates(stateWage, effectivePremium);
+    // If dashboard pricing is available, use it as the NY baseline and scale proportionally
+    const hourlyRate = useMemo(() => {
+        if (isContractor) return scaledRates.subRate;
+        if (configClientRate && configClientRate > 0) {
+            // Scale the dashboard NY rate proportionally for other states
+            const scale = stateWage / NY_MIN_WAGE;
+            return Math.round(configClientRate * scale * 100) / 100;
+        }
+        return scaledRates.clientRate;
+    }, [isContractor, configClientRate, scaledRates, stateWage]);
     const costTier = getCostTier(stateWage);
 
     // ─── Floor helpers ────────────────────────────────────────────────
@@ -333,20 +370,26 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                 {/* Frequency */}
                 <div>
                     <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-2">Cleaning Frequency</label>
-                    <div className="flex gap-2">
-                        {[{ d: 5, label: '5x / week' }, { d: 3, label: '3x / week' }, { d: 2, label: '2x / week' }, { d: 1, label: '1x / week' }].map(({ d, label }) => (
+                    <div className="flex flex-wrap gap-2">
+                        {[{ d: 7, label: '7x' }, { d: 6, label: '6x' }, { d: 5, label: '5x' }, { d: 4, label: '4x' }, { d: 3, label: '3x' }, { d: 2, label: '2x' }, { d: 1, label: '1x' }].map(({ d, label }) => (
                             <button
                                 key={d}
                                 onClick={() => setDaysPerWeek(d)}
-                                className={`flex-1 h-11 rounded-xl text-sm font-semibold transition-all ${daysPerWeek === d
+                                className={`h-11 px-4 rounded-xl text-sm font-semibold transition-all ${daysPerWeek === d
                                     ? 'bg-sky-600 text-white shadow-lg shadow-sky-200'
                                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                             >
-                                {label}
+                                {label}<span className="text-xs font-normal opacity-70">/wk</span>
                             </button>
                         ))}
                     </div>
+                    <p className="text-xs text-slate-400 mt-1.5">
+                        {daysPerWeek === 7 ? 'Nightly — recommended for medical & high-traffic facilities' :
+                            daysPerWeek >= 5 ? 'Standard for most commercial spaces' :
+                                daysPerWeek >= 3 ? 'Common for low-traffic offices' :
+                                    'Weekly — best for small or low-traffic spaces'}
+                    </p>
                 </div>
             </div>
 

@@ -133,6 +133,44 @@ export default function PricingSettingsPage() {
                 Service: {config.label || 'Janitorial Cleaning'}
             </Badge>
 
+            {/* Wage Premium */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                        <Zap className="w-4 h-4" />
+                        Wage Premium Above Minimum
+                    </CardTitle>
+                    <CardDescription>
+                        Multiplier applied to state minimum wages before rate scaling.
+                        Cleaners typically earn 20–30% above minimum wage.
+                        This affects the <strong>public site calculator</strong>.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-4 max-w-md">
+                        <div className="flex-1">
+                            <Label className="text-xs text-muted-foreground">Premium (%)</Label>
+                            <Input
+                                type="number"
+                                step="5"
+                                className="mt-1"
+                                value={Math.round((config.wagePremium - 1) * 100)}
+                                onChange={(e) => {
+                                    const pct = parseInt(e.target.value) || 0;
+                                    update('wagePremium', 1 + pct / 100);
+                                }}
+                            />
+                        </div>
+                        <div className="text-sm text-muted-foreground pt-5">
+                            = <span className="font-semibold text-foreground">{config.wagePremium.toFixed(2)}x</span> multiplier
+                        </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                        Example: NY min wage ($20/hr) × {config.wagePremium.toFixed(2)} = ${(20 * config.wagePremium).toFixed(0)}/hr effective base
+                    </p>
+                </CardContent>
+            </Card>
+
             {/* Cost Stack */}
             <Card>
                 <CardHeader>

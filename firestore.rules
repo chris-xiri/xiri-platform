@@ -154,6 +154,14 @@ service cloud.firestore {
       allow write: if hasRole('admin');
     }
 
+    // Pricing config (janitorial calculator settings in dashboard)
+    // Public read: public site calculator reads these rates (no auth)
+    // Write: admin only
+    match /pricing_config/{configId} {
+      allow read: if true;
+      allow write: if hasRole('admin');
+    }
+
     // Social Media Management
     match /social_posts/{postId} {
       allow read: if request.auth != null;

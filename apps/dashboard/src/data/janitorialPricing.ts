@@ -12,6 +12,7 @@
 export interface PricingConfig {
     serviceTag: string;
     label: string;
+    wagePremium: number;          // multiplier above min wage (1.20 = 20% above)
     costStack: {
         clientRate: number;       // $/hr billed to client
         subcontractorRate: number; // $/hr paid to sub
@@ -60,6 +61,7 @@ export interface EstimateResult {
 export const DEFAULT_PRICING_CONFIG: PricingConfig = {
     serviceTag: 'janitorial',
     label: 'Janitorial Cleaning',
+    wagePremium: 1.20,
     costStack: {
         clientRate: 77,
         subcontractorRate: 50,
