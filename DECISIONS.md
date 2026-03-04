@@ -167,3 +167,14 @@ Maintained by: @architect-cto
 > - Decision: **Firestore Rules: `notifications` and `lead_activities` Collections**
 > - Rationale: Added security rules for two new collections. `notifications`: authenticated users can read and update (mark as read), only Cloud Functions can create (via admin SDK). `lead_activities`: authenticated users can read and create, but documents are immutable (no updates or deletes) to maintain an audit trail.
 > - Status: **Active**
+
+> - Date: 2026-03-03
+> - Decision: **⚠️ CAN-SPAM: Unsubscribe Link Required on ALL Outbound Emails (REGULATORY)**
+> - Rationale: **Federal regulation — CAN-SPAM Act requires every commercial email to include a visible unsubscribe mechanism.** This applies to ALL outbound emails: vendor outreach, lead outreach (tenant, enterprise, referral), drip sequences, and any new templates/sequences created in the future. Implementation details:
+>   1. **Email Footer**: `sendEmail()` in `emailUtils.ts` automatically appends an unsubscribe link + physical address footer when `entityType` is passed. All callers in `outreachWorker.ts` pass `'vendor'` or `'lead'` as `entityType`.
+>   2. **List-Unsubscribe Header**: Resend emails include `List-Unsubscribe` and `List-Unsubscribe-Post` headers for one-click unsubscribe in email clients (Gmail, Outlook).
+>   3. **Unsubscribe Handler**: `handleUnsubscribe.ts` is a unified HTTP endpoint that handles both vendors (`?type=vendor`) and leads (`?type=lead`). Vendors → status `dismissed`. Leads → status `lost` + `unsubscribedAt` timestamp. All pending outreach tasks are cancelled.
+>   4. **Suppression Checks**: `outreachWorker.ts` checks before every send — dismissed vendors and lost/unsubscribed leads are auto-skipped and tasks cancelled.
+>   5. **Activity Logging**: Unsubscribe events are logged to `vendor_activities` or `lead_activities` with full metadata.
+> - **RULE: Any new email sequence, template, or outbound email feature MUST use `sendEmail()` with the `entityType` parameter to ensure CAN-SPAM compliance. Never bypass the footer.**
+> - Status: **Active — Regulatory Requirement**

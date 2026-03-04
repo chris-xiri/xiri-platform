@@ -246,18 +246,41 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
     console.error("Error sending email:", error11);
   }
 }
-async function sendEmail(to, subject, html, attachments, from, vendorId, templateId) {
+function buildEmailFooter(entityId, entityType) {
+  if (!entityId || !entityType) return "";
+  const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${entityId}&type=${entityType}`;
+  return `
+<div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+    <p style="margin: 0;">Xiri Facility Solutions \xB7 1225 Franklin Ave, Suite 325 \xB7 Garden City, NY 11530</p>
+    <p style="margin: 8px 0 0 0;">
+        <a href="${unsubscribeUrl}" style="color: #64748b; text-decoration: underline;">Unsubscribe</a>
+        &nbsp;\xB7&nbsp;
+        <a href="mailto:chris@xiri.ai" style="color: #64748b; text-decoration: underline;">Contact Us</a>
+    </p>
+</div>`;
+}
+async function sendEmail(to, subject, html, attachments, from, vendorId, templateId, entityType) {
   try {
+    const entityId = vendorId;
+    const footer = buildEmailFooter(entityId, entityType);
+    const htmlWithFooter = footer ? html + footer : html;
     const tags = [];
     if (vendorId) tags.push({ name: "vendorId", value: vendorId });
     if (templateId) tags.push({ name: "templateId", value: templateId });
+    const headers = {};
+    if (entityId && entityType) {
+      const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${entityId}&type=${entityType}`;
+      headers["List-Unsubscribe"] = `<${unsubscribeUrl}>`;
+      headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+    }
     const { data, error: error11 } = await resend.emails.send({
       from: from || "Xiri Facility Solutions <onboarding@xiri.ai>",
       replyTo: "chris@xiri.ai",
       to,
       subject,
-      html,
+      html: htmlWithFooter,
       attachments,
+      headers,
       ...tags.length > 0 ? { tags } : {}
     });
     if (error11) {
@@ -271,7 +294,7 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
     return { success: false };
   }
 }
-var admin3, import_generative_ai, import_resend, db3, genAI, resend;
+var admin3, import_generative_ai, import_resend, db3, genAI, resend, FUNCTIONS_BASE_URL;
 var init_emailUtils = __esm({
   "src/utils/emailUtils.ts"() {
     "use strict";
@@ -282,6 +305,7 @@ var init_emailUtils = __esm({
     db3 = admin3.firestore();
     genAI = new import_generative_ai.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     resend = new import_resend.Resend(process.env.RESEND_API_KEY || "re_dummy_key");
+    FUNCTIONS_BASE_URL = "https://us-central1-xiri-facility-solutions.cloudfunctions.net";
   }
 });
 
@@ -20474,6 +20498,11 @@ async function handleSend(task) {
   logger3.info(`Executing SEND for task ${task.id}`);
   const vendorDoc = await db4.collection("vendors").doc(task.vendorId).get();
   const vendor = vendorDoc.exists ? vendorDoc.data() : null;
+  if (vendor?.status === "dismissed") {
+    logger3.info(`[Suppression] Vendor ${task.vendorId} is dismissed \u2014 skipping send and cancelling task.`);
+    await updateTaskStatus(db4, task.id, "CANCELLED");
+    return;
+  }
   const vendorEmail = vendor?.email || task.metadata?.email?.to;
   let sendSuccess = false;
   let resendId;
@@ -20491,8 +20520,10 @@ async function handleSend(task) {
       // default from
       task.vendorId ?? void 0,
       // tag email with vendorId for webhook tracking
-      task.metadata.templateId ?? void 0
+      task.metadata.templateId ?? void 0,
       // tag with templateId for stats tracking
+      "vendor"
+      // entityType for unsubscribe footer
     );
     sendSuccess = result.success;
     resendId = result.resendId;
@@ -20683,6 +20714,15 @@ async function handleFollowUp(task) {
 }
 async function handleLeadSend(task) {
   logger3.info(`[LeadOutreach] Sending template email for lead ${task.leadId}`);
+  const leadDoc = await db4.collection("leads").doc(task.leadId).get();
+  if (leadDoc.exists) {
+    const leadData = leadDoc.data();
+    if (leadData.status === "lost" || leadData.unsubscribedAt) {
+      logger3.info(`[Suppression] Lead ${task.leadId} is ${leadData.status}/unsubscribed \u2014 skipping send.`);
+      await updateTaskStatus(db4, task.id, "CANCELLED");
+      return;
+    }
+  }
   const toEmail = task.metadata?.email;
   if (!toEmail) {
     logger3.warn(`[LeadOutreach] No email for lead ${task.leadId}, skipping.`);
@@ -20724,7 +20764,9 @@ async function handleLeadSend(task) {
     void 0,
     void 0,
     task.leadId ?? void 0,
-    templateId
+    templateId,
+    "lead"
+    // entityType for unsubscribe footer
   );
   await db4.collection("lead_activities").add({
     leadId: task.leadId,
@@ -21631,62 +21673,24 @@ var db8 = admin11.firestore();
 var handleUnsubscribe = (0, import_https2.onRequest)({
   cors: true
 }, async (req, res) => {
-  const vendorId = req.query.vendorId;
-  if (!vendorId) {
+  const entityType = req.query.type || "vendor";
+  const entityId = req.query.id || req.query.vendorId;
+  if (!entityId) {
     res.status(400).send(renderPage(
       "Invalid Request",
-      "Missing vendor identifier. If you clicked a link from an email, please try again.",
+      "Missing identifier. If you clicked a link from an email, please try again.",
       false
     ));
     return;
   }
   try {
-    const vendorDoc = await db8.collection("vendors").doc(vendorId).get();
-    if (!vendorDoc.exists) {
-      res.status(404).send(renderPage(
-        "Not Found",
-        "We couldn't find your record. You may have already been unsubscribed.",
-        false
-      ));
-      return;
+    if (entityType === "lead") {
+      await handleLeadUnsubscribe(entityId, res);
+    } else {
+      await handleVendorUnsubscribe(entityId, res);
     }
-    const vendor = vendorDoc.data();
-    const businessName = vendor.businessName || "Vendor";
-    if (vendor.status === "dismissed") {
-      res.status(200).send(renderPage(
-        "Already Unsubscribed",
-        `${businessName} has already been removed from our outreach list. You won't receive any more emails.`,
-        true
-      ));
-      return;
-    }
-    await db8.collection("vendors").doc(vendorId).update({
-      status: "dismissed",
-      statusUpdatedAt: /* @__PURE__ */ new Date(),
-      dismissReason: "unsubscribed",
-      unsubscribedAt: /* @__PURE__ */ new Date()
-    });
-    const cancelledCount = await cancelVendorTasks(db8, vendorId);
-    await db8.collection("vendor_activities").add({
-      vendorId,
-      type: "STATUS_CHANGE",
-      description: `${businessName} unsubscribed via email link. ${cancelledCount} pending tasks cancelled.`,
-      createdAt: /* @__PURE__ */ new Date(),
-      metadata: {
-        from: vendor.status,
-        to: "dismissed",
-        trigger: "unsubscribe_link",
-        cancelledTasks: cancelledCount
-      }
-    });
-    logger8.info(`Vendor ${vendorId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
-    res.status(200).send(renderPage(
-      "Unsubscribed Successfully",
-      `${businessName} has been removed from our outreach list. You won't receive any more emails from Xiri Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
-      true
-    ));
   } catch (err) {
-    logger8.error(`Error processing unsubscribe for ${vendorId}:`, err);
+    logger8.error(`Error processing unsubscribe for ${entityType} ${entityId}:`, err);
     res.status(500).send(renderPage(
       "Something Went Wrong",
       'We encountered an error processing your request. Please try again or contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.',
@@ -21694,6 +21698,99 @@ var handleUnsubscribe = (0, import_https2.onRequest)({
     ));
   }
 });
+async function handleVendorUnsubscribe(vendorId, res) {
+  const vendorDoc = await db8.collection("vendors").doc(vendorId).get();
+  if (!vendorDoc.exists) {
+    res.status(404).send(renderPage(
+      "Not Found",
+      "We couldn't find your record. You may have already been unsubscribed.",
+      false
+    ));
+    return;
+  }
+  const vendor = vendorDoc.data();
+  const businessName = vendor.businessName || "Vendor";
+  if (vendor.status === "dismissed") {
+    res.status(200).send(renderPage(
+      "Already Unsubscribed",
+      `${businessName} has already been removed from our outreach list. You won't receive any more emails.`,
+      true
+    ));
+    return;
+  }
+  await db8.collection("vendors").doc(vendorId).update({
+    status: "dismissed",
+    statusUpdatedAt: /* @__PURE__ */ new Date(),
+    dismissReason: "unsubscribed",
+    unsubscribedAt: /* @__PURE__ */ new Date()
+  });
+  const cancelledCount = await cancelVendorTasks(db8, vendorId);
+  await db8.collection("vendor_activities").add({
+    vendorId,
+    type: "STATUS_CHANGE",
+    description: `${businessName} unsubscribed via email link. ${cancelledCount} pending tasks cancelled.`,
+    createdAt: /* @__PURE__ */ new Date(),
+    metadata: {
+      from: vendor.status,
+      to: "dismissed",
+      trigger: "unsubscribe_link",
+      cancelledTasks: cancelledCount
+    }
+  });
+  logger8.info(`Vendor ${vendorId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
+  res.status(200).send(renderPage(
+    "Unsubscribed Successfully",
+    `${businessName} has been removed from our outreach list. You won't receive any more emails from Xiri Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
+    true
+  ));
+}
+async function handleLeadUnsubscribe(leadId, res) {
+  const leadDoc = await db8.collection("leads").doc(leadId).get();
+  if (!leadDoc.exists) {
+    res.status(404).send(renderPage(
+      "Not Found",
+      "We couldn't find your record. You may have already been unsubscribed.",
+      false
+    ));
+    return;
+  }
+  const lead = leadDoc.data();
+  const businessName = lead.businessName || "Business";
+  if (lead.unsubscribedAt || lead.status === "lost") {
+    res.status(200).send(renderPage(
+      "Already Unsubscribed",
+      `${businessName} has already been removed from our outreach list. You won't receive any more emails.`,
+      true
+    ));
+    return;
+  }
+  const previousStatus = lead.status;
+  await db8.collection("leads").doc(leadId).update({
+    status: "lost",
+    unsubscribedAt: /* @__PURE__ */ new Date(),
+    lostReason: "unsubscribed",
+    outreachStatus: "UNSUBSCRIBED"
+  });
+  const cancelledCount = await cancelLeadTasks(db8, leadId);
+  await db8.collection("lead_activities").add({
+    leadId,
+    type: "STATUS_CHANGE",
+    description: `${businessName} unsubscribed via email link. Status changed from ${previousStatus} to lost. ${cancelledCount} pending tasks cancelled.`,
+    createdAt: /* @__PURE__ */ new Date(),
+    metadata: {
+      from: previousStatus,
+      to: "lost",
+      trigger: "unsubscribe_link",
+      cancelledTasks: cancelledCount
+    }
+  });
+  logger8.info(`Lead ${leadId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
+  res.status(200).send(renderPage(
+    "Unsubscribed Successfully",
+    `${businessName} has been removed from our outreach list. You won't receive any more emails from Xiri Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
+    true
+  ));
+}
 function renderPage(title, message, success) {
   const icon = success ? "\u2705" : "\u26A0\uFE0F";
   const color = success ? "#059669" : "#dc2626";
@@ -21717,7 +21814,7 @@ function renderPage(title, message, success) {
         <div class="icon">${icon}</div>
         <h1>${title}</h1>
         <p>${message}</p>
-        <div class="footer">Xiri Facility Solutions</div>
+        <div class="footer">Xiri Facility Solutions \xB7 1225 Franklin Ave, Suite 325 \xB7 Garden City, NY 11530</div>
     </div>
 </body>
 </html>`;
