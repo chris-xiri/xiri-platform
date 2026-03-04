@@ -529,6 +529,8 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
                                 <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
                                     <TabsTrigger value="overview" className="gap-1 text-xs"><LayoutDashboard className="w-3.5 h-3.5" /> Overview</TabsTrigger>
+                                    <TabsTrigger value="audit" className="gap-1 text-xs"><Calendar className="w-3.5 h-3.5" /> Audit</TabsTrigger>
+                                    <TabsTrigger value="attribution" className="gap-1 text-xs"><TrendingUp className="w-3.5 h-3.5" /> Attribution</TabsTrigger>
                                     <TabsTrigger value="activity" className="gap-1 text-xs"><Activity className="w-3.5 h-3.5" /> Activity</TabsTrigger>
                                 </TabsList>
 
@@ -579,42 +581,6 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                                     });
                                                 }}
                                             />
-                                        </CardContent>
-                                    </Card>
-
-                                    {/* Audit Booking */}
-                                    <Card>
-                                        <CardHeader className="py-3">
-                                            <CardTitle className="text-sm flex items-center gap-2">
-                                                <Calendar className="w-4 h-4" /> Audit Booking
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="space-y-3">
-                                            {lead.preferredAuditTimes && lead.preferredAuditTimes.length > 0 ? (
-                                                <div className="space-y-2">
-                                                    {lead.preferredAuditTimes.map((time, idx) => {
-                                                        const d = toDate(time);
-                                                        return d ? (
-                                                            <div key={idx} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg text-sm">
-                                                                <Clock className="w-4 h-4 text-muted-foreground" />
-                                                                <div>
-                                                                    <p className="font-medium">{format(d, 'EEEE, MMMM d, yyyy')}</p>
-                                                                    <p className="text-xs text-muted-foreground">{format(d, 'h:mm a')}</p>
-                                                                </div>
-                                                                {idx === 0 && <Badge variant="secondary" className="ml-auto text-[10px]">Primary</Badge>}
-                                                            </div>
-                                                        ) : null;
-                                                    })}
-                                                </div>
-                                            ) : (
-                                                <p className="text-xs text-muted-foreground">No audit times scheduled</p>
-                                            )}
-                                            {lead.serviceInterest && (
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
-                                                    <span className="capitalize">{lead.serviceInterest.replace(/_/g, ' ')}</span>
-                                                </div>
-                                            )}
                                         </CardContent>
                                     </Card>
 
@@ -716,8 +682,52 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                         </CardContent>
                                     </Card>
 
-                                    {/* Attribution */}
-                                    {lead.attribution && (lead.attribution.source || lead.attribution.medium || lead.attribution.campaign) && (
+                                    {/* Meta */}
+                                    <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+                                        <p><span className="font-medium">ID:</span> {lead.id}</p>
+                                        {createdDate && <p><span className="font-medium">Created:</span> {format(createdDate, 'MMM d, yyyy h:mm a')}</p>}
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="audit" className="space-y-4">
+                                    <Card>
+                                        <CardHeader className="py-3">
+                                            <CardTitle className="text-sm flex items-center gap-2">
+                                                <Calendar className="w-4 h-4" /> Audit Booking
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-3">
+                                            {lead.preferredAuditTimes && lead.preferredAuditTimes.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {lead.preferredAuditTimes.map((time, idx) => {
+                                                        const d = toDate(time);
+                                                        return d ? (
+                                                            <div key={idx} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg text-sm">
+                                                                <Clock className="w-4 h-4 text-muted-foreground" />
+                                                                <div>
+                                                                    <p className="font-medium">{format(d, 'EEEE, MMMM d, yyyy')}</p>
+                                                                    <p className="text-xs text-muted-foreground">{format(d, 'h:mm a')}</p>
+                                                                </div>
+                                                                {idx === 0 && <Badge variant="secondary" className="ml-auto text-[10px]">Primary</Badge>}
+                                                            </div>
+                                                        ) : null;
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs text-muted-foreground">No audit times scheduled</p>
+                                            )}
+                                            {lead.serviceInterest && (
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
+                                                    <span className="capitalize">{lead.serviceInterest.replace(/_/g, ' ')}</span>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
+
+                                <TabsContent value="attribution" className="space-y-4">
+                                    {lead.attribution && (lead.attribution.source || lead.attribution.medium || lead.attribution.campaign) ? (
                                         <Card>
                                             <CardHeader className="py-3">
                                                 <CardTitle className="text-sm flex items-center gap-2">
@@ -753,13 +763,13 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                                 </div>
                                             </CardContent>
                                         </Card>
+                                    ) : (
+                                        <div className="p-8 text-center">
+                                            <TrendingUp className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
+                                            <h3 className="font-medium text-sm">No Attribution Data</h3>
+                                            <p className="text-xs text-muted-foreground mt-1">Attribution data appears when leads come through tracked campaigns.</p>
+                                        </div>
                                     )}
-
-                                    {/* Meta */}
-                                    <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-                                        <p><span className="font-medium">ID:</span> {lead.id}</p>
-                                        {createdDate && <p><span className="font-medium">Created:</span> {format(createdDate, 'MMM d, yyyy h:mm a')}</p>}
-                                    </div>
                                 </TabsContent>
 
                                 <TabsContent value="activity">
