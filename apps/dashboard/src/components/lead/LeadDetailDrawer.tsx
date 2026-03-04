@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
     Building2, User, Mail, Phone, MapPin, Calendar, Clock,
     Briefcase, TrendingUp, Pencil, Check, X, Save, Loader2,
-    FileText, ExternalLink, Plus, ChevronRight, Rocket, Send, Activity, LayoutDashboard
+    FileText, ExternalLink, Plus, ChevronRight, Rocket, Send, Activity, LayoutDashboard, Calculator
 } from 'lucide-react';
 import { format } from 'date-fns';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
@@ -624,6 +624,73 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                             )}
                                         </CardContent>
                                     </Card>
+
+                                    {/* Calculator Estimate — shown when lead came from calculator */}
+                                    {lead.calculatorData && (
+                                        <Card className="border-sky-200 bg-sky-50/30">
+                                            <CardHeader className="py-3 flex flex-row items-center justify-between">
+                                                <CardTitle className="text-sm flex items-center gap-2">
+                                                    <Calculator className="w-4 h-4 text-sky-600" /> Calculator Estimate
+                                                </CardTitle>
+                                                <Badge variant="outline" className="text-[10px] border-sky-300 text-sky-700">
+                                                    {lead.source === 'calculator_client' ? 'Client Calculator' : 'Calculator'}
+                                                </Badge>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                                                    {lead.facilityType && (
+                                                        <div>
+                                                            <p className="text-[10px] uppercase text-muted-foreground">Facility Type</p>
+                                                            <p className="font-medium">{FACILITY_TYPE_LABELS[lead.facilityType] || lead.facilityType}</p>
+                                                        </div>
+                                                    )}
+                                                    {(lead.sqft || lead.sqft === '0') && (
+                                                        <div>
+                                                            <p className="text-[10px] uppercase text-muted-foreground">Square Footage</p>
+                                                            <p className="font-medium">{Number(lead.sqft).toLocaleString()} sqft</p>
+                                                        </div>
+                                                    )}
+                                                    {lead.calculatorData.daysPerWeek && (
+                                                        <div>
+                                                            <p className="text-[10px] uppercase text-muted-foreground">Frequency</p>
+                                                            <p className="font-medium">{lead.calculatorData.daysPerWeek}x / week</p>
+                                                        </div>
+                                                    )}
+                                                    {lead.state && (
+                                                        <div>
+                                                            <p className="text-[10px] uppercase text-muted-foreground">State</p>
+                                                            <p className="font-medium">{lead.state}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {(lead.calculatorData.monthlyLow || lead.calculatorData.monthlyEstimate) && (
+                                                    <div className="bg-white rounded-lg border p-3 text-center">
+                                                        <p className="text-[10px] uppercase text-muted-foreground mb-1">Monthly Estimate</p>
+                                                        {lead.calculatorData.monthlyLow ? (
+                                                            <p className="text-lg font-bold text-sky-700">
+                                                                {fmt(lead.calculatorData.monthlyLow)} – {fmt(lead.calculatorData.monthlyHigh!)}
+                                                            </p>
+                                                        ) : (
+                                                            <p className="text-lg font-bold text-sky-700">
+                                                                ~{fmt(lead.calculatorData.monthlyEstimate!)}/mo
+                                                            </p>
+                                                        )}
+                                                        {lead.calculatorData.monthlyEstimate && (
+                                                            <p className="text-xs text-muted-foreground">Mid-point: {fmt(lead.calculatorData.monthlyEstimate)}/mo</p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="w-full mt-3 h-8 text-xs gap-1.5 border-sky-300 text-sky-700 hover:bg-sky-100"
+                                                    onClick={() => router.push(`/sales/quotes?leadId=${leadId}&facilityType=${lead.facilityType || ''}&sqft=${lead.sqft || ''}&daysPerWeek=${lead.calculatorData?.daysPerWeek || 5}`)}
+                                                >
+                                                    <Rocket className="w-3 h-3" /> Create Quote from Estimate
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+                                    )}
 
                                     {/* Quotes — Linked Records */}
                                     <Card>

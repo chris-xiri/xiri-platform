@@ -255,7 +255,19 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
-            await addDoc(collection(db, collectionName), docData);
+            const docRef = await addDoc(collection(db, collectionName), docData);
+            // Auto-generate activity note for client leads
+            if (!isContractor) {
+                const facilityLabel = FACILITY_LABELS[facilityType] || facilityType;
+                const fmtNum = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
+                await addDoc(collection(db, 'lead_activities'), {
+                    leadId: docRef.id,
+                    type: 'note',
+                    source: 'system',
+                    note: `Calculator estimate: ${Number(sqft).toLocaleString()} sqft ${facilityLabel}, ${daysPerWeek}x/week, ${fmtNum(estimate.monthly.low)}–${fmtNum(estimate.monthly.high)}/mo (${stateCode}). Source: public calculator.`,
+                    createdAt: serverTimestamp(),
+                });
+            }
             trackEvent('calculator_email_submit', { calculator_type: mode, state: stateCode, facility_type: facilityType });
             setEmailSubmitted(true);
         } catch (err) {

@@ -82,6 +82,16 @@ export interface Lead {
     handedOffToFsm?: string;     // FSM staffId
     handoffDate?: Date;
 
+    // Public Calculator Lead Data
+    sqft?: string;
+    source?: string;  // e.g. 'calculator_client', 'calculator_contractor', 'audit_form'
+    calculatorData?: {
+        daysPerWeek?: number;
+        monthlyEstimate?: number;
+        monthlyLow?: number;
+        monthlyHigh?: number;
+    };
+
     // External Integrations (Xero / Mercury)
     externalIds?: {
         xeroContactId?: string;
