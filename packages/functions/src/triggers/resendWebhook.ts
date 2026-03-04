@@ -77,46 +77,77 @@ export const resendWebhook = onRequest({
             return;
         }
 
-        // ─── Resolve vendorId ───────────────────────────────────────────
-        // Path 1: Resend tags — handle both object ({vendorId:"xxx"}) and array ([{name,value}]) formats
-        let vendorId: string | null = null;
+        // ─── Resolve entity (vendor or lead) ─────────────────────────────
+        // Path 1: Resend tags — handle both object ({entityId:"xxx"}) and array ([{name,value}]) formats
+        let entityId: string | null = null;
+        let entityType: 'vendor' | 'lead' | null = null;
         const tags = event?.data?.tags;
+
         if (tags) {
-            if (typeof tags === 'object' && !Array.isArray(tags) && tags.vendorId) {
-                // Object format: { vendorId: "xxx" }
-                vendorId = tags.vendorId;
-            } else if (Array.isArray(tags)) {
-                // Array format: [{ name: "vendorId", value: "xxx" }]
-                const vendorTag = tags.find((t: any) => t.name === 'vendorId');
-                if (vendorTag?.value) vendorId = vendorTag.value;
-            }
+            const getTag = (key: string): string | null => {
+                if (typeof tags === 'object' && !Array.isArray(tags) && tags[key]) return tags[key];
+                if (Array.isArray(tags)) {
+                    const found = tags.find((t: any) => t.name === key);
+                    return found?.value || null;
+                }
+                return null;
+            };
+
+            // Check for vendorId or leadId in tags
+            const vendorId = getTag('vendorId');
+            const leadId = getTag('leadId');
             if (vendorId) {
-                logger.info(`Resend webhook: resolved vendorId=${vendorId} from tag`);
+                entityId = vendorId;
+                entityType = 'vendor';
+            } else if (leadId) {
+                entityId = leadId;
+                entityType = 'lead';
+            }
+
+            if (entityId) {
+                logger.info(`Resend webhook: resolved ${entityType}Id=${entityId} from tag`);
             }
         }
 
-        // Path 2: Activity lookup fallback — for emails that predate the tagging fix
-        if (!vendorId) {
-            const activitiesSnapshot = await db.collection('vendor_activities')
+        // Path 2: Activity lookup fallback — check both vendor_activities and lead_activities
+        if (!entityId) {
+            // Try vendor_activities first
+            const vendorSnap = await db.collection('vendor_activities')
                 .where('metadata.resendId', '==', emailId)
                 .limit(1)
                 .get();
 
-            if (!activitiesSnapshot.empty) {
-                vendorId = activitiesSnapshot.docs[0].data().vendorId;
-                logger.info(`Resend webhook: resolved vendorId=${vendorId} from activity lookup`);
+            if (!vendorSnap.empty) {
+                entityId = vendorSnap.docs[0].data().vendorId;
+                entityType = 'vendor';
+                logger.info(`Resend webhook: resolved vendorId=${entityId} from vendor_activities lookup`);
+            } else {
+                // Try lead_activities
+                const leadSnap = await db.collection('lead_activities')
+                    .where('metadata.resendId', '==', emailId)
+                    .limit(1)
+                    .get();
+
+                if (!leadSnap.empty) {
+                    entityId = leadSnap.docs[0].data().leadId;
+                    entityType = 'lead';
+                    logger.info(`Resend webhook: resolved leadId=${entityId} from lead_activities lookup`);
+                }
             }
         }
 
-        if (!vendorId) {
-            logger.warn(`Resend webhook: could not resolve vendorId for emailId ${emailId}`);
+        if (!entityId || !entityType) {
+            logger.warn(`Resend webhook: could not resolve entity for emailId ${emailId}`);
             res.status(200).json({ ok: true, notFound: true });
             return;
         }
 
-        // Create a new activity entry for this event (so it shows in timeline)
-        await db.collection('vendor_activities').add({
-            vendorId,
+        // ─── Log activity to the correct collection ───
+        const activitiesCollection = entityType === 'vendor' ? 'vendor_activities' : 'lead_activities';
+        const idField = entityType === 'vendor' ? 'vendorId' : 'leadId';
+
+        await db.collection(activitiesCollection).add({
+            [idField]: entityId,
             type: mapping.activityType,
             description: mapping.description,
             createdAt: new Date(),
@@ -128,49 +159,56 @@ export const resendWebhook = onRequest({
             }
         });
 
-        // ─── Update vendor doc engagement cache ───
-        if (vendorId) {
-            const engagementUpdate: Record<string, any> = {
-                'emailEngagement.lastEvent': mapping.deliveryStatus,
-                'emailEngagement.lastEventAt': new Date(),
-            };
+        // ─── Update entity doc engagement cache ───
+        const entityCollection = entityType === 'vendor' ? 'vendors' : 'leads';
+        const engagementUpdate: Record<string, any> = {
+            'emailEngagement.lastEvent': mapping.deliveryStatus,
+            'emailEngagement.lastEventAt': new Date(),
+        };
 
-            if (eventType === 'email.opened') {
-                engagementUpdate['emailEngagement.openCount'] = admin.firestore.FieldValue.increment(1);
-            } else if (eventType === 'email.clicked') {
-                engagementUpdate['emailEngagement.clickCount'] = admin.firestore.FieldValue.increment(1);
-            }
+        if (eventType === 'email.opened') {
+            engagementUpdate['emailEngagement.openCount'] = admin.firestore.FieldValue.increment(1);
+        } else if (eventType === 'email.clicked') {
+            engagementUpdate['emailEngagement.clickCount'] = admin.firestore.FieldValue.increment(1);
+        }
 
-            // If bounced, also update outreach status
-            if (eventType === 'email.bounced') {
-                engagementUpdate['outreachStatus'] = 'FAILED';
-                engagementUpdate['outreachMeta.bounced'] = true;
-                engagementUpdate['outreachMeta.bounceType'] = event?.data?.bounce_type || 'unknown';
-                engagementUpdate['outreachMeta.bounceError'] = event?.data?.error_message || 'Email bounced';
-            }
+        // If bounced, also update outreach status
+        if (eventType === 'email.bounced') {
+            engagementUpdate['outreachStatus'] = 'FAILED';
+            engagementUpdate['outreachMeta.bounced'] = true;
+            engagementUpdate['outreachMeta.bounceType'] = event?.data?.bounce_type || 'unknown';
+            engagementUpdate['outreachMeta.bounceError'] = event?.data?.error_message || 'Email bounced';
+        }
 
-            engagementUpdate['updatedAt'] = new Date();
+        engagementUpdate['updatedAt'] = new Date();
 
-            await db.collection('vendors').doc(vendorId).update(engagementUpdate);
-            logger.info(`Vendor ${vendorId}: emailEngagement updated (${mapping.deliveryStatus})`);
+        try {
+            await db.collection(entityCollection).doc(entityId).update(engagementUpdate);
+            logger.info(`${entityType} ${entityId}: emailEngagement updated (${mapping.deliveryStatus})`);
+        } catch (engErr) {
+            logger.warn(`Failed to update ${entityType} engagement:`, engErr);
         }
 
         // ─── Template Stats Tracking (for A/B testing analytics) ───
         try {
-            // Path 1: Read templateId directly from Resend tags (preferred - no Firestore query needed)
             let templateId: string | null = null;
+
+            // Path 1: Read templateId from Resend tags
             if (tags) {
-                if (typeof tags === 'object' && !Array.isArray(tags) && tags.templateId) {
-                    templateId = tags.templateId;
-                } else if (Array.isArray(tags)) {
-                    const templateTag = tags.find((t: any) => t.name === 'templateId');
-                    if (templateTag?.value) templateId = templateTag.value;
-                }
+                const getTag = (key: string): string | null => {
+                    if (typeof tags === 'object' && !Array.isArray(tags) && tags[key]) return tags[key];
+                    if (Array.isArray(tags)) {
+                        const found = tags.find((t: any) => t.name === key);
+                        return found?.value || null;
+                    }
+                    return null;
+                };
+                templateId = getTag('templateId');
             }
 
             // Path 2: Fallback — query activity to find templateId (legacy emails without tag)
             if (!templateId) {
-                const sentActivity = await db.collection('vendor_activities')
+                const sentActivity = await db.collection(activitiesCollection)
                     .where('metadata.resendId', '==', emailId)
                     .limit(1)
                     .get();
@@ -193,7 +231,7 @@ export const resendWebhook = onRequest({
             logger.warn('Template stats update failed:', statsErr);
         }
 
-        logger.info(`Resend webhook: processed ${eventType} for vendor ${vendorId}`);
+        logger.info(`Resend webhook: processed ${eventType} for ${entityType} ${entityId}`);
         res.status(200).json({ ok: true, processed: eventType });
 
     } catch (error) {
