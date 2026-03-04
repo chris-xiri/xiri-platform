@@ -250,9 +250,32 @@ export async function sendTemplatedEmail(
     }
 }
 
+const FUNCTIONS_BASE_URL = 'https://us-central1-xiri-facility-solutions.cloudfunctions.net';
+
 /**
- * Send a raw email with optional attachments
+ * Build CAN-SPAM compliant email footer with unsubscribe link.
+ */
+function buildEmailFooter(entityId?: string, entityType?: 'vendor' | 'lead'): string {
+    if (!entityId || !entityType) return '';
+
+    const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${entityId}&type=${entityType}`;
+
+    return `
+<div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+    <p style="margin: 0;">Xiri Facility Solutions · 1225 Franklin Ave, Suite 325 · Garden City, NY 11530</p>
+    <p style="margin: 8px 0 0 0;">
+        <a href="${unsubscribeUrl}" style="color: #64748b; text-decoration: underline;">Unsubscribe</a>
+        &nbsp;·&nbsp;
+        <a href="mailto:chris@xiri.ai" style="color: #64748b; text-decoration: underline;">Contact Us</a>
+    </p>
+</div>`;
+}
+
+/**
+ * Send a raw email with optional attachments.
  * Returns { success, resendId } so callers can store the ID for webhook tracking.
+ *
+ * If entityId + entityType are provided, a CAN-SPAM unsubscribe footer is appended.
  */
 export async function sendEmail(
     to: string,
@@ -261,21 +284,36 @@ export async function sendEmail(
     attachments?: any[],
     from?: string,
     vendorId?: string,
-    templateId?: string
+    templateId?: string,
+    entityType?: 'vendor' | 'lead',
 ): Promise<{ success: boolean; resendId?: string }> {
     try {
+        // Determine entity ID for unsubscribe link
+        const entityId = vendorId; // vendorId param is actually entityId (vendor or lead)
+        const footer = buildEmailFooter(entityId, entityType);
+        const htmlWithFooter = footer ? html + footer : html;
+
         // Build tags array for webhook tracking
         const tags: { name: string; value: string }[] = [];
         if (vendorId) tags.push({ name: 'vendorId', value: vendorId });
         if (templateId) tags.push({ name: 'templateId', value: templateId });
+
+        // Build Resend List-Unsubscribe header for one-click unsubscribe
+        const headers: Record<string, string> = {};
+        if (entityId && entityType) {
+            const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${entityId}&type=${entityType}`;
+            headers['List-Unsubscribe'] = `<${unsubscribeUrl}>`;
+            headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
+        }
 
         const { data, error } = await resend.emails.send({
             from: from || 'Xiri Facility Solutions <onboarding@xiri.ai>',
             replyTo: 'chris@xiri.ai',
             to,
             subject,
-            html,
+            html: htmlWithFooter,
             attachments,
+            headers,
             ...(tags.length > 0 ? { tags } : {}),
         });
 

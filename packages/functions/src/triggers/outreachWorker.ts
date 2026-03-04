@@ -177,6 +177,14 @@ async function handleSend(task: QueueItem) {
 
     const vendorDoc = await db.collection("vendors").doc(task.vendorId!).get();
     const vendor = vendorDoc.exists ? vendorDoc.data() : null;
+
+    // ── Suppression check: skip dismissed/unsubscribed vendors ──
+    if (vendor?.status === 'dismissed') {
+        logger.info(`[Suppression] Vendor ${task.vendorId} is dismissed — skipping send and cancelling task.`);
+        await updateTaskStatus(db, task.id!, 'CANCELLED');
+        return;
+    }
+
     const vendorEmail = vendor?.email || task.metadata?.email?.to;
 
     let sendSuccess = false;
@@ -195,7 +203,8 @@ async function handleSend(task: QueueItem) {
             undefined,   // no attachments
             undefined,   // default from
             task.vendorId ?? undefined,  // tag email with vendorId for webhook tracking
-            task.metadata.templateId ?? undefined  // tag with templateId for stats tracking
+            task.metadata.templateId ?? undefined,  // tag with templateId for stats tracking
+            'vendor', // entityType for unsubscribe footer
         );
         sendSuccess = result.success;
         resendId = result.resendId;
@@ -427,6 +436,17 @@ async function handleFollowUp(task: QueueItem) {
 async function handleLeadSend(task: QueueItem) {
     logger.info(`[LeadOutreach] Sending template email for lead ${task.leadId}`);
 
+    // ── Suppression check: skip lost/unsubscribed leads ──
+    const leadDoc = await db.collection("leads").doc(task.leadId!).get();
+    if (leadDoc.exists) {
+        const leadData = leadDoc.data()!;
+        if (leadData.status === 'lost' || leadData.unsubscribedAt) {
+            logger.info(`[Suppression] Lead ${task.leadId} is ${leadData.status}/unsubscribed — skipping send.`);
+            await updateTaskStatus(db, task.id!, 'CANCELLED');
+            return;
+        }
+    }
+
     const toEmail = task.metadata?.email;
     if (!toEmail) {
         logger.warn(`[LeadOutreach] No email for lead ${task.leadId}, skipping.`);
@@ -473,7 +493,8 @@ async function handleLeadSend(task: QueueItem) {
 
     const sendResult = await sendEmail(
         toEmail, subject, htmlBody,
-        undefined, undefined, task.leadId ?? undefined, templateId
+        undefined, undefined, task.leadId ?? undefined, templateId,
+        'lead', // entityType for unsubscribe footer
     );
 
     await db.collection("lead_activities").add({
