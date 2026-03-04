@@ -6,6 +6,7 @@ import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, orderBy 
 import { db } from '@/lib/firebase';
 import { Lead, LeadType } from '@xiri/shared';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
     Building2, User, Mail, Phone, MapPin, Calendar, Clock,
     Briefcase, TrendingUp, Pencil, Check, X, Save, Loader2,
-    FileText, ExternalLink, Plus, ChevronRight, Rocket, Send, Activity
+    FileText, ExternalLink, Plus, ChevronRight, Rocket, Send, Activity, LayoutDashboard
 } from 'lucide-react';
 import { format } from 'date-fns';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
@@ -385,9 +386,10 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
     const [notesSaving, setNotesSaving] = useState(false);
     const [quotes, setQuotes] = useState<any[]>([]);
     const [quotesLoading, setQuotesLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('overview');
 
     useEffect(() => {
-        if (!leadId || !open) { setLead(null); setLoading(true); return; }
+        if (!leadId || !open) { setLead(null); setLoading(true); setActiveTab('overview'); return; }
         setLoading(true);
         const unsub = onSnapshot(doc(db, 'leads', leadId), (snap) => {
             if (snap.exists()) {
@@ -524,245 +526,246 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
 
                         {/* ─── Content ─────────────────────────── */}
                         <div className="p-5 space-y-4">
-                            {/* Contact — Inline Editable */}
-                            <Card>
-                                <CardHeader className="py-3">
-                                    <CardTitle className="text-sm flex items-center gap-2">
-                                        <User className="w-4 h-4" /> Contact
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-2.5">
-                                    <EditableField
-                                        label="Contact name"
-                                        value={lead.contactName || ''}
-                                        icon={User}
-                                        onSave={(v) => updateField('contactName', v)}
-                                    />
-                                    <EditableField
-                                        label="Email"
-                                        value={lead.email || ''}
-                                        icon={Mail}
-                                        type="email"
-                                        linkPrefix="mailto:"
-                                        onSave={(v) => updateField('email', v)}
-                                    />
-                                    <EditableField
-                                        label="Phone"
-                                        value={lead.contactPhone || ''}
-                                        icon={Phone}
-                                        type="tel"
-                                        linkPrefix="tel:"
-                                        onSave={(v) => updateField('contactPhone', v)}
-                                    />
-                                    <EditableAddressField
-                                        address={lead.address || ''}
-                                        city={lead.city || ''}
-                                        state={lead.state || ''}
-                                        zip={lead.zip || lead.zipCode || ''}
-                                        onSave={async (fields) => {
-                                            if (!leadId) return;
-                                            await updateDoc(doc(db, 'leads', leadId), {
-                                                address: fields.address,
-                                                city: fields.city,
-                                                state: fields.state,
-                                                zip: fields.zip,
-                                                updatedAt: new Date(),
-                                            });
-                                        }}
-                                    />
-                                </CardContent>
-                            </Card>
+                            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
+                                <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
+                                    <TabsTrigger value="overview" className="gap-1 text-xs"><LayoutDashboard className="w-3.5 h-3.5" /> Overview</TabsTrigger>
+                                    <TabsTrigger value="activity" className="gap-1 text-xs"><Activity className="w-3.5 h-3.5" /> Activity</TabsTrigger>
+                                </TabsList>
 
-                            {/* Audit Booking */}
-                            <Card>
-                                <CardHeader className="py-3">
-                                    <CardTitle className="text-sm flex items-center gap-2">
-                                        <Calendar className="w-4 h-4" /> Audit Booking
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    {lead.preferredAuditTimes && lead.preferredAuditTimes.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {lead.preferredAuditTimes.map((time, idx) => {
-                                                const d = toDate(time);
-                                                return d ? (
-                                                    <div key={idx} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg text-sm">
-                                                        <Clock className="w-4 h-4 text-muted-foreground" />
-                                                        <div>
-                                                            <p className="font-medium">{format(d, 'EEEE, MMMM d, yyyy')}</p>
-                                                            <p className="text-xs text-muted-foreground">{format(d, 'h:mm a')}</p>
-                                                        </div>
-                                                        {idx === 0 && <Badge variant="secondary" className="ml-auto text-[10px]">Primary</Badge>}
-                                                    </div>
-                                                ) : null;
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <p className="text-xs text-muted-foreground">No audit times scheduled</p>
-                                    )}
-                                    {lead.serviceInterest && (
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
-                                            <span className="capitalize">{lead.serviceInterest.replace(/_/g, ' ')}</span>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-
-                            {/* Notes — Editable */}
-                            <Card>
-                                <CardHeader className="py-3 flex flex-row items-center justify-between">
-                                    <CardTitle className="text-sm flex items-center gap-2">
-                                        <Pencil className="w-4 h-4" /> Notes
-                                    </CardTitle>
-                                    {!notesEditing && (
-                                        <Button variant="ghost" size="sm" className="h-6 text-xs gap-1"
-                                            onClick={() => { setNotesDraft(lead.notes || ''); setNotesEditing(true); }}>
-                                            <Pencil className="w-3 h-3" /> Edit
-                                        </Button>
-                                    )}
-                                </CardHeader>
-                                <CardContent>
-                                    {notesEditing ? (
-                                        <div className="space-y-2">
-                                            <textarea
-                                                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y"
-                                                value={notesDraft}
-                                                onChange={(e) => setNotesDraft(e.target.value)}
-                                                placeholder="Add notes about this lead..."
-                                                autoFocus
+                                <TabsContent value="overview" className="space-y-4">
+                                    {/* Contact — Inline Editable */}
+                                    <Card>
+                                        <CardHeader className="py-3">
+                                            <CardTitle className="text-sm flex items-center gap-2">
+                                                <User className="w-4 h-4" /> Contact
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-2.5">
+                                            <EditableField
+                                                label="Contact name"
+                                                value={lead.contactName || ''}
+                                                icon={User}
+                                                onSave={(v) => updateField('contactName', v)}
                                             />
-                                            <div className="flex gap-2 justify-end">
-                                                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setNotesEditing(false)}>
-                                                    Cancel
-                                                </Button>
-                                                <Button size="sm" className="h-7 text-xs gap-1" onClick={handleNotesSave} disabled={notesSaving}>
-                                                    {notesSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                                                    Save
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <p className={`text-sm ${lead.notes ? '' : 'text-muted-foreground italic'}`}>
-                                            {lead.notes || 'No notes yet — click Edit to add'}
-                                        </p>
-                                    )}
-                                </CardContent>
-                            </Card>
+                                            <EditableField
+                                                label="Email"
+                                                value={lead.email || ''}
+                                                icon={Mail}
+                                                type="email"
+                                                linkPrefix="mailto:"
+                                                onSave={(v) => updateField('email', v)}
+                                            />
+                                            <EditableField
+                                                label="Phone"
+                                                value={lead.contactPhone || ''}
+                                                icon={Phone}
+                                                type="tel"
+                                                linkPrefix="tel:"
+                                                onSave={(v) => updateField('contactPhone', v)}
+                                            />
+                                            <EditableAddressField
+                                                address={lead.address || ''}
+                                                city={lead.city || ''}
+                                                state={lead.state || ''}
+                                                zip={lead.zip || lead.zipCode || ''}
+                                                onSave={async (fields) => {
+                                                    if (!leadId) return;
+                                                    await updateDoc(doc(db, 'leads', leadId), {
+                                                        address: fields.address,
+                                                        city: fields.city,
+                                                        state: fields.state,
+                                                        zip: fields.zip,
+                                                        updatedAt: new Date(),
+                                                    });
+                                                }}
+                                            />
+                                        </CardContent>
+                                    </Card>
 
-                            {/* Quotes — Linked Records */}
-                            <Card>
-                                <CardHeader className="py-3 flex flex-row items-center justify-between">
-                                    <CardTitle className="text-sm flex items-center gap-2">
-                                        <FileText className="w-4 h-4" /> Quotes
-                                        {quotes.length > 0 && (
-                                            <Badge variant="secondary" className="text-[10px] ml-1">{quotes.length}</Badge>
-                                        )}
-                                    </CardTitle>
-                                    <Button variant="outline" size="sm" className="h-6 text-xs gap-1"
-                                        onClick={() => router.push('/sales/quotes')}>
-                                        <Plus className="w-3 h-3" /> Create Quote
-                                    </Button>
-                                </CardHeader>
-                                <CardContent>
-                                    {quotesLoading ? (
-                                        <Skeleton className="h-10 w-full" />
-                                    ) : quotes.length === 0 ? (
-                                        <p className="text-xs text-muted-foreground italic">No quotes yet for this lead</p>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {quotes.map((q) => {
-                                                const badge = QUOTE_BADGE[q.status] || QUOTE_BADGE.draft;
-                                                const created = q.createdAt?.toDate?.()
-                                                    ? q.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                                                    : '—';
-                                                return (
-                                                    <div
-                                                        key={q.id}
-                                                        className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/30 cursor-pointer transition-colors group"
-                                                        onClick={() => router.push(`/sales/quotes/${q.id}`)}
-                                                    >
-                                                        <div className="flex items-center gap-3 min-w-0">
-                                                            <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                            <div className="min-w-0">
-                                                                <p className="text-sm font-medium truncate">
-                                                                    v{q.version || 1} — {fmt(q.totalMonthlyRate || 0)}/mo
-                                                                </p>
-                                                                <p className="text-[10px] text-muted-foreground">
-                                                                    {q.lineItems?.length || 0} services • {created}
-                                                                </p>
+                                    {/* Audit Booking */}
+                                    <Card>
+                                        <CardHeader className="py-3">
+                                            <CardTitle className="text-sm flex items-center gap-2">
+                                                <Calendar className="w-4 h-4" /> Audit Booking
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-3">
+                                            {lead.preferredAuditTimes && lead.preferredAuditTimes.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {lead.preferredAuditTimes.map((time, idx) => {
+                                                        const d = toDate(time);
+                                                        return d ? (
+                                                            <div key={idx} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg text-sm">
+                                                                <Clock className="w-4 h-4 text-muted-foreground" />
+                                                                <div>
+                                                                    <p className="font-medium">{format(d, 'EEEE, MMMM d, yyyy')}</p>
+                                                                    <p className="text-xs text-muted-foreground">{format(d, 'h:mm a')}</p>
+                                                                </div>
+                                                                {idx === 0 && <Badge variant="secondary" className="ml-auto text-[10px]">Primary</Badge>}
                                                             </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${badge.color}`}>
-                                                                {badge.label}
-                                                            </span>
-                                                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/0 group-hover:text-muted-foreground transition-opacity" />
-                                                        </div>
+                                                        ) : null;
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs text-muted-foreground">No audit times scheduled</p>
+                                            )}
+                                            {lead.serviceInterest && (
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
+                                                    <span className="capitalize">{lead.serviceInterest.replace(/_/g, ' ')}</span>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Notes — Editable */}
+                                    <Card>
+                                        <CardHeader className="py-3 flex flex-row items-center justify-between">
+                                            <CardTitle className="text-sm flex items-center gap-2">
+                                                <Pencil className="w-4 h-4" /> Notes
+                                            </CardTitle>
+                                            {!notesEditing && (
+                                                <Button variant="ghost" size="sm" className="h-6 text-xs gap-1"
+                                                    onClick={() => { setNotesDraft(lead.notes || ''); setNotesEditing(true); }}>
+                                                    <Pencil className="w-3 h-3" /> Edit
+                                                </Button>
+                                            )}
+                                        </CardHeader>
+                                        <CardContent>
+                                            {notesEditing ? (
+                                                <div className="space-y-2">
+                                                    <textarea
+                                                        className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y"
+                                                        value={notesDraft}
+                                                        onChange={(e) => setNotesDraft(e.target.value)}
+                                                        placeholder="Add notes about this lead..."
+                                                        autoFocus
+                                                    />
+                                                    <div className="flex gap-2 justify-end">
+                                                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setNotesEditing(false)}>
+                                                            Cancel
+                                                        </Button>
+                                                        <Button size="sm" className="h-7 text-xs gap-1" onClick={handleNotesSave} disabled={notesSaving}>
+                                                            {notesSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                                            Save
+                                                        </Button>
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
+                                                </div>
+                                            ) : (
+                                                <p className={`text-sm ${lead.notes ? '' : 'text-muted-foreground italic'}`}>
+                                                    {lead.notes || 'No notes yet — click Edit to add'}
+                                                </p>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Quotes — Linked Records */}
+                                    <Card>
+                                        <CardHeader className="py-3 flex flex-row items-center justify-between">
+                                            <CardTitle className="text-sm flex items-center gap-2">
+                                                <FileText className="w-4 h-4" /> Quotes
+                                                {quotes.length > 0 && (
+                                                    <Badge variant="secondary" className="text-[10px] ml-1">{quotes.length}</Badge>
+                                                )}
+                                            </CardTitle>
+                                            <Button variant="outline" size="sm" className="h-6 text-xs gap-1"
+                                                onClick={() => router.push('/sales/quotes')}>
+                                                <Plus className="w-3 h-3" /> Create Quote
+                                            </Button>
+                                        </CardHeader>
+                                        <CardContent>
+                                            {quotesLoading ? (
+                                                <Skeleton className="h-10 w-full" />
+                                            ) : quotes.length === 0 ? (
+                                                <p className="text-xs text-muted-foreground italic">No quotes yet for this lead</p>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    {quotes.map((q) => {
+                                                        const badge = QUOTE_BADGE[q.status] || QUOTE_BADGE.draft;
+                                                        const created = q.createdAt?.toDate?.()
+                                                            ? q.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                                            : '—';
+                                                        return (
+                                                            <div
+                                                                key={q.id}
+                                                                className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/30 cursor-pointer transition-colors group"
+                                                                onClick={() => router.push(`/sales/quotes/${q.id}`)}
+                                                            >
+                                                                <div className="flex items-center gap-3 min-w-0">
+                                                                    <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                                    <div className="min-w-0">
+                                                                        <p className="text-sm font-medium truncate">
+                                                                            v{q.version || 1} — {fmt(q.totalMonthlyRate || 0)}/mo
+                                                                        </p>
+                                                                        <p className="text-[10px] text-muted-foreground">
+                                                                            {q.lineItems?.length || 0} services • {created}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${badge.color}`}>
+                                                                        {badge.label}
+                                                                    </span>
+                                                                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/0 group-hover:text-muted-foreground transition-opacity" />
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Attribution */}
+                                    {lead.attribution && (lead.attribution.source || lead.attribution.medium || lead.attribution.campaign) && (
+                                        <Card>
+                                            <CardHeader className="py-3">
+                                                <CardTitle className="text-sm flex items-center gap-2">
+                                                    <TrendingUp className="w-4 h-4" /> Attribution
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                                    {lead.attribution.source && (
+                                                        <div>
+                                                            <p className="text-[10px] uppercase text-muted-foreground">Source</p>
+                                                            <p className="font-medium capitalize">{lead.attribution.source}</p>
+                                                        </div>
+                                                    )}
+                                                    {lead.attribution.medium && (
+                                                        <div>
+                                                            <p className="text-[10px] uppercase text-muted-foreground">Medium</p>
+                                                            <p className="capitalize">{lead.attribution.medium}</p>
+                                                        </div>
+                                                    )}
+                                                    {lead.attribution.campaign && (
+                                                        <div className="col-span-2">
+                                                            <p className="text-[10px] uppercase text-muted-foreground">Campaign</p>
+                                                            <p>{lead.attribution.campaign}</p>
+                                                        </div>
+                                                    )}
+                                                    {lead.attribution.landingPage && (
+                                                        <div className="col-span-2">
+                                                            <p className="text-[10px] uppercase text-muted-foreground">Landing Page</p>
+                                                            <p className="text-xs text-primary break-all">{lead.attribution.landingPage}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
                                     )}
-                                </CardContent>
-                            </Card>
 
-                            {/* Attribution */}
-                            {lead.attribution && (lead.attribution.source || lead.attribution.medium || lead.attribution.campaign) && (
-                                <Card>
-                                    <CardHeader className="py-3">
-                                        <CardTitle className="text-sm flex items-center gap-2">
-                                            <TrendingUp className="w-4 h-4" /> Attribution
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="grid grid-cols-2 gap-3 text-sm">
-                                            {lead.attribution.source && (
-                                                <div>
-                                                    <p className="text-[10px] uppercase text-muted-foreground">Source</p>
-                                                    <p className="font-medium capitalize">{lead.attribution.source}</p>
-                                                </div>
-                                            )}
-                                            {lead.attribution.medium && (
-                                                <div>
-                                                    <p className="text-[10px] uppercase text-muted-foreground">Medium</p>
-                                                    <p className="capitalize">{lead.attribution.medium}</p>
-                                                </div>
-                                            )}
-                                            {lead.attribution.campaign && (
-                                                <div className="col-span-2">
-                                                    <p className="text-[10px] uppercase text-muted-foreground">Campaign</p>
-                                                    <p>{lead.attribution.campaign}</p>
-                                                </div>
-                                            )}
-                                            {lead.attribution.landingPage && (
-                                                <div className="col-span-2">
-                                                    <p className="text-[10px] uppercase text-muted-foreground">Landing Page</p>
-                                                    <p className="text-xs text-primary break-all">{lead.attribution.landingPage}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
+                                    {/* Meta */}
+                                    <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+                                        <p><span className="font-medium">ID:</span> {lead.id}</p>
+                                        {createdDate && <p><span className="font-medium">Created:</span> {format(createdDate, 'MMM d, yyyy h:mm a')}</p>}
+                                    </div>
+                                </TabsContent>
 
-                            {/* Meta */}
-                            <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-                                <p><span className="font-medium">ID:</span> {lead.id}</p>
-                                {createdDate && <p><span className="font-medium">Created:</span> {format(createdDate, 'MMM d, yyyy h:mm a')}</p>}
-                            </div>
-
-                            {/* Activity Feed */}
-                            <Card>
-                                <CardHeader className="py-3">
-                                    <CardTitle className="text-sm flex items-center gap-2">
-                                        <Activity className="w-4 h-4" /> Activity
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-0">
+                                <TabsContent value="activity">
                                     <LeadActivityFeed leadId={leadId!} />
-                                </CardContent>
-                            </Card>
+                                </TabsContent>
+                            </Tabs>
                         </div>
                     </>
                 )}
