@@ -421,12 +421,13 @@ function PipelineSection({ title, icon, pipeline, optimizing, applying, onOptimi
                 <h3 className="text-lg font-semibold">{title}</h3>
                 <div className="flex items-center gap-3 ml-auto text-xs text-muted-foreground">
                     {/* Sender selector */}
-                    <div className="flex items-center gap-1.5 bg-muted/50 rounded-md px-2 py-1 border">
-                        <Send className="w-3 h-3 text-muted-foreground" />
+                    <div className="flex items-center gap-1.5 bg-background rounded-lg px-2.5 py-1.5 border shadow-sm">
+                        <Send className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                        <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">From:</span>
                         <select
                             value={senderId}
                             onChange={(e) => onSenderChange(e.target.value)}
-                            className="bg-transparent text-xs font-medium border-none outline-none cursor-pointer pr-4"
+                            className="bg-transparent text-xs font-semibold text-foreground border-none outline-none cursor-pointer appearance-auto min-w-[120px]"
                         >
                             {senders.map(s => (
                                 <option key={s.id} value={s.id}>
