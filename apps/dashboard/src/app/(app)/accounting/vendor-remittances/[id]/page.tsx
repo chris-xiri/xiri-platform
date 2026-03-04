@@ -288,7 +288,7 @@ export default function VendorRemittanceDetailPage({ params }: PageProps) {
                                     )}
                                     {(rem.xiriAbsorbedTax ?? 0) > 0 && (
                                         <tr>
-                                            <td colSpan={3} className="px-4 py-2 text-right text-xs text-amber-600">Xiri Absorbed Tax (no exemption on file)</td>
+                                            <td colSpan={3} className="px-4 py-2 text-right text-xs text-amber-600">XIRI Absorbed Tax (no exemption on file)</td>
                                             <td className="px-4 py-2 text-right text-xs text-amber-600">{formatCurrency(rem.xiriAbsorbedTax!)}</td>
                                         </tr>
                                     )}

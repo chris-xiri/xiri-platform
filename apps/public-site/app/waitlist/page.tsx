@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Loader2, ArrowRight, MapPin } from "lucide-react";
+import { trackEvent } from "@/lib/tracking";
 
 function WaitlistContent() {
     const searchParams = useSearchParams();
@@ -29,6 +30,7 @@ function WaitlistContent() {
             url: typeof window !== 'undefined' ? window.location.href : null,
             createdAt: serverTimestamp(),
         }).catch((err) => console.error("Failed to log waitlist visit:", err));
+        trackEvent('waitlist_view', { zip: zip || 'unknown' });
     }, [zip]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -46,6 +48,7 @@ function WaitlistContent() {
                 createdAt: serverTimestamp()
             });
             setSuccess(true);
+            trackEvent('waitlist_submit', { zip: zip || 'unknown', facility_type: facilityType || '' });
         } catch (err) {
             console.error(err);
         } finally {

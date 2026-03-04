@@ -19,81 +19,81 @@ const db = admin.firestore();
  * - `quote` — Quote email (handled by existing sendQuoteEmail)
  */
 export const processMailQueue = onDocumentCreated({
-    document: "mail_queue/{docId}",
-    secrets: ["RESEND_API_KEY"],
+  document: "mail_queue/{docId}",
+  secrets: ["RESEND_API_KEY"],
 }, async (event) => {
-    const snap = event.data;
-    if (!snap) {
-        console.error("No data in mail_queue document");
-        return;
+  const snap = event.data;
+  if (!snap) {
+    console.error("No data in mail_queue document");
+    return;
+  }
+
+  const data = snap.data();
+  const docRef = snap.ref;
+
+  try {
+    // Mark as processing
+    await docRef.update({ status: "processing", processedAt: admin.firestore.FieldValue.serverTimestamp() });
+
+    const { to, subject, templateType, templateData } = data;
+
+    if (!to || !subject) {
+      throw new Error("Missing 'to' or 'subject' in mail_queue document");
     }
 
-    const data = snap.data();
-    const docRef = snap.ref;
+    // Build HTML based on template type
+    let html = "";
 
-    try {
-        // Mark as processing
-        await docRef.update({ status: "processing", processedAt: admin.firestore.FieldValue.serverTimestamp() });
-
-        const { to, subject, templateType, templateData } = data;
-
-        if (!to || !subject) {
-            throw new Error("Missing 'to' or 'subject' in mail_queue document");
-        }
-
-        // Build HTML based on template type
-        let html = "";
-
-        switch (templateType) {
-            case "client_invoice":
-                html = buildClientInvoiceEmail(templateData);
-                break;
-            case "vendor_remittance":
-                html = buildVendorRemittanceEmail(templateData);
-                break;
-            default:
-                // Generic email — use subject and any provided HTML body
-                html = templateData?.html || `<p>${subject}</p>`;
-                break;
-        }
-
-        // Send via Resend
-        const success = await sendEmail(
-            to,
-            subject,
-            html,
-            undefined, // attachments
-            "Xiri Facility Solutions <billing@xiri.ai>"
-        );
-
-        if (success) {
-            await docRef.update({ status: "sent", sentAt: admin.firestore.FieldValue.serverTimestamp() });
-            console.log(`✅ Mail sent: ${templateType} → ${to}`);
-        } else {
-            await docRef.update({ status: "failed", error: "Resend API returned failure" });
-            console.error(`❌ Mail failed: ${templateType} → ${to}`);
-        }
-
-    } catch (error: any) {
-        console.error("Error processing mail_queue:", error);
-        await docRef.update({
-            status: "failed",
-            error: error.message || "Unknown error",
-            failedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+    switch (templateType) {
+      case "client_invoice":
+        html = buildClientInvoiceEmail(templateData);
+        break;
+      case "vendor_remittance":
+        html = buildVendorRemittanceEmail(templateData);
+        break;
+      default:
+        // Generic email — use subject and any provided HTML body
+        html = templateData?.html || `<p>${subject}</p>`;
+        break;
     }
+
+    // Send via Resend
+    const success = await sendEmail(
+      to,
+      subject,
+      html,
+      undefined, // attachments
+      "XIRI Facility Solutions <billing@xiri.ai>"
+    );
+
+    if (success) {
+      await docRef.update({ status: "sent", sentAt: admin.firestore.FieldValue.serverTimestamp() });
+      console.log(`✅ Mail sent: ${templateType} → ${to}`);
+    } else {
+      await docRef.update({ status: "failed", error: "Resend API returned failure" });
+      console.error(`❌ Mail failed: ${templateType} → ${to}`);
+    }
+
+  } catch (error: any) {
+    console.error("Error processing mail_queue:", error);
+    await docRef.update({
+      status: "failed",
+      error: error.message || "Unknown error",
+      failedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
 });
 
 
 // ─── Email Template Builders ──────────────────────────────────────────
 
 function buildClientInvoiceEmail(data: any): string {
-    const { clientBusinessName, clientContactName, totalAmount, paymentLink, billingPeriod } = data || {};
+  const { clientBusinessName, clientContactName, totalAmount, paymentLink, billingPeriod } = data || {};
 
-    const formattedAmount = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(totalAmount || 0);
-    const periodText = billingPeriod ? `${billingPeriod.start} — ${billingPeriod.end}` : "Current Period";
+  const formattedAmount = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(totalAmount || 0);
+  const periodText = billingPeriod ? `${billingPeriod.start} — ${billingPeriod.end}` : "Current Period";
 
-    return `
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -139,7 +139,7 @@ function buildClientInvoiceEmail(data: any): string {
     <!-- Footer -->
     <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px; background: #f9fafb;">
       <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">
-        Xiri Facility Solutions • <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
+        XIRI Facility Solutions • <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
       </p>
     </div>
   </div>
@@ -149,20 +149,20 @@ function buildClientInvoiceEmail(data: any): string {
 
 
 function buildVendorRemittanceEmail(data: any): string {
-    const { vendorName, totalAmount, billingPeriod, lineItems } = data || {};
+  const { vendorName, totalAmount, billingPeriod, lineItems } = data || {};
 
-    const formattedAmount = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(totalAmount || 0);
-    const periodText = billingPeriod ? `${billingPeriod.start} — ${billingPeriod.end}` : "Current Period";
+  const formattedAmount = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(totalAmount || 0);
+  const periodText = billingPeriod ? `${billingPeriod.start} — ${billingPeriod.end}` : "Current Period";
 
-    const lineItemsHtml = (lineItems || []).map((li: any) =>
-        `<tr>
+  const lineItemsHtml = (lineItems || []).map((li: any) =>
+    `<tr>
             <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #374151;">${li.serviceType || "—"}</td>
             <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #6b7280;">${li.locationName || "—"}</td>
             <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #374151; text-align: right; font-weight: 500;">$${(li.amount || 0).toLocaleString()}</td>
         </tr>`
-    ).join("");
+  ).join("");
 
-    return `
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -214,7 +214,7 @@ function buildVendorRemittanceEmail(data: any): string {
     <!-- Footer -->
     <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px; background: #f9fafb;">
       <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">
-        Xiri Facility Solutions • <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
+        XIRI Facility Solutions • <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
       </p>
     </div>
   </div>

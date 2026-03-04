@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Pay Invoice — Xiri Facility Solutions',
+    title: 'Pay Invoice — XIRI Facility Solutions',
     description: 'View and pay your facility services invoice securely.',
 };
 

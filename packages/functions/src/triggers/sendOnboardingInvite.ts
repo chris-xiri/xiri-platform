@@ -57,13 +57,13 @@ export const sendOnboardingInvite = onDocumentUpdated({
     const icsContent = generateICS({
         start: startTime,
         end: endTime,
-        summary: `Xiri Onboarding Call: ${businessName}`,
+        summary: `XIRI Onboarding Call: ${businessName}`,
         description: `Onboarding call with ${contactName} from ${businessName}.\n\nWe'll cover:\n- Service capabilities & coverage areas\n- Insurance & compliance verification\n- Account setup & next steps\n\nPower to the Facilities!`,
         location: 'Phone Call',
-        organizer: { name: "Xiri Facility Solutions", email: "onboarding@xiri.ai" },
+        organizer: { name: "XIRI Facility Solutions", email: "onboarding@xiri.ai" },
         attendees: [
             { name: contactName, email: vendorEmail },
-            { name: "Xiri Team", email: ADMIN_EMAIL }
+            { name: "XIRI Team", email: ADMIN_EMAIL }
         ]
     });
 
@@ -74,7 +74,7 @@ export const sendOnboardingInvite = onDocumentUpdated({
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #0ea5e9;">Onboarding Call Confirmed!</h1>
         <p>Hi ${contactName},</p>
-        <p>Your onboarding call with Xiri Facility Solutions has been scheduled:</p>
+        <p>Your onboarding call with XIRI Facility Solutions has been scheduled:</p>
         <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 0; font-size: 18px; font-weight: bold;">
                 ${formattedTime}
@@ -88,11 +88,11 @@ export const sendOnboardingInvite = onDocumentUpdated({
             <li>Account setup and next steps</li>
         </ul>
         <p>A calendar invitation has been attached to this email.</p>
-        <p>Best,<br/>The Xiri Team</p>
+        <p>Best,<br/>The XIRI Team</p>
     </div>
     `;
 
-    const subject = `Confirmed: Xiri Onboarding Call — ${formattedTime}`;
+    const subject = `Confirmed: XIRI Onboarding Call — ${formattedTime}`;
 
     // Send to vendor
     const vendorSent = await sendEmail(vendorEmail, subject, htmlBody, [
@@ -155,7 +155,7 @@ function generateICS(event: {
 
     return `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Xiri//Facility Solutions//EN
+PRODID:-//XIRI//Facility Solutions//EN
 CALSCALE:GREGORIAN
 METHOD:REQUEST
 BEGIN:VEVENT

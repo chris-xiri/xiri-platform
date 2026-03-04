@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { trackEvent } from '@/lib/tracking';
 
 // Initialize Firebase (public-site has its own config)
 const firebaseConfig = {
@@ -74,6 +75,7 @@ export default function QuoteReviewPage() {
                 if (!data.viewedAt) {
                     await updateDoc(doc.ref, { viewedAt: new Date() });
                 }
+                trackEvent('quote_review_view', { quote_id: doc.id, business: data.leadBusinessName || '' });
             } catch (err) {
                 console.error('Error loading quote:', err);
                 setError('Unable to load this quote. Please try again later.');
@@ -88,9 +90,11 @@ export default function QuoteReviewPage() {
         setSubmitting(true);
         try {
             const respondToQuoteFn = httpsCallable(functions, 'respondToQuote');
+            trackEvent('quote_accept', { token });
             await respondToQuoteFn({ reviewToken: token, action: 'accept', notes: '' });
             setResponded(true);
             setResponseType('accepted');
+            trackEvent('quote_response_success', { action: 'accept', token });
         } catch (err) {
             console.error('Error accepting quote:', err);
             alert('Something went wrong. Please try again or contact us.');
@@ -103,9 +107,11 @@ export default function QuoteReviewPage() {
         setSubmitting(true);
         try {
             const respondToQuoteFn = httpsCallable(functions, 'respondToQuote');
+            trackEvent('quote_request_changes', { token });
             await respondToQuoteFn({ reviewToken: token, action: 'request_changes', notes });
             setResponded(true);
             setResponseType('changes_requested');
+            trackEvent('quote_response_success', { action: 'request_changes', token });
         } catch (err) {
             console.error('Error requesting changes:', err);
             alert('Something went wrong. Please try again or contact us.');

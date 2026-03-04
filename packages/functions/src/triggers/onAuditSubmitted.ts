@@ -3,7 +3,7 @@ import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 
 if (!admin.apps.length) {
-    admin.initializeApp();
+  admin.initializeApp();
 }
 
 const db = admin.firestore();
@@ -19,71 +19,71 @@ const INTERNAL_NOTIFY_EMAIL = "chris@xiri.ai";
  * 3. Log to activity_logs
  */
 export const onAuditSubmitted = onDocumentCreated({
-    document: "leads/{leadId}",
+  document: "leads/{leadId}",
 }, async (event) => {
-    const snap = event.data;
-    if (!snap) return;
+  const snap = event.data;
+  if (!snap) return;
 
-    const data = snap.data();
-    const leadId = event.params.leadId;
+  const data = snap.data();
+  const leadId = event.params.leadId;
 
-    // Only fire for audit wizard leads
-    if (data.source !== 'audit_wizard') return;
+  // Only fire for audit wizard leads
+  if (data.source !== 'audit_wizard') return;
 
-    const businessName = data.businessName || data.companyName || 'Your Facility';
-    const contactName = data.contactName || data.name || '';
-    const contactEmail = data.email || data.contactEmail;
-    const address = data.address || data.location || '';
+  const businessName = data.businessName || data.companyName || 'Your Facility';
+  const contactName = data.contactName || data.name || '';
+  const contactEmail = data.email || data.contactEmail;
+  const address = data.address || data.location || '';
 
-    if (!contactEmail) {
-        logger.warn(`[AuditSubmitted] Lead ${leadId} has no email — skipping confirmation`);
-        return;
-    }
+  if (!contactEmail) {
+    logger.warn(`[AuditSubmitted] Lead ${leadId} has no email — skipping confirmation`);
+    return;
+  }
 
-    // 1. Send confirmation email to the lead
-    await db.collection('mail_queue').add({
-        to: contactEmail,
-        subject: `We received your audit request — ${businessName}`,
-        templateType: 'audit_confirmation',
-        templateData: {
-            html: buildAuditConfirmationEmail(contactName, businessName),
-        },
-        status: 'pending',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+  // 1. Send confirmation email to the lead
+  await db.collection('mail_queue').add({
+    to: contactEmail,
+    subject: `We received your audit request — ${businessName}`,
+    templateType: 'audit_confirmation',
+    templateData: {
+      html: buildAuditConfirmationEmail(contactName, businessName),
+    },
+    status: 'pending',
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
 
-    // 2. Send internal notification
-    await db.collection('mail_queue').add({
-        to: INTERNAL_NOTIFY_EMAIL,
-        subject: `🔔 New Audit Lead: ${businessName}`,
-        templateType: 'internal_notification',
-        templateData: {
-            html: buildInternalNotificationEmail(leadId, contactName, contactEmail, businessName, address, data),
-        },
-        status: 'pending',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+  // 2. Send internal notification
+  await db.collection('mail_queue').add({
+    to: INTERNAL_NOTIFY_EMAIL,
+    subject: `🔔 New Audit Lead: ${businessName}`,
+    templateType: 'internal_notification',
+    templateData: {
+      html: buildInternalNotificationEmail(leadId, contactName, contactEmail, businessName, address, data),
+    },
+    status: 'pending',
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
 
-    // 3. Log activity
-    await db.collection('activity_logs').add({
-        type: 'AUDIT_SUBMITTED',
-        leadId,
-        email: contactEmail,
-        businessName,
-        description: `New audit lead from ${businessName} (${contactEmail})`,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+  // 3. Log activity
+  await db.collection('activity_logs').add({
+    type: 'AUDIT_SUBMITTED',
+    leadId,
+    email: contactEmail,
+    businessName,
+    description: `New audit lead from ${businessName} (${contactEmail})`,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
 
-    logger.info(`[AuditSubmitted] Confirmation + internal alert sent for lead ${leadId} (${businessName})`);
+  logger.info(`[AuditSubmitted] Confirmation + internal alert sent for lead ${leadId} (${businessName})`);
 });
 
 
 // ─── Email Builders ───────────────────────────────────────────────────
 
 function buildAuditConfirmationEmail(contactName: string, businessName: string): string {
-    const greeting = contactName ? `Hi ${contactName}` : 'Hello';
+  const greeting = contactName ? `Hi ${contactName}` : 'Hello';
 
-    return `
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -125,7 +125,7 @@ function buildAuditConfirmationEmail(contactName: string, businessName: string):
     <!-- Footer -->
     <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px; background: #f9fafb;">
       <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">
-        Xiri Facility Solutions • <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
+        XIRI Facility Solutions • <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
       </p>
     </div>
   </div>
@@ -135,18 +135,18 @@ function buildAuditConfirmationEmail(contactName: string, businessName: string):
 
 
 function buildInternalNotificationEmail(
-    leadId: string,
-    contactName: string,
-    contactEmail: string,
-    businessName: string,
-    address: string,
-    data: any,
+  leadId: string,
+  contactName: string,
+  contactEmail: string,
+  businessName: string,
+  address: string,
+  data: any,
 ): string {
-    const facilityType = data.facilityType || data.propertyType || 'Not specified';
-    const sqft = data.squareFootage || data.sqft || 'Not specified';
-    const services = data.services?.join(', ') || data.selectedServices?.join(', ') || 'Not specified';
+  const facilityType = data.facilityType || data.propertyType || 'Not specified';
+  const sqft = data.squareFootage || data.sqft || 'Not specified';
+  const services = data.services?.join(', ') || data.selectedServices?.join(', ') || 'Not specified';
 
-    return `
+  return `
 <!DOCTYPE html>
 <html>
 <body style="margin:0; padding:20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f6f8;">

@@ -157,7 +157,7 @@ async function sendFlagNotification(vendorId: string, vendorName: string, flags:
         const dashboardLink = `https://app.xiri.ai/supply/crm/${vendorId}`;
 
         await resend.emails.send({
-            from: 'Xiri Compliance <compliance@xiri.ai>',
+            from: 'XIRI Compliance <compliance@xiri.ai>',
             to: 'chris@xiri.ai',
             subject: `⚠️ ACORD 25 Flagged: ${vendorName}`,
             html: `

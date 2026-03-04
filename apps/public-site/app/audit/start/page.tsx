@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Loader2 } from "lucide-react";
+import { trackEvent } from "@/lib/tracking";
 
 function AuditInitializer() {
     const router = useRouter();
@@ -40,6 +41,7 @@ function AuditInitializer() {
                 });
 
                 // Redirect to Wizard (same as vendor onboarding pattern)
+                trackEvent('audit_start', { zip: zip || '', service, source });
                 router.replace(`/audit/${docRef.id}`);
 
             } catch (err) {

@@ -76,7 +76,7 @@ export const onOnboardingComplete = onDocumentUpdated({
 
     try {
         const { data, error } = await resend.emails.send({
-            from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+            from: 'XIRI Facility Solutions <onboarding@xiri.ai>',
             to: 'chris@xiri.ai',
             subject: `🏗️ Vendor Onboarded: ${businessName}`,
             html,
@@ -102,7 +102,7 @@ export const onOnboardingComplete = onDocumentUpdated({
         </div>
         <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
             <p>Hola <strong>${businessName}</strong>,</p>
-            <p>Gracias por completar su solicitud para unirse a la Red de Contratistas de Xiri. Hemos recibido su información y nuestro equipo la revisará en breve.</p>
+            <p>Gracias por completar su solicitud para unirse a la Red de Contratistas de XIRI. Hemos recibido su información y nuestro equipo la revisará en breve.</p>
 
             <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
                 <h3 style="margin: 0 0 12px 0; color: #0c4a6e; font-size: 15px;">Lo que recibimos:</h3>
@@ -120,7 +120,7 @@ export const onOnboardingComplete = onDocumentUpdated({
 
             <p style="font-size: 14px; color: #64748b;">Si tiene alguna pregunta, simplemente responda a este correo.</p>
 
-            <p style="margin-top: 24px;">Saludos cordiales,<br/><strong>Equipo Xiri Facility Solutions</strong></p>
+            <p style="margin-top: 24px;">Saludos cordiales,<br/><strong>Equipo XIRI Facility Solutions</strong></p>
         </div>
     </div>` : `
     <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px; color: #1e293b;">
@@ -129,7 +129,7 @@ export const onOnboardingComplete = onDocumentUpdated({
         </div>
         <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
             <p>Hi <strong>${businessName}</strong>,</p>
-            <p>Thank you for completing your application to join the Xiri Contractor Network. We've received your information and our team will review it shortly.</p>
+            <p>Thank you for completing your application to join the XIRI Contractor Network. We've received your information and our team will review it shortly.</p>
 
             <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
                 <h3 style="margin: 0 0 12px 0; color: #0c4a6e; font-size: 15px;">What we received:</h3>
@@ -147,7 +147,7 @@ export const onOnboardingComplete = onDocumentUpdated({
 
             <p style="font-size: 14px; color: #64748b;">If you have any questions, just reply to this email.</p>
 
-            <p style="margin-top: 24px;">Best regards,<br/><strong>Xiri Facility Solutions Team</strong></p>
+            <p style="margin-top: 24px;">Best regards,<br/><strong>XIRI Facility Solutions Team</strong></p>
         </div>
     </div>`;
 
@@ -157,7 +157,7 @@ export const onOnboardingComplete = onDocumentUpdated({
 
         try {
             const { error: vendorError } = await resend.emails.send({
-                from: 'Xiri Facility Solutions <onboarding@xiri.ai>',
+                from: 'XIRI Facility Solutions <onboarding@xiri.ai>',
                 replyTo: 'chris@xiri.ai',
                 to: email,
                 subject: vendorSubject,

@@ -9,6 +9,7 @@ import { Vendor } from "@xiri/shared";
 import { Loader2, CheckCircle, Upload, ChevronRight, ChevronLeft, Globe, Calendar, Clock, Phone } from "lucide-react";
 import { translations, t, type Language } from "./translations";
 import { addDays, addHours, addMinutes, startOfDay, format } from "date-fns";
+import { trackEvent } from "@/lib/tracking";
 
 export default function OnboardingPage() {
     const params = useParams();
@@ -93,6 +94,13 @@ export default function OnboardingPage() {
         return () => unsubscribe();
     }, [vendorId]);
 
+    // Track onboarding start on mount
+    useEffect(() => {
+        if (vendorId) {
+            trackEvent('onboarding_start', { vendor_id: vendorId });
+        }
+    }, [vendorId]);
+
     const formatPhoneNumber = (value: string) => {
         const phoneNumber = value.replace(/\D/g, '');
         if (phoneNumber.length <= 3) {
@@ -173,6 +181,7 @@ export default function OnboardingPage() {
         if (currentStep === 3 && currentTrack === 'STANDARD') {
             handleSubmit();
         } else if (currentStep < totalSteps) {
+            trackEvent('onboarding_step_complete', { step_number: String(currentStep), track: currentTrack, vendor_id: vendorId });
             setCurrentStep(currentStep + 1);
         }
     };
@@ -225,6 +234,8 @@ export default function OnboardingPage() {
             });
 
             setCompleted(true);
+            trackEvent('onboarding_submit', { track: currentTrack, vendor_id: vendorId });
+            trackEvent('onboarding_success', { track: currentTrack, vendor_id: vendorId });
         } catch (error) {
             console.error("Error submitting onboarding:", error);
         } finally {
@@ -507,7 +518,7 @@ export default function OnboardingPage() {
             {/* Header */}
             <header className="bg-sky-900 text-white py-8 px-6">
                 <div className="max-w-2xl mx-auto">
-                    <h1 className="text-2xl md:text-3xl font-bold">Join the Xiri Partner Network</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold">Join the XIRI Partner Network</h1>
                     <p className="text-sky-200 mt-2">Complete your profile to start receiving opportunities</p>
                 </div>
             </header>
@@ -554,6 +565,7 @@ export default function OnboardingPage() {
                                         setLanguage('en');
                                         setLanguageSelected(true);
                                         setCurrentStep(1);
+                                        trackEvent('onboarding_language', { language: 'en', vendor_id: vendorId });
                                     }}
                                     className="p-6 border-2 border-slate-200 rounded-lg hover:border-sky-600 hover:bg-sky-50 transition-all group"
                                 >
@@ -569,6 +581,7 @@ export default function OnboardingPage() {
                                         setLanguage('es');
                                         setLanguageSelected(true);
                                         setCurrentStep(1);
+                                        trackEvent('onboarding_language', { language: 'es', vendor_id: vendorId });
                                     }}
                                     className="p-6 border-2 border-slate-200 rounded-lg hover:border-sky-600 hover:bg-sky-50 transition-all group"
                                 >
@@ -895,10 +908,10 @@ export default function OnboardingPage() {
                             {/* Upload Zone */}
                             <div className="space-y-4">
                                 <div className={`p-6 border-2 border-dashed rounded-lg text-center transition-all ${acordUploaded
-                                        ? 'border-green-400 bg-green-50'
-                                        : uploading
-                                            ? 'border-sky-400 bg-sky-50'
-                                            : 'border-sky-300 bg-sky-50 hover:border-sky-400'
+                                    ? 'border-green-400 bg-green-50'
+                                    : uploading
+                                        ? 'border-sky-400 bg-sky-50'
+                                        : 'border-sky-300 bg-sky-50 hover:border-sky-400'
                                     }`}>
                                     {acordUploaded ? (
                                         <div className="space-y-2">

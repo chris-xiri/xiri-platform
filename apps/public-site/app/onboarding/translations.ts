@@ -3,9 +3,9 @@ export const translations = {
     en: {
         // Headers
         urgentTitle: "Complete Your Compliance Profile",
-        standardTitle: "Join the Xiri Supply Network",
+        standardTitle: "Join the XIRI Supply Network",
         urgentSubtitle: "We have an active contract ready for {{businessName}}. Please upload your documents to be cleared for work.",
-        standardSubtitle: "Expand your business with Xiri. Register {{businessName}} to receive commercial cleaning leads.",
+        standardSubtitle: "Expand your business with XIRI. Register {{businessName}} to receive commercial cleaning leads.",
 
         // Business Info
         businessInfo: "Business Information",
@@ -50,14 +50,14 @@ export const translations = {
         // Success
         successTitle: "Application Received",
         successFastTrack: "Our compliance team is reviewing your documents. Expect a call within 24 hours.",
-        successStandard: "You have been added to the Xiri Supply Network. We will contact you when jobs match your profile."
+        successStandard: "You have been added to the XIRI Supply Network. We will contact you when jobs match your profile."
     },
     es: {
         // Headers
         urgentTitle: "Complete Su Perfil de Cumplimiento",
-        standardTitle: "Únase a la Red de Proveedores Xiri",
+        standardTitle: "Únase a la Red de Proveedores XIRI",
         urgentSubtitle: "Tenemos un contrato activo listo para {{businessName}}. Por favor cargue sus documentos para ser autorizado para trabajar.",
-        standardSubtitle: "Expanda su negocio con Xiri. Registre {{businessName}} para recibir oportunidades de limpieza comercial.",
+        standardSubtitle: "Expanda su negocio con XIRI. Registre {{businessName}} para recibir oportunidades de limpieza comercial.",
 
         // Business Info
         businessInfo: "Información del Negocio",
@@ -102,7 +102,7 @@ export const translations = {
         // Success
         successTitle: "Solicitud Recibida",
         successFastTrack: "Nuestro equipo de cumplimiento está revisando sus documentos. Espere una llamada dentro de 24 horas.",
-        successStandard: "Ha sido agregado a la Red de Proveedores Xiri. Lo contactaremos cuando haya trabajos que coincidan con su perfil."
+        successStandard: "Ha sido agregado a la Red de Proveedores XIRI. Lo contactaremos cuando haya trabajos que coincidan con su perfil."
     }
 };
 

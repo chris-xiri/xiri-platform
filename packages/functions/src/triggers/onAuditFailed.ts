@@ -232,7 +232,7 @@ function buildAuditFailedEmail(data: {
 
     <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px; background: #f9fafb;">
       <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">
-        Xiri Facility Solutions • <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
+        XIRI Facility Solutions • <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
       </p>
     </div>
   </div>

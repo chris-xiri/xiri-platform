@@ -123,14 +123,16 @@ export const onLeadQualified = onDocumentUpdated({
         outreachStatus: 'PENDING',
     });
 
-    // Log activity
+    // Log activity (dynamic per lead type)
+    const schedule = leadType === 'enterprise' ? 'Day 0/4/8/14/21'
+        : leadType === 'referral_partnership' ? 'Day 0/4/10' : 'Day 0/3/7/14';
     await db.collection("lead_activities").add({
         leadId,
         type: "DRIP_SCHEDULED",
-        description: `Sales drip campaign scheduled: 4 emails over 14 days for ${businessName}.`,
+        description: `${leadType} drip campaign scheduled: ${steps.length} emails (${schedule}) for ${businessName}.`,
         createdAt: new Date(),
-        metadata: { followUpCount: 4, schedule: 'Day 0/3/7/14' }
+        metadata: { followUpCount: steps.length, schedule, leadType }
     });
 
-    logger.info(`[SalesOutreach] Drip campaign scheduled for lead ${leadId}: 4 emails at days 0, 3, 7, 14`);
+    logger.info(`[SalesOutreach] ${leadType} drip campaign scheduled for lead ${leadId}: ${steps.length} emails (${schedule})`);
 });

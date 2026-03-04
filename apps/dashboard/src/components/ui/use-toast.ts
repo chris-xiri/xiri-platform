@@ -1,4 +1,4 @@
-// Minimal Toast Hook for Xiri
+// Minimal Toast Hook for XIRI
 import * as React from "react"
 
 const TOAST_LIMIT = 1

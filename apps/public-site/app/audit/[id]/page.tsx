@@ -7,6 +7,7 @@ import { db } from "@/lib/firebase";
 import { Loader2, MapPin, Calendar, CheckCircle, ArrowRight, ArrowLeft, Phone, Building2 } from "lucide-react";
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { addDays, format, startOfHour, addHours } from 'date-fns';
+import { trackEvent } from '@/lib/tracking';
 
 // Steps
 const STEPS = [
@@ -69,6 +70,14 @@ export default function AuditWizardPage() {
                 wizardStep: (nextStep || currentStep) + 1
             };
             await updateDoc(doc(db, "leads", leadId), data);
+            // Track step completion
+            const stepNames = ['service', 'facility', 'schedule', 'contact', 'submit'];
+            const stepId = stepNames[currentStep] || `step_${currentStep}`;
+            if (nextStep === 5) {
+                trackEvent('audit_submit', { step_id: stepId, lead_id: leadId });
+            } else {
+                trackEvent('audit_step_complete', { step_id: stepId, next_step: String(nextStep ?? currentStep) });
+            }
             if (nextStep !== undefined) setCurrentStep(nextStep);
         } catch (err) {
             console.error(err);
@@ -509,24 +518,30 @@ export default function AuditWizardPage() {
     }
 
     // Step 6: Success
-    const StepSuccess = () => (
-        <div className="text-center py-10 animate-fadeIn">
-            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
-                <CheckCircle className="w-12 h-12" />
+    const StepSuccess = () => {
+        useEffect(() => {
+            trackEvent('audit_success', { lead_id: leadId });
+        }, []);
+
+        return (
+            <div className="text-center py-10 animate-fadeIn">
+                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+                    <CheckCircle className="w-12 h-12" />
+                </div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-4">Request Received!</h2>
+                <p className="text-lg text-gray-600 mb-8 max-w-sm mx-auto">
+                    We have received your audit request for <strong>{companyName}</strong>.
+                    A Facility Solutions Manager will confirm your time shortly.
+                </p>
+                <button
+                    onClick={() => router.push("/")}
+                    className="text-sky-600 font-bold hover:underline"
+                >
+                    Return Home
+                </button>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Request Received!</h2>
-            <p className="text-lg text-gray-600 mb-8 max-w-sm mx-auto">
-                We have received your audit request for <strong>{companyName}</strong>.
-                A Facility Solutions Manager will confirm your time shortly.
-            </p>
-            <button
-                onClick={() => router.push("/")}
-                className="text-sky-600 font-bold hover:underline"
-            >
-                Return Home
-            </button>
-        </div>
-    );
+        );
+    };
 
 
     // Render current step - memoized to prevent input focus loss

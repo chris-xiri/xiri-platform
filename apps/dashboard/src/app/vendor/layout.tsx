@@ -15,7 +15,7 @@ export default function VendorLayout({
             <header className="w-full bg-white border-b border-gray-200 py-4 px-6 flex justify-center">
                 <div className="flex items-center gap-2 font-bold text-xl text-primary">
                     <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white">X</div>
-                    Xiri
+                    XIRI
                 </div>
             </header>
 
@@ -26,7 +26,7 @@ export default function VendorLayout({
 
             {/* Footer */}
             <footer className="w-full py-6 text-center text-sm text-muted-foreground border-t border-gray-200 bg-white">
-                © {new Date().getFullYear()} Xiri Facility Solutions. All rights reserved.
+                © {new Date().getFullYear()} XIRI Facility Solutions. All rights reserved.
             </footer>
         </div>
     );

@@ -47,14 +47,14 @@ export const sendBookingConfirmation = onDocumentWritten({
     const icsContent = generateICS({
         start: startTime,
         end: endTime,
-        summary: `Xiri ${type}: ${businessName || 'Facility Audit'}`,
+        summary: `XIRI ${type}: ${businessName || 'Facility Audit'}`,
         description: `Meeting with ${contactName || 'Client'}.\n\nType: ${type}\nDuration: ${duration} mins\n\nPower to the Facilities!`,
         location: type === 'intro' ? 'Phone Call' : (after.address || after.zipCode || 'On Site'),
-        organizer: { name: "Xiri Facility Solutions", email: "onboarding@xiri.ai" }
+        organizer: { name: "XIRI Facility Solutions", email: "onboarding@xiri.ai" }
     });
 
     // 6. Send Email
-    const subject = `Confirmed: Your Xini ${type}`;
+    const subject = `Confirmed: Your XIRI ${type}`;
     const htmlBody = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
             <h1 style="color: #0ea5e9;">You're booked!</h1>
@@ -67,7 +67,7 @@ export const sendBookingConfirmation = onDocumentWritten({
                 <p style="margin: 5px 0 0; color: #6b7280;">Duration: ${duration} mins</p>
             </div>
             <p>A calendar invitation has been attached to this email.</p>
-            <p>Best,<br/>The Xiri Team</p>
+            <p>Best,<br/>The XIRI Team</p>
         </div>
     `;
 
@@ -108,7 +108,7 @@ function generateICS(event: {
 
     return `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Xiri//Facility Solutions//EN
+PRODID:-//XIRI//Facility Solutions//EN
 CALSCALE:GREGORIAN
 METHOD:REQUEST
 BEGIN:VEVENT

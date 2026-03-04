@@ -261,3 +261,13 @@ Maintained by: @architect-cto
 > - Rationale: The client calculator (`/calculator`) uses the **client rate** ($77/hr in NY) and frames output as "Estimated Monthly Cost." The contractor calculator (`/contractors/calculator`) uses the **sub rate** ($50/hr in NY) and frames output as "Estimated Monthly Earnings." **Neither calculator shows the explicit $/hr rate** — instead showing a "High/Mid/Low-cost market" tier label. This protects XIRI's 35% margin from being visible in a side-by-side comparison. Even if a user visits both pages, they see different monthly totals with different framing — which is natural since cost ≠ earnings. The contractor page uses an emerald/green theme vs sky blue for the client page.
 > - **RULE: Never display explicit $/hr rates on public-facing calculators. Use cost-tier labels and monthly totals only.**
 > - Status: **Active**
+
+> - Date: 2026-03-04
+> - Decision: **Architecture Audit Remediation — Brand, Rate Exposure, Sender Consistency**
+> - Rationale: Systematic audit of all ADRs against the codebase revealed 5 inconsistencies, all resolved in this commit:
+>   1. **Brand enforcement**: ~50 instances of "Xiri" (mixed case) corrected to "XIRI" across Cloud Functions (`sendOnboardingInvite`, `sendBookingConfirmation`, `onOnboardingComplete`, `processMailQueue`, `onDocumentUploaded`, `sendQuoteEmail`, `onAuditSubmitted`, `onAuditFailed`, `commissionTriggers`), public-site (onboarding translations EN/ES, invoice payment page, onboarding page), and dashboard (vendor layout, toast). Also fixed a "Xini" typo in `sendBookingConfirmation.ts`.
+>   2. **Rate exposure**: `calculator/page.tsx` line 206 displayed "$77/hr" explicitly, violating the Dual Calculator margin-protection rule. Replaced with "high-cost market" label.
+>   3. **Dynamic activity log**: `onLeadQualified.ts` hardcoded "4 emails over 14 days" regardless of `leadType`. Now dynamically reflects enterprise (5 steps, Day 0/4/8/14/21), referral (3 steps, Day 0/4/10), or direct/tenant (4 steps, Day 0/3/7/14).
+>   4. **Hardcoded sender addresses**: `onOnboardingComplete`, `onDocumentUploaded`, `sendQuoteEmail`, `processMailQueue` used inline `from:` strings. Brand name corrected in those addresses; migrating to `getSenderFrom()` is a future improvement.
+>   5. **Template prefix naming**: Direct and tenant leads both use `tenant_lead_` template prefix. This is intentional (same 4-step drip), but the naming is ambiguous. Documented here for clarity — no code change needed.
+> - Status: **Active**

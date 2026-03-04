@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { trackEvent } from '@/lib/tracking';
 
 // Initialize Firebase (public-site config)
 const firebaseConfig = {
@@ -80,6 +81,7 @@ export default function InvoicePayPage() {
                     dueDate: data.dueDate,
                     status: data.status,
                 });
+                trackEvent('invoice_view', { invoice_id: doc.id, business: data.clientBusinessName || '' });
             } catch (err) {
                 console.error('Error fetching invoice:', err);
                 setError('Something went wrong. Please try again.');
@@ -195,7 +197,10 @@ export default function InvoicePayPage() {
                                 <button
                                     key={opt.id}
                                     disabled={opt.disabled}
-                                    onClick={() => setSelectedMethod(opt.id)}
+                                    onClick={() => {
+                                        setSelectedMethod(opt.id);
+                                        trackEvent('invoice_payment_method_select', { method: opt.id });
+                                    }}
                                     className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left
                                         ${selectedMethod === opt.id
                                             ? 'border-sky-500 bg-sky-50'
@@ -228,8 +233,8 @@ export default function InvoicePayPage() {
                                 )}
                                 {selectedMethod === 'check' && (
                                     <div className="text-sm text-amber-700 space-y-1">
-                                        <p>Please make the check payable to <strong>Xiri Facility Solutions LLC</strong> and mail to:</p>
-                                        <p className="font-mono text-xs mt-1">Xiri Facility Solutions<br />Attn: Accounting<br />[Address on file]</p>
+                                        <p>Please make the check payable to <strong>XIRI Facility Solutions LLC</strong> and mail to:</p>
+                                        <p className="font-mono text-xs mt-1">XIRI Facility Solutions<br />Attn: Accounting<br />[Address on file]</p>
                                     </div>
                                 )}
                                 {selectedMethod === 'zelle' && (
@@ -248,7 +253,7 @@ export default function InvoicePayPage() {
             {/* Footer */}
             <div className="text-center mt-8">
                 <p className="text-xs text-gray-400">
-                    Xiri Facility Solutions • <a href="https://xiri.ai" className="text-sky-600 hover:underline">xiri.ai</a>
+                    XIRI Facility Solutions • <a href="https://xiri.ai" className="text-sky-600 hover:underline">xiri.ai</a>
                 </p>
                 <p className="text-xs text-gray-300 mt-1">
                     Questions? Contact <a href="mailto:chris@xiri.ai" className="text-sky-500 hover:underline">chris@xiri.ai</a>

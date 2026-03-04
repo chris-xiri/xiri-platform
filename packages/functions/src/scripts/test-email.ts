@@ -22,11 +22,11 @@ async function testEmail() {
 
     try {
         const info = await transporter.sendMail({
-            from: '"Xiri Recruit" <ic-recruiter@xiri.ai>',
+            from: '"XIRI Recruit" <ic-recruiter@xiri.ai>',
             to: rcp,
-            subject: "Test Email from Xiri Agent",
-            text: "This is a test email from your local Xiri development environment.",
-            html: "<b>This is a test email</b> from your local Xiri development environment.",
+            subject: "Test Email from XIRI Agent",
+            text: "This is a test email from your local XIRI development environment.",
+            html: "<b>This is a test email</b> from your local XIRI development environment.",
         });
 
         console.log("Message sent: %s", info.messageId);

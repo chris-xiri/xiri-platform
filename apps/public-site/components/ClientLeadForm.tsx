@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight } from "lucide-react";
 import { isValidZip } from "@/data/validZips";
+import { trackEvent } from "@/lib/tracking";
 
 interface ClientLeadFormProps {
     industryName?: string;
@@ -17,6 +18,15 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
     const [zip, setZip] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const tracked = useRef(false);
+
+    // Track form view on mount
+    useEffect(() => {
+        if (!tracked.current) {
+            tracked.current = true;
+            trackEvent('lead_form_view', { source: industryName || 'homepage' });
+        }
+    }, [industryName]);
 
     const handleStart = (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,8 +40,11 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
 
         setLoading(true);
 
+        trackEvent('lead_zip_submit', { zip, source: industryName || 'homepage' });
+
         // Alpha Geo-Fence: Only Great Neck & New Hyde Park zips proceed
         if (!isValidZip(zip)) {
+            trackEvent('lead_zip_rejected', { zip });
             router.push(`/waitlist?zip=${zip}`);
             return;
         }

@@ -155,7 +155,7 @@ export const sendQuoteEmail = onCall({
         `Service Proposal for ${quote.leadBusinessName} — XIRI Facility Solutions`,
         html,
         undefined,
-        'Xiri Facility Solutions <quotes@xiri.ai>'
+        'XIRI Facility Solutions <quotes@xiri.ai>'
     );
 
     if (!sent) {

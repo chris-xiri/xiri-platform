@@ -203,7 +203,7 @@ export default function CalculatorPage() {
                         </table>
                     </div>
                     <p className="text-xs text-slate-400 text-center mt-4">
-                        Based on New York rates ($77/hr). Adjust to your state using the calculator above.
+                        Based on New York (high-cost market) rates. Adjust to your state using the calculator above.
                     </p>
                 </div>
             </section>

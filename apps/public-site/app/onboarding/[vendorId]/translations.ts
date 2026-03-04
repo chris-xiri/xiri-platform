@@ -145,8 +145,8 @@ interface Translations {
 export const translations: Record<Language, Translations> = {
     en: {
         languageSelector: {
-            title: "Welcome to Xiri Partner Network",
-            subtitle: "Bienvenido a la Red de Socios de Xiri",
+            title: "Welcome to XIRI Partner Network",
+            subtitle: "Bienvenido a la Red de Socios de XIRI",
             english: "English",
             spanish: "Español"
         },
@@ -165,7 +165,7 @@ export const translations: Record<Language, Translations> = {
             complete: "{percent}% Complete"
         },
         header: {
-            title: "Join the Xiri Partner Network",
+            title: "Join the XIRI Partner Network",
             subtitle: "Complete your profile to start receiving opportunities"
         },
         step1: {
@@ -242,7 +242,7 @@ export const translations: Record<Language, Translations> = {
         success: {
             title: "Application Received",
             network: {
-                message: "You have been added to the Xiri Supply Network. We will contact you when jobs match your profile."
+                message: "You have been added to the XIRI Supply Network. We will contact you when jobs match your profile."
             },
             express: {
                 message: "Our compliance team is reviewing your documents. Expect a call within 24 hours."
@@ -255,8 +255,8 @@ export const translations: Record<Language, Translations> = {
     },
     es: {
         languageSelector: {
-            title: "Bienvenido a la Red de Socios de Xiri",
-            subtitle: "Welcome to Xiri Partner Network",
+            title: "Bienvenido a la Red de Socios de XIRI",
+            subtitle: "Welcome to XIRI Partner Network",
             english: "English",
             spanish: "Español"
         },
@@ -275,7 +275,7 @@ export const translations: Record<Language, Translations> = {
             complete: "{percent}% Completado"
         },
         header: {
-            title: "Únase a la Red de Socios de Xiri",
+            title: "Únase a la Red de Socios de XIRI",
             subtitle: "Complete su perfil para comenzar a recibir oportunidades"
         },
         step1: {
@@ -352,7 +352,7 @@ export const translations: Record<Language, Translations> = {
         success: {
             title: "Solicitud Recibida",
             network: {
-                message: "Ha sido agregado a la Red de Proveedores de Xiri. Le contactaremos cuando haya trabajos que coincidan con su perfil."
+                message: "Ha sido agregado a la Red de Proveedores de XIRI. Le contactaremos cuando haya trabajos que coincidan con su perfil."
             },
             express: {
                 message: "Nuestro equipo de cumplimiento está revisando sus documentos. Espere una llamada dentro de 24 horas."

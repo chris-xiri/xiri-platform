@@ -91,7 +91,7 @@ export async function verifyDocument(docType: 'COI' | 'W9', vendorName: string, 
     }
 
     try {
-        const FALLBACK = `You are a document verification agent for Xiri Facility Solutions.
+        const FALLBACK = `You are a document verification agent for XIRI Facility Solutions.
 
 Analyze this {{documentType}} for {{vendorName}} (specialty: {{specialty}}).
 
@@ -163,7 +163,7 @@ export async function verifyAcord25(
         const base64Data = buffer.toString('base64');
 
         // 2. Build the structured extraction prompt
-        const ACORD_FALLBACK = `You are an insurance compliance verification agent for Xiri Facility Solutions.
+        const ACORD_FALLBACK = `You are an insurance compliance verification agent for XIRI Facility Solutions.
 
 Analyze this ACORD 25 Certificate of Liability Insurance and extract data in JSON format.
 Vendor: "{{vendorName}}"
