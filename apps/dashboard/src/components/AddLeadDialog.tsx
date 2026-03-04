@@ -180,6 +180,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     const [state, setState] = useState("");
     const [zip, setZip] = useState("");
     const [facilityType, setFacilityType] = useState("");
+    const [leadType, setLeadType] = useState("direct");
     const [contactName, setContactName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
@@ -272,6 +273,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                 state,
                 zip,
                 facilityType: facilityType || null,
+                leadType,
                 contactName: contactName || null,
                 email: email || null,
                 phone: phone || null,
@@ -298,6 +300,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
             setState("");
             setZip("");
             setFacilityType("");
+            setLeadType("direct");
             setContactName("");
             setEmail("");
             setPhone("");
@@ -425,6 +428,22 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
 
                     {/* Facility Type — Creatable Combobox */}
                     <FacilityTypeCombobox value={facilityType} onChange={setFacilityType} />
+
+                    {/* Lead Type */}
+                    <div>
+                        <Label>Lead Type</Label>
+                        <Select value={leadType} onValueChange={setLeadType}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="direct">Direct</SelectItem>
+                                <SelectItem value="tenant">Tenant</SelectItem>
+                                <SelectItem value="referral_partnership">Referral Partnership</SelectItem>
+                                <SelectItem value="enterprise">Enterprise</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
                     {/* Contact Details */}
                     <div className="space-y-4 pt-4 border-t">
