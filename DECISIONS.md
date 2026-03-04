@@ -201,3 +201,35 @@ Maintained by: @architect-cto
 > - Decision: **Lead Detail Drawer: 4-Tab Layout**
 > - Rationale: The `LeadDetailDrawer.tsx` uses a tabbed layout: **Overview** (Contact, Notes, Quotes, Meta), **Audit** (Audit Booking + Service Interest), **Attribution** (Source/Medium/Campaign/Landing Page), **Activity** (LeadActivityFeed). This separation keeps the drawer organized and prevents information overload.
 > - Status: **Active**
+
+> - Date: 2026-03-04
+> - Decision: **Janitorial Pricing Calculator — Hours-Based Model at $77/hr**
+> - Rationale: Janitorial cleaning is XIRI's main wedge. During audits/walkthroughs, sales needs to give on-the-spot quotes with ±20% accuracy. The calculator uses an **hours-based model** (not $/sqft) because we price per visit — the number of cleaning days is variable per client. The cost stack: **$77/hr** billed to client, **$50/hr** to subcontractor (35% margin for XIRI), **$25/hr** cleaner pay. Per-visit hours are calculated from: `sqft ÷ production rate + fixture time + add-ons × shift multiplier`, with a 1-hour minimum per visit. Monthly rate = `per-visit cost × days/week × 4.33`.
+> - **RULE: Pricing is always per-visit first, then multiplied by frequency. Never quote a flat monthly rate without knowing hours/visit.**
+> - Status: **Active**
+
+> - Date: 2026-03-04
+> - Decision: **Pricing Config Stored in Firestore (`pricing_config` Collection)**
+> - Rationale: The cost stack ($77/hr), production rates, fixture times, floor modifiers, shift multipliers, and add-ons are all stored in `pricing_config/janitorial` in Firestore — not hardcoded. This allows adjusting rates from the admin Settings UI without code deploys. The collection is tagged `janitorial` and designed to be extensible for future service calculators (e.g., floor care, window cleaning). The dashboard component loads config on mount with a hardcoded fallback default if Firestore is unreachable.
+> - **RULE: To adjust pricing rates, update the `pricing_config/janitorial` doc in Firestore (or use the Settings UI). Do not hardcode rates in the calculator component.**
+> - Status: **Active**
+
+> - Date: 2026-03-04
+> - Decision: **Production Rates (sqft/hr) by Facility Type**
+> - Rationale: Different facility types require different cleaning intensity. A cleaner can cover ~4,250 sqft/hr in an office but only ~1,250 sqft/hr in a cleanroom. These rates determine how many hours a visit takes. Current defaults: Office 4,250 | Medical (private/dental/vet) 2,500 | Medical (urgent/surgery/dialysis) 1,750 | Auto 3,500 | Education 3,000 | Gym 3,000 | Retail 4,750 | Lab/Cleanroom 1,250 | Manufacturing 3,000 | Other 3,500. All configurable via `pricing_config/janitorial.productionRates`.
+> - Status: **Active**
+
+> - Date: 2026-03-04
+> - Decision: **Fixture-Based Time Additions (Restrooms + Trash)**
+> - Rationale: Restroom fixtures (toilets, sinks, urinals) and trash bins add predictable time on top of base sqft cleaning. **3 minutes per restroom fixture** and **1 minute per trash bin** are added to each visit. This is more accurate than flat percentage add-ons because fixture count correlates directly with cleaning time. Configured in `pricing_config/janitorial.fixtures`.
+> - Status: **Active**
+
+> - Date: 2026-03-04
+> - Decision: **Floor Type Breakdown with Weighted Production Rates**
+> - Rationale: Different floor types affect cleaning speed. Hard floor (mop + sweep) is slower than carpet (vacuum). The calculator lets users specify floor type mix as percentages or sqft with a toggle. Each type has a production rate modifier: carpet 1.0x (baseline), hard floor 0.85x, tile 0.80x, concrete 1.1x, vinyl 0.90x. The weighted average adjusts the base production rate for more accurate estimates. Configured in `pricing_config/janitorial.floorModifiers`.
+> - Status: **Active**
+
+> - Date: 2026-03-04
+> - Decision: **Calculator Lives in QuoteBuilder Step 3 as Collapsible Panel**
+> - Rationale: The pricing calculator appears below the "Monthly Rate" input in the QuoteBuilder wizard (Step 3: Services & Pricing) **only for janitorial service category items**. It's a collapsible panel — starts collapsed to not overwhelm, one click to expand. The "Use $X/mo" button applies the mid-point estimate to the line item. It auto-fills facility type from the lead and sqft from property sourcing data when available. Non-janitorial services (floor care, window cleaning, etc.) don't show the calculator.
+> - Status: **Active**
