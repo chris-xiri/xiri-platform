@@ -142,6 +142,21 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "__comment": "Lead Scheduled Emails: shows pending outreach tasks for a lead — LeadActivityFeed.tsx",
+            "collectionGroup": "outreach_queue",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "leadId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []

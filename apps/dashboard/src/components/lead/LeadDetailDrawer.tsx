@@ -14,10 +14,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
     Building2, User, Mail, Phone, MapPin, Calendar, Clock,
     Briefcase, TrendingUp, Pencil, Check, X, Save, Loader2,
-    FileText, ExternalLink, Plus, ChevronRight, Rocket, Send
+    FileText, ExternalLink, Plus, ChevronRight, Rocket, Send, Activity
 } from 'lucide-react';
 import { format } from 'date-fns';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
+import LeadActivityFeed from './LeadActivityFeed';
 
 function toDate(value: any): Date | null {
     if (!value) return null;
@@ -509,6 +510,15 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                         </select>
                                     </div>
                                 </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 text-xs gap-1 text-muted-foreground"
+                                    onClick={() => router.push(`/sales/crm/${leadId}`)}
+                                >
+                                    <ExternalLink className="w-3 h-3" />
+                                    Full Page
+                                </Button>
                             </div>
                         </div>
 
@@ -741,6 +751,18 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                 <p><span className="font-medium">ID:</span> {lead.id}</p>
                                 {createdDate && <p><span className="font-medium">Created:</span> {format(createdDate, 'MMM d, yyyy h:mm a')}</p>}
                             </div>
+
+                            {/* Activity Feed */}
+                            <Card>
+                                <CardHeader className="py-3">
+                                    <CardTitle className="text-sm flex items-center gap-2">
+                                        <Activity className="w-4 h-4" /> Activity
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <LeadActivityFeed leadId={leadId!} />
+                                </CardContent>
+                            </Card>
                         </div>
                     </>
                 )}
