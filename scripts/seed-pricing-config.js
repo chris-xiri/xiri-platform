@@ -39,10 +39,9 @@ async function seed() {
         },
         floorModifiers: {
             carpet: 1.0,
-            hardFloor: 0.85,
-            tile: 0.80,
+            resilient: 0.85,
+            tileStone: 0.75,
             concrete: 1.1,
-            vinyl: 0.90,
         },
         shiftModifiers: {
             afterHours: 1.0,

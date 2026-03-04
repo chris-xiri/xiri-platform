@@ -16,6 +16,7 @@ import {
     EstimateResult,
     calculateJanitorialEstimate,
     FLOOR_TYPE_LABELS,
+    FLOOR_TYPE_INFO,
     SHIFT_LABELS,
     ADD_ON_LABELS,
 } from '@/data/janitorialPricing';
@@ -61,9 +62,9 @@ export default function JanitorialPricingCalc({
     const [sqft, setSqft] = useState(initialSqft || 0);
     const [floorMode, setFloorMode] = useState<'percent' | 'sqft'>('percent');
     const [floorBreakdown, setFloorBreakdown] = useState<FloorBreakdown[]>([
-        { type: 'carpet', percent: 60 },
-        { type: 'hardFloor', percent: 30 },
-        { type: 'tile', percent: 10 },
+        { type: 'carpet', percent: 50 },
+        { type: 'resilient', percent: 40 },
+        { type: 'tileStone', percent: 10 },
     ]);
     const [restroomFixtures, setRestroomFixtures] = useState(6);
     const [trashBins, setTrashBins] = useState(8);
@@ -220,21 +221,30 @@ export default function JanitorialPricingCalc({
                             {floorMode === 'percent' ? '% → sqft' : 'sqft → %'}
                         </button>
                     </div>
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className="grid grid-cols-4 gap-1.5">
                         {Object.entries(FLOOR_TYPE_LABELS).map(([type, label]) => {
                             const entry = floorBreakdown.find(f => f.type === type);
                             const isActive = !!entry;
+                            const info = FLOOR_TYPE_INFO[type];
                             return (
                                 <div key={type} className="space-y-0.5">
-                                    <button
-                                        onClick={() => toggleFloorType(type)}
-                                        className={`text-[10px] w-full text-center px-1 py-0.5 rounded transition-colors ${isActive
+                                    <div className="relative group">
+                                        <button
+                                            onClick={() => toggleFloorType(type)}
+                                            className={`text-[10px] w-full text-center px-1 py-0.5 rounded transition-colors ${isActive
                                                 ? 'bg-primary/10 text-primary font-medium border border-primary/30'
                                                 : 'bg-muted text-muted-foreground border border-transparent hover:border-border'
-                                            }`}
-                                    >
-                                        {label}
-                                    </button>
+                                                }`}
+                                        >
+                                            {label}
+                                        </button>
+                                        {info && (
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50 w-48 p-2 bg-popover text-popover-foreground border rounded-md shadow-lg text-[10px]">
+                                                <p className="font-semibold">{info.method}</p>
+                                                <p className="text-muted-foreground mt-0.5">Includes: {info.includes}</p>
+                                            </div>
+                                        )}
+                                    </div>
                                     {isActive && (
                                         <Input
                                             type="number"
@@ -250,8 +260,8 @@ export default function JanitorialPricingCalc({
                     </div>
                     {floorMode === 'percent' && (
                         <p className={`text-[10px] mt-0.5 ${floorBreakdown.reduce((s, f) => s + f.percent, 0) === 100
-                                ? 'text-green-600'
-                                : 'text-amber-600'
+                            ? 'text-green-600'
+                            : 'text-amber-600'
                             }`}>
                             Total: {floorBreakdown.reduce((s, f) => s + f.percent, 0)}%
                             {floorBreakdown.reduce((s, f) => s + f.percent, 0) !== 100 && ' (should be 100%)'}
@@ -296,8 +306,8 @@ export default function JanitorialPricingCalc({
                                     key={d}
                                     onClick={() => setDaysPerWeek(d)}
                                     className={`flex-1 h-7 rounded text-xs font-medium transition-colors ${daysPerWeek === d
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted hover:bg-muted/80 text-muted-foreground'
                                         }`}
                                 >
                                     {d}x
@@ -313,8 +323,8 @@ export default function JanitorialPricingCalc({
                                     key={key}
                                     onClick={() => setShift(key)}
                                     className={`flex-1 h-7 rounded text-[10px] font-medium transition-colors ${shift === key
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted hover:bg-muted/80 text-muted-foreground'
                                         }`}
                                 >
                                     {label}
@@ -333,8 +343,8 @@ export default function JanitorialPricingCalc({
                                 key={key}
                                 onClick={() => setAddOns(prev => ({ ...prev, [key]: !prev[key] }))}
                                 className={`px-2 py-1 rounded text-[10px] font-medium transition-colors border ${addOns[key]
-                                        ? 'bg-primary/10 text-primary border-primary/30'
-                                        : 'bg-muted text-muted-foreground border-transparent hover:border-border'
+                                    ? 'bg-primary/10 text-primary border-primary/30'
+                                    : 'bg-muted text-muted-foreground border-transparent hover:border-border'
                                     }`}
                             >
                                 {addOns[key] ? '✓ ' : ''}{label}

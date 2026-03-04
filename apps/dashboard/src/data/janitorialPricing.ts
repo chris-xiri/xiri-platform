@@ -29,7 +29,7 @@ export interface PricingConfig {
 }
 
 export interface FloorBreakdown {
-    type: string;   // 'carpet' | 'hardFloor' | 'tile' | 'concrete' | 'vinyl'
+    type: string;   // 'carpet' | 'resilient' | 'tileStone' | 'concrete'
     percent: number; // 0-100
 }
 
@@ -91,10 +91,9 @@ export const DEFAULT_PRICING_CONFIG: PricingConfig = {
     },
     floorModifiers: {
         carpet: 1.0,
-        hardFloor: 0.85,
-        tile: 0.80,
+        resilient: 0.85,
+        tileStone: 0.75,
         concrete: 1.1,
-        vinyl: 0.90,
     },
     shiftModifiers: {
         afterHours: 1.0,
@@ -112,10 +111,28 @@ export const DEFAULT_PRICING_CONFIG: PricingConfig = {
 
 export const FLOOR_TYPE_LABELS: Record<string, string> = {
     carpet: 'Carpet',
-    hardFloor: 'Hard Floor',
-    tile: 'Tile',
+    resilient: 'Resilient',
+    tileStone: 'Tile / Stone',
     concrete: 'Concrete',
-    vinyl: 'Vinyl / LVT',
+};
+
+export const FLOOR_TYPE_INFO: Record<string, { includes: string; method: string }> = {
+    carpet: {
+        includes: 'Carpet, carpet tile',
+        method: 'Vacuum — fastest surface to clean',
+    },
+    resilient: {
+        includes: 'VCT, LVT, vinyl, sheet vinyl, linoleum, rubber',
+        method: 'Dust mop + wet mop — standard hard floor care',
+    },
+    tileStone: {
+        includes: 'Ceramic, porcelain, natural stone, terrazzo, marble',
+        method: 'Dust mop + wet mop + periodic grout/stone care — slowest',
+    },
+    concrete: {
+        includes: 'Sealed concrete, polished concrete, epoxy',
+        method: 'Dust mop — easiest hard surface',
+    },
 };
 
 export const SHIFT_LABELS: Record<string, string> = {

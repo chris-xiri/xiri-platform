@@ -231,6 +231,14 @@ export default function Navigation() {
 
 
                             <Link
+                                href="/calculator"
+                                className="text-gray-600 font-medium hover:text-sky-600 transition-colors"
+                                onClick={() => handleNavClick('/calculator', 'Calculator')}
+                            >
+                                Calculator
+                            </Link>
+
+                            <Link
                                 href="/contractors"
                                 className="text-gray-600 font-medium hover:text-sky-600 transition-colors"
                                 onClick={() => handleNavClick('/contractors', 'Our Contractors')}

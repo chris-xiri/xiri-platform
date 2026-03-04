@@ -6,7 +6,12 @@ export type EventName =
     | 'click_cta'
     | 'lead_submission_start'
     | 'lead_submission_success'
-    | 'lead_submission_error';
+    | 'lead_submission_error'
+    | 'calculator_view'
+    | 'calculator_estimate'
+    | 'calculator_advanced_toggle'
+    | 'calculator_cta_click'
+    | 'calculator_email_submit';
 
 export interface EventProperties {
     [key: string]: string | number | boolean | undefined;

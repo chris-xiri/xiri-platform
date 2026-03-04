@@ -225,11 +225,39 @@ Maintained by: @architect-cto
 > - Status: **Active**
 
 > - Date: 2026-03-04
-> - Decision: **Floor Type Breakdown with Weighted Production Rates**
-> - Rationale: Different floor types affect cleaning speed. Hard floor (mop + sweep) is slower than carpet (vacuum). The calculator lets users specify floor type mix as percentages or sqft with a toggle. Each type has a production rate modifier: carpet 1.0x (baseline), hard floor 0.85x, tile 0.80x, concrete 1.1x, vinyl 0.90x. The weighted average adjusts the base production rate for more accurate estimates. Configured in `pricing_config/janitorial.floorModifiers`.
-> - Status: **Active**
+> - Decision: **Floor Type Breakdown — 4 Industry-Standard Categories**
+> - Rationale: Different floor types affect cleaning speed. The calculator lets users specify floor type mix as percentages or sqft with a toggle. Consolidated from 5 ad-hoc types to **4 industry-standard categories**: **Carpet** (1.0x — vacuum, fastest surface), **Resilient** (0.85x — VCT, LVT, vinyl, linoleum, rubber — dust mop + wet mop), **Tile / Stone** (0.75x — ceramic, porcelain, terrazzo, marble — mop + periodic grout care), **Concrete** (1.1x — sealed/polished concrete, epoxy — dust mop, easiest surface). Each floor type has an info tooltip showing cleaning method and included materials. The weighted average adjusts the base production rate. Configured in `pricing_config/janitorial.floorModifiers`.
+> - Status: **Active (Updated from 5 types to 4)**
 
 > - Date: 2026-03-04
 > - Decision: **Calculator Lives in QuoteBuilder Step 3 as Collapsible Panel**
 > - Rationale: The pricing calculator appears below the "Monthly Rate" input in the QuoteBuilder wizard (Step 3: Services & Pricing) **only for janitorial service category items**. It's a collapsible panel — starts collapsed to not overwhelm, one click to expand. The "Use $X/mo" button applies the mid-point estimate to the line item. It auto-fills facility type from the lead and sqft from property sourcing data when available. Non-janitorial services (floor care, window cleaning, etc.) don't show the calculator.
+> - Status: **Active**
+
+> - Date: 2026-03-04
+> - Decision: **Public SEO Calculators — Standalone Pillar Pages**
+> - Rationale: Two public-facing calculators at `xiri.ai/calculator` (clients) and `xiri.ai/contractors/calculator` (contractors). These are **standalone pillar pages** — not linked from other site pages — designed to attract direct traffic from Facebook ads and email campaigns. Each page includes full SEO: JSON-LD schemas (FAQPage + WebApplication), rich FAQ content, average cost tables, and dual CTAs. The nav has a subtle "Calculator" link but no cross-linking from industry/service pages to avoid cluttering those pages.
+> - Status: **Active**
+
+> - Date: 2026-03-04
+> - Decision: **State-Variable Pricing (50 States + DC)**
+> - Rationale: Pricing varies significantly by state labor market. A **hardcoded state minimum wage table** (`data/state-wages.ts`) maps all 50 states + DC to their current minimum wage. The `scaleRates()` function proportionally scales cleaner, subcontractor, and client rates based on the state's min wage vs New York's $20/hr baseline. Example: Texas ($7.25/hr min) → ~$28/hr client rate vs NY's $77/hr. This is used on the public calculators (statically generated, no Firestore dependency). The internal dashboard calculator continues to use Firestore-stored rates.
+> - **RULE: For the public site, use `state-wages.ts`. For the dashboard, use `pricing_config/janitorial` from Firestore.**
+> - Status: **Active**
+
+> - Date: 2026-03-04
+> - Decision: **Simple/Advanced Calculator UX (High Engagement Pattern)**
+> - Rationale: Public calculators use a **simple/advanced toggle** modeled after NerdWallet and Zillow calculators. **Simple mode** (default): 4 inputs — state, facility type, sqft, frequency. Uses sensible defaults for floor breakdown, fixtures, and shift. **Advanced mode** (expandable): reveals floor type breakdown with tooltips, restroom fixtures, trash bins, shift timing, and add-ons. This maximizes engagement — casual users get an instant answer, power users can refine. A "Refine this estimate →" nudge appears in the results if advanced mode is not open.
+> - Status: **Active**
+
+> - Date: 2026-03-04
+> - Decision: **Soft-Gate Lead Capture (No Paywall, Voluntary Email)**
+> - Rationale: The public calculators show full estimate ranges **ungated** — no email required to see the result. After the estimate, a **"📧 Email Me a Detailed Breakdown"** CTA opens a modal. Submitting creates a `leads` doc (client calc) or `vendors` doc (contractor calc) in Firestore with calculator data (state, facility type, sqft, estimate). This is a **soft gate** — higher quality leads than a hard gate because they opt in voluntarily. Preserves engagement and SEO dwell time while still capturing leads. GA events track all interactions (view, estimate, advanced toggle, CTA click, email submit) for anonymous traffic research even without email capture.
+> - **RULE: Never hard-gate the calculator results. The value is in engagement and SEO dwell time, not forced email collection.**
+> - Status: **Active**
+
+> - Date: 2026-03-04
+> - Decision: **Dual Calculator: Client Rate vs Contractor Rate (Margin Protection)**
+> - Rationale: The client calculator (`/calculator`) uses the **client rate** ($77/hr in NY) and frames output as "Estimated Monthly Cost." The contractor calculator (`/contractors/calculator`) uses the **sub rate** ($50/hr in NY) and frames output as "Estimated Monthly Earnings." **Neither calculator shows the explicit $/hr rate** — instead showing a "High/Mid/Low-cost market" tier label. This protects XIRI's 35% margin from being visible in a side-by-side comparison. Even if a user visits both pages, they see different monthly totals with different framing — which is natural since cost ≠ earnings. The contractor page uses an emerald/green theme vs sky blue for the client page.
+> - **RULE: Never display explicit $/hr rates on public-facing calculators. Use cost-tier labels and monthly totals only.**
 > - Status: **Active**

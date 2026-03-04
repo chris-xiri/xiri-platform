@@ -1,0 +1,635 @@
+'use client';
+
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { trackEvent } from '@/lib/tracking';
+import { STATE_WAGES, scaleRates, NY_MIN_WAGE } from '@/data/state-wages';
+
+// ─── Types ────────────────────────────────────────────────────────────
+interface FloorBreakdown { type: string; percent: number; }
+interface EstimateResult {
+    perVisit: number;
+    daysPerMonth: number;
+    monthly: { low: number; mid: number; high: number };
+}
+
+// ─── Props ────────────────────────────────────────────────────────────
+interface PublicCalculatorProps {
+    /** 'client' shows client rate (what they pay), 'contractor' shows sub rate (what they earn) */
+    mode?: 'client' | 'contractor';
+}
+
+// ─── Constants ────────────────────────────────────────────────────────
+const FACILITY_LABELS: Record<string, string> = {
+    office_general: 'Office (General)',
+    medical_private: 'Medical (Private Practice)',
+    medical_dental: 'Medical (Dental)',
+    medical_veterinary: 'Medical (Veterinary)',
+    medical_urgent_care: 'Medical (Urgent Care)',
+    medical_surgery: 'Medical (Surgery Center)',
+    medical_dialysis: 'Medical (Dialysis)',
+    auto_dealer_showroom: 'Auto Dealership (Showroom)',
+    auto_service_center: 'Auto (Service Center)',
+    edu_daycare: 'Daycare / Preschool',
+    edu_private_school: 'Private School',
+    fitness_gym: 'Fitness / Gym',
+    retail_storefront: 'Retail Storefront',
+    lab_cleanroom: 'Lab / Cleanroom',
+    lab_bsl: 'Lab (BSL)',
+    manufacturing_light: 'Light Manufacturing',
+    other: 'Other',
+};
+
+const PRODUCTION_RATES: Record<string, number> = {
+    office_general: 4250, medical_private: 2500, medical_dental: 2500,
+    medical_veterinary: 2500, medical_urgent_care: 1750, medical_surgery: 1750,
+    medical_dialysis: 1750, auto_dealer_showroom: 3500, auto_service_center: 3500,
+    edu_daycare: 3000, edu_private_school: 3000, fitness_gym: 3000,
+    retail_storefront: 4750, lab_cleanroom: 1250, lab_bsl: 1250,
+    manufacturing_light: 3000, other: 3500,
+};
+
+const FLOOR_TYPES = [
+    { key: 'carpet', label: 'Carpet', modifier: 1.0, method: 'Vacuum — fastest surface', includes: 'Carpet, carpet tile' },
+    { key: 'resilient', label: 'Resilient', modifier: 0.85, method: 'Dust mop + wet mop', includes: 'VCT, LVT, vinyl, linoleum, rubber' },
+    { key: 'tileStone', label: 'Tile / Stone', modifier: 0.75, method: 'Mop + periodic grout care', includes: 'Ceramic, porcelain, terrazzo, marble' },
+    { key: 'concrete', label: 'Concrete', modifier: 1.1, method: 'Dust mop — easiest surface', includes: 'Sealed/polished concrete, epoxy' },
+];
+
+const SHIFT_OPTIONS = [
+    { key: 'afterHours', label: 'After-hours', modifier: 1.0 },
+    { key: 'daytime', label: 'Daytime', modifier: 1.15 },
+    { key: 'weekend', label: 'Weekend', modifier: 1.25 },
+];
+
+const ADDON_OPTIONS = [
+    { key: 'kitchen', label: 'Kitchen / Breakroom', modifier: 0.10 },
+    { key: 'highTouchDisinfection', label: 'High-Touch Disinfection', modifier: 0.15 },
+    { key: 'entryWayMats', label: 'Entryway Mats', modifier: 0.03 },
+];
+
+const FIXTURE_MINUTES = { restroom: 3, trash: 1 };
+const MIN_HOURS = 1;
+const DEFAULT_FLOORS: FloorBreakdown[] = [
+    { type: 'carpet', percent: 50 },
+    { type: 'resilient', percent: 40 },
+    { type: 'tileStone', percent: 10 },
+];
+
+// Cost-of-living tier labels (hides explicit $/hr)
+function getCostTier(minWage: number): string {
+    if (minWage >= 16) return 'High-cost market';
+    if (minWage >= 12) return 'Mid-cost market';
+    return 'Low-cost market';
+}
+
+// ─── Calculator Engine ────────────────────────────────────────────────
+function calculate(
+    hourlyRate: number,
+    facilityType: string,
+    sqft: number,
+    floorBreakdown: FloorBreakdown[],
+    restroomFixtures: number,
+    trashBins: number,
+    daysPerWeek: number,
+    shift: string,
+    addOns: Record<string, boolean>,
+): EstimateResult {
+    const baseRate = PRODUCTION_RATES[facilityType] || 3500;
+    const totalPct = floorBreakdown.reduce((s, f) => s + f.percent, 0);
+    let weightedRate = baseRate;
+    if (totalPct > 0) {
+        weightedRate = floorBreakdown.reduce((sum, f) => {
+            const mod = FLOOR_TYPES.find(ft => ft.key === f.type)?.modifier || 1.0;
+            return sum + (baseRate * mod * (f.percent / totalPct));
+        }, 0);
+    }
+    const baseHours = sqft / weightedRate;
+    const fixtureHours = (restroomFixtures * FIXTURE_MINUTES.restroom + trashBins * FIXTURE_MINUTES.trash) / 60;
+    let addOnMult = 1.0;
+    for (const [key, on] of Object.entries(addOns)) {
+        if (on) addOnMult += ADDON_OPTIONS.find(a => a.key === key)?.modifier || 0;
+    }
+    const shiftMult = SHIFT_OPTIONS.find(s => s.key === shift)?.modifier || 1.0;
+    const rawHours = (baseHours + fixtureHours) * addOnMult * shiftMult;
+    const hours = Math.max(MIN_HOURS, Math.round(rawHours * 10) / 10);
+    const perVisit = Math.round(hours * hourlyRate);
+    const daysPerMonth = Math.round(daysPerWeek * 4.33 * 10) / 10;
+    const mid = Math.round(perVisit * daysPerMonth);
+    return { perVisit, daysPerMonth, monthly: { low: Math.round(mid * 0.8), mid, high: Math.round(mid * 1.2) } };
+}
+
+// ─── Component ────────────────────────────────────────────────────────
+export default function PublicCalculator({ mode = 'client' }: PublicCalculatorProps) {
+    const isContractor = mode === 'contractor';
+
+    // ─── Inputs ───────────────────────────────────────────────────────
+    const [stateCode, setStateCode] = useState('NY');
+    const [facilityType, setFacilityType] = useState('office_general');
+    const [sqft, setSqft] = useState(0);
+    const [daysPerWeek, setDaysPerWeek] = useState(5);
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [floorMode, setFloorMode] = useState<'percent' | 'sqft'>('percent');
+    const [floorBreakdown, setFloorBreakdown] = useState<FloorBreakdown[]>(DEFAULT_FLOORS);
+    const [restroomFixtures, setRestroomFixtures] = useState(6);
+    const [trashBins, setTrashBins] = useState(8);
+    const [shift, setShift] = useState('afterHours');
+    const [addOns, setAddOns] = useState<Record<string, boolean>>({
+        kitchen: false, highTouchDisinfection: false, entryWayMats: false,
+    });
+
+    // ─── Email gate ───────────────────────────────────────────────────
+    const [showEmailModal, setShowEmailModal] = useState(false);
+    const [email, setEmail] = useState('');
+    const [emailName, setEmailName] = useState('');
+    const [emailSubmitting, setEmailSubmitting] = useState(false);
+    const [emailSubmitted, setEmailSubmitted] = useState(false);
+
+    // ─── GA: track page view ──────────────────────────────────────────
+    const tracked = useRef(false);
+    useEffect(() => {
+        if (!tracked.current) {
+            trackEvent('calculator_view', { calculator_type: mode });
+            tracked.current = true;
+        }
+    }, [mode]);
+
+    // ─── Rate calculation ─────────────────────────────────────────────
+    const stateWage = STATE_WAGES.find(s => s.code === stateCode)?.minWage || NY_MIN_WAGE;
+    const scaledRates = scaleRates(stateWage);
+    const hourlyRate = isContractor ? scaledRates.subRate : scaledRates.clientRate;
+    const costTier = getCostTier(stateWage);
+
+    // ─── Floor helpers ────────────────────────────────────────────────
+    const toggleFloor = (type: string) => {
+        setFloorBreakdown(prev => {
+            if (prev.find(f => f.type === type)) return prev.filter(f => f.type !== type);
+            return [...prev, { type, percent: 0 }];
+        });
+    };
+    const updateFloor = (type: string, val: number) => {
+        setFloorBreakdown(prev => prev.map(f => f.type === type ? { ...f, percent: val } : f));
+    };
+
+    const normalizedFloors = useMemo(() => {
+        if (floorMode === 'percent') return floorBreakdown;
+        const total = floorBreakdown.reduce((s, f) => s + f.percent, 0);
+        if (total === 0) return floorBreakdown.map(f => ({ ...f, percent: 0 }));
+        return floorBreakdown.map(f => ({ ...f, percent: (f.percent / total) * 100 }));
+    }, [floorBreakdown, floorMode]);
+
+    const effectiveFloors = showAdvanced ? normalizedFloors : DEFAULT_FLOORS;
+    const effectiveFixtures = showAdvanced ? restroomFixtures : 6;
+    const effectiveTrash = showAdvanced ? trashBins : 8;
+    const effectiveShift = showAdvanced ? shift : 'afterHours';
+    const effectiveAddOns = showAdvanced ? addOns : { kitchen: false, highTouchDisinfection: false, entryWayMats: false };
+
+    // ─── Estimate ─────────────────────────────────────────────────────
+    const estimate = useMemo(() => {
+        if (sqft <= 0) return null;
+        return calculate(hourlyRate, facilityType, sqft, effectiveFloors, effectiveFixtures, effectiveTrash, daysPerWeek, effectiveShift, effectiveAddOns);
+    }, [hourlyRate, facilityType, sqft, effectiveFloors, effectiveFixtures, effectiveTrash, daysPerWeek, effectiveShift, effectiveAddOns]);
+
+    // ─── GA: track estimate ───────────────────────────────────────────
+    const lastTrackedEstimate = useRef<string>('');
+    useEffect(() => {
+        if (!estimate) return;
+        const key = `${stateCode}-${facilityType}-${sqft}-${daysPerWeek}-${estimate.monthly.mid}`;
+        if (key === lastTrackedEstimate.current) return;
+        lastTrackedEstimate.current = key;
+        trackEvent('calculator_estimate', {
+            calculator_type: mode,
+            state: stateCode,
+            facility_type: facilityType,
+            sqft,
+            days_per_week: daysPerWeek,
+            monthly_estimate: estimate.monthly.mid,
+            advanced_mode: showAdvanced,
+        });
+    }, [estimate, stateCode, facilityType, sqft, daysPerWeek, mode, showAdvanced]);
+
+    // ─── Email submission ─────────────────────────────────────────────
+    const handleEmailSubmit = async () => {
+        if (!email || !estimate) return;
+        setEmailSubmitting(true);
+        try {
+            const collectionName = isContractor ? 'vendors' : 'leads';
+            const docData = isContractor ? {
+                status: 'new',
+                source: 'calculator_contractor',
+                email,
+                name: emailName || '',
+                calculatorData: {
+                    state: stateCode,
+                    facilityType,
+                    sqft,
+                    daysPerWeek,
+                    monthlyEstimate: estimate.monthly.mid,
+                },
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            } : {
+                source: 'calculator_client',
+                status: 'new',
+                email,
+                name: emailName || '',
+                facilityType,
+                sqft: String(sqft),
+                state: stateCode,
+                calculatorData: {
+                    daysPerWeek,
+                    monthlyEstimate: estimate.monthly.mid,
+                    monthlyLow: estimate.monthly.low,
+                    monthlyHigh: estimate.monthly.high,
+                },
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+            await addDoc(collection(db, collectionName), docData);
+            trackEvent('calculator_email_submit', { calculator_type: mode, state: stateCode, facility_type: facilityType });
+            setEmailSubmitted(true);
+        } catch (err) {
+            console.error('Failed to save lead:', err);
+        }
+        setEmailSubmitting(false);
+    };
+
+    const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
+    const totalPct = floorBreakdown.reduce((s, f) => s + f.percent, 0);
+
+    return (
+        <div className="space-y-6">
+            {/* ═══ SIMPLE MODE ═══ */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
+                {/* State + Cost Tier */}
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex-1 min-w-[200px]">
+                        <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Your State</label>
+                        <select
+                            value={stateCode}
+                            onChange={(e) => setStateCode(e.target.value)}
+                            className="w-full h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow"
+                        >
+                            {STATE_WAGES.map(s => (
+                                <option key={s.code} value={s.code}>{s.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-xs text-slate-400 font-medium">Labor Market</p>
+                        <p className="text-lg font-bold text-slate-900">{costTier}</p>
+                        <p className="text-xs text-slate-400">{STATE_WAGES.find(s => s.code === stateCode)?.name}</p>
+                    </div>
+                </div>
+
+                {/* Facility Type + Sqft */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Facility Type</label>
+                        <select
+                            value={facilityType}
+                            onChange={(e) => setFacilityType(e.target.value)}
+                            className="w-full h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm focus:ring-2 focus:ring-sky-500 transition-shadow"
+                        >
+                            {Object.entries(FACILITY_LABELS).map(([val, label]) => (
+                                <option key={val} value={val}>{label}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Square Footage</label>
+                        <input
+                            type="number"
+                            value={sqft || ''}
+                            onChange={(e) => setSqft(parseInt(e.target.value) || 0)}
+                            placeholder="e.g. 10,000"
+                            className="w-full h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm focus:ring-2 focus:ring-sky-500 transition-shadow"
+                        />
+                    </div>
+                </div>
+
+                {/* Frequency */}
+                <div>
+                    <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-2">Cleaning Frequency</label>
+                    <div className="flex gap-2">
+                        {[{ d: 5, label: '5x / week' }, { d: 3, label: '3x / week' }, { d: 2, label: '2x / week' }, { d: 1, label: '1x / week' }].map(({ d, label }) => (
+                            <button
+                                key={d}
+                                onClick={() => setDaysPerWeek(d)}
+                                className={`flex-1 h-11 rounded-xl text-sm font-semibold transition-all ${daysPerWeek === d
+                                    ? 'bg-sky-600 text-white shadow-lg shadow-sky-200'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* ═══ ADVANCED TOGGLE ═══ */}
+            <button
+                onClick={() => {
+                    setShowAdvanced(!showAdvanced);
+                    trackEvent('calculator_advanced_toggle', { opened: !showAdvanced ? 'true' : 'false', calculator_type: mode });
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-sky-600 hover:text-sky-700 transition-colors"
+            >
+                <svg
+                    className={`w-4 h-4 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+                {showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}
+                {!showAdvanced && <span className="text-xs text-slate-400 font-normal">(floor types, fixtures, shift, add-ons)</span>}
+            </button>
+
+            {/* ═══ ADVANCED OPTIONS ═══ */}
+            {showAdvanced && (
+                <div className="space-y-4">
+                    {/* Floor Breakdown */}
+                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                                <span className="text-lg">🏗️</span> Floor Breakdown
+                            </h3>
+                            <button
+                                onClick={() => setFloorMode(floorMode === 'percent' ? 'sqft' : 'percent')}
+                                className="text-xs text-sky-600 hover:underline font-medium"
+                            >
+                                {floorMode === 'percent' ? 'Switch to sqft' : 'Switch to %'}
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
+                            {FLOOR_TYPES.map(ft => {
+                                const entry = floorBreakdown.find(f => f.type === ft.key);
+                                const isActive = !!entry;
+                                return (
+                                    <div key={ft.key} className="space-y-1.5">
+                                        <div className="relative group">
+                                            <button
+                                                onClick={() => toggleFloor(ft.key)}
+                                                className={`w-full text-center text-xs px-2 py-2 rounded-xl transition-all font-medium ${isActive
+                                                    ? 'bg-sky-100 text-sky-700 border border-sky-300 shadow-sm'
+                                                    : 'bg-slate-100 text-slate-500 border border-transparent hover:border-slate-300'
+                                                    }`}
+                                            >
+                                                {ft.label}
+                                            </button>
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 w-56 p-3 bg-slate-900 text-white rounded-lg shadow-xl text-xs">
+                                                <p className="font-semibold text-sky-300">{ft.method}</p>
+                                                <p className="text-slate-300 mt-1">Includes: {ft.includes}</p>
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 bg-slate-900 rotate-45"></div>
+                                            </div>
+                                        </div>
+                                        {isActive && (
+                                            <input
+                                                type="number"
+                                                className="w-full h-9 rounded-xl border border-slate-300 bg-white px-2 text-xs text-center focus:ring-2 focus:ring-sky-500"
+                                                value={entry!.percent || ''}
+                                                onChange={(e) => updateFloor(ft.key, parseInt(e.target.value) || 0)}
+                                                placeholder={floorMode === 'percent' ? '%' : 'sqft'}
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        {floorMode === 'percent' && (
+                            <p className={`text-xs mt-2 ${totalPct === 100 ? 'text-green-600' : 'text-amber-600'}`}>
+                                Total: {totalPct}%{totalPct !== 100 && ' (should equal 100%)'}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Fixtures + Shift */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-3">
+                            <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                                <span className="text-lg">🚿</span> Fixtures
+                            </h3>
+                            <div>
+                                <label className="block text-xs text-slate-500 font-medium mb-1">
+                                    Restroom Fixtures <span className="opacity-60">(3 min each)</span>
+                                </label>
+                                <input type="number" value={restroomFixtures || ''} onChange={(e) => setRestroomFixtures(parseInt(e.target.value) || 0)}
+                                    placeholder="toilets + sinks + urinals"
+                                    className="w-full h-10 rounded-xl border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-sky-500" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 font-medium mb-1">
+                                    Trash Bins <span className="opacity-60">(1 min each)</span>
+                                </label>
+                                <input type="number" value={trashBins || ''} onChange={(e) => setTrashBins(parseInt(e.target.value) || 0)}
+                                    className="w-full h-10 rounded-xl border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-sky-500" />
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-3">
+                            <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                                <span className="text-lg">🕐</span> Shift Timing
+                            </h3>
+                            <div className="space-y-2">
+                                {SHIFT_OPTIONS.map(s => (
+                                    <button key={s.key} onClick={() => setShift(s.key)}
+                                        className={`w-full h-10 rounded-xl text-sm font-medium transition-all flex items-center justify-between px-4 ${shift === s.key
+                                            ? 'bg-sky-600 text-white shadow-lg shadow-sky-200'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}>
+                                        <span>{s.label}</span>
+                                        {s.modifier > 1 && (
+                                            <span className={`text-xs ${shift === s.key ? 'text-sky-200' : 'text-slate-400'}`}>+{Math.round((s.modifier - 1) * 100)}%</span>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Add-ons */}
+                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                        <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
+                            <span className="text-lg">➕</span> Add-on Services
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                            {ADDON_OPTIONS.map(a => (
+                                <button key={a.key} onClick={() => setAddOns(prev => ({ ...prev, [a.key]: !prev[a.key] }))}
+                                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${addOns[a.key]
+                                            ? 'bg-sky-100 text-sky-700 border-sky-300 shadow-sm'
+                                            : 'bg-slate-100 text-slate-600 border-transparent hover:border-slate-300'
+                                        }`}>
+                                    {addOns[a.key] ? '✓ ' : ''}{a.label}
+                                    <span className="opacity-60 ml-1">+{Math.round(a.modifier * 100)}%</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══ ESTIMATE RESULT ═══ */}
+            {estimate && sqft > 0 ? (
+                <div className={`rounded-2xl p-8 text-white shadow-xl ${isContractor
+                        ? 'bg-gradient-to-br from-emerald-600 to-emerald-800'
+                        : 'bg-gradient-to-br from-sky-600 to-sky-800'
+                    }`}>
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-bold">
+                            {isContractor ? 'Estimated Earnings' : 'Your Estimate'}
+                        </h3>
+                        <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold">±20% accuracy</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                        <div className="bg-white/10 rounded-xl p-4 text-center backdrop-blur-sm">
+                            <p className={`text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
+                                {isContractor ? 'Per Visit' : 'Per Visit'}
+                            </p>
+                            <p className="text-2xl font-bold mt-1">{fmt(estimate.perVisit)}</p>
+                        </div>
+                        <div className="bg-white/10 rounded-xl p-4 text-center backdrop-blur-sm">
+                            <p className={`text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>Visits / Month</p>
+                            <p className="text-2xl font-bold mt-1">{estimate.daysPerMonth}</p>
+                            <p className={`text-[10px] ${isContractor ? 'text-emerald-300' : 'text-sky-300'}`}>{daysPerWeek}x/wk × 4.33</p>
+                        </div>
+                        <div className="bg-white/10 rounded-xl p-4 text-center backdrop-blur-sm">
+                            <p className={`text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
+                                {isContractor ? 'Annual Earnings' : 'Annual Estimate'}
+                            </p>
+                            <p className="text-2xl font-bold mt-1">{fmt(estimate.monthly.mid * 12)}</p>
+                        </div>
+                    </div>
+
+                    {/* Monthly total */}
+                    <div className="bg-white rounded-2xl p-6 text-center text-slate-900">
+                        <p className="text-sm text-slate-500 mb-1">
+                            {isContractor ? 'Estimated Monthly Earnings' : 'Estimated Monthly Cost'}
+                        </p>
+                        <p className="text-4xl font-bold">
+                            {fmt(estimate.monthly.low)} – {fmt(estimate.monthly.high)}
+                        </p>
+                        <p className="text-sm text-slate-500 mt-2">
+                            Mid-point: <span className="font-bold text-slate-900">{fmt(estimate.monthly.mid)}/mo</span>
+                        </p>
+                        {stateCode !== 'NY' && (
+                            <p className="text-xs text-slate-400 mt-2">
+                                Adjusted for {STATE_WAGES.find(s => s.code === stateCode)?.name} ({costTier.toLowerCase()})
+                            </p>
+                        )}
+                        {!showAdvanced && (
+                            <p className="text-xs text-slate-400 mt-2">
+                                <button onClick={() => setShowAdvanced(true)} className="text-sky-600 hover:underline font-medium">
+                                    Refine this estimate →
+                                </button>{' '}
+                                Add floor types, fixtures, and shift details.
+                            </p>
+                        )}
+                    </div>
+
+                    {/* ─── Soft Gate: Email CTA ─── */}
+                    <div className="mt-6 text-center space-y-3">
+                        <button
+                            onClick={() => {
+                                setShowEmailModal(true);
+                                trackEvent('calculator_cta_click', { cta: 'email_breakdown', calculator_type: mode });
+                            }}
+                            className={`inline-block px-8 py-3.5 rounded-xl font-bold text-sm transition-colors shadow-lg ${isContractor
+                                    ? 'bg-white text-emerald-700 hover:bg-emerald-50'
+                                    : 'bg-white text-sky-700 hover:bg-sky-50'
+                                }`}
+                        >
+                            📧 Email Me a Detailed Breakdown
+                        </button>
+                        <p className={`text-xs ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
+                            Includes per-sqft costs, frequency comparison, and {isContractor ? 'bidding tips' : 'industry benchmarks'}.
+                        </p>
+
+                        {/* Secondary CTA */}
+                        <div className="pt-2">
+                            <a
+                                href={isContractor ? '/contractors' : '/#audit'}
+                                onClick={() => trackEvent('calculator_cta_click', { cta: isContractor ? 'join_network' : 'get_quote', calculator_type: mode })}
+                                className="text-sm font-semibold underline underline-offset-4 text-white/80 hover:text-white transition-colors"
+                            >
+                                {isContractor ? 'See Available Jobs in Your Area →' : 'Or get a custom quote with a free site walkthrough →'}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="bg-white rounded-2xl p-12 text-center border-2 border-dashed border-slate-200">
+                    <div className="text-4xl mb-3">🧮</div>
+                    <p className="text-slate-500 font-medium">Enter your square footage above to see an instant estimate</p>
+                    <p className="text-slate-400 text-sm mt-1">Results update in real-time as you adjust inputs</p>
+                </div>
+            )}
+
+            {/* ═══ EMAIL MODAL ═══ */}
+            {showEmailModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !emailSubmitting && setShowEmailModal(false)}>
+                    <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        {emailSubmitted ? (
+                            <div className="text-center">
+                                <div className="text-5xl mb-4">✅</div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">You&apos;re all set!</h3>
+                                <p className="text-slate-600 text-sm mb-6">
+                                    We&apos;ll send your detailed breakdown to <strong>{email}</strong>.
+                                    {isContractor
+                                        ? ' Check your inbox for bidding tips and available jobs in your area.'
+                                        : ' A specialist may also reach out to help you finalize your scope.'}
+                                </p>
+                                <button onClick={() => setShowEmailModal(false)} className="bg-slate-900 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-slate-800 transition-colors">
+                                    Close
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <h3 className="text-xl font-bold text-slate-900 mb-1">📧 Get Your Detailed Breakdown</h3>
+                                <p className="text-slate-500 text-sm mb-6">
+                                    We&apos;ll email you a complete breakdown including per-sqft analysis,
+                                    frequency comparison, and {isContractor ? 'what similar jobs are paying in your area' : 'how your facility compares to industry averages'}.
+                                </p>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-xs text-slate-500 font-medium mb-1">Name (optional)</label>
+                                        <input
+                                            type="text"
+                                            value={emailName}
+                                            onChange={(e) => setEmailName(e.target.value)}
+                                            placeholder="Your name"
+                                            className="w-full h-11 rounded-xl border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-sky-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-500 font-medium mb-1">Email *</label>
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="you@company.com"
+                                            required
+                                            className="w-full h-11 rounded-xl border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-sky-500"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleEmailSubmit}
+                                        disabled={!email || emailSubmitting}
+                                        className="w-full h-12 rounded-xl bg-sky-600 text-white font-bold text-sm hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {emailSubmitting ? 'Sending...' : 'Send My Breakdown'}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-slate-400 text-center mt-3">
+                                    No spam. Just your estimate breakdown.
+                                </p>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

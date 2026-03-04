@@ -21,6 +21,7 @@ import {
     EstimateResult,
     calculateJanitorialEstimate,
     FLOOR_TYPE_LABELS,
+    FLOOR_TYPE_INFO,
     SHIFT_LABELS,
     ADD_ON_LABELS,
 } from '@/data/janitorialPricing';
@@ -56,9 +57,9 @@ export default function PricingCalculatorPage() {
     const [sqft, setSqft] = useState<number>(0);
     const [floorMode, setFloorMode] = useState<'percent' | 'sqft'>('percent');
     const [floorBreakdown, setFloorBreakdown] = useState<FloorBreakdown[]>([
-        { type: 'carpet', percent: 60 },
-        { type: 'hardFloor', percent: 30 },
-        { type: 'tile', percent: 10 },
+        { type: 'carpet', percent: 50 },
+        { type: 'resilient', percent: 40 },
+        { type: 'tileStone', percent: 10 },
     ]);
     const [restroomFixtures, setRestroomFixtures] = useState(6);
     const [trashBins, setTrashBins] = useState(8);
@@ -131,9 +132,9 @@ export default function PricingCalculatorPage() {
         setFacilityType('office_general');
         setSqft(0);
         setFloorBreakdown([
-            { type: 'carpet', percent: 60 },
-            { type: 'hardFloor', percent: 30 },
-            { type: 'tile', percent: 10 },
+            { type: 'carpet', percent: 50 },
+            { type: 'resilient', percent: 40 },
+            { type: 'tileStone', percent: 10 },
         ]);
         setRestroomFixtures(6);
         setTrashBins(8);
@@ -230,21 +231,30 @@ export default function PricingCalculatorPage() {
                                 {floorMode === 'percent' ? 'Switch to sqft' : 'Switch to %'}
                             </button>
                         </div>
-                        <div className="grid grid-cols-5 gap-2">
+                        <div className="grid grid-cols-4 gap-2">
                             {Object.entries(FLOOR_TYPE_LABELS).map(([type, label]) => {
                                 const entry = floorBreakdown.find(f => f.type === type);
                                 const isActive = !!entry;
+                                const info = FLOOR_TYPE_INFO[type];
                                 return (
                                     <div key={type} className="space-y-1">
-                                        <button
-                                            onClick={() => toggleFloorType(type)}
-                                            className={`text-xs w-full text-center px-1.5 py-1 rounded transition-colors print:border ${isActive
-                                                ? 'bg-primary/10 text-primary font-medium border border-primary/30'
-                                                : 'bg-muted text-muted-foreground border border-transparent hover:border-border'
-                                                }`}
-                                        >
-                                            {label}
-                                        </button>
+                                        <div className="relative group">
+                                            <button
+                                                onClick={() => toggleFloorType(type)}
+                                                className={`text-xs w-full text-center px-1.5 py-1 rounded transition-colors print:border ${isActive
+                                                    ? 'bg-primary/10 text-primary font-medium border border-primary/30'
+                                                    : 'bg-muted text-muted-foreground border border-transparent hover:border-border'
+                                                    }`}
+                                            >
+                                                {label}
+                                            </button>
+                                            {info && (
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 w-56 p-2.5 bg-popover text-popover-foreground border rounded-lg shadow-lg text-xs">
+                                                    <p className="font-semibold">{info.method}</p>
+                                                    <p className="text-muted-foreground mt-0.5">Includes: {info.includes}</p>
+                                                </div>
+                                            )}
+                                        </div>
                                         {isActive && (
                                             <Input
                                                 type="number"
