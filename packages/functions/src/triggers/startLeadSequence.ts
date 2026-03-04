@@ -44,12 +44,11 @@ export const startLeadSequence = onCall(async (request) => {
         );
     }
 
-    // Guard: check if sequence already running
-    if (lead.outreachStatus === 'PENDING' || lead.outreachStatus === 'IN_PROGRESS') {
-        throw new HttpsError(
-            'already-exists',
-            `Lead ${businessName} already has an active outreach sequence (status: ${lead.outreachStatus}).`
-        );
+    // Cancel any existing pending/retry tasks before starting a new sequence
+    const { cancelLeadTasks } = await import("../utils/queueUtils");
+    const cancelledCount = await cancelLeadTasks(db, leadId);
+    if (cancelledCount > 0) {
+        logger.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
     }
 
     const leadType = lead.leadType || 'direct';
