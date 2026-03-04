@@ -180,7 +180,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     const [state, setState] = useState("");
     const [zip, setZip] = useState("");
     const [facilityType, setFacilityType] = useState("");
-    const [leadType, setLeadType] = useState("direct");
+    const [leadType, setLeadType] = useState("tenant");
     const [contactName, setContactName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
@@ -300,7 +300,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
             setState("");
             setZip("");
             setFacilityType("");
-            setLeadType("direct");
+            setLeadType("tenant");
             setContactName("");
             setEmail("");
             setPhone("");
