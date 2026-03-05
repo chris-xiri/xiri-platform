@@ -6,6 +6,8 @@ import { CTAButton } from '@/components/CTAButton';
 import { JsonLd } from '@/components/JsonLd';
 import seoData from '@/data/seo-data.json';
 import { CheckCircle, AlertTriangle, DollarSign, ArrowRight } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 // ── Guide Data ──
 const GUIDES: Record<string, {
@@ -279,9 +281,27 @@ export async function generateStaticParams() {
     return Object.keys(GUIDES).map(slug => ({ slug }));
 }
 
+/**
+ * Fetch a published guide from Firestore by slug.
+ */
+async function getFirestoreGuide(slug: string) {
+    try {
+        const q = query(
+            collection(db, 'guides'),
+            where('slug', '==', slug),
+            where('status', '==', 'published')
+        );
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) return null;
+        return snapshot.docs[0].data() as typeof GUIDES[string];
+    } catch {
+        return null;
+    }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
-    const guide = GUIDES[slug];
+    const guide = GUIDES[slug] || await getFirestoreGuide(slug);
     if (!guide) return {};
 
     return {
@@ -302,7 +322,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function GuidePage({ params }: Props) {
     const { slug } = await params;
-    const guide = GUIDES[slug];
+    const guide = GUIDES[slug] || await getFirestoreGuide(slug);
 
     if (!guide) {
         notFound();

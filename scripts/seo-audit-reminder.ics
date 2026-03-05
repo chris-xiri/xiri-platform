@@ -1,0 +1,23 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//XIRI//SEO Audit//EN
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+DTSTART:20260316T093000
+DTEND:20260316T100000
+RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO
+SUMMARY:🔍 SEO Audit — Run /seo-audit
+DESCRIPTION:Bi-weekly SEO review.\n\nSTEPS:\n1. Run: node scripts/pull-gsc-data.js\n2. Open Gemini and type: /seo-audit\n3. Share the GSC data or paste ranking screenshots\n4. Review recommendations and approve execution\n\nPIPELINE: Audit → Strategy → Execution
+ATTENDEE;CN=Chris;RSVP=TRUE:mailto:chris@xiri.ai
+ORGANIZER;CN=XIRI SEO Agent:mailto:chris@xiri.ai
+LOCATION:Gemini / Terminal
+STATUS:CONFIRMED
+TRANSP:OPAQUE
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Time to run your SEO audit! Open terminal and run: node scripts/pull-gsc-data.js
+END:VALARM
+END:VEVENT
+END:VCALENDAR

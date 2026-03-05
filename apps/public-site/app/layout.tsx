@@ -74,6 +74,11 @@ export default function RootLayout({
               "logo": "https://xiri.ai/icon.png",
               "description": "Medical-grade facility management for single-tenant buildings.",
               "serviceType": "Facility Management",
+              "telephone": "+1-516-526-9585",
+              "sameAs": [
+                "https://www.facebook.com/xirifacilitysolutions/",
+                "https://www.linkedin.com/company/xiri-facility-solutions"
+              ],
               "areaServed": {
                 "@type": "State",
                 "name": "New York"
@@ -81,7 +86,8 @@ export default function RootLayout({
               "contactPoint": {
                 "@type": "ContactPoint",
                 "contactType": "sales",
-                "email": "chris@xiri.ai"
+                "email": "chris@xiri.ai",
+                "telephone": "+1-516-526-9585"
               }
             })
           }}
