@@ -3,7 +3,7 @@ import { JsonLd } from '@/components/JsonLd';
 import PublicCalculator from '@/components/PublicCalculator';
 
 export const metadata: Metadata = {
-    title: 'Janitorial Bid Calculator (2025) | Free Pricing Tool for Cleaning Companies',
+    title: 'Janitorial Bid Calculator (2026) | Free Pricing Tool for Cleaning Companies',
     description: 'Calculate what to charge for janitorial contracts. Enter facility size, type, and state to see competitive bid pricing. Free tool for cleaning companies by XIRI.',
     alternates: {
         canonical: 'https://xiri.ai/contractors/calculator',
@@ -69,6 +69,19 @@ export default function ContractorCalculatorPage() {
                     operatingSystem: 'Web',
                     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
                     author: { '@type': 'Organization', name: 'XIRI Facility Solutions' },
+                }}
+            />
+            <JsonLd
+                data={{
+                    '@context': 'https://schema.org',
+                    '@type': 'Article',
+                    headline: 'Janitorial Bid Calculator (2026) — Free Pricing Tool for Cleaning Companies',
+                    description: 'Calculate what to charge for janitorial contracts. Enter facility size, type, and state to see competitive bid pricing.',
+                    author: { '@type': 'Organization', name: 'XIRI Facility Solutions' },
+                    publisher: { '@type': 'Organization', name: 'XIRI Facility Solutions' },
+                    datePublished: '2025-03-01',
+                    dateModified: '2026-03-05',
+                    mainEntityOfPage: 'https://xiri.ai/contractors/calculator',
                 }}
             />
 
