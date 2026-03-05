@@ -271,3 +271,69 @@ Maintained by: @architect-cto
 >   4. **Hardcoded sender addresses**: `onOnboardingComplete`, `onDocumentUploaded`, `sendQuoteEmail`, `processMailQueue` used inline `from:` strings. Brand name corrected in those addresses; migrating to `getSenderFrom()` is a future improvement.
 >   5. **Template prefix naming**: Direct and tenant leads both use `tenant_lead_` template prefix. This is intentional (same 4-step drip), but the naming is ambiguous. Documented here for clarity — no code change needed.
 > - Status: **Active**
+
+> - Date: 2026-03-05
+> - Decision: **SEO Agent — Forked & Customized for XIRI**
+> - Rationale: Forked `zurd46/AISeoAgent` into `tools/seo-agent/`. Full German→English localization (~120 strings), XIRI brand colors (`#0369a1`, `#38bdf8`, `#0a0a0a`), 12 Nassau County competitors hardcoded, LangGraph workflow: `crawl → [analyze, competitor, keyword] → report → writer → END`. Runs on Gemini 2.0 Flash (Cloud Run) or Ollama phi3:mini (local GTX 1650).
+> - Status: **Active**
+
+> - Date: 2026-03-05
+> - Decision: **34-Keyword SEO Strategy (4 Tiers)**
+> - Rationale: Target keywords organized into 4 tiers: **Tier 1** — Core + Local (12 keywords: "janitorial services nassau county", "facility management nassau county", etc.), **Tier 2** — Brand + Near Me (6 keywords: "facility solutions nassau county", "near me" variants), **Tier 3** — Content/Guide keywords (6: "commercial cleaning rates 2026", "HIPAA", etc.), **Tier 4** — Vertical/Niche + Broad (10: school, medical, restaurant, auto × nassau/long island, plus "cleaning services nassau county" and "commercial property cleaning services"). All tracked in `keyword.ts` `XIRI_TARGET_KEYWORDS` array.
+> - Status: **Active**
+
+> - Date: 2026-03-05
+> - Decision: **GSC Data Integration via JSON File**
+> - Rationale: Google Search Console data is pulled by `scripts/pull-gsc-data.js` into `seo-data/gsc-rankings.json`. The SEO agent's `gsc.ts` tool loads this file — avoids duplicating GSC API auth in the agent. Real positions, CTR, and impressions are fed into the keyword agent's LLM prompt for data-driven analysis.
+> - Status: **Active**
+
+> - Date: 2026-03-05
+> - Decision: **Content Writer Agent — Structured JSON Output (Not Markdown)**
+> - Rationale: The Content Writer agent (`writer.ts`) generates guide articles as **structured JSON** matching the public site's `GUIDES` format (sections, FAQs, callout, relatedServices), not markdown. This allows direct storage in Firestore and rendering by the existing `[slug]/page.tsx` template without any parsing or conversion. The LLM prompt specifies the exact JSON schema and enforces it.
+> - Status: **Active**
+
+> - Date: 2026-03-05
+> - Decision: **Hardcoded Contact Info — Prevent LLM Hallucination**
+> - Rationale: The Content Writer agent hardcodes XIRI contact info as `XIRI_INFO` constants (name, phone, email, website, location, CTA URL). The LLM prompt explicitly forbids inventing contact details, and post-processing appends the real CTA. This prevents the LLM from hallucinating fake phone numbers or addresses in generated guides.
+> - **RULE: Any LLM-generated content for XIRI must use the hardcoded `XIRI_INFO` constants. Never allow the LLM to generate contact information.**
+> - Status: **Active**
+
+> - Date: 2026-03-05
+> - Decision: **SEO Report Delivered as PDF Attachment (Not HTML)**
+> - Rationale: HTML report files are hard to open on mobile and desktop email clients. The `pdf.ts` tool uses `puppeteer-core` (headless Chromium) to convert the HTML report to PDF before email attachment. Falls back to HTML if PDF conversion fails. Cloud Run Dockerfile includes Chromium for this purpose.
+> - Status: **Active**
+
+> - Date: 2026-03-05
+> - Decision: **Firestore-Backed Guide Publishing with Approval Workflow**
+> - Rationale: Generated guides are saved to Firestore `guides` collection as `draft` with a cryptographic `approvalToken`. The email report includes Preview and Approve links. **Preview**: `/guides/preview/{docId}` — shows full guide with "DRAFT PREVIEW" banner, fetches from Firestore by document ID. **Approve**: `/api/guides/approve?id=xx&token=yy` — verifies token, sets status to `published`, renders a branded confirmation page. **Published guides**: The existing `[slug]/page.tsx` checks both hardcoded `GUIDES` and Firestore (via `getFirestoreGuide()`) — Firestore-published guides are served alongside hardcoded ones seamlessly.
+> - **RULE: Guides are never published automatically. They require explicit one-click approval via the email link.**
+> - Status: **Active**
+
+> - Date: 2026-03-05
+> - Decision: **Email Deliverability — No Emoji in Subject Lines**
+> - Rationale: SEO report emails were hitting spam. The subject line `🟢 SEO Report: xiri.ai — Score 90/100` contained emoji and "Score" trigger words. Changed to `SEO Analysis: xiri.ai — Healthy (90/100)` — no emoji, descriptive label instead of number-heavy format. Sender remains `internal@xiri.ai` via Resend.
+> - **RULE: No emoji in email subject lines for automated/internal emails. Use descriptive labels, not numeric scores.**
+> - Status: **Active**
+
+> - Date: 2026-03-05
+> - Decision: **Cloud Run + Cloud Scheduler for Weekly SEO Runs**
+> - Rationale: SEO agent deployed to Cloud Run (`xiri-seo-agent`, us-east1, 2Gi memory, 900s timeout) with a scheduled HTTP entry point (`scheduled.ts`). Cloud Scheduler job `xiri-seo-weekly` fires `POST /run` every Monday at 9 AM EST with OIDC authentication. Health check at `GET /`. Dockerfile uses Node 20 + Chromium for PDF generation. Env vars include `GEMINI_API_KEY`, `RESEND_API_KEY`, `FIREBASE_PROJECT_ID`.
+> - Status: **Active**
+
+> - Date: 2026-03-05
+> - Decision: **Gemini 2.0 Flash as Default LLM Provider**
+> - Rationale: Switched from Ollama (local, requires GPU) to **Gemini 2.0 Flash** as the default LLM provider for the SEO agent. This enables Cloud Run execution without a GPU. Config supports 4 providers: `gemini` (default), `ollama`, `openai`, `anthropic` — switched via `LLM_PROVIDER` env var. Gemini API key stored in GCP Secret Manager (`GEMINI_API_KEY`). Local `.env` and Cloud Run env vars both updated.
+> - Status: **Active**
+
+> - Date: 2026-03-05
+> - Decision: **Google Analytics — Key Events Must Be Manually Marked in GA4**
+> - Rationale: GA Measurement ID (`G-0WBYZT18YY`) was already set in Vercel and the GA script was loading via `@next/third-parties/google`. The site has 35+ `trackEvent()` calls across 10+ components (lead forms, audit, calculator, onboarding, quotes, invoices, CTAs). Events ARE sent to GA4, but "Key Events" (formerly Conversions) must be **manually toggled** in GA4 Admin → Events. Recommended key events: `lead_submission_success`, `audit_submit`, `calculator_email_submit`, `quote_accept`, `onboarding_submit`. Also added `NEXT_PUBLIC_GA_ID` to `.env.local` for local development.
+> - **RULE: When adding new trackEvent() calls, update `tracking.ts` EventName type. Mark business-critical events as Key Events in GA4 Admin.**
+> - Status: **Active**
+
+> - Date: 2026-03-05
+> - Decision: **Social Links — Facebook + LinkedIn in Structured Data + Footer**
+> - Rationale: Added Facebook (`facebook.com/xirifacilitysolutions`) and LinkedIn (`linkedin.com/company/xiri-facility-solutions`) to the Organization schema's `sameAs` array in `layout.tsx`. Also added phone number `+1-516-526-9585` to both the Organization and ContactPoint schemas. Footer brand column now includes Facebook and LinkedIn SVG icons with gray-to-white hover transitions. This connects the website, Facebook page, and LinkedIn company page in Google's Knowledge Graph.
+> - **RULE: When adding new social profiles, update both `layout.tsx` sameAs schema AND Footer.tsx social icons.**
+> - Status: **Active**
+
