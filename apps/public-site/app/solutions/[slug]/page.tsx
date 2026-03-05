@@ -497,7 +497,29 @@ export default async function SolutionPage({ params }: Props) {
         return (
             <div className="min-h-screen bg-white">
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: `${dlp.title} in ${location.name}`, description: dlp.metaDescription, url: `https://xiri.ai/solutions/${slug}` }} />
-                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'LocalBusiness', name: 'XIRI Facility Solutions', address: { '@type': 'PostalAddress', addressLocality: location.name.split(',')[0], addressRegion: location.state }, ...(location.latitude ? { geo: { '@type': 'GeoCoordinates', latitude: location.latitude, longitude: location.longitude } } : {}) }} />
+                <JsonLd data={{
+                    '@context': 'https://schema.org',
+                    '@type': 'LocalBusiness',
+                    '@id': `https://xiri.ai/solutions/${slug}#business`,
+                    name: `XIRI ${dlp.title} — ${location.name}`,
+                    description: dlp.metaDescription,
+                    image: 'https://xiri.ai/xiri-logo-horizontal.svg',
+                    url: `https://xiri.ai/solutions/${slug}`,
+                    telephone: '+1-516-526-9585',
+                    priceRange: '$$',
+                    address: { '@type': 'PostalAddress', addressLocality: location.name.split(',')[0], addressRegion: location.state, addressCountry: 'US' },
+                    ...(location.latitude ? { geo: { '@type': 'GeoCoordinates', latitude: location.latitude, longitude: location.longitude } } : {}),
+                    openingHoursSpecification: { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], opens: '00:00', closes: '23:59' },
+                }} />
+                <JsonLd data={{
+                    '@context': 'https://schema.org',
+                    '@type': 'Service',
+                    name: `${dlp.title} in ${location.name}`,
+                    description: dlp.metaDescription,
+                    provider: { '@type': 'LocalBusiness', '@id': `https://xiri.ai/solutions/${slug}#business` },
+                    areaServed: { '@type': 'Place', name: `${location.name.split(',')[0]}, ${location.state}` },
+                    serviceType: dlp.title,
+                }} />
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: dlp.faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
                 <Hero title={`${dlp.heroTitle} in ${location.name.split(',')[0]}`} subtitle={dlp.heroSubtitle} ctaText="Get a Free Site Audit" />
                 <section className="py-16">

@@ -18,6 +18,8 @@ interface Location {
     name: string;
     state: string;
     region: string;
+    latitude?: number;
+    longitude?: number;
     population?: string;
     medicalDensity?: string;
     keyIntersection?: string;
@@ -331,13 +333,18 @@ export default async function ServicePage({ params }: Props) {
         { question: `What zip codes do you cover in ${townName}?`, answer: `We serve ${location.zipCodes?.join(', ') || 'the surrounding area'} and all of ${location.region}.` },
     ];
 
-    // Enhanced JSON-LD: LocalBusiness + FAQPage
+    // Enhanced JSON-LD: LocalBusiness + Service + FAQPage
     const jsonLd = [
         {
             '@context': 'https://schema.org',
             '@type': 'LocalBusiness',
+            '@id': `https://xiri.ai/services/${slug}#business`,
             name: `XIRI ${service.name} — ${location.name}`,
             description: location.localInsight || service.shortDescription,
+            image: 'https://xiri.ai/xiri-logo-horizontal.svg',
+            url: `https://xiri.ai/services/${slug}`,
+            telephone: '+1-516-526-9585',
+            priceRange: '$$',
             areaServed: {
                 '@type': 'Place',
                 name: location.region,
@@ -346,15 +353,40 @@ export default async function ServicePage({ params }: Props) {
                     addressLocality: townName,
                     addressRegion: location.state,
                     postalCode: location.zipCodes?.[0],
-                }
+                    addressCountry: 'US',
+                },
             },
-            url: `https://xiri.ai/services/${slug}`,
-            telephone: '+1-516-000-0000',
-            priceRange: '$$',
+            geo: {
+                '@type': 'GeoCoordinates',
+                latitude: location.latitude,
+                longitude: location.longitude,
+            },
+            openingHoursSpecification: {
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                opens: '00:00',
+                closes: '23:59',
+            },
             department: {
                 '@type': 'ProfessionalService',
                 name: service.name,
             },
+        },
+        {
+            '@context': 'https://schema.org',
+            '@type': 'Service',
+            '@id': `https://xiri.ai/services/${slug}#service`,
+            name: `${service.name} in ${location.name}`,
+            description: service.shortDescription,
+            provider: {
+                '@type': 'LocalBusiness',
+                '@id': `https://xiri.ai/services/${slug}#business`,
+            },
+            areaServed: {
+                '@type': 'Place',
+                name: `${townName}, ${location.state}`,
+            },
+            serviceType: service.name,
         },
         {
             '@context': 'https://schema.org',
