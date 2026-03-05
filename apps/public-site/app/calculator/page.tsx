@@ -5,11 +5,11 @@ import PublicCalculator from '@/components/PublicCalculator';
 
 export const metadata: Metadata = {
     title: 'Janitorial Cleaning Cost Calculator (2026) | Commercial Cleaning Rates',
-    description: 'How much does janitorial cleaning cost? Use our free calculator to get instant commercial cleaning rates by sqft, facility type, and state. Compare office cleaning costs, janitorial services pricing, and get an accurate estimate in seconds.',
+    description: 'How much should office cleaning cost? Use our free calculator to get instant commercial cleaning rates by sqft, facility type, and state. Compare janitorial services pricing and see what a fair monthly cleaning cost should be in seconds.',
     alternates: {
         canonical: 'https://xiri.ai/calculator',
     },
-    keywords: ['janitorial cleaning cost', 'janitorial services cost', 'commercial cleaning rates', 'office cleaning cost', 'janitorial cleaning cost calculator', 'commercial cleaning cost per square foot'],
+    keywords: ['janitorial cleaning cost', 'janitorial services cost', 'commercial cleaning rates', 'office cleaning cost', 'how much should office cleaning cost', 'janitorial cleaning cost calculator', 'commercial cleaning cost per square foot'],
     openGraph: {
         title: 'Janitorial Cleaning Cost Calculator (2026) | Free Instant Estimate',
         description: 'How much do janitorial services cost? Free calculator for commercial cleaning rates — office, medical, auto dealership & more. Instant estimate by sqft and state.',
@@ -33,8 +33,8 @@ const FAQS = [
         answer: 'Average commercial cleaning rates range from $25–$75 per hour per cleaner, or $0.05–$0.25 per square foot per visit. Monthly contracts for recurring janitorial service typically run $0.10–$0.35/sqft/month depending on frequency and facility type. The most common pricing model for commercial cleaning is per-square-foot, which makes it easy to compare bids. Our calculator uses production-rate-based pricing — the same method professional cleaning companies use to build bids.',
     },
     {
-        question: 'How much does office cleaning cost?',
-        answer: 'Office cleaning costs range from $0.08–$0.18 per square foot per visit for a standard general office. A typical 10,000 sqft office cleaned 5 nights per week costs $2,000–$3,600/month. Key factors that affect office cleaning cost include: number of restrooms and kitchens, floor type (carpet vs. tile vs. VCT), shift timing (after-hours vs. daytime), and whether high-touch disinfection is required. Smaller offices under 3,000 sqft often have a per-visit minimum of $75–$150.',
+        question: 'How much should office cleaning cost?',
+        answer: 'A fair price for office cleaning is $0.08–$0.18 per square foot per visit, or $2,000–$3,600/month for a typical 10,000 sqft office cleaned 5 nights per week. If you\'re being quoted significantly above this range, the vendor may be overcharging — or your facility may have specific requirements (medical compliance, high-traffic restrooms, hard floor care) that justify a premium. If you\'re below this range, ask about scope — low bids often skip restroom disinfection, floor care, or trash liner replacement. Use our calculator above to see what your specific facility should cost based on size, type, state, and frequency.',
     },
     {
         question: 'How much does commercial cleaning cost per square foot?',
@@ -130,10 +130,10 @@ export default function CalculatorPage() {
                 data={{
                     '@context': 'https://schema.org',
                     '@type': 'Article',
-                    headline: 'How Much Does Janitorial Cleaning Cost in 2026?',
-                    description: 'Complete guide to janitorial services cost, commercial cleaning rates, and office cleaning pricing. Free interactive calculator included.',
+                    headline: 'How Much Should Office Cleaning Cost in 2026?',
+                    description: 'Complete guide to office cleaning costs, janitorial services pricing, and commercial cleaning rates. Find out what a fair price should be with our free interactive calculator.',
                     datePublished: '2025-03-01',
-                    dateModified: '2026-03-04',
+                    dateModified: '2026-03-05',
                     author: {
                         '@type': 'Organization',
                         name: 'XIRI Facility Solutions',
@@ -158,7 +158,7 @@ export default function CalculatorPage() {
                         Janitorial Cleaning Cost Calculator
                     </h1>
                     <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-                        How much do janitorial services cost? Get instant commercial cleaning rates
+                        How much should office cleaning cost? Get instant commercial cleaning rates
                         for your office, medical facility, or commercial space — updated for 2026.
                     </p>
                     <p className="text-sm text-slate-400 mt-3">
