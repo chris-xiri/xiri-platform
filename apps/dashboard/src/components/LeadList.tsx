@@ -71,6 +71,8 @@ export default function LeadList({
     const [bulkStatus, setBulkStatus] = useState<LeadStatus | "">("");
     const [bulkLeadType, setBulkLeadType] = useState<LeadType | "">("");
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState("");
+    const [deleting, setDeleting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const PAGE_SIZE = 50;
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -162,14 +164,17 @@ export default function LeadList({
 
     const handleBulkStatusUpdate = async () => {
         if (!bulkStatus || selectedLeads.size === 0) return;
-
+        const ids = Array.from(selectedLeads);
+        const BATCH_LIMIT = 499;
         try {
-            const batch = writeBatch(db);
-            selectedLeads.forEach(leadId => {
-                const leadRef = doc(db, "leads", leadId);
-                batch.update(leadRef, { status: bulkStatus });
-            });
-            await batch.commit();
+            for (let i = 0; i < ids.length; i += BATCH_LIMIT) {
+                const chunk = ids.slice(i, i + BATCH_LIMIT);
+                const batch = writeBatch(db);
+                chunk.forEach(leadId => {
+                    batch.update(doc(db, "leads", leadId), { status: bulkStatus });
+                });
+                await batch.commit();
+            }
             setSelectedLeads(new Set());
             setBulkStatus("");
         } catch (error) {
@@ -177,36 +182,52 @@ export default function LeadList({
         }
     };
 
+    const deleteConfirmPhrase = `Delete ${selectedLeads.size} leads`;
+
     const handleBulkDelete = async () => {
+        const ids = Array.from(selectedLeads);
+        const BATCH_LIMIT = 499; // Firestore max is 500 operations per batch
+        setDeleting(true);
         try {
-            const batch = writeBatch(db);
-            selectedLeads.forEach(leadId => {
-                const leadRef = doc(db, "leads", leadId);
-                batch.delete(leadRef);
-            });
-            await batch.commit();
+            // Chunk into batches of 499 to stay within Firestore limits
+            for (let i = 0; i < ids.length; i += BATCH_LIMIT) {
+                const chunk = ids.slice(i, i + BATCH_LIMIT);
+                const batch = writeBatch(db);
+                chunk.forEach(leadId => {
+                    batch.delete(doc(db, "leads", leadId));
+                });
+                await batch.commit();
+            }
             setSelectedLeads(new Set());
             setShowDeleteDialog(false);
+            setDeleteConfirmText("");
         } catch (error: any) {
             console.error("Error deleting leads:", error);
             setShowDeleteDialog(false);
+            setDeleteConfirmText("");
             window.alert(
                 error?.code === 'permission-denied'
-                    ? 'Delete failed: Your account does not have permission to delete leads. Contact an admin to check your roles.'
+                    ? 'Delete failed: Your account does not have permission to delete leads.'
                     : `Delete failed: ${error?.message || 'Unknown error'}`
             );
+        } finally {
+            setDeleting(false);
         }
     };
 
     const handleBulkLeadTypeUpdate = async () => {
         if (!bulkLeadType || selectedLeads.size === 0) return;
+        const ids = Array.from(selectedLeads);
+        const BATCH_LIMIT = 499;
         try {
-            const batch = writeBatch(db);
-            selectedLeads.forEach(leadId => {
-                const leadRef = doc(db, "leads", leadId);
-                batch.update(leadRef, { leadType: bulkLeadType });
-            });
-            await batch.commit();
+            for (let i = 0; i < ids.length; i += BATCH_LIMIT) {
+                const chunk = ids.slice(i, i + BATCH_LIMIT);
+                const batch = writeBatch(db);
+                chunk.forEach(leadId => {
+                    batch.update(doc(db, "leads", leadId), { leadType: bulkLeadType });
+                });
+                await batch.commit();
+            }
             setSelectedLeads(new Set());
             setBulkLeadType("");
         } catch (error) {
@@ -561,19 +582,39 @@ export default function LeadList({
             </CardContent>
 
             {/* Delete Confirmation Dialog */}
-            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialog open={showDeleteDialog} onOpenChange={(open: boolean) => { setShowDeleteDialog(open); if (!open) setDeleteConfirmText(""); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete {selectedLeads.size} lead(s)?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the selected leads from the database.
+                        <AlertDialogDescription asChild>
+                            <div className="space-y-3">
+                                <p>This action cannot be undone. This will permanently delete the selected leads from the database.</p>
+                                <div>
+                                    <p className="text-sm font-medium text-foreground mb-1.5">Type <strong className="text-destructive">{deleteConfirmPhrase}</strong> to confirm:</p>
+                                    <Input
+                                        value={deleteConfirmText}
+                                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                        placeholder={deleteConfirmPhrase}
+                                        className="font-mono text-sm"
+                                        autoFocus
+                                    />
+                                </div>
+                            </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Delete
-                        </AlertDialogAction>
+                        <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                        <Button
+                            onClick={handleBulkDelete}
+                            disabled={deleteConfirmText !== deleteConfirmPhrase || deleting}
+                            variant="destructive"
+                        >
+                            {deleting ? (
+                                <><Loader2 className="w-4 h-4 animate-spin mr-1" /> Deleting...</>
+                            ) : (
+                                'Delete'
+                            )}
+                        </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
