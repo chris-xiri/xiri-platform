@@ -109,20 +109,15 @@ export default function Navigation() {
             {/* Trust Bar - Sticky Top */}
             <div className="bg-[#0f172a] text-white text-[14px] md:text-[14px] font-bold tracking-[0.15em] text-center py-2.5 relative z-50 border-b border-white/10">
                 <div className="max-w-7xl mx-auto px-4 flex items-center justify-center">
-                    {/* Nationwide Section */}
+                    {/* Mobile: Short single line */}
+                    <span className="md:hidden">NATIONWIDE SCALE · FULLY INSURED</span>
+
+                    {/* Desktop: Full message */}
                     <span className="hidden md:inline">NATIONWIDE SCALE</span>
-                    <span className="md:hidden">NATIONWIDE SCALE</span>
-
-                    <span className="mx-2 md:mx-4 text-sky-500 opacity-60">|</span>
-
-                    {/* Precision/Local Section */}
+                    <span className="hidden md:inline mx-4 text-sky-500 opacity-60">|</span>
                     <span className="hidden md:inline">LOCAL PRECISION</span>
-                    <span className="md:hidden">LOCAL PRECISION</span>
-
-                    <span className="mx-2 md:mx-4 text-sky-500 opacity-60">|</span>
-
-                    {/* Security Section */}
-                    <span>FULLY BONDED & INSURED</span>
+                    <span className="hidden md:inline mx-4 text-sky-500 opacity-60">|</span>
+                    <span className="hidden md:inline">FULLY BONDED & INSURED</span>
 
                     <span className="mx-2 md:mx-4 text-sky-500 opacity-60">|</span>
 

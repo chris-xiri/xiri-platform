@@ -20,6 +20,7 @@ import {
     FREQUENCY_MULTIPLIERS,
     DEFAULT_FLOORS,
 } from '@/lib/calculator';
+import { Building, ShowerHead, Clock, Mail, Calculator, CheckCircle } from 'lucide-react';
 
 
 // ─── Props ────────────────────────────────────────────────────────────
@@ -314,7 +315,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                     <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                                <span className="text-lg">🏗️</span> Floor Breakdown
+                                <span className="text-lg"><Building className="w-5 h-5 inline" /></span> Floor Breakdown
                             </h3>
                             <button
                                 onClick={() => {
@@ -396,7 +397,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-3">
                             <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                                <span className="text-lg">🚿</span> Fixtures
+                                <span className="text-lg"><ShowerHead className="w-5 h-5 inline" /></span> Fixtures
                             </h3>
                             <div>
                                 <label className="block text-xs text-slate-500 font-medium mb-1">
@@ -417,7 +418,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
 
                         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-3">
                             <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                                <span className="text-lg">🕐</span> Shift Timing
+                                <span className="text-lg"><Clock className="w-5 h-5 inline" /></span> Shift Timing
                             </h3>
                             <div className="space-y-2">
                                 {SHIFT_OPTIONS.map(s => (
@@ -528,7 +529,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                                 : 'bg-white text-sky-700 hover:bg-sky-50'
                                 }`}
                         >
-                            📧 Email Me a Detailed Breakdown
+                            <Mail className="w-5 h-5 inline mr-1" /> Email Me a Detailed Breakdown
                         </button>
                         <p className={`text-xs ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
                             Includes per-sqft costs, frequency comparison, and {isContractor ? 'bidding tips' : 'industry benchmarks'}.
@@ -548,7 +549,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                 </div>
             ) : (
                 <div className="bg-white rounded-2xl p-12 text-center border-2 border-dashed border-slate-200">
-                    <div className="text-4xl mb-3">🧮</div>
+                    <div className="text-4xl mb-3"><Calculator className="w-10 h-10 mx-auto text-slate-400" /></div>
                     <p className="text-slate-500 font-medium">Enter your square footage above to see an instant estimate</p>
                     <p className="text-slate-400 text-sm mt-1">Results update in real-time as you adjust inputs</p>
                 </div>
@@ -560,7 +561,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                     <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
                         {emailSubmitted ? (
                             <div className="text-center">
-                                <div className="text-5xl mb-4">✅</div>
+                                <div className="text-5xl mb-4"><CheckCircle className="w-12 h-12 mx-auto text-emerald-500" /></div>
                                 <h3 className="text-xl font-bold text-slate-900 mb-2">You&apos;re all set!</h3>
                                 <p className="text-slate-600 text-sm mb-6">
                                     We&apos;ll send your detailed breakdown to <strong>{email}</strong>.
@@ -574,7 +575,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                             </div>
                         ) : (
                             <>
-                                <h3 className="text-xl font-bold text-slate-900 mb-1">📧 Get Your Detailed Breakdown</h3>
+                                <h3 className="text-xl font-bold text-slate-900 mb-1"><Mail className="w-5 h-5 inline mr-1" /> Get Your Detailed Breakdown</h3>
                                 <p className="text-slate-500 text-sm mb-6">
                                     We&apos;ll email you a complete breakdown including per-sqft analysis,
                                     frequency comparison, and {isContractor ? 'what similar jobs are paying in your area' : 'how your facility compares to industry averages'}.

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { LeadFormModal } from './LeadFormModal';
+import { Hospital, Car, GraduationCap, Building2 } from 'lucide-react';
 
 interface HeroProps {
     title: React.ReactNode;
@@ -19,10 +20,10 @@ interface HeroProps {
 }
 
 const COMPANY_LOGOS = [
-    { name: 'Urgent Care Center', icon: '🏥', type: 'Medical' },
-    { name: 'Auto Dealership', icon: '🚘', type: 'Automotive' },
-    { name: 'Private School', icon: '🎓', type: 'Education' },
-    { name: 'Corporate Office', icon: '🏢', type: 'Commercial' }
+    { name: 'Urgent Care Center', icon: <Hospital className="w-5 h-5 text-sky-600" />, type: 'Medical' },
+    { name: 'Auto Dealership', icon: <Car className="w-5 h-5 text-sky-600" />, type: 'Automotive' },
+    { name: 'Private School', icon: <GraduationCap className="w-5 h-5 text-sky-600" />, type: 'Education' },
+    { name: 'Corporate Office', icon: <Building2 className="w-5 h-5 text-sky-600" />, type: 'Commercial' }
 ];
 
 export function Hero({

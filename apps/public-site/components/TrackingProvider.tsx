@@ -17,7 +17,7 @@ export default function TrackingProvider({
     return (
         <>
             {children}
-            <TrackingDebugOverlay />
+            {process.env.NODE_ENV === 'development' && <TrackingDebugOverlay />}
         </>
     );
 }

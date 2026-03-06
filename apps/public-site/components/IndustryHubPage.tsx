@@ -4,7 +4,7 @@ import { ValuePropsSection } from "@/components/ValueProps";
 import { ClientLeadForm } from "@/components/ClientLeadForm";
 import { FAQ } from "@/components/FAQ";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Wrench, Rocket, ShieldCheck, Moon, DollarSign } from "lucide-react";
 import seoData from "@/data/seo-data.json";
 
 interface IndustryHubPageProps {
@@ -53,8 +53,8 @@ export function IndustryHubPage({ industry }: IndustryHubPageProps) {
                     <div className="grid md:grid-cols-3 gap-8">
                         {coreServices.map((service) => (
                             <div key={service.slug} className="group p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-lg transition-all hover:-translate-y-1">
-                                <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform">
-                                    {service.valueProps?.[0]?.icon || "🔧"}
+                                <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                    <Wrench className="w-6 h-6 text-sky-600" />
                                 </div>
                                 <h3 className="text-xl font-bold text-slate-900 mb-3">{service.name}</h3>
                                 <p className="text-slate-600 mb-6">{service.shortDescription}</p>
@@ -90,7 +90,7 @@ export function IndustryHubPage({ industry }: IndustryHubPageProps) {
                                     href={`/services/${service.slug}`}
                                     className="p-4 bg-white rounded-lg border border-slate-200 hover:border-sky-500 hover:shadow-md transition-all flex items-center gap-3"
                                 >
-                                    <span className="text-2xl">{service.valueProps?.[0]?.icon}</span>
+                                    <Wrench className="w-5 h-5 text-sky-600" />
                                     <span className="font-medium text-slate-700">{service.name}</span>
                                 </Link>
                             ))}
@@ -107,7 +107,7 @@ export function IndustryHubPage({ industry }: IndustryHubPageProps) {
                         {/* Left: Copy */}
                         <div className="text-white">
                             <div className="inline-block px-4 py-2 rounded-full bg-sky-800 text-sky-200 font-bold text-sm mb-6 border border-sky-700">
-                                🚀 Start Your Transformation
+                                <Rocket className="w-4 h-4 inline mr-1" /> Start Your Transformation
                             </div>
                             <h2 className="text-4xl md:text-5xl font-heading font-bold mb-6 leading-tight">
                                 Ready to elevate your facility management?
@@ -119,7 +119,7 @@ export function IndustryHubPage({ industry }: IndustryHubPageProps) {
                             <div className="space-y-6">
                                 <div className="flex items-start gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-sky-800 flex items-center justify-center text-sky-300 text-2xl flex-shrink-0">
-                                        🛡️
+                                        <ShieldCheck className="w-6 h-6" />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-lg">100% Insured & Vetted</h4>
@@ -128,7 +128,7 @@ export function IndustryHubPage({ industry }: IndustryHubPageProps) {
                                 </div>
                                 <div className="flex items-start gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-sky-800 flex items-center justify-center text-sky-300 text-2xl flex-shrink-0">
-                                        🌙
+                                        <Moon className="w-6 h-6" />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-lg">Nightly Audits</h4>
@@ -137,7 +137,7 @@ export function IndustryHubPage({ industry }: IndustryHubPageProps) {
                                 </div>
                                 <div className="flex items-start gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-sky-800 flex items-center justify-center text-sky-300 text-2xl flex-shrink-0">
-                                        💰
+                                        <DollarSign className="w-6 h-6" />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-lg">Consolidated Billing</h4>
