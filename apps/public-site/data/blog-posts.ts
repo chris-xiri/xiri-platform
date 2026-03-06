@@ -44,11 +44,11 @@ export const BLOG_POSTS: BlogPost[] = [
         publishDate: '2025-09-01',
         readTime: '8 min',
         category: 'Pricing',
-        content: `## What Does Commercial Cleaning Actually Cost?
+        content: `## Got Three Cleaning Quotes? Here's Why They're All Different.
 
-If you manage a commercial building, you've probably gotten wildly different quotes for cleaning. One company says $0.10/sqft, another says $0.35/sqft, and neither explains what's included.
+You asked three companies for a bid. One came back at $0.10/sqft. Another at $0.35/sqft. Nobody explained what's included — or what's not.
 
-Here's what actually drives the price — and how to make sure you're comparing apples to apples.
+You're not comparing prices. You're comparing guesses. Here's how to read a cleaning quote like a facility manager who's been burned before.
 
 ## Cost Per Square Foot by Facility Type
 
@@ -79,15 +79,15 @@ This is where "low" quotes get expensive. A company offering $0.08/sqft for a me
 4. **Request references** — Call them. Ask about reliability
 5. **Look at the total cost** — Include supplies, supervision, and escalation handling
 
-## The Hidden Cost of Cheap Cleaning
+## The Hidden Cost of "Cheap" Cleaning
 
-The cheapest quote usually isn't the cheapest option. No-shows cost you time. Compliance gaps can cost your accreditation. Multiple vendors mean multiple invoices and multiple headaches.
+Ever had a cleaner no-show at 6 AM? That "cheap" bid just cost you a morning scrambling for coverage. Bad cleaning compounds fast: no-shows cost you hours per incident, compliance gaps risk your accreditation, and managing 5 separate vendors turns you into an unpaid project manager.
 
-## What XIRI Costs
+## See What Your Building Would Actually Cost
 
-We publish transparent pricing through our [free calculator](/calculator). Enter your square footage, facility type, and frequency to get an instant estimate. No email required.
+No sales call. No "request a quote" form. Just enter your square footage, facility type, and frequency into our [free calculator](/calculator) and get a real number in 30 seconds. No email required.
 
-[**Try the Calculator →**](/calculator)`,
+[**Get Your Instant Estimate →**](/calculator)`,
     },
     {
         slug: 'in-house-vs-outsourced-facility-management',
@@ -96,9 +96,9 @@ We publish transparent pricing through our [free calculator](/calculator). Enter
         publishDate: '2025-09-03',
         readTime: '10 min',
         category: 'Operations',
-        content: `## The Real Cost of In-House Cleaning
+        content: `## Think In-House Cleaning Is Cheaper? Do This Math.
 
-Most facility managers don't realize how much in-house cleaning actually costs until they calculate the total loaded cost.
+You're paying your cleaner $18/hour and feeling good about it. But have you added payroll taxes, workers' comp, liability insurance, supplies, equipment, and your own time managing them? Most facility managers haven't — until they do.
 
 ## Full Cost Breakdown: In-House
 
@@ -119,11 +119,11 @@ This doesn't include finding replacements for call-outs, managing quality, or co
 
 A typical 10,000 sqft professional office cleaned 5x/week costs $1,200-$2,000/month outsourced, or $14,400-$24,000/year. That's roughly 75-80% less than in-house.
 
-## The Third Option: Managed Outsourcing
+## The Third Option: Someone Else Manages the Vendors
 
-XIRI combines both benefits. We vet and manage contractors, verify every shift digitally, and give you one point of contact. Cost savings of outsourcing with the accountability of in-house.
+What if you got the cost savings of outsourcing without losing control? XIRI vets the contractors, verifies every shift digitally, and gives you one person to call — not a call center, not a ticket system. One number. One invoice. One person who knows your building.
 
-[**See Your Estimated Cost →**](/calculator)`,
+[**See Your Building's Estimated Cost →**](/calculator)`,
     },
     {
         slug: 'medical-office-cleaning-compliance-checklist',
@@ -132,9 +132,9 @@ XIRI combines both benefits. We vet and manage contractors, verify every shift d
         publishDate: '2025-09-05',
         readTime: '12 min',
         category: 'Compliance',
-        content: `## Why Compliance Matters for Medical Cleaning
+        content: `## Would Your Cleaning Pass an Unannounced OSHA Inspection?
 
-A dirty exam room isn't just unpleasant. It's a liability. Medical offices must comply with OSHA, HIPAA, CDC, and potentially JCAHO or AAAHC standards.
+Imagine a surveyor walking your facility right now. Would your cleaning logs hold up? Would your contractor's training certificates be current? A dirty exam room isn't just unpleasant — it's a citation waiting to happen.
 
 ## OSHA Bloodborne Pathogens (29 CFR 1910.1030)
 
@@ -179,9 +179,9 @@ A dirty exam room isn't just unpleasant. It's a liability. Medical offices must 
         publishDate: '2025-09-08',
         readTime: '6 min',
         category: 'Guides',
-        content: `## Most Cleaning Companies Look the Same on Paper
+        content: `## Every Cleaning Company Says They're "Reliable." Here's How to Check.
 
-Every cleaning company promises "quality service." Here's how to find the ones that deliver.
+You've seen the pitches: "Quality service. Reliable crews. Customer satisfaction." But when your lobby is dirty at 7 AM, those words don't help. Here are 7 questions that separate the pros from the no-shows.
 
 ## 1. "What does your insurance actually cover?"
 
@@ -220,9 +220,9 @@ Right answer: Month-to-month. Red flag: Multi-year with heavy termination fees.
         publishDate: '2025-09-10',
         readTime: '9 min',
         category: 'Compliance',
-        content: `## JCAHO Surveys and Your Cleaning Program
+        content: `## The Question That Trips Up 90% of Facilities During a JCAHO Survey
 
-Joint Commission (JCAHO) surveyors don't just check if your facility looks clean. They verify that your cleaning program is documented, consistent, and meets infection control standards.
+"Can I see your cleaning logs from the past 12 months?" That's usually the moment a survey goes sideways. Joint Commission surveyors don't just check if your facility looks clean. They check if you can *prove* it was cleaned — consistently, correctly, and on schedule.
 
 ## What Surveyors Actually Inspect
 
@@ -260,9 +260,9 @@ Start 90 days before your survey window:
         publishDate: '2025-09-12',
         readTime: '5 min',
         category: 'Services',
-        content: `## Nightly Cleaning Isn't Always Enough
+        content: `## It's 2 PM. Your Lobby Restroom Just Ran Out of Paper Towels. Again.
 
-If your lobby gets heavy foot traffic, your restrooms need midday restocking, or your tenants expect a spotless common area during business hours, you need a day porter.
+Your nightly cleaning crew vacuumed at midnight. But it's 2 PM now, and the waiting room has coffee stains on the table, the restroom is out of soap, and a patient just tracked mud through the hallway. Nightly cleaning handles the reset. A day porter handles the reality.
 
 ## What Day Porters Actually Do
 
@@ -287,7 +287,7 @@ If your lobby gets heavy foot traffic, your restrooms need midday restocking, or
 
 Day porter services typically run $15-$25/hour depending on your market and the scope. For a single porter covering 8 hours, expect $2,400-$4,000/month.
 
-[**Get a Day Porter Quote →**](/services/day-porter)`,
+[**Get a Day Porter Quote — No Commitment →**](/services/day-porter)`,
     },
     {
         slug: 'commercial-floor-care-guide',
@@ -296,9 +296,9 @@ Day porter services typically run $15-$25/hour depending on your market and the 
         publishDate: '2025-09-15',
         readTime: '7 min',
         category: 'Services',
-        content: `## Your Floors Are the First Thing People Notice
+        content: `## When Did You Last Look at Your Floors? Really Look?
 
-Dull VCT tile, stained carpet, or grimy grout doesn't just look bad. It signals neglect to patients, customers, and inspectors.
+Step back and stare at your VCT tile under the fluorescent lights. See those scuff marks, the yellowing wax, the dull patches? Your patients, customers, and inspectors see them too. Floors are the largest visible surface in any facility — and the first thing people judge.
 
 ## Floor Types and Maintenance Schedules
 
@@ -327,9 +327,9 @@ Document your floor care schedule. In personal injury claims, the first question
         publishDate: '2025-09-17',
         readTime: '6 min',
         category: 'Operations',
-        content: `## Cutting Costs Doesn't Mean Cutting Corners
+        content: `## You Don't Have a Budget Problem. You Have a Vendor Problem.
 
-Most facility managers think the only way to save money is to find a cheaper vendor. That usually backfires. Here are 5 strategies that actually work.
+Most facility managers think the only way to cut costs is to find a cheaper vendor. That usually backfires — cheaper means thinner crews, more no-shows, and corners cut on compliance. Here are 5 strategies that cut costs and actually improve results.
 
 ## 1. Consolidate Vendors Under One Partner
 
@@ -354,7 +354,7 @@ Reactive maintenance costs 3-5x more than preventive. Bundle HVAC filter changes
 
 Lock in annual pricing for savings, but ensure you can exit monthly. This gives you leverage without risk.
 
-[**See How Much You Could Save →**](/calculator)`,
+[**See How Much Your Building Could Save →**](/calculator)`,
     },
     {
         slug: 'nassau-county-commercial-cleaning-guide',
@@ -363,9 +363,9 @@ Lock in annual pricing for savings, but ensure you can exit monthly. This gives 
         publishDate: '2025-09-20',
         readTime: '7 min',
         category: 'Local',
-        content: `## Cleaning Services in Nassau County
+        content: `## Why Does Everything Cost More on Long Island? (And What to Do About It)
 
-Nassau County has unique characteristics that affect commercial cleaning: higher labor costs than the national average, strict local health department requirements, and a concentrated medical corridor that demands compliance-grade cleaning.
+Nassau County cleaning costs run 15-25% above national averages. That's the reality of higher prevailing wages, NY-mandated workers' comp, and a cost of living that makes your vendors charge more. But higher costs don't have to mean overpaying.
 
 ## Local Cost Benchmarks
 
@@ -398,9 +398,9 @@ We're based here. We serve Great Neck, New Hyde Park, Albertson, Farmingdale, an
         publishDate: '2025-09-22',
         readTime: '5 min',
         category: 'Services',
-        content: `## Construction Is Done. Now What?
+        content: `## The Punch List Is Done. Your Building Still Isn't Ready.
 
-Post-construction cleanup is the critical step between "construction complete" and "ready for occupancy." Skip it or do it poorly and you'll be dealing with dust, debris, and complaints for months.
+You signed off on the GC's final walkthrough. But look around: there's drywall dust on every surface, protective film on the windows, label residue on the fixtures, and a fine white layer on every horizontal surface that won't quit. That building isn't move-in ready. It needs a post-construction clean, and it needs one done right.
 
 ## The Three Phases of Post-Construction Cleaning
 
@@ -433,11 +433,11 @@ Post-construction cleanup is the critical step between "construction complete" a
         publishDate: '2025-09-25',
         readTime: '5 min',
         category: 'Operations',
-        content: `## The 7 AM Panic
+        content: `## It's 7 AM. The Lobby Trash Is Full. The Restrooms Are Untouched.
 
-You walk into your facility at 7 AM. The trash is still full. The restrooms haven't been touched. Your cleaning company no-showed again.
+You pull into the parking lot, walk through the front door, and immediately feel your stomach drop. The trash cans are overflowing. The restroom hasn't been touched. Your cleaning company no-showed. Again.
 
-It happens more than it should. And it's almost always a symptom of deeper problems.
+You call them. Voicemail. You call again. "We'll send someone tonight." But tonight doesn't fix the patient walking in right now.
 
 ## Why No-Shows Happen
 
@@ -460,7 +460,7 @@ It happens more than it should. And it's almost always a symptom of deeper probl
 
 Every XIRI shift is digitally verified. If a contractor doesn't check in, we know immediately and dispatch a backup. You get a notification, not a surprise.
 
-[**Never Get No-Showed Again →**](/#audit)`,
+[**Never Get No-Showed Again — No Contract Required →**](/#audit)`,
     },
     {
         slug: 'commercial-trash-recycling-mistakes',
@@ -469,9 +469,9 @@ Every XIRI shift is digitally verified. If a contractor doesn't check in, we kno
         publishDate: '2025-09-26',
         readTime: '5 min',
         category: 'Operations',
-        content: `## Waste Management Is an Afterthought — Until It Costs You
+        content: `## Is Your Dumpster Bill 40% Higher Than It Should Be?
 
-Most facility managers don't think about trash until they get a contamination fine or their hauling bill jumps 40%. Here are the 5 mistakes we see most often.
+Nobody thinks about trash until the hauling bill spikes or a contamination fine lands on your desk. Here are 5 waste management mistakes that are quietly draining your budget — and how to fix each one in under a week.
 
 ## 1. No Recycling Contamination Control
 
@@ -506,9 +506,9 @@ Dented, unlabeled, mismatched indoor bins make recycling impossible for tenants 
         publishDate: '2025-09-27',
         readTime: '7 min',
         category: 'Compliance',
-        content: `## Urgent Care Moves Fast. Your Cleaning Can't Fall Behind.
+        content: `## 45 Patients Today. 6 Exam Rooms. Can Your Cleaning Keep Up?
 
-Urgent care centers see 30-60 patients per day across limited exam rooms. That means rapid patient turnover cleaning on top of nightly deep cleaning. Most general janitorial companies aren't equipped for this pace.
+A patient leaves Room 3 at 2:14 PM. The next one walks in at 2:21. That's 7 minutes to disinfect every surface, restock supplies, and mop any contamination. Most janitorial companies weren't built for this pace. Urgent care cleaning is a different discipline entirely.
 
 ## Between-Patient Cleaning Protocol
 
@@ -545,9 +545,9 @@ Urgent care facilities handle minor injuries, blood draws, and wound care. Your 
         publishDate: '2025-09-28',
         readTime: '6 min',
         category: 'Guides',
-        content: `## Green Cleaning Has Grown Up
+        content: `## Still Think "Green Cleaning" Means Weak Products? That Changed.
 
-Five years ago, "green cleaning" meant weaker products and higher costs. Today, EPA Safer Choice and Green Seal certified products perform on par with traditional chemicals — without the health risks.
+Five years ago, green cleaning meant trading effectiveness for a label. Not anymore. Today's EPA Safer Choice and Green Seal certified products match traditional chemicals on performance — and your tenants won't get headaches from the fumes.
 
 ## When Green Cleaning Makes Sense
 
@@ -586,9 +586,9 @@ The product cost is higher, but the total cost of ownership is often lower when 
         publishDate: '2025-09-29',
         readTime: '6 min',
         category: 'Services',
-        content: `## Reactive HVAC = Expensive HVAC
+        content: `## It's July. Your AC Just Died. The Emergency Tech Charges $400/Hour.
 
-An emergency HVAC call on a Friday afternoon costs 3-5x more than a scheduled filter change. And when the system goes down in July, you lose tenants.
+Friday afternoon. 94 degrees outside. Your HVAC compressor just failed. The emergency tech can come — but it's $400/hour plus parts. That $40 filter change you skipped in April? It just became a $3,000 repair.
 
 ## The Preventive Maintenance Schedule
 
@@ -630,9 +630,9 @@ Plus, well-maintained systems use 15-25% less energy. On a commercial system, th
         publishDate: '2025-10-01',
         readTime: '7 min',
         category: 'Compliance',
-        content: `## Dental Offices Have Unique Cleaning Needs
+        content: `## Your Dental Practice Isn't a Regular Office. Don't Clean It Like One.
 
-Dental practices generate aerosols, handle regulated waste, and require instrument sterilization areas that demand cleaning protocols beyond standard commercial janitorial.
+Aerosols from drills. Amalgam waste from fillings. Sterilization areas that can't share a mop with the waiting room. Dental practices have cleaning requirements that most commercial janitorial companies have never been trained on.
 
 ## OSHA Requirements for Dental Cleaning
 
@@ -661,9 +661,9 @@ Dental practices generate aerosols, handle regulated waste, and require instrume
         publishDate: '2025-10-08',
         readTime: '6 min',
         category: 'Industries',
-        content: `## Your Showroom Is Your Sales Floor
+        content: `## A Customer Just Walked Into Your Showroom. What Did They Notice First?
 
-A car dealership is one of the few businesses where the cleanliness of the facility directly correlates with sales. A spotless showroom signals professionalism. A dirty service bay signals neglect.
+Not the cars. The floor. The glass. The smell. A dealership is one of the few businesses where facility cleanliness directly correlates with sales. A spotless showroom says "this dealership takes care of things." A dirty service bay says the opposite.
 
 ## The 3 Zones of Dealership Cleaning
 
@@ -697,9 +697,9 @@ A car dealership is one of the few businesses where the cleanliness of the facil
         publishDate: '2025-10-15',
         readTime: '8 min',
         category: 'Compliance',
-        content: `## Children Are More Vulnerable to Cleaning Chemicals
+        content: `## Would You Let a Toddler Crawl on a Floor Cleaned with Industrial Degreaser?
 
-Standard commercial cleaning chemicals can be harmful to children. Daycares need Green Seal or Safer Choice certified products that meet CDC cleanliness standards without toxic residue.
+That's effectively what's happening when a standard janitorial company cleans your daycare with off-the-shelf commercial chemicals. Children breathe closer to the ground, touch every surface, and put their hands in their mouths. Your cleaning products need to be as safe as the environment you're creating.
 
 ## CDC Guidelines for Childcare Cleaning
 
@@ -732,9 +732,9 @@ Your state likely requires all cleaning staff who access the facility during ope
         publishDate: '2025-10-22',
         readTime: '5 min',
         category: 'Services',
-        content: `## First Impressions Start in the Parking Lot
+        content: `## When Was the Last Time You Looked at Your Building From the Street?
 
-Before a customer walks through your door, they've already judged your business based on the exterior. Stained sidewalks, green algae on walls, and grimy building facades send the wrong message.
+Drive past your property tomorrow like a first-time visitor would. See those dark stains on the sidewalk? The green film creeping up the north wall? The oil spots in the guest parking? That's your first impression — and it's being made before anyone walks through the door.
 
 ## When to Pressure Wash
 
