@@ -129,6 +129,29 @@ const MEDICAL_LOGIC: Record<string, { titlePrefix: string; compliance: string; p
 // Fallback for any service not in the map
 const DEFAULT_LOGIC = { titlePrefix: '100% OSHA-Compliant', compliance: 'OSHA', pitch: 'nightly-verified, $1M-insured contractors' };
 
+// ─── Explicit Meta Descriptions (max 155 chars each) ───
+const META_DESCRIPTIONS: Record<string, string> = {
+    'medical-office-cleaning': 'OSHA + HIPAA compliant medical office cleaning. Nightly verified, $1M insured. One partner for janitorial, supplies & compliance.',
+    'urgent-care-cleaning': 'Rapid-turnover sterile cleaning for urgent care centers. OSHA + HIPAA compliant, nightly verified. One partner, one invoice.',
+    'surgery-center-cleaning': 'AAAHC audit-ready surgery center cleaning. Terminal cleaning with AORN-standard OR protocols. Nightly verified, $1M insured.',
+    'daycare-cleaning': 'Child-safe daycare cleaning with non-toxic Green Seal products. CDC compliant, background-checked crews. Free walkthrough available.',
+    'commercial-cleaning': 'Nightly-verified commercial cleaning for offices and retail. $1M insured contractors, one invoice, zero headaches. Get a free scope.',
+    'janitorial-services': '365 nights/yr audited janitorial services. $1M-insured, background-checked crews. One partner replaces cleaning, supplies & compliance.',
+    'floor-care': 'OSHA-compliant floor care: VCT waxing, tile scrubbing, carpet extraction. Slip/fall prevention documented. Free walkthrough available.',
+    'disinfecting-services': 'EPA-registered disinfection with documented kill-rate protocols. CDC compliant, nightly verified. One partner, one invoice.',
+    'carpet-upholstery': 'Commercial carpet and upholstery deep cleaning. EPA-compliant products, scheduled service, nightly verified. Free estimate available.',
+    'window-cleaning': 'Fully insured commercial window cleaning. Scheduled, inspected, and verified. $1M liability coverage. Free walkthrough available.',
+    'pressure-washing': 'EPA-compliant commercial pressure washing with OSHA safety protocols. Documented runoff management. Free site assessment.',
+    'day-porter': 'Daytime facility monitoring with documented shift logs. Real-time reporting, $1M insured. One partner for lobby, restrooms & common areas.',
+    'snow-ice-removal': 'Liability-protected snow and ice removal. OSHA-compliant slip/fall prevention — every event documented and audited. Free scope.',
+    'hvac-maintenance': 'EPA-compliant HVAC maintenance for occupied commercial facilities. Documented air quality management. Free walkthrough available.',
+    'pest-control': 'Integrated pest management meeting local health code standards. EPA compliant, documented treatments. Free site assessment.',
+    'waste-management': 'Documented chain-of-custody waste handling with EPA compliance. OSHA-compliant, nightly verified. One partner, one invoice.',
+    'parking-lot-maintenance': 'ADA-compliant parking lot maintenance. Sweeping, striping, slip/fall prevention. $1M insured, documented. Free walkthrough.',
+    'handyman-services': 'Fully insured, background-checked maintenance crews. $1M liability, documented work orders. One partner for all facility repairs.',
+    'post-construction-cleanup': 'Professional post-construction cleanup for commercial spaces. Dust removal, floor finishing, final inspection. $1M insured.',
+};
+
 // Generate dynamic metadata for SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
@@ -139,8 +162,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         const logic = MEDICAL_LOGIC[service.slug] || DEFAULT_LOGIC;
         // Title: compliance prefix + "Cleaning for" + service name + brand
         const title = `${logic.titlePrefix} Cleaning for ${service.heroTitle || service.name} | XIRI Facility Solutions`;
-        // Description: surgical pitch + numbers + CTA
-        const description = `${service.shortDescription} ${logic.pitch}. 1 partner, 1 invoice, 365 nights/yr verified. Free walkthrough →`.slice(0, 155);
+        // Description: use explicit description if available, otherwise auto-generate
+        const description = META_DESCRIPTIONS[service.slug] || `${service.shortDescription} ${logic.pitch}. 1 partner, 1 invoice, 365 nights/yr verified.`.slice(0, 155);
         return {
             title,
             description,
@@ -209,7 +232,22 @@ export default async function ServicePage({ params }: Props) {
                         "name": service.name,
                         "description": service.shortDescription,
                         "serviceType": "Facility Management",
-                        "areaServed": "New York"
+                        "areaServed": "New York",
+                        "provider": {
+                            "@type": "Organization",
+                            "@id": "https://xiri.ai/#organization"
+                        }
+                    }}
+                />
+                <JsonLd
+                    data={{
+                        "@context": "https://schema.org",
+                        "@type": "BreadcrumbList",
+                        "itemListElement": [
+                            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
+                            { "@type": "ListItem", "position": 2, "name": "Services", "item": "https://xiri.ai/services" },
+                            { "@type": "ListItem", "position": 3, "name": service.name, "item": `https://xiri.ai/services/${service.slug}` },
+                        ]
                     }}
                 />
                 <Hero
@@ -412,6 +450,18 @@ export default async function ServicePage({ params }: Props) {
             {jsonLd.map((ld, i) => (
                 <JsonLd key={i} data={ld} />
             ))}
+            <JsonLd
+                data={{
+                    "@context": "https://schema.org",
+                    "@type": "BreadcrumbList",
+                    "itemListElement": [
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
+                        { "@type": "ListItem", "position": 2, "name": "Services", "item": "https://xiri.ai/services" },
+                        { "@type": "ListItem", "position": 3, "name": service.name, "item": `https://xiri.ai/services/${service.slug}` },
+                        { "@type": "ListItem", "position": 4, "name": townName, "item": `https://xiri.ai/services/${slug}` },
+                    ]
+                }}
+            />
             <ServiceTracker service={service.slug} location={location.slug} />
 
             {/* Dynamic Hero */}
