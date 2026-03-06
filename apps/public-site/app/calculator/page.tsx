@@ -1,7 +1,17 @@
 import { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import { JsonLd } from '@/components/JsonLd';
 import { CTAButton } from '@/components/CTAButton';
-import PublicCalculator from '@/components/PublicCalculator';
+
+const PublicCalculator = dynamic(() => import('@/components/PublicCalculator'), {
+    loading: () => (
+        <div className="animate-pulse space-y-4">
+            <div className="h-12 bg-slate-200 rounded-lg" />
+            <div className="h-48 bg-slate-200 rounded-lg" />
+            <div className="h-12 bg-slate-200 rounded-lg w-1/2 mx-auto" />
+        </div>
+    ),
+});
 
 export const metadata: Metadata = {
     title: 'Janitorial Cleaning Cost Calculator (2026) | Commercial Cleaning Rates',

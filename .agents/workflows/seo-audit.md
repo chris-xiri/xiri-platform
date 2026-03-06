@@ -2,11 +2,13 @@
 description: Run an SEO audit and get recommendations for improving organic rankings. Feed it ranking data for analysis.
 ---
 
-# SEO Pipeline: Audit → Strategy → Execution
+# SEO Pipeline: Technical Health → Ranking Audit → Strategy → Execution
 
-This workflow runs as a 3-stage pipeline. You can run all stages in one session or stop after any stage for review.
+This workflow runs as a 4-stage pipeline. You can run all stages in one session or stop after any stage for review.
 
 **Cadence: Every 2 weeks** (set a recurring calendar reminder — Google changes take 7-14 days to reflect)
+
+> **Skills used:** This workflow uses the `seo-audit` skill (global) for Stage 1 technical checks. Read its `SKILL.md` if you need the full checklist reference.
 
 ## Process Flow
 
@@ -17,27 +19,37 @@ This workflow runs as a 3-stage pipeline. You can run all stages in one session 
 └────────────────────────┬────────────────────────────────┘
                          ▼
 ┌─────────────────────────────────────────────────────────┐
-│  STAGE 1: AUDIT                                         │
+│  STAGE 1: TECHNICAL HEALTH CHECK (seo-audit skill)      │
+│  • Crawlability: robots.txt, sitemap, architecture      │
+│  • Indexation: canonicals, noindex, redirects            │
+│  • Core Web Vitals: LCP, INP, CLS via PageSpeed         │
+│  • On-page: titles, metas, headings, images, links      │
+│  • Local SEO: NAP consistency, local schema              │
+│  Output: Technical findings + priority fixes             │
+└────────────────────────┬────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│  STAGE 2: RANKING AUDIT                                  │
 │  • Ingest ranking data (GSC JSON, CSV, or screenshot)   │
 │  • Compare against tracked keywords                     │
 │  • Check competitor sites for new content               │
 │  • Identify wins, drops, and gaps                       │
-│  Output: Audit findings report                          │
+│  Output: Ranking findings report                         │
 └────────────────────────┬────────────────────────────────┘
                          ▼
 ┌─────────────────────────────────────────────────────────┐
-│  STAGE 2: STRATEGY                                      │
-│  • Prioritize gaps by impact (volume × difficulty)      │
+│  STAGE 3: STRATEGY                                      │
+│  • Merge technical fixes + ranking opportunities        │
+│  • Prioritize by impact (volume × difficulty)           │
 │  • Recommend specific new guides/pages                  │
 │  • Suggest on-page fixes for existing pages             │
-│  • Update content calendar                              │
 │  Output: Prioritized action list for user approval      │
 └────────────────────────┬────────────────────────────────┘
                          ▼ (after user approves)
 ┌─────────────────────────────────────────────────────────┐
-│  STAGE 3: EXECUTION                                     │
+│  STAGE 4: EXECUTION                                     │
+│  • Fix technical issues (canonicals, metas, speed)      │
 │  • Create new guides in guides/[slug]/page.tsx          │
-│  • Fix on-page SEO (titles, metas, H1s, FAQs)          │
 │  • Add internal links                                   │
 │  • Build, commit, push                                  │
 │  Output: Deployed changes + summary                     │
@@ -46,9 +58,61 @@ This workflow runs as a 3-stage pipeline. You can run all stages in one session 
 
 ---
 
-## Stage 1: AUDIT
+## Stage 1: TECHNICAL HEALTH CHECK
 
-### 1a. Ingest Ranking Data
+> This stage follows the `seo-audit` skill checklist. XIRI context is pre-filled below — skip the skill's discovery questions.
+
+### XIRI Site Context (pre-filled)
+- **Site type:** Local B2B service business (janitorial/facility management)
+- **URL:** https://xiri.ai
+- **Framework:** Next.js 15 (App Router, Vercel-hosted)
+- **SEO goal:** Rank for 34 target keywords across 4 tiers (see keyword reference below)
+- **Competitors:** CBM Corp, Clear View, POC Corp, CommercialCleaningCorp, MethodCleanBiz, Coverall, JAN-PRO, SERVPRO, City Wide, Summit, One-A Cleaning, JanitorialLeadsPro
+- **Known:** ~1,400 pages in sitemap, programmatic SEO pages, JSON-LD structured data
+
+### 1a. Crawlability & Indexation
+Check these XIRI-specific items:
+- Fetch `https://xiri.ai/robots.txt` — verify no accidental blocks
+- Fetch `https://xiri.ai/sitemap.xml` — verify it loads, count URLs, check for non-canonical or noindex pages
+- Spot-check 3-5 programmatic pages (service×location) for proper canonical tags
+- Check for redirect chains on any recently consolidated pages (e.g., old `/partners` → `/contractors`)
+
+### 1b. Core Web Vitals
+Use PageSpeed Insights API or browser tool on these representative pages:
+- Homepage: `https://xiri.ai`
+- A service page: `https://xiri.ai/services/janitorial-cleaning-in-garden-city`
+- Calculator: `https://xiri.ai/calculator`
+- A guide: `https://xiri.ai/guides/commercial-cleaning-cost`
+
+Flag any page with:
+- LCP > 2.5s
+- INP > 200ms
+- CLS > 0.1
+
+### 1c. On-Page Spot Check
+For the top 5 highest-traffic pages (from GSC data if available, otherwise homepage + calculator + top guides):
+- Title tag: unique, primary keyword near beginning, 50-60 chars
+- Meta description: unique, 150-160 chars, includes keyword
+- H1: one per page, matches primary keyword
+- Images: alt text present, WebP format, lazy loading
+- Internal links: at least 3 contextual links to other XIRI pages
+
+### 1d. Local SEO Check
+- Verify Organization schema in `layout.tsx` includes correct NAP (Name, Address, Phone)
+- Verify `sameAs` array includes Facebook + LinkedIn URLs
+- Check Google Business Profile link consistency (if applicable)
+
+### 1e. Output: Technical Health Report
+Present findings as:
+- ✅ **Passing** checks
+- ⚠️ **Warnings** (non-blocking but should fix)
+- 🔴 **Critical** (blocking ranking or indexation)
+
+---
+
+## Stage 2: RANKING AUDIT
+
+### 2a. Ingest Ranking Data
 
 Ask the user for their latest data. Accept any of these formats:
 
@@ -62,7 +126,7 @@ If the user ran the GSC script, read `seo-data/gsc-rankings.json` which contains
 - `trackedKeywords` — performance on our 23 target keywords
 - `improvementOpportunities` — page 2+ keywords with decent impressions
 
-### 1b. Analyze Current State
+### 2b. Analyze Current State
 
 For each keyword, classify into:
 - 🟢 **Winning** (position 1-10): protect and strengthen
@@ -76,7 +140,7 @@ Cross-reference against the existing site pages:
 - `apps/public-site/app/calculator/page.tsx` — calculator page
 - `apps/public-site/data/seo-data.json` — location/service data
 
-### 1c. Competitor Check
+### 2c. Competitor Check
 
 Check these competitor sites for new content published since last audit:
 
@@ -95,7 +159,7 @@ Check these competitor sites for new content published since last audit:
 | One-A Cleaning | one-acleaning.com | Any site changes |
 | JanitorialLeadsPro | janitorialleadspro.com | New blog posts |
 
-### 1d. Output: Audit Report
+### 2d. Output: Ranking Report
 
 Present findings as a structured summary:
 - **Rankings snapshot** (how many keywords in each tier)
@@ -105,9 +169,11 @@ Present findings as a structured summary:
 
 ---
 
-## Stage 2: STRATEGY
+## Stage 3: STRATEGY
 
-### 2a. Prioritize Actions
+### 3a. Prioritize Actions
+
+Merge findings from Stage 1 (technical fixes) and Stage 2 (ranking gaps) into a single prioritized list.
 
 Score each opportunity by: `Impact = Search Volume × (1 / Difficulty) × Intent Score`
 
@@ -117,7 +183,7 @@ Intent Score:
 - Informational ("how to X") = 2×
 - Navigational ("X company") = 1×
 
-### 2b. Generate Recommendations
+### 3b. Generate Recommendations
 
 For each action, provide:
 
@@ -139,7 +205,7 @@ For each action, provide:
 - Which locations need content enhancement
 - Specific fields to update in seo-data.json
 
-### 2c. Present Action Plan
+### 3c. Present Action Plan
 
 Organize into:
 1. **Quick Wins** (< 30 min, do today) — on-page fixes, internal links
@@ -150,11 +216,18 @@ Organize into:
 
 ---
 
-## Stage 3: EXECUTION
+## Stage 4: EXECUTION
 
 After user approves the strategy:
 
-### 3a. Implement Changes
+### 4a. Implement Changes
+
+**Fixing technical issues (from Stage 1):**
+- Fix broken canonicals, redirect chains
+- Optimize images (WebP, alt text, lazy loading)
+- Fix meta tags (titles, descriptions)
+- Add missing internal links
+- Fix any Core Web Vitals issues (image sizing, font loading, JS bundles)
 
 **Adding new guides:**
 Add entries to the `GUIDES` object in `apps/public-site/app/guides/[slug]/page.tsx`:
@@ -182,15 +255,15 @@ Add entries to the `GUIDES` object in `apps/public-site/app/guides/[slug]/page.t
 - Update FAQ entries in calculator page or guide pages
 - Add internal links between pages
 
-### 3b. Build and Verify
+### 4b. Build and Verify
 // turbo
 1. Run `cd apps/public-site && npx next build` to verify no compilation errors
 
-### 3c. Commit and Push
+### 4c. Commit and Push
 2. Commit: `git add -A && git commit -m "feat(seo): [description of changes]"`
 3. Push: `git push origin main`
 
-### 3d. Post-Deploy
+### 4d. Post-Deploy
 After Vercel deploys:
 - Suggest user submit new URLs to Google Search Console for indexing
 - Note which keywords to watch in the next audit cycle
