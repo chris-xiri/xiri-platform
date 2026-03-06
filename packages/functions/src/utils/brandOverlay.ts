@@ -36,9 +36,9 @@ export function extractHeadline(postMessage: string): string {
     // Remove leading emojis for cleaner text but keep trailing ones
     headline = headline.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}\s]+/u, "");
 
-    // Truncate to ~70 chars max at word boundary
-    if (headline.length > 70) {
-        headline = headline.slice(0, 70).replace(/\s+\S*$/, "") + "…";
+    // Keep up to 100 chars — trim at word boundary, no ellipsis
+    if (headline.length > 100) {
+        headline = headline.slice(0, 100).replace(/\s+\S*$/, "");
     }
 
     return headline || "Professional Facility Solutions";
@@ -63,10 +63,9 @@ function wrapText(text: string, maxChars: number): string[] {
     }
     if (currentLine) lines.push(currentLine);
 
-    // Limit to 3 lines max
-    if (lines.length > 3) {
-        lines.length = 3;
-        lines[2] = lines[2].replace(/\s+\S*$/, "") + "…";
+    // Allow up to 4 lines — trim cleanly, no ellipsis
+    if (lines.length > 4) {
+        lines.length = 4;
     }
 
     return lines;
@@ -99,8 +98,13 @@ function createBrandOverlaySvg(
     height: number,
     headline: string,
 ): string {
-    const headlineLines = wrapText(headline, 32);
-    const lineHeight = 38;
+    // Adaptive sizing: shorter headlines get bigger text
+    const isLong = headline.length > 65;
+    const fontSize = isLong ? 24 : 30;
+    const charsPerLine = isLong ? 38 : 32;
+    const lineHeight = isLong ? 32 : 38;
+
+    const headlineLines = wrapText(headline, charsPerLine);
     const headlineBlockHeight = headlineLines.length * lineHeight + 50;
 
     // Position headline block in the lower third
@@ -108,7 +112,7 @@ function createBrandOverlaySvg(
 
     const headlineTexts = headlineLines.map((line, i) => {
         const y = headlineY + 45 + (i * lineHeight);
-        return `<text x="${width * 0.08}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="30" fill="white" letter-spacing="0.5">${escapeXml(line)}</text>`;
+        return `<text x="${width * 0.08}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="${fontSize}" fill="white" letter-spacing="0.5">${escapeXml(line)}</text>`;
     }).join("\n        ");
 
     return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
