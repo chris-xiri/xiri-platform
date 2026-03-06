@@ -18,15 +18,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
     if (industry) {
         return {
-            title: `${industry.heroTitle} | XIRI`, // e.g. "Clinical-Grade Facility Management | XIRI"
+            title: `${industry.heroTitle} | XIRI`,
             description: industry.heroSubtitle,
             alternates: {
-                canonical: `https://xiri.ai/${industry.slug}`
+                canonical: `https://xiri.ai/industries/${industry.slug}`
             },
             openGraph: {
                 title: `${industry.heroTitle} | XIRI`,
                 description: industry.heroSubtitle,
-                url: `https://xiri.ai/${industry.slug}`,
+                url: `https://xiri.ai/industries/${industry.slug}`,
                 siteName: 'XIRI Facility Solutions',
                 type: 'website',
             },
@@ -40,7 +40,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function IndustryPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
 
-    // Strict Industry Check
     const industry = seoData.industries.find((i) => i.slug === slug);
 
     if (!industry) {

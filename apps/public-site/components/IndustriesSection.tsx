@@ -14,7 +14,7 @@ export function IndustriesSection() {
 
                 <div className="grid md:grid-cols-3 gap-8">
                     {/* Medical Card */}
-                    <Link href="/medical-offices" className="group block" onClick={() => trackEvent('industry_card_click', { industry: 'medical' })}>
+                    <Link href="/industries/medical-offices" className="group block" onClick={() => trackEvent('industry_card_click', { industry: 'medical' })}>
                         <div className="relative overflow-hidden rounded-2xl bg-sky-50 p-8 h-full border border-sky-100 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
                             <div className="absolute top-0 right-0 p-4 opacity-10 text-9xl font-bold text-sky-900 leading-none -mr-8 -mt-8">Rx</div>
                             <div className="relative z-10">
@@ -27,7 +27,7 @@ export function IndustriesSection() {
                     </Link>
 
                     {/* Automotive Card */}
-                    <Link href="/auto-dealerships" className="group block" onClick={() => trackEvent('industry_card_click', { industry: 'automotive' })}>
+                    <Link href="/industries/auto-dealerships" className="group block" onClick={() => trackEvent('industry_card_click', { industry: 'automotive' })}>
                         <div className="relative overflow-hidden rounded-2xl bg-gray-50 p-8 h-full border border-gray-100 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
                             <div className="absolute top-0 right-0 p-4 opacity-10 text-9xl font-bold text-gray-900 leading-none -mr-8 -mt-8">Au</div>
                             <div className="relative z-10">
@@ -40,7 +40,7 @@ export function IndustriesSection() {
                     </Link>
 
                     {/* Commercial/School Card */}
-                    <Link href="/daycare-preschool" className="group block" onClick={() => trackEvent('industry_card_click', { industry: 'education' })}>
+                    <Link href="/industries/daycare-preschool" className="group block" onClick={() => trackEvent('industry_card_click', { industry: 'education' })}>
                         <div className="relative overflow-hidden rounded-2xl bg-orange-50 p-8 h-full border border-orange-100 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
                             <div className="absolute top-0 right-0 p-4 opacity-10 text-9xl font-bold text-orange-900 leading-none -mr-8 -mt-8">Ed</div>
                             <div className="relative z-10">

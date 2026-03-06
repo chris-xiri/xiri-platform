@@ -160,8 +160,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (type === 'SERVICE') {
         const service = data as any;
         const logic = MEDICAL_LOGIC[service.slug] || DEFAULT_LOGIC;
-        // Title: compliance prefix + "Cleaning for" + service name + brand
-        const title = `${logic.titlePrefix} Cleaning for ${service.heroTitle || service.name} | XIRI Facility Solutions`;
+        // Title: service name + compliance prefix + short brand (under 60 chars)
+        const title = `${service.heroTitle || service.name} — ${logic.titlePrefix} | XIRI`;
         // Description: use explicit description if available, otherwise auto-generate
         const description = META_DESCRIPTIONS[service.slug] || `${service.shortDescription} ${logic.pitch}. 1 partner, 1 invoice, 365 nights/yr verified.`.slice(0, 155);
         return {
@@ -181,8 +181,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     } else if (type === 'LOCATION') {
         const { service, location } = data as { service: any; location: Location };
         const logic = MEDICAL_LOGIC[service.slug] || DEFAULT_LOGIC;
-        // Title: compliance prefix + "Cleaning for" + service + location + brand
-        const title = `${logic.titlePrefix} Cleaning for ${service.name} in ${location.name} | XIRI`;
+        // Title: service + location + short brand (under 60 chars)
+        const title = `${service.name} in ${location.name} | XIRI`;
         // Description: local hook + surgical pitch + numbers + CTA
         const localHook = location.localInsight
             ? `${location.localInsight} `
@@ -291,23 +291,55 @@ export default async function ServicePage({ params }: Props) {
                 {/* FAQs */}
                 <FAQ items={service.faqs || []} />
 
-                {/* ═══ CALCULATOR CTA ═══ */}
-                <section className="py-12 bg-sky-50 border-y border-sky-100">
-                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <h2 className="text-2xl font-bold text-slate-900 mb-3">
-                            💰 How Much Does {service.name} Cost?
-                        </h2>
-                        <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
-                            Get an instant estimate with our free janitorial cleaning cost calculator. Enter your square footage, facility type, and state — results in seconds.
-                        </p>
-                        <Link
-                            href="/calculator"
-                            className="inline-block bg-sky-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-200"
-                        >
-                            Try the Cost Calculator →
-                        </Link>
-                    </div>
-                </section>
+                {/* ═══ PRICING / CALCULATOR CTA ═══ */}
+                {(() => {
+                    const CLEANING_SERVICES = [
+                        'medical-office-cleaning', 'urgent-care-cleaning', 'surgery-center-cleaning',
+                        'daycare-cleaning', 'commercial-cleaning', 'janitorial-services',
+                        'day-porter', 'disinfecting-services',
+                    ];
+                    const isCleaning = CLEANING_SERVICES.includes(service.slug);
+
+                    if (isCleaning) {
+                        return (
+                            <section className="py-12 bg-sky-50 border-y border-sky-100">
+                                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                                    <h2 className="text-2xl font-bold text-slate-900 mb-3">
+                                        💰 How Much Does {service.name} Cost?
+                                    </h2>
+                                    <p className="text-slate-600 mb-2 max-w-2xl mx-auto">
+                                        Get an instant estimate with our free janitorial cleaning cost calculator. Enter your square footage, facility type, and state — results in seconds.
+                                    </p>
+                                    <p className="text-sm text-slate-500 mb-6">Used by 20+ facilities across New York · No sign-up required</p>
+                                    <Link
+                                        href="/calculator"
+                                        className="inline-block bg-sky-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-200"
+                                    >
+                                        Get Your Instant Estimate →
+                                    </Link>
+                                </div>
+                            </section>
+                        );
+                    }
+                    return (
+                        <section className="py-12 bg-sky-50 border-y border-sky-100">
+                            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                                <h2 className="text-2xl font-bold text-slate-900 mb-3">
+                                    Need {service.name} for Your Facility?
+                                </h2>
+                                <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
+                                    Every facility is different. We'll walk your property, build a custom scope, and match you with vetted, $1M-insured contractors — all under one invoice.
+                                </p>
+                                <Link
+                                    href="/#audit"
+                                    className="inline-block bg-sky-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-200"
+                                >
+                                    Request a Custom Quote →
+                                </Link>
+                            </div>
+                        </section>
+                    );
+                })()}
 
                 {(() => {
                     const otherServices = seoData.services.filter(s => s.slug !== service.slug).slice(0, 6);

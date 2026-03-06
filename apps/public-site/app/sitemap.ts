@@ -10,7 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const toSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     // 1. Static Pages
-    ['', '/contractors', '/contact', '/directory/locations', '/directory/solutions', '/about', '/services', '/solutions', '/blog'].forEach((route) => {
+    ['', '/contractors', '/contact', '/directory/locations', '/directory/solutions', '/about', '/services', '/solutions', '/industries', '/blog'].forEach((route) => {
         sitemapEntries.push({ url: `${BASE_URL}${route}`, lastModified: new Date(), changeFrequency: 'weekly', priority: route === '' ? 1.0 : 0.8 });
     });
 
@@ -30,9 +30,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
         sitemapEntries.push({ url: `${BASE_URL}/blog/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
     });
 
-    // 2. Industry Hubs (/[slug])
+    // 2. Industry Hubs (/industries/[slug])
     (seoData.industries || []).forEach((item) => {
-        sitemapEntries.push({ url: `${BASE_URL}/${item.slug}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 });
+        sitemapEntries.push({ url: `${BASE_URL}/industries/${item.slug}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 });
     });
 
     // 3. Service Hubs (/services/[slug])

@@ -172,7 +172,7 @@ export default function Navigation() {
                                                     {facilities.map((facility) => (
                                                         <Link
                                                             key={facility.slug}
-                                                            href={`/${facility.slug}`}
+                                                            href={`/industries/${facility.slug}`}
                                                             className="block px-3 py-1.5 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 transition-colors"
                                                             onClick={() => handleNavClick(`/${facility.slug}`, facility.label)}
                                                         >
@@ -300,7 +300,7 @@ export default function Navigation() {
                                 <p className="text-xs font-bold text-sky-500 uppercase tracking-wider mb-2">Facility Types</p>
                                 <div className="grid grid-cols-2 gap-1">
                                     {FACILITY_TYPES.slice(0, 8).map(f => (
-                                        <Link key={f.slug} href={`/${f.slug}`} className="text-sm text-gray-700 py-1.5 hover:text-sky-600" onClick={() => setMobileOpen(false)}>
+                                        <Link key={f.slug} href={`/industries/${f.slug}`} className="text-sm text-gray-700 py-1.5 hover:text-sky-600" onClick={() => setMobileOpen(false)}>
                                             {f.label}
                                         </Link>
                                     ))}

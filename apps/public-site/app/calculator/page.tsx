@@ -171,6 +171,10 @@ export default function CalculatorPage() {
                         How much should office cleaning cost? Get instant commercial cleaning rates
                         for your office, medical facility, or commercial space — updated for 2026.
                     </p>
+                    <div className="flex items-center justify-center gap-2 mt-5 text-sky-300 text-sm font-medium">
+                        <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" /></svg>
+                        <span>Used by 20+ facilities across New York</span>
+                    </div>
                     <p className="text-sm text-slate-400 mt-3">
                         Free tool — no sign-up required. For recurring maintenance cleaning, not one-time or post-construction services.
                     </p>
