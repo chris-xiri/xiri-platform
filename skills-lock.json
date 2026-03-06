@@ -151,6 +151,11 @@
       "sourceType": "github",
       "computedHash": "7e94629c1bafd6459b4f113237655a98761438eb1b26aa15c440351f79a86d2e"
     },
+    "scoutqa-test": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "computedHash": "67633b5abb6e9f6b1ee4e7ef347300df0f931cf07d5cabc347b523570f36e7ef"
+    },
     "seo-audit": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",

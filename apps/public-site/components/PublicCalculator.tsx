@@ -196,7 +196,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                 const fmtNum = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
                 await addDoc(collection(db, 'lead_activities'), {
                     leadId: docRef.id,
-                    type: 'note',
+                    type: 'calculator_estimate',
                     source: 'system',
                     note: `Calculator estimate: ${Number(sqft).toLocaleString()} sqft ${facilityLabel}, ${daysPerWeek}x/week, ${fmtNum(estimate.monthly.low)}–${fmtNum(estimate.monthly.high)}/mo (${stateCode}). Source: public calculator.`,
                     createdAt: serverTimestamp(),

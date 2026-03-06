@@ -191,7 +191,11 @@ service cloud.firestore {
     // Lead Activities (audit trail)
     match /lead_activities/{activityId} {
       allow read: if request.auth != null;
+      // Dashboard users can create activities
       allow create: if request.auth != null;
+      // Public calculator can also create activities (unauthenticated)
+      allow create: if request.auth == null
+                    && request.resource.data.type == 'calculator_estimate';
       allow update, delete: if false;  // Immutable audit trail
     }
     
