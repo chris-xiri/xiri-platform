@@ -266,27 +266,107 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
 
                 {/* Frequency */}
                 <div>
-                    <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-2">Cleaning Frequency</label>
-                    <div className="flex flex-wrap gap-2">
-                        {[{ d: 7, label: '7x' }, { d: 6, label: '6x' }, { d: 5, label: '5x' }, { d: 4, label: '4x' }, { d: 3, label: '3x' }, { d: 2, label: '2x' }, { d: 1, label: '1x' }].map(({ d, label }) => (
-                            <button
-                                key={d}
-                                onClick={() => setDaysPerWeek(d)}
-                                className={`h-11 px-4 rounded-xl text-sm font-semibold transition-all ${daysPerWeek === d
-                                    ? 'bg-sky-600 text-white shadow-lg shadow-sky-200'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                    }`}
-                            >
-                                {label}<span className="text-xs font-normal opacity-70">/wk</span>
-                            </button>
-                        ))}
+                    <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-3">Cleaning Frequency</label>
+                    <div className="grid grid-cols-2 gap-3">
+                        {/* Nightly */}
+                        <button
+                            onClick={() => setDaysPerWeek(7)}
+                            className={`text-left p-3 rounded-xl border-2 transition-all ${daysPerWeek === 7
+                                ? `${isContractor ? 'border-emerald-500 bg-emerald-50' : 'border-sky-500 bg-sky-50'} shadow-md`
+                                : 'border-slate-200 bg-white hover:border-slate-300'
+                                }`}
+                        >
+                            <div className="flex items-center justify-between mb-1">
+                                <span className={`text-sm font-bold ${daysPerWeek === 7 ? (isContractor ? 'text-emerald-700' : 'text-sky-700') : 'text-slate-800'}`}>Nightly</span>
+                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${daysPerWeek === 7 ? (isContractor ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700') : 'bg-slate-100 text-slate-500'}`}>7x/wk</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 leading-snug">Medical, food service, high-traffic lobbies</p>
+                        </button>
+
+                        {/* Standard */}
+                        <div className={`p-3 rounded-xl border-2 transition-all ${[5, 6].includes(daysPerWeek)
+                            ? `${isContractor ? 'border-emerald-500 bg-emerald-50' : 'border-sky-500 bg-sky-50'} shadow-md`
+                            : 'border-slate-200 bg-white'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between mb-1">
+                                <span className={`text-sm font-bold ${[5, 6].includes(daysPerWeek) ? (isContractor ? 'text-emerald-700' : 'text-sky-700') : 'text-slate-800'}`}>Standard</span>
+                                <div className="flex gap-1">
+                                    {[6, 5].map(d => (
+                                        <button
+                                            key={d}
+                                            onClick={() => setDaysPerWeek(d)}
+                                            className={`text-xs font-semibold px-2 py-0.5 rounded-full transition-all ${daysPerWeek === d
+                                                ? (isContractor ? 'bg-emerald-600 text-white' : 'bg-sky-600 text-white')
+                                                : [5, 6].includes(daysPerWeek)
+                                                    ? (isContractor ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200' : 'bg-sky-100 text-sky-600 hover:bg-sky-200')
+                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                                }`}
+                                        >
+                                            {d}x
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-slate-500 leading-snug">Most offices, retail, commercial spaces</p>
+                        </div>
+
+                        {/* Low Traffic */}
+                        <div className={`p-3 rounded-xl border-2 transition-all ${[3, 4].includes(daysPerWeek)
+                            ? `${isContractor ? 'border-emerald-500 bg-emerald-50' : 'border-sky-500 bg-sky-50'} shadow-md`
+                            : 'border-slate-200 bg-white'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between mb-1">
+                                <span className={`text-sm font-bold ${[3, 4].includes(daysPerWeek) ? (isContractor ? 'text-emerald-700' : 'text-sky-700') : 'text-slate-800'}`}>Low Traffic</span>
+                                <div className="flex gap-1">
+                                    {[4, 3].map(d => (
+                                        <button
+                                            key={d}
+                                            onClick={() => setDaysPerWeek(d)}
+                                            className={`text-xs font-semibold px-2 py-0.5 rounded-full transition-all ${daysPerWeek === d
+                                                ? (isContractor ? 'bg-emerald-600 text-white' : 'bg-sky-600 text-white')
+                                                : [3, 4].includes(daysPerWeek)
+                                                    ? (isContractor ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200' : 'bg-sky-100 text-sky-600 hover:bg-sky-200')
+                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                                }`}
+                                        >
+                                            {d}x
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-slate-500 leading-snug">Small offices, low-foot-traffic areas</p>
+                        </div>
+
+                        {/* Weekly */}
+                        <div className={`p-3 rounded-xl border-2 transition-all ${[1, 2].includes(daysPerWeek)
+                            ? `${isContractor ? 'border-emerald-500 bg-emerald-50' : 'border-sky-500 bg-sky-50'} shadow-md`
+                            : 'border-slate-200 bg-white'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between mb-1">
+                                <span className={`text-sm font-bold ${[1, 2].includes(daysPerWeek) ? (isContractor ? 'text-emerald-700' : 'text-sky-700') : 'text-slate-800'}`}>Weekly</span>
+                                <div className="flex gap-1">
+                                    {[2, 1].map(d => (
+                                        <button
+                                            key={d}
+                                            onClick={() => setDaysPerWeek(d)}
+                                            className={`text-xs font-semibold px-2 py-0.5 rounded-full transition-all ${daysPerWeek === d
+                                                ? (isContractor ? 'bg-emerald-600 text-white' : 'bg-sky-600 text-white')
+                                                : [1, 2].includes(daysPerWeek)
+                                                    ? (isContractor ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200' : 'bg-sky-100 text-sky-600 hover:bg-sky-200')
+                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                                }`}
+                                        >
+                                            {d}x
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-slate-500 leading-snug">Warehouses, storage, seasonal spaces</p>
+                        </div>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1.5">
-                        {daysPerWeek === 7 ? 'Nightly — recommended for medical & high-traffic facilities' :
-                            daysPerWeek >= 5 ? 'Standard for most commercial spaces' :
-                                daysPerWeek >= 3 ? 'Common for low-traffic offices' :
-                                    'Weekly — best for small or low-traffic spaces'}
-                    </p>
                 </div>
             </div>
 

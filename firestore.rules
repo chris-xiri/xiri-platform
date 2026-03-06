@@ -49,7 +49,7 @@ service cloud.firestore {
       allow create: if true;
       allow read: if true;
       allow update: if true;
-      allow delete: if hasAnyRole(['admin', 'sales']);
+      allow delete: if hasAnyRole(['admin', 'sales', 'sales_exec', 'sales_mgr']);
     }
 
     match /sales_leads/{leadId} {

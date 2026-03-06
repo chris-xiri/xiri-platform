@@ -187,8 +187,14 @@ export default function LeadList({
             await batch.commit();
             setSelectedLeads(new Set());
             setShowDeleteDialog(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error deleting leads:", error);
+            setShowDeleteDialog(false);
+            window.alert(
+                error?.code === 'permission-denied'
+                    ? 'Delete failed: Your account does not have permission to delete leads. Contact an admin to check your roles.'
+                    : `Delete failed: ${error?.message || 'Unknown error'}`
+            );
         }
     };
 
