@@ -718,6 +718,7 @@ export interface QuoteLineItem {
     serviceType: string;
     serviceCategory?: 'janitorial' | 'specialized' | 'consumables' | 'exterior';
     scopeTemplateId?: string;
+    scopeTasks?: { name: string; description?: string; required: boolean; isCustom?: boolean }[];
     description?: string;
     frequency: 'one_time' | 'custom_days' | 'nightly' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
     daysOfWeek?: boolean[]; // [Sun, Mon, Tue, Wed, Thu, Fri, Sat]

@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { QuoteLineItem, getTaxRate, calculateTax } from '@xiri/shared';
 import { Lead } from '@xiri/shared';
 import { XIRI_SERVICES, SERVICE_CATEGORIES, ServiceCategory } from '@/data/serviceTypes';
+import { SCOPE_TEMPLATES } from '@/data/scopeTemplates';
 import JanitorialPricingCalc from '@/components/JanitorialPricingCalc';
 import { Location, DAY_LABELS, SERVICE_COLORS } from './types';
 import { formatCurrency, computeTotals } from './helpers';
@@ -12,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { MapPin, Plus, Trash2, DollarSign } from 'lucide-react';
+import { MapPin, Plus, Trash2, DollarSign, ClipboardList, Check, ChevronDown, ChevronRight } from 'lucide-react';
 
 // ─── Props ────────────────────────────────────────────────────────────
 interface StepServicesAndPricingProps {
@@ -41,18 +43,70 @@ export default function StepServicesAndPricing({
 }: StepServicesAndPricingProps) {
 
     const totals = computeTotals(lineItems);
+    const [expandedScopes, setExpandedScopes] = useState<Record<string, boolean>>({});
+    const [customTaskInputs, setCustomTaskInputs] = useState<Record<string, string>>({});
+
+    const toggleScopeExpanded = (id: string) =>
+        setExpandedScopes(prev => ({ ...prev, [id]: !prev[id] }));
 
     const handleServiceSelect = (itemId: string, serviceValue: string) => {
         const service = XIRI_SERVICES.find(s => s.value === serviceValue);
         if (!service) return;
         const isConsumable = service.category === 'consumables';
+
+        // Auto-load scope tasks from matching template
+        const template = SCOPE_TEMPLATES.find(t =>
+            t.name.toLowerCase().includes(service.label.toLowerCase()) ||
+            service.label.toLowerCase().includes(t.facilityType.replace(/_/g, ' '))
+        );
+        // Also try to match by facility type from selected lead
+        const leadTemplate = !template && selectedLead?.facilityType
+            ? SCOPE_TEMPLATES.find(t => t.facilityType === selectedLead.facilityType)
+            : null;
+        const matchedTemplate = template || leadTemplate;
+        const scopeTasks = matchedTemplate
+            ? matchedTemplate.tasks.map(t => ({ name: t.name, description: t.description, required: t.required, isCustom: false }))
+            : undefined;
+
         onUpdateLineItem(itemId, {
             serviceType: service.label,
             serviceCategory: service.category,
             isConsumable,
             ...(isConsumable ? { frequency: 'weekly' as const, daysOfWeek: undefined } : {}),
+            ...(scopeTasks ? { scopeTasks } : {}),
         });
-        quoteLogger.lineItemUpdated(itemId, ['serviceType', 'serviceCategory']);
+        // Auto-expand scope section when tasks are loaded
+        if (scopeTasks && scopeTasks.length > 0) {
+            setExpandedScopes(prev => ({ ...prev, [itemId]: true }));
+        }
+        quoteLogger.lineItemUpdated(itemId, ['serviceType', 'serviceCategory', 'scopeTasks']);
+    };
+
+    const addCustomTask = (itemId: string) => {
+        const taskName = customTaskInputs[itemId]?.trim();
+        if (!taskName) return;
+        const item = lineItems.find(li => li.id === itemId);
+        const existing = item?.scopeTasks || [];
+        onUpdateLineItem(itemId, {
+            scopeTasks: [...existing, { name: taskName, required: false, isCustom: true }],
+        });
+        setCustomTaskInputs(prev => ({ ...prev, [itemId]: '' }));
+    };
+
+    const removeScopeTask = (itemId: string, taskIndex: number) => {
+        const item = lineItems.find(li => li.id === itemId);
+        if (!item?.scopeTasks) return;
+        const updated = item.scopeTasks.filter((_, i) => i !== taskIndex);
+        onUpdateLineItem(itemId, { scopeTasks: updated });
+    };
+
+    const toggleTaskRequired = (itemId: string, taskIndex: number) => {
+        const item = lineItems.find(li => li.id === itemId);
+        if (!item?.scopeTasks) return;
+        const updated = item.scopeTasks.map((t, i) =>
+            i === taskIndex ? { ...t, required: !t.required } : t
+        );
+        onUpdateLineItem(itemId, { scopeTasks: updated });
     };
 
     const toggleDay = (itemId: string, dayIndex: number, currentDays: boolean[]) => {
@@ -238,6 +292,19 @@ export default function StepServicesAndPricing({
                                                         <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
                                                     </Button>
                                                 </div>
+
+                                                {/* ±20% Price Band (internal only) */}
+                                                {item.clientRate > 0 && !item.isConsumable && item.frequency !== 'one_time' && (
+                                                    <div className="col-span-12">
+                                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900">
+                                                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">📊 Internal Range:</span>
+                                                            <span className="text-xs font-semibold text-blue-800 dark:text-blue-300">
+                                                                {formatCurrency(Math.round(item.clientRate * 0.8))} – {formatCurrency(Math.round(item.clientRate * 1.2))}/mo
+                                                            </span>
+                                                            <span className="text-[10px] text-blue-500">(±20%)</span>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Row 2: Frequency */}
@@ -404,6 +471,92 @@ export default function StepServicesAndPricing({
                                                     </p>
                                                 )}
                                             </div>
+
+                                            {/* ─── Cleaning Scope Checklist ─── */}
+                                            {item.serviceCategory === 'janitorial' && (
+                                                <div className="border-t border-dashed pt-3">
+                                                    <button
+                                                        type="button"
+                                                        className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors w-full"
+                                                        onClick={() => toggleScopeExpanded(item.id)}
+                                                    >
+                                                        {expandedScopes[item.id]
+                                                            ? <ChevronDown className="w-3.5 h-3.5" />
+                                                            : <ChevronRight className="w-3.5 h-3.5" />}
+                                                        <ClipboardList className="w-3.5 h-3.5" />
+                                                        Cleaning Scope
+                                                        {item.scopeTasks && item.scopeTasks.length > 0 && (
+                                                            <span className="ml-1 text-[10px] bg-muted px-1.5 py-0.5 rounded-full">
+                                                                {item.scopeTasks.length} tasks
+                                                            </span>
+                                                        )}
+                                                        {(!item.scopeTasks || item.scopeTasks.length === 0) && (
+                                                            <span className="ml-1 text-[10px] text-amber-600">No scope — click to add</span>
+                                                        )}
+                                                    </button>
+
+                                                    {expandedScopes[item.id] && (
+                                                        <div className="mt-2 space-y-1.5">
+                                                            {/* Existing scope tasks */}
+                                                            {(item.scopeTasks || []).map((task, tIdx) => (
+                                                                <div key={tIdx} className="flex items-center gap-2 group">
+                                                                    <button
+                                                                        type="button"
+                                                                        className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${task.required
+                                                                                ? 'bg-primary border-primary text-primary-foreground'
+                                                                                : 'border-muted-foreground/30 hover:border-primary/50'
+                                                                            }`}
+                                                                        onClick={() => toggleTaskRequired(item.id, tIdx)}
+                                                                        title={task.required ? 'Required — click to make optional' : 'Optional — click to make required'}
+                                                                    >
+                                                                        {task.required && <Check className="w-3 h-3" />}
+                                                                    </button>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <span className={`text-xs font-medium ${task.isCustom ? 'text-blue-700 dark:text-blue-400' : ''}`}>
+                                                                            {task.isCustom && '✦ '}{task.name}
+                                                                        </span>
+                                                                        {task.description && (
+                                                                            <span className="text-[10px] text-muted-foreground ml-1.5">— {task.description}</span>
+                                                                        )}
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        onClick={() => removeScopeTask(item.id, tIdx)}
+                                                                    >
+                                                                        <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+
+                                                            {/* Add custom task */}
+                                                            <div className="flex gap-2 mt-2">
+                                                                <Input
+                                                                    placeholder="Add custom task..."
+                                                                    className="h-7 text-xs flex-1"
+                                                                    value={customTaskInputs[item.id] || ''}
+                                                                    onChange={(e) => setCustomTaskInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            e.preventDefault();
+                                                                            addCustomTask(item.id);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="h-7 text-xs gap-1 px-2"
+                                                                    onClick={() => addCustomTask(item.id)}
+                                                                    disabled={!customTaskInputs[item.id]?.trim()}
+                                                                >
+                                                                    <Plus className="w-3 h-3" /> Add
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     )
                                 ))

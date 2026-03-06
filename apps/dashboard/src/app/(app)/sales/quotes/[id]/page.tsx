@@ -409,10 +409,20 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
             // 2. Create Work Orders ONLY for newly accepted (pending) items
             for (const item of pendingItems) {
+                // Prefer scopeTasks stored on the line item (includes custom tasks);
+                // fall back to template lookup for backwards compatibility
+                let tasks;
+                if (item.scopeTasks && item.scopeTasks.length > 0) {
+                    tasks = item.scopeTasks.map((t: any, i: number) => ({
+                        id: `task_${i}`, name: t.name, description: t.description || '', required: t.required,
+                    }));
+                } else {
+                    const template = SCOPE_TEMPLATES.find(t => t.name.toLowerCase().includes(item.serviceType.toLowerCase()));
+                    tasks = template
+                        ? template.tasks.map((t, i) => ({ id: `task_${i}`, name: t.name, description: t.description, required: t.required }))
+                        : [];
+                }
                 const template = SCOPE_TEMPLATES.find(t => t.name.toLowerCase().includes(item.serviceType.toLowerCase()));
-                const tasks = template
-                    ? template.tasks.map((t, i) => ({ id: `task_${i}`, name: t.name, description: t.description, required: t.required }))
-                    : [];
 
                 await addDoc(collection(db, 'work_orders'), {
                     leadId: quote.leadId,
