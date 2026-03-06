@@ -263,7 +263,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter') handleSaveContact();
                                                     }}
-                                                    className="h-7 px-2 text-xs border border-border rounded-md bg-background text-foreground w-[150px] focus:outline-none focus:ring-1 focus:ring-primary"
+                                                    className="h-7 px-2 text-xs border border-border rounded-md bg-background text-foreground w-[150px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                                     autoFocus
                                                 />
                                             </div>
@@ -277,7 +277,7 @@ export function VendorRow({ vendor, index, showActions, isRecruitmentMode = fals
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter') handleSaveContact();
                                                     }}
-                                                    className="h-7 px-2 text-xs border border-border rounded-md bg-background text-foreground w-[150px] focus:outline-none focus:ring-1 focus:ring-primary"
+                                                    className="h-7 px-2 text-xs border border-border rounded-md bg-background text-foreground w-[150px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                                 />
                                             </div>
                                             <div className="flex justify-end gap-1">

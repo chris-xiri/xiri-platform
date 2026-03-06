@@ -33,15 +33,18 @@ service cloud.firestore {
     }
     
     match /vendor_activities/{activityId} {
-      allow read, write: if hasAnyRole(['admin', 'recruiter', 'fsm']);
+      allow read: if hasAnyRole(['admin', 'recruiter', 'fsm', 'qa']);
+      allow write: if hasAnyRole(['admin', 'recruiter', 'fsm', 'qa']);
     }
     
     match /outreach_queue/{queueId} {
-      allow read, write: if hasAnyRole(['admin', 'recruiter', 'fsm']);
+      allow read: if hasAnyRole(['admin', 'recruiter', 'fsm', 'qa']);
+      allow write: if hasAnyRole(['admin', 'recruiter', 'fsm', 'qa']);
     }
 
     match /scheduled_activities/{activityId} {
-      allow read, write: if hasAnyRole(['admin', 'recruiter', 'fsm']);
+      allow read: if hasAnyRole(['admin', 'recruiter', 'fsm', 'qa']);
+      allow write: if hasAnyRole(['admin', 'recruiter', 'fsm', 'qa']);
     }
     
     // SALES SIDE (Leads, Clients)
@@ -53,27 +56,30 @@ service cloud.firestore {
     }
 
     match /sales_leads/{leadId} {
-      allow read, write: if hasAnyRole(['admin', 'sales']);
+      allow read: if hasAnyRole(['admin', 'sales', 'qa']);
+      allow write: if hasAnyRole(['admin', 'sales', 'qa']);
     }
     
     match /sales_activities/{activityId} {
-      allow read, write: if hasAnyRole(['admin', 'sales']);
+      allow read: if hasAnyRole(['admin', 'sales', 'qa']);
+      allow write: if hasAnyRole(['admin', 'sales', 'qa']);
     }
     
     match /sales_outreach_queue/{queueId} {
-      allow read, write: if hasAnyRole(['admin', 'sales']);
+      allow read: if hasAnyRole(['admin', 'sales', 'qa']);
+      allow write: if hasAnyRole(['admin', 'sales', 'qa']);
     }
     
     // OPERATIONS BACKBONE (Quotes, Contracts, Work Orders)
     match /quotes/{quoteId} {
       // Authenticated dashboard users
-      allow read: if hasAnyRole(['admin', 'sales', 'fsm']);
+      allow read: if hasAnyRole(['admin', 'sales', 'fsm', 'qa']);
       // Public review page: allow unauthenticated read on quotes that have been sent
       // Security: reviewToken is a UUID v4 (unguessable), acts as capability-based auth
       allow read: if resource.data.reviewToken is string
                   && resource.data.status in ['sent', 'accepted', 'rejected'];
-      allow create: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm']);
-      allow update: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm']);
+      allow create: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'qa']);
+      allow update: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'qa']);
       // Allow public update only to mark as viewed (viewedAt field)
       allow update: if request.auth == null
                     && resource.data.reviewToken is string
@@ -84,28 +90,28 @@ service cloud.firestore {
     // Public quote review (by token) - handled by Cloud Functions, not direct Firestore access
 
     match /contracts/{contractId} {
-      allow read: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'accounting']);
-      allow create: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm']);
-      allow update: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm']);
+      allow read: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'accounting', 'qa']);
+      allow create: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'qa']);
+      allow update: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'qa']);
       allow delete: if hasRole('admin');
     }
 
     match /work_orders/{workOrderId} {
-      allow read: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'night_mgr']);
-      allow create: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm']);
-      allow update: if hasAnyRole(['admin', 'fsm', 'night_mgr', 'sales_mgr']);
+      allow read: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'night_mgr', 'qa']);
+      allow create: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'qa']);
+      allow update: if hasAnyRole(['admin', 'fsm', 'night_mgr', 'sales_mgr', 'qa']);
       allow delete: if hasRole('admin');
     }
 
     match /check_ins/{checkInId} {
-      allow read: if hasAnyRole(['admin', 'fsm', 'night_mgr']);
-      allow create: if hasAnyRole(['admin', 'fsm', 'night_mgr']);
-      allow update: if hasAnyRole(['admin', 'fsm']);
+      allow read: if hasAnyRole(['admin', 'fsm', 'night_mgr', 'qa']);
+      allow create: if hasAnyRole(['admin', 'fsm', 'night_mgr', 'qa']);
+      allow update: if hasAnyRole(['admin', 'fsm', 'qa']);
       allow delete: if hasRole('admin');
     }
 
     match /invoices/{invoiceId} {
-      allow read: if hasAnyRole(['admin', 'fsm', 'accounting']);
+      allow read: if hasAnyRole(['admin', 'fsm', 'accounting', 'qa']);
       allow create: if hasAnyRole(['admin', 'accounting']);
       allow update: if hasAnyRole(['admin', 'accounting']);
       allow delete: if hasRole('admin');
@@ -113,21 +119,21 @@ service cloud.firestore {
 
     // Commissions & Ledger
     match /commissions/{commissionId} {
-      allow read: if hasAnyRole(['admin', 'accounting', 'sales', 'sales_exec', 'sales_mgr', 'fsm']);
-      allow create: if hasAnyRole(['admin', 'sales', 'sales_exec', 'sales_mgr', 'fsm']);
-      allow update: if hasAnyRole(['admin', 'accounting']);
+      allow read: if hasAnyRole(['admin', 'accounting', 'sales', 'sales_exec', 'sales_mgr', 'fsm', 'qa']);
+      allow create: if hasAnyRole(['admin', 'sales', 'sales_exec', 'sales_mgr', 'fsm', 'qa']);
+      allow update: if hasAnyRole(['admin', 'accounting', 'qa']);
       allow delete: if hasRole('admin');
     }
 
     match /commission_ledger/{entryId} {
-      allow read: if hasAnyRole(['admin', 'accounting', 'sales', 'sales_exec', 'sales_mgr', 'fsm']);
+      allow read: if hasAnyRole(['admin', 'accounting', 'sales', 'sales_exec', 'sales_mgr', 'fsm', 'qa']);
       allow create: if request.auth != null;
       allow update, delete: if false; // Immutable audit trail
     }
 
     // Activity logs - append-only for all authenticated users
     match /activity_logs/{logId} {
-      allow read: if hasAnyRole(['admin', 'fsm']);
+      allow read: if hasAnyRole(['admin', 'fsm', 'qa']);
       allow create: if request.auth != null;
       allow update, delete: if false; // Immutable audit trail
     }
@@ -150,7 +156,7 @@ service cloud.firestore {
 
     // Settings (commission rates, company config)
     match /settings/{settingId} {
-      allow read: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'accounting']);
+      allow read: if hasAnyRole(['admin', 'sales', 'sales_mgr', 'sales_exec', 'fsm', 'accounting', 'qa']);
       allow write: if hasRole('admin');
     }
 
@@ -202,13 +208,13 @@ service cloud.firestore {
     // Waitlist (public site geo-fence redirect)
     match /waitlist/{entryId} {
       allow create: if true;  // Public unauthenticated form
-      allow read: if hasAnyRole(['admin', 'sales']);
+      allow read: if hasAnyRole(['admin', 'sales', 'qa']);
       allow update, delete: if hasRole('admin');
     }
 
     match /waitlist_visits/{visitId} {
       allow create: if true;  // Public page view tracking
-      allow read: if hasAnyRole(['admin', 'sales']);
+      allow read: if hasAnyRole(['admin', 'sales', 'qa']);
       allow update, delete: if false;  // Immutable
     }
     

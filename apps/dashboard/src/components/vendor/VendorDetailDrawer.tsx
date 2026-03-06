@@ -63,7 +63,7 @@ const InlineEditField = ({
                     onChange={(e) => setVal(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setVal(value || ''); setEditing(false); } }}
                     onBlur={save} disabled={saving}
-                    className="flex-1 text-sm px-2 py-0.5 border rounded-md bg-card focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="flex-1 text-sm px-2 py-0.5 border rounded-md bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     placeholder={`Enter ${field}...`}
                 />
             </div>
@@ -217,7 +217,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                 try { await updateDoc(doc(db, 'vendors', vendor.id!), { status: e.target.value, updatedAt: new Date() }); }
                                                 catch (err) { console.error('Failed:', err); }
                                             }}
-                                            className="text-xs font-medium px-2 py-0.5 rounded border bg-card cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+                                            className="text-xs font-medium px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         >
                                             <option value="pending_review">Sourced</option>
                                             <option value="qualified">Qualified</option>

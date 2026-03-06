@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import {
     Loader2, Users, Plus, Pencil, Trash2, X, Save, Shield, ShoppingCart,
-    Briefcase, Moon, UserCheck
+    Briefcase, Moon, UserCheck, Bug
 } from "lucide-react";
 
 interface UserProfile {
@@ -34,6 +34,7 @@ const ALL_ROLES = [
     { value: "night_manager", label: "Night Manager", icon: Moon, color: "bg-purple-100 text-purple-800", borderColor: "border-purple-200" },
     { value: "recruiter", label: "Recruiter", icon: UserCheck, color: "bg-amber-100 text-amber-800", borderColor: "border-amber-200" },
     { value: "accounting", label: "Accounting", icon: Briefcase, color: "bg-emerald-100 text-emerald-800", borderColor: "border-emerald-200" },
+    { value: "qa", label: "QA Tester", icon: Bug, color: "bg-teal-100 text-teal-800", borderColor: "border-teal-200" },
 ];
 
 function getRoleBadge(role: string) {

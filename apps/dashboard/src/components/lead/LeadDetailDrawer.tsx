@@ -486,7 +486,8 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                             value={lead.status}
                                             onChange={(e) => handleStatusChange(e.target.value)}
                                             disabled={statusUpdating}
-                                            className="text-xs font-medium px-2 py-0.5 rounded border bg-card cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+                                            className="text-xs font-medium px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            aria-label="Lead status"
                                         >
                                             {STATUS_ORDER.map((s) => (
                                                 <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
@@ -495,7 +496,8 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                         <select
                                             value={lead.facilityType || ''}
                                             onChange={(e) => updateField('facilityType', e.target.value)}
-                                            className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground"
+                                            className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
+                                            aria-label="Facility type"
                                         >
                                             {Object.entries(FACILITY_TYPE_LABELS).map(([key, label]) => (
                                                 <option key={key} value={key}>{label}</option>
@@ -504,7 +506,8 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                         <select
                                             value={lead.leadType || 'direct'}
                                             onChange={(e) => handleLeadTypeChange(e.target.value)}
-                                            className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground"
+                                            className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
+                                            aria-label="Lead type"
                                         >
                                             {Object.entries(LEAD_TYPE_LABELS).map(([key, label]) => (
                                                 <option key={key} value={key}>{label}</option>
@@ -664,7 +667,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                                     )}
                                                 </div>
                                                 {(lead.calculatorData.monthlyLow || lead.calculatorData.monthlyEstimate) && (
-                                                    <div className="bg-white rounded-lg border p-3 text-center">
+                                                    <div className="bg-card rounded-lg border p-3 text-center">
                                                         <p className="text-[10px] uppercase text-muted-foreground mb-1">Monthly Estimate</p>
                                                         {lead.calculatorData.monthlyLow ? (
                                                             <p className="text-lg font-bold text-sky-700">

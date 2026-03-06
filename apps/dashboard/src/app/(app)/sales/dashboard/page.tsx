@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -252,7 +252,7 @@ export default function SalesDashboardPage() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-xs text-muted-foreground">Total Leads</p>
-                                            <p className="text-xl font-bold">{leads.length}</p>
+                                            <p className="text-xl font-bold tabular-nums">{leads.length}</p>
                                         </div>
                                         <Users className="w-5 h-5 text-muted-foreground" />
                                     </div>
@@ -263,7 +263,7 @@ export default function SalesDashboardPage() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-xs text-muted-foreground">Win Rate</p>
-                                            <p className="text-xl font-bold">{convRate}%</p>
+                                            <p className="text-xl font-bold tabular-nums">{convRate}%</p>
                                         </div>
                                         <TrendingUp className="w-5 h-5 text-sky-500" />
                                     </div>
@@ -274,7 +274,7 @@ export default function SalesDashboardPage() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-xs text-muted-foreground">Total ACV</p>
-                                            <p className="text-xl font-bold">{fmt(totalAcv)}</p>
+                                            <p className="text-xl font-bold tabular-nums">{fmt(totalAcv)}</p>
                                         </div>
                                         <DollarSign className="w-5 h-5 text-green-500" />
                                     </div>
@@ -285,7 +285,7 @@ export default function SalesDashboardPage() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-xs text-muted-foreground">Earned</p>
-                                            <p className="text-xl font-bold text-green-600">{fmt(commTotals.earned)}</p>
+                                            <p className="text-xl font-bold text-green-600 tabular-nums">{fmt(commTotals.earned)}</p>
                                         </div>
                                         <CheckCircle className="w-5 h-5 text-green-500" />
                                     </div>
@@ -296,7 +296,7 @@ export default function SalesDashboardPage() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-xs text-muted-foreground">Pending</p>
-                                            <p className="text-xl font-bold text-amber-600">{fmt(commTotals.pending)}</p>
+                                            <p className="text-xl font-bold text-amber-600 tabular-nums">{fmt(commTotals.pending)}</p>
                                         </div>
                                         <Clock className="w-5 h-5 text-amber-500" />
                                     </div>
@@ -348,7 +348,7 @@ export default function SalesDashboardPage() {
                                 {count > 0 && (
                                     <Badge
                                         variant={isActive ? 'outline' : 'secondary'}
-                                        className={`text-[10px] px-1 py-0 h-4 ml-0.5 ${isActive ? 'border-primary-foreground/30 text-primary-foreground' : ''}`}
+                                        className={`text-[10px] px-1 py-0 h-4 ml-0.5 tabular-nums ${isActive ? 'border-primary-foreground/30 text-primary-foreground' : ''}`}
                                     >
                                         {count}
                                     </Badge>
@@ -374,7 +374,7 @@ export default function SalesDashboardPage() {
                             <div className="flex items-center gap-2">
                                 <DollarSign className="w-4 h-4 text-green-500" />
                                 <span className="text-sm font-semibold">My Commissions</span>
-                                <Badge variant="secondary" className="text-[10px]">{commRecords.length}</Badge>
+                                <Badge variant="secondary" className="text-[10px] tabular-nums">{commRecords.length}</Badge>
                             </div>
                             <div className="flex items-center gap-3 text-xs">
                                 <span className="text-green-600 font-medium">{fmt(commTotals.earned)} earned</span>
@@ -396,7 +396,7 @@ export default function SalesDashboardPage() {
                                 </thead>
                                 <tbody>
                                     {commRecords.map(c => (
-                                        <>
+                                        <React.Fragment key={c.id}>
                                             <tr
                                                 key={c.id}
                                                 className="border-b hover:bg-muted/20 cursor-pointer transition-colors"
@@ -406,9 +406,9 @@ export default function SalesDashboardPage() {
                                                 <td className="p-2">
                                                     <Badge variant="outline" className="text-[10px]">{typeLabel(c.type)}</Badge>
                                                 </td>
-                                                <td className="p-2 text-right font-mono text-xs">{fmt(c.acv)}</td>
-                                                <td className="p-2 text-right text-xs">{(c.rate * 100).toFixed(0)}%</td>
-                                                <td className="p-2 text-right font-mono font-semibold">{fmt(c.totalCommission)}</td>
+                                                <td className="p-2 text-right font-mono text-xs tabular-nums">{fmt(c.acv)}</td>
+                                                <td className="p-2 text-right text-xs tabular-nums">{(c.rate * 100).toFixed(0)}%</td>
+                                                <td className="p-2 text-right font-mono font-semibold tabular-nums">{fmt(c.totalCommission)}</td>
                                                 <td className="p-2 text-center">
                                                     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${COMM_STATUS[c.status] || ''}`}>
                                                         {c.status.replace('_', ' ')}
@@ -446,7 +446,7 @@ export default function SalesDashboardPage() {
                                                     </td>
                                                 </tr>
                                             )}
-                                        </>
+                                        </React.Fragment>
                                     ))}
                                 </tbody>
                             </table>

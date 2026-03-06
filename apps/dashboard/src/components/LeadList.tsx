@@ -73,6 +73,8 @@ export default function LeadList({
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState("");
     const [deleting, setDeleting] = useState(false);
+    const [updatingStatus, setUpdatingStatus] = useState(false);
+    const [updatingType, setUpdatingType] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const PAGE_SIZE = 50;
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -164,6 +166,7 @@ export default function LeadList({
 
     const handleBulkStatusUpdate = async () => {
         if (!bulkStatus || selectedLeads.size === 0) return;
+        setUpdatingStatus(true);
         const ids = Array.from(selectedLeads);
         const BATCH_LIMIT = 499;
         try {
@@ -179,6 +182,9 @@ export default function LeadList({
             setBulkStatus("");
         } catch (error) {
             console.error("Error updating leads:", error);
+            window.alert(`Failed to update status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setUpdatingStatus(false);
         }
     };
 
@@ -217,6 +223,7 @@ export default function LeadList({
 
     const handleBulkLeadTypeUpdate = async () => {
         if (!bulkLeadType || selectedLeads.size === 0) return;
+        setUpdatingType(true);
         const ids = Array.from(selectedLeads);
         const BATCH_LIMIT = 499;
         try {
@@ -232,6 +239,9 @@ export default function LeadList({
             setBulkLeadType("");
         } catch (error) {
             console.error("Error updating lead types:", error);
+            window.alert(`Failed to update type: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setUpdatingType(false);
         }
     };
 
@@ -293,7 +303,7 @@ export default function LeadList({
             <Card className="shadow-sm h-full flex items-center justify-center border-border bg-card/50 backdrop-blur-sm">
                 <div className="flex flex-col items-center gap-2">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                    <p className="text-sm text-muted-foreground font-medium">Loading leads...</p>
+                    <p className="text-sm text-muted-foreground font-medium">Loading leads…</p>
                 </div>
             </Card>
         );
@@ -306,7 +316,7 @@ export default function LeadList({
                     <CardTitle className="text-xl font-bold flex items-center gap-2 text-primary text-base">
                         <Users className="w-4 h-4 text-primary" />
                         {title}
-                        <Badge variant="secondary" className="bg-secondary text-secondary-foreground ml-2 text-xs px-1.5 py-0">
+                        <Badge variant="secondary" className="bg-secondary text-secondary-foreground ml-2 text-xs px-1.5 py-0 tabular-nums">
                             {filteredLeads.length}
                         </Badge>
                     </CardTitle>
@@ -315,8 +325,8 @@ export default function LeadList({
 
             {/* Bulk Actions Bar */}
             {selectedLeads.size > 0 && (
-                <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg mb-2 flex items-center gap-3">
-                    <span className="text-sm font-medium text-blue-900">
+                <div className="px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg mb-2 flex items-center gap-3">
+                    <span className="text-sm font-medium text-primary tabular-nums">
                         {selectedLeads.size} selected
                     </span>
                     <div className="flex items-center gap-2 flex-1">
@@ -337,14 +347,17 @@ export default function LeadList({
                         <Button
                             size="sm"
                             onClick={handleBulkStatusUpdate}
-                            disabled={!bulkStatus}
+                            disabled={!bulkStatus || updatingStatus}
                             className="h-8"
                         >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Update Status
+                            {updatingStatus ? (
+                                <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Updating…</>
+                            ) : (
+                                <><Edit className="w-3 h-3 mr-1" /> Update Status</>
+                            )}
                         </Button>
 
-                        <div className="w-px h-6 bg-blue-200 mx-1" />
+                        <div className="w-px h-6 bg-primary/20 mx-1" />
 
                         <Select value={bulkLeadType} onValueChange={(value: string) => setBulkLeadType(value as LeadType)}>
                             <SelectTrigger className="w-[160px] h-8 text-sm">
@@ -360,11 +373,14 @@ export default function LeadList({
                         <Button
                             size="sm"
                             onClick={handleBulkLeadTypeUpdate}
-                            disabled={!bulkLeadType}
+                            disabled={!bulkLeadType || updatingType}
                             className="h-8"
                         >
-                            <Tag className="w-3 h-3 mr-1" />
-                            Update Type
+                            {updatingType ? (
+                                <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Updating…</>
+                            ) : (
+                                <><Tag className="w-3 h-3 mr-1" /> Update Type</>
+                            )}
                         </Button>
                     </div>
                     <Button
@@ -400,7 +416,8 @@ export default function LeadList({
                     {searchQuery && (
                         <button
                             onClick={() => setSearchQuery("")}
-                            className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                            className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            aria-label="Clear search"
                         >
                             <X className="h-4 w-4" />
                         </button>
@@ -564,7 +581,7 @@ export default function LeadList({
                             >
                                 <ChevronLeft className="w-4 h-4 mr-1" /> Previous
                             </Button>
-                            <span className="text-sm font-medium px-2">
+                            <span className="text-sm font-medium px-2 tabular-nums">
                                 Page {currentPage} of {totalPages}
                             </span>
                             <Button
@@ -610,7 +627,7 @@ export default function LeadList({
                             variant="destructive"
                         >
                             {deleting ? (
-                                <><Loader2 className="w-4 h-4 animate-spin mr-1" /> Deleting...</>
+                                <><Loader2 className="w-4 h-4 animate-spin mr-1" /> Deleting…</>
                             ) : (
                                 'Delete'
                             )}
