@@ -156,7 +156,7 @@ export default function UserManagerPage() {
 
     useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-    const [resetLinkResult, setResetLinkResult] = useState<{ email: string; link: string } | null>(null);
+    const [resetLinkResult, setResetLinkResult] = useState<{ email: string; tempPassword: string; emailSent: boolean } | null>(null);
 
     const handleSave = async (data: { email: string; displayName: string; roles: string[] }) => {
         setSaving(true);
@@ -185,18 +185,22 @@ export default function UserManagerPage() {
                     }
                 }
             } else {
-                // Create new user via Cloud Function (Auth + Firestore + reset link)
+                // Create new user via Cloud Function (Auth + Firestore + email invite)
                 const createUser = httpsCallable<
                     { email: string; displayName: string; roles: string[] },
-                    { success: boolean; uid: string; resetLink: string; message: string }
+                    { success: boolean; uid: string; tempPassword: string; emailSent: boolean; message: string }
                 >(functions, 'adminCreateUser');
                 const result = await createUser({
                     email: data.email,
                     displayName: data.displayName,
                     roles: data.roles,
                 });
-                // Show password reset link so admin can share it
-                setResetLinkResult({ email: data.email, link: result.data.resetLink });
+                // Show confirmation with temp password
+                setResetLinkResult({
+                    email: data.email,
+                    tempPassword: result.data.tempPassword,
+                    emailSent: result.data.emailSent,
+                });
             }
             await fetchUsers();
             setShowForm(false);
@@ -353,7 +357,7 @@ export default function UserManagerPage() {
                     </Card>
                 )}
 
-                {/* Password Reset Link Dialog */}
+                {/* User Created Confirmation Dialog */}
                 {resetLinkResult && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
                         <Card className="max-w-lg w-full mx-4 shadow-xl">
@@ -364,32 +368,45 @@ export default function UserManagerPage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <p className="text-sm text-muted-foreground">
-                                    <strong>{resetLinkResult.email}</strong> has been created. Share this password reset link so they can set their password:
-                                </p>
-                                <div className="bg-muted rounded-lg p-3 break-all text-xs font-mono select-all">
-                                    {resetLinkResult.link}
+                                {resetLinkResult.emailSent ? (
+                                    <div className="flex items-start gap-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                                        <span className="text-green-500 text-lg">✅</span>
+                                        <p className="text-sm text-green-700 dark:text-green-300">
+                                            An invite email with login credentials has been sent to <strong>{resetLinkResult.email}</strong>
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                                        <span className="text-amber-500 text-lg">⚠️</span>
+                                        <p className="text-sm text-amber-700 dark:text-amber-300">
+                                            Email failed to send. Share the credentials below manually.
+                                        </p>
+                                    </div>
+                                )}
+                                <div className="bg-muted rounded-lg p-4 space-y-2">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="text-muted-foreground w-20">Email</span>
+                                        <span className="font-medium">{resetLinkResult.email}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="text-muted-foreground w-20">Password</span>
+                                        <code className="font-mono text-sm bg-background px-2 py-1 rounded border select-all">{resetLinkResult.tempPassword}</code>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="text-muted-foreground w-20">Dashboard</span>
+                                        <a href="https://app.xiri.ai" className="text-blue-500 hover:underline">app.xiri.ai</a>
+                                    </div>
                                 </div>
                                 <div className="flex gap-2">
                                     <Button
                                         size="sm"
                                         onClick={() => {
-                                            navigator.clipboard.writeText(resetLinkResult.link);
-                                            alert('Copied to clipboard!');
+                                            navigator.clipboard.writeText(resetLinkResult.tempPassword);
+                                            alert('Password copied!');
                                         }}
                                         className="gap-1.5"
                                     >
-                                        📋 Copy Link
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            window.open(`mailto:${resetLinkResult.email}?subject=Set your XIRI Dashboard password&body=Click this link to set your password:%0A%0A${encodeURIComponent(resetLinkResult.link)}`);
-                                        }}
-                                        className="gap-1.5"
-                                    >
-                                        ✉️ Email Link
+                                        📋 Copy Password
                                     </Button>
                                     <Button
                                         variant="ghost"
