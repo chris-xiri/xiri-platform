@@ -10,8 +10,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const toSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     // 1. Static Pages
-    ['', '/contractors', '/contact', '/directory/locations', '/directory/solutions'].forEach((route) => {
+    ['', '/contractors', '/contact', '/directory/locations', '/directory/solutions', '/about', '/services', '/solutions', '/blog'].forEach((route) => {
         sitemapEntries.push({ url: `${BASE_URL}${route}`, lastModified: new Date(), changeFrequency: 'weekly', priority: route === '' ? 1.0 : 0.8 });
+    });
+
+    // 1b. Blog Posts
+    [
+        'how-much-does-commercial-cleaning-cost', 'in-house-vs-outsourced-facility-management',
+        'medical-office-cleaning-compliance-checklist', 'how-to-evaluate-commercial-cleaning-company',
+        'jcaho-cleaning-requirements-guide', 'what-is-a-day-porter-and-do-you-need-one',
+        'commercial-floor-care-guide', 'how-to-reduce-facility-management-costs',
+        'nassau-county-commercial-cleaning-guide', 'what-to-expect-from-post-construction-cleaning',
+        'why-your-cleaning-company-keeps-no-showing', 'commercial-trash-recycling-mistakes',
+        'urgent-care-cleaning-requirements', 'green-cleaning-commercial-buildings',
+        'hvac-maintenance-schedule-commercial', 'dental-office-cleaning-osha-requirements',
+        'facility-management-for-auto-dealerships', 'daycare-cleaning-safety-guide',
+        'pressure-washing-for-commercial-properties',
+    ].forEach((slug) => {
+        sitemapEntries.push({ url: `${BASE_URL}/blog/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
     });
 
     // 2. Industry Hubs (/[slug])

@@ -37,6 +37,7 @@ export default function Navigation() {
     const [servicesOpen, setServicesOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
 
     const handleNavClick = (destination: string, label: string) => {
         trackEvent('click_cta', {
@@ -182,7 +183,7 @@ export default function Navigation() {
                                             ))}
                                         </div>
                                         <div className="bg-gray-50 px-4 py-3 text-xs text-gray-500 border-t border-gray-100">
-                                            Trusted by 500+ NYC facilities
+                                            Serving medical, commercial, and specialized facilities
                                         </div>
                                     </div>
                                 </div>
@@ -222,8 +223,10 @@ export default function Navigation() {
                                                 </div>
                                             ))}
                                         </div>
-                                        <div className="bg-gray-50 px-4 py-3 text-xs text-gray-500 border-t border-gray-100">
-                                            Roof-to-floor coverage, one invoice
+                                        <div className="bg-gray-50 px-4 py-3 border-t border-gray-100">
+                                            <Link href="/services" className="text-xs text-sky-600 font-semibold hover:text-sky-700 transition-colors">
+                                                View All Services →
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
@@ -233,9 +236,9 @@ export default function Navigation() {
                             <Link
                                 href="/calculator"
                                 className="text-gray-600 font-medium hover:text-sky-600 transition-colors"
-                                onClick={() => handleNavClick('/calculator', 'Calculator')}
+                                onClick={() => handleNavClick('/calculator', 'Pricing')}
                             >
-                                Calculator
+                                Pricing
                             </Link>
 
                             <Link
@@ -247,7 +250,7 @@ export default function Navigation() {
                             </Link>
                         </div>
 
-                        {/* CTA Button */}
+                        {/* CTA Button + Mobile Hamburger */}
                         <div className="flex items-center gap-4">
                             {pathname === '/contractors' || pathname?.includes('/partners') ? (
                                 <button
@@ -263,19 +266,82 @@ export default function Navigation() {
                                         Need a quote?
                                     </span>
                                     <button
-                                        className="bg-sky-600 text-white px-6 py-2.5 rounded-full font-medium shadow-md shadow-sky-600/20 hover:bg-sky-700 hover:shadow-lg hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
+                                        className="hidden md:inline-flex bg-sky-600 text-white px-6 py-2.5 rounded-full font-medium shadow-md shadow-sky-600/20 hover:bg-sky-700 hover:shadow-lg hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
                                         onClick={() => {
-                                            handleNavClick('modal_open', 'Get Audit');
+                                            handleNavClick('modal_open', 'Get Building Scope');
                                             setIsAuditModalOpen(true);
                                         }}
                                     >
-                                        Get Facility Audit
+                                        Get Your Building Scope
                                     </button>
                                 </>
                             )}
+
+                            {/* Mobile Hamburger */}
+                            <button
+                                className="md:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5"
+                                onClick={() => setMobileOpen(!mobileOpen)}
+                                aria-label="Toggle menu"
+                            >
+                                <span className={`block w-6 h-0.5 bg-gray-700 transition-all duration-300 ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} />
+                                <span className={`block w-6 h-0.5 bg-gray-700 transition-all duration-300 ${mobileOpen ? 'opacity-0' : ''}`} />
+                                <span className={`block w-6 h-0.5 bg-gray-700 transition-all duration-300 ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+                            </button>
                         </div>
                     </div>
                 </div>
+
+                {/* Mobile Menu Panel */}
+                {mobileOpen && (
+                    <div className="md:hidden border-t border-gray-100 bg-white max-h-[70vh] overflow-y-auto">
+                        <div className="px-4 py-4 space-y-4">
+                            {/* Facility Types */}
+                            <div>
+                                <p className="text-xs font-bold text-sky-500 uppercase tracking-wider mb-2">Facility Types</p>
+                                <div className="grid grid-cols-2 gap-1">
+                                    {FACILITY_TYPES.slice(0, 8).map(f => (
+                                        <Link key={f.slug} href={`/${f.slug}`} className="text-sm text-gray-700 py-1.5 hover:text-sky-600" onClick={() => setMobileOpen(false)}>
+                                            {f.label}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Services */}
+                            <div>
+                                <p className="text-xs font-bold text-sky-500 uppercase tracking-wider mb-2">Services</p>
+                                <div className="grid grid-cols-2 gap-1">
+                                    {Object.values(SERVICE_LINKS).flat().slice(0, 6).map(s => (
+                                        <Link key={s.slug} href={`/services/${s.slug}`} className="text-sm text-gray-700 py-1.5 hover:text-sky-600" onClick={() => setMobileOpen(false)}>
+                                            {s.label}
+                                        </Link>
+                                    ))}
+                                </div>
+                                <Link href="/services" className="text-xs text-sky-600 font-semibold mt-2 inline-block" onClick={() => setMobileOpen(false)}>
+                                    View All Services →
+                                </Link>
+                            </div>
+
+                            {/* Direct Links */}
+                            <div className="border-t border-gray-100 pt-3 space-y-3">
+                                <Link href="/calculator" className="block text-sm font-medium text-gray-700 hover:text-sky-600" onClick={() => setMobileOpen(false)}>Pricing</Link>
+                                <Link href="/contractors" className="block text-sm font-medium text-gray-700 hover:text-sky-600" onClick={() => setMobileOpen(false)}>For Contractors</Link>
+                            </div>
+
+                            {/* Mobile CTA */}
+                            <button
+                                className="w-full bg-sky-600 text-white py-3 rounded-xl font-medium text-sm shadow-md"
+                                onClick={() => {
+                                    setMobileOpen(false);
+                                    handleNavClick('modal_open', 'Get Building Scope');
+                                    setIsAuditModalOpen(true);
+                                }}
+                            >
+                                Get Your Building Scope
+                            </button>
+                        </div>
+                    </div>
+                )}
             </nav>
 
             <LeadFormModal

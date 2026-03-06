@@ -5,6 +5,7 @@ import { ClientLeadForm } from '@/components/ClientLeadForm';
 import { TrustBar } from '@/components/TrustBar';
 import { IndustriesSection } from '@/components/IndustriesSection';
 import { Testimonials } from '@/components/Testimonials';
+import { HomepageFAQ } from '@/components/HomepageFAQ';
 
 export default function Home() {
   return (
@@ -23,6 +24,8 @@ export default function Home() {
       <Testimonials />
 
       <IndustriesSection />
+
+      <HomepageFAQ />
 
       {/* LEAD FORM SECTION (Anchor: #audit) */}
       <section id="audit" className="py-24 bg-sky-900 relative overflow-hidden">

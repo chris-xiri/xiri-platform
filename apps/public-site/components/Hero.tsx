@@ -28,7 +28,7 @@ const COMPANY_LOGOS = [
 export function Hero({
     title,
     subtitle,
-    ctaText = "Schedule Free Facility Survey",
+    ctaText = "Get Your Building Scope",
     ctaLink = "#audit",
     industryIcon = "🏢",
     industryLabel = "Commercial • Medical • Auto",
