@@ -516,6 +516,15 @@ function CheckInFlow() {
                     </div>
 
                     <div className="flex flex-col gap-3 max-w-xs mx-auto">
+                        {/* Contextual CTA: low score → follow-up work order */}
+                        {auditScore <= 3 && (
+                            <Button
+                                className="w-full h-12 gap-2 bg-amber-600 hover:bg-amber-700"
+                                onClick={() => router.push(`/operations/work-orders/${wo.id}`)}
+                            >
+                                <AlertTriangle className="w-4 h-4" /> View Work Order — Issues Found
+                            </Button>
+                        )}
                         <Button
                             className="w-full h-12"
                             onClick={() => router.push('/operations/audits')}
@@ -525,9 +534,9 @@ function CheckInFlow() {
                         <Button
                             variant="outline"
                             className="w-full"
-                            onClick={() => router.push('/operations/audits')}
+                            onClick={() => router.push(`/operations/work-orders/${wo.id}`)}
                         >
-                            Back to Dashboard
+                            View Work Order
                         </Button>
                     </div>
                 </div>

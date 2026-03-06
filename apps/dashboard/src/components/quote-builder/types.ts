@@ -16,6 +16,14 @@ export interface QuoteBuilderProps {
         notes?: string;
         version: number;
     };
+    /** Pre-fill data from Calculator, Lead Drawer, or Audit flows */
+    initialData?: {
+        leadId?: string;
+        rate?: number;
+        sqft?: number;
+        facilityType?: string;
+        facilityName?: string;
+    };
 }
 
 export interface Location {

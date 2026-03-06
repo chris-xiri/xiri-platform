@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { CLIENT_COLORS } from '@/lib/constants';
 import { X } from 'lucide-react';
 import { WorkOrder } from '@xiri/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,16 +24,7 @@ const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destru
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const CLIENT_COLORS = [
-    { border: '#6366f1', bg: '#eef2ff' },  // indigo
-    { border: '#0ea5e9', bg: '#f0f9ff' },  // sky
-    { border: '#10b981', bg: '#ecfdf5' },  // emerald
-    { border: '#f59e0b', bg: '#fffbeb' },  // amber
-    { border: '#ef4444', bg: '#fef2f2' },  // red
-    { border: '#8b5cf6', bg: '#f5f3ff' },  // violet
-    { border: '#ec4899', bg: '#fdf2f8' },  // pink
-    { border: '#14b8a6', bg: '#f0fdfa' },  // teal
-];
+// CLIENT_COLORS imported from @/lib/constants
 
 function formatFrequency(freq?: string, daysOfWeek?: boolean[]) {
     if (!freq) return '—';

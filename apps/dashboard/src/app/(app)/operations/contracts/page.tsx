@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { CLIENT_COLORS } from '@/lib/constants';
 import { Contract } from '@xiri/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,16 +23,7 @@ const STATUS_BADGE: Record<string, { variant: any; label: string }> = {
     expired: { variant: 'secondary', label: 'Expired' },
 };
 
-const CLIENT_COLORS = [
-    { border: '#6366f1', bg: '#eef2ff' },
-    { border: '#0ea5e9', bg: '#f0f9ff' },
-    { border: '#10b981', bg: '#ecfdf5' },
-    { border: '#f59e0b', bg: '#fffbeb' },
-    { border: '#ef4444', bg: '#fef2f2' },
-    { border: '#8b5cf6', bg: '#f5f3ff' },
-    { border: '#ec4899', bg: '#fdf2f8' },
-    { border: '#14b8a6', bg: '#f0fdfa' },
-];
+// CLIENT_COLORS imported from @/lib/constants
 
 interface ClientGroup {
     clientBusinessName: string;

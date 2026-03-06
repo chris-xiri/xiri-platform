@@ -687,7 +687,17 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                                     variant="outline"
                                                     size="sm"
                                                     className="w-full mt-3 h-8 text-xs gap-1.5 border-sky-300 text-sky-700 hover:bg-sky-100"
-                                                    onClick={() => router.push(`/sales/quotes?leadId=${leadId}&facilityType=${lead.facilityType || ''}&sqft=${lead.sqft || ''}&daysPerWeek=${lead.calculatorData?.daysPerWeek || 5}`)}
+                                                    onClick={() => {
+                                                        if (!leadId) return;
+                                                        const params = new URLSearchParams({
+                                                            new: 'true',
+                                                            leadId,
+                                                            ...(lead.calculatorData?.monthlyEstimate ? { rate: String(lead.calculatorData.monthlyEstimate) } : {}),
+                                                            ...(lead.facilityType ? { facilityType: lead.facilityType } : {}),
+                                                            ...(lead.sqft ? { sqft: String(lead.sqft) } : {}),
+                                                        });
+                                                        router.push(`/sales/quotes?${params.toString()}`);
+                                                    }}
                                                 >
                                                     <Rocket className="w-3 h-3" /> Create Quote from Estimate
                                                 </Button>
@@ -705,7 +715,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                                 )}
                                             </CardTitle>
                                             <Button variant="outline" size="sm" className="h-6 text-xs gap-1"
-                                                onClick={() => router.push('/sales/quotes')}>
+                                                onClick={() => router.push(`/sales/quotes?new=true&leadId=${leadId}`)}>
                                                 <Plus className="w-3 h-3" /> Create Quote
                                             </Button>
                                         </CardHeader>

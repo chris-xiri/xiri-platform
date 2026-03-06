@@ -19,7 +19,7 @@ import {
 // ─── Main Orchestrator ────────────────────────────────────────────────
 // This component manages state and delegates rendering to step components.
 
-export default function QuoteBuilder({ onClose, onCreated, existingQuote }: QuoteBuilderProps) {
+export default function QuoteBuilder({ onClose, onCreated, existingQuote, initialData }: QuoteBuilderProps) {
     const router = useRouter();
     const { profile } = useAuth();
     const isEditing = !!existingQuote;
@@ -56,6 +56,13 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
             if (existingQuote) {
                 const match = data.find(l => l.id === existingQuote.leadId);
                 if (match) setSelectedLead(match);
+            } else if (initialData?.leadId) {
+                // Auto-select lead from initialData and skip to step 1
+                const match = data.find(l => l.id === initialData.leadId);
+                if (match) {
+                    handleSelectLead(match);
+                    setStep(1);
+                }
             }
         }
         fetchLeads();
@@ -85,15 +92,47 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote }: Quot
     useEffect(() => {
         if (isEditing && locations.length > 0) return;
         if (selectedLead?.locations && selectedLead.locations.length > 0) {
-            setLocations(selectedLead.locations.map((loc: any, i: number) => ({
+            const locs = selectedLead.locations.map((loc: any, i: number) => ({
                 id: `loc_${i}`, name: loc.name || `Location ${i + 1}`,
                 address: loc.address || '', city: loc.city || '', state: loc.state || '', zip: loc.zip || '',
-            })));
+            }));
+            setLocations(locs);
+            // Pre-fill a line item with rate from initialData (Calculator/Lead Drawer flow)
+            if (initialData?.rate && lineItems.length === 0) {
+                const userId = profile?.uid || profile?.email || 'unknown';
+                setLineItems([{
+                    id: `li_${Date.now()}_prefill`,
+                    locationId: locs[0].id, locationName: locs[0].name,
+                    locationAddress: locs[0].address, locationCity: locs[0].city,
+                    locationState: locs[0].state, locationZip: locs[0].zip,
+                    serviceType: '', serviceCategory: undefined,
+                    frequency: 'custom_days', daysOfWeek: [false, true, true, true, true, true, false],
+                    clientRate: initialData.rate,
+                    lineItemStatus: 'pending' as const,
+                    addedBy: userId, addedByRole: 'sales' as const, isUpsell: false,
+                }]);
+            }
         } else if (selectedLead) {
-            setLocations([{
+            const loc = {
                 id: 'loc_0', name: selectedLead.businessName || 'Primary Location',
                 address: selectedLead.address || '', city: '', state: '', zip: selectedLead.zipCode || '',
-            }]);
+            };
+            setLocations([loc]);
+            // Pre-fill a line item with rate from initialData
+            if (initialData?.rate && lineItems.length === 0) {
+                const userId = profile?.uid || profile?.email || 'unknown';
+                setLineItems([{
+                    id: `li_${Date.now()}_prefill`,
+                    locationId: loc.id, locationName: loc.name,
+                    locationAddress: loc.address, locationCity: loc.city,
+                    locationState: loc.state, locationZip: loc.zip,
+                    serviceType: '', serviceCategory: undefined,
+                    frequency: 'custom_days', daysOfWeek: [false, true, true, true, true, true, false],
+                    clientRate: initialData.rate,
+                    lineItemStatus: 'pending' as const,
+                    addedBy: userId, addedByRole: 'sales' as const, isUpsell: false,
+                }]);
+            }
         }
     }, [selectedLead]);
 

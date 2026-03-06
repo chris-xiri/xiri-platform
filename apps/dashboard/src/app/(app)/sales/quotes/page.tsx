@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { CLIENT_COLORS } from '@/lib/constants';
 import { Quote } from '@xiri/shared';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,16 +23,7 @@ const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destruc
     changes_requested: { variant: 'default', label: 'Changes Requested' },
 };
 
-const CLIENT_COLORS = [
-    { border: '#6366f1', bg: '#eef2ff' },
-    { border: '#0ea5e9', bg: '#f0f9ff' },
-    { border: '#10b981', bg: '#ecfdf5' },
-    { border: '#f59e0b', bg: '#fffbeb' },
-    { border: '#ef4444', bg: '#fef2f2' },
-    { border: '#8b5cf6', bg: '#f5f3ff' },
-    { border: '#ec4899', bg: '#fdf2f8' },
-    { border: '#14b8a6', bg: '#f0fdfa' },
-];
+// CLIENT_COLORS imported from @/lib/constants
 
 interface QuoteGroup {
     leadBusinessName: string;
@@ -42,12 +34,37 @@ interface QuoteGroup {
 
 export default function QuotesPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { profile } = useAuth();
     const [quotes, setQuotes] = useState<(Quote & { id: string })[]>([]);
     const [loading, setLoading] = useState(true);
     const [showBuilder, setShowBuilder] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedLeads, setExpandedLeads] = useState<Record<string, boolean>>({});
+
+    // Pre-fill data from URL params (Calculator / Lead Drawer / Audit flows)
+    const initialData = (() => {
+        const leadId = searchParams.get('leadId');
+        const rate = searchParams.get('rate');
+        const sqft = searchParams.get('sqft');
+        const facilityType = searchParams.get('facilityType');
+        const facilityName = searchParams.get('facilityName');
+        if (!leadId && !rate) return undefined;
+        return {
+            ...(leadId ? { leadId } : {}),
+            ...(rate ? { rate: parseFloat(rate) } : {}),
+            ...(sqft ? { sqft: parseInt(sqft) } : {}),
+            ...(facilityType ? { facilityType } : {}),
+            ...(facilityName ? { facilityName } : {}),
+        };
+    })();
+
+    // Auto-open QuoteBuilder when URL has pre-fill params
+    useEffect(() => {
+        if (searchParams.get('new') === 'true' || searchParams.get('leadId')) {
+            setShowBuilder(true);
+        }
+    }, [searchParams]);
 
     const isFsm = profile?.roles?.some((r: string) => r === 'fsm') && !profile?.roles?.some((r: string) => r === 'admin');
 
@@ -293,11 +310,18 @@ export default function QuotesPage() {
             {/* Quote Builder Modal */}
             {showBuilder && (
                 <QuoteBuilder
-                    onClose={() => setShowBuilder(false)}
+                    onClose={() => {
+                        setShowBuilder(false);
+                        // Clear URL params so re-opening doesn't re-trigger pre-fill
+                        if (searchParams.get('new') || searchParams.get('leadId')) {
+                            router.replace('/sales/quotes');
+                        }
+                    }}
                     onCreated={(quoteId) => {
                         setShowBuilder(false);
                         router.push(`/sales/quotes/${quoteId}`);
                     }}
+                    initialData={initialData}
                 />
             )}
         </div>

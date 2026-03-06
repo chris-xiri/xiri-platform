@@ -42,7 +42,7 @@ export default function AboutPage() {
                         Technology meets facility management.
                     </h1>
                     <p className="text-xl text-slate-600 leading-relaxed max-w-2xl">
-                        We started XIRI because we believed the facility management industry deserved a fresh perspective — one rooted in technology, operational excellence, and a genuine commitment to the communities we serve.
+                        We started XIRI because we believed the facility management industry deserved a fresh perspective — one rooted in operational excellence, genuine commitment to the communities we serve, and selective use of technology.
                     </p>
                 </div>
             </section>
@@ -58,10 +58,10 @@ export default function AboutPage() {
                                     Facility management has worked the same way for decades — you hire a cleaning company, a handyman, a supply vendor, maybe a pest control service. You juggle five invoices, chase down no-shows, and hope someone actually followed the compliance protocols overnight.
                                 </p>
                                 <p>
-                                    We come from a background in technology and high-level operations. When we looked at how single-tenant buildings were being managed, we saw an industry ripe for the same kind of digitization and operational rigor that transformed logistics, healthcare, and finance.
+                                    We come from a background high-level operations, customer satisfaction, and technology. When we looked at how single-tenant buildings were being managed, we saw an industry ripe for the same kind operational rigor that transformed logistics, healthcare, and finance with a dash of technology.
                                 </p>
                                 <p>
-                                    XIRI consolidates all of your facility services under one partner with one invoice, verifies every shift digitally, and passes the efficiency savings directly to you. No middleman markup. No mystery about whether the work got done.
+                                    XIRI consolidates all of your facility services under one partner with one invoice, verifies every shift digitally with proof-of-work, and passes the efficiency savings directly to you. No middleman markup. No mystery about whether the work got done.
                                 </p>
                             </div>
                         </div>
