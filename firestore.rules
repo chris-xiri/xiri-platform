@@ -198,6 +198,19 @@ service cloud.firestore {
                     && request.resource.data.type == 'calculator_estimate';
       allow update, delete: if false;  // Immutable audit trail
     }
+
+    // Waitlist (public site geo-fence redirect)
+    match /waitlist/{entryId} {
+      allow create: if true;  // Public unauthenticated form
+      allow read: if hasAnyRole(['admin', 'sales']);
+      allow update, delete: if hasRole('admin');
+    }
+
+    match /waitlist_visits/{visitId} {
+      allow create: if true;  // Public page view tracking
+      allow read: if hasAnyRole(['admin', 'sales']);
+      allow update, delete: if false;  // Immutable
+    }
     
     // Default deny
     match /{document=**} {

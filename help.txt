@@ -1,0 +1,15 @@
+Usage: scoutqa [options] [command]
+
+Scout QA CLI - Run AI-powered test executions
+
+Options:
+  -V, --version                 output the version number
+  -h, --help                    display help for command
+
+Commands:
+  create-execution [options]    Create a new Scout test execution
+  send-message [options]        Send a message to an existing execution
+  list-executions [options]     List your executions
+  complete-execution [options]  Complete an execution and release its resources
+  auth                          Manage authentication
+  help [command]                display help for command
