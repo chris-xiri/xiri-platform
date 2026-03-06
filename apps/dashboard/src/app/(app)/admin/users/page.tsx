@@ -156,6 +156,8 @@ export default function UserManagerPage() {
 
     useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
+    const [resetLinkResult, setResetLinkResult] = useState<{ email: string; link: string } | null>(null);
+
     const handleSave = async (data: { email: string; displayName: string; roles: string[] }) => {
         setSaving(true);
         try {
@@ -183,22 +185,26 @@ export default function UserManagerPage() {
                     }
                 }
             } else {
-                const newUid = `manual-${Date.now()}`;
-                await setDoc(doc(db, "users", newUid), {
-                    uid: newUid,
+                // Create new user via Cloud Function (Auth + Firestore + reset link)
+                const createUser = httpsCallable<
+                    { email: string; displayName: string; roles: string[] },
+                    { success: boolean; uid: string; resetLink: string; message: string }
+                >(functions, 'adminCreateUser');
+                const result = await createUser({
                     email: data.email,
                     displayName: data.displayName,
                     roles: data.roles,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                    lastLogin: null,
                 });
+                // Show password reset link so admin can share it
+                setResetLinkResult({ email: data.email, link: result.data.resetLink });
             }
             await fetchUsers();
             setShowForm(false);
             setEditingUser(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving user:", error);
+            const msg = error?.message || error?.details || "Unknown error";
+            alert(`Failed to save user: ${msg}`);
         } finally {
             setSaving(false);
         }
@@ -345,6 +351,58 @@ export default function UserManagerPage() {
                             <p className="text-sm">Click &quot;Add User&quot; to create a team member.</p>
                         </CardContent>
                     </Card>
+                )}
+
+                {/* Password Reset Link Dialog */}
+                {resetLinkResult && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                        <Card className="max-w-lg w-full mx-4 shadow-xl">
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <Shield className="w-5 h-5 text-green-500" />
+                                    User Created Successfully
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <p className="text-sm text-muted-foreground">
+                                    <strong>{resetLinkResult.email}</strong> has been created. Share this password reset link so they can set their password:
+                                </p>
+                                <div className="bg-muted rounded-lg p-3 break-all text-xs font-mono select-all">
+                                    {resetLinkResult.link}
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(resetLinkResult.link);
+                                            alert('Copied to clipboard!');
+                                        }}
+                                        className="gap-1.5"
+                                    >
+                                        📋 Copy Link
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            window.open(`mailto:${resetLinkResult.email}?subject=Set your XIRI Dashboard password&body=Click this link to set your password:%0A%0A${encodeURIComponent(resetLinkResult.link)}`);
+                                        }}
+                                        className="gap-1.5"
+                                    >
+                                        ✉️ Email Link
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setResetLinkResult(null)}
+                                        className="ml-auto"
+                                    >
+                                        Done
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 )}
             </div>
         </ProtectedRoute>

@@ -70,6 +70,61 @@ var init_promptUtils = __esm({
   }
 });
 
+// src/utils/queueUtils.ts
+var queueUtils_exports = {};
+__export(queueUtils_exports, {
+  cancelLeadTasks: () => cancelLeadTasks,
+  cancelVendorTasks: () => cancelVendorTasks,
+  enqueueTask: () => enqueueTask,
+  fetchPendingTasks: () => fetchPendingTasks,
+  updateTaskStatus: () => updateTaskStatus
+});
+async function enqueueTask(db21, task) {
+  return db21.collection(COLLECTION).add({
+    ...task,
+    status: "PENDING",
+    retryCount: 0,
+    createdAt: /* @__PURE__ */ new Date()
+  });
+}
+async function fetchPendingTasks(db21) {
+  const now = admin3.firestore.Timestamp.now();
+  const snapshot = await db21.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+}
+async function updateTaskStatus(db21, taskId, status, updates = {}) {
+  await db21.collection(COLLECTION).doc(taskId).update({
+    status,
+    ...updates
+  });
+}
+async function cancelVendorTasks(db21, vendorId) {
+  const snapshot = await db21.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db21.batch();
+  snapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
+  });
+  await batch.commit();
+  return snapshot.size;
+}
+async function cancelLeadTasks(db21, leadId) {
+  const snapshot = await db21.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db21.batch();
+  snapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
+  });
+  await batch.commit();
+  return snapshot.size;
+}
+var admin3, COLLECTION;
+var init_queueUtils = __esm({
+  "src/utils/queueUtils.ts"() {
+    "use strict";
+    admin3 = __toESM(require("firebase-admin"));
+    COLLECTION = "outreach_queue";
+  }
+});
+
 // src/utils/emailUtils.ts
 var emailUtils_exports = {};
 __export(emailUtils_exports, {
@@ -216,7 +271,7 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
         vendorId,
         type: "EMAIL_FAILED",
         description: `Failed to send email: ${email.subject}`,
-        createdAt: admin3.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin5.firestore.FieldValue.serverTimestamp(),
         metadata: {
           templateId,
           subject: email.subject,
@@ -230,7 +285,7 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
       vendorId,
       type: "EMAIL_SENT",
       description: `Email sent: ${email.subject}`,
-      createdAt: admin3.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin5.firestore.FieldValue.serverTimestamp(),
       metadata: {
         templateId,
         subject: email.subject,
@@ -297,198 +352,18 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
     return { success: false };
   }
 }
-var admin3, import_generative_ai, import_resend, db3, genAI, resend, FUNCTIONS_BASE_URL;
+var admin5, import_generative_ai2, import_resend, db3, genAI, resend, FUNCTIONS_BASE_URL;
 var init_emailUtils = __esm({
   "src/utils/emailUtils.ts"() {
     "use strict";
-    admin3 = __toESM(require("firebase-admin"));
-    import_generative_ai = require("@google/generative-ai");
+    admin5 = __toESM(require("firebase-admin"));
+    import_generative_ai2 = require("@google/generative-ai");
     import_resend = require("resend");
     init_promptUtils();
-    db3 = admin3.firestore();
-    genAI = new import_generative_ai.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+    db3 = admin5.firestore();
+    genAI = new import_generative_ai2.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     resend = new import_resend.Resend(process.env.RESEND_API_KEY || "re_dummy_key");
     FUNCTIONS_BASE_URL = "https://us-central1-xiri-facility-solutions.cloudfunctions.net";
-  }
-});
-
-// src/agents/sodaSourcer.ts
-var sodaSourcer_exports = {};
-__export(sodaSourcer_exports, {
-  searchVendorsSoda: () => searchVendorsSoda
-});
-async function searchNycDca(query, location, dcaCategory, limit = 50) {
-  let where = "license_status='Active'";
-  if (dcaCategory) {
-    where += ` AND business_category='${dcaCategory.replace(/'/g, "''")}'`;
-  } else {
-    const queryWords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
-    const searchTerms = queryWords.length > 0 ? queryWords : ["clean", "janitor", "maintenance", "hvac"];
-    const nameFilter = searchTerms.map((w) => `upper(business_name) like '%${w.toUpperCase()}%'`).join(" OR ");
-    where += ` AND (${nameFilter})`;
-  }
-  const boroughMap = {
-    "manhattan": "Manhattan",
-    "nyc": "",
-    "new york": "",
-    "brooklyn": "Brooklyn",
-    "queens": "Queens",
-    "bronx": "Bronx",
-    "staten island": "Staten Island"
-  };
-  const normalizedLoc = location.toLowerCase().trim();
-  const borough = boroughMap[normalizedLoc];
-  if (borough) {
-    where += ` AND address_borough='${borough}'`;
-  }
-  try {
-    const params = new URLSearchParams({
-      "$limit": String(limit),
-      "$where": where,
-      "$select": "business_name,business_category,contact_phone,address_building,address_street_name,address_city,address_state,address_zip,address_borough,license_status,lic_expir_dd,latitude,longitude",
-      "$order": "business_name ASC"
-    });
-    console.log(`[SODA/NYC] Querying DCA: ${where}`);
-    const response = await import_axios.default.get(`${NYC_DCA_ENDPOINT}?${params}`);
-    const results = response.data || [];
-    console.log(`[SODA/NYC] Found ${results.length} results from NYC DCA`);
-    return results.map((item) => ({
-      name: item.business_name,
-      description: `NYC DCA Licensed ${item.business_category} (${item.license_status})`,
-      location: `${item.address_building} ${item.address_street_name}, ${item.address_city}, ${item.address_state} ${item.address_zip}`,
-      phone: item.contact_phone,
-      source: "nyc_open_data",
-      dcaCategory: item.business_category,
-      rating: void 0,
-      user_ratings_total: void 0
-    }));
-  } catch (error11) {
-    console.error("[SODA/NYC] Error:", error11.message);
-    return [];
-  }
-}
-async function searchNyState(query, location, limit = 50) {
-  const queryWords = query.toLowerCase().split(/[\s,\/]+/).filter((w) => w.length > 3);
-  const nameFilters = queryWords.map((w) => `upper(current_entity_name) like '%${w.toUpperCase()}%'`).join(" OR ");
-  const locationWords = location.toLowerCase().split(/[\s,\/]+/).filter((w) => w.length > 2);
-  let locFilter = "";
-  if (locationWords.length > 0) {
-    const locConditions = locationWords.map(
-      (w) => `(upper(dos_process_city) like '%${w.toUpperCase()}%' OR upper(county) like '%${w.toUpperCase()}%')`
-    ).join(" OR ");
-    locFilter = ` AND (${locConditions})`;
-  }
-  const where = `(${nameFilters || "current_entity_name like '%CLEAN%'"})${locFilter}`;
-  try {
-    const params = new URLSearchParams({
-      "$limit": String(limit),
-      "$where": where,
-      "$order": "initial_dos_filing_date DESC"
-    });
-    console.log(`[SODA/NYS] Querying State Corps: ${where}`);
-    const response = await import_axios.default.get(`${NYS_CORP_ENDPOINT}?${params}`);
-    const results = response.data || [];
-    console.log(`[SODA/NYS] Found ${results.length} results from NY State`);
-    return results.map((b) => ({
-      name: titleCase(b.current_entity_name || ""),
-      description: `${b.entity_type_desc || "Business Entity"} \u2014 Registered in NY State. Filed: ${b.initial_dos_filing_date ? new Date(b.initial_dos_filing_date).toLocaleDateString() : "N/A"}`,
-      location: [b.dos_process_address_1, b.dos_process_city, "NY", b.dos_process_zip].filter(Boolean).join(", "),
-      phone: void 0,
-      source: "ny_state_corps",
-      rating: void 0,
-      user_ratings_total: void 0
-    }));
-  } catch (error11) {
-    console.error("[SODA/NYS] Error:", error11.message);
-    return [];
-  }
-}
-async function searchVendorsSoda(query, location, dcaCategory) {
-  const normalizedLoc = location.toLowerCase().trim();
-  const isNycBorough = ["manhattan", "brooklyn", "queens", "bronx", "staten island", "nyc", "new york city", "new york"].includes(normalizedLoc);
-  const isLongIsland = ["nassau", "suffolk", "long island", "garden city", "mineola", "hempstead", "hicksville", "huntington", "babylon", "islip"].includes(normalizedLoc);
-  const results = [];
-  if (isNycBorough || !isLongIsland) {
-    const nycResults = await searchNycDca(query, location, dcaCategory, 25);
-    results.push(...nycResults);
-  }
-  const nysResults = await searchNyState(query, location, 25);
-  results.push(...nysResults);
-  const seen = /* @__PURE__ */ new Set();
-  const deduped = results.filter((v) => {
-    const key = v.name.toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-  console.log(`[SODA] Total: ${deduped.length} unique vendors (${results.length} before dedup)`);
-  return deduped;
-}
-function titleCase(s) {
-  return s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
-}
-var import_axios, NYC_DCA_ENDPOINT, NYS_CORP_ENDPOINT;
-var init_sodaSourcer = __esm({
-  "src/agents/sodaSourcer.ts"() {
-    "use strict";
-    import_axios = __toESM(require("axios"));
-    NYC_DCA_ENDPOINT = "https://data.cityofnewyork.us/resource/w7w3-xahh.json";
-    NYS_CORP_ENDPOINT = "https://data.ny.gov/resource/n9v6-gdp6.json";
-  }
-});
-
-// src/utils/queueUtils.ts
-var queueUtils_exports = {};
-__export(queueUtils_exports, {
-  cancelLeadTasks: () => cancelLeadTasks,
-  cancelVendorTasks: () => cancelVendorTasks,
-  enqueueTask: () => enqueueTask,
-  fetchPendingTasks: () => fetchPendingTasks,
-  updateTaskStatus: () => updateTaskStatus
-});
-async function enqueueTask(db21, task) {
-  return db21.collection(COLLECTION).add({
-    ...task,
-    status: "PENDING",
-    retryCount: 0,
-    createdAt: /* @__PURE__ */ new Date()
-  });
-}
-async function fetchPendingTasks(db21) {
-  const now = admin4.firestore.Timestamp.now();
-  const snapshot = await db21.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-}
-async function updateTaskStatus(db21, taskId, status, updates = {}) {
-  await db21.collection(COLLECTION).doc(taskId).update({
-    status,
-    ...updates
-  });
-}
-async function cancelVendorTasks(db21, vendorId) {
-  const snapshot = await db21.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db21.batch();
-  snapshot.docs.forEach((doc) => {
-    batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
-  });
-  await batch.commit();
-  return snapshot.size;
-}
-async function cancelLeadTasks(db21, leadId) {
-  const snapshot = await db21.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db21.batch();
-  snapshot.docs.forEach((doc) => {
-    batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
-  });
-  await batch.commit();
-  return snapshot.size;
-}
-var admin4, COLLECTION;
-var init_queueUtils = __esm({
-  "src/utils/queueUtils.ts"() {
-    "use strict";
-    admin4 = __toESM(require("firebase-admin"));
-    COLLECTION = "outreach_queue";
   }
 });
 
@@ -18450,8 +18325,8 @@ function extractHeadline(postMessage) {
   if (lines.length === 0) return "Professional Facility Solutions";
   let headline = lines[0];
   headline = headline.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}\s]+/u, "");
-  if (headline.length > 70) {
-    headline = headline.slice(0, 70).replace(/\s+\S*$/, "") + "\u2026";
+  if (headline.length > 100) {
+    headline = headline.slice(0, 100).replace(/\s+\S*$/, "");
   }
   return headline || "Professional Facility Solutions";
 }
@@ -18468,9 +18343,8 @@ function wrapText(text, maxChars) {
     }
   }
   if (currentLine) lines.push(currentLine);
-  if (lines.length > 3) {
-    lines.length = 3;
-    lines[2] = lines[2].replace(/\s+\S*$/, "") + "\u2026";
+  if (lines.length > 4) {
+    lines.length = 4;
   }
   return lines;
 }
@@ -18478,13 +18352,16 @@ function escapeXml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 function createBrandOverlaySvg(width, height, headline) {
-  const headlineLines = wrapText(headline, 32);
-  const lineHeight = 38;
+  const isLong = headline.length > 65;
+  const fontSize = isLong ? 24 : 30;
+  const charsPerLine = isLong ? 38 : 32;
+  const lineHeight = isLong ? 32 : 38;
+  const headlineLines = wrapText(headline, charsPerLine);
   const headlineBlockHeight = headlineLines.length * lineHeight + 50;
   const headlineY = height * 0.58;
   const headlineTexts = headlineLines.map((line, i) => {
     const y = headlineY + 45 + i * lineHeight;
-    return `<text x="${width * 0.08}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="30" fill="white" letter-spacing="0.5">${escapeXml(line)}</text>`;
+    return `<text x="${width * 0.08}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="${fontSize}" fill="white" letter-spacing="0.5">${escapeXml(line)}</text>`;
   }).join("\n        ");
   return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -18676,6 +18553,131 @@ var init_imagenApi = __esm({
   }
 });
 
+// src/agents/sodaSourcer.ts
+var sodaSourcer_exports = {};
+__export(sodaSourcer_exports, {
+  searchVendorsSoda: () => searchVendorsSoda
+});
+async function searchNycDca(query, location, dcaCategory, limit = 50) {
+  let where = "license_status='Active'";
+  if (dcaCategory) {
+    where += ` AND business_category='${dcaCategory.replace(/'/g, "''")}'`;
+  } else {
+    const queryWords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+    const searchTerms = queryWords.length > 0 ? queryWords : ["clean", "janitor", "maintenance", "hvac"];
+    const nameFilter = searchTerms.map((w) => `upper(business_name) like '%${w.toUpperCase()}%'`).join(" OR ");
+    where += ` AND (${nameFilter})`;
+  }
+  const boroughMap = {
+    "manhattan": "Manhattan",
+    "nyc": "",
+    "new york": "",
+    "brooklyn": "Brooklyn",
+    "queens": "Queens",
+    "bronx": "Bronx",
+    "staten island": "Staten Island"
+  };
+  const normalizedLoc = location.toLowerCase().trim();
+  const borough = boroughMap[normalizedLoc];
+  if (borough) {
+    where += ` AND address_borough='${borough}'`;
+  }
+  try {
+    const params = new URLSearchParams({
+      "$limit": String(limit),
+      "$where": where,
+      "$select": "business_name,business_category,contact_phone,address_building,address_street_name,address_city,address_state,address_zip,address_borough,license_status,lic_expir_dd,latitude,longitude",
+      "$order": "business_name ASC"
+    });
+    console.log(`[SODA/NYC] Querying DCA: ${where}`);
+    const response = await import_axios.default.get(`${NYC_DCA_ENDPOINT}?${params}`);
+    const results = response.data || [];
+    console.log(`[SODA/NYC] Found ${results.length} results from NYC DCA`);
+    return results.map((item) => ({
+      name: item.business_name,
+      description: `NYC DCA Licensed ${item.business_category} (${item.license_status})`,
+      location: `${item.address_building} ${item.address_street_name}, ${item.address_city}, ${item.address_state} ${item.address_zip}`,
+      phone: item.contact_phone,
+      source: "nyc_open_data",
+      dcaCategory: item.business_category,
+      rating: void 0,
+      user_ratings_total: void 0
+    }));
+  } catch (error11) {
+    console.error("[SODA/NYC] Error:", error11.message);
+    return [];
+  }
+}
+async function searchNyState(query, location, limit = 50) {
+  const queryWords = query.toLowerCase().split(/[\s,\/]+/).filter((w) => w.length > 3);
+  const nameFilters = queryWords.map((w) => `upper(current_entity_name) like '%${w.toUpperCase()}%'`).join(" OR ");
+  const locationWords = location.toLowerCase().split(/[\s,\/]+/).filter((w) => w.length > 2);
+  let locFilter = "";
+  if (locationWords.length > 0) {
+    const locConditions = locationWords.map(
+      (w) => `(upper(dos_process_city) like '%${w.toUpperCase()}%' OR upper(county) like '%${w.toUpperCase()}%')`
+    ).join(" OR ");
+    locFilter = ` AND (${locConditions})`;
+  }
+  const where = `(${nameFilters || "current_entity_name like '%CLEAN%'"})${locFilter}`;
+  try {
+    const params = new URLSearchParams({
+      "$limit": String(limit),
+      "$where": where,
+      "$order": "initial_dos_filing_date DESC"
+    });
+    console.log(`[SODA/NYS] Querying State Corps: ${where}`);
+    const response = await import_axios.default.get(`${NYS_CORP_ENDPOINT}?${params}`);
+    const results = response.data || [];
+    console.log(`[SODA/NYS] Found ${results.length} results from NY State`);
+    return results.map((b) => ({
+      name: titleCase2(b.current_entity_name || ""),
+      description: `${b.entity_type_desc || "Business Entity"} \u2014 Registered in NY State. Filed: ${b.initial_dos_filing_date ? new Date(b.initial_dos_filing_date).toLocaleDateString() : "N/A"}`,
+      location: [b.dos_process_address_1, b.dos_process_city, "NY", b.dos_process_zip].filter(Boolean).join(", "),
+      phone: void 0,
+      source: "ny_state_corps",
+      rating: void 0,
+      user_ratings_total: void 0
+    }));
+  } catch (error11) {
+    console.error("[SODA/NYS] Error:", error11.message);
+    return [];
+  }
+}
+async function searchVendorsSoda(query, location, dcaCategory) {
+  const normalizedLoc = location.toLowerCase().trim();
+  const isNycBorough = ["manhattan", "brooklyn", "queens", "bronx", "staten island", "nyc", "new york city", "new york"].includes(normalizedLoc);
+  const isLongIsland = ["nassau", "suffolk", "long island", "garden city", "mineola", "hempstead", "hicksville", "huntington", "babylon", "islip"].includes(normalizedLoc);
+  const results = [];
+  if (isNycBorough || !isLongIsland) {
+    const nycResults = await searchNycDca(query, location, dcaCategory, 25);
+    results.push(...nycResults);
+  }
+  const nysResults = await searchNyState(query, location, 25);
+  results.push(...nysResults);
+  const seen = /* @__PURE__ */ new Set();
+  const deduped = results.filter((v) => {
+    const key = v.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  console.log(`[SODA] Total: ${deduped.length} unique vendors (${results.length} before dedup)`);
+  return deduped;
+}
+function titleCase2(s) {
+  return s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+var import_axios, NYC_DCA_ENDPOINT, NYS_CORP_ENDPOINT;
+var init_sodaSourcer = __esm({
+  "src/agents/sodaSourcer.ts"() {
+    "use strict";
+    import_axios = __toESM(require("axios"));
+    NYC_DCA_ENDPOINT = "https://data.cityofnewyork.us/resource/w7w3-xahh.json";
+    NYS_CORP_ENDPOINT = "https://data.ny.gov/resource/n9v6-gdp6.json";
+  }
+});
+
 // src/utils/reelOutroGenerator.ts
 var reelOutroGenerator_exports = {};
 __export(reelOutroGenerator_exports, {
@@ -18857,6 +18859,7 @@ var init_reelOutroGenerator = __esm({
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
+  adminCreateUser: () => adminCreateUser,
   adminUpdateAuthUser: () => adminUpdateAuthUser,
   calculateNrr: () => calculateNrr,
   changeMyPassword: () => changeMyPassword,
@@ -18912,7 +18915,13 @@ __export(index_exports, {
   weeklyTemplateOptimizer: () => weeklyTemplateOptimizer
 });
 module.exports = __toCommonJS(index_exports);
-var import_https8 = require("firebase-functions/v2/https");
+
+// src/triggers/onVendorApproved.ts
+var import_firestore = require("firebase-functions/v2/firestore");
+var import_firestore2 = require("firebase-functions/v2/firestore");
+var import_params = require("firebase-functions/params");
+var admin4 = __toESM(require("firebase-admin"));
+var logger2 = __toESM(require("firebase-functions/logger"));
 
 // src/utils/firebase.ts
 var admin = __toESM(require("firebase-admin"));
@@ -18930,619 +18939,9 @@ try {
   console.log("Firestore settings usage note:", error11);
 }
 
-// src/index.ts
-init_promptUtils();
-
-// src/agents/recruiter.ts
-var import_generative_ai2 = require("@google/generative-ai");
-init_emailUtils();
-
-// src/utils/googlePlacesEnrichment.ts
-var PLACES_TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText";
-async function enrichVendorWithPlaces(vendorName, vendorAddress, apiKey) {
-  const key = apiKey || process.env.GOOGLE_MAPS_API_KEY || "";
-  if (!key) {
-    console.warn("GOOGLE_MAPS_API_KEY not set \u2014 skipping Places enrichment");
-    return null;
-  }
-  try {
-    const textQuery = vendorAddress ? `${vendorName} near ${vendorAddress}` : vendorName;
-    const response = await fetch(PLACES_TEXT_SEARCH_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": key,
-        "X-Goog-FieldMask": "places.id,places.displayName,places.rating,places.userRatingCount,places.internationalPhoneNumber,places.websiteUri,places.types,places.currentOpeningHours,places.googleMapsUri"
-      },
-      body: JSON.stringify({
-        textQuery,
-        maxResultCount: 1,
-        languageCode: "en"
-      })
-    });
-    if (!response.ok) {
-      const errText = await response.text();
-      console.warn(`Places API error for "${vendorName}": ${response.status} \u2014 ${errText}`);
-      return null;
-    }
-    const data = await response.json();
-    const place = data.places?.[0];
-    if (!place) return null;
-    const rating = place.rating || 0;
-    const ratingCount = place.userRatingCount || 0;
-    return {
-      placeId: place.id,
-      name: place.displayName?.text || vendorName,
-      rating,
-      ratingCount,
-      phone: place.internationalPhoneNumber || void 0,
-      website: place.websiteUri || void 0,
-      types: place.types || [],
-      openNow: place.currentOpeningHours?.openNow,
-      googleMapsUrl: place.googleMapsUri || void 0,
-      isEstablished: ratingCount >= 20,
-      isHighlyRated: rating >= 4
-    };
-  } catch (err) {
-    console.warn(`Places enrichment failed for "${vendorName}": ${err.message}`);
-    return null;
-  }
-}
-async function batchEnrichVendors(vendors, apiKey, concurrencyLimit = 5) {
-  const results = /* @__PURE__ */ new Map();
-  for (let i = 0; i < vendors.length; i += concurrencyLimit) {
-    const batch = vendors.slice(i, i + concurrencyLimit);
-    const batchResults = await Promise.all(
-      batch.map(async (v) => {
-        const result = await enrichVendorWithPlaces(v.name, v.address, apiKey);
-        return { index: v.index, result };
-      })
-    );
-    for (const { index, result } of batchResults) {
-      if (result) {
-        results.set(index, result);
-      }
-    }
-  }
-  console.log(`Places enrichment: ${results.size}/${vendors.length} vendors enriched.`);
-  return results;
-}
-function calculatePlacesSubScores(places) {
-  if (!places) {
-    return { googleReputation: 30, businessMaturity: 30, websiteQuality: 20 };
-  }
-  let googleReputation = 30;
-  if (places.rating) {
-    if (places.rating >= 4.5) googleReputation = 90;
-    else if (places.rating >= 4) googleReputation = 75;
-    else if (places.rating >= 3.5) googleReputation = 55;
-    else if (places.rating >= 3) googleReputation = 40;
-    else googleReputation = 25;
-  }
-  if (places.ratingCount && places.ratingCount >= 50) googleReputation = Math.min(100, googleReputation + 10);
-  else if (places.ratingCount && places.ratingCount >= 20) googleReputation = Math.min(100, googleReputation + 5);
-  let businessMaturity = 30;
-  if (places.ratingCount) {
-    if (places.ratingCount >= 100) businessMaturity = 95;
-    else if (places.ratingCount >= 50) businessMaturity = 80;
-    else if (places.ratingCount >= 20) businessMaturity = 65;
-    else if (places.ratingCount >= 5) businessMaturity = 45;
-  }
-  let websiteQuality = 20;
-  if (places.website) websiteQuality = 60;
-  if (places.website && places.ratingCount && places.ratingCount > 10) websiteQuality = 80;
-  return { googleReputation, businessMaturity, websiteQuality };
-}
-
-// src/agents/recruiter.ts
-function normalizeUrl(url) {
-  if (!url) return "";
-  return url.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "").trim();
-}
-var API_KEY = process.env.GEMINI_API_KEY || "";
-var genAI2 = new import_generative_ai2.GoogleGenerativeAI(API_KEY);
-var model = genAI2.getGenerativeModel({ model: "gemini-2.0-flash" });
-var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false, previewOnly = false) => {
-  console.log("!!! RECRUITER AGENT UPDATED - V4 (Robust Dedup + Blacklist) !!!");
-  let analyzed = 0;
-  let qualified = 0;
-  const errors = [];
-  const batch = db.batch();
-  const previewVendors = [];
-  if (rawVendors.length === 0) return { analyzed, qualified, errors };
-  const threshold = hasActiveContract ? 50 : 0;
-  const modeDescription = hasActiveContract ? "URGENT FULFILLMENT: We need high-quality vendors ready to deploy. Be strict." : "DATABASE BUILDING: We are building a supply list. ACCEPT ALL VENDORS. Do not filter. Score is for reference only.";
-  let vendorsToAnalyze = rawVendors;
-  let prompt = "";
-  try {
-    let dismissedNames = /* @__PURE__ */ new Set();
-    let dismissedPhones = /* @__PURE__ */ new Set();
-    let dismissedWebsites = /* @__PURE__ */ new Set();
-    try {
-      const dismissedSnapshot = await db.collection("dismissed_vendors").get();
-      if (!dismissedSnapshot.empty) {
-        for (const doc of dismissedSnapshot.docs) {
-          const d = doc.data();
-          if (d.businessName) dismissedNames.add(d.businessName.toLowerCase().trim());
-          if (d.phone) dismissedPhones.add(d.phone.replace(/\D/g, ""));
-          if (d.website) dismissedWebsites.add(normalizeUrl(d.website));
-        }
-        console.log(`Loaded ${dismissedNames.size} dismissed vendor names, ${dismissedPhones.size} phones, ${dismissedWebsites.size} websites.`);
-      }
-    } catch (dismissErr) {
-      console.warn("Could not check dismissed_vendors:", dismissErr.message);
-    }
-    const vendorsToProcess = [];
-    const duplicateUpdates = [];
-    let existingByNameLower = /* @__PURE__ */ new Map();
-    let existingByPhone = /* @__PURE__ */ new Map();
-    let existingByWebsite = /* @__PURE__ */ new Map();
-    try {
-      const existingSnap = await db.collection("vendors").select("businessName", "businessNameLower", "phone", "website").get();
-      for (const doc of existingSnap.docs) {
-        const data = doc.data();
-        const nameLower = (data.businessNameLower || data.businessName || "").toLowerCase().trim();
-        if (nameLower) existingByNameLower.set(nameLower, doc.id);
-        if (data.phone) existingByPhone.set(data.phone.replace(/\D/g, ""), doc.id);
-        if (data.website) existingByWebsite.set(normalizeUrl(data.website), doc.id);
-      }
-      console.log(`Loaded ${existingByNameLower.size} existing vendors for dedup (names: ${existingByNameLower.size}, phones: ${existingByPhone.size}, websites: ${existingByWebsite.size}).`);
-    } catch (err) {
-      console.warn("Could not pre-load vendors for dedup:", err.message);
-    }
-    console.log(`Checking ${rawVendors.length} vendors for duplicates and blacklist...`);
-    for (const vendor of rawVendors) {
-      const bName = vendor.name || vendor.companyName || vendor.title || "";
-      const bNameLower = bName.toLowerCase().trim();
-      const bPhone = (vendor.phone || "").replace(/\D/g, "");
-      const bWebsite = normalizeUrl(vendor.website || "");
-      const isBlacklisted = bNameLower && dismissedNames.has(bNameLower) || bPhone && bPhone.length >= 7 && dismissedPhones.has(bPhone) || bWebsite && dismissedWebsites.has(bWebsite);
-      if (isBlacklisted) {
-        console.log(`\u26D4 Blacklisted vendor skipped: ${bName}`);
-        continue;
-      }
-      const existingDocId = bNameLower && existingByNameLower.get(bNameLower) || bPhone && bPhone.length >= 7 && existingByPhone.get(bPhone) || bWebsite && existingByWebsite.get(bWebsite) || null;
-      if (existingDocId) {
-        console.log(`\u{1F501} Duplicate vendor skipped: ${bName} (matches ${existingDocId})`);
-        duplicateUpdates.push(
-          db.collection("vendors").doc(existingDocId).update({
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-          })
-        );
-      } else {
-        vendorsToProcess.push(vendor);
-      }
-    }
-    if (duplicateUpdates.length > 0) {
-      await Promise.all(duplicateUpdates);
-      console.log(`Updated ${duplicateUpdates.length} existing vendors.`);
-    }
-    if (vendorsToProcess.length === 0) {
-      console.log("All vendors were duplicates or blacklisted. Sourcing complete.");
-      return { analyzed, qualified, errors };
-    }
-    vendorsToAnalyze = vendorsToProcess;
-    const templateDoc = await db.collection("prompts").doc("recruiter_analysis_prompt").get();
-    if (!templateDoc.exists) {
-      throw new Error("Recruiter analysis prompt not found in database (prompts/recruiter_analysis_prompt)");
-    }
-    const template = templateDoc.data();
-    const vendorsForEnrichment = vendorsToAnalyze.map((v, i) => ({
-      name: v.name || v.companyName || v.title || "",
-      address: v.location || v.address || v.vicinity || "",
-      index: i
-    }));
-    console.log(`Starting Google Places enrichment for ${vendorsForEnrichment.length} vendors...`);
-    const placesData = await batchEnrichVendors(vendorsForEnrichment);
-    console.log(`Google Places enrichment complete: ${placesData.size}/${vendorsForEnrichment.length} matched.`);
-    const vendorList = JSON.stringify(vendorsToAnalyze.map((v, i) => {
-      const places = placesData.get(i);
-      return {
-        index: i,
-        name: v.name || v.companyName,
-        description: v.description || v.services,
-        address: v.location || v.address || v.vicinity,
-        website: v.website,
-        phone: v.phone,
-        // Google Places enrichment
-        googleRating: places?.rating || null,
-        googleReviewCount: places?.ratingCount || null,
-        googleTypes: places?.types?.slice(0, 5) || [],
-        isEstablished: places?.isEstablished || false,
-        isHighlyRated: places?.isHighlyRated || false
-      };
-    }));
-    prompt = template?.content.replace(/\{\{query\}\}/g, jobQuery).replace(/\{\{modeDescription\}\}/g, modeDescription).replace(/\{\{threshold\}\}/g, threshold.toString()).replace(/\{\{vendorList\}\}/g, vendorList);
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
-    console.log("Gemini Raw Response:", text);
-    const jsonStr = text.replace(/```json/g, "").replace(/```/g, "").trim();
-    const analysis = JSON.parse(jsonStr);
-    analyzed = analysis.length;
-    for (const item of analysis) {
-      if (item.isQualified || threshold === 0) {
-        qualified++;
-        const originalVendor = vendorsToAnalyze[item.index];
-        if (!originalVendor) {
-          console.warn(`Analysis returned index ${item.index} but we only have ${vendorsToAnalyze.length} vendors.`);
-          continue;
-        }
-        const bName = originalVendor.name || originalVendor.companyName || originalVendor.title || "Unknown Vendor";
-        const vendorRef = db.collection("vendors").doc();
-        const rawAddr = originalVendor.location || item.address || "Unknown";
-        const parsed = parseAddress(rawAddr);
-        const placesEnrichment = placesData.get(item.index);
-        const placesSubScores = calculatePlacesSubScores(placesEnrichment || null);
-        const newVendor = {
-          id: vendorRef.id,
-          businessName: bName,
-          businessNameLower: bName.toLowerCase().trim(),
-          capabilities: item.services || (item.primarySpecialty ? [item.primarySpecialty] : item.specialty ? [item.specialty] : []),
-          specialty: item.primarySpecialty || item.specialty || item.services?.[0] || void 0,
-          contactName: item.contactName || void 0,
-          address: rawAddr,
-          streetAddress: parsed.streetAddress || void 0,
-          city: item.city || parsed.city || void 0,
-          state: item.state || parsed.state || void 0,
-          zip: item.zip || parsed.zip || void 0,
-          country: item.country || "USA",
-          phone: placesEnrichment?.phone || originalVendor.phone || item.phone || void 0,
-          email: originalVendor.email || item.email || void 0,
-          website: placesEnrichment?.website || originalVendor.website || item.website || void 0,
-          dcaCategory: originalVendor.dcaCategory || void 0,
-          fitScore: item.fitScore,
-          aiReasoning: item.reasoning || void 0,
-          hasActiveContract,
-          onboardingTrack: hasActiveContract ? "FAST_TRACK" : "STANDARD",
-          status: "pending_review",
-          // Google Places enrichment (persisted)
-          googlePlaces: placesEnrichment ? {
-            placeId: placesEnrichment.placeId,
-            name: placesEnrichment.name,
-            rating: placesEnrichment.rating,
-            ratingCount: placesEnrichment.ratingCount,
-            phone: placesEnrichment.phone,
-            website: placesEnrichment.website,
-            types: placesEnrichment.types,
-            openNow: placesEnrichment.openNow,
-            googleMapsUrl: placesEnrichment.googleMapsUrl,
-            enrichedAt: admin.firestore.FieldValue.serverTimestamp()
-          } : void 0,
-          // Fit score breakdown
-          fitScoreBreakdown: {
-            googleReputation: placesSubScores.googleReputation,
-            serviceAlignment: item.serviceAlignmentScore || 50,
-            locationScore: item.locationScore || 50,
-            businessMaturity: placesSubScores.businessMaturity,
-            websiteQuality: placesSubScores.websiteQuality
-          },
-          rating: placesEnrichment?.rating || void 0,
-          totalRatings: placesEnrichment?.ratingCount || void 0,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        };
-        console.log(`Adding qualified vendor to batch: ${newVendor.businessName}`);
-        if (previewOnly) {
-          const isDismissed = dismissedNames.has((newVendor.businessName || "").toLowerCase().trim());
-          previewVendors.push({ ...newVendor, isDismissed });
-        } else {
-          batch.set(vendorRef, newVendor);
-        }
-      }
-    }
-    if (qualified > 0 && !previewOnly) {
-      console.log(`Committing batch of ${qualified} vendors...`);
-      await batch.commit();
-      console.log("Batch commit successful.");
-    } else if (previewOnly) {
-      console.log(`Preview mode: ${qualified} vendors ready for review (not saved).`);
-    } else {
-      console.log("No qualified vendors to commit.");
-    }
-  } catch (err) {
-    console.error("AI Analysis Failed:", err.message);
-    console.error("Prompt used:", prompt);
-    errors.push(err.message);
-    console.log("Saving raw vendors with 'pending_review' status due to AI failure...");
-    for (const originalVendor of vendorsToAnalyze) {
-      const vendorRef = db.collection("vendors").doc();
-      const bName = originalVendor.name || originalVendor.companyName || originalVendor.title || "Unknown Vendor";
-      const rawAddr = originalVendor.location || originalVendor.address || "Unknown";
-      const parsed = parseAddress(rawAddr);
-      const newVendor = {
-        id: vendorRef.id,
-        businessName: bName,
-        capabilities: [],
-        address: rawAddr,
-        streetAddress: parsed.streetAddress || void 0,
-        city: parsed.city || void 0,
-        state: parsed.state || void 0,
-        zip: parsed.zip || void 0,
-        phone: originalVendor.phone || void 0,
-        email: originalVendor.email || void 0,
-        website: originalVendor.website || void 0,
-        dcaCategory: originalVendor.dcaCategory || void 0,
-        fitScore: 0,
-        status: "pending_review",
-        hasActiveContract,
-        onboardingTrack: hasActiveContract ? "FAST_TRACK" : "STANDARD",
-        aiReasoning: `AI Analysis Failed: ${err.message}`,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      };
-      batch.set(vendorRef, newVendor);
-      if (previewOnly) {
-        previewVendors.push(newVendor);
-      }
-      qualified++;
-    }
-    if (qualified > 0 && !previewOnly) {
-      console.log(`Committing batch of ${qualified} fallback vendors...`);
-      await batch.commit();
-    }
-  }
-  return { analyzed, qualified, errors, vendors: previewOnly ? previewVendors : void 0 };
-};
-
-// src/agents/sourcer.ts
-var import_axios2 = __toESM(require("axios"));
-var searchVendors = async (query, location, provider = "google_maps", dcaCategory) => {
-  console.log(`Searching for: "${query}" in "${location}" [provider: ${provider}]`);
-  if (provider === "nyc_open_data") {
-    const { searchVendorsSoda: searchVendorsSoda2 } = await Promise.resolve().then(() => (init_sodaSourcer(), sodaSourcer_exports));
-    return searchVendorsSoda2(query, location, dcaCategory);
-  }
-  const apiKey = process.env.SERPER_API_KEY || "02ece77ffd27d2929e3e79604cb27e1dfaa40fe7";
-  if (!apiKey) {
-    console.warn("SERPER_API_KEY is not set. Returning mock data.");
-    return getMockVendors(query, location);
-  }
-  const fullQuery = `${query} in ${location}`;
-  console.log(`Searching for: ${fullQuery} using Serper (places)...`);
-  let googleResults = [];
-  try {
-    const response = await import_axios2.default.post(
-      "https://google.serper.dev/places",
-      { q: fullQuery },
-      { headers: { "X-API-KEY": apiKey.trim(), "Content-Type": "application/json" } }
-    );
-    const places = response.data.places || [];
-    console.log(`Serper returned ${places.length} raw results.`);
-    const rawVendors = places.map((place) => ({
-      name: place.title,
-      description: `${place.category || ""} - ${place.address || ""}`,
-      location: place.address,
-      phone: place.phoneNumber,
-      website: place.website,
-      source: "google_maps_serper",
-      rating: place.rating,
-      user_ratings_total: place.userRatingsTotal
-    }));
-    googleResults = rawVendors.filter((v) => v.rating === void 0 || v.rating >= 3.5);
-    console.log(`Filtered ${rawVendors.length} -> ${googleResults.length} vendors (Rating >= 3.5 or N/A).`);
-  } catch (error11) {
-    console.error("Error searching vendors via Google:", error11.message);
-    if (provider !== "all") {
-      throw new Error(`Failed to source vendors: ${error11.message}`);
-    }
-  }
-  if (provider === "all") {
-    const { searchVendorsSoda: searchVendorsSoda2 } = await Promise.resolve().then(() => (init_sodaSourcer(), sodaSourcer_exports));
-    const sodaResults = await searchVendorsSoda2(query, location, dcaCategory);
-    const combined = [...googleResults, ...sodaResults];
-    const seen = /* @__PURE__ */ new Set();
-    const deduped = combined.filter((v) => {
-      const key = v.name.toLowerCase().replace(/[^a-z0-9]/g, "");
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-    console.log(`Combined: ${googleResults.length} Google + ${sodaResults.length} SODA = ${deduped.length} unique`);
-    return deduped;
-  }
-  return googleResults;
-};
-var getMockVendors = (query, location) => {
-  return [
-    {
-      name: "Mock Cleaning Services " + location,
-      description: "Deep comercial cleaning and janitorial services.",
-      location,
-      source: "mock"
-    },
-    {
-      name: "Test HVAC Solutions " + location,
-      description: "HVAC maintenance and repair.",
-      location,
-      source: "mock"
-    },
-    {
-      name: "General Facilities Co",
-      description: "We do everything including plumbing and electrical.",
-      location,
-      source: "mock"
-    }
-  ];
-};
-
-// src/agents/propertySourcer.ts
-var MockPropertyProvider = class {
-  constructor() {
-    this.name = "mock";
-  }
-  async search(params) {
-    console.log(`[MockPropertyProvider] Searching "${params.query}" in "${params.location}"...`);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    const mockProperties = [
-      {
-        name: "Williston Park Medical Plaza",
-        address: "420 Willis Ave",
-        city: "Williston Park",
-        state: "NY",
-        zip: "11596",
-        propertyType: "medical_office",
-        squareFootage: 8500,
-        yearBuilt: 2005,
-        ownerName: "WP Medical Holdings LLC",
-        ownerPhone: "(516) 555-0101",
-        tenantName: "CityMD Urgent Care",
-        tenantCount: 1,
-        lastSalePrice: 24e5,
-        lastSaleDate: "2021-06-15",
-        source: "mock",
-        sourceId: "MOCK-001"
-      },
-      {
-        name: "Mineola Surgical Center",
-        address: "155 E 2nd St",
-        city: "Mineola",
-        state: "NY",
-        zip: "11501",
-        propertyType: "medical_office",
-        squareFootage: 12e3,
-        yearBuilt: 2010,
-        ownerName: "Mineola Health Properties Inc",
-        ownerPhone: "(516) 555-0202",
-        tenantName: "North Shore Ambulatory Surgery",
-        tenantCount: 1,
-        lastSalePrice: 42e5,
-        lastSaleDate: "2019-03-22",
-        source: "mock",
-        sourceId: "MOCK-002"
-      },
-      {
-        name: "New Hyde Park Dialysis Suite",
-        address: "700 Lakeville Rd",
-        city: "New Hyde Park",
-        state: "NY",
-        zip: "11040",
-        propertyType: "medical_office",
-        squareFootage: 5200,
-        yearBuilt: 2015,
-        ownerName: "NHP Realty Corp",
-        ownerPhone: "(516) 555-0303",
-        tenantName: "DaVita Kidney Care",
-        tenantCount: 1,
-        lastSalePrice: 18e5,
-        lastSaleDate: "2022-09-10",
-        source: "mock",
-        sourceId: "MOCK-003"
-      },
-      {
-        name: "Herricks Auto Center",
-        address: "200 Herricks Rd",
-        city: "New Hyde Park",
-        state: "NY",
-        zip: "11040",
-        propertyType: "auto_dealership",
-        squareFootage: 22e3,
-        yearBuilt: 1998,
-        ownerName: "Herricks Motors LLC",
-        ownerPhone: "(516) 555-0404",
-        tenantName: "Herricks Toyota",
-        tenantCount: 1,
-        lotSize: 45e3,
-        lastSalePrice: 55e5,
-        lastSaleDate: "2018-01-20",
-        source: "mock",
-        sourceId: "MOCK-004"
-      },
-      {
-        name: "Floral Park Urgent Care",
-        address: "265 Jericho Tpke",
-        city: "Floral Park",
-        state: "NY",
-        zip: "11001",
-        propertyType: "medical_office",
-        squareFootage: 4800,
-        yearBuilt: 2012,
-        ownerName: "FP Healthcare Properties",
-        ownerPhone: "(516) 555-0505",
-        tenantName: "GoHealth Urgent Care",
-        tenantCount: 1,
-        lastSalePrice: 15e5,
-        lastSaleDate: "2020-07-05",
-        source: "mock",
-        sourceId: "MOCK-005"
-      },
-      {
-        name: "Garden City Auto Mile",
-        address: "500 Stewart Ave",
-        city: "Garden City",
-        state: "NY",
-        zip: "11530",
-        propertyType: "auto_dealership",
-        squareFootage: 35e3,
-        yearBuilt: 2001,
-        ownerName: "GC Auto Holdings LLC",
-        ownerPhone: "(516) 555-0606",
-        tenantName: "Legacy Honda",
-        tenantCount: 1,
-        lotSize: 8e4,
-        lastSalePrice: 82e5,
-        lastSaleDate: "2017-11-30",
-        source: "mock",
-        sourceId: "MOCK-006"
-      }
-    ];
-    let filtered = mockProperties;
-    if (params.minSquareFootage) {
-      filtered = filtered.filter((p) => (p.squareFootage || 0) >= params.minSquareFootage);
-    }
-    if (params.maxSquareFootage) {
-      filtered = filtered.filter((p) => (p.squareFootage || 0) <= params.maxSquareFootage);
-    }
-    const queryLower = params.query.toLowerCase();
-    if (queryLower.includes("medical") || queryLower.includes("urgent") || queryLower.includes("surgery") || queryLower.includes("dialysis")) {
-      filtered = filtered.filter((p) => p.propertyType === "medical_office");
-    } else if (queryLower.includes("auto") || queryLower.includes("dealer")) {
-      filtered = filtered.filter((p) => p.propertyType === "auto_dealership");
-    }
-    const maxResults = params.maxResults || 25;
-    const results = filtered.slice(0, maxResults);
-    console.log(`[MockPropertyProvider] Returning ${results.length} mock properties.`);
-    return results;
-  }
-};
-var providers = {
-  mock: () => new MockPropertyProvider()
-  // attom: () => new AttomPropertyProvider(),
-  // reonomy: () => new ReonomyPropertyProvider(),
-};
-function getPropertyProvider(name) {
-  const factory = providers[name];
-  if (!factory) {
-    console.warn(`[PropertySourcer] Unknown provider "${name}", falling back to mock.`);
-    return new MockPropertyProvider();
-  }
-  return factory();
-}
-var searchProperties = async (query, location, providerName = "mock") => {
-  console.log(`[PropertySourcer] Sourcing: "${query}" in "${location}" via ${providerName}`);
-  const provider = getPropertyProvider(providerName);
-  try {
-    const properties = await provider.search({ query, location });
-    console.log(`[PropertySourcer] ${provider.name} returned ${properties.length} results.`);
-    const singleTenant = properties.filter((p) => !p.tenantCount || p.tenantCount === 1);
-    console.log(`[PropertySourcer] After single-tenant filter: ${singleTenant.length}`);
-    return singleTenant;
-  } catch (error11) {
-    console.error(`[PropertySourcer] Error sourcing properties: ${error11.message}`);
-    throw new Error(`Failed to source properties: ${error11.message}`);
-  }
-};
-
-// src/triggers/onVendorApproved.ts
-var import_firestore = require("firebase-functions/v2/firestore");
-var import_firestore2 = require("firebase-functions/v2/firestore");
-var import_params = require("firebase-functions/params");
-var admin5 = __toESM(require("firebase-admin"));
-var logger2 = __toESM(require("firebase-functions/logger"));
-
 // src/utils/websiteScraper.ts
 var cheerio = __toESM(require("cheerio"));
-var import_generative_ai3 = require("@google/generative-ai");
+var import_generative_ai = require("@google/generative-ai");
 init_promptUtils();
 var TIMEOUT_MS = 15e3;
 var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -19776,7 +19175,7 @@ function mergeContactPages(pages) {
 }
 async function extractWithAI(html, geminiApiKey) {
   try {
-    const genAI4 = new import_generative_ai3.GoogleGenerativeAI(geminiApiKey);
+    const genAI4 = new import_generative_ai.GoogleGenerativeAI(geminiApiKey);
     const model2 = genAI4.getGenerativeModel({ model: "gemini-1.5-flash" });
     const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 15e3);
     const FALLBACK = `Extract business contact information from this website content. 
@@ -20039,8 +19438,8 @@ function determinePhoneType(digits) {
 }
 
 // src/triggers/onVendorApproved.ts
-if (!admin5.apps.length) {
-  admin5.initializeApp();
+if (!admin4.apps.length) {
+  admin4.initializeApp();
 }
 var GEMINI_API_KEY = (0, import_params.defineSecret)("GEMINI_API_KEY");
 var SERPER_API_KEY = (0, import_params.defineSecret)("SERPER_API_KEY");
@@ -20111,7 +19510,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           return;
         }
         const scrapedData = scrapedResult.data;
-        const updateData = { updatedAt: admin5.firestore.FieldValue.serverTimestamp() };
+        const updateData = { updatedAt: admin4.firestore.FieldValue.serverTimestamp() };
         const enrichedFields = [];
         let foundEmail;
         if (scrapedData.email) {
@@ -20156,7 +19555,7 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           enrichedFields.push("contactFormUrl");
         }
         updateData.enrichment = {
-          lastEnriched: admin5.firestore.FieldValue.serverTimestamp(),
+          lastEnriched: admin4.firestore.FieldValue.serverTimestamp(),
           enrichedFields,
           enrichmentSource: "auto_onboarding",
           scrapedWebsite: vendorWebsite,
@@ -20185,9 +19584,9 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           if (mailtoVerification.valid && mailtoVerification.deliverable) {
             await db.collection("vendors").doc(vendorId).update({
               email: mailtoResult.email,
-              "enrichment.enrichedFields": admin5.firestore.FieldValue.arrayUnion("email"),
+              "enrichment.enrichedFields": admin4.firestore.FieldValue.arrayUnion("email"),
               "enrichment.enrichmentSource": "deep_mailto_scan",
-              updatedAt: admin5.firestore.FieldValue.serverTimestamp()
+              updatedAt: admin4.firestore.FieldValue.serverTimestamp()
             });
             await db.collection("vendor_activities").add({
               vendorId,
@@ -20216,9 +19615,9 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           if (webVerification.valid && webVerification.deliverable) {
             await db.collection("vendors").doc(vendorId).update({
               email: webResult.email,
-              "enrichment.enrichedFields": admin5.firestore.FieldValue.arrayUnion("email"),
+              "enrichment.enrichedFields": admin4.firestore.FieldValue.arrayUnion("email"),
               "enrichment.enrichmentSource": webResult.source,
-              updatedAt: admin5.firestore.FieldValue.serverTimestamp()
+              updatedAt: admin4.firestore.FieldValue.serverTimestamp()
             });
             await db.collection("vendor_activities").add({
               vendorId,
@@ -20272,11 +19671,11 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
           await db.collection("vendors").doc(vendorId).update({
             email: webResult.email,
             enrichment: {
-              lastEnriched: admin5.firestore.FieldValue.serverTimestamp(),
+              lastEnriched: admin4.firestore.FieldValue.serverTimestamp(),
               enrichedFields: ["email"],
               enrichmentSource: webResult.source
             },
-            updatedAt: admin5.firestore.FieldValue.serverTimestamp()
+            updatedAt: admin4.firestore.FieldValue.serverTimestamp()
           });
           await db.collection("vendor_activities").add({
             vendorId,
@@ -20409,7 +19808,7 @@ async function getSenderFrom(senderId) {
   senderCache[senderId] = fallback;
   return `${fallback.name} <${fallback.email}>`;
 }
-function titleCase2(s) {
+function titleCase(s) {
   if (!s) return "";
   if (s === s.toUpperCase() && s.length <= 5) return s;
   return s.replace(/[_-]/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -20481,7 +19880,7 @@ async function handleGenerate(task) {
   }
   const template = templateDoc.data();
   const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
-  const services = Array.isArray(vendor?.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.map(titleCase2).join(", ") : titleCase2(vendor?.specialty || "Facility Services");
+  const services = Array.isArray(vendor?.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.map(titleCase).join(", ") : titleCase(vendor?.specialty || "Facility Services");
   const contactName = vendor?.contactName || vendor?.businessName || "there";
   const mergeVars = {
     vendorName: vendor?.companyName || vendor?.businessName || "your company",
@@ -20489,7 +19888,7 @@ async function handleGenerate(task) {
     city: vendor?.city || "your area",
     state: vendor?.state || "",
     services,
-    specialty: titleCase2(vendor?.specialty || vendor?.capabilities?.[0] || "Services"),
+    specialty: titleCase(vendor?.specialty || vendor?.capabilities?.[0] || "Services"),
     onboardingUrl
   };
   let subject = template.subject || "";
@@ -20684,7 +20083,7 @@ async function handleFollowUp(task) {
   }
   const template = templateDoc.data();
   const onboardingUrl = `https://xiri.ai/contractor?vid=${task.vendorId}`;
-  const services = Array.isArray(vendor.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.map(titleCase2).join(", ") : titleCase2(vendor.specialty || "Facility Services");
+  const services = Array.isArray(vendor.capabilities) && vendor.capabilities.length > 0 ? vendor.capabilities.map(titleCase).join(", ") : titleCase(vendor.specialty || "Facility Services");
   const contactName = vendor.contactName || vendor.businessName || "there";
   const mergeVars = {
     vendorName: vendor.companyName || vendor.businessName || "your company",
@@ -20692,7 +20091,7 @@ async function handleFollowUp(task) {
     city: vendor.city || "your area",
     state: vendor.state || "",
     services,
-    specialty: titleCase2(vendor.specialty || vendor.capabilities?.[0] || "Services"),
+    specialty: titleCase(vendor.specialty || vendor.capabilities?.[0] || "Services"),
     onboardingUrl
   };
   let subject = template.subject || "";
@@ -20783,7 +20182,7 @@ async function handleLeadSend(task) {
   const mergeVars = {
     contactName: task.metadata.contactName || "there",
     businessName: task.metadata.businessName || "your practice",
-    facilityType: titleCase2(task.metadata.facilityType || "Medical Office"),
+    facilityType: titleCase(task.metadata.facilityType || "Medical Office"),
     address: task.metadata.address || "",
     squareFootage: task.metadata.squareFootage || ""
   };
@@ -20846,11 +20245,11 @@ var admin7 = __toESM(require("firebase-admin"));
 var logger5 = __toESM(require("firebase-functions/logger"));
 
 // src/agents/documentVerifier.ts
-var import_generative_ai4 = require("@google/generative-ai");
+var import_generative_ai3 = require("@google/generative-ai");
 var logger4 = __toESM(require("firebase-functions/logger"));
 var https = __toESM(require("https"));
 init_promptUtils();
-var genAI3 = new import_generative_ai4.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+var genAI2 = new import_generative_ai3.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 function downloadFileAsBuffer(url) {
   return new Promise((resolve, reject) => {
     https.get(url, (res) => {
@@ -20868,7 +20267,7 @@ function downloadFileAsBuffer(url) {
   });
 }
 async function verifyDocument(docType, vendorName, specialty) {
-  const model2 = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model2 = genAI2.getGenerativeModel({ model: "gemini-2.0-flash" });
   let simulatedOcrText = "";
   if (docType === "COI") {
     const today = /* @__PURE__ */ new Date();
@@ -20903,7 +20302,7 @@ async function verifyDocument(docType, vendorName, specialty) {
         `;
   }
   try {
-    const FALLBACK = `You are a document verification agent for Xiri Facility Solutions.
+    const FALLBACK = `You are a document verification agent for XIRI Facility Solutions.
 
 Analyze this {{documentType}} for {{vendorName}} (specialty: {{specialty}}).
 
@@ -20943,7 +20342,7 @@ Verify compliance and extract key data. Return JSON:
   }
 }
 async function verifyAcord25(fileUrl, vendorName, attestations) {
-  const model2 = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model2 = genAI2.getGenerativeModel({ model: "gemini-2.0-flash" });
   try {
     logger4.info(`Downloading ACORD 25 from: ${fileUrl}`);
     const buffer = await downloadFileAsBuffer(fileUrl);
@@ -20952,7 +20351,7 @@ async function verifyAcord25(fileUrl, vendorName, attestations) {
     const isPng = fileUrl.toLowerCase().includes(".png");
     const contentType = isPdf ? "application/pdf" : isJpg ? "image/jpeg" : isPng ? "image/png" : "application/pdf";
     const base64Data = buffer.toString("base64");
-    const ACORD_FALLBACK = `You are an insurance compliance verification agent for Xiri Facility Solutions.
+    const ACORD_FALLBACK = `You are an insurance compliance verification agent for XIRI Facility Solutions.
 
 Analyze this ACORD 25 Certificate of Liability Insurance and extract data in JSON format.
 Vendor: "{{vendorName}}"
@@ -21126,7 +20525,7 @@ async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
     const flagList = flags.map((f) => `<li style="color: #b45309;">${f}</li>`).join("");
     const dashboardLink = `https://app.xiri.ai/supply/crm/${vendorId}`;
     await resend2.emails.send({
-      from: "Xiri Compliance <compliance@xiri.ai>",
+      from: "XIRI Compliance <compliance@xiri.ai>",
       to: "chris@xiri.ai",
       subject: `\u26A0\uFE0F ACORD 25 Flagged: ${vendorName}`,
       html: `
@@ -21188,7 +20587,7 @@ var sendBookingConfirmation = (0, import_firestore4.onDocumentWritten)({
   const icsContent = generateICS({
     start: startTime,
     end: endTime,
-    summary: `Xiri ${type}: ${businessName || "Facility Audit"}`,
+    summary: `XIRI ${type}: ${businessName || "Facility Audit"}`,
     description: `Meeting with ${contactName || "Client"}.
 
 Type: ${type}
@@ -21196,9 +20595,9 @@ Duration: ${duration} mins
 
 Power to the Facilities!`,
     location: type === "intro" ? "Phone Call" : after.address || after.zipCode || "On Site",
-    organizer: { name: "Xiri Facility Solutions", email: "onboarding@xiri.ai" }
+    organizer: { name: "XIRI Facility Solutions", email: "onboarding@xiri.ai" }
   });
-  const subject = `Confirmed: Your Xini ${type}`;
+  const subject = `Confirmed: Your XIRI ${type}`;
   const htmlBody = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
             <h1 style="color: #0ea5e9;">You're booked!</h1>
@@ -21211,7 +20610,7 @@ Power to the Facilities!`,
                 <p style="margin: 5px 0 0; color: #6b7280;">Duration: ${duration} mins</p>
             </div>
             <p>A calendar invitation has been attached to this email.</p>
-            <p>Best,<br/>The Xiri Team</p>
+            <p>Best,<br/>The XIRI Team</p>
         </div>
     `;
   const sendSuccess = await sendEmail(email, subject, htmlBody, [
@@ -21239,7 +20638,7 @@ function generateICS(event) {
   const formatDate = (date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   return `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Xiri//Facility Solutions//EN
+PRODID:-//XIRI//Facility Solutions//EN
 CALSCALE:GREGORIAN
 METHOD:REQUEST
 BEGIN:VEVENT
@@ -21479,7 +20878,7 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
     </div>`;
   try {
     const { data, error: error11 } = await resend2.emails.send({
-      from: "Xiri Facility Solutions <onboarding@xiri.ai>",
+      from: "XIRI Facility Solutions <onboarding@xiri.ai>",
       to: "chris@xiri.ai",
       subject: `\u{1F3D7}\uFE0F Vendor Onboarded: ${businessName}`,
       html
@@ -21501,7 +20900,7 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
         </div>
         <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
             <p>Hola <strong>${businessName}</strong>,</p>
-            <p>Gracias por completar su solicitud para unirse a la Red de Contratistas de Xiri. Hemos recibido su informaci\xF3n y nuestro equipo la revisar\xE1 en breve.</p>
+            <p>Gracias por completar su solicitud para unirse a la Red de Contratistas de XIRI. Hemos recibido su informaci\xF3n y nuestro equipo la revisar\xE1 en breve.</p>
 
             <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
                 <h3 style="margin: 0 0 12px 0; color: #0c4a6e; font-size: 15px;">Lo que recibimos:</h3>
@@ -21519,7 +20918,7 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
 
             <p style="font-size: 14px; color: #64748b;">Si tiene alguna pregunta, simplemente responda a este correo.</p>
 
-            <p style="margin-top: 24px;">Saludos cordiales,<br/><strong>Equipo Xiri Facility Solutions</strong></p>
+            <p style="margin-top: 24px;">Saludos cordiales,<br/><strong>Equipo XIRI Facility Solutions</strong></p>
         </div>
     </div>` : `
     <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px; color: #1e293b;">
@@ -21528,7 +20927,7 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
         </div>
         <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
             <p>Hi <strong>${businessName}</strong>,</p>
-            <p>Thank you for completing your application to join the Xiri Contractor Network. We've received your information and our team will review it shortly.</p>
+            <p>Thank you for completing your application to join the XIRI Contractor Network. We've received your information and our team will review it shortly.</p>
 
             <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
                 <h3 style="margin: 0 0 12px 0; color: #0c4a6e; font-size: 15px;">What we received:</h3>
@@ -21546,13 +20945,13 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
 
             <p style="font-size: 14px; color: #64748b;">If you have any questions, just reply to this email.</p>
 
-            <p style="margin-top: 24px;">Best regards,<br/><strong>Xiri Facility Solutions Team</strong></p>
+            <p style="margin-top: 24px;">Best regards,<br/><strong>XIRI Facility Solutions Team</strong></p>
         </div>
     </div>`;
     const vendorSubject = isSpanish ? `\u2705 Solicitud recibida \u2014 ${businessName}` : `\u2705 Application received \u2014 ${businessName}`;
     try {
       const { error: vendorError } = await resend2.emails.send({
-        from: "Xiri Facility Solutions <onboarding@xiri.ai>",
+        from: "XIRI Facility Solutions <onboarding@xiri.ai>",
         replyTo: "chris@xiri.ai",
         to: email,
         subject: vendorSubject,
@@ -21902,7 +21301,7 @@ var sendOnboardingInvite = (0, import_firestore8.onDocumentUpdated)({
   const icsContent = generateICS2({
     start: startTime,
     end: endTime,
-    summary: `Xiri Onboarding Call: ${businessName}`,
+    summary: `XIRI Onboarding Call: ${businessName}`,
     description: `Onboarding call with ${contactName} from ${businessName}.
 
 We'll cover:
@@ -21912,10 +21311,10 @@ We'll cover:
 
 Power to the Facilities!`,
     location: "Phone Call",
-    organizer: { name: "Xiri Facility Solutions", email: "onboarding@xiri.ai" },
+    organizer: { name: "XIRI Facility Solutions", email: "onboarding@xiri.ai" },
     attendees: [
       { name: contactName, email: vendorEmail },
-      { name: "Xiri Team", email: ADMIN_EMAIL }
+      { name: "XIRI Team", email: ADMIN_EMAIL }
     ]
   });
   const formattedTime = (0, import_date_fns_tz.formatInTimeZone)(startTime, EASTERN_TZ, "EEEE, MMMM do 'at' h:mm a zzz");
@@ -21923,7 +21322,7 @@ Power to the Facilities!`,
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #0ea5e9;">Onboarding Call Confirmed!</h1>
         <p>Hi ${contactName},</p>
-        <p>Your onboarding call with Xiri Facility Solutions has been scheduled:</p>
+        <p>Your onboarding call with XIRI Facility Solutions has been scheduled:</p>
         <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 0; font-size: 18px; font-weight: bold;">
                 ${formattedTime}
@@ -21937,10 +21336,10 @@ Power to the Facilities!`,
             <li>Account setup and next steps</li>
         </ul>
         <p>A calendar invitation has been attached to this email.</p>
-        <p>Best,<br/>The Xiri Team</p>
+        <p>Best,<br/>The XIRI Team</p>
     </div>
     `;
-  const subject = `Confirmed: Xiri Onboarding Call \u2014 ${formattedTime}`;
+  const subject = `Confirmed: XIRI Onboarding Call \u2014 ${formattedTime}`;
   const vendorSent = await sendEmail(vendorEmail, subject, htmlBody, [
     { filename: "onboarding-call.ics", content: icsContent }
   ]);
@@ -21980,7 +21379,7 @@ function generateICS2(event) {
   }
   return `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Xiri//Facility Solutions//EN
+PRODID:-//XIRI//Facility Solutions//EN
 CALSCALE:GREGORIAN
 METHOD:REQUEST
 BEGIN:VEVENT
@@ -22127,7 +21526,7 @@ var sendQuoteEmail = (0, import_https3.onCall)({
     `Service Proposal for ${quote.leadBusinessName} \u2014 XIRI Facility Solutions`,
     html,
     void 0,
-    "Xiri Facility Solutions <quotes@xiri.ai>"
+    "XIRI Facility Solutions <quotes@xiri.ai>"
   );
   if (!sent) {
     throw new import_https3.HttpsError("internal", "Failed to send email");
@@ -22306,7 +21705,7 @@ var processMailQueue = (0, import_firestore9.onDocumentCreated)({
       html,
       void 0,
       // attachments
-      "Xiri Facility Solutions <billing@xiri.ai>"
+      "XIRI Facility Solutions <billing@xiri.ai>"
     );
     if (success) {
       await docRef.update({ status: "sent", sentAt: admin14.firestore.FieldValue.serverTimestamp() });
@@ -22374,7 +21773,7 @@ function buildClientInvoiceEmail(data) {
     <!-- Footer -->
     <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px; background: #f9fafb;">
       <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">
-        Xiri Facility Solutions \u2022 <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
+        XIRI Facility Solutions \u2022 <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
       </p>
     </div>
   </div>
@@ -22444,7 +21843,7 @@ function buildVendorRemittanceEmail(data) {
     <!-- Footer -->
     <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px; background: #f9fafb;">
       <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">
-        Xiri Facility Solutions \u2022 <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
+        XIRI Facility Solutions \u2022 <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
       </p>
     </div>
   </div>
@@ -22723,14 +22122,15 @@ var onLeadQualified = (0, import_firestore11.onDocumentUpdated)({
   await db12.collection("leads").doc(leadId).update({
     outreachStatus: "PENDING"
   });
+  const schedule = leadType === "enterprise" ? "Day 0/4/8/14/21" : leadType === "referral_partnership" ? "Day 0/4/10" : "Day 0/3/7/14";
   await db12.collection("lead_activities").add({
     leadId,
     type: "DRIP_SCHEDULED",
-    description: `Sales drip campaign scheduled: 4 emails over 14 days for ${businessName}.`,
+    description: `${leadType} drip campaign scheduled: ${steps.length} emails (${schedule}) for ${businessName}.`,
     createdAt: /* @__PURE__ */ new Date(),
-    metadata: { followUpCount: 4, schedule: "Day 0/3/7/14" }
+    metadata: { followUpCount: steps.length, schedule, leadType }
   });
-  logger11.info(`[SalesOutreach] Drip campaign scheduled for lead ${leadId}: 4 emails at days 0, 3, 7, 14`);
+  logger11.info(`[SalesOutreach] ${leadType} drip campaign scheduled for lead ${leadId}: ${steps.length} emails (${schedule})`);
 });
 
 // src/triggers/commissionTriggers.ts
@@ -22974,7 +22374,7 @@ var onWorkOrderHandoff = (0, import_firestore12.onDocumentUpdated)({
       </div>
     </div>
     <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px; background: #f9fafb;">
-      <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">Xiri Facility Solutions \u2022 <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a></p>
+      <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">XIRI Facility Solutions \u2022 <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a></p>
     </div>
   </div>
 </body>
@@ -23331,7 +22731,7 @@ function buildAuditConfirmationEmail(contactName, businessName) {
     <!-- Footer -->
     <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px; background: #f9fafb;">
       <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">
-        Xiri Facility Solutions \u2022 <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
+        XIRI Facility Solutions \u2022 <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
       </p>
     </div>
   </div>
@@ -23538,7 +22938,7 @@ function buildAuditFailedEmail(data) {
 
     <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px; background: #f9fafb;">
       <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">
-        Xiri Facility Solutions \u2022 <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
+        XIRI Facility Solutions \u2022 <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
       </p>
     </div>
   </div>
@@ -24272,13 +23672,9 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
   };
 });
 
-// src/index.ts
-var import_auth = require("firebase-admin/auth");
-init_facebookApi();
-
 // src/triggers/socialContentGenerator.ts
 var import_scheduler5 = require("firebase-functions/v2/scheduler");
-var import_generative_ai5 = require("@google/generative-ai");
+var import_generative_ai4 = require("@google/generative-ai");
 init_facebookApi();
 init_imagenApi();
 
@@ -24390,7 +23786,7 @@ Duration: 8 seconds. Smooth tracking shots. Professional quality. No text, no ti
 
 // src/triggers/socialContentGenerator.ts
 init_promptUtils();
-var API_KEY2 = process.env.GEMINI_API_KEY || "";
+var API_KEY = process.env.GEMINI_API_KEY || "";
 var DAY_MAP = {
   sunday: 0,
   monday: 1,
@@ -24427,19 +23823,57 @@ Key messaging for contractors:
 - Join a network of pros \u2014 not a faceless gig platform
 - We value quality work and long-term partnerships
 - Currently hiring in Queens, Nassau, Suffolk, Long Island`;
-  const FALLBACK = `You are the social media manager for XIRI Facility Solutions.
+  const FALLBACK = `You are the social media copywriter for XIRI Facility Solutions. You write Facebook posts that stop the scroll, build trust, and drive action.
 
 {{audienceContext}}
 {{campaignContext}}
 
-## ENGAGEMENT DATA
+## YOUR WRITING RULES (non-negotiable)
+1. HOOK FIRST \u2014 The opening line decides if anyone reads further. Use one of these patterns:
+   - Curiosity: "The real reason [outcome] happens isn't what you think."
+   - Story: "Last week, [unexpected thing] happened at one of our buildings."
+   - Value: "How to [desirable outcome] without [common pain]:"
+   - Contrarian: "[Common industry belief] is wrong. Here's why:"
+   - Question: "Tired of [specific pain point your audience has]?"
+2. SPECIFICITY OVER VAGUENESS \u2014 Use real numbers, real scenarios, real outcomes.
+   Bad: "We provide great cleaning services"
+   Good: "Our crews cleaned 847 restroom fixtures last week across 12 medical offices \u2014 every single one passed the blacklight test."
+3. BENEFITS OVER FEATURES \u2014 Every claim must answer "so what?" with a deeper benefit.
+   Bad: "We use a nightly audit system"
+   Good: "Our nightly audits mean you'll never walk into a dirty lobby on Monday morning again"
+4. ACTIVE VOICE \u2014 "We cleaned 12 offices" not "12 offices were cleaned by our team"
+5. SIMPLE WORDS \u2014 "Use" not "utilize." "Help" not "facilitate." "Fix" not "remediate."
+6. ONE IDEA PER POST \u2014 Don't cram 3 messages into one post. Pick one angle and commit.
+7. END WITH A CLEAR CTA \u2014 Tell the reader exactly what to do next. "Comment CLEAN" or "DM us" or "Link in bio."
+8. NO EXCLAMATION POINTS \u2014 Confidence doesn't shout. Period.
+
+## POST STRUCTURE
+- Line 1: Strong hook (pattern from above)
+- Lines 2-6: Body \u2014 develop the ONE idea with specifics, proof, or a brief story
+- Use emoji bullets (\u2705, \u{1F4CB}, \u{1F512}, \u{1F4B0}) to break up visual density \u2014 but max 4-5 bullets
+- Final line: CTA + value prop in one sentence
+- Bottom: 3-5 relevant hashtags (no more)
+
+## ENGAGEMENT DATA (use to inform what's working)
 {{engagementSummary}}
 
-## RECENT THEMES (avoid repeats)
+## RECENT THEMES (avoid repeating these angles)
 {{recentThemes}}
 
-Generate 1 Facebook post for {{audienceLabel}}. 100-250 words, emoji bullets, hashtags. No Markdown.
-Respond with ONLY the post text.`;
+## POST FORMAT ROTATION
+Rotate between these formats to keep the feed fresh. Pick the one that HASN'T been used recently:
+- Story post (a real scenario, behind-the-scenes, lesson learned)
+- Tip/Value post (actionable advice the audience can use today)
+- Question post (engage the audience, spark conversation)
+- Bold take (challenge a common industry belief)
+- Proof post (share a real number, result, or before/after)
+
+## TONE
+{{tone}}. Sound like a competent professional who takes pride in the work \u2014 not a corporate robot, not a hype machine.
+
+Generate 1 Facebook post for {{audienceLabel}}.
+120-200 words (shorter is better). No Markdown formatting.
+Respond with ONLY the post text, nothing else.`;
   return getPrompt("social_post_generator", FALLBACK, {
     audienceContext,
     campaignContext: campaignContext ? `
@@ -24463,15 +23897,28 @@ CTA: "DM us" or "Link in bio" or "Comment WORK to get started"`;
   const locationNote = location ? `
 Mention ${location}, NY naturally \u2014 e.g., "Looking for reliable facility management in ${location}?"` : `
 Mention Long Island / Queens area naturally.`;
-  const REEL_FALLBACK = `You are writing a Facebook Reel caption for XIRI Facility Solutions.
+  const REEL_FALLBACK = `You are writing a short, punchy Facebook Reel caption for XIRI Facility Solutions.
 
 ## TARGET AUDIENCE: {{audienceLabel}}
 {{audienceHook}}
 {{locationNote}}
 {{campaignContext}}
 
-Generate a Reel caption: 2-4 lines, hook + value prop + CTA + hashtags. No Markdown.
-Respond with ONLY the caption text.`;
+## REEL CAPTION RULES
+1. HOOK in the first 5 words \u2014 viewers decide in under 2 seconds
+2. Max 3 lines before "... see more" \u2014 frontload the value
+3. Use a pattern: Hook \u2192 One benefit \u2192 CTA
+4. Specific > vague: "12 medical offices cleaned last night" beats "We clean offices"
+5. No exclamation points. Confidence is quiet.
+6. CTA must be ONE clear action: "Comment CLEAN" or "DM us" or "Link in bio"
+
+## FORMAT
+Line 1: Hook (question, bold statement, or surprising number)
+Line 2: Value prop or proof point
+Line 3: CTA
+Line 4: 3-4 hashtags
+
+Respond with ONLY the caption text. No Markdown. Under 100 words.`;
   return getPrompt("social_reel_caption", REEL_FALLBACK, {
     audienceLabel: audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS",
     audienceHook,
@@ -24612,7 +24059,7 @@ async function generateSocialContent(channel = "facebook_posts") {
   const currentClientRatio = totalExisting > 0 ? existingClientDrafts / totalExisting : 0.5;
   const activeCampaignsSnap = await db.collection("social_campaigns").where("channel", "==", channel).where("status", "==", "active").get();
   const activeCampaigns = activeCampaignsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  const genAI4 = new import_generative_ai5.GoogleGenerativeAI(API_KEY2);
+  const genAI4 = new import_generative_ai4.GoogleGenerativeAI(API_KEY);
   const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
   const isReels = channel === "facebook_reels";
   let slotIndex = 0;
@@ -24803,19 +24250,34 @@ var runSocialPublisher = (0, import_scheduler6.onSchedule)({
   await publishScheduledPosts();
 });
 
-// src/index.ts
+// src/functions/auth.ts
+var import_https8 = require("firebase-functions/v2/https");
+var import_auth = require("firebase-admin/auth");
+
+// src/utils/cors.ts
 var DASHBOARD_CORS = [
   "http://localhost:3001",
+  // Dashboard Dev
   "http://localhost:3000",
+  // Public Site Dev
   "https://xiri.ai",
+  // Public Site Production
   "https://www.xiri.ai",
+  // Public Site WWW
   "https://app.xiri.ai",
+  // Dashboard Production
   "https://xiri-dashboard.vercel.app",
+  // Dashboard Vercel
   "https://xiri-dashboard-git-develop-xiri-facility-solutions.vercel.app",
+  // Vercel develop branch
   /https:\/\/xiri-dashboard-.*\.vercel\.app$/,
+  // All Vercel preview deployments
   "https://xiri-facility-solutions.web.app",
+  // Firebase Hosting
   "https://xiri-facility-solutions.firebaseapp.com"
 ];
+
+// src/functions/auth.ts
 var adminUpdateAuthUser = (0, import_https8.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
@@ -24840,6 +24302,50 @@ var adminUpdateAuthUser = (0, import_https8.onCall)({
     throw new import_https8.HttpsError("internal", error11.message || "Failed to update Auth user");
   }
 });
+var adminCreateUser = (0, import_https8.onCall)({
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  const callerDoc = await db.collection("users").doc(request.auth.uid).get();
+  const callerRoles = callerDoc.data()?.roles || [];
+  if (!callerRoles.includes("admin")) throw new import_https8.HttpsError("permission-denied", "Admin only");
+  const { email, displayName, roles } = request.data;
+  if (!email) throw new import_https8.HttpsError("invalid-argument", "email is required");
+  if (!displayName) throw new import_https8.HttpsError("invalid-argument", "displayName is required");
+  if (!roles || !Array.isArray(roles) || roles.length === 0) {
+    throw new import_https8.HttpsError("invalid-argument", "At least one role is required");
+  }
+  try {
+    const userRecord = await (0, import_auth.getAuth)().createUser({
+      email,
+      displayName,
+      disabled: false
+    });
+    const uid = userRecord.uid;
+    await db.collection("users").doc(uid).set({
+      uid,
+      email,
+      displayName,
+      roles,
+      createdAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date(),
+      lastLogin: null
+    });
+    const resetLink = await (0, import_auth.getAuth)().generatePasswordResetLink(email);
+    return {
+      success: true,
+      uid,
+      resetLink,
+      message: `User ${email} created. Share the password reset link so they can set their password.`
+    };
+  } catch (error11) {
+    console.error("adminCreateUser error:", error11);
+    if (error11.code === "auth/email-already-exists") {
+      throw new import_https8.HttpsError("already-exists", "A user with this email already exists");
+    }
+    throw new import_https8.HttpsError("internal", error11.message || "Failed to create user");
+  }
+});
 var changeMyPassword = (0, import_https8.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
@@ -24856,29 +24362,614 @@ var changeMyPassword = (0, import_https8.onCall)({
     throw new import_https8.HttpsError("internal", error11.message || "Failed to change password");
   }
 });
-var generateLeads = (0, import_https8.onCall)({
+
+// src/functions/leads.ts
+var import_https9 = require("firebase-functions/v2/https");
+
+// src/agents/recruiter.ts
+var import_generative_ai5 = require("@google/generative-ai");
+init_emailUtils();
+
+// src/utils/googlePlacesEnrichment.ts
+var PLACES_TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText";
+async function enrichVendorWithPlaces(vendorName, vendorAddress, apiKey) {
+  const key = apiKey || process.env.GOOGLE_MAPS_API_KEY || "";
+  if (!key) {
+    console.warn("GOOGLE_MAPS_API_KEY not set \u2014 skipping Places enrichment");
+    return null;
+  }
+  try {
+    const textQuery = vendorAddress ? `${vendorName} near ${vendorAddress}` : vendorName;
+    const response = await fetch(PLACES_TEXT_SEARCH_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": key,
+        "X-Goog-FieldMask": "places.id,places.displayName,places.rating,places.userRatingCount,places.internationalPhoneNumber,places.websiteUri,places.types,places.currentOpeningHours,places.googleMapsUri"
+      },
+      body: JSON.stringify({
+        textQuery,
+        maxResultCount: 1,
+        languageCode: "en"
+      })
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      console.warn(`Places API error for "${vendorName}": ${response.status} \u2014 ${errText}`);
+      return null;
+    }
+    const data = await response.json();
+    const place = data.places?.[0];
+    if (!place) return null;
+    const rating = place.rating || 0;
+    const ratingCount = place.userRatingCount || 0;
+    return {
+      placeId: place.id,
+      name: place.displayName?.text || vendorName,
+      rating,
+      ratingCount,
+      phone: place.internationalPhoneNumber || void 0,
+      website: place.websiteUri || void 0,
+      types: place.types || [],
+      openNow: place.currentOpeningHours?.openNow,
+      googleMapsUrl: place.googleMapsUri || void 0,
+      isEstablished: ratingCount >= 20,
+      isHighlyRated: rating >= 4
+    };
+  } catch (err) {
+    console.warn(`Places enrichment failed for "${vendorName}": ${err.message}`);
+    return null;
+  }
+}
+async function batchEnrichVendors(vendors, apiKey, concurrencyLimit = 5) {
+  const results = /* @__PURE__ */ new Map();
+  for (let i = 0; i < vendors.length; i += concurrencyLimit) {
+    const batch = vendors.slice(i, i + concurrencyLimit);
+    const batchResults = await Promise.all(
+      batch.map(async (v) => {
+        const result = await enrichVendorWithPlaces(v.name, v.address, apiKey);
+        return { index: v.index, result };
+      })
+    );
+    for (const { index, result } of batchResults) {
+      if (result) {
+        results.set(index, result);
+      }
+    }
+  }
+  console.log(`Places enrichment: ${results.size}/${vendors.length} vendors enriched.`);
+  return results;
+}
+function calculatePlacesSubScores(places) {
+  if (!places) {
+    return { googleReputation: 30, businessMaturity: 30, websiteQuality: 20 };
+  }
+  let googleReputation = 30;
+  if (places.rating) {
+    if (places.rating >= 4.5) googleReputation = 90;
+    else if (places.rating >= 4) googleReputation = 75;
+    else if (places.rating >= 3.5) googleReputation = 55;
+    else if (places.rating >= 3) googleReputation = 40;
+    else googleReputation = 25;
+  }
+  if (places.ratingCount && places.ratingCount >= 50) googleReputation = Math.min(100, googleReputation + 10);
+  else if (places.ratingCount && places.ratingCount >= 20) googleReputation = Math.min(100, googleReputation + 5);
+  let businessMaturity = 30;
+  if (places.ratingCount) {
+    if (places.ratingCount >= 100) businessMaturity = 95;
+    else if (places.ratingCount >= 50) businessMaturity = 80;
+    else if (places.ratingCount >= 20) businessMaturity = 65;
+    else if (places.ratingCount >= 5) businessMaturity = 45;
+  }
+  let websiteQuality = 20;
+  if (places.website) websiteQuality = 60;
+  if (places.website && places.ratingCount && places.ratingCount > 10) websiteQuality = 80;
+  return { googleReputation, businessMaturity, websiteQuality };
+}
+
+// src/agents/recruiter.ts
+function normalizeUrl(url) {
+  if (!url) return "";
+  return url.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "").trim();
+}
+var API_KEY2 = process.env.GEMINI_API_KEY || "";
+var genAI3 = new import_generative_ai5.GoogleGenerativeAI(API_KEY2);
+var model = genAI3.getGenerativeModel({ model: "gemini-2.0-flash" });
+var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false, previewOnly = false) => {
+  console.log("!!! RECRUITER AGENT UPDATED - V4 (Robust Dedup + Blacklist) !!!");
+  let analyzed = 0;
+  let qualified = 0;
+  const errors = [];
+  const batch = db.batch();
+  const previewVendors = [];
+  if (rawVendors.length === 0) return { analyzed, qualified, errors };
+  const threshold = hasActiveContract ? 50 : 0;
+  const modeDescription = hasActiveContract ? "URGENT FULFILLMENT: We need high-quality vendors ready to deploy. Be strict." : "DATABASE BUILDING: We are building a supply list. ACCEPT ALL VENDORS. Do not filter. Score is for reference only.";
+  let vendorsToAnalyze = rawVendors;
+  let prompt = "";
+  try {
+    let dismissedNames = /* @__PURE__ */ new Set();
+    let dismissedPhones = /* @__PURE__ */ new Set();
+    let dismissedWebsites = /* @__PURE__ */ new Set();
+    try {
+      const dismissedSnapshot = await db.collection("dismissed_vendors").get();
+      if (!dismissedSnapshot.empty) {
+        for (const doc of dismissedSnapshot.docs) {
+          const d = doc.data();
+          if (d.businessName) dismissedNames.add(d.businessName.toLowerCase().trim());
+          if (d.phone) dismissedPhones.add(d.phone.replace(/\D/g, ""));
+          if (d.website) dismissedWebsites.add(normalizeUrl(d.website));
+        }
+        console.log(`Loaded ${dismissedNames.size} dismissed vendor names, ${dismissedPhones.size} phones, ${dismissedWebsites.size} websites.`);
+      }
+    } catch (dismissErr) {
+      console.warn("Could not check dismissed_vendors:", dismissErr.message);
+    }
+    const vendorsToProcess = [];
+    const duplicateUpdates = [];
+    let existingByNameLower = /* @__PURE__ */ new Map();
+    let existingByPhone = /* @__PURE__ */ new Map();
+    let existingByWebsite = /* @__PURE__ */ new Map();
+    try {
+      const existingSnap = await db.collection("vendors").select("businessName", "businessNameLower", "phone", "website").get();
+      for (const doc of existingSnap.docs) {
+        const data = doc.data();
+        const nameLower = (data.businessNameLower || data.businessName || "").toLowerCase().trim();
+        if (nameLower) existingByNameLower.set(nameLower, doc.id);
+        if (data.phone) existingByPhone.set(data.phone.replace(/\D/g, ""), doc.id);
+        if (data.website) existingByWebsite.set(normalizeUrl(data.website), doc.id);
+      }
+      console.log(`Loaded ${existingByNameLower.size} existing vendors for dedup (names: ${existingByNameLower.size}, phones: ${existingByPhone.size}, websites: ${existingByWebsite.size}).`);
+    } catch (err) {
+      console.warn("Could not pre-load vendors for dedup:", err.message);
+    }
+    console.log(`Checking ${rawVendors.length} vendors for duplicates and blacklist...`);
+    for (const vendor of rawVendors) {
+      const bName = vendor.name || vendor.companyName || vendor.title || "";
+      const bNameLower = bName.toLowerCase().trim();
+      const bPhone = (vendor.phone || "").replace(/\D/g, "");
+      const bWebsite = normalizeUrl(vendor.website || "");
+      const isBlacklisted = bNameLower && dismissedNames.has(bNameLower) || bPhone && bPhone.length >= 7 && dismissedPhones.has(bPhone) || bWebsite && dismissedWebsites.has(bWebsite);
+      if (isBlacklisted) {
+        console.log(`\u26D4 Blacklisted vendor skipped: ${bName}`);
+        continue;
+      }
+      const existingDocId = bNameLower && existingByNameLower.get(bNameLower) || bPhone && bPhone.length >= 7 && existingByPhone.get(bPhone) || bWebsite && existingByWebsite.get(bWebsite) || null;
+      if (existingDocId) {
+        console.log(`\u{1F501} Duplicate vendor skipped: ${bName} (matches ${existingDocId})`);
+        duplicateUpdates.push(
+          db.collection("vendors").doc(existingDocId).update({
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          })
+        );
+      } else {
+        vendorsToProcess.push(vendor);
+      }
+    }
+    if (duplicateUpdates.length > 0) {
+      await Promise.all(duplicateUpdates);
+      console.log(`Updated ${duplicateUpdates.length} existing vendors.`);
+    }
+    if (vendorsToProcess.length === 0) {
+      console.log("All vendors were duplicates or blacklisted. Sourcing complete.");
+      return { analyzed, qualified, errors };
+    }
+    vendorsToAnalyze = vendorsToProcess;
+    const templateDoc = await db.collection("prompts").doc("recruiter_analysis_prompt").get();
+    if (!templateDoc.exists) {
+      throw new Error("Recruiter analysis prompt not found in database (prompts/recruiter_analysis_prompt)");
+    }
+    const template = templateDoc.data();
+    const vendorsForEnrichment = vendorsToAnalyze.map((v, i) => ({
+      name: v.name || v.companyName || v.title || "",
+      address: v.location || v.address || v.vicinity || "",
+      index: i
+    }));
+    console.log(`Starting Google Places enrichment for ${vendorsForEnrichment.length} vendors...`);
+    const placesData = await batchEnrichVendors(vendorsForEnrichment);
+    console.log(`Google Places enrichment complete: ${placesData.size}/${vendorsForEnrichment.length} matched.`);
+    const vendorList = JSON.stringify(vendorsToAnalyze.map((v, i) => {
+      const places = placesData.get(i);
+      return {
+        index: i,
+        name: v.name || v.companyName,
+        description: v.description || v.services,
+        address: v.location || v.address || v.vicinity,
+        website: v.website,
+        phone: v.phone,
+        // Google Places enrichment
+        googleRating: places?.rating || null,
+        googleReviewCount: places?.ratingCount || null,
+        googleTypes: places?.types?.slice(0, 5) || [],
+        isEstablished: places?.isEstablished || false,
+        isHighlyRated: places?.isHighlyRated || false
+      };
+    }));
+    prompt = template?.content.replace(/\{\{query\}\}/g, jobQuery).replace(/\{\{modeDescription\}\}/g, modeDescription).replace(/\{\{threshold\}\}/g, threshold.toString()).replace(/\{\{vendorList\}\}/g, vendorList);
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.text();
+    console.log("Gemini Raw Response:", text);
+    const jsonStr = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const analysis = JSON.parse(jsonStr);
+    analyzed = analysis.length;
+    for (const item of analysis) {
+      if (item.isQualified || threshold === 0) {
+        qualified++;
+        const originalVendor = vendorsToAnalyze[item.index];
+        if (!originalVendor) {
+          console.warn(`Analysis returned index ${item.index} but we only have ${vendorsToAnalyze.length} vendors.`);
+          continue;
+        }
+        const bName = originalVendor.name || originalVendor.companyName || originalVendor.title || "Unknown Vendor";
+        const vendorRef = db.collection("vendors").doc();
+        const rawAddr = originalVendor.location || item.address || "Unknown";
+        const parsed = parseAddress(rawAddr);
+        const placesEnrichment = placesData.get(item.index);
+        const placesSubScores = calculatePlacesSubScores(placesEnrichment || null);
+        const newVendor = {
+          id: vendorRef.id,
+          businessName: bName,
+          businessNameLower: bName.toLowerCase().trim(),
+          capabilities: item.services || (item.primarySpecialty ? [item.primarySpecialty] : item.specialty ? [item.specialty] : []),
+          specialty: item.primarySpecialty || item.specialty || item.services?.[0] || void 0,
+          contactName: item.contactName || void 0,
+          address: rawAddr,
+          streetAddress: parsed.streetAddress || void 0,
+          city: item.city || parsed.city || void 0,
+          state: item.state || parsed.state || void 0,
+          zip: item.zip || parsed.zip || void 0,
+          country: item.country || "USA",
+          phone: placesEnrichment?.phone || originalVendor.phone || item.phone || void 0,
+          email: originalVendor.email || item.email || void 0,
+          website: placesEnrichment?.website || originalVendor.website || item.website || void 0,
+          dcaCategory: originalVendor.dcaCategory || void 0,
+          fitScore: item.fitScore,
+          aiReasoning: item.reasoning || void 0,
+          hasActiveContract,
+          onboardingTrack: hasActiveContract ? "FAST_TRACK" : "STANDARD",
+          status: "pending_review",
+          // Google Places enrichment (persisted)
+          googlePlaces: placesEnrichment ? {
+            placeId: placesEnrichment.placeId,
+            name: placesEnrichment.name,
+            rating: placesEnrichment.rating,
+            ratingCount: placesEnrichment.ratingCount,
+            phone: placesEnrichment.phone,
+            website: placesEnrichment.website,
+            types: placesEnrichment.types,
+            openNow: placesEnrichment.openNow,
+            googleMapsUrl: placesEnrichment.googleMapsUrl,
+            enrichedAt: admin.firestore.FieldValue.serverTimestamp()
+          } : void 0,
+          // Fit score breakdown
+          fitScoreBreakdown: {
+            googleReputation: placesSubScores.googleReputation,
+            serviceAlignment: item.serviceAlignmentScore || 50,
+            locationScore: item.locationScore || 50,
+            businessMaturity: placesSubScores.businessMaturity,
+            websiteQuality: placesSubScores.websiteQuality
+          },
+          rating: placesEnrichment?.rating || void 0,
+          totalRatings: placesEnrichment?.ratingCount || void 0,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+        console.log(`Adding qualified vendor to batch: ${newVendor.businessName}`);
+        if (previewOnly) {
+          const isDismissed = dismissedNames.has((newVendor.businessName || "").toLowerCase().trim());
+          previewVendors.push({ ...newVendor, isDismissed });
+        } else {
+          batch.set(vendorRef, newVendor);
+        }
+      }
+    }
+    if (qualified > 0 && !previewOnly) {
+      console.log(`Committing batch of ${qualified} vendors...`);
+      await batch.commit();
+      console.log("Batch commit successful.");
+    } else if (previewOnly) {
+      console.log(`Preview mode: ${qualified} vendors ready for review (not saved).`);
+    } else {
+      console.log("No qualified vendors to commit.");
+    }
+  } catch (err) {
+    console.error("AI Analysis Failed:", err.message);
+    console.error("Prompt used:", prompt);
+    errors.push(err.message);
+    console.log("Saving raw vendors with 'pending_review' status due to AI failure...");
+    for (const originalVendor of vendorsToAnalyze) {
+      const vendorRef = db.collection("vendors").doc();
+      const bName = originalVendor.name || originalVendor.companyName || originalVendor.title || "Unknown Vendor";
+      const rawAddr = originalVendor.location || originalVendor.address || "Unknown";
+      const parsed = parseAddress(rawAddr);
+      const newVendor = {
+        id: vendorRef.id,
+        businessName: bName,
+        capabilities: [],
+        address: rawAddr,
+        streetAddress: parsed.streetAddress || void 0,
+        city: parsed.city || void 0,
+        state: parsed.state || void 0,
+        zip: parsed.zip || void 0,
+        phone: originalVendor.phone || void 0,
+        email: originalVendor.email || void 0,
+        website: originalVendor.website || void 0,
+        dcaCategory: originalVendor.dcaCategory || void 0,
+        fitScore: 0,
+        status: "pending_review",
+        hasActiveContract,
+        onboardingTrack: hasActiveContract ? "FAST_TRACK" : "STANDARD",
+        aiReasoning: `AI Analysis Failed: ${err.message}`,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      batch.set(vendorRef, newVendor);
+      if (previewOnly) {
+        previewVendors.push(newVendor);
+      }
+      qualified++;
+    }
+    if (qualified > 0 && !previewOnly) {
+      console.log(`Committing batch of ${qualified} fallback vendors...`);
+      await batch.commit();
+    }
+  }
+  return { analyzed, qualified, errors, vendors: previewOnly ? previewVendors : void 0 };
+};
+
+// src/agents/sourcer.ts
+var import_axios2 = __toESM(require("axios"));
+var searchVendors = async (query, location, provider = "google_maps", dcaCategory) => {
+  console.log(`Searching for: "${query}" in "${location}" [provider: ${provider}]`);
+  if (provider === "nyc_open_data") {
+    const { searchVendorsSoda: searchVendorsSoda2 } = await Promise.resolve().then(() => (init_sodaSourcer(), sodaSourcer_exports));
+    return searchVendorsSoda2(query, location, dcaCategory);
+  }
+  const apiKey = process.env.SERPER_API_KEY || "02ece77ffd27d2929e3e79604cb27e1dfaa40fe7";
+  if (!apiKey) {
+    console.warn("SERPER_API_KEY is not set. Returning mock data.");
+    return getMockVendors(query, location);
+  }
+  const fullQuery = `${query} in ${location}`;
+  console.log(`Searching for: ${fullQuery} using Serper (places)...`);
+  let googleResults = [];
+  try {
+    const response = await import_axios2.default.post(
+      "https://google.serper.dev/places",
+      { q: fullQuery },
+      { headers: { "X-API-KEY": apiKey.trim(), "Content-Type": "application/json" } }
+    );
+    const places = response.data.places || [];
+    console.log(`Serper returned ${places.length} raw results.`);
+    const rawVendors = places.map((place) => ({
+      name: place.title,
+      description: `${place.category || ""} - ${place.address || ""}`,
+      location: place.address,
+      phone: place.phoneNumber,
+      website: place.website,
+      source: "google_maps_serper",
+      rating: place.rating,
+      user_ratings_total: place.userRatingsTotal
+    }));
+    googleResults = rawVendors.filter((v) => v.rating === void 0 || v.rating >= 3.5);
+    console.log(`Filtered ${rawVendors.length} -> ${googleResults.length} vendors (Rating >= 3.5 or N/A).`);
+  } catch (error11) {
+    console.error("Error searching vendors via Google:", error11.message);
+    if (provider !== "all") {
+      throw new Error(`Failed to source vendors: ${error11.message}`);
+    }
+  }
+  if (provider === "all") {
+    const { searchVendorsSoda: searchVendorsSoda2 } = await Promise.resolve().then(() => (init_sodaSourcer(), sodaSourcer_exports));
+    const sodaResults = await searchVendorsSoda2(query, location, dcaCategory);
+    const combined = [...googleResults, ...sodaResults];
+    const seen = /* @__PURE__ */ new Set();
+    const deduped = combined.filter((v) => {
+      const key = v.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    console.log(`Combined: ${googleResults.length} Google + ${sodaResults.length} SODA = ${deduped.length} unique`);
+    return deduped;
+  }
+  return googleResults;
+};
+var getMockVendors = (query, location) => {
+  return [
+    {
+      name: "Mock Cleaning Services " + location,
+      description: "Deep comercial cleaning and janitorial services.",
+      location,
+      source: "mock"
+    },
+    {
+      name: "Test HVAC Solutions " + location,
+      description: "HVAC maintenance and repair.",
+      location,
+      source: "mock"
+    },
+    {
+      name: "General Facilities Co",
+      description: "We do everything including plumbing and electrical.",
+      location,
+      source: "mock"
+    }
+  ];
+};
+
+// src/agents/propertySourcer.ts
+var MockPropertyProvider = class {
+  constructor() {
+    this.name = "mock";
+  }
+  async search(params) {
+    console.log(`[MockPropertyProvider] Searching "${params.query}" in "${params.location}"...`);
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    const mockProperties = [
+      {
+        name: "Williston Park Medical Plaza",
+        address: "420 Willis Ave",
+        city: "Williston Park",
+        state: "NY",
+        zip: "11596",
+        propertyType: "medical_office",
+        squareFootage: 8500,
+        yearBuilt: 2005,
+        ownerName: "WP Medical Holdings LLC",
+        ownerPhone: "(516) 555-0101",
+        tenantName: "CityMD Urgent Care",
+        tenantCount: 1,
+        lastSalePrice: 24e5,
+        lastSaleDate: "2021-06-15",
+        source: "mock",
+        sourceId: "MOCK-001"
+      },
+      {
+        name: "Mineola Surgical Center",
+        address: "155 E 2nd St",
+        city: "Mineola",
+        state: "NY",
+        zip: "11501",
+        propertyType: "medical_office",
+        squareFootage: 12e3,
+        yearBuilt: 2010,
+        ownerName: "Mineola Health Properties Inc",
+        ownerPhone: "(516) 555-0202",
+        tenantName: "North Shore Ambulatory Surgery",
+        tenantCount: 1,
+        lastSalePrice: 42e5,
+        lastSaleDate: "2019-03-22",
+        source: "mock",
+        sourceId: "MOCK-002"
+      },
+      {
+        name: "New Hyde Park Dialysis Suite",
+        address: "700 Lakeville Rd",
+        city: "New Hyde Park",
+        state: "NY",
+        zip: "11040",
+        propertyType: "medical_office",
+        squareFootage: 5200,
+        yearBuilt: 2015,
+        ownerName: "NHP Realty Corp",
+        ownerPhone: "(516) 555-0303",
+        tenantName: "DaVita Kidney Care",
+        tenantCount: 1,
+        lastSalePrice: 18e5,
+        lastSaleDate: "2022-09-10",
+        source: "mock",
+        sourceId: "MOCK-003"
+      },
+      {
+        name: "Herricks Auto Center",
+        address: "200 Herricks Rd",
+        city: "New Hyde Park",
+        state: "NY",
+        zip: "11040",
+        propertyType: "auto_dealership",
+        squareFootage: 22e3,
+        yearBuilt: 1998,
+        ownerName: "Herricks Motors LLC",
+        ownerPhone: "(516) 555-0404",
+        tenantName: "Herricks Toyota",
+        tenantCount: 1,
+        lotSize: 45e3,
+        lastSalePrice: 55e5,
+        lastSaleDate: "2018-01-20",
+        source: "mock",
+        sourceId: "MOCK-004"
+      },
+      {
+        name: "Floral Park Urgent Care",
+        address: "265 Jericho Tpke",
+        city: "Floral Park",
+        state: "NY",
+        zip: "11001",
+        propertyType: "medical_office",
+        squareFootage: 4800,
+        yearBuilt: 2012,
+        ownerName: "FP Healthcare Properties",
+        ownerPhone: "(516) 555-0505",
+        tenantName: "GoHealth Urgent Care",
+        tenantCount: 1,
+        lastSalePrice: 15e5,
+        lastSaleDate: "2020-07-05",
+        source: "mock",
+        sourceId: "MOCK-005"
+      },
+      {
+        name: "Garden City Auto Mile",
+        address: "500 Stewart Ave",
+        city: "Garden City",
+        state: "NY",
+        zip: "11530",
+        propertyType: "auto_dealership",
+        squareFootage: 35e3,
+        yearBuilt: 2001,
+        ownerName: "GC Auto Holdings LLC",
+        ownerPhone: "(516) 555-0606",
+        tenantName: "Legacy Honda",
+        tenantCount: 1,
+        lotSize: 8e4,
+        lastSalePrice: 82e5,
+        lastSaleDate: "2017-11-30",
+        source: "mock",
+        sourceId: "MOCK-006"
+      }
+    ];
+    let filtered = mockProperties;
+    if (params.minSquareFootage) {
+      filtered = filtered.filter((p) => (p.squareFootage || 0) >= params.minSquareFootage);
+    }
+    if (params.maxSquareFootage) {
+      filtered = filtered.filter((p) => (p.squareFootage || 0) <= params.maxSquareFootage);
+    }
+    const queryLower = params.query.toLowerCase();
+    if (queryLower.includes("medical") || queryLower.includes("urgent") || queryLower.includes("surgery") || queryLower.includes("dialysis")) {
+      filtered = filtered.filter((p) => p.propertyType === "medical_office");
+    } else if (queryLower.includes("auto") || queryLower.includes("dealer")) {
+      filtered = filtered.filter((p) => p.propertyType === "auto_dealership");
+    }
+    const maxResults = params.maxResults || 25;
+    const results = filtered.slice(0, maxResults);
+    console.log(`[MockPropertyProvider] Returning ${results.length} mock properties.`);
+    return results;
+  }
+};
+var providers = {
+  mock: () => new MockPropertyProvider()
+  // attom: () => new AttomPropertyProvider(),
+  // reonomy: () => new ReonomyPropertyProvider(),
+};
+function getPropertyProvider(name) {
+  const factory = providers[name];
+  if (!factory) {
+    console.warn(`[PropertySourcer] Unknown provider "${name}", falling back to mock.`);
+    return new MockPropertyProvider();
+  }
+  return factory();
+}
+var searchProperties = async (query, location, providerName = "mock") => {
+  console.log(`[PropertySourcer] Sourcing: "${query}" in "${location}" via ${providerName}`);
+  const provider = getPropertyProvider(providerName);
+  try {
+    const properties = await provider.search({ query, location });
+    console.log(`[PropertySourcer] ${provider.name} returned ${properties.length} results.`);
+    const singleTenant = properties.filter((p) => !p.tenantCount || p.tenantCount === 1);
+    console.log(`[PropertySourcer] After single-tenant filter: ${singleTenant.length}`);
+    return singleTenant;
+  } catch (error11) {
+    console.error(`[PropertySourcer] Error sourcing properties: ${error11.message}`);
+    throw new Error(`Failed to source properties: ${error11.message}`);
+  }
+};
+
+// src/functions/leads.ts
+var generateLeads = (0, import_https9.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
-  cors: [
-    "http://localhost:3001",
-    // Dashboard Dev
-    "http://localhost:3000",
-    // Public Site Dev
-    "https://xiri.ai",
-    // Public Site Production
-    "https://www.xiri.ai",
-    // Public Site WWW
-    "https://app.xiri.ai",
-    // Dashboard Production
-    "https://xiri-dashboard.vercel.app",
-    // Dashboard Vercel
-    "https://xiri-dashboard-git-develop-xiri-facility-solutions.vercel.app",
-    // Vercel develop branch
-    /https:\/\/xiri-dashboard-.*\.vercel\.app$/,
-    // All Vercel preview deployments
-    "https://xiri-facility-solutions.web.app",
-    // Firebase Hosting
-    "https://xiri-facility-solutions.firebaseapp.com"
-  ],
+  cors: DASHBOARD_CORS,
   timeoutSeconds: 540
 }, async (request) => {
   const data = request.data || {};
@@ -24889,7 +24980,7 @@ var generateLeads = (0, import_https8.onCall)({
   const provider = data.provider || "google_maps";
   const dcaCategory = data.dcaCategory;
   if (provider === "google_maps" && !query || !location) {
-    throw new import_https8.HttpsError("invalid-argument", "Missing required fields in request.");
+    throw new import_https9.HttpsError("invalid-argument", "Missing required fields in request.");
   }
   try {
     console.log(`Analyzing leads for query: ${query}, location: ${location}, provider: ${provider}, category: ${dcaCategory}${previewOnly ? " (PREVIEW MODE)" : ""}`);
@@ -24900,23 +24991,15 @@ var generateLeads = (0, import_https8.onCall)({
       message: "Lead generation process completed.",
       sourced: rawVendors.length,
       analysis: result,
-      // Include vendor data in response for preview mode
       vendors: previewOnly ? result.vendors : void 0
     };
   } catch (error11) {
     console.error("Error in generateLeads:", error11);
-    throw new import_https8.HttpsError("internal", error11.message || "An internal error occurred.");
+    throw new import_https9.HttpsError("internal", error11.message || "An internal error occurred.");
   }
 });
-var clearPipeline = (0, import_https8.onCall)({
-  cors: [
-    "http://localhost:3001",
-    "http://localhost:3000",
-    "https://xiri.ai",
-    "https://www.xiri.ai",
-    "https://app.xiri.ai",
-    "https://xiri-dashboard.vercel.app"
-  ]
+var clearPipeline = (0, import_https9.onCall)({
+  cors: DASHBOARD_CORS
 }, async (request) => {
   try {
     const snapshot = await db.collection("vendors").get();
@@ -24938,10 +25021,10 @@ var clearPipeline = (0, import_https8.onCall)({
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
   } catch (error11) {
-    throw new import_https8.HttpsError("internal", error11.message);
+    throw new import_https9.HttpsError("internal", error11.message);
   }
 });
-var runRecruiterAgent = (0, import_https8.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
+var runRecruiterAgent = (0, import_https9.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
   const rawVendors = req.body.vendors || [
     { name: "ABC Cleaning", services: "We do medical office cleaning and terminal cleaning." },
     { name: "Joe's Pizza", services: "Best pizza in town" },
@@ -24950,42 +25033,25 @@ var runRecruiterAgent = (0, import_https8.onRequest)({ secrets: ["GEMINI_API_KEY
   const result = await analyzeVendorLeads(rawVendors, "Commercial Cleaning");
   res.json(result);
 });
-var testSendEmail = (0, import_https8.onCall)({
+var testSendEmail = (0, import_https9.onCall)({
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
-  cors: [
-    "http://localhost:3001",
-    "http://localhost:3000",
-    "https://xiri.ai",
-    "https://www.xiri.ai",
-    "https://app.xiri.ai",
-    "https://xiri-dashboard.vercel.app"
-  ]
+  cors: DASHBOARD_CORS
 }, async (request) => {
   const { sendTemplatedEmail: sendTemplatedEmail2 } = await Promise.resolve().then(() => (init_emailUtils(), emailUtils_exports));
   const { vendorId, templateId } = request.data;
   if (!vendorId || !templateId) {
-    throw new import_https8.HttpsError("invalid-argument", "Missing vendorId or templateId");
+    throw new import_https9.HttpsError("invalid-argument", "Missing vendorId or templateId");
   }
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
   } catch (error11) {
     console.error("Error sending test email:", error11);
-    throw new import_https8.HttpsError("internal", error11.message || "Failed to send email");
+    throw new import_https9.HttpsError("internal", error11.message || "Failed to send email");
   }
 });
-var sourceProperties = (0, import_https8.onCall)({
-  cors: [
-    "http://localhost:3001",
-    "http://localhost:3000",
-    "https://xiri.ai",
-    "https://www.xiri.ai",
-    "https://app.xiri.ai",
-    "https://xiri-dashboard.vercel.app",
-    /https:\/\/xiri-dashboard-.*\.vercel\.app$/,
-    "https://xiri-facility-solutions.web.app",
-    "https://xiri-facility-solutions.firebaseapp.com"
-  ],
+var sourceProperties = (0, import_https9.onCall)({
+  cors: DASHBOARD_CORS,
   timeoutSeconds: 120
 }, async (request) => {
   const data = request.data || {};
@@ -24993,7 +25059,7 @@ var sourceProperties = (0, import_https8.onCall)({
   const location = data.location;
   const providerName = data.provider || "mock";
   if (!query || !location) {
-    throw new import_https8.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https9.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`[sourceProperties] query="${query}", location="${location}", provider=${providerName}`);
@@ -25005,17 +25071,22 @@ var sourceProperties = (0, import_https8.onCall)({
     };
   } catch (error11) {
     console.error("[sourceProperties] Error:", error11);
-    throw new import_https8.HttpsError("internal", error11.message || "Failed to source properties.");
+    throw new import_https9.HttpsError("internal", error11.message || "Failed to source properties.");
   }
 });
-var publishFacebookPost = (0, import_https8.onCall)({
+
+// src/functions/social.ts
+var import_https10 = require("firebase-functions/v2/https");
+init_promptUtils();
+init_facebookApi();
+var publishFacebookPost = (0, import_https10.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const { message, link, imageUrl, scheduledTime } = request.data;
   if (!message) {
-    throw new import_https8.HttpsError("invalid-argument", "Message is required");
+    throw new import_https10.HttpsError("invalid-argument", "Message is required");
   }
   try {
     let result;
@@ -25042,14 +25113,14 @@ var publishFacebookPost = (0, import_https8.onCall)({
     return result;
   } catch (error11) {
     console.error("[Facebook] Publish error:", error11);
-    throw new import_https8.HttpsError("internal", error11.message || "Failed to publish to Facebook");
+    throw new import_https10.HttpsError("internal", error11.message || "Failed to publish to Facebook");
   }
 });
-var getFacebookPosts = (0, import_https8.onCall)({
+var getFacebookPosts = (0, import_https10.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const posts = await getRecentPosts(limit || 10);
@@ -25057,14 +25128,14 @@ var getFacebookPosts = (0, import_https8.onCall)({
     return { posts, insights };
   } catch (error11) {
     console.error("[Facebook] Get posts error:", error11);
-    throw new import_https8.HttpsError("internal", error11.message || "Failed to get Facebook posts");
+    throw new import_https10.HttpsError("internal", error11.message || "Failed to get Facebook posts");
   }
 });
-var getFacebookReels = (0, import_https8.onCall)({
+var getFacebookReels = (0, import_https10.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const { getRecentReels: getRecentReels2 } = await Promise.resolve().then(() => (init_facebookApi(), facebookApi_exports));
@@ -25072,16 +25143,16 @@ var getFacebookReels = (0, import_https8.onCall)({
     return { reels };
   } catch (error11) {
     console.error("[Facebook] Get reels error:", error11);
-    throw new import_https8.HttpsError("internal", error11.message || "Failed to get Facebook reels");
+    throw new import_https10.HttpsError("internal", error11.message || "Failed to get Facebook reels");
   }
 });
-var deleteFacebookPost = (0, import_https8.onCall)({
+var deleteFacebookPost = (0, import_https10.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https8.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https10.HttpsError("invalid-argument", "postId is required");
   try {
     const success = await deletePost(postId);
     const snapshot = await db.collection("social_posts").where("facebookPostId", "==", postId).limit(1).get();
@@ -25095,24 +25166,24 @@ var deleteFacebookPost = (0, import_https8.onCall)({
     return { success };
   } catch (error11) {
     console.error("[Facebook] Delete error:", error11);
-    throw new import_https8.HttpsError("internal", error11.message || "Failed to delete Facebook post");
+    throw new import_https10.HttpsError("internal", error11.message || "Failed to delete Facebook post");
   }
 });
-var triggerSocialContentGeneration = (0, import_https8.onCall)({
+var triggerSocialContentGeneration = (0, import_https10.onCall)({
   secrets: ["GEMINI_API_KEY", "FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const channel = request.data?.channel || "facebook_posts";
   await generateSocialContent(channel);
   return { success: true };
 });
-var updateSocialConfig = (0, import_https8.onCall)({
+var updateSocialConfig = (0, import_https10.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const { channel, cadence, preferredDays, preferredTime, tone, topics, hashtagSets, enabled, audienceMix } = request.data;
   const channelId = channel || "facebook_posts";
   const config2 = { updatedAt: /* @__PURE__ */ new Date() };
@@ -25129,18 +25200,18 @@ var updateSocialConfig = (0, import_https8.onCall)({
   console.log(`[Social] Config updated for ${channelId}:`, config2);
   return { success: true };
 });
-var reviewSocialPost = (0, import_https8.onCall)({
+var reviewSocialPost = (0, import_https10.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const { postId, action, editedMessage, rejectionReason, scheduledFor } = request.data;
   if (!postId || !action) {
-    throw new import_https8.HttpsError("invalid-argument", "postId and action are required");
+    throw new import_https10.HttpsError("invalid-argument", "postId and action are required");
   }
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
   if (!postDoc.exists) {
-    throw new import_https8.HttpsError("not-found", "Post not found");
+    throw new import_https10.HttpsError("not-found", "Post not found");
   }
   const update = {
     reviewedBy: request.auth.uid,
@@ -25157,24 +25228,24 @@ var reviewSocialPost = (0, import_https8.onCall)({
       update.rejectionReason = rejectionReason || null;
       break;
     default:
-      throw new import_https8.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
+      throw new import_https10.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
   }
   await postRef.update(update);
   console.log(`[Social] Post ${postId} ${action}ed by ${request.auth.uid}`);
   return { success: true, status: update.status };
 });
-var publishPostNow = (0, import_https8.onCall)({
+var publishPostNow = (0, import_https10.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   timeoutSeconds: 180,
   memory: "512MiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https8.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https10.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https8.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https10.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   try {
     let result;
@@ -25262,7 +25333,7 @@ file '${outroMp4}'
         error: result.error || "Publishing failed",
         failedAt: /* @__PURE__ */ new Date()
       });
-      throw new import_https8.HttpsError("internal", result.error || "Publishing failed");
+      throw new import_https10.HttpsError("internal", result.error || "Publishing failed");
     }
   } catch (err) {
     const errorMsg = err.message || "Publishing failed";
@@ -25273,37 +25344,37 @@ file '${outroMp4}'
       failedAt: /* @__PURE__ */ new Date()
     }).catch(() => {
     });
-    throw new import_https8.HttpsError("internal", errorMsg);
+    throw new import_https10.HttpsError("internal", errorMsg);
   }
 });
-var searchPlaces = (0, import_https8.onCall)({
+var searchPlaces = (0, import_https10.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"]
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const { query } = request.data;
-  if (!query) throw new import_https8.HttpsError("invalid-argument", "query is required");
+  if (!query) throw new import_https10.HttpsError("invalid-argument", "query is required");
   const results = await searchFacebookPlaces(query);
   return { places: results };
 });
-var regeneratePostImage = (0, import_https8.onCall)({
+var regeneratePostImage = (0, import_https10.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 300,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https8.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https10.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https8.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https10.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience || "contractor";
   console.log(`[RegenImage] Regenerating image for post ${postId} with feedback: "${feedback || "none"}"`);
   const { generatePostImage: generatePostImage2 } = await Promise.resolve().then(() => (init_imagenApi(), imagenApi_exports));
   const result = await generatePostImage2(post.message, audience, feedback || void 0);
   if (!result) {
-    throw new import_https8.HttpsError("internal", "Image generation failed");
+    throw new import_https10.HttpsError("internal", "Image generation failed");
   }
   await postRef.update({
     imageUrl: result.imageUrl,
@@ -25313,17 +25384,17 @@ var regeneratePostImage = (0, import_https8.onCall)({
   console.log(`[RegenImage] New image: ${result.imageUrl}`);
   return { success: true, imageUrl: result.imageUrl };
 });
-var regeneratePostCaption = (0, import_https8.onCall)({
+var regeneratePostCaption = (0, import_https10.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["GEMINI_API_KEY"],
   timeoutSeconds: 120
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https8.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https10.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https8.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https10.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
   console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
@@ -25359,7 +25430,7 @@ Respond with ONLY the post text. No introductions.`;
   const result = await model2.generateContent(prompt);
   const newCaption = result.response.text().trim();
   if (!newCaption) {
-    throw new import_https8.HttpsError("internal", "Caption generation returned empty");
+    throw new import_https10.HttpsError("internal", "Caption generation returned empty");
   }
   await postRef.update({
     message: newCaption,
@@ -25369,18 +25440,19 @@ Respond with ONLY the post text. No introductions.`;
   console.log(`[RegenCaption] New caption generated (${newCaption.length} chars)`);
   return { success: true, message: newCaption };
 });
-var getOutroPreview = (0, import_https8.onCall)({
+var getOutroPreview = (0, import_https10.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const { presetId } = request.data;
-  if (!presetId) throw new import_https8.HttpsError("invalid-argument", "presetId is required");
+  if (!presetId) throw new import_https10.HttpsError("invalid-argument", "presetId is required");
   const { getOrCreateOutroFrameUrl: getOrCreateOutroFrameUrl2 } = await Promise.resolve().then(() => (init_reelOutroGenerator(), reelOutroGenerator_exports));
   const url = await getOrCreateOutroFrameUrl2(presetId);
   return { url };
 });
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  adminCreateUser,
   adminUpdateAuthUser,
   calculateNrr,
   changeMyPassword,

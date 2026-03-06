@@ -34,7 +34,7 @@ export { runSocialContentGenerator } from "./triggers/socialContentGenerator";
 export { runSocialPublisher } from "./triggers/socialPublisher";
 
 // ── Auth functions (onCall) ──
-export { adminUpdateAuthUser, changeMyPassword } from "./functions/auth";
+export { adminUpdateAuthUser, adminCreateUser, changeMyPassword } from "./functions/auth";
 
 // ── Lead & Vendor sourcing (onCall / onRequest) ──
 export { generateLeads, clearPipeline, runRecruiterAgent, testSendEmail, sourceProperties } from "./functions/leads";

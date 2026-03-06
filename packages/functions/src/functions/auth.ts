@@ -38,6 +38,65 @@ export const adminUpdateAuthUser = onCall({
 });
 
 /**
+ * Admin-only: create a new user in Firebase Auth + Firestore
+ * Creates the Auth account, writes the Firestore user doc, and generates
+ * a password reset link so the user can set their own password.
+ */
+export const adminCreateUser = onCall({
+    cors: DASHBOARD_CORS,
+}, async (request) => {
+    // Verify caller is admin
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be logged in");
+    const callerDoc = await db.collection("users").doc(request.auth.uid).get();
+    const callerRoles = callerDoc.data()?.roles || [];
+    if (!callerRoles.includes("admin")) throw new HttpsError("permission-denied", "Admin only");
+
+    const { email, displayName, roles } = request.data;
+    if (!email) throw new HttpsError("invalid-argument", "email is required");
+    if (!displayName) throw new HttpsError("invalid-argument", "displayName is required");
+    if (!roles || !Array.isArray(roles) || roles.length === 0) {
+        throw new HttpsError("invalid-argument", "At least one role is required");
+    }
+
+    try {
+        // 1. Create Firebase Auth user (no password — they'll set via reset link)
+        const userRecord = await getAuth().createUser({
+            email,
+            displayName,
+            disabled: false,
+        });
+        const uid = userRecord.uid;
+
+        // 2. Create Firestore user doc
+        await db.collection("users").doc(uid).set({
+            uid,
+            email,
+            displayName,
+            roles,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            lastLogin: null,
+        });
+
+        // 3. Generate password reset link
+        const resetLink = await getAuth().generatePasswordResetLink(email);
+
+        return {
+            success: true,
+            uid,
+            resetLink,
+            message: `User ${email} created. Share the password reset link so they can set their password.`,
+        };
+    } catch (error: any) {
+        console.error("adminCreateUser error:", error);
+        if (error.code === "auth/email-already-exists") {
+            throw new HttpsError("already-exists", "A user with this email already exists");
+        }
+        throw new HttpsError("internal", error.message || "Failed to create user");
+    }
+});
+
+/**
  * Self-service: any authenticated user can change their own password
  */
 export const changeMyPassword = onCall({
