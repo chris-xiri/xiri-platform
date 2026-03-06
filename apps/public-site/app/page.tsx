@@ -4,20 +4,23 @@ import { CTAButton } from '@/components/CTAButton';
 import { ClientLeadForm } from '@/components/ClientLeadForm';
 import { TrustBar } from '@/components/TrustBar';
 import { IndustriesSection } from '@/components/IndustriesSection';
+import { Testimonials } from '@/components/Testimonials';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-white font-sans">
       <Hero
-        title={<>The New Standard in<br /><span className="text-sky-600">Facility Management</span></>}
-        subtitle="Professional facility management for single-tenant buildings. One Partner. Zero Headaches. Nightly Verified."
-        ctaText="Get Your Facility Audit"
+        title={<>Stop Managing 5 Vendors<br /><span className="text-sky-600">for 1 Building</span></>}
+        subtitle="XIRI replaces your cleaning company, handyman, supply orders, and compliance paperwork with one verified partner."
+        ctaText="See If We Cover Your Area"
         ctaLink="#audit"
       />
 
       <TrustBar />
 
       <ValuePropsSection />
+
+      <Testimonials />
 
       <IndustriesSection />
 
@@ -29,13 +32,13 @@ export default function Home() {
             {/* Left: Copy */}
             <div className="text-white">
               <div className="inline-block px-4 py-2 rounded-full bg-sky-800 text-sky-200 font-bold text-sm mb-6 border border-sky-700">
-                🚀 Start Your Transformation
+                🚀 One Partner. One Invoice. Done.
               </div>
               <h2 className="text-4xl md:text-5xl font-heading font-bold mb-6 leading-tight">
-                Ready to elevate your facility management?
+                Get a custom cleaning scope for your building
               </h2>
               <p className="text-xl text-sky-100 mb-8 leading-relaxed">
-                Stop worrying about missing shifts, empty supplies, and failed inspections. Let XIRI build a custom scope of work for your facility today.
+                We&apos;ll walk your facility, match you with vetted contractors already in your area, and handle everything — from nightly cleaning to supplies to compliance paperwork.
               </p>
 
               <div className="space-y-6">
@@ -79,3 +82,4 @@ export default function Home() {
     </div>
   );
 }
+

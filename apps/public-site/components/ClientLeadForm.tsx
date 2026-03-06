@@ -42,6 +42,15 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
 
         trackEvent('lead_zip_submit', { zip, source: industryName || 'homepage' });
 
+        // GA4 conversion event for lead generation
+        if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+            (window as any).gtag('event', 'generate_lead', {
+                source: industryName || 'homepage',
+                zip_code: zip,
+                currency: 'USD',
+            });
+        }
+
         // Alpha Geo-Fence: Only Great Neck & New Hyde Park zips proceed
         if (!isValidZip(zip)) {
             trackEvent('lead_zip_rejected', { zip });
@@ -65,10 +74,10 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
         <div id="audit" className={`bg-white rounded-2xl shadow-xl border border-gray-100 p-8 ${className || ''}`}>
             <div className="mb-6">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    {industryName ? `Get Your ${industryName} Audit` : "Check Availability"}
+                    {industryName ? `Get Your ${industryName} Scope` : "Get Your Building Scope"}
                 </h3>
                 <p className="text-gray-600">
-                    See if XIRI is available for your facility.
+                    Enter your zip and we&apos;ll build a custom cleaning plan for your facility — free.
                 </p>
             </div>
 
@@ -118,7 +127,7 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
             </form>
 
             <p className="text-xs text-center text-gray-400 mt-4">
-                No commitment required. 100% Free Audit.
+                No commitment. Takes 30 seconds.
             </p>
         </div>
     );

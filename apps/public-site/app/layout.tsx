@@ -43,6 +43,12 @@ export const metadata: Metadata = {
     siteName: 'XIRI Facility Solutions',
     title: 'XIRI Facility Solutions | Medical-Grade Facility Management',
     description: 'The facility management standard for single-tenant buildings. One partner. Zero headaches. Nightly verified.',
+    images: [{
+      url: 'https://xiri.ai/og-image.png',
+      width: 1200,
+      height: 630,
+      alt: 'XIRI Facility Solutions — One Partner. Zero Headaches.',
+    }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -69,6 +75,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Organization",
+              "@id": "https://xiri.ai/#organization",
               "name": "XIRI Facility Solutions",
               "url": "https://xiri.ai",
               "logo": "https://xiri.ai/icon.png",
@@ -99,6 +106,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
+              "@id": "https://xiri.ai/#website",
               "name": "XIRI Facility Solutions",
               "alternateName": ["XIRI", "Xiri Facility Solutions", "XIRI FM"],
               "url": "https://xiri.ai"
