@@ -4,6 +4,7 @@ import { DLP_SOLUTIONS, SPOKE_HUBS } from '@/data/dlp-solutions';
 import { TRADES, KEYWORD_PAGES, GUIDE_PAGES, getGeoPages } from '@/data/dlp-contractors';
 import { REGULATION_GUIDE_SLUGS } from '@/data/guides';
 import { LOCATIONS } from '@/lib/locations';
+import { INDUSTRY_PILLARS, getPillarForIndustry } from '@/lib/industry-pillars';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://xiri.ai';
 
@@ -32,9 +33,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
         sitemapEntries.push({ url: `${BASE_URL}/blog/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
     });
 
-    // 2. Industry Hubs (/industries/[slug])
+    // 2. Industry Pillar Hubs (/industries/healthcare, /industries/automotive, etc.)
+    INDUSTRY_PILLARS.forEach((pillar) => {
+        sitemapEntries.push({ url: `${BASE_URL}/industries/${pillar.slug}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 });
+    });
+
+    // 2b. Industry Pages (/industries/[pillar]/[slug])
     (seoData.industries || []).forEach((item) => {
-        sitemapEntries.push({ url: `${BASE_URL}/industries/${item.slug}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 });
+        const pillar = getPillarForIndustry(item.slug);
+        if (pillar) {
+            sitemapEntries.push({ url: `${BASE_URL}/industries/${pillar.slug}/${item.slug}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 });
+        }
     });
 
     // 3. Service Hubs (/services/[slug])

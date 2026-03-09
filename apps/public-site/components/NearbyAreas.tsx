@@ -6,9 +6,10 @@ interface NearbyAreasProps {
     serviceName: string;
     nearbyCities: string[];
     currentLocationName: string;
+    baseRoute?: string; // e.g. 'industries/healthcare' — defaults to 'services'
 }
 
-export function NearbyAreas({ serviceSlug, serviceName, nearbyCities, currentLocationName }: NearbyAreasProps) {
+export function NearbyAreas({ serviceSlug, serviceName, nearbyCities, currentLocationName, baseRoute = 'services' }: NearbyAreasProps) {
     if (!nearbyCities || nearbyCities.length === 0) return null;
 
     // Helper to format city name to slug
@@ -54,7 +55,7 @@ export function NearbyAreas({ serviceSlug, serviceName, nearbyCities, currentLoc
                     {nearbyCities.map((city) => {
                         const citySlug = city.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
                         const countySlug = inferCounty(city);
-                        const href = `/services/${serviceSlug}-in-${citySlug}-${countySlug}-ny`;
+                        const href = `/${baseRoute}/${serviceSlug}-in-${citySlug}-${countySlug}-ny`;
 
                         return (
                             <Link

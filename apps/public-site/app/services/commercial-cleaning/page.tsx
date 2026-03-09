@@ -108,18 +108,104 @@ const CLEANING_SERVICES = [
 export default function CommercialCleaningPage() {
     return (
         <div className="min-h-screen bg-white">
-            {/* Structured Data */}
+            {/* Structured Data — Service + StatisticalDistribution */}
             <JsonLd
                 data={{
                     "@context": "https://schema.org",
                     "@type": "Service",
+                    "@id": "https://xiri.ai/services/commercial-cleaning#service",
                     "name": "Commercial Cleaning Services",
                     "description": "Professional commercial cleaning services for medical, commercial, and specialized facilities. Janitorial, floor care, disinfecting, day porters, and more.",
                     "serviceType": "Commercial Cleaning",
-                    "areaServed": "New York",
                     "provider": {
                         "@type": "Organization",
                         "@id": "https://xiri.ai/#organization"
+                    },
+                    "areaServed": {
+                        "@type": "State",
+                        "name": "New York"
+                    },
+                    "hasOfferCatalog": {
+                        "@type": "OfferCatalog",
+                        "name": "Commercial Cleaning Services",
+                        "itemListElement": CLEANING_SERVICES.map((svc, i) => ({
+                            "@type": "Offer",
+                            "position": i + 1,
+                            "itemOffered": {
+                                "@type": "Service",
+                                "name": svc.name,
+                                "url": `https://xiri.ai/services/${svc.slug}`
+                            }
+                        }))
+                    },
+                    "offers": {
+                        "@type": "AggregateOffer",
+                        "priceCurrency": "USD",
+                        "lowPrice": "0.07",
+                        "highPrice": "0.35",
+                        "unitText": "per square foot per visit",
+                        "description": "Price range based on facility type, scope, and frequency. Calculated from XIRI's data-backed Commercial Cleaning Calculator.",
+                        "url": "https://xiri.ai/calculator",
+                        "priceSpecification": {
+                            "@type": "UnitPriceSpecification",
+                            "priceCurrency": "USD",
+                            "unitText": "per square foot per visit",
+                            "referenceQuantity": {
+                                "@type": "QuantitativeValue",
+                                "value": "1",
+                                "unitCode": "FTK"
+                            }
+                        }
+                    }
+                }}
+            />
+            {/* LocalBusiness + AreaServed — deep-link 60+ towns */}
+            <JsonLd
+                data={{
+                    "@context": "https://schema.org",
+                    "@type": "LocalBusiness",
+                    "@id": "https://xiri.ai/#localbusiness",
+                    "name": "XIRI Facility Solutions",
+                    "url": "https://xiri.ai",
+                    "telephone": "+1-516-243-9474",
+                    "address": {
+                        "@type": "PostalAddress",
+                        "addressLocality": "Garden City",
+                        "addressRegion": "NY",
+                        "postalCode": "11530",
+                        "addressCountry": "US"
+                    },
+                    "geo": {
+                        "@type": "GeoCoordinates",
+                        "latitude": "40.7268",
+                        "longitude": "-73.6343"
+                    },
+                    "areaServed": [
+                        { "@type": "County", "name": "Nassau County", "containedInPlace": { "@type": "State", "name": "New York" } },
+                        { "@type": "County", "name": "Suffolk County", "containedInPlace": { "@type": "State", "name": "New York" } },
+                        { "@type": "Borough", "name": "Queens", "containedInPlace": { "@type": "City", "name": "New York" } },
+                        ...["Garden City", "Great Neck", "Manhasset", "Rockville Centre", "Syosset", "Mineola", "Westbury", "New Hyde Park", "Hicksville", "Levittown", "Massapequa", "Plainview", "Jericho", "Old Westbury", "East Meadow", "Merrick", "Bellmore", "Wantagh", "Seaford", "Oceanside", "Lynbrook", "Valley Stream", "Floral Park", "Hempstead", "Freeport", "Long Beach", "Glen Cove", "Port Washington", "Roslyn", "Woodmere", "Cedarhurst", "Hewlett", "Lawrence", "Bethpage", "Farmingdale"].map(city => ({
+                            "@type": "City",
+                            "name": city,
+                            "containedInPlace": { "@type": "County", "name": "Nassau County" }
+                        })),
+                        ...["Melville", "Huntington", "Stony Brook", "Smithtown", "Bay Shore", "Commack", "Deer Park", "Hauppauge", "Islip", "Babylon"].map(city => ({
+                            "@type": "City",
+                            "name": city,
+                            "containedInPlace": { "@type": "County", "name": "Suffolk County" }
+                        })),
+                        ...["Astoria", "Long Island City", "Forest Hills", "Bayside", "Flushing", "Jamaica", "Rego Park", "Ridgewood", "Woodside", "Jackson Heights"].map(city => ({
+                            "@type": "City",
+                            "name": city,
+                            "containedInPlace": { "@type": "Borough", "name": "Queens" }
+                        })),
+                    ],
+                    "makesOffer": {
+                        "@type": "Offer",
+                        "itemOffered": {
+                            "@type": "Service",
+                            "@id": "https://xiri.ai/services/commercial-cleaning#service"
+                        }
                     }
                 }}
             />

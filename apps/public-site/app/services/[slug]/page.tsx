@@ -51,28 +51,13 @@ export async function generateStaticParams() {
         params.push({ slug: service.slug });
     }
 
-    // 2. Industry Hubs (e.g. /services/auto-dealerships)
-    for (const industry of seoData.industries) {
-        params.push({ slug: industry.slug });
-    }
-
-    // 3. Service x Location combos (e.g. /services/medical-office-cleaning-in-garden-city-nassau-ny)
+    // 2. Service x Location combos (e.g. /services/medical-office-cleaning-in-garden-city-nassau-ny)
     for (const service of seoData.services) {
         for (const location of seoData.locations) {
             const countySlug = slugify(location.region);
             const townSlug = slugify(location.name.split(',')[0]);
             const stateSlug = "ny";
             params.push({ slug: `${service.slug}-in-${townSlug}-${countySlug}-${stateSlug}` });
-        }
-    }
-
-    // 4. Industry x Location combos (e.g. /services/auto-dealerships-in-new-hyde-park-nassau-ny)
-    for (const industry of seoData.industries) {
-        for (const location of seoData.locations) {
-            const countySlug = slugify(location.region);
-            const townSlug = slugify(location.name.split(',')[0]);
-            const stateSlug = "ny";
-            params.push({ slug: `${industry.slug}-in-${townSlug}-${countySlug}-${stateSlug}` });
         }
     }
 
@@ -229,15 +214,40 @@ export default async function ServicePage({ params }: Props) {
                 <JsonLd
                     data={{
                         "@context": "https://schema.org",
-                        "@type": "Service",
-                        "name": service.name,
-                        "description": service.shortDescription,
-                        "serviceType": "Facility Management",
-                        "areaServed": "New York",
-                        "provider": {
-                            "@type": "Organization",
-                            "@id": "https://xiri.ai/#organization"
-                        }
+                        "@graph": [
+                            {
+                                "@type": "Service",
+                                "@id": `https://xiri.ai/services/${service.slug}#service`,
+                                "name": service.heroTitle || service.name,
+                                "description": service.shortDescription,
+                                "serviceType": service.name,
+                                "provider": {
+                                    "@type": "Organization",
+                                    "@id": "https://xiri.ai/#organization"
+                                },
+                                "areaServed": {
+                                    "@type": "State",
+                                    "name": "New York"
+                                },
+                                ...(getPillarForService(service.slug).href !== `/services/${service.slug}` && {
+                                    "isPartOf": {
+                                        "@type": "Service",
+                                        "@id": `https://xiri.ai${getPillarForService(service.slug).href}#service`
+                                    }
+                                })
+                            },
+                            ...(service.faqs && service.faqs.length > 0 ? [{
+                                "@type": "FAQPage",
+                                "mainEntity": service.faqs.map((faq: any) => ({
+                                    "@type": "Question",
+                                    "name": faq.question,
+                                    "acceptedAnswer": {
+                                        "@type": "Answer",
+                                        "text": faq.answer
+                                    }
+                                }))
+                            }] : [])
+                        ]
                     }}
                 />
                 <JsonLd
@@ -801,15 +811,9 @@ function parseSlug(slug: string) {
         return { type: 'SERVICE', data: service };
     }
 
-    // 2. Check if it's an Industry Hub (e.g. /services/auto-dealerships)
-    const industry = seoData.industries.find((i: any) => i.slug === slug);
-    if (industry) {
-        return { type: 'SERVICE', data: industry };
-    }
-
     const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-    // 3. Check if it's a Service x Location page
+    // 2. Check if it's a Service x Location page
     const matchingService = seoData.services.find(s => slug.startsWith(s.slug + '-in-'));
     if (matchingService) {
         const locationPart = slug.substring(matchingService.slug.length + 4);
@@ -820,20 +824,6 @@ function parseSlug(slug: string) {
         });
         if (matchingLocation) {
             return { type: 'LOCATION', data: { service: matchingService, location: matchingLocation } };
-        }
-    }
-
-    // 4. Check if it's an Industry x Location page (e.g. /services/auto-dealerships-in-new-hyde-park-nassau-ny)
-    const matchingIndustry = seoData.industries.find((i: any) => slug.startsWith(i.slug + '-in-'));
-    if (matchingIndustry) {
-        const locationPart = slug.substring(matchingIndustry.slug.length + 4);
-        const matchingLocation = seoData.locations.find(loc => {
-            const townSlug = slugify(loc.name.split(',')[0]);
-            const countySlug = slugify(loc.region);
-            return `${townSlug}-${countySlug}-ny` === locationPart;
-        });
-        if (matchingLocation) {
-            return { type: 'LOCATION', data: { service: matchingIndustry, location: matchingLocation } };
         }
     }
 

@@ -9,23 +9,25 @@ import { db } from "@/lib/firebase";
 
 // Ordered for 2-column nav: Medical | Everything Else
 const FACILITY_TYPES = [
-    // Column 1: Medical (6 items)
-    { group: "Medical", label: "Medical Offices", slug: "medical-offices" },
-    { group: "Medical", label: "Urgent Care Centers", slug: "urgent-care" },
-    { group: "Medical", label: "Surgery Centers", slug: "surgery-centers" },
-    { group: "Medical", label: "Dental Offices", slug: "dental-offices" },
-    { group: "Medical", label: "Dialysis Centers", slug: "dialysis-centers" },
-    { group: "Medical", label: "Veterinary Clinics", slug: "veterinary-clinics" },
-    { group: "Medical", label: "Converted Clinical Suites", slug: "converted-clinical-suites" },
-    // Column 2: Specialized (3) + Education (2) + Commercial (3)
-    { group: "Specialized", label: "Auto Dealerships", slug: "auto-dealerships" },
-    { group: "Specialized", label: "Labs & Cleanrooms", slug: "labs-cleanrooms" },
-    { group: "Specialized", label: "Light Manufacturing", slug: "light-manufacturing" },
-    { group: "Education", label: "Daycares & Preschools", slug: "daycare-preschool" },
-    { group: "Education", label: "Private Schools", slug: "private-schools" },
-    { group: "Commercial", label: "Professional Offices", slug: "professional-offices" },
-    { group: "Commercial", label: "Fitness & Gyms", slug: "fitness-gyms" },
-    { group: "Commercial", label: "Retail Storefronts", slug: "retail-storefronts" },
+    // Healthcare
+    { group: "Healthcare", label: "Medical Offices", slug: "medical-offices", pillar: "healthcare" },
+    { group: "Healthcare", label: "Urgent Care Centers", slug: "urgent-care", pillar: "healthcare" },
+    { group: "Healthcare", label: "Surgery Centers", slug: "surgery-centers", pillar: "healthcare" },
+    { group: "Healthcare", label: "Dental Offices", slug: "dental-offices", pillar: "healthcare" },
+    { group: "Healthcare", label: "Dialysis Centers", slug: "dialysis-centers", pillar: "healthcare" },
+    { group: "Healthcare", label: "Veterinary Clinics", slug: "veterinary-clinics", pillar: "healthcare" },
+    { group: "Healthcare", label: "Converted Clinical Suites", slug: "converted-clinical-suites", pillar: "healthcare" },
+    // Automotive & Specialized
+    { group: "Automotive", label: "Auto Dealerships", slug: "auto-dealerships", pillar: "automotive" },
+    { group: "Specialized", label: "Labs & Cleanrooms", slug: "labs-cleanrooms", pillar: "specialized" },
+    { group: "Specialized", label: "Light Manufacturing", slug: "light-manufacturing", pillar: "specialized" },
+    // Education
+    { group: "Education", label: "Daycares & Preschools", slug: "daycare-preschool", pillar: "education" },
+    { group: "Education", label: "Private Schools", slug: "private-schools", pillar: "education" },
+    // Commercial
+    { group: "Commercial", label: "Professional Offices", slug: "professional-offices", pillar: "commercial" },
+    { group: "Commercial", label: "Fitness & Gyms", slug: "fitness-gyms", pillar: "commercial" },
+    { group: "Commercial", label: "Retail Storefronts", slug: "retail-storefronts", pillar: "commercial" },
 ];
 
 import { LeadFormModal } from './LeadFormModal';
@@ -172,7 +174,7 @@ export default function Navigation() {
                                                     {facilities.map((facility) => (
                                                         <Link
                                                             key={facility.slug}
-                                                            href={`/industries/${facility.slug}`}
+                                                            href={`/industries/${facility.pillar}/${facility.slug}`}
                                                             className="block px-3 py-1.5 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 transition-colors"
                                                             onClick={() => handleNavClick(`/${facility.slug}`, facility.label)}
                                                         >
@@ -304,7 +306,7 @@ export default function Navigation() {
                                 <p className="text-xs font-bold text-sky-500 uppercase tracking-wider mb-2">Facility Types</p>
                                 <div className="grid grid-cols-2 gap-1">
                                     {FACILITY_TYPES.slice(0, 8).map(f => (
-                                        <Link key={f.slug} href={`/industries/${f.slug}`} className="text-sm text-gray-700 py-1.5 hover:text-sky-600" onClick={() => setMobileOpen(false)}>
+                                        <Link key={f.slug} href={`/industries/${f.pillar}/${f.slug}`} className="text-sm text-gray-700 py-1.5 hover:text-sky-600" onClick={() => setMobileOpen(false)}>
                                             {f.label}
                                         </Link>
                                     ))}

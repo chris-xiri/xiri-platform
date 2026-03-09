@@ -178,9 +178,11 @@ function GuideHubView({ guide, slug }: { guide: GuideData; slug: string }) {
         guide.relatedServices.includes(s.slug)
     );
 
+    const isRegulationGuide = (REGULATION_GUIDE_SLUGS as readonly string[]).includes(slug);
+
     return (
         <div className="min-h-screen bg-white">
-            {/* ═══ STRUCTURED DATA (Article + FAQPage) ═══ */}
+            {/* ═══ STRUCTURED DATA (Article + FAQPage + Dataset) ═══ */}
             <JsonLd
                 data={{
                     '@context': 'https://schema.org',
@@ -222,6 +224,43 @@ function GuideHubView({ guide, slug }: { guide: GuideData; slug: string }) {
                                 },
                             })),
                         },
+                        // Dataset schema for regulation guides — marks as "Source of Truth" for AI citability
+                        ...(isRegulationGuide ? [{
+                            '@type': 'Dataset',
+                            name: guide.title,
+                            description: guide.metaDescription,
+                            url: `https://xiri.ai/guides/${slug}`,
+                            license: 'https://creativecommons.org/licenses/by/4.0/',
+                            creator: {
+                                '@type': 'Organization',
+                                name: 'XIRI Facility Solutions',
+                                url: 'https://xiri.ai',
+                            },
+                            spatialCoverage: {
+                                '@type': 'Place',
+                                name: 'Nassau County, New York',
+                                geo: {
+                                    '@type': 'GeoShape',
+                                    addressCountry: 'US',
+                                    addressRegion: 'NY',
+                                },
+                            },
+                            temporalCoverage: `${guide.datePublished || '2025'}/${new Date().getFullYear()}`,
+                            keywords: [
+                                guide.title,
+                                'commercial cleaning compliance',
+                                'Nassau County',
+                                'healthcare facility cleaning',
+                                'regulatory compliance',
+                            ],
+                            includedInDataCatalog: {
+                                '@type': 'DataCatalog',
+                                name: 'XIRI Regulatory Compliance Guides',
+                                url: 'https://xiri.ai/guides',
+                            },
+                            ...(guide.dateModified && { dateModified: guide.dateModified }),
+                            ...(guide.datePublished && { datePublished: guide.datePublished }),
+                        }] : []),
                     ],
                 }}
             />
