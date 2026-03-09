@@ -733,7 +733,7 @@ function TemplateDetail({ template: t, onOptimize, onApply, onDismiss, optimizin
                         </div>
                         <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => onDismiss(t.id)}>Dismiss</Button>
                     </div>
-                    <p className="text-xs text-purple-700 dark:text-purple-400">{latestAI.analysis}</p>
+                    <p className="text-xs text-purple-900 dark:text-purple-400">{latestAI.analysis}</p>
                     {latestAI.suggestions?.map((sug, i) => (
                         <div key={i} className="p-3 bg-white dark:bg-card rounded border space-y-2">
                             <div className="flex items-center justify-between">
@@ -744,7 +744,7 @@ function TemplateDetail({ template: t, onOptimize, onApply, onDismiss, optimizin
                             </div>
                             <p className="text-xs"><span className="font-medium">Subject:</span> {sug.subject}</p>
                             <p className="text-[11px] text-muted-foreground whitespace-pre-wrap">{sug.body}</p>
-                            <p className="text-[10px] text-purple-600 dark:text-purple-400 italic">{sug.rationale}</p>
+                            <p className="text-[10px] text-purple-800 dark:text-purple-300 italic">{sug.rationale}</p>
                         </div>
                     ))}
                 </div>
