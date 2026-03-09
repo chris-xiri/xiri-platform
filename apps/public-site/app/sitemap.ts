@@ -12,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const toSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     // 1. Static Pages
-    ['', '/contractors', '/contact', '/directory/locations', '/directory/solutions', '/about', '/services', '/solutions', '/industries', '/blog'].forEach((route) => {
+    ['', '/contractors', '/contact', '/directory/locations', '/directory/solutions', '/about', '/services', '/services/facility-management', '/solutions', '/industries', '/blog'].forEach((route) => {
         sitemapEntries.push({ url: `${BASE_URL}${route}`, lastModified: new Date(), changeFrequency: 'weekly', priority: route === '' ? 1.0 : 0.8 });
     });
 
