@@ -19,23 +19,17 @@ interface SeoService {
     category?: string;
 }
 
-// Group services by category
-const CATEGORIES: Record<string, { label: string; slugs: string[] }> = {
+// Group services by pillar
+const CATEGORIES: Record<string, { label: string; href: string; slugs: string[] }> = {
     'Cleaning': {
-        label: 'Cleaning Services',
-        slugs: ['janitorial-services', 'commercial-cleaning', 'disinfecting-services', 'medical-office-cleaning', 'urgent-care-cleaning', 'surgery-center-cleaning', 'daycare-cleaning'],
+        label: 'Commercial Cleaning',
+        href: '/services/commercial-cleaning',
+        slugs: ['janitorial-services', 'commercial-cleaning', 'medical-office-cleaning', 'urgent-care-cleaning', 'surgery-center-cleaning', 'daycare-cleaning', 'floor-care', 'carpet-upholstery', 'disinfecting-services', 'window-cleaning', 'day-porter', 'post-construction-cleanup'],
     },
-    'Floor & Surface': {
-        label: 'Floor & Surface Care',
-        slugs: ['floor-care', 'carpet-upholstery', 'window-cleaning', 'pressure-washing'],
-    },
-    'Building Maintenance': {
-        label: 'Building Maintenance',
-        slugs: ['hvac-maintenance', 'pest-control', 'handyman-services', 'snow-ice-removal', 'parking-lot-maintenance', 'waste-management'],
-    },
-    'Specialty': {
-        label: 'Specialty Services',
-        slugs: ['day-porter', 'post-construction-cleanup'],
+    'Facility': {
+        label: 'Facility Management',
+        href: '/services/facility-management',
+        slugs: ['hvac-maintenance', 'pest-control', 'waste-management', 'parking-lot-maintenance', 'handyman-services', 'pressure-washing', 'snow-ice-removal'],
     },
 };
 
@@ -81,7 +75,9 @@ export default function ServicesIndex() {
                         return (
                             <div key={key} className="mb-16 last:mb-0">
                                 <h2 className="text-2xl font-heading font-bold text-slate-900 mb-6 pb-3 border-b border-slate-200">
-                                    {cat.label}
+                                    <Link href={cat.href} className="hover:text-sky-600 transition-colors">
+                                        {cat.label} →
+                                    </Link>
                                 </h2>
                                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {services.map(service => (

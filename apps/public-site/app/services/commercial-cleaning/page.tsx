@@ -4,7 +4,7 @@ import { Hero } from '@/components/Hero';
 import { JsonLd } from '@/components/JsonLd';
 import { CTAButton } from '@/components/CTAButton';
 import { AuthorityBreadcrumb, PILLAR_CLEANING_HREF, PILLAR_CLEANING_TEXT } from '@/components/AuthorityBreadcrumb';
-import { ArrowRight, Stethoscope, Building2, Sparkles, SprayCan, UserCheck, ShieldCheck, CheckCircle2, DollarSign, Clock, Footprints, Rows3 } from 'lucide-react';
+import { ArrowRight, Stethoscope, Building2, Sparkles, SprayCan, UserCheck, ShieldCheck, CheckCircle2, DollarSign, Clock, Footprints, Rows3, HeartPulse, Scissors, Baby } from 'lucide-react';
 
 // ─── SEO METADATA ──────────────────────────────────────────────────
 
@@ -37,6 +37,27 @@ const CLEANING_SERVICES = [
         description: 'JCAHO survey-ready cleaning for medical offices, urgent care, surgery centers, and clinical suites — HIPAA-compliant with documented protocols.',
         icon: Stethoscope,
         features: ['JCAHO-compliant protocols', 'HIPAA-safe procedures', 'Terminal cleaning logs', 'Biohazard handling'],
+    },
+    {
+        slug: 'urgent-care-cleaning',
+        name: 'Urgent Care Cleaning',
+        description: 'Rapid-turnaround cleaning for high-volume urgent care facilities — blood-borne pathogen compliance, waiting room sanitation, and exam room turnover.',
+        icon: HeartPulse,
+        features: ['BBP-compliant protocols', 'High-traffic sanitation', 'Exam room turnover', 'Waiting area deep clean'],
+    },
+    {
+        slug: 'surgery-center-cleaning',
+        name: 'Surgery Center Cleaning',
+        description: 'AAAHC and CMS-compliant terminal cleaning for ambulatory surgery centers — OR turnover, sterile corridors, and instrument processing areas.',
+        icon: Scissors,
+        features: ['OR terminal cleaning', 'AAAHC/CMS compliance', 'Sterile corridor protocols', 'Pre-op & PACU cleaning'],
+    },
+    {
+        slug: 'daycare-cleaning',
+        name: 'Daycare & Childcare Cleaning',
+        description: 'Child-safe cleaning programs for daycares, preschools, and childcare facilities — non-toxic products, toy sanitation, and DOH-compliant documentation.',
+        icon: Baby,
+        features: ['Non-toxic products only', 'Toy & surface sanitation', 'DOH documentation', 'Nap area deep clean'],
     },
     {
         slug: 'floor-care',
