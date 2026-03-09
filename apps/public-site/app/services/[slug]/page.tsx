@@ -12,7 +12,7 @@ import seoData from '@/data/seo-data.json';
 import { SeoService } from '@xiri/shared';
 // FIX: Add Lucide imports
 import { MapPin, Eye } from 'lucide-react';
-import { AuthorityBreadcrumb } from '@/components/AuthorityBreadcrumb';
+import { AuthorityBreadcrumb, getPillarForService } from '@/components/AuthorityBreadcrumb';
 
 interface Location {
     slug: string;
@@ -246,12 +246,12 @@ export default async function ServicePage({ params }: Props) {
                         "@type": "BreadcrumbList",
                         "itemListElement": [
                             { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
-                            { "@type": "ListItem", "position": 2, "name": "Commercial Cleaning Services", "item": "https://xiri.ai/services/commercial-cleaning" },
+                            { "@type": "ListItem", "position": 2, "name": getPillarForService(service.slug).text, "item": `https://xiri.ai${getPillarForService(service.slug).href}` },
                             { "@type": "ListItem", "position": 3, "name": service.name, "item": `https://xiri.ai/services/${service.slug}` },
                         ]
                     }}
                 />
-                <AuthorityBreadcrumb items={[{ label: service.name }]} />
+                <AuthorityBreadcrumb items={[{ label: service.name }]} pillar={getPillarForService(service.slug)} />
                 <Hero
                     title={service.heroTitle || service.name}
                     subtitle={service.heroSubtitle || service.shortDescription}
@@ -490,7 +490,7 @@ export default async function ServicePage({ params }: Props) {
                     "@type": "BreadcrumbList",
                     "itemListElement": [
                         { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
-                        { "@type": "ListItem", "position": 2, "name": "Commercial Cleaning Services", "item": "https://xiri.ai/services/commercial-cleaning" },
+                        { "@type": "ListItem", "position": 2, "name": getPillarForService(service.slug).text, "item": `https://xiri.ai${getPillarForService(service.slug).href}` },
                         { "@type": "ListItem", "position": 3, "name": service.name, "item": `https://xiri.ai/services/${service.slug}` },
                         { "@type": "ListItem", "position": 4, "name": `${townName}, NY`, "item": `https://xiri.ai/services/${slug}` },
                     ]
@@ -502,7 +502,7 @@ export default async function ServicePage({ params }: Props) {
             <AuthorityBreadcrumb items={[
                 { label: service.name, href: `/services/${service.slug}` },
                 { label: `${townName}, NY` },
-            ]} />
+            ]} pillar={getPillarForService(service.slug)} />
             <Hero
                 title={heroTitle}
                 subtitle={heroSubtitle}

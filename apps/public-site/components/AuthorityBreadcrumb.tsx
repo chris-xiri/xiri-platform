@@ -1,28 +1,63 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 
-// ─── AUTHORITY FUNNEL CONSTANTS ────────────────────────────────────
-export const PILLAR_HREF = '/services/commercial-cleaning';
-export const PILLAR_ANCHOR_TEXT = 'Commercial Cleaning Services';
+// ─── AUTHORITY FUNNEL: TWO PILLARS ─────────────────────────────────
+
+export const PILLAR_CLEANING_HREF = '/services/commercial-cleaning';
+export const PILLAR_CLEANING_TEXT = 'Commercial Cleaning Services';
+
+export const PILLAR_FACILITY_HREF = '/services/facility-management';
+export const PILLAR_FACILITY_TEXT = 'Facility and Building Management Services';
+
+// Legacy aliases (guides, blog, tools, solutions all link to cleaning pillar)
+export const PILLAR_HREF = PILLAR_CLEANING_HREF;
+export const PILLAR_ANCHOR_TEXT = PILLAR_CLEANING_TEXT;
+
+// Services that belong under the Facility Management pillar
+const FACILITY_MGMT_SLUGS = new Set([
+    'hvac-maintenance',
+    'pest-control',
+    'waste-management',
+    'parking-lot-maintenance',
+    'handyman-services',
+    'pressure-washing',
+    'snow-ice-removal',
+]);
+
+/** Returns the correct pillar for a given service slug */
+export function getPillarForService(slug: string): { href: string; text: string } {
+    if (FACILITY_MGMT_SLUGS.has(slug)) {
+        return { href: PILLAR_FACILITY_HREF, text: PILLAR_FACILITY_TEXT };
+    }
+    return { href: PILLAR_CLEANING_HREF, text: PILLAR_CLEANING_TEXT };
+}
 
 export interface BreadcrumbItem {
     label: string;
     href?: string; // if omitted, renders as current page (no link)
 }
 
+interface AuthorityBreadcrumbProps {
+    items: BreadcrumbItem[];
+    /** Override the default pillar. Use getPillarForService() for service pages. */
+    pillar?: { href: string; text: string };
+}
+
 /**
  * Above-fold breadcrumb nav implementing the Authority Funnel protocol.
  *
- * Every spoke and hub page links back to the pillar (/services/commercial-cleaning)
- * with consistent anchor text "Commercial Cleaning Services" for maximum link equity.
+ * By default, links to the Commercial Cleaning pillar.
+ * Pass a `pillar` prop to override for Facility Management pages.
  *
  * Breadcrumb schema (JSON-LD) should be added separately in each page's structured data.
  */
-export function AuthorityBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
+export function AuthorityBreadcrumb({ items, pillar }: AuthorityBreadcrumbProps) {
+    const activePillar = pillar ?? { href: PILLAR_CLEANING_HREF, text: PILLAR_CLEANING_TEXT };
+
     // Prepend Home + Pillar automatically
     const fullItems: BreadcrumbItem[] = [
         { label: 'Home', href: '/' },
-        { label: PILLAR_ANCHOR_TEXT, href: PILLAR_HREF },
+        { label: activePillar.text, href: activePillar.href },
         ...items,
     ];
 
