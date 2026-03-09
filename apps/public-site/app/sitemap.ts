@@ -2,6 +2,8 @@ import { MetadataRoute } from 'next';
 import seoData from '@/data/seo-data.json';
 import { DLP_SOLUTIONS, SPOKE_HUBS } from '@/data/dlp-solutions';
 import { TRADES, KEYWORD_PAGES, GUIDE_PAGES, getGeoPages } from '@/data/dlp-contractors';
+import { REGULATION_GUIDE_SLUGS } from '@/data/guides';
+import { LOCATIONS } from '@/lib/locations';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://xiri.ai';
 
@@ -92,8 +94,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Pages still live — just not submitted to Google.
 
     // 10. Guide Pages
-    ['jcaho-cleaning-requirements', 'accreditation-360-preparation-guide', 'commercial-cleaning-cost-guide', 'inhouse-vs-outsourced-facility-management'].forEach((slug) => {
+    ['jcaho-cleaning-requirements', 'accreditation-360-preparation-guide', 'commercial-cleaning-cost-guide', 'inhouse-vs-outsourced-facility-management',
+        'osha-bloodborne-pathogen-cleaning-standard', 'hipaa-environmental-compliance-cleaning', 'nys-part-226-voc-cleaning-compliance', 'cms-conditions-for-coverage-cleaning', 'aaahc-surgery-center-cleaning-standards',
+    ].forEach((slug) => {
         sitemapEntries.push({ url: `${BASE_URL}/guides/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
+    });
+
+    // 11. Regulation × Location Pages (5 regulations × 15 locations = 75 pages)
+    REGULATION_GUIDE_SLUGS.forEach((regSlug) => {
+        LOCATIONS.forEach((loc) => {
+            const countySlug = loc.county.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            sitemapEntries.push({ url: `${BASE_URL}/guides/${regSlug}-in-${loc.slug}-${countySlug}-ny`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 });
+        });
+    });
+
+    // 12. Free Tools (backlink magnets)
+    ['compliance-checker', 'sds-lookup'].forEach((tool) => {
+        sitemapEntries.push({ url: `${BASE_URL}/tools/${tool}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 });
     });
 
     return sitemapEntries;

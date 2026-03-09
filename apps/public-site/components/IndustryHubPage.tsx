@@ -6,6 +6,7 @@ import { FAQ } from "@/components/FAQ";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Wrench, Rocket, ShieldCheck, Moon, DollarSign } from "lucide-react";
 import seoData from "@/data/seo-data.json";
+import { AuthorityBreadcrumb } from "@/components/AuthorityBreadcrumb";
 
 interface IndustryHubPageProps {
     industry: SeoIndustry;
@@ -25,6 +26,9 @@ export function IndustryHubPage({ industry }: IndustryHubPageProps) {
 
     return (
         <main className="min-h-screen bg-slate-50">
+            {/* Authority Funnel: Breadcrumb */}
+            <AuthorityBreadcrumb items={[{ label: industry.name }]} />
+
             {/* 1. HERO */}
             <Hero
                 title={industry.heroTitle || `${industry.name} Facility Management`}

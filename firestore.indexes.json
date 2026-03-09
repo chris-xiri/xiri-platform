@@ -1,163 +1,51 @@
 {
-    "indexes": [
-        {
-            "__comment": "Outreach Worker: fetches due tasks — fetchPendingTasks() in queueUtils.ts",
-            "collectionGroup": "outreach_queue",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "status",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "scheduledAt",
-                    "order": "ASCENDING"
-                }
-            ]
-        },
-        {
-            "__comment": "Cancel Vendor Tasks: cancels pending outreach on dismiss/unsubscribe — cancelVendorTasks() in queueUtils.ts",
-            "collectionGroup": "outreach_queue",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "vendorId",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "status",
-                    "order": "ASCENDING"
-                }
-            ]
-        },
-        {
-            "__comment": "Vendor Activity Feed: loads timeline for a vendor — VendorActivityFeed.tsx",
-            "collectionGroup": "vendor_activities",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "vendorId",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "createdAt",
-                    "order": "DESCENDING"
-                }
-            ]
-        },
-        {
-            "__comment": "Email Templates Admin: filters vendor_email templates sorted by sequence",
-            "collectionGroup": "templates",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "category",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "sequence",
-                    "order": "ASCENDING"
-                }
-            ]
-        },
-        {
-            "__comment": "Social Media Drafts: fetches drafts by status sorted by date — admin/social/page.tsx",
-            "collectionGroup": "social_posts",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "status",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "createdAt",
-                    "order": "DESCENDING"
-                }
-            ]
-        },
-        {
-            "__comment": "Social Publisher: finds approved posts due for publishing — socialPublisher.ts",
-            "collectionGroup": "social_posts",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "status",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "scheduledFor",
-                    "order": "ASCENDING"
-                }
-            ]
-        },
-        {
-            "__comment": "Social Generator: checks for existing AI drafts today — socialContentGenerator.ts",
-            "collectionGroup": "social_posts",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "generatedBy",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "status",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "createdAt",
-                    "order": "ASCENDING"
-                }
-            ]
-        },
-        {
-            "__comment": "Channel Drafts: fetches drafts per channel sorted by deadline — admin/social/page.tsx",
-            "collectionGroup": "social_posts",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "channel",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "status",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "scheduledFor",
-                    "order": "ASCENDING"
-                }
-            ]
-        },
-        {
-            "__comment": "Lead Activity Timeline: loads timeline for a lead — /sales/crm/[id]/page.tsx",
-            "collectionGroup": "lead_activities",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "leadId",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "createdAt",
-                    "order": "DESCENDING"
-                }
-            ]
-        },
-        {
-            "__comment": "Lead Scheduled Emails: shows pending outreach tasks for a lead — LeadActivityFeed.tsx",
-            "collectionGroup": "outreach_queue",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "leadId",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "status",
-                    "order": "ASCENDING"
-                }
-            ]
-        }
-    ],
-    "fieldOverrides": []
+  // Example (Standard Edition):
+  //
+  // "indexes": [
+  //   {
+  //     "collectionGroup": "widgets",
+  //     "queryScope": "COLLECTION",
+  //     "fields": [
+  //       { "fieldPath": "foo", "arrayConfig": "CONTAINS" },
+  //       { "fieldPath": "bar", "mode": "DESCENDING" }
+  //     ]
+  //   },
+  //
+  //  "fieldOverrides": [
+  //    {
+  //      "collectionGroup": "widgets",
+  //      "fieldPath": "baz",
+  //      "indexes": [
+  //        { "order": "ASCENDING", "queryScope": "COLLECTION" }
+  //      ]
+  //    },
+  //   ]
+  // ]
+  //
+  // Example (Enterprise Edition):
+  //
+  // "indexes": [
+  //   {
+  //     "collectionGroup": "reviews",
+  //     "queryScope": "COLLECTION_GROUP",
+  //     "apiScope": "MONGODB_COMPATIBLE_API",
+  //     "density": "DENSE",
+  //     "multikey": false,
+  //     "fields": [
+  //       { "fieldPath": "baz", "mode": "ASCENDING" }
+  //     ]
+  //   },
+  //   {
+  //     "collectionGroup": "items",
+  //     "queryScope": "COLLECTION_GROUP",
+  //     "apiScope": "MONGODB_COMPATIBLE_API",
+  //     "density": "SPARSE_ANY",
+  //     "multikey": true,
+  //     "fields": [
+  //       { "fieldPath": "baz", "mode": "ASCENDING" }
+  //     ]
+  //   },
+  // ]
+  "indexes": [],
+  "fieldOverrides": []
 }

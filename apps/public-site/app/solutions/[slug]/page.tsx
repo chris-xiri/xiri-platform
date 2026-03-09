@@ -8,6 +8,7 @@ import { FAQ } from '@/components/FAQ';
 import { DLPSidebar } from '@/components/DLPSidebar';
 import seoData from '@/data/seo-data.json';
 import { CheckCircle, ArrowRight, Building2, Stethoscope, Shield, Users, FileText, Phone } from 'lucide-react';
+import { AuthorityBreadcrumb } from '@/components/AuthorityBreadcrumb';
 
 // ── Solutions Data ──
 const SOLUTIONS: Record<string, {
@@ -271,6 +272,7 @@ export default async function SolutionPage({ params }: Props) {
         return (
             <div className="min-h-screen bg-white">
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: solution.title, description: solution.metaDescription, url: `https://xiri.ai/solutions/${slug}` }} />
+                <AuthorityBreadcrumb items={[{ label: 'Solutions', href: '/solutions' }, { label: solution.title }]} />
                 <Hero title={solution.heroTitle} subtitle={solution.heroSubtitle} ctaText="Get a Free Site Audit" />
                 <section className="py-16 bg-slate-50 border-y border-slate-200">
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -367,6 +369,7 @@ export default async function SolutionPage({ params }: Props) {
         return (
             <div className="min-h-screen bg-white">
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', name: hub.title, description: hub.metaDescription, url: `https://xiri.ai/solutions/${slug}` }} />
+                <AuthorityBreadcrumb items={[{ label: 'Solutions', href: '/solutions' }, { label: hub.title }]} />
                 <Hero title={hub.heroTitle} subtitle={hub.heroSubtitle} ctaText="Get a Free Site Audit" />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -408,6 +411,7 @@ export default async function SolutionPage({ params }: Props) {
             <div className="min-h-screen bg-white">
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: dlp.title, description: dlp.metaDescription, url: `https://xiri.ai/solutions/${slug}` }} />
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: dlp.faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
+                <AuthorityBreadcrumb items={[{ label: 'Solutions', href: '/solutions' }, { label: dlp.title }]} />
                 <Hero title={dlp.heroTitle} subtitle={dlp.heroSubtitle} ctaText="Get a Free Site Audit" />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -521,6 +525,11 @@ export default async function SolutionPage({ params }: Props) {
                     serviceType: dlp.title,
                 }} />
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: dlp.faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
+                <AuthorityBreadcrumb items={[
+                    { label: 'Solutions', href: '/solutions' },
+                    { label: dlp.title, href: `/solutions/${dlpSlug}` },
+                    { label: location.name.split(',')[0] },
+                ]} />
                 <Hero title={`${dlp.heroTitle} in ${location.name.split(',')[0]}`} subtitle={dlp.heroSubtitle} ctaText="Get a Free Site Audit" />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

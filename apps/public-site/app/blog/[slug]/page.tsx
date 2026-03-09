@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { JsonLd } from '@/components/JsonLd';
 import { getPost, getAllSlugs } from '@/data/blog-posts';
+import { AuthorityBreadcrumb } from '@/components/AuthorityBreadcrumb';
 
 type Props = {
     params: Promise<{ slug: string }>;
@@ -175,11 +176,14 @@ export default async function BlogPost({ params }: Props) {
                     "@type": "BreadcrumbList",
                     "itemListElement": [
                         { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
-                        { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://xiri.ai/blog" },
-                        { "@type": "ListItem", "position": 3, "name": post.title, "item": `https://xiri.ai/blog/${slug}` },
+                        { "@type": "ListItem", "position": 2, "name": "Commercial Cleaning Services", "item": "https://xiri.ai/services/commercial-cleaning" },
+                        { "@type": "ListItem", "position": 3, "name": "Blog", "item": "https://xiri.ai/blog" },
+                        { "@type": "ListItem", "position": 4, "name": post.title, "item": `https://xiri.ai/blog/${slug}` },
                     ]
                 }}
             />
+
+            <AuthorityBreadcrumb items={[{ label: 'Blog', href: '/blog' }, { label: post.title }]} />
 
             <article className="pt-32 pb-20">
                 <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
