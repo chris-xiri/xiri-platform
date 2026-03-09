@@ -1,0 +1,282 @@
+[
+    {
+        "id": "betco-sanibet",
+        "name": "Betco Symplicity Sanibet Multi-Range Sanitizer",
+        "manufacturer": "Betco Corporation",
+        "category": "specialty",
+        "categoryLabel": "Food-Contact Sanitizer",
+        "activeIngredient": "Quaternary Ammonium Compounds",
+        "epaRegNumber": "4170-13",
+        "vocCompliant": true,
+        "vocGperL": 0,
+        "greenSealCertified": false,
+        "dilutionRatio": "1:512 (sanitize), 1:64 (disinfect)",
+        "dwellTime": "60 seconds (sanitize)",
+        "hazards": [
+            "Eye irritant at concentrate"
+        ],
+        "ppe": [
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush 15 min.",
+        "storage": "Original container.",
+        "disposal": "Per local regulations.",
+        "suitableFor": [
+            "food-prep",
+            "daycare",
+            "commercial-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA-registered food-contact sanitizer. No rinse required at sanitizing dilution. NSF D2 rated. Ideal for breakroom and kitchen surfaces.",
+        "sdsUrl": "https://www.betco.com/sds",
+        "references": [
+            {
+                "label": "EPA Pesticide Product Label",
+                "url": "https://www.epa.gov/pesticide-labels",
+                "authority": "EPA"
+            },
+            {
+                "label": "NSF International",
+                "url": "https://www.nsf.org/",
+                "authority": "NSF"
+            }
+        ]
+    },
+    {
+        "id": "diversey-oxivir-1-wipes",
+        "name": "Diversey Oxivir 1 Wipes",
+        "manufacturer": "Diversey",
+        "category": "specialty",
+        "categoryLabel": "AHP Disinfecting Wipes",
+        "activeIngredient": "Hydrogen Peroxide (Accelerated)",
+        "epaRegNumber": "70627-77",
+        "vocCompliant": true,
+        "vocGperL": 0,
+        "greenSealCertified": false,
+        "greenSealSaferList": true,
+        "epaListN": true,
+        "dilutionRatio": "Ready to Use (pre-saturated)",
+        "dwellTime": "1 minute",
+        "hazards": [
+            "Low toxicity"
+        ],
+        "ppe": [
+            "None typically required"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Keep lid closed.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "medical-office",
+            "surgery-center",
+            "dental-office",
+            "daycare",
+            "commercial-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA List N. 1-min kill time in wipe format. AHP technology — on Green Seal safer active ingredients list. Non-irritating — no PPE needed at use concentration.",
+        "sdsUrl": "https://sds.diversey.com/",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            },
+            {
+                "label": "Green Seal Safer Disinfectants",
+                "url": "https://greenseal.org/safer-disinfectants",
+                "authority": "Green Seal"
+            }
+        ]
+    },
+    {
+        "id": "spartan-airlift-odor",
+        "name": "Spartan Airlift Smoke & Odor Eliminator",
+        "manufacturer": "Spartan Chemical",
+        "category": "specialty",
+        "categoryLabel": "Odor Eliminator",
+        "activeIngredient": "Odor counteractant blend",
+        "vocCompliant": true,
+        "vocGperL": 15,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use or 1:20 dilution",
+        "dwellTime": "Spray and leave",
+        "hazards": [
+            "Eye irritant",
+            "Flammable aerosol"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Ventilation"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Away from heat. Do not puncture.",
+        "disposal": "Per aerosol regulations.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Odor counteractant — doesn't mask with fragrance but neutralizes odor molecules. Effective on smoke, food, and biological odors. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.spartanchemical.com/sds/",
+        "references": []
+    },
+    {
+        "id": "3m-stainless-steel-polish",
+        "name": "3M Stainless Steel Cleaner & Polish",
+        "manufacturer": "3M Commercial",
+        "category": "specialty",
+        "categoryLabel": "Stainless Steel Polish",
+        "activeIngredient": "Mineral Oil, Surfactants",
+        "vocCompliant": true,
+        "vocGperL": 20,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use (aerosol)",
+        "dwellTime": "Spray, wipe, buff",
+        "hazards": [
+            "Flammable aerosol",
+            "Eye irritant"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Ventilation"
+        ],
+        "firstAid": "Eyes: Flush with water. Inhalation: Move to fresh air.",
+        "storage": "Away from heat and flame.",
+        "disposal": "Per aerosol regulations.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office",
+            "food-prep"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Cleans, polishes, and protects stainless steel surfaces. Leaves protective film that resists fingerprints. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.3m.com/3M/en_US/safety-data-sheets/",
+        "references": []
+    },
+    {
+        "id": "betco-bestscent-odor",
+        "name": "Betco BestScent Metered Air Freshener",
+        "manufacturer": "Betco Corporation",
+        "category": "specialty",
+        "categoryLabel": "Air Freshener",
+        "activeIngredient": "Fragrance compounds in aerosol carrier",
+        "vocCompliant": true,
+        "vocGperL": 18,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use (metered dispenser)",
+        "dwellTime": "Continuous release",
+        "hazards": [
+            "Flammable aerosol",
+            "Mild respiratory irritant"
+        ],
+        "ppe": [
+            "Ventilation"
+        ],
+        "firstAid": "Inhalation: Move to fresh air.",
+        "storage": "Away from heat. Do not puncture.",
+        "disposal": "Per aerosol regulations.",
+        "suitableFor": [
+            "commercial-office"
+        ],
+        "notSuitableFor": [
+            "daycare",
+            "medical-office"
+        ],
+        "regulationNotes": "Metered dispenser system for consistent air freshening. Not recommended where fragrance-free policies apply (healthcare, daycares). NYS Part 226 compliant.",
+        "sdsUrl": "https://www.betco.com/sds",
+        "references": []
+    },
+    {
+        "id": "3m-carpet-extractor",
+        "name": "3M Carpet Extraction Cleaner HB Quat",
+        "manufacturer": "3M Commercial",
+        "category": "specialty",
+        "categoryLabel": "Carpet Extractor Cleaner",
+        "activeIngredient": "Quaternary Ammonium, Surfactants",
+        "vocCompliant": true,
+        "vocGperL": 5,
+        "greenSealCertified": false,
+        "dilutionRatio": "1:128 (via Twist'n Fill)",
+        "dwellTime": "Pre-spray 5-10 min, extract",
+        "hazards": [
+            "Mild eye irritant at concentrate"
+        ],
+        "ppe": [
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Cleans and sanitizes carpet in one step. Part of 3M Twist'n Fill system. Low-foam formula for extraction equipment. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.3m.com/3M/en_US/safety-data-sheets/",
+        "references": []
+    },
+    {
+        "id": "ecolab-drain-maintainer",
+        "name": "Ecolab Drain Maintainer",
+        "manufacturer": "Ecolab",
+        "category": "specialty",
+        "categoryLabel": "Enzymatic Drain Treatment",
+        "activeIngredient": "Enzymatic Bio-Culture Blend",
+        "vocCompliant": true,
+        "vocGperL": 0,
+        "greenSealCertified": false,
+        "dilutionRatio": "4-8 oz per drain",
+        "dwellTime": "Overnight (best results)",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Gloves recommended"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Room temperature. Keep sealed.",
+        "disposal": "Non-hazardous. Biodegradable.",
+        "suitableFor": [
+            "food-prep",
+            "commercial-office",
+            "medical-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Bio-enzyme drain maintainer — prevents buildup, eliminates drain odors. Not a chemical drain opener. Apply at end of day for overnight digestion.",
+        "sdsUrl": "https://www.ecolab.com/sds-search",
+        "references": []
+    },
+    {
+        "id": "diversey-good-sense-odor",
+        "name": "Diversey Good Sense Odor Counteractant",
+        "manufacturer": "Diversey",
+        "category": "specialty",
+        "categoryLabel": "Odor Neutralizer",
+        "activeIngredient": "Odor counteractant surfactant blend",
+        "vocCompliant": true,
+        "vocGperL": 8,
+        "greenSealCertified": false,
+        "dilutionRatio": "1:32 (4 oz per gallon)",
+        "dwellTime": "Spray on source area",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "True odor counteractant — chemically neutralizes odor molecules rather than masking. Dilutable concentrate. NYS Part 226 compliant.",
+        "sdsUrl": "https://sds.diversey.com/",
+        "references": []
+    }
+]

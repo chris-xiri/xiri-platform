@@ -2,209 +2,10 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, FileText, Shield, AlertTriangle, Leaf, ExternalLink, ArrowRight } from 'lucide-react';
+import { Search, FileText, Shield, AlertTriangle, Leaf, ExternalLink, ArrowRight, BookOpen } from 'lucide-react';
 import { AuthorityBreadcrumb } from '@/components/AuthorityBreadcrumb';
-
-// ─── CHEMICAL SDS DATABASE ────────────────────────────────────────
-
-interface SDSEntry {
-    id: string;
-    name: string;
-    manufacturer: string;
-    category: 'disinfectant' | 'floor-care' | 'glass-surface' | 'restroom' | 'degreaser' | 'specialty';
-    categoryLabel: string;
-    activeIngredient: string;
-    epaRegNumber?: string;
-    vocCompliant: boolean;
-    vocGperL?: number;
-    greenSealCertified: boolean;
-    dilutionRatio: string;
-    dwellTime: string;
-    hazards: string[];
-    ppe: string[];
-    firstAid: string;
-    storage: string;
-    disposal: string;
-    suitableFor: string[];
-    notSuitableFor: string[];
-    regulationNotes: string;
-}
-
-const SDS_DATABASE: SDSEntry[] = [
-    {
-        id: 'virex-ii-256',
-        name: 'Virex II 256 One-Step Disinfectant',
-        manufacturer: 'Diversey',
-        category: 'disinfectant',
-        categoryLabel: 'Hospital-Grade Disinfectant',
-        activeIngredient: 'Quaternary Ammonium (Didecyl dimethyl ammonium chloride)',
-        epaRegNumber: '70627-24',
-        vocCompliant: true,
-        vocGperL: 12,
-        greenSealCertified: false,
-        dilutionRatio: '1:256 (½ oz per gallon)',
-        dwellTime: '10 minutes',
-        hazards: ['Corrosive to eyes', 'Harmful if swallowed', 'Skin irritant at concentrate'],
-        ppe: ['Chemical splash goggles', 'Chemical-resistant gloves', 'Apron when handling concentrate'],
-        firstAid: 'Eyes: Flush with water 15 min. Skin: Wash with soap and water. Ingestion: Do not induce vomiting, call Poison Control.',
-        storage: 'Store in original container in a cool, dry area. Keep from freezing.',
-        disposal: 'Rinse empty container and dispose per local regulations. Do not reuse container.',
-        suitableFor: ['medical-office', 'surgery-center', 'urgent-care', 'dialysis-center', 'dental-office'],
-        notSuitableFor: ['daycare', 'food-prep'],
-        regulationNotes: 'EPA-registered hospital-grade disinfectant. Meets OSHA BBP requirements for blood and OPIM cleanup. NYS Part 226 compliant at 12 g/L VOC.',
-    },
-    {
-        id: 'oxivir-tb',
-        name: 'Oxivir TB RTU Disinfectant Cleaner',
-        manufacturer: 'Diversey',
-        category: 'disinfectant',
-        categoryLabel: 'AHP Disinfectant',
-        activeIngredient: 'Hydrogen Peroxide (Accelerated)',
-        epaRegNumber: '70627-56',
-        vocCompliant: true,
-        vocGperL: 5,
-        greenSealCertified: true,
-        dilutionRatio: 'Ready to Use (no dilution)',
-        dwellTime: '1 minute (TB claim)',
-        hazards: ['Low toxicity', 'Mild eye irritant'],
-        ppe: ['Safety glasses', 'Gloves recommended'],
-        firstAid: 'Eyes: Flush with water 5 min. Skin: Rinse with water. Minimal hazard at use dilution.',
-        storage: 'Room temperature. Avoid extreme heat.',
-        disposal: 'Rinsate can be disposed of in sanitary sewer. Empty container is not hazardous waste.',
-        suitableFor: ['medical-office', 'surgery-center', 'urgent-care', 'daycare', 'dental-office', 'veterinary-clinic'],
-        notSuitableFor: [],
-        regulationNotes: 'EPA-registered hospital-grade. Green Seal certified (GS-53). Only 1-min dwell time — ideal for high-throughput surgical turnover. NYS Part 226 compliant.',
-    },
-    {
-        id: 'clorox-healthcare-bleach',
-        name: 'Clorox Healthcare Bleach Germicidal Cleaner',
-        manufacturer: 'Clorox Professional',
-        category: 'disinfectant',
-        categoryLabel: 'Bleach-Based Disinfectant',
-        activeIngredient: 'Sodium Hypochlorite (0.55%)',
-        epaRegNumber: '56392-7',
-        vocCompliant: true,
-        vocGperL: 0,
-        greenSealCertified: false,
-        dilutionRatio: 'Ready to Use',
-        dwellTime: '1 minute (bloodborne pathogen)',
-        hazards: ['Corrosive to eyes', 'Skin irritant', 'Releases chlorine gas if mixed with ammonia or acids'],
-        ppe: ['Chemical splash goggles', 'Chemical-resistant gloves', 'Ventilation in enclosed areas'],
-        firstAid: 'Eyes: Flush 15 min. Ingestion: Drink water, do not induce vomiting. Inhalation: Move to fresh air.',
-        storage: 'Store upright in cool, dry area. Do not mix with other chemicals.',
-        disposal: 'Flush down drain with water. Do not reuse container.',
-        suitableFor: ['surgery-center', 'dialysis-center', 'urgent-care'],
-        notSuitableFor: ['daycare', 'areas-with-metal-surfaces'],
-        regulationNotes: 'Meets CDC recommendations for C. diff and Norovirus. 1-min BBP kill claim meets OSHA. Can damage stainless steel with prolonged contact.',
-    },
-    {
-        id: 'enmotion-foam-soap',
-        name: 'enMotion Foam Soap with Moisturizers',
-        manufacturer: 'GP PRO (Georgia-Pacific)',
-        category: 'restroom',
-        categoryLabel: 'Hand Soap',
-        activeIngredient: 'Cocamidopropyl Betaine (surfactant)',
-        vocCompliant: true,
-        vocGperL: 0,
-        greenSealCertified: true,
-        dilutionRatio: 'Ready to Use (cartridge)',
-        dwellTime: '20 seconds (CDC hand hygiene)',
-        hazards: ['Mild eye irritant'],
-        ppe: ['None required for normal use'],
-        firstAid: 'Eyes: Rinse with water. Generally non-hazardous.',
-        storage: 'Room temperature. Keep sealed until use.',
-        disposal: 'Empty cartridge is non-hazardous waste.',
-        suitableFor: ['medical-office', 'surgery-center', 'daycare', 'commercial-office', 'dental-office'],
-        notSuitableFor: [],
-        regulationNotes: 'Green Seal certified. Supports CDC hand hygiene guidelines. Fragrance-free options available for sensitive healthcare environments.',
-    },
-    {
-        id: 'betco-ph7-ultra',
-        name: 'Betco pH7 Ultra Neutral Floor Cleaner',
-        manufacturer: 'Betco Corporation',
-        category: 'floor-care',
-        categoryLabel: 'Neutral Floor Cleaner',
-        activeIngredient: 'Nonionic Surfactants',
-        vocCompliant: true,
-        vocGperL: 8,
-        greenSealCertified: true,
-        dilutionRatio: '1:128 (1 oz per gallon)',
-        dwellTime: 'N/A — mop and go',
-        hazards: ['Mild eye irritant at concentrate'],
-        ppe: ['Gloves when handling concentrate'],
-        firstAid: 'Eyes: Flush with water. Skin: Wash with water. Low hazard.',
-        storage: 'Store in original container. Keep from freezing.',
-        disposal: 'Diluted solution safe for sewer. Empty container is recyclable.',
-        suitableFor: ['medical-office', 'commercial-office', 'daycare', 'dental-office', 'surgery-center'],
-        notSuitableFor: [],
-        regulationNotes: 'Green Seal GS-37 certified. Safe on all resilient and hard floor types. Will not damage floor finish. NYS Part 226 compliant.',
-    },
-    {
-        id: 'spartan-biorenewables-glass',
-        name: 'Spartan BioRenewables Glass Cleaner',
-        manufacturer: 'Spartan Chemical',
-        category: 'glass-surface',
-        categoryLabel: 'Glass & Surface Cleaner',
-        activeIngredient: 'Bio-based surfactants (corn & soy derived)',
-        vocCompliant: true,
-        vocGperL: 3,
-        greenSealCertified: true,
-        dilutionRatio: '1:64 (2 oz per gallon)',
-        dwellTime: 'Spray and wipe',
-        hazards: ['Minimal — mild eye irritant'],
-        ppe: ['Safety glasses recommended'],
-        firstAid: 'Eyes: Flush with water. Non-toxic.',
-        storage: 'Room temperature. Keep sealed.',
-        disposal: 'Biodegradable. Non-hazardous waste.',
-        suitableFor: ['medical-office', 'commercial-office', 'daycare', 'dental-office'],
-        notSuitableFor: [],
-        regulationNotes: 'USDA BioPreferred product. Green Seal certified. Ideal for VOC-sensitive environments like daycares.',
-    },
-    {
-        id: 'simple-green-d-pro-5',
-        name: 'Simple Green d Pro 5 One-Step Disinfectant',
-        manufacturer: 'Sunshine Makers',
-        category: 'disinfectant',
-        categoryLabel: 'One-Step Disinfectant',
-        activeIngredient: 'Quaternary Ammonium Compounds',
-        epaRegNumber: '3573-30',
-        vocCompliant: true,
-        vocGperL: 10,
-        greenSealCertified: false,
-        dilutionRatio: '1:30 (4.3 oz per gallon)',
-        dwellTime: '10 minutes',
-        hazards: ['Moderate eye irritant', 'Harmful if swallowed'],
-        ppe: ['Safety glasses', 'Chemical-resistant gloves'],
-        firstAid: 'Eyes: Flush 15 min. Skin: Wash thoroughly. Ingestion: Call Poison Control.',
-        storage: 'Original container, cool dry area.',
-        disposal: 'Per local/state regulations.',
-        suitableFor: ['veterinary-clinic', 'commercial-office', 'medical-office'],
-        notSuitableFor: ['daycare'],
-        regulationNotes: 'EPA-registered hospital-grade. Kills HIV-1, HBV, HCV — meets OSHA BBP. Pleasant lemon fragrance. NYS Part 226 compliant.',
-    },
-    {
-        id: 'zep-spirit-ii',
-        name: 'Zep Spirit II Ready-to-Use Detergent Disinfectant',
-        manufacturer: 'Zep Inc.',
-        category: 'disinfectant',
-        categoryLabel: 'RTU Disinfectant',
-        activeIngredient: 'Quaternary Ammonium (Alkyl C12-16)',
-        epaRegNumber: '1839-220',
-        vocCompliant: false,
-        vocGperL: 185,
-        greenSealCertified: false,
-        dilutionRatio: 'Ready to Use',
-        dwellTime: '10 minutes',
-        hazards: ['Moderate eye irritant', 'Skin irritant', 'High VOC content'],
-        ppe: ['Chemical splash goggles', 'Gloves', 'Ventilation required'],
-        firstAid: 'Eyes: Flush 15 min. Skin: Wash with soap and water. Inhalation: Move to fresh air.',
-        storage: 'Original container. Do not expose to heat or flame.',
-        disposal: 'Hazardous waste — dispose per RCRA guidelines.',
-        suitableFor: ['commercial-office'],
-        notSuitableFor: ['medical-office', 'surgery-center', 'daycare', 'dental-office'],
-        regulationNotes: '⚠️ NOT NYS Part 226 compliant at 185 g/L VOC. Cannot be used in NYC or Long Island without violating VOC regulations. Not recommended for healthcare.',
-    },
-];
+import { SDS_DATABASE } from '@/data/sds-database';
+import type { SDSEntry } from '@/data/sds-types';
 
 // ─── COMPONENT ─────────────────────────────────────────────────────
 
@@ -213,6 +14,8 @@ export default function SDSLookupPage() {
     const [filterCategory, setFilterCategory] = useState<string>('all');
     const [filterVOC, setFilterVOC] = useState<boolean | null>(null);
     const [filterGreen, setFilterGreen] = useState<boolean | null>(null);
+    const [filterEpaListN, setFilterEpaListN] = useState<boolean | null>(null);
+    const [filterSaferChoice, setFilterSaferChoice] = useState<boolean | null>(null);
     const [expanded, setExpanded] = useState<string | null>(null);
 
     const filtered = useMemo(() => {
@@ -224,9 +27,22 @@ export default function SDSLookupPage() {
             const matchesCategory = filterCategory === 'all' || entry.category === filterCategory;
             const matchesVOC = filterVOC === null || entry.vocCompliant === filterVOC;
             const matchesGreen = filterGreen === null || entry.greenSealCertified === filterGreen;
-            return matchesSearch && matchesCategory && matchesVOC && matchesGreen;
+            const matchesEpaListN = filterEpaListN === null || entry.epaListN === filterEpaListN;
+            const matchesSaferChoice = filterSaferChoice === null || entry.epaSaferChoice === filterSaferChoice;
+            return matchesSearch && matchesCategory && matchesVOC && matchesGreen && matchesEpaListN && matchesSaferChoice;
         });
-    }, [searchTerm, filterCategory, filterVOC, filterGreen]);
+    }, [searchTerm, filterCategory, filterVOC, filterGreen, filterEpaListN, filterSaferChoice]);
+
+    const clearFilters = () => {
+        setSearchTerm('');
+        setFilterCategory('all');
+        setFilterVOC(null);
+        setFilterGreen(null);
+        setFilterEpaListN(null);
+        setFilterSaferChoice(null);
+    };
+
+    const hasActiveFilters = searchTerm || filterCategory !== 'all' || filterVOC !== null || filterGreen !== null || filterEpaListN !== null || filterSaferChoice !== null;
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -243,9 +59,13 @@ export default function SDSLookupPage() {
                     <h1 className="text-4xl md:text-5xl font-bold mb-4">
                         Cleaning Chemical SDS Lookup
                     </h1>
-                    <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-                        Look up Safety Data Sheets, VOC compliance, PPE requirements, and regulation notes for common janitorial chemicals. No signup required.
+                    <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-6">
+                        Look up Safety Data Sheets, VOC compliance, PPE requirements, and regulation notes for janitorial chemicals. No signup required.
                     </p>
+                    <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white text-sm font-semibold backdrop-blur-sm border border-white/20">
+                        <Shield className="w-4 h-4 text-emerald-400" />
+                        {SDS_DATABASE.length} Chemicals Indexed — Cleaning & Facility Management
+                    </div>
                 </div>
             </section>
 
@@ -304,11 +124,34 @@ export default function SDSLookupPage() {
                         >
                             🏅 Green Seal Certified
                         </button>
+
+                        <button
+                            onClick={() => setFilterEpaListN(filterEpaListN === true ? null : true)}
+                            className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${filterEpaListN === true ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-slate-200 text-slate-500 hover:border-blue-300'}`}
+                        >
+                            🦠 EPA List N (COVID-19)
+                        </button>
+
+                        <button
+                            onClick={() => setFilterSaferChoice(filterSaferChoice === true ? null : true)}
+                            className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${filterSaferChoice === true ? 'bg-teal-50 border-teal-300 text-teal-700' : 'border-slate-200 text-slate-500 hover:border-teal-300'}`}
+                        >
+                            🌿 EPA Safer Choice
+                        </button>
+
+                        {hasActiveFilters && (
+                            <button
+                                onClick={clearFilters}
+                                className="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-500 hover:bg-slate-50 transition-all"
+                            >
+                                ✕ Clear All
+                            </button>
+                        )}
                     </div>
                 </div>
 
                 {/* ═══ RESULTS COUNT ═══ */}
-                <p className="text-sm text-slate-500 mb-6">{filtered.length} chemical{filtered.length !== 1 ? 's' : ''} found</p>
+                <p className="text-sm text-slate-500 mb-6">{filtered.length} chemical{filtered.length !== 1 ? 's' : ''} found{hasActiveFilters ? ' (filtered)' : ''}</p>
 
                 {/* ═══ CHEMICAL CARDS ═══ */}
                 <div className="space-y-4">
@@ -323,7 +166,7 @@ export default function SDSLookupPage() {
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-1">
+                                            <div className="flex items-center gap-2 flex-wrap mb-1">
                                                 <h3 className="font-bold text-slate-900 text-lg">{entry.name}</h3>
                                                 {entry.vocCompliant ? (
                                                     <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-700">VOC ✓</span>
@@ -332,6 +175,15 @@ export default function SDSLookupPage() {
                                                 )}
                                                 {entry.greenSealCertified && (
                                                     <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-700">Green Seal ✓</span>
+                                                )}
+                                                {entry.epaListN && (
+                                                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700">EPA List N</span>
+                                                )}
+                                                {entry.epaSaferChoice && (
+                                                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-teal-100 text-teal-700">Safer Choice</span>
+                                                )}
+                                                {entry.greenSealSaferList && (
+                                                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-lime-100 text-lime-700">GS Safer List</span>
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-4 text-sm text-slate-500">
@@ -416,6 +268,47 @@ export default function SDSLookupPage() {
                                             <h4 className="text-xs font-bold text-sky-700 uppercase tracking-wider mb-1">📋 Regulation Notes</h4>
                                             <p className="text-sm text-sky-800">{entry.regulationNotes}</p>
                                         </div>
+
+                                        {/* SDS Link + References */}
+                                        <div className="mt-4 flex flex-col sm:flex-row gap-4">
+                                            {entry.sdsUrl && (
+                                                <a
+                                                    href={entry.sdsUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-lg font-semibold text-sm hover:bg-slate-800 transition-colors"
+                                                >
+                                                    <FileText className="w-4 h-4" />
+                                                    View Full SDS →
+                                                </a>
+                                            )}
+                                        </div>
+
+                                        {/* References */}
+                                        {entry.references && entry.references.length > 0 && (
+                                            <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                                    <BookOpen className="w-3.5 h-3.5" />
+                                                    Sources & References
+                                                </h4>
+                                                <ul className="space-y-1">
+                                                    {entry.references.map((ref, i) => (
+                                                        <li key={i} className="text-sm">
+                                                            <a
+                                                                href={ref.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-sky-600 hover:text-sky-800 hover:underline inline-flex items-center gap-1"
+                                                            >
+                                                                <span className="px-1.5 py-0.5 bg-slate-200 rounded text-xs font-bold text-slate-600">{ref.authority}</span>
+                                                                {ref.label}
+                                                                <ExternalLink className="w-3 h-3" />
+                                                            </a>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -428,7 +321,10 @@ export default function SDSLookupPage() {
                     <div className="text-center py-16">
                         <Search className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                         <h3 className="font-bold text-slate-700 text-lg mb-2">No chemicals match your filters</h3>
-                        <p className="text-slate-500">Try adjusting your search or filters.</p>
+                        <p className="text-slate-500 mb-4">Try adjusting your search or filters.</p>
+                        <button onClick={clearFilters} className="text-sky-600 hover:text-sky-800 font-semibold text-sm">
+                            Clear all filters →
+                        </button>
                     </div>
                 )}
 
@@ -448,9 +344,32 @@ export default function SDSLookupPage() {
                 </div>
             </div>
 
-            {/* ═══ SEO FOOTER ═══ */}
+            {/* ═══ REGULATORY SOURCES FOOTER ═══ */}
             <section className="py-12 bg-white border-t border-slate-200">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h2 className="text-xl font-bold text-slate-900 mb-4 text-center">Regulatory Sources</h2>
+                    <p className="text-sm text-slate-500 text-center mb-6">
+                        All chemical data verified against government and expert-association sources. XIRI does not host SDS documents — we link directly to manufacturer pages.
+                    </p>
+                    <div className="grid md:grid-cols-3 gap-4 mb-8">
+                        {[
+                            { label: 'EPA List N', url: 'https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19', desc: 'COVID-19 Disinfectants' },
+                            { label: 'OSHA BBP Standard', url: 'https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.1030', desc: '29 CFR 1910.1030' },
+                            { label: 'CDC Disinfection Guide', url: 'https://www.cdc.gov/infection-control/hcp/disinfection-sterilization/', desc: 'Healthcare Facilities' },
+                            { label: 'Green Seal Standards', url: 'https://greenseal.org/', desc: 'GS-37, GS-41, GS-53' },
+                            { label: 'EPA Safer Choice', url: 'https://www.epa.gov/saferchoice', desc: 'Certified Products' },
+                            { label: 'NYS DEC Part 226', url: 'https://www.dec.ny.gov/chemical/8569.html', desc: 'VOC Limits' },
+                        ].map(s => (
+                            <a key={s.label} href={s.url} target="_blank" rel="noopener noreferrer" className="group flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                                <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-sky-600 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-700 group-hover:text-sky-700">{s.label}</p>
+                                    <p className="text-xs text-slate-400">{s.desc}</p>
+                                </div>
+                            </a>
+                        ))}
+                    </div>
+
                     <h2 className="text-xl font-bold text-slate-900 mb-6 text-center">Related Compliance Resources</h2>
                     <div className="grid md:grid-cols-3 gap-4">
                         {[

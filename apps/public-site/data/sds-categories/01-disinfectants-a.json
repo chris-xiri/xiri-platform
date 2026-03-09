@@ -1,0 +1,388 @@
+[
+    {
+        "id": "virex-ii-256",
+        "name": "Virex II 256 One-Step Disinfectant",
+        "manufacturer": "Diversey",
+        "category": "disinfectant",
+        "categoryLabel": "Hospital-Grade Disinfectant",
+        "activeIngredient": "Quaternary Ammonium (Didecyl dimethyl ammonium chloride)",
+        "epaRegNumber": "70627-24",
+        "vocCompliant": true,
+        "vocGperL": 12,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "1:256 (½ oz per gallon)",
+        "dwellTime": "10 minutes",
+        "hazards": [
+            "Corrosive to eyes",
+            "Harmful if swallowed",
+            "Skin irritant at concentrate"
+        ],
+        "ppe": [
+            "Chemical splash goggles",
+            "Chemical-resistant gloves",
+            "Apron when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush with water 15 min. Skin: Wash with soap and water. Ingestion: Do not induce vomiting, call Poison Control.",
+        "storage": "Store in original container, cool dry area. Keep from freezing.",
+        "disposal": "Rinse empty container, dispose per local regulations.",
+        "suitableFor": [
+            "medical-office",
+            "surgery-center",
+            "urgent-care",
+            "dialysis-center",
+            "dental-office"
+        ],
+        "notSuitableFor": [
+            "daycare",
+            "food-prep"
+        ],
+        "regulationNotes": "EPA-registered hospital-grade disinfectant. Meets OSHA BBP requirements for blood and OPIM cleanup. On EPA List N for SARS-CoV-2. NYS Part 226 compliant at 12 g/L VOC.",
+        "sdsUrl": "https://sds.diversey.com/",
+        "references": [
+            {
+                "label": "EPA List N: Disinfectants for SARS-CoV-2",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            },
+            {
+                "label": "OSHA BBP Standard 29 CFR 1910.1030",
+                "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.1030",
+                "authority": "OSHA"
+            }
+        ]
+    },
+    {
+        "id": "oxivir-tb",
+        "name": "Oxivir TB RTU Disinfectant Cleaner",
+        "manufacturer": "Diversey",
+        "category": "disinfectant",
+        "categoryLabel": "AHP Disinfectant",
+        "activeIngredient": "Hydrogen Peroxide (Accelerated)",
+        "epaRegNumber": "70627-56",
+        "vocCompliant": true,
+        "vocGperL": 5,
+        "greenSealCertified": false,
+        "greenSealSaferList": true,
+        "epaListN": true,
+        "dilutionRatio": "Ready to Use (no dilution)",
+        "dwellTime": "1 minute (TB claim)",
+        "hazards": [
+            "Low toxicity",
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Gloves recommended"
+        ],
+        "firstAid": "Eyes: Flush with water 5 min. Minimal hazard at use dilution.",
+        "storage": "Room temperature. Avoid extreme heat.",
+        "disposal": "Rinsate safe for sanitary sewer.",
+        "suitableFor": [
+            "medical-office",
+            "surgery-center",
+            "urgent-care",
+            "daycare",
+            "dental-office",
+            "veterinary-clinic"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA-registered hospital-grade. On Green Seal safer active ingredients list (H₂O₂) — note: EPA prohibits formal third-party eco-certification on disinfectant labels. 1-min dwell time ideal for surgical turnover.",
+        "sdsUrl": "https://sds.diversey.com/",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            },
+            {
+                "label": "Green Seal Safer Disinfectants List",
+                "url": "https://greenseal.org/safer-disinfectants",
+                "authority": "Green Seal"
+            },
+            {
+                "label": "CDC Guideline for Disinfection and Sterilization",
+                "url": "https://www.cdc.gov/infection-control/hcp/disinfection-sterilization/",
+                "authority": "CDC"
+            }
+        ]
+    },
+    {
+        "id": "clorox-healthcare-bleach",
+        "name": "Clorox Healthcare Bleach Germicidal Cleaner",
+        "manufacturer": "Clorox Professional",
+        "category": "disinfectant",
+        "categoryLabel": "Bleach-Based Disinfectant",
+        "activeIngredient": "Sodium Hypochlorite (0.55%)",
+        "epaRegNumber": "56392-7",
+        "vocCompliant": true,
+        "vocGperL": 0,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "1 minute (bloodborne pathogen)",
+        "hazards": [
+            "Corrosive to eyes",
+            "Skin irritant",
+            "Releases chlorine gas if mixed with ammonia or acids"
+        ],
+        "ppe": [
+            "Chemical splash goggles",
+            "Chemical-resistant gloves",
+            "Ventilation in enclosed areas"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Ingestion: Drink water, do not induce vomiting.",
+        "storage": "Store upright, cool dry area. Do not mix with other chemicals.",
+        "disposal": "Flush down drain with water.",
+        "suitableFor": [
+            "surgery-center",
+            "dialysis-center",
+            "urgent-care"
+        ],
+        "notSuitableFor": [
+            "daycare",
+            "areas-with-metal-surfaces"
+        ],
+        "regulationNotes": "Meets CDC recommendations for C. diff and Norovirus. 1-min BBP kill claim meets OSHA. Can damage stainless steel with prolonged contact.",
+        "sdsUrl": "https://www.thecloroxcompany.com/brands/product-sds/",
+        "references": [
+            {
+                "label": "CDC C. diff Disinfection Guidelines",
+                "url": "https://www.cdc.gov/infection-control/hcp/disinfection-sterilization/",
+                "authority": "CDC"
+            },
+            {
+                "label": "OSHA BBP Standard",
+                "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.1030",
+                "authority": "OSHA"
+            }
+        ]
+    },
+    {
+        "id": "simple-green-d-pro-5",
+        "name": "Simple Green d Pro 5 One-Step Disinfectant",
+        "manufacturer": "Sunshine Makers",
+        "category": "disinfectant",
+        "categoryLabel": "One-Step Disinfectant",
+        "activeIngredient": "Quaternary Ammonium Compounds",
+        "epaRegNumber": "3573-30",
+        "vocCompliant": true,
+        "vocGperL": 10,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "1:30 (4.3 oz per gallon)",
+        "dwellTime": "10 minutes",
+        "hazards": [
+            "Moderate eye irritant",
+            "Harmful if swallowed"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Chemical-resistant gloves"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Ingestion: Call Poison Control.",
+        "storage": "Original container, cool dry area.",
+        "disposal": "Per local/state regulations.",
+        "suitableFor": [
+            "veterinary-clinic",
+            "commercial-office",
+            "medical-office"
+        ],
+        "notSuitableFor": [
+            "daycare"
+        ],
+        "regulationNotes": "EPA-registered hospital-grade. Kills HIV-1, HBV, HCV — meets OSHA BBP. NYS Part 226 compliant.",
+        "sdsUrl": "https://simplegreen.com/resources/sds/",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            },
+            {
+                "label": "OSHA BBP Standard",
+                "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.1030",
+                "authority": "OSHA"
+            }
+        ]
+    },
+    {
+        "id": "zep-spirit-ii",
+        "name": "Zep Spirit II RTU Detergent Disinfectant",
+        "manufacturer": "Zep Inc.",
+        "category": "disinfectant",
+        "categoryLabel": "RTU Disinfectant",
+        "activeIngredient": "Quaternary Ammonium (Alkyl C12-16)",
+        "epaRegNumber": "1839-220",
+        "vocCompliant": false,
+        "vocGperL": 185,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "10 minutes",
+        "hazards": [
+            "Moderate eye irritant",
+            "Skin irritant",
+            "High VOC content"
+        ],
+        "ppe": [
+            "Chemical splash goggles",
+            "Gloves",
+            "Ventilation required"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Inhalation: Move to fresh air.",
+        "storage": "Original container. Do not expose to heat or flame.",
+        "disposal": "Hazardous waste — dispose per RCRA guidelines.",
+        "suitableFor": [
+            "commercial-office"
+        ],
+        "notSuitableFor": [
+            "medical-office",
+            "surgery-center",
+            "daycare",
+            "dental-office"
+        ],
+        "regulationNotes": "⚠️ NOT NYS Part 226 compliant at 185 g/L VOC. Cannot be used in NYC or Long Island without violating VOC regulations.",
+        "sdsUrl": "https://www.zep.com/sds",
+        "references": [
+            {
+                "label": "NYS Part 226 VOC Limits",
+                "url": "https://www.dec.ny.gov/chemical/8569.html",
+                "authority": "NYS DEC"
+            }
+        ]
+    },
+    {
+        "id": "purell-professional-surface",
+        "name": "Purell Professional Surface Disinfectant",
+        "manufacturer": "GOJO Industries",
+        "category": "disinfectant",
+        "categoryLabel": "Ethanol-Based Disinfectant",
+        "activeIngredient": "Ethyl Alcohol (72%)",
+        "epaRegNumber": "84150-1",
+        "vocCompliant": true,
+        "vocGperL": 0,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "30 sec (bacteria), 1 min (viruses)",
+        "hazards": [
+            "Flammable",
+            "Eye irritant"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Ventilation for enclosed areas"
+        ],
+        "firstAid": "Eyes: Flush with water. Keep away from ignition sources.",
+        "storage": "Store in cool area away from heat and flame.",
+        "disposal": "Non-hazardous at use concentration.",
+        "suitableFor": [
+            "medical-office",
+            "dental-office",
+            "daycare",
+            "food-prep",
+            "commercial-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA List N. No rinse required on food-contact surfaces. 30-second kill time among the fastest available. Safe around children.",
+        "sdsUrl": "https://www.gojo.com/en/sds",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "ecolab-peroxide-msc",
+        "name": "Ecolab Peroxide Multi Surface Cleaner & Disinfectant",
+        "manufacturer": "Ecolab",
+        "category": "disinfectant",
+        "categoryLabel": "Peroxide Disinfectant",
+        "activeIngredient": "Hydrogen Peroxide (1.4%)",
+        "epaRegNumber": "1677-238",
+        "vocCompliant": true,
+        "vocGperL": 3,
+        "greenSealCertified": false,
+        "greenSealSaferList": true,
+        "epaListN": true,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "5 minutes",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Safety glasses recommended"
+        ],
+        "firstAid": "Eyes: Flush with water 5 min.",
+        "storage": "Room temperature. Keep sealed.",
+        "disposal": "Non-hazardous. Flush to sanitary sewer.",
+        "suitableFor": [
+            "medical-office",
+            "surgery-center",
+            "dental-office",
+            "commercial-office",
+            "daycare"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA List N. H₂O₂ breaks down to water and oxygen. On Green Seal safer active ingredients list. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.ecolab.com/sds-search",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            },
+            {
+                "label": "Green Seal Safer Disinfectants",
+                "url": "https://greenseal.org/safer-disinfectants",
+                "authority": "Green Seal"
+            }
+        ]
+    },
+    {
+        "id": "clorox-total-360",
+        "name": "Clorox Total 360 Disinfectant Cleaner",
+        "manufacturer": "Clorox Professional",
+        "category": "disinfectant",
+        "categoryLabel": "Electrostatic Disinfectant",
+        "activeIngredient": "Quaternary Ammonium Compounds",
+        "epaRegNumber": "67619-32",
+        "vocCompliant": true,
+        "vocGperL": 5,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "Ready to Use (electrostatic sprayer)",
+        "dwellTime": "2 minutes",
+        "hazards": [
+            "Moderate eye irritant",
+            "Skin irritant"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Chemical-resistant gloves"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Skin: Wash with soap and water.",
+        "storage": "Original container. Room temperature.",
+        "disposal": "Per local regulations.",
+        "suitableFor": [
+            "medical-office",
+            "surgery-center",
+            "commercial-office",
+            "dental-office"
+        ],
+        "notSuitableFor": [
+            "food-prep"
+        ],
+        "regulationNotes": "EPA List N. Designed for electrostatic sprayer system. Wraps around surfaces for full coverage.",
+        "sdsUrl": "https://www.thecloroxcompany.com/brands/product-sds/",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            }
+        ]
+    }
+]

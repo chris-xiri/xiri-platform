@@ -1,0 +1,291 @@
+[
+    {
+        "id": "enmotion-foam-soap",
+        "name": "enMotion Foam Soap with Moisturizers",
+        "manufacturer": "GP PRO (Georgia-Pacific)",
+        "category": "restroom",
+        "categoryLabel": "Hand Soap",
+        "activeIngredient": "Cocamidopropyl Betaine (surfactant)",
+        "vocCompliant": true,
+        "vocGperL": 0,
+        "greenSealCertified": true,
+        "greenSealStandard": "GS-41",
+        "dilutionRatio": "Ready to Use (cartridge)",
+        "dwellTime": "20 seconds (CDC hand hygiene)",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "None required for normal use"
+        ],
+        "firstAid": "Eyes: Rinse with water. Generally non-hazardous.",
+        "storage": "Room temperature. Keep sealed until use.",
+        "disposal": "Empty cartridge is non-hazardous waste.",
+        "suitableFor": [
+            "medical-office",
+            "surgery-center",
+            "daycare",
+            "commercial-office",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Green Seal certified. Supports CDC hand hygiene guidelines. Fragrance-free options available for sensitive healthcare environments.",
+        "sdsUrl": "https://www.gppro.com/sds",
+        "references": [
+            {
+                "label": "CDC Hand Hygiene Guidelines",
+                "url": "https://www.cdc.gov/clean-hands/",
+                "authority": "CDC"
+            },
+            {
+                "label": "Green Seal GS-41 Standard",
+                "url": "https://greenseal.org/standard/gs-41/",
+                "authority": "Green Seal"
+            }
+        ]
+    },
+    {
+        "id": "gojo-antibacterial-foam",
+        "name": "GOJO Antibacterial Foam Handwash",
+        "manufacturer": "GOJO Industries",
+        "category": "restroom",
+        "categoryLabel": "Antibacterial Hand Soap",
+        "activeIngredient": "Benzalkonium Chloride (0.13%)",
+        "vocCompliant": true,
+        "vocGperL": 0,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use (cartridge)",
+        "dwellTime": "20 seconds (CDC hand hygiene)",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "None for normal use"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Room temperature.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "medical-office",
+            "surgery-center",
+            "dental-office",
+            "commercial-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Antibacterial formula for healthcare settings. Compatible with GOJO dispensing systems. Supports CDC hand hygiene guidelines.",
+        "sdsUrl": "https://www.gojo.com/en/sds",
+        "references": [
+            {
+                "label": "CDC Hand Hygiene Guidelines",
+                "url": "https://www.cdc.gov/clean-hands/",
+                "authority": "CDC"
+            }
+        ]
+    },
+    {
+        "id": "spartan-green-solutions-restroom",
+        "name": "Spartan Green Solutions Restroom Cleaner",
+        "manufacturer": "Spartan Chemical",
+        "category": "restroom",
+        "categoryLabel": "Green Restroom Cleaner",
+        "activeIngredient": "Nonionic Surfactants (bio-based)",
+        "vocCompliant": true,
+        "vocGperL": 3,
+        "greenSealCertified": true,
+        "greenSealStandard": "GS-37",
+        "dilutionRatio": "1:16 (8 oz per gallon)",
+        "dwellTime": "2-3 minutes contact",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Gloves recommended"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container.",
+        "disposal": "Biodegradable. Non-hazardous.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "daycare",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Green Seal GS-37 certified. Part of Spartan Clean on the Go system. Safe on all bathroom surfaces. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.spartanchemical.com/sds/",
+        "references": [
+            {
+                "label": "Green Seal GS-37 Standard",
+                "url": "https://greenseal.org/standard/gs-37/",
+                "authority": "Green Seal"
+            }
+        ]
+    },
+    {
+        "id": "betco-af79",
+        "name": "Betco AF79 Acid-Free Bathroom Disinfectant",
+        "manufacturer": "Betco Corporation",
+        "category": "restroom",
+        "categoryLabel": "Bathroom Disinfectant Cleaner",
+        "activeIngredient": "Quaternary Ammonium Compounds",
+        "epaRegNumber": "4170-175",
+        "vocCompliant": true,
+        "vocGperL": 8,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "1:32 (4 oz per gallon)",
+        "dwellTime": "10 minutes",
+        "hazards": [
+            "Eye irritant at concentrate",
+            "Harmful if swallowed"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Chemical-resistant gloves"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Ingestion: Call Poison Control.",
+        "storage": "Original container.",
+        "disposal": "Per local regulations.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA List N. Acid-free formula — won't damage fixtures or grout. Disinfects, cleans, and deodorizes. Most popular Betco restroom product.",
+        "sdsUrl": "https://www.betco.com/sds",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "ecolab-oasis-pro-66",
+        "name": "Ecolab Oasis Pro 66 Bathroom Cleaner",
+        "manufacturer": "Ecolab",
+        "category": "restroom",
+        "categoryLabel": "Premium Bathroom Cleaner",
+        "activeIngredient": "Citric Acid, Nonionic Surfactants",
+        "vocCompliant": true,
+        "vocGperL": 2,
+        "greenSealCertified": false,
+        "epaSaferChoice": true,
+        "dilutionRatio": "1:32 (via dispensing system)",
+        "dwellTime": "2-3 minutes contact",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Gloves recommended"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container.",
+        "disposal": "Non-hazardous. Biodegradable.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA Safer Choice certified. Acid-based for mineral deposit removal without harsh fumes. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.ecolab.com/sds-search",
+        "references": [
+            {
+                "label": "EPA Safer Choice Program",
+                "url": "https://www.epa.gov/saferchoice",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "diversey-crew-bathroom",
+        "name": "Diversey Crew Bathroom Cleaner & Scale Remover",
+        "manufacturer": "Diversey",
+        "category": "restroom",
+        "categoryLabel": "Scale & Mineral Remover",
+        "activeIngredient": "Phosphoric Acid, Surfactants",
+        "vocCompliant": true,
+        "vocGperL": 5,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "3-5 minutes contact",
+        "hazards": [
+            "Corrosive to eyes",
+            "Skin irritant",
+            "Acid burns possible at concentrate"
+        ],
+        "ppe": [
+            "Chemical splash goggles",
+            "Chemical-resistant gloves"
+        ],
+        "firstAid": "Eyes: Flush 15 min immediately. Skin: Wash immediately. Seek medical attention if burns develop.",
+        "storage": "Original container. Do not mix with bleach.",
+        "disposal": "Per local regulations.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office"
+        ],
+        "notSuitableFor": [
+            "marble-surfaces",
+            "natural-stone"
+        ],
+        "regulationNotes": "Effective on hard water deposits, soap scum, rust. Do NOT use on marble or natural stone — acid will etch. Do NOT mix with bleach products.",
+        "sdsUrl": "https://sds.diversey.com/",
+        "references": [
+            {
+                "label": "OSHA Chemical Safety",
+                "url": "https://www.osha.gov/chemical-hazards",
+                "authority": "OSHA"
+            }
+        ]
+    },
+    {
+        "id": "purell-advanced-hand-sanitizer",
+        "name": "PURELL Advanced Hand Sanitizer",
+        "manufacturer": "GOJO Industries",
+        "category": "restroom",
+        "categoryLabel": "Hand Sanitizer",
+        "activeIngredient": "Ethyl Alcohol (70%)",
+        "vocCompliant": true,
+        "vocGperL": 0,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "15-20 seconds rub",
+        "hazards": [
+            "Flammable",
+            "Eye irritant"
+        ],
+        "ppe": [
+            "None for normal use"
+        ],
+        "firstAid": "Eyes: Flush with water. Keep from ignition sources.",
+        "storage": "Away from heat and flame.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "medical-office",
+            "surgery-center",
+            "dental-office",
+            "daycare",
+            "commercial-office",
+            "food-prep"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "CDC recommended 60%+ ethanol hand sanitizer. FDA-compliant formulation. Place dispensers per OSHA hand hygiene requirements.",
+        "sdsUrl": "https://www.gojo.com/en/sds",
+        "references": [
+            {
+                "label": "CDC Hand Hygiene Guidelines",
+                "url": "https://www.cdc.gov/clean-hands/",
+                "authority": "CDC"
+            },
+            {
+                "label": "OSHA Hand Hygiene",
+                "url": "https://www.osha.gov/hand-hygiene",
+                "authority": "OSHA"
+            }
+        ]
+    }
+]

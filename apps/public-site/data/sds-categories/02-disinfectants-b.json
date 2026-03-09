@@ -1,0 +1,351 @@
+[
+    {
+        "id": "spartan-tb-cide-quat",
+        "name": "Spartan TB-Cide Quat",
+        "manufacturer": "Spartan Chemical",
+        "category": "disinfectant",
+        "categoryLabel": "TB-Claim Disinfectant",
+        "activeIngredient": "Quaternary Ammonium (Dual-chain)",
+        "epaRegNumber": "5741-18",
+        "vocCompliant": true,
+        "vocGperL": 8,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "1:64 (2 oz per gallon)",
+        "dwellTime": "3 minutes (TB claim)",
+        "hazards": [
+            "Eye irritant",
+            "Harmful if swallowed"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Chemical-resistant gloves"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Ingestion: Call Poison Control.",
+        "storage": "Original container. Cool, dry area.",
+        "disposal": "Per local regulations. Rinse container.",
+        "suitableFor": [
+            "medical-office",
+            "surgery-center",
+            "veterinary-clinic",
+            "dental-office"
+        ],
+        "notSuitableFor": [
+            "daycare"
+        ],
+        "regulationNotes": "EPA List N. 3-minute TB kill claim. Hospital-grade. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.spartanchemical.com/sds/",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "diversey-alpha-hp",
+        "name": "Diversey Alpha-HP Multi-Surface Disinfectant",
+        "manufacturer": "Diversey",
+        "category": "disinfectant",
+        "categoryLabel": "AHP Concentrate",
+        "activeIngredient": "Hydrogen Peroxide (Accelerated, concentrate)",
+        "epaRegNumber": "70627-62",
+        "vocCompliant": true,
+        "vocGperL": 4,
+        "greenSealCertified": false,
+        "greenSealSaferList": true,
+        "epaListN": true,
+        "dilutionRatio": "1:40 (dilutable concentrate)",
+        "dwellTime": "5 minutes",
+        "hazards": [
+            "Eye irritant at concentrate",
+            "Mild skin irritant"
+        ],
+        "ppe": [
+            "Chemical splash goggles when handling concentrate",
+            "Gloves"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Skin: Wash with water.",
+        "storage": "Original container. Cool, dry, ventilated area.",
+        "disposal": "Diluted solution safe for sewer.",
+        "suitableFor": [
+            "medical-office",
+            "surgery-center",
+            "dental-office",
+            "commercial-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA List N. AHP concentrate — more economical than RTU. On Green Seal safer active ingredients list.",
+        "sdsUrl": "https://sds.diversey.com/",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            },
+            {
+                "label": "Green Seal Safer Disinfectants",
+                "url": "https://greenseal.org/safer-disinfectants",
+                "authority": "Green Seal"
+            }
+        ]
+    },
+    {
+        "id": "pdi-sani-cloth-af3",
+        "name": "PDI Sani-Cloth AF3 Germicidal Wipes",
+        "manufacturer": "PDI",
+        "category": "disinfectant",
+        "categoryLabel": "Disinfecting Wipes",
+        "activeIngredient": "Quaternary Ammonium Compounds",
+        "epaRegNumber": "9480-10",
+        "vocCompliant": true,
+        "vocGperL": 0,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "Ready to Use (pre-saturated wipe)",
+        "dwellTime": "3 minutes",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Gloves recommended"
+        ],
+        "firstAid": "Eyes: Flush with water. Skin: Wash with water.",
+        "storage": "Keep lid closed to prevent drying.",
+        "disposal": "Dispose in regular waste. Non-hazardous.",
+        "suitableFor": [
+            "medical-office",
+            "surgery-center",
+            "dental-office",
+            "urgent-care",
+            "dialysis-center"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA List N. Industry-standard healthcare surface wipe. Alcohol-free — won't damage equipment finishes.",
+        "sdsUrl": "https://pdihc.com/sds/",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "diversey-morning-mist",
+        "name": "Diversey Morning Mist Neutral Disinfectant",
+        "manufacturer": "Diversey",
+        "category": "disinfectant",
+        "categoryLabel": "Neutral Disinfectant",
+        "activeIngredient": "Quaternary Ammonium Compounds",
+        "epaRegNumber": "70627-2",
+        "vocCompliant": true,
+        "vocGperL": 10,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "1:128 (1 oz per gallon)",
+        "dwellTime": "10 minutes",
+        "hazards": [
+            "Eye irritant at concentrate"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush 15 min.",
+        "storage": "Original container. Cool, dry area.",
+        "disposal": "Per local regulations.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "dental-office",
+            "surgery-center"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA List N. Hospital-grade neutral pH — safe on all floor finishes. Very popular among BSCs for daily disinfection.",
+        "sdsUrl": "https://sds.diversey.com/",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "betco-quat-stat-5",
+        "name": "Betco Quat-Stat 5 Disinfectant",
+        "manufacturer": "Betco Corporation",
+        "category": "disinfectant",
+        "categoryLabel": "Fifth-Gen Quat Disinfectant",
+        "activeIngredient": "Fifth Generation Quaternary Ammonium",
+        "epaRegNumber": "4170-119",
+        "vocCompliant": true,
+        "vocGperL": 6,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "1:64 (2 oz per gallon)",
+        "dwellTime": "10 minutes",
+        "hazards": [
+            "Eye irritant at concentrate",
+            "Harmful if swallowed"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Chemical-resistant gloves"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Ingestion: Call Poison Control.",
+        "storage": "Original container. Keep from freezing.",
+        "disposal": "Per local regulations.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "dental-office",
+            "veterinary-clinic"
+        ],
+        "notSuitableFor": [
+            "daycare"
+        ],
+        "regulationNotes": "EPA List N. One of Betco's most popular disinfectants. Fifth-gen quat formulation. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.betco.com/sds",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "vital-oxide",
+        "name": "Vital Oxide Disinfectant",
+        "manufacturer": "Vital Solutions",
+        "category": "disinfectant",
+        "categoryLabel": "Chlorine Dioxide Disinfectant",
+        "activeIngredient": "Chlorine Dioxide (stabilized)",
+        "epaRegNumber": "82972-1",
+        "vocCompliant": true,
+        "vocGperL": 0,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "10 min (bacteria), 1 min (mold)",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Safety glasses recommended"
+        ],
+        "firstAid": "Eyes: Flush with water. Low toxicity.",
+        "storage": "Room temperature. Avoid direct sunlight.",
+        "disposal": "Non-hazardous. Flush to sewer.",
+        "suitableFor": [
+            "medical-office",
+            "daycare",
+            "commercial-office",
+            "food-prep",
+            "veterinary-clinic"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA List N. NSF D2 rated (no rinse on food-contact). Chlorine dioxide breaks down to salt — very low residue. Excellent for allergy-sensitive environments.",
+        "sdsUrl": "https://vitaloxide.com/sds/",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            },
+            {
+                "label": "NSF International Registration",
+                "url": "https://www.nsf.org/",
+                "authority": "NSF"
+            }
+        ]
+    },
+    {
+        "id": "lysol-ic-quat",
+        "name": "Lysol IC Quaternary Disinfectant Cleaner",
+        "manufacturer": "Reckitt Professional",
+        "category": "disinfectant",
+        "categoryLabel": "Institutional Quat Disinfectant",
+        "activeIngredient": "Quaternary Ammonium Compounds",
+        "epaRegNumber": "675-52",
+        "vocCompliant": true,
+        "vocGperL": 8,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "1:128 (1 oz per gallon)",
+        "dwellTime": "10 minutes",
+        "hazards": [
+            "Eye irritant",
+            "Skin irritant at concentrate"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Chemical-resistant gloves"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Skin: Wash with water.",
+        "storage": "Original container. Room temperature.",
+        "disposal": "Per local regulations.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA List N. Institutional Lysol. Non-bleach formula safe on most surfaces. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.reckittpro.com/sds",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "microban-24-pro",
+        "name": "Microban 24 Professional Sanitizing Spray",
+        "manufacturer": "P&G Professional",
+        "category": "disinfectant",
+        "categoryLabel": "24-Hour Residual Sanitizer",
+        "activeIngredient": "Quaternary Ammonium Compounds",
+        "epaRegNumber": "4091-22",
+        "vocCompliant": true,
+        "vocGperL": 15,
+        "greenSealCertified": false,
+        "epaListN": true,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "5 min (disinfect), 60 sec (sanitize)",
+        "hazards": [
+            "Moderate eye irritant",
+            "Flammable aerosol"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Ventilation for aerosol use"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Inhalation: Move to fresh air.",
+        "storage": "Do not expose to temps above 120°F.",
+        "disposal": "Per local aerosol disposal regulations.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office",
+            "dental-office",
+            "daycare"
+        ],
+        "notSuitableFor": [
+            "food-prep"
+        ],
+        "regulationNotes": "EPA List N. Claims 24-hour residual sanitizing protection on hard non-porous surfaces. NYS Part 226 compliant.",
+        "sdsUrl": "https://pgpro.com/sds",
+        "references": [
+            {
+                "label": "EPA List N Registration",
+                "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+                "authority": "EPA"
+            }
+        ]
+    }
+]

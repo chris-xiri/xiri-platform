@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Free Cleaning Chemical SDS Lookup — VOC, PPE, Regulation Notes | XIRI',
-    description: 'Look up Safety Data Sheets, VOC compliance, PPE requirements, and regulation notes for common janitorial and healthcare cleaning chemicals. Filter by Green Seal, NYS Part 226 VOC compliance, and category.',
+    title: 'Free Cleaning Chemical SDS Lookup — 50+ Chemicals, VOC & PPE Data | XIRI',
+    description: 'Search 50+ cleaning chemicals with Safety Data Sheets, VOC compliance, PPE requirements, EPA List N status, and Green Seal certifications. Filter by category, regulatory status, and EPA Safer Choice. Free — no signup required.',
     alternates: {
         canonical: 'https://xiri.ai/tools/sds-lookup',
     },

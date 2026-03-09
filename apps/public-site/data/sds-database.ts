@@ -1,0 +1,2163 @@
+import type { SDSEntry } from './sds-types';
+
+export const SDS_DATABASE: SDSEntry[] = [
+  {
+    "id": "virex-ii-256",
+    "name": "Virex II 256 One-Step Disinfectant",
+    "manufacturer": "Diversey",
+    "category": "disinfectant",
+    "categoryLabel": "Hospital-Grade Disinfectant",
+    "activeIngredient": "Quaternary Ammonium (Didecyl dimethyl ammonium chloride)",
+    "epaRegNumber": "70627-24",
+    "vocCompliant": true,
+    "vocGperL": 12,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "1:256 (½ oz per gallon)",
+    "dwellTime": "10 minutes",
+    "hazards": [
+      "Corrosive to eyes",
+      "Harmful if swallowed",
+      "Skin irritant at concentrate"
+    ],
+    "ppe": [
+      "Chemical splash goggles",
+      "Chemical-resistant gloves",
+      "Apron when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush with water 15 min. Skin: Wash with soap and water. Ingestion: Do not induce vomiting, call Poison Control.",
+    "storage": "Store in original container, cool dry area. Keep from freezing.",
+    "disposal": "Rinse empty container, dispose per local regulations.",
+    "suitableFor": [
+      "medical-office",
+      "surgery-center",
+      "urgent-care",
+      "dialysis-center",
+      "dental-office"
+    ],
+    "notSuitableFor": [
+      "daycare",
+      "food-prep"
+    ],
+    "regulationNotes": "EPA-registered hospital-grade disinfectant. Meets OSHA BBP requirements for blood and OPIM cleanup. On EPA List N for SARS-CoV-2. NYS Part 226 compliant at 12 g/L VOC.",
+    "sdsUrl": "https://sds.diversey.com/",
+    "references": [
+      {
+        "label": "EPA List N: Disinfectants for SARS-CoV-2",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      },
+      {
+        "label": "OSHA BBP Standard 29 CFR 1910.1030",
+        "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.1030",
+        "authority": "OSHA"
+      }
+    ]
+  },
+  {
+    "id": "oxivir-tb",
+    "name": "Oxivir TB RTU Disinfectant Cleaner",
+    "manufacturer": "Diversey",
+    "category": "disinfectant",
+    "categoryLabel": "AHP Disinfectant",
+    "activeIngredient": "Hydrogen Peroxide (Accelerated)",
+    "epaRegNumber": "70627-56",
+    "vocCompliant": true,
+    "vocGperL": 5,
+    "greenSealCertified": false,
+    "greenSealSaferList": true,
+    "epaListN": true,
+    "dilutionRatio": "Ready to Use (no dilution)",
+    "dwellTime": "1 minute (TB claim)",
+    "hazards": [
+      "Low toxicity",
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Gloves recommended"
+    ],
+    "firstAid": "Eyes: Flush with water 5 min. Minimal hazard at use dilution.",
+    "storage": "Room temperature. Avoid extreme heat.",
+    "disposal": "Rinsate safe for sanitary sewer.",
+    "suitableFor": [
+      "medical-office",
+      "surgery-center",
+      "urgent-care",
+      "daycare",
+      "dental-office",
+      "veterinary-clinic"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA-registered hospital-grade. On Green Seal safer active ingredients list (H₂O₂) — note: EPA prohibits formal third-party eco-certification on disinfectant labels. 1-min dwell time ideal for surgical turnover.",
+    "sdsUrl": "https://sds.diversey.com/",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      },
+      {
+        "label": "Green Seal Safer Disinfectants List",
+        "url": "https://greenseal.org/safer-disinfectants",
+        "authority": "Green Seal"
+      },
+      {
+        "label": "CDC Guideline for Disinfection and Sterilization",
+        "url": "https://www.cdc.gov/infection-control/hcp/disinfection-sterilization/",
+        "authority": "CDC"
+      }
+    ]
+  },
+  {
+    "id": "clorox-healthcare-bleach",
+    "name": "Clorox Healthcare Bleach Germicidal Cleaner",
+    "manufacturer": "Clorox Professional",
+    "category": "disinfectant",
+    "categoryLabel": "Bleach-Based Disinfectant",
+    "activeIngredient": "Sodium Hypochlorite (0.55%)",
+    "epaRegNumber": "56392-7",
+    "vocCompliant": true,
+    "vocGperL": 0,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "1 minute (bloodborne pathogen)",
+    "hazards": [
+      "Corrosive to eyes",
+      "Skin irritant",
+      "Releases chlorine gas if mixed with ammonia or acids"
+    ],
+    "ppe": [
+      "Chemical splash goggles",
+      "Chemical-resistant gloves",
+      "Ventilation in enclosed areas"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Ingestion: Drink water, do not induce vomiting.",
+    "storage": "Store upright, cool dry area. Do not mix with other chemicals.",
+    "disposal": "Flush down drain with water.",
+    "suitableFor": [
+      "surgery-center",
+      "dialysis-center",
+      "urgent-care"
+    ],
+    "notSuitableFor": [
+      "daycare",
+      "areas-with-metal-surfaces"
+    ],
+    "regulationNotes": "Meets CDC recommendations for C. diff and Norovirus. 1-min BBP kill claim meets OSHA. Can damage stainless steel with prolonged contact.",
+    "sdsUrl": "https://www.thecloroxcompany.com/brands/product-sds/",
+    "references": [
+      {
+        "label": "CDC C. diff Disinfection Guidelines",
+        "url": "https://www.cdc.gov/infection-control/hcp/disinfection-sterilization/",
+        "authority": "CDC"
+      },
+      {
+        "label": "OSHA BBP Standard",
+        "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.1030",
+        "authority": "OSHA"
+      }
+    ]
+  },
+  {
+    "id": "simple-green-d-pro-5",
+    "name": "Simple Green d Pro 5 One-Step Disinfectant",
+    "manufacturer": "Sunshine Makers",
+    "category": "disinfectant",
+    "categoryLabel": "One-Step Disinfectant",
+    "activeIngredient": "Quaternary Ammonium Compounds",
+    "epaRegNumber": "3573-30",
+    "vocCompliant": true,
+    "vocGperL": 10,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "1:30 (4.3 oz per gallon)",
+    "dwellTime": "10 minutes",
+    "hazards": [
+      "Moderate eye irritant",
+      "Harmful if swallowed"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Chemical-resistant gloves"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Ingestion: Call Poison Control.",
+    "storage": "Original container, cool dry area.",
+    "disposal": "Per local/state regulations.",
+    "suitableFor": [
+      "veterinary-clinic",
+      "commercial-office",
+      "medical-office"
+    ],
+    "notSuitableFor": [
+      "daycare"
+    ],
+    "regulationNotes": "EPA-registered hospital-grade. Kills HIV-1, HBV, HCV — meets OSHA BBP. NYS Part 226 compliant.",
+    "sdsUrl": "https://simplegreen.com/resources/sds/",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      },
+      {
+        "label": "OSHA BBP Standard",
+        "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.1030",
+        "authority": "OSHA"
+      }
+    ]
+  },
+  {
+    "id": "zep-spirit-ii",
+    "name": "Zep Spirit II RTU Detergent Disinfectant",
+    "manufacturer": "Zep Inc.",
+    "category": "disinfectant",
+    "categoryLabel": "RTU Disinfectant",
+    "activeIngredient": "Quaternary Ammonium (Alkyl C12-16)",
+    "epaRegNumber": "1839-220",
+    "vocCompliant": false,
+    "vocGperL": 185,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "10 minutes",
+    "hazards": [
+      "Moderate eye irritant",
+      "Skin irritant",
+      "High VOC content"
+    ],
+    "ppe": [
+      "Chemical splash goggles",
+      "Gloves",
+      "Ventilation required"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Inhalation: Move to fresh air.",
+    "storage": "Original container. Do not expose to heat or flame.",
+    "disposal": "Hazardous waste — dispose per RCRA guidelines.",
+    "suitableFor": [
+      "commercial-office"
+    ],
+    "notSuitableFor": [
+      "medical-office",
+      "surgery-center",
+      "daycare",
+      "dental-office"
+    ],
+    "regulationNotes": "⚠️ NOT NYS Part 226 compliant at 185 g/L VOC. Cannot be used in NYC or Long Island without violating VOC regulations.",
+    "sdsUrl": "https://www.zep.com/sds",
+    "references": [
+      {
+        "label": "NYS Part 226 VOC Limits",
+        "url": "https://www.dec.ny.gov/chemical/8569.html",
+        "authority": "NYS DEC"
+      }
+    ]
+  },
+  {
+    "id": "purell-professional-surface",
+    "name": "Purell Professional Surface Disinfectant",
+    "manufacturer": "GOJO Industries",
+    "category": "disinfectant",
+    "categoryLabel": "Ethanol-Based Disinfectant",
+    "activeIngredient": "Ethyl Alcohol (72%)",
+    "epaRegNumber": "84150-1",
+    "vocCompliant": true,
+    "vocGperL": 0,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "30 sec (bacteria), 1 min (viruses)",
+    "hazards": [
+      "Flammable",
+      "Eye irritant"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Ventilation for enclosed areas"
+    ],
+    "firstAid": "Eyes: Flush with water. Keep away from ignition sources.",
+    "storage": "Store in cool area away from heat and flame.",
+    "disposal": "Non-hazardous at use concentration.",
+    "suitableFor": [
+      "medical-office",
+      "dental-office",
+      "daycare",
+      "food-prep",
+      "commercial-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA List N. No rinse required on food-contact surfaces. 30-second kill time among the fastest available. Safe around children.",
+    "sdsUrl": "https://www.gojo.com/en/sds",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "ecolab-peroxide-msc",
+    "name": "Ecolab Peroxide Multi Surface Cleaner & Disinfectant",
+    "manufacturer": "Ecolab",
+    "category": "disinfectant",
+    "categoryLabel": "Peroxide Disinfectant",
+    "activeIngredient": "Hydrogen Peroxide (1.4%)",
+    "epaRegNumber": "1677-238",
+    "vocCompliant": true,
+    "vocGperL": 3,
+    "greenSealCertified": false,
+    "greenSealSaferList": true,
+    "epaListN": true,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "5 minutes",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Safety glasses recommended"
+    ],
+    "firstAid": "Eyes: Flush with water 5 min.",
+    "storage": "Room temperature. Keep sealed.",
+    "disposal": "Non-hazardous. Flush to sanitary sewer.",
+    "suitableFor": [
+      "medical-office",
+      "surgery-center",
+      "dental-office",
+      "commercial-office",
+      "daycare"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA List N. H₂O₂ breaks down to water and oxygen. On Green Seal safer active ingredients list. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.ecolab.com/sds-search",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      },
+      {
+        "label": "Green Seal Safer Disinfectants",
+        "url": "https://greenseal.org/safer-disinfectants",
+        "authority": "Green Seal"
+      }
+    ]
+  },
+  {
+    "id": "clorox-total-360",
+    "name": "Clorox Total 360 Disinfectant Cleaner",
+    "manufacturer": "Clorox Professional",
+    "category": "disinfectant",
+    "categoryLabel": "Electrostatic Disinfectant",
+    "activeIngredient": "Quaternary Ammonium Compounds",
+    "epaRegNumber": "67619-32",
+    "vocCompliant": true,
+    "vocGperL": 5,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "Ready to Use (electrostatic sprayer)",
+    "dwellTime": "2 minutes",
+    "hazards": [
+      "Moderate eye irritant",
+      "Skin irritant"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Chemical-resistant gloves"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Skin: Wash with soap and water.",
+    "storage": "Original container. Room temperature.",
+    "disposal": "Per local regulations.",
+    "suitableFor": [
+      "medical-office",
+      "surgery-center",
+      "commercial-office",
+      "dental-office"
+    ],
+    "notSuitableFor": [
+      "food-prep"
+    ],
+    "regulationNotes": "EPA List N. Designed for electrostatic sprayer system. Wraps around surfaces for full coverage.",
+    "sdsUrl": "https://www.thecloroxcompany.com/brands/product-sds/",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "spartan-tb-cide-quat",
+    "name": "Spartan TB-Cide Quat",
+    "manufacturer": "Spartan Chemical",
+    "category": "disinfectant",
+    "categoryLabel": "TB-Claim Disinfectant",
+    "activeIngredient": "Quaternary Ammonium (Dual-chain)",
+    "epaRegNumber": "5741-18",
+    "vocCompliant": true,
+    "vocGperL": 8,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "1:64 (2 oz per gallon)",
+    "dwellTime": "3 minutes (TB claim)",
+    "hazards": [
+      "Eye irritant",
+      "Harmful if swallowed"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Chemical-resistant gloves"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Ingestion: Call Poison Control.",
+    "storage": "Original container. Cool, dry area.",
+    "disposal": "Per local regulations. Rinse container.",
+    "suitableFor": [
+      "medical-office",
+      "surgery-center",
+      "veterinary-clinic",
+      "dental-office"
+    ],
+    "notSuitableFor": [
+      "daycare"
+    ],
+    "regulationNotes": "EPA List N. 3-minute TB kill claim. Hospital-grade. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.spartanchemical.com/sds/",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "diversey-alpha-hp",
+    "name": "Diversey Alpha-HP Multi-Surface Disinfectant",
+    "manufacturer": "Diversey",
+    "category": "disinfectant",
+    "categoryLabel": "AHP Concentrate",
+    "activeIngredient": "Hydrogen Peroxide (Accelerated, concentrate)",
+    "epaRegNumber": "70627-62",
+    "vocCompliant": true,
+    "vocGperL": 4,
+    "greenSealCertified": false,
+    "greenSealSaferList": true,
+    "epaListN": true,
+    "dilutionRatio": "1:40 (dilutable concentrate)",
+    "dwellTime": "5 minutes",
+    "hazards": [
+      "Eye irritant at concentrate",
+      "Mild skin irritant"
+    ],
+    "ppe": [
+      "Chemical splash goggles when handling concentrate",
+      "Gloves"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Skin: Wash with water.",
+    "storage": "Original container. Cool, dry, ventilated area.",
+    "disposal": "Diluted solution safe for sewer.",
+    "suitableFor": [
+      "medical-office",
+      "surgery-center",
+      "dental-office",
+      "commercial-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA List N. AHP concentrate — more economical than RTU. On Green Seal safer active ingredients list.",
+    "sdsUrl": "https://sds.diversey.com/",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      },
+      {
+        "label": "Green Seal Safer Disinfectants",
+        "url": "https://greenseal.org/safer-disinfectants",
+        "authority": "Green Seal"
+      }
+    ]
+  },
+  {
+    "id": "pdi-sani-cloth-af3",
+    "name": "PDI Sani-Cloth AF3 Germicidal Wipes",
+    "manufacturer": "PDI",
+    "category": "disinfectant",
+    "categoryLabel": "Disinfecting Wipes",
+    "activeIngredient": "Quaternary Ammonium Compounds",
+    "epaRegNumber": "9480-10",
+    "vocCompliant": true,
+    "vocGperL": 0,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "Ready to Use (pre-saturated wipe)",
+    "dwellTime": "3 minutes",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Gloves recommended"
+    ],
+    "firstAid": "Eyes: Flush with water. Skin: Wash with water.",
+    "storage": "Keep lid closed to prevent drying.",
+    "disposal": "Dispose in regular waste. Non-hazardous.",
+    "suitableFor": [
+      "medical-office",
+      "surgery-center",
+      "dental-office",
+      "urgent-care",
+      "dialysis-center"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA List N. Industry-standard healthcare surface wipe. Alcohol-free — won't damage equipment finishes.",
+    "sdsUrl": "https://pdihc.com/sds/",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "diversey-morning-mist",
+    "name": "Diversey Morning Mist Neutral Disinfectant",
+    "manufacturer": "Diversey",
+    "category": "disinfectant",
+    "categoryLabel": "Neutral Disinfectant",
+    "activeIngredient": "Quaternary Ammonium Compounds",
+    "epaRegNumber": "70627-2",
+    "vocCompliant": true,
+    "vocGperL": 10,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "1:128 (1 oz per gallon)",
+    "dwellTime": "10 minutes",
+    "hazards": [
+      "Eye irritant at concentrate"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush 15 min.",
+    "storage": "Original container. Cool, dry area.",
+    "disposal": "Per local regulations.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "dental-office",
+      "surgery-center"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA List N. Hospital-grade neutral pH — safe on all floor finishes. Very popular among BSCs for daily disinfection.",
+    "sdsUrl": "https://sds.diversey.com/",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "betco-quat-stat-5",
+    "name": "Betco Quat-Stat 5 Disinfectant",
+    "manufacturer": "Betco Corporation",
+    "category": "disinfectant",
+    "categoryLabel": "Fifth-Gen Quat Disinfectant",
+    "activeIngredient": "Fifth Generation Quaternary Ammonium",
+    "epaRegNumber": "4170-119",
+    "vocCompliant": true,
+    "vocGperL": 6,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "1:64 (2 oz per gallon)",
+    "dwellTime": "10 minutes",
+    "hazards": [
+      "Eye irritant at concentrate",
+      "Harmful if swallowed"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Chemical-resistant gloves"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Ingestion: Call Poison Control.",
+    "storage": "Original container. Keep from freezing.",
+    "disposal": "Per local regulations.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "dental-office",
+      "veterinary-clinic"
+    ],
+    "notSuitableFor": [
+      "daycare"
+    ],
+    "regulationNotes": "EPA List N. One of Betco's most popular disinfectants. Fifth-gen quat formulation. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.betco.com/sds",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "vital-oxide",
+    "name": "Vital Oxide Disinfectant",
+    "manufacturer": "Vital Solutions",
+    "category": "disinfectant",
+    "categoryLabel": "Chlorine Dioxide Disinfectant",
+    "activeIngredient": "Chlorine Dioxide (stabilized)",
+    "epaRegNumber": "82972-1",
+    "vocCompliant": true,
+    "vocGperL": 0,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "10 min (bacteria), 1 min (mold)",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Safety glasses recommended"
+    ],
+    "firstAid": "Eyes: Flush with water. Low toxicity.",
+    "storage": "Room temperature. Avoid direct sunlight.",
+    "disposal": "Non-hazardous. Flush to sewer.",
+    "suitableFor": [
+      "medical-office",
+      "daycare",
+      "commercial-office",
+      "food-prep",
+      "veterinary-clinic"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA List N. NSF D2 rated (no rinse on food-contact). Chlorine dioxide breaks down to salt — very low residue. Excellent for allergy-sensitive environments.",
+    "sdsUrl": "https://vitaloxide.com/sds/",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      },
+      {
+        "label": "NSF International Registration",
+        "url": "https://www.nsf.org/",
+        "authority": "NSF"
+      }
+    ]
+  },
+  {
+    "id": "lysol-ic-quat",
+    "name": "Lysol IC Quaternary Disinfectant Cleaner",
+    "manufacturer": "Reckitt Professional",
+    "category": "disinfectant",
+    "categoryLabel": "Institutional Quat Disinfectant",
+    "activeIngredient": "Quaternary Ammonium Compounds",
+    "epaRegNumber": "675-52",
+    "vocCompliant": true,
+    "vocGperL": 8,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "1:128 (1 oz per gallon)",
+    "dwellTime": "10 minutes",
+    "hazards": [
+      "Eye irritant",
+      "Skin irritant at concentrate"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Chemical-resistant gloves"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Skin: Wash with water.",
+    "storage": "Original container. Room temperature.",
+    "disposal": "Per local regulations.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA List N. Institutional Lysol. Non-bleach formula safe on most surfaces. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.reckittpro.com/sds",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "microban-24-pro",
+    "name": "Microban 24 Professional Sanitizing Spray",
+    "manufacturer": "P&G Professional",
+    "category": "disinfectant",
+    "categoryLabel": "24-Hour Residual Sanitizer",
+    "activeIngredient": "Quaternary Ammonium Compounds",
+    "epaRegNumber": "4091-22",
+    "vocCompliant": true,
+    "vocGperL": 15,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "5 min (disinfect), 60 sec (sanitize)",
+    "hazards": [
+      "Moderate eye irritant",
+      "Flammable aerosol"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Ventilation for aerosol use"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Inhalation: Move to fresh air.",
+    "storage": "Do not expose to temps above 120°F.",
+    "disposal": "Per local aerosol disposal regulations.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office",
+      "dental-office",
+      "daycare"
+    ],
+    "notSuitableFor": [
+      "food-prep"
+    ],
+    "regulationNotes": "EPA List N. Claims 24-hour residual sanitizing protection on hard non-porous surfaces. NYS Part 226 compliant.",
+    "sdsUrl": "https://pgpro.com/sds",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "betco-ph7-ultra",
+    "name": "Betco pH7 Ultra Neutral Floor Cleaner",
+    "manufacturer": "Betco Corporation",
+    "category": "floor-care",
+    "categoryLabel": "Neutral Floor Cleaner",
+    "activeIngredient": "Nonionic Surfactants",
+    "vocCompliant": true,
+    "vocGperL": 8,
+    "greenSealCertified": true,
+    "greenSealStandard": "GS-37",
+    "dilutionRatio": "1:128 (1 oz per gallon)",
+    "dwellTime": "N/A — mop and go",
+    "hazards": [
+      "Mild eye irritant at concentrate"
+    ],
+    "ppe": [
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush with water. Low hazard.",
+    "storage": "Original container. Keep from freezing.",
+    "disposal": "Diluted solution safe for sewer.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "daycare",
+      "dental-office",
+      "surgery-center"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Green Seal GS-37 certified. Safe on all resilient and hard floor types. Will not damage floor finish. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.betco.com/sds",
+    "references": [
+      {
+        "label": "Green Seal GS-37 Standard",
+        "url": "https://greenseal.org/standard/gs-37/",
+        "authority": "Green Seal"
+      }
+    ]
+  },
+  {
+    "id": "3m-neutral-cleaner-3l",
+    "name": "3M Neutral Cleaner Concentrate 3L",
+    "manufacturer": "3M Commercial",
+    "category": "floor-care",
+    "categoryLabel": "Neutral Floor Cleaner",
+    "activeIngredient": "Nonionic Surfactants",
+    "vocCompliant": true,
+    "vocGperL": 5,
+    "greenSealCertified": false,
+    "epaSaferChoice": true,
+    "dilutionRatio": "1:128 (via 3M Twist'n Fill)",
+    "dwellTime": "N/A — mop and go",
+    "hazards": [
+      "Mild eye irritant at concentrate"
+    ],
+    "ppe": [
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container. Room temperature.",
+    "disposal": "Non-hazardous. Per local regulations.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA Safer Choice certified. Compatible with 3M Twist'n Fill dispensing system for accurate dilution. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.3m.com/3M/en_US/safety-data-sheets/",
+    "references": [
+      {
+        "label": "EPA Safer Choice Program",
+        "url": "https://www.epa.gov/saferchoice",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "diversey-stride-citrus",
+    "name": "Diversey Stride Citrus HC Neutral Cleaner",
+    "manufacturer": "Diversey",
+    "category": "floor-care",
+    "categoryLabel": "Citrus Neutral Cleaner",
+    "activeIngredient": "Bio-based surfactants",
+    "vocCompliant": true,
+    "vocGperL": 6,
+    "greenSealCertified": false,
+    "epaSaferChoice": true,
+    "dilutionRatio": "1:128 (1 oz per gallon)",
+    "dwellTime": "N/A — mop and go",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container. Room temperature.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "daycare",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA Safer Choice certified. Pleasant citrus scent. Safe on all floor finishes. NYS Part 226 compliant.",
+    "sdsUrl": "https://sds.diversey.com/",
+    "references": [
+      {
+        "label": "EPA Safer Choice Program",
+        "url": "https://www.epa.gov/saferchoice",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "spartan-green-solutions-floor",
+    "name": "Spartan Green Solutions Floor Cleaner",
+    "manufacturer": "Spartan Chemical",
+    "category": "floor-care",
+    "categoryLabel": "Green Floor Cleaner",
+    "activeIngredient": "Nonionic Surfactants (bio-based)",
+    "vocCompliant": true,
+    "vocGperL": 4,
+    "greenSealCertified": true,
+    "greenSealStandard": "GS-37",
+    "dilutionRatio": "1:128 (via Clean on the Go)",
+    "dwellTime": "N/A — mop and go",
+    "hazards": [
+      "Minimal — mild eye irritant"
+    ],
+    "ppe": [
+      "Gloves recommended"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container.",
+    "disposal": "Non-hazardous. Biodegradable.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "daycare",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Green Seal GS-37 certified. Part of Spartan's Clean on the Go dispensing system. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.spartanchemical.com/sds/",
+    "references": [
+      {
+        "label": "Green Seal GS-37 Standard",
+        "url": "https://greenseal.org/standard/gs-37/",
+        "authority": "Green Seal"
+      }
+    ]
+  },
+  {
+    "id": "ecolab-neutral-floor",
+    "name": "Ecolab Neutral Floor Cleaner",
+    "manufacturer": "Ecolab",
+    "category": "floor-care",
+    "categoryLabel": "Low-Foam Neutral Cleaner",
+    "activeIngredient": "Nonionic Surfactants",
+    "vocCompliant": true,
+    "vocGperL": 5,
+    "greenSealCertified": false,
+    "dilutionRatio": "1:128",
+    "dwellTime": "N/A — auto-scrubber or mop",
+    "hazards": [
+      "Mild eye irritant at concentrate"
+    ],
+    "ppe": [
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "surgery-center"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Low-foam formula designed for auto-scrubbers. Safe on all hard floor types. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.ecolab.com/sds-search",
+    "references": []
+  },
+  {
+    "id": "betco-untouchable-finish",
+    "name": "Betco Untouchable Floor Finish",
+    "manufacturer": "Betco Corporation",
+    "category": "floor-care",
+    "categoryLabel": "Floor Finish",
+    "activeIngredient": "Acrylic Polymer Emulsion",
+    "vocCompliant": true,
+    "vocGperL": 10,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "30-45 min dry time per coat",
+    "hazards": [
+      "Mild ammonia odor",
+      "Slippery when wet"
+    ],
+    "ppe": [
+      "Ventilation recommended"
+    ],
+    "firstAid": "Eyes: Flush with water. Inhalation: Move to fresh air.",
+    "storage": "Original container. Do not freeze.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office",
+      "dental-office"
+    ],
+    "notSuitableFor": [
+      "wood-floors"
+    ],
+    "regulationNotes": "High-solids floor finish. Apply in thin coats. Requires burnishing for high-gloss. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.betco.com/sds",
+    "references": []
+  },
+  {
+    "id": "betco-extreme-stripper",
+    "name": "Betco Extreme Floor Stripper",
+    "manufacturer": "Betco Corporation",
+    "category": "floor-care",
+    "categoryLabel": "Floor Stripper",
+    "activeIngredient": "2-Butoxyethanol, Monoethanolamine",
+    "vocCompliant": true,
+    "vocGperL": 20,
+    "greenSealCertified": false,
+    "dilutionRatio": "1:4 to 1:8 depending on buildup",
+    "dwellTime": "5-10 minutes",
+    "hazards": [
+      "Eye and skin irritant",
+      "Inhalation hazard",
+      "Not for use on wood"
+    ],
+    "ppe": [
+      "Chemical splash goggles",
+      "Chemical-resistant gloves",
+      "Ventilation required",
+      "Non-slip footwear"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Skin: Wash immediately. Inhalation: Fresh air.",
+    "storage": "Original container. Do not freeze.",
+    "disposal": "Per local regulations.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office"
+    ],
+    "notSuitableFor": [
+      "wood-floors",
+      "daycare-during-hours"
+    ],
+    "regulationNotes": "Heavy-duty stripper for removing multiple coats of floor finish. Requires PPE and ventilation. Schedule after-hours. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.betco.com/sds",
+    "references": [
+      {
+        "label": "OSHA Chemical Safety",
+        "url": "https://www.osha.gov/chemical-hazards",
+        "authority": "OSHA"
+      }
+    ]
+  },
+  {
+    "id": "zep-wet-look-finish",
+    "name": "Zep Wet Look Floor Finish",
+    "manufacturer": "Zep Inc.",
+    "category": "floor-care",
+    "categoryLabel": "High-Gloss Floor Finish",
+    "activeIngredient": "Acrylic Polymer Emulsion",
+    "vocCompliant": true,
+    "vocGperL": 12,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "30 min dry time per coat",
+    "hazards": [
+      "Mild ammonia odor",
+      "Slippery when wet"
+    ],
+    "ppe": [
+      "Ventilation recommended"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Do not freeze.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office"
+    ],
+    "notSuitableFor": [
+      "wood-floors"
+    ],
+    "regulationNotes": "High-gloss finish. 25% solids content. Apply 3-5 coats for best results. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.zep.com/sds",
+    "references": []
+  },
+  {
+    "id": "3m-scotchgard-floor-protector",
+    "name": "3M Scotchgard Resilient Floor Protector",
+    "manufacturer": "3M Commercial",
+    "category": "floor-care",
+    "categoryLabel": "Floor Protector",
+    "activeIngredient": "Fluorochemical Acrylic Copolymer",
+    "vocCompliant": true,
+    "vocGperL": 8,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "45 min dry time",
+    "hazards": [
+      "Mild eye irritant",
+      "Slippery when wet"
+    ],
+    "ppe": [
+      "Ventilation recommended"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container. Do not freeze.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office",
+      "dental-office"
+    ],
+    "notSuitableFor": [
+      "wood-floors"
+    ],
+    "regulationNotes": "Soil and stain resistant finish protector. Reduces recoat frequency. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.3m.com/3M/en_US/safety-data-sheets/",
+    "references": []
+  },
+  {
+    "id": "spartan-biorenewables-glass",
+    "name": "Spartan BioRenewables Glass Cleaner",
+    "manufacturer": "Spartan Chemical",
+    "category": "glass-surface",
+    "categoryLabel": "Glass & Surface Cleaner",
+    "activeIngredient": "Bio-based surfactants (corn & soy derived)",
+    "vocCompliant": true,
+    "vocGperL": 3,
+    "greenSealCertified": true,
+    "greenSealStandard": "GS-37",
+    "dilutionRatio": "1:64 (2 oz per gallon)",
+    "dwellTime": "Spray and wipe",
+    "hazards": [
+      "Minimal — mild eye irritant"
+    ],
+    "ppe": [
+      "Safety glasses recommended"
+    ],
+    "firstAid": "Eyes: Flush with water. Non-toxic.",
+    "storage": "Room temperature. Keep sealed.",
+    "disposal": "Biodegradable. Non-hazardous waste.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "daycare",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "USDA BioPreferred product. Green Seal GS-37 certified. Ideal for VOC-sensitive environments like daycares.",
+    "sdsUrl": "https://www.spartanchemical.com/sds/",
+    "references": [
+      {
+        "label": "Green Seal GS-37 Standard",
+        "url": "https://greenseal.org/standard/gs-37/",
+        "authority": "Green Seal"
+      },
+      {
+        "label": "USDA BioPreferred Program",
+        "url": "https://www.biopreferred.gov/",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "windex-original-pro",
+    "name": "Windex Original Glass Cleaner (SC Johnson Professional)",
+    "manufacturer": "SC Johnson Professional",
+    "category": "glass-surface",
+    "categoryLabel": "Commercial Glass Cleaner",
+    "activeIngredient": "2-Hexoxyethanol, Isopropanolamine",
+    "vocCompliant": true,
+    "vocGperL": 12,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "Spray and wipe",
+    "hazards": [
+      "Eye irritant",
+      "Contains ammonia"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Ventilation"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Do not mix with bleach.",
+    "storage": "Room temperature.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office"
+    ],
+    "notSuitableFor": [
+      "ammonia-sensitive-areas"
+    ],
+    "regulationNotes": "Industry-standard glass cleaner. Do NOT mix with bleach-based products — produces chloramine gas. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.scjohnson.com/sds",
+    "references": [
+      {
+        "label": "OSHA Chemical Safety",
+        "url": "https://www.osha.gov/chemical-hazards",
+        "authority": "OSHA"
+      }
+    ]
+  },
+  {
+    "id": "ecolab-oasis-pro-40",
+    "name": "Ecolab Oasis Pro 40 Glass Cleaner",
+    "manufacturer": "Ecolab",
+    "category": "glass-surface",
+    "categoryLabel": "Glass Cleaner",
+    "activeIngredient": "Nonionic Surfactants",
+    "vocCompliant": true,
+    "vocGperL": 2,
+    "greenSealCertified": false,
+    "epaSaferChoice": true,
+    "dilutionRatio": "1:64 (via dispensing system)",
+    "dwellTime": "Spray and wipe",
+    "hazards": [
+      "Minimal"
+    ],
+    "ppe": [
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container.",
+    "disposal": "Non-hazardous. Biodegradable.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "daycare",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA Safer Choice certified. Ammonia-free — safe for healthcare and daycares. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.ecolab.com/sds-search",
+    "references": [
+      {
+        "label": "EPA Safer Choice Program",
+        "url": "https://www.epa.gov/saferchoice",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "betco-green-earth-glass",
+    "name": "Betco Green Earth Glass Cleaner",
+    "manufacturer": "Betco Corporation",
+    "category": "glass-surface",
+    "categoryLabel": "Green Glass Cleaner",
+    "activeIngredient": "Bio-based Surfactants",
+    "vocCompliant": true,
+    "vocGperL": 4,
+    "greenSealCertified": true,
+    "greenSealStandard": "GS-37",
+    "dilutionRatio": "1:32 (4 oz per gallon)",
+    "dwellTime": "Spray and wipe",
+    "hazards": [
+      "Minimal"
+    ],
+    "ppe": [
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container.",
+    "disposal": "Non-hazardous. Biodegradable.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "daycare",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Green Seal GS-37 certified. Ammonia-free formula. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.betco.com/sds",
+    "references": [
+      {
+        "label": "Green Seal GS-37 Standard",
+        "url": "https://greenseal.org/standard/gs-37/",
+        "authority": "Green Seal"
+      }
+    ]
+  },
+  {
+    "id": "3m-glass-cleaner",
+    "name": "3M Glass Cleaner Concentrate 17L",
+    "manufacturer": "3M Commercial",
+    "category": "glass-surface",
+    "categoryLabel": "Glass Cleaner Concentrate",
+    "activeIngredient": "Nonionic Surfactants",
+    "vocCompliant": true,
+    "vocGperL": 3,
+    "greenSealCertified": false,
+    "dilutionRatio": "1:40 (via Twist'n Fill)",
+    "dwellTime": "Spray and wipe",
+    "hazards": [
+      "Mild eye irritant at concentrate"
+    ],
+    "ppe": [
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Part of 3M Twist'n Fill dispensing system. Streak-free formula. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.3m.com/3M/en_US/safety-data-sheets/",
+    "references": []
+  },
+  {
+    "id": "diversey-glance-na",
+    "name": "Diversey Glance NA Glass Cleaner",
+    "manufacturer": "Diversey",
+    "category": "glass-surface",
+    "categoryLabel": "Non-Ammoniated Glass Cleaner",
+    "activeIngredient": "Nonionic Surfactants",
+    "vocCompliant": true,
+    "vocGperL": 5,
+    "greenSealCertified": false,
+    "dilutionRatio": "1:40 (via J-Fill)",
+    "dwellTime": "Spray and wipe",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "daycare",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Non-ammoniated formula — safe for healthcare. Won't interact with bleach products. NYS Part 226 compliant.",
+    "sdsUrl": "https://sds.diversey.com/",
+    "references": []
+  },
+  {
+    "id": "zep-streak-free-glass",
+    "name": "Zep Streak-Free Glass Cleaner",
+    "manufacturer": "Zep Inc.",
+    "category": "glass-surface",
+    "categoryLabel": "RTU Glass Cleaner",
+    "activeIngredient": "Isopropanol, Surfactants",
+    "vocCompliant": true,
+    "vocGperL": 18,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "Spray and wipe",
+    "hazards": [
+      "Eye irritant",
+      "Flammable"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Ventilation"
+    ],
+    "firstAid": "Eyes: Flush with water. Keep from ignition.",
+    "storage": "Away from heat and flame.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "commercial-office"
+    ],
+    "notSuitableFor": [
+      "daycare"
+    ],
+    "regulationNotes": "Fast-evaporating streak-free formula. Higher VOC than green alternatives but still NYS Part 226 compliant.",
+    "sdsUrl": "https://www.zep.com/sds",
+    "references": []
+  },
+  {
+    "id": "enmotion-foam-soap",
+    "name": "enMotion Foam Soap with Moisturizers",
+    "manufacturer": "GP PRO (Georgia-Pacific)",
+    "category": "restroom",
+    "categoryLabel": "Hand Soap",
+    "activeIngredient": "Cocamidopropyl Betaine (surfactant)",
+    "vocCompliant": true,
+    "vocGperL": 0,
+    "greenSealCertified": true,
+    "greenSealStandard": "GS-41",
+    "dilutionRatio": "Ready to Use (cartridge)",
+    "dwellTime": "20 seconds (CDC hand hygiene)",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "None required for normal use"
+    ],
+    "firstAid": "Eyes: Rinse with water. Generally non-hazardous.",
+    "storage": "Room temperature. Keep sealed until use.",
+    "disposal": "Empty cartridge is non-hazardous waste.",
+    "suitableFor": [
+      "medical-office",
+      "surgery-center",
+      "daycare",
+      "commercial-office",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Green Seal certified. Supports CDC hand hygiene guidelines. Fragrance-free options available for sensitive healthcare environments.",
+    "sdsUrl": "https://www.gppro.com/sds",
+    "references": [
+      {
+        "label": "CDC Hand Hygiene Guidelines",
+        "url": "https://www.cdc.gov/clean-hands/",
+        "authority": "CDC"
+      },
+      {
+        "label": "Green Seal GS-41 Standard",
+        "url": "https://greenseal.org/standard/gs-41/",
+        "authority": "Green Seal"
+      }
+    ]
+  },
+  {
+    "id": "gojo-antibacterial-foam",
+    "name": "GOJO Antibacterial Foam Handwash",
+    "manufacturer": "GOJO Industries",
+    "category": "restroom",
+    "categoryLabel": "Antibacterial Hand Soap",
+    "activeIngredient": "Benzalkonium Chloride (0.13%)",
+    "vocCompliant": true,
+    "vocGperL": 0,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use (cartridge)",
+    "dwellTime": "20 seconds (CDC hand hygiene)",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "None for normal use"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Room temperature.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "medical-office",
+      "surgery-center",
+      "dental-office",
+      "commercial-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Antibacterial formula for healthcare settings. Compatible with GOJO dispensing systems. Supports CDC hand hygiene guidelines.",
+    "sdsUrl": "https://www.gojo.com/en/sds",
+    "references": [
+      {
+        "label": "CDC Hand Hygiene Guidelines",
+        "url": "https://www.cdc.gov/clean-hands/",
+        "authority": "CDC"
+      }
+    ]
+  },
+  {
+    "id": "spartan-green-solutions-restroom",
+    "name": "Spartan Green Solutions Restroom Cleaner",
+    "manufacturer": "Spartan Chemical",
+    "category": "restroom",
+    "categoryLabel": "Green Restroom Cleaner",
+    "activeIngredient": "Nonionic Surfactants (bio-based)",
+    "vocCompliant": true,
+    "vocGperL": 3,
+    "greenSealCertified": true,
+    "greenSealStandard": "GS-37",
+    "dilutionRatio": "1:16 (8 oz per gallon)",
+    "dwellTime": "2-3 minutes contact",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Gloves recommended"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container.",
+    "disposal": "Biodegradable. Non-hazardous.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "daycare",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Green Seal GS-37 certified. Part of Spartan Clean on the Go system. Safe on all bathroom surfaces. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.spartanchemical.com/sds/",
+    "references": [
+      {
+        "label": "Green Seal GS-37 Standard",
+        "url": "https://greenseal.org/standard/gs-37/",
+        "authority": "Green Seal"
+      }
+    ]
+  },
+  {
+    "id": "betco-af79",
+    "name": "Betco AF79 Acid-Free Bathroom Disinfectant",
+    "manufacturer": "Betco Corporation",
+    "category": "restroom",
+    "categoryLabel": "Bathroom Disinfectant Cleaner",
+    "activeIngredient": "Quaternary Ammonium Compounds",
+    "epaRegNumber": "4170-175",
+    "vocCompliant": true,
+    "vocGperL": 8,
+    "greenSealCertified": false,
+    "epaListN": true,
+    "dilutionRatio": "1:32 (4 oz per gallon)",
+    "dwellTime": "10 minutes",
+    "hazards": [
+      "Eye irritant at concentrate",
+      "Harmful if swallowed"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Chemical-resistant gloves"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Ingestion: Call Poison Control.",
+    "storage": "Original container.",
+    "disposal": "Per local regulations.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA List N. Acid-free formula — won't damage fixtures or grout. Disinfects, cleans, and deodorizes. Most popular Betco restroom product.",
+    "sdsUrl": "https://www.betco.com/sds",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "ecolab-oasis-pro-66",
+    "name": "Ecolab Oasis Pro 66 Bathroom Cleaner",
+    "manufacturer": "Ecolab",
+    "category": "restroom",
+    "categoryLabel": "Premium Bathroom Cleaner",
+    "activeIngredient": "Citric Acid, Nonionic Surfactants",
+    "vocCompliant": true,
+    "vocGperL": 2,
+    "greenSealCertified": false,
+    "epaSaferChoice": true,
+    "dilutionRatio": "1:32 (via dispensing system)",
+    "dwellTime": "2-3 minutes contact",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Gloves recommended"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container.",
+    "disposal": "Non-hazardous. Biodegradable.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA Safer Choice certified. Acid-based for mineral deposit removal without harsh fumes. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.ecolab.com/sds-search",
+    "references": [
+      {
+        "label": "EPA Safer Choice Program",
+        "url": "https://www.epa.gov/saferchoice",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "diversey-crew-bathroom",
+    "name": "Diversey Crew Bathroom Cleaner & Scale Remover",
+    "manufacturer": "Diversey",
+    "category": "restroom",
+    "categoryLabel": "Scale & Mineral Remover",
+    "activeIngredient": "Phosphoric Acid, Surfactants",
+    "vocCompliant": true,
+    "vocGperL": 5,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "3-5 minutes contact",
+    "hazards": [
+      "Corrosive to eyes",
+      "Skin irritant",
+      "Acid burns possible at concentrate"
+    ],
+    "ppe": [
+      "Chemical splash goggles",
+      "Chemical-resistant gloves"
+    ],
+    "firstAid": "Eyes: Flush 15 min immediately. Skin: Wash immediately. Seek medical attention if burns develop.",
+    "storage": "Original container. Do not mix with bleach.",
+    "disposal": "Per local regulations.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office"
+    ],
+    "notSuitableFor": [
+      "marble-surfaces",
+      "natural-stone"
+    ],
+    "regulationNotes": "Effective on hard water deposits, soap scum, rust. Do NOT use on marble or natural stone — acid will etch. Do NOT mix with bleach products.",
+    "sdsUrl": "https://sds.diversey.com/",
+    "references": [
+      {
+        "label": "OSHA Chemical Safety",
+        "url": "https://www.osha.gov/chemical-hazards",
+        "authority": "OSHA"
+      }
+    ]
+  },
+  {
+    "id": "purell-advanced-hand-sanitizer",
+    "name": "PURELL Advanced Hand Sanitizer",
+    "manufacturer": "GOJO Industries",
+    "category": "restroom",
+    "categoryLabel": "Hand Sanitizer",
+    "activeIngredient": "Ethyl Alcohol (70%)",
+    "vocCompliant": true,
+    "vocGperL": 0,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use",
+    "dwellTime": "15-20 seconds rub",
+    "hazards": [
+      "Flammable",
+      "Eye irritant"
+    ],
+    "ppe": [
+      "None for normal use"
+    ],
+    "firstAid": "Eyes: Flush with water. Keep from ignition sources.",
+    "storage": "Away from heat and flame.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "medical-office",
+      "surgery-center",
+      "dental-office",
+      "daycare",
+      "commercial-office",
+      "food-prep"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "CDC recommended 60%+ ethanol hand sanitizer. FDA-compliant formulation. Place dispensers per OSHA hand hygiene requirements.",
+    "sdsUrl": "https://www.gojo.com/en/sds",
+    "references": [
+      {
+        "label": "CDC Hand Hygiene Guidelines",
+        "url": "https://www.cdc.gov/clean-hands/",
+        "authority": "CDC"
+      },
+      {
+        "label": "OSHA Hand Hygiene",
+        "url": "https://www.osha.gov/hand-hygiene",
+        "authority": "OSHA"
+      }
+    ]
+  },
+  {
+    "id": "diversey-suma-breakup",
+    "name": "Diversey Suma Break-Up D3.5 Heavy Duty Degreaser",
+    "manufacturer": "Diversey",
+    "category": "degreaser",
+    "categoryLabel": "Heavy-Duty Kitchen Degreaser",
+    "activeIngredient": "Alkaline Surfactant Blend",
+    "vocCompliant": true,
+    "vocGperL": 8,
+    "greenSealCertified": false,
+    "epaSaferChoice": true,
+    "dilutionRatio": "1:20 (6.4 oz per gallon)",
+    "dwellTime": "3-5 minutes",
+    "hazards": [
+      "Eye irritant",
+      "Skin irritant at concentrate"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Chemical-resistant gloves"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Skin: Wash with water.",
+    "storage": "Original container. Room temperature.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "food-prep",
+      "commercial-office",
+      "medical-office"
+    ],
+    "notSuitableFor": [
+      "aluminum-surfaces"
+    ],
+    "regulationNotes": "EPA Safer Choice certified. NSF registered for food-service use. Do not use on aluminum — will cause discoloration. NYS Part 226 compliant.",
+    "sdsUrl": "https://sds.diversey.com/",
+    "references": [
+      {
+        "label": "EPA Safer Choice Program",
+        "url": "https://www.epa.gov/saferchoice",
+        "authority": "EPA"
+      },
+      {
+        "label": "NSF Registration",
+        "url": "https://www.nsf.org/",
+        "authority": "NSF"
+      }
+    ]
+  },
+  {
+    "id": "zep-heavy-duty-citrus",
+    "name": "Zep Heavy-Duty Citrus Degreaser",
+    "manufacturer": "Zep Inc.",
+    "category": "degreaser",
+    "categoryLabel": "Citrus Degreaser",
+    "activeIngredient": "d-Limonene (citrus solvent)",
+    "vocCompliant": true,
+    "vocGperL": 22,
+    "greenSealCertified": false,
+    "dilutionRatio": "1:4 to 1:10 depending on soil",
+    "dwellTime": "3-5 minutes",
+    "hazards": [
+      "Eye irritant",
+      "Skin irritant",
+      "Flammable at concentrate"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Chemical-resistant gloves",
+      "Ventilation"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Skin: Wash with soap and water.",
+    "storage": "Original container. Away from heat and flame.",
+    "disposal": "Per local regulations.",
+    "suitableFor": [
+      "food-prep",
+      "commercial-office"
+    ],
+    "notSuitableFor": [
+      "plastic-surfaces"
+    ],
+    "regulationNotes": "Industrial-strength citrus degreaser. May damage some plastics — test first. Strong citrus odor. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.zep.com/sds",
+    "references": []
+  },
+  {
+    "id": "simple-green-all-purpose",
+    "name": "Simple Green All-Purpose Cleaner",
+    "manufacturer": "Sunshine Makers",
+    "category": "degreaser",
+    "categoryLabel": "All-Purpose Cleaner/Degreaser",
+    "activeIngredient": "Proprietary Surfactant Blend",
+    "vocCompliant": true,
+    "vocGperL": 3,
+    "greenSealCertified": false,
+    "epaSaferChoice": true,
+    "dilutionRatio": "1:10 to 1:30 depending on use",
+    "dwellTime": "Spray and wipe",
+    "hazards": [
+      "Low toxicity",
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Gloves recommended for prolonged use"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Room temperature.",
+    "disposal": "Non-hazardous. Biodegradable.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "daycare",
+      "food-prep"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA Safer Choice certified. Non-toxic, biodegradable. One of the most widely used green cleaning products. NYS Part 226 compliant.",
+    "sdsUrl": "https://simplegreen.com/resources/sds/",
+    "references": [
+      {
+        "label": "EPA Safer Choice Program",
+        "url": "https://www.epa.gov/saferchoice",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "betco-green-earth-peroxide",
+    "name": "Betco Green Earth Peroxide Cleaner",
+    "manufacturer": "Betco Corporation",
+    "category": "degreaser",
+    "categoryLabel": "Peroxide All-Purpose Cleaner",
+    "activeIngredient": "Hydrogen Peroxide (accelerated)",
+    "vocCompliant": true,
+    "vocGperL": 5,
+    "greenSealCertified": false,
+    "dilutionRatio": "1:32 (4 oz per gallon)",
+    "dwellTime": "2-3 minutes",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container.",
+    "disposal": "Non-hazardous. Biodegradable.",
+    "suitableFor": [
+      "medical-office",
+      "commercial-office",
+      "daycare",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "H₂O₂-based all-purpose cleaner. Breaks down to water and oxygen. Safe on most surfaces. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.betco.com/sds",
+    "references": []
+  },
+  {
+    "id": "ecolab-grease-express",
+    "name": "Ecolab Grease Express",
+    "manufacturer": "Ecolab",
+    "category": "degreaser",
+    "categoryLabel": "Kitchen Degreaser",
+    "activeIngredient": "Alkaline Surfactant Blend",
+    "vocCompliant": true,
+    "vocGperL": 10,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use (trigger spray)",
+    "dwellTime": "1-3 minutes",
+    "hazards": [
+      "Eye irritant",
+      "Skin irritant"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Gloves"
+    ],
+    "firstAid": "Eyes: Flush 15 min. Skin: Wash with water.",
+    "storage": "Original container.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "food-prep",
+      "commercial-office"
+    ],
+    "notSuitableFor": [
+      "aluminum-surfaces"
+    ],
+    "regulationNotes": "Kitchen-grade degreaser for hoods, ovens, grills. Do not use on aluminum. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.ecolab.com/sds-search",
+    "references": []
+  },
+  {
+    "id": "spartan-tough-duty-nb",
+    "name": "Spartan Tough Duty NB Non-Butyl Cleaner Degreaser",
+    "manufacturer": "Spartan Chemical",
+    "category": "degreaser",
+    "categoryLabel": "Non-Butyl Degreaser",
+    "activeIngredient": "Non-butyl alkaline surfactants",
+    "vocCompliant": true,
+    "vocGperL": 6,
+    "greenSealCertified": false,
+    "dilutionRatio": "1:20 to 1:64 depending on soil",
+    "dwellTime": "3-5 minutes",
+    "hazards": [
+      "Eye irritant at concentrate"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush 15 min.",
+    "storage": "Original container.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office",
+      "food-prep"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Non-butyl formula eliminates butyl ether exposure risk. Effective on grease without harsh solvents. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.spartanchemical.com/sds/",
+    "references": [
+      {
+        "label": "NIOSH Pocket Guide — 2-Butoxyethanol",
+        "url": "https://www.cdc.gov/niosh/npg/npgd0058.html",
+        "authority": "NIOSH"
+      }
+    ]
+  },
+  {
+    "id": "krud-kutter-degreaser",
+    "name": "Krud Kutter Original Concentrated Cleaner/Degreaser",
+    "manufacturer": "Rust-Oleum",
+    "category": "degreaser",
+    "categoryLabel": "Concentrated Multi-Purpose Degreaser",
+    "activeIngredient": "Proprietary Surfactant Blend",
+    "vocCompliant": true,
+    "vocGperL": 0,
+    "greenSealCertified": false,
+    "epaSaferChoice": true,
+    "dilutionRatio": "Full strength to 1:30 depending on soil",
+    "dwellTime": "1-5 minutes",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Gloves for prolonged use"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Room temperature.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "commercial-office",
+      "food-prep",
+      "medical-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA Safer Choice certified. Zero VOC. Extremely versatile — works on grease, adhesives, crayon, wax. Popular budget option for BSCs.",
+    "sdsUrl": "https://www.rustoleum.com/sds",
+    "references": [
+      {
+        "label": "EPA Safer Choice Program",
+        "url": "https://www.epa.gov/saferchoice",
+        "authority": "EPA"
+      }
+    ]
+  },
+  {
+    "id": "betco-sanibet",
+    "name": "Betco Symplicity Sanibet Multi-Range Sanitizer",
+    "manufacturer": "Betco Corporation",
+    "category": "specialty",
+    "categoryLabel": "Food-Contact Sanitizer",
+    "activeIngredient": "Quaternary Ammonium Compounds",
+    "epaRegNumber": "4170-13",
+    "vocCompliant": true,
+    "vocGperL": 0,
+    "greenSealCertified": false,
+    "dilutionRatio": "1:512 (sanitize), 1:64 (disinfect)",
+    "dwellTime": "60 seconds (sanitize)",
+    "hazards": [
+      "Eye irritant at concentrate"
+    ],
+    "ppe": [
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush 15 min.",
+    "storage": "Original container.",
+    "disposal": "Per local regulations.",
+    "suitableFor": [
+      "food-prep",
+      "daycare",
+      "commercial-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA-registered food-contact sanitizer. No rinse required at sanitizing dilution. NSF D2 rated. Ideal for breakroom and kitchen surfaces.",
+    "sdsUrl": "https://www.betco.com/sds",
+    "references": [
+      {
+        "label": "EPA Pesticide Product Label",
+        "url": "https://www.epa.gov/pesticide-labels",
+        "authority": "EPA"
+      },
+      {
+        "label": "NSF International",
+        "url": "https://www.nsf.org/",
+        "authority": "NSF"
+      }
+    ]
+  },
+  {
+    "id": "diversey-oxivir-1-wipes",
+    "name": "Diversey Oxivir 1 Wipes",
+    "manufacturer": "Diversey",
+    "category": "specialty",
+    "categoryLabel": "AHP Disinfecting Wipes",
+    "activeIngredient": "Hydrogen Peroxide (Accelerated)",
+    "epaRegNumber": "70627-77",
+    "vocCompliant": true,
+    "vocGperL": 0,
+    "greenSealCertified": false,
+    "greenSealSaferList": true,
+    "epaListN": true,
+    "dilutionRatio": "Ready to Use (pre-saturated)",
+    "dwellTime": "1 minute",
+    "hazards": [
+      "Low toxicity"
+    ],
+    "ppe": [
+      "None typically required"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Keep lid closed.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "medical-office",
+      "surgery-center",
+      "dental-office",
+      "daycare",
+      "commercial-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "EPA List N. 1-min kill time in wipe format. AHP technology — on Green Seal safer active ingredients list. Non-irritating — no PPE needed at use concentration.",
+    "sdsUrl": "https://sds.diversey.com/",
+    "references": [
+      {
+        "label": "EPA List N Registration",
+        "url": "https://www.epa.gov/pesticide-registration/disinfectants-coronavirus-covid-19",
+        "authority": "EPA"
+      },
+      {
+        "label": "Green Seal Safer Disinfectants",
+        "url": "https://greenseal.org/safer-disinfectants",
+        "authority": "Green Seal"
+      }
+    ]
+  },
+  {
+    "id": "spartan-airlift-odor",
+    "name": "Spartan Airlift Smoke & Odor Eliminator",
+    "manufacturer": "Spartan Chemical",
+    "category": "specialty",
+    "categoryLabel": "Odor Eliminator",
+    "activeIngredient": "Odor counteractant blend",
+    "vocCompliant": true,
+    "vocGperL": 15,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use or 1:20 dilution",
+    "dwellTime": "Spray and leave",
+    "hazards": [
+      "Eye irritant",
+      "Flammable aerosol"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Ventilation"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Away from heat. Do not puncture.",
+    "disposal": "Per aerosol regulations.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Odor counteractant — doesn't mask with fragrance but neutralizes odor molecules. Effective on smoke, food, and biological odors. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.spartanchemical.com/sds/",
+    "references": []
+  },
+  {
+    "id": "3m-stainless-steel-polish",
+    "name": "3M Stainless Steel Cleaner & Polish",
+    "manufacturer": "3M Commercial",
+    "category": "specialty",
+    "categoryLabel": "Stainless Steel Polish",
+    "activeIngredient": "Mineral Oil, Surfactants",
+    "vocCompliant": true,
+    "vocGperL": 20,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use (aerosol)",
+    "dwellTime": "Spray, wipe, buff",
+    "hazards": [
+      "Flammable aerosol",
+      "Eye irritant"
+    ],
+    "ppe": [
+      "Safety glasses",
+      "Ventilation"
+    ],
+    "firstAid": "Eyes: Flush with water. Inhalation: Move to fresh air.",
+    "storage": "Away from heat and flame.",
+    "disposal": "Per aerosol regulations.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office",
+      "food-prep"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Cleans, polishes, and protects stainless steel surfaces. Leaves protective film that resists fingerprints. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.3m.com/3M/en_US/safety-data-sheets/",
+    "references": []
+  },
+  {
+    "id": "betco-bestscent-odor",
+    "name": "Betco BestScent Metered Air Freshener",
+    "manufacturer": "Betco Corporation",
+    "category": "specialty",
+    "categoryLabel": "Air Freshener",
+    "activeIngredient": "Fragrance compounds in aerosol carrier",
+    "vocCompliant": true,
+    "vocGperL": 18,
+    "greenSealCertified": false,
+    "dilutionRatio": "Ready to Use (metered dispenser)",
+    "dwellTime": "Continuous release",
+    "hazards": [
+      "Flammable aerosol",
+      "Mild respiratory irritant"
+    ],
+    "ppe": [
+      "Ventilation"
+    ],
+    "firstAid": "Inhalation: Move to fresh air.",
+    "storage": "Away from heat. Do not puncture.",
+    "disposal": "Per aerosol regulations.",
+    "suitableFor": [
+      "commercial-office"
+    ],
+    "notSuitableFor": [
+      "daycare",
+      "medical-office"
+    ],
+    "regulationNotes": "Metered dispenser system for consistent air freshening. Not recommended where fragrance-free policies apply (healthcare, daycares). NYS Part 226 compliant.",
+    "sdsUrl": "https://www.betco.com/sds",
+    "references": []
+  },
+  {
+    "id": "3m-carpet-extractor",
+    "name": "3M Carpet Extraction Cleaner HB Quat",
+    "manufacturer": "3M Commercial",
+    "category": "specialty",
+    "categoryLabel": "Carpet Extractor Cleaner",
+    "activeIngredient": "Quaternary Ammonium, Surfactants",
+    "vocCompliant": true,
+    "vocGperL": 5,
+    "greenSealCertified": false,
+    "dilutionRatio": "1:128 (via Twist'n Fill)",
+    "dwellTime": "Pre-spray 5-10 min, extract",
+    "hazards": [
+      "Mild eye irritant at concentrate"
+    ],
+    "ppe": [
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Cleans and sanitizes carpet in one step. Part of 3M Twist'n Fill system. Low-foam formula for extraction equipment. NYS Part 226 compliant.",
+    "sdsUrl": "https://www.3m.com/3M/en_US/safety-data-sheets/",
+    "references": []
+  },
+  {
+    "id": "ecolab-drain-maintainer",
+    "name": "Ecolab Drain Maintainer",
+    "manufacturer": "Ecolab",
+    "category": "specialty",
+    "categoryLabel": "Enzymatic Drain Treatment",
+    "activeIngredient": "Enzymatic Bio-Culture Blend",
+    "vocCompliant": true,
+    "vocGperL": 0,
+    "greenSealCertified": false,
+    "dilutionRatio": "4-8 oz per drain",
+    "dwellTime": "Overnight (best results)",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Gloves recommended"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Room temperature. Keep sealed.",
+    "disposal": "Non-hazardous. Biodegradable.",
+    "suitableFor": [
+      "food-prep",
+      "commercial-office",
+      "medical-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "Bio-enzyme drain maintainer — prevents buildup, eliminates drain odors. Not a chemical drain opener. Apply at end of day for overnight digestion.",
+    "sdsUrl": "https://www.ecolab.com/sds-search",
+    "references": []
+  },
+  {
+    "id": "diversey-good-sense-odor",
+    "name": "Diversey Good Sense Odor Counteractant",
+    "manufacturer": "Diversey",
+    "category": "specialty",
+    "categoryLabel": "Odor Neutralizer",
+    "activeIngredient": "Odor counteractant surfactant blend",
+    "vocCompliant": true,
+    "vocGperL": 8,
+    "greenSealCertified": false,
+    "dilutionRatio": "1:32 (4 oz per gallon)",
+    "dwellTime": "Spray on source area",
+    "hazards": [
+      "Mild eye irritant"
+    ],
+    "ppe": [
+      "Gloves when handling concentrate"
+    ],
+    "firstAid": "Eyes: Flush with water.",
+    "storage": "Original container.",
+    "disposal": "Non-hazardous.",
+    "suitableFor": [
+      "commercial-office",
+      "medical-office",
+      "dental-office"
+    ],
+    "notSuitableFor": [],
+    "regulationNotes": "True odor counteractant — chemically neutralizes odor molecules rather than masking. Dilutable concentrate. NYS Part 226 compliant.",
+    "sdsUrl": "https://sds.diversey.com/",
+    "references": []
+  }
+];

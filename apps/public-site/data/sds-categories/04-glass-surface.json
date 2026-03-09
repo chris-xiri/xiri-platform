@@ -1,0 +1,259 @@
+[
+    {
+        "id": "spartan-biorenewables-glass",
+        "name": "Spartan BioRenewables Glass Cleaner",
+        "manufacturer": "Spartan Chemical",
+        "category": "glass-surface",
+        "categoryLabel": "Glass & Surface Cleaner",
+        "activeIngredient": "Bio-based surfactants (corn & soy derived)",
+        "vocCompliant": true,
+        "vocGperL": 3,
+        "greenSealCertified": true,
+        "greenSealStandard": "GS-37",
+        "dilutionRatio": "1:64 (2 oz per gallon)",
+        "dwellTime": "Spray and wipe",
+        "hazards": [
+            "Minimal — mild eye irritant"
+        ],
+        "ppe": [
+            "Safety glasses recommended"
+        ],
+        "firstAid": "Eyes: Flush with water. Non-toxic.",
+        "storage": "Room temperature. Keep sealed.",
+        "disposal": "Biodegradable. Non-hazardous waste.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "daycare",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "USDA BioPreferred product. Green Seal GS-37 certified. Ideal for VOC-sensitive environments like daycares.",
+        "sdsUrl": "https://www.spartanchemical.com/sds/",
+        "references": [
+            {
+                "label": "Green Seal GS-37 Standard",
+                "url": "https://greenseal.org/standard/gs-37/",
+                "authority": "Green Seal"
+            },
+            {
+                "label": "USDA BioPreferred Program",
+                "url": "https://www.biopreferred.gov/",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "windex-original-pro",
+        "name": "Windex Original Glass Cleaner (SC Johnson Professional)",
+        "manufacturer": "SC Johnson Professional",
+        "category": "glass-surface",
+        "categoryLabel": "Commercial Glass Cleaner",
+        "activeIngredient": "2-Hexoxyethanol, Isopropanolamine",
+        "vocCompliant": true,
+        "vocGperL": 12,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "Spray and wipe",
+        "hazards": [
+            "Eye irritant",
+            "Contains ammonia"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Ventilation"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Do not mix with bleach.",
+        "storage": "Room temperature.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office"
+        ],
+        "notSuitableFor": [
+            "ammonia-sensitive-areas"
+        ],
+        "regulationNotes": "Industry-standard glass cleaner. Do NOT mix with bleach-based products — produces chloramine gas. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.scjohnson.com/sds",
+        "references": [
+            {
+                "label": "OSHA Chemical Safety",
+                "url": "https://www.osha.gov/chemical-hazards",
+                "authority": "OSHA"
+            }
+        ]
+    },
+    {
+        "id": "ecolab-oasis-pro-40",
+        "name": "Ecolab Oasis Pro 40 Glass Cleaner",
+        "manufacturer": "Ecolab",
+        "category": "glass-surface",
+        "categoryLabel": "Glass Cleaner",
+        "activeIngredient": "Nonionic Surfactants",
+        "vocCompliant": true,
+        "vocGperL": 2,
+        "greenSealCertified": false,
+        "epaSaferChoice": true,
+        "dilutionRatio": "1:64 (via dispensing system)",
+        "dwellTime": "Spray and wipe",
+        "hazards": [
+            "Minimal"
+        ],
+        "ppe": [
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container.",
+        "disposal": "Non-hazardous. Biodegradable.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "daycare",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA Safer Choice certified. Ammonia-free — safe for healthcare and daycares. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.ecolab.com/sds-search",
+        "references": [
+            {
+                "label": "EPA Safer Choice Program",
+                "url": "https://www.epa.gov/saferchoice",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "betco-green-earth-glass",
+        "name": "Betco Green Earth Glass Cleaner",
+        "manufacturer": "Betco Corporation",
+        "category": "glass-surface",
+        "categoryLabel": "Green Glass Cleaner",
+        "activeIngredient": "Bio-based Surfactants",
+        "vocCompliant": true,
+        "vocGperL": 4,
+        "greenSealCertified": true,
+        "greenSealStandard": "GS-37",
+        "dilutionRatio": "1:32 (4 oz per gallon)",
+        "dwellTime": "Spray and wipe",
+        "hazards": [
+            "Minimal"
+        ],
+        "ppe": [
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container.",
+        "disposal": "Non-hazardous. Biodegradable.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "daycare",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Green Seal GS-37 certified. Ammonia-free formula. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.betco.com/sds",
+        "references": [
+            {
+                "label": "Green Seal GS-37 Standard",
+                "url": "https://greenseal.org/standard/gs-37/",
+                "authority": "Green Seal"
+            }
+        ]
+    },
+    {
+        "id": "3m-glass-cleaner",
+        "name": "3M Glass Cleaner Concentrate 17L",
+        "manufacturer": "3M Commercial",
+        "category": "glass-surface",
+        "categoryLabel": "Glass Cleaner Concentrate",
+        "activeIngredient": "Nonionic Surfactants",
+        "vocCompliant": true,
+        "vocGperL": 3,
+        "greenSealCertified": false,
+        "dilutionRatio": "1:40 (via Twist'n Fill)",
+        "dwellTime": "Spray and wipe",
+        "hazards": [
+            "Mild eye irritant at concentrate"
+        ],
+        "ppe": [
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Part of 3M Twist'n Fill dispensing system. Streak-free formula. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.3m.com/3M/en_US/safety-data-sheets/",
+        "references": []
+    },
+    {
+        "id": "diversey-glance-na",
+        "name": "Diversey Glance NA Glass Cleaner",
+        "manufacturer": "Diversey",
+        "category": "glass-surface",
+        "categoryLabel": "Non-Ammoniated Glass Cleaner",
+        "activeIngredient": "Nonionic Surfactants",
+        "vocCompliant": true,
+        "vocGperL": 5,
+        "greenSealCertified": false,
+        "dilutionRatio": "1:40 (via J-Fill)",
+        "dwellTime": "Spray and wipe",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "daycare",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Non-ammoniated formula — safe for healthcare. Won't interact with bleach products. NYS Part 226 compliant.",
+        "sdsUrl": "https://sds.diversey.com/",
+        "references": []
+    },
+    {
+        "id": "zep-streak-free-glass",
+        "name": "Zep Streak-Free Glass Cleaner",
+        "manufacturer": "Zep Inc.",
+        "category": "glass-surface",
+        "categoryLabel": "RTU Glass Cleaner",
+        "activeIngredient": "Isopropanol, Surfactants",
+        "vocCompliant": true,
+        "vocGperL": 18,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "Spray and wipe",
+        "hazards": [
+            "Eye irritant",
+            "Flammable"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Ventilation"
+        ],
+        "firstAid": "Eyes: Flush with water. Keep from ignition.",
+        "storage": "Away from heat and flame.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "commercial-office"
+        ],
+        "notSuitableFor": [
+            "daycare"
+        ],
+        "regulationNotes": "Fast-evaporating streak-free formula. Higher VOC than green alternatives but still NYS Part 226 compliant.",
+        "sdsUrl": "https://www.zep.com/sds",
+        "references": []
+    }
+]

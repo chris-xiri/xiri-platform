@@ -1,0 +1,268 @@
+[
+    {
+        "id": "diversey-suma-breakup",
+        "name": "Diversey Suma Break-Up D3.5 Heavy Duty Degreaser",
+        "manufacturer": "Diversey",
+        "category": "degreaser",
+        "categoryLabel": "Heavy-Duty Kitchen Degreaser",
+        "activeIngredient": "Alkaline Surfactant Blend",
+        "vocCompliant": true,
+        "vocGperL": 8,
+        "greenSealCertified": false,
+        "epaSaferChoice": true,
+        "dilutionRatio": "1:20 (6.4 oz per gallon)",
+        "dwellTime": "3-5 minutes",
+        "hazards": [
+            "Eye irritant",
+            "Skin irritant at concentrate"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Chemical-resistant gloves"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Skin: Wash with water.",
+        "storage": "Original container. Room temperature.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "food-prep",
+            "commercial-office",
+            "medical-office"
+        ],
+        "notSuitableFor": [
+            "aluminum-surfaces"
+        ],
+        "regulationNotes": "EPA Safer Choice certified. NSF registered for food-service use. Do not use on aluminum — will cause discoloration. NYS Part 226 compliant.",
+        "sdsUrl": "https://sds.diversey.com/",
+        "references": [
+            {
+                "label": "EPA Safer Choice Program",
+                "url": "https://www.epa.gov/saferchoice",
+                "authority": "EPA"
+            },
+            {
+                "label": "NSF Registration",
+                "url": "https://www.nsf.org/",
+                "authority": "NSF"
+            }
+        ]
+    },
+    {
+        "id": "zep-heavy-duty-citrus",
+        "name": "Zep Heavy-Duty Citrus Degreaser",
+        "manufacturer": "Zep Inc.",
+        "category": "degreaser",
+        "categoryLabel": "Citrus Degreaser",
+        "activeIngredient": "d-Limonene (citrus solvent)",
+        "vocCompliant": true,
+        "vocGperL": 22,
+        "greenSealCertified": false,
+        "dilutionRatio": "1:4 to 1:10 depending on soil",
+        "dwellTime": "3-5 minutes",
+        "hazards": [
+            "Eye irritant",
+            "Skin irritant",
+            "Flammable at concentrate"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Chemical-resistant gloves",
+            "Ventilation"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Skin: Wash with soap and water.",
+        "storage": "Original container. Away from heat and flame.",
+        "disposal": "Per local regulations.",
+        "suitableFor": [
+            "food-prep",
+            "commercial-office"
+        ],
+        "notSuitableFor": [
+            "plastic-surfaces"
+        ],
+        "regulationNotes": "Industrial-strength citrus degreaser. May damage some plastics — test first. Strong citrus odor. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.zep.com/sds",
+        "references": []
+    },
+    {
+        "id": "simple-green-all-purpose",
+        "name": "Simple Green All-Purpose Cleaner",
+        "manufacturer": "Sunshine Makers",
+        "category": "degreaser",
+        "categoryLabel": "All-Purpose Cleaner/Degreaser",
+        "activeIngredient": "Proprietary Surfactant Blend",
+        "vocCompliant": true,
+        "vocGperL": 3,
+        "greenSealCertified": false,
+        "epaSaferChoice": true,
+        "dilutionRatio": "1:10 to 1:30 depending on use",
+        "dwellTime": "Spray and wipe",
+        "hazards": [
+            "Low toxicity",
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Gloves recommended for prolonged use"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Room temperature.",
+        "disposal": "Non-hazardous. Biodegradable.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "daycare",
+            "food-prep"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA Safer Choice certified. Non-toxic, biodegradable. One of the most widely used green cleaning products. NYS Part 226 compliant.",
+        "sdsUrl": "https://simplegreen.com/resources/sds/",
+        "references": [
+            {
+                "label": "EPA Safer Choice Program",
+                "url": "https://www.epa.gov/saferchoice",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "betco-green-earth-peroxide",
+        "name": "Betco Green Earth Peroxide Cleaner",
+        "manufacturer": "Betco Corporation",
+        "category": "degreaser",
+        "categoryLabel": "Peroxide All-Purpose Cleaner",
+        "activeIngredient": "Hydrogen Peroxide (accelerated)",
+        "vocCompliant": true,
+        "vocGperL": 5,
+        "greenSealCertified": false,
+        "dilutionRatio": "1:32 (4 oz per gallon)",
+        "dwellTime": "2-3 minutes",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container.",
+        "disposal": "Non-hazardous. Biodegradable.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "daycare",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "H₂O₂-based all-purpose cleaner. Breaks down to water and oxygen. Safe on most surfaces. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.betco.com/sds",
+        "references": []
+    },
+    {
+        "id": "ecolab-grease-express",
+        "name": "Ecolab Grease Express",
+        "manufacturer": "Ecolab",
+        "category": "degreaser",
+        "categoryLabel": "Kitchen Degreaser",
+        "activeIngredient": "Alkaline Surfactant Blend",
+        "vocCompliant": true,
+        "vocGperL": 10,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use (trigger spray)",
+        "dwellTime": "1-3 minutes",
+        "hazards": [
+            "Eye irritant",
+            "Skin irritant"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Gloves"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Skin: Wash with water.",
+        "storage": "Original container.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "food-prep",
+            "commercial-office"
+        ],
+        "notSuitableFor": [
+            "aluminum-surfaces"
+        ],
+        "regulationNotes": "Kitchen-grade degreaser for hoods, ovens, grills. Do not use on aluminum. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.ecolab.com/sds-search",
+        "references": []
+    },
+    {
+        "id": "spartan-tough-duty-nb",
+        "name": "Spartan Tough Duty NB Non-Butyl Cleaner Degreaser",
+        "manufacturer": "Spartan Chemical",
+        "category": "degreaser",
+        "categoryLabel": "Non-Butyl Degreaser",
+        "activeIngredient": "Non-butyl alkaline surfactants",
+        "vocCompliant": true,
+        "vocGperL": 6,
+        "greenSealCertified": false,
+        "dilutionRatio": "1:20 to 1:64 depending on soil",
+        "dwellTime": "3-5 minutes",
+        "hazards": [
+            "Eye irritant at concentrate"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush 15 min.",
+        "storage": "Original container.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office",
+            "food-prep"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Non-butyl formula eliminates butyl ether exposure risk. Effective on grease without harsh solvents. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.spartanchemical.com/sds/",
+        "references": [
+            {
+                "label": "NIOSH Pocket Guide — 2-Butoxyethanol",
+                "url": "https://www.cdc.gov/niosh/npg/npgd0058.html",
+                "authority": "NIOSH"
+            }
+        ]
+    },
+    {
+        "id": "krud-kutter-degreaser",
+        "name": "Krud Kutter Original Concentrated Cleaner/Degreaser",
+        "manufacturer": "Rust-Oleum",
+        "category": "degreaser",
+        "categoryLabel": "Concentrated Multi-Purpose Degreaser",
+        "activeIngredient": "Proprietary Surfactant Blend",
+        "vocCompliant": true,
+        "vocGperL": 0,
+        "greenSealCertified": false,
+        "epaSaferChoice": true,
+        "dilutionRatio": "Full strength to 1:30 depending on soil",
+        "dwellTime": "1-5 minutes",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Safety glasses",
+            "Gloves for prolonged use"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Room temperature.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "commercial-office",
+            "food-prep",
+            "medical-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA Safer Choice certified. Zero VOC. Extremely versatile — works on grease, adhesives, crayon, wax. Popular budget option for BSCs.",
+        "sdsUrl": "https://www.rustoleum.com/sds",
+        "references": [
+            {
+                "label": "EPA Safer Choice Program",
+                "url": "https://www.epa.gov/saferchoice",
+                "authority": "EPA"
+            }
+        ]
+    }
+]

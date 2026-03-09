@@ -1,0 +1,334 @@
+[
+    {
+        "id": "betco-ph7-ultra",
+        "name": "Betco pH7 Ultra Neutral Floor Cleaner",
+        "manufacturer": "Betco Corporation",
+        "category": "floor-care",
+        "categoryLabel": "Neutral Floor Cleaner",
+        "activeIngredient": "Nonionic Surfactants",
+        "vocCompliant": true,
+        "vocGperL": 8,
+        "greenSealCertified": true,
+        "greenSealStandard": "GS-37",
+        "dilutionRatio": "1:128 (1 oz per gallon)",
+        "dwellTime": "N/A — mop and go",
+        "hazards": [
+            "Mild eye irritant at concentrate"
+        ],
+        "ppe": [
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush with water. Low hazard.",
+        "storage": "Original container. Keep from freezing.",
+        "disposal": "Diluted solution safe for sewer.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "daycare",
+            "dental-office",
+            "surgery-center"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Green Seal GS-37 certified. Safe on all resilient and hard floor types. Will not damage floor finish. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.betco.com/sds",
+        "references": [
+            {
+                "label": "Green Seal GS-37 Standard",
+                "url": "https://greenseal.org/standard/gs-37/",
+                "authority": "Green Seal"
+            }
+        ]
+    },
+    {
+        "id": "3m-neutral-cleaner-3l",
+        "name": "3M Neutral Cleaner Concentrate 3L",
+        "manufacturer": "3M Commercial",
+        "category": "floor-care",
+        "categoryLabel": "Neutral Floor Cleaner",
+        "activeIngredient": "Nonionic Surfactants",
+        "vocCompliant": true,
+        "vocGperL": 5,
+        "greenSealCertified": false,
+        "epaSaferChoice": true,
+        "dilutionRatio": "1:128 (via 3M Twist'n Fill)",
+        "dwellTime": "N/A — mop and go",
+        "hazards": [
+            "Mild eye irritant at concentrate"
+        ],
+        "ppe": [
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container. Room temperature.",
+        "disposal": "Non-hazardous. Per local regulations.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA Safer Choice certified. Compatible with 3M Twist'n Fill dispensing system for accurate dilution. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.3m.com/3M/en_US/safety-data-sheets/",
+        "references": [
+            {
+                "label": "EPA Safer Choice Program",
+                "url": "https://www.epa.gov/saferchoice",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "diversey-stride-citrus",
+        "name": "Diversey Stride Citrus HC Neutral Cleaner",
+        "manufacturer": "Diversey",
+        "category": "floor-care",
+        "categoryLabel": "Citrus Neutral Cleaner",
+        "activeIngredient": "Bio-based surfactants",
+        "vocCompliant": true,
+        "vocGperL": 6,
+        "greenSealCertified": false,
+        "epaSaferChoice": true,
+        "dilutionRatio": "1:128 (1 oz per gallon)",
+        "dwellTime": "N/A — mop and go",
+        "hazards": [
+            "Mild eye irritant"
+        ],
+        "ppe": [
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container. Room temperature.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "daycare",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "EPA Safer Choice certified. Pleasant citrus scent. Safe on all floor finishes. NYS Part 226 compliant.",
+        "sdsUrl": "https://sds.diversey.com/",
+        "references": [
+            {
+                "label": "EPA Safer Choice Program",
+                "url": "https://www.epa.gov/saferchoice",
+                "authority": "EPA"
+            }
+        ]
+    },
+    {
+        "id": "spartan-green-solutions-floor",
+        "name": "Spartan Green Solutions Floor Cleaner",
+        "manufacturer": "Spartan Chemical",
+        "category": "floor-care",
+        "categoryLabel": "Green Floor Cleaner",
+        "activeIngredient": "Nonionic Surfactants (bio-based)",
+        "vocCompliant": true,
+        "vocGperL": 4,
+        "greenSealCertified": true,
+        "greenSealStandard": "GS-37",
+        "dilutionRatio": "1:128 (via Clean on the Go)",
+        "dwellTime": "N/A — mop and go",
+        "hazards": [
+            "Minimal — mild eye irritant"
+        ],
+        "ppe": [
+            "Gloves recommended"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container.",
+        "disposal": "Non-hazardous. Biodegradable.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "daycare",
+            "dental-office"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Green Seal GS-37 certified. Part of Spartan's Clean on the Go dispensing system. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.spartanchemical.com/sds/",
+        "references": [
+            {
+                "label": "Green Seal GS-37 Standard",
+                "url": "https://greenseal.org/standard/gs-37/",
+                "authority": "Green Seal"
+            }
+        ]
+    },
+    {
+        "id": "ecolab-neutral-floor",
+        "name": "Ecolab Neutral Floor Cleaner",
+        "manufacturer": "Ecolab",
+        "category": "floor-care",
+        "categoryLabel": "Low-Foam Neutral Cleaner",
+        "activeIngredient": "Nonionic Surfactants",
+        "vocCompliant": true,
+        "vocGperL": 5,
+        "greenSealCertified": false,
+        "dilutionRatio": "1:128",
+        "dwellTime": "N/A — auto-scrubber or mop",
+        "hazards": [
+            "Mild eye irritant at concentrate"
+        ],
+        "ppe": [
+            "Gloves when handling concentrate"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "medical-office",
+            "commercial-office",
+            "surgery-center"
+        ],
+        "notSuitableFor": [],
+        "regulationNotes": "Low-foam formula designed for auto-scrubbers. Safe on all hard floor types. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.ecolab.com/sds-search",
+        "references": []
+    },
+    {
+        "id": "betco-untouchable-finish",
+        "name": "Betco Untouchable Floor Finish",
+        "manufacturer": "Betco Corporation",
+        "category": "floor-care",
+        "categoryLabel": "Floor Finish",
+        "activeIngredient": "Acrylic Polymer Emulsion",
+        "vocCompliant": true,
+        "vocGperL": 10,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "30-45 min dry time per coat",
+        "hazards": [
+            "Mild ammonia odor",
+            "Slippery when wet"
+        ],
+        "ppe": [
+            "Ventilation recommended"
+        ],
+        "firstAid": "Eyes: Flush with water. Inhalation: Move to fresh air.",
+        "storage": "Original container. Do not freeze.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office",
+            "dental-office"
+        ],
+        "notSuitableFor": [
+            "wood-floors"
+        ],
+        "regulationNotes": "High-solids floor finish. Apply in thin coats. Requires burnishing for high-gloss. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.betco.com/sds",
+        "references": []
+    },
+    {
+        "id": "betco-extreme-stripper",
+        "name": "Betco Extreme Floor Stripper",
+        "manufacturer": "Betco Corporation",
+        "category": "floor-care",
+        "categoryLabel": "Floor Stripper",
+        "activeIngredient": "2-Butoxyethanol, Monoethanolamine",
+        "vocCompliant": true,
+        "vocGperL": 20,
+        "greenSealCertified": false,
+        "dilutionRatio": "1:4 to 1:8 depending on buildup",
+        "dwellTime": "5-10 minutes",
+        "hazards": [
+            "Eye and skin irritant",
+            "Inhalation hazard",
+            "Not for use on wood"
+        ],
+        "ppe": [
+            "Chemical splash goggles",
+            "Chemical-resistant gloves",
+            "Ventilation required",
+            "Non-slip footwear"
+        ],
+        "firstAid": "Eyes: Flush 15 min. Skin: Wash immediately. Inhalation: Fresh air.",
+        "storage": "Original container. Do not freeze.",
+        "disposal": "Per local regulations.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office"
+        ],
+        "notSuitableFor": [
+            "wood-floors",
+            "daycare-during-hours"
+        ],
+        "regulationNotes": "Heavy-duty stripper for removing multiple coats of floor finish. Requires PPE and ventilation. Schedule after-hours. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.betco.com/sds",
+        "references": [
+            {
+                "label": "OSHA Chemical Safety",
+                "url": "https://www.osha.gov/chemical-hazards",
+                "authority": "OSHA"
+            }
+        ]
+    },
+    {
+        "id": "zep-wet-look-finish",
+        "name": "Zep Wet Look Floor Finish",
+        "manufacturer": "Zep Inc.",
+        "category": "floor-care",
+        "categoryLabel": "High-Gloss Floor Finish",
+        "activeIngredient": "Acrylic Polymer Emulsion",
+        "vocCompliant": true,
+        "vocGperL": 12,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "30 min dry time per coat",
+        "hazards": [
+            "Mild ammonia odor",
+            "Slippery when wet"
+        ],
+        "ppe": [
+            "Ventilation recommended"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Do not freeze.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office"
+        ],
+        "notSuitableFor": [
+            "wood-floors"
+        ],
+        "regulationNotes": "High-gloss finish. 25% solids content. Apply 3-5 coats for best results. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.zep.com/sds",
+        "references": []
+    },
+    {
+        "id": "3m-scotchgard-floor-protector",
+        "name": "3M Scotchgard Resilient Floor Protector",
+        "manufacturer": "3M Commercial",
+        "category": "floor-care",
+        "categoryLabel": "Floor Protector",
+        "activeIngredient": "Fluorochemical Acrylic Copolymer",
+        "vocCompliant": true,
+        "vocGperL": 8,
+        "greenSealCertified": false,
+        "dilutionRatio": "Ready to Use",
+        "dwellTime": "45 min dry time",
+        "hazards": [
+            "Mild eye irritant",
+            "Slippery when wet"
+        ],
+        "ppe": [
+            "Ventilation recommended"
+        ],
+        "firstAid": "Eyes: Flush with water.",
+        "storage": "Original container. Do not freeze.",
+        "disposal": "Non-hazardous.",
+        "suitableFor": [
+            "commercial-office",
+            "medical-office",
+            "dental-office"
+        ],
+        "notSuitableFor": [
+            "wood-floors"
+        ],
+        "regulationNotes": "Soil and stain resistant finish protector. Reduces recoat frequency. NYS Part 226 compliant.",
+        "sdsUrl": "https://www.3m.com/3M/en_US/safety-data-sheets/",
+        "references": []
+    }
+]
