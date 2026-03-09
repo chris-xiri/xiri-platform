@@ -84,7 +84,7 @@ export default function Navigation() {
     }, {} as Record<string, typeof FACILITY_TYPES>);
 
     const SERVICE_LINKS = {
-        'Core Services': [
+        'Commercial Cleaning': [
             { label: 'Janitorial Services', slug: 'janitorial-services' },
             { label: 'Commercial Cleaning', slug: 'commercial-cleaning' },
             { label: 'Floor Care', slug: 'floor-care' },
@@ -92,7 +92,7 @@ export default function Navigation() {
             { label: 'Day Porters', slug: 'day-porter' },
             { label: 'Disinfecting', slug: 'disinfecting-services' },
         ],
-        'Building Maintenance': [
+        'Facility Management': [
             { label: 'Window Cleaning', slug: 'window-cleaning' },
             { label: 'Pressure Washing', slug: 'pressure-washing' },
             { label: 'HVAC Maintenance', slug: 'hvac-maintenance' },
@@ -100,6 +100,11 @@ export default function Navigation() {
             { label: 'Snow & Ice Removal', slug: 'snow-ice-removal' },
             { label: 'Handyman Services', slug: 'handyman-services' },
         ],
+    };
+
+    const GROUP_PILLAR_HREFS: Record<string, string> = {
+        'Commercial Cleaning': '/services/commercial-cleaning',
+        'Facility Management': '/services/facility-management',
     };
 
 
@@ -202,9 +207,13 @@ export default function Navigation() {
                                         <div className="p-2 grid grid-cols-2 gap-1">
                                             {Object.entries(SERVICE_LINKS).map(([group, services]) => (
                                                 <div key={group} className="pb-2">
-                                                    <div className="px-3 py-1.5 text-xs font-bold text-sky-500 uppercase tracking-wider">
-                                                        {group}
-                                                    </div>
+                                                    <Link
+                                                        href={GROUP_PILLAR_HREFS[group] || '/services'}
+                                                        className="px-3 py-1.5 text-xs font-bold text-sky-500 uppercase tracking-wider hover:text-sky-700 transition-colors block"
+                                                        onClick={() => handleNavClick(GROUP_PILLAR_HREFS[group] || '/services', group)}
+                                                    >
+                                                        {group} →
+                                                    </Link>
                                                     {services.map((service) => (
                                                         <Link
                                                             key={service.slug}
