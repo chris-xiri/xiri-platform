@@ -3,16 +3,41 @@ import { Hero } from "@/components/Hero";
 import { ValuePropsSection } from "@/components/ValueProps";
 import { ClientLeadForm } from "@/components/ClientLeadForm";
 import { FAQ } from "@/components/FAQ";
+import { JsonLd } from "@/components/JsonLd";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Wrench, Rocket, ShieldCheck, Moon, DollarSign } from "lucide-react";
+import { ArrowRight, CheckCircle2, Wrench, Rocket, ShieldCheck, Moon, DollarSign, MapPin } from "lucide-react";
 import seoData from "@/data/seo-data.json";
 import { AuthorityBreadcrumb } from "@/components/AuthorityBreadcrumb";
+import { NearbyAreas } from "@/components/NearbyAreas";
+
+interface Location {
+    slug: string;
+    name: string;
+    state: string;
+    region: string;
+    latitude?: number;
+    longitude?: number;
+    population?: string;
+    medicalDensity?: string;
+    keyIntersection?: string;
+    localInsight?: string;
+    complianceNote?: string;
+    serviceChallenges?: string;
+    whyXiri?: string;
+    facilityTypes?: string[];
+    landmarks?: string[];
+    nearbyCities?: string[];
+    zipCodes?: string[];
+    localFaqs?: { question: string; answer: string }[];
+}
 
 interface IndustryHubPageProps {
     industry: SeoIndustry;
+    pillar?: { href: string; text: string };
+    location?: Location;
 }
 
-export function IndustryHubPage({ industry }: IndustryHubPageProps) {
+export function IndustryHubPage({ industry, pillar, location }: IndustryHubPageProps) {
     // 1. Resolve Services (IDs to Objects)
     const allServices = (seoData.services || []) as SeoService[];
 
@@ -24,10 +49,263 @@ export function IndustryHubPage({ industry }: IndustryHubPageProps) {
         allServices.find(s => s.slug === id)
     ).filter(Boolean) as SeoService[] || [];
 
+    // ─── INDUSTRY × LOCATION VIEW ──────────────────────────────────
+    if (location) {
+        const townName = location.name.split(',')[0].trim();
+        const allFaqs = [
+            ...(location.localFaqs || []),
+            ...(industry.faqs || []),
+            { question: `What zip codes do you cover in ${townName}?`, answer: `We serve ${location.zipCodes?.join(', ') || 'the surrounding area'} and all of ${location.region}.` },
+        ];
+
+        return (
+            <main className="min-h-screen bg-slate-50">
+                {/* Structured Data */}
+                <JsonLd
+                    data={{
+                        "@context": "https://schema.org",
+                        "@graph": [
+                            {
+                                "@type": "LocalBusiness",
+                                "@id": `https://xiri.ai/industries/${pillar?.href?.split('/').pop()}/${industry.slug}-in-${location.slug}#business`,
+                                "name": `XIRI ${industry.name} Cleaning — ${location.name}`,
+                                "description": location.localInsight || industry.heroSubtitle,
+                                "url": `https://xiri.ai/industries/${pillar?.href?.split('/').pop()}/${industry.slug}`,
+                                "telephone": "+1-516-243-9474",
+                                "areaServed": {
+                                    "@type": "Place",
+                                    "name": location.region,
+                                    "address": {
+                                        "@type": "PostalAddress",
+                                        "addressLocality": townName,
+                                        "addressRegion": location.state,
+                                        "addressCountry": "US",
+                                    },
+                                },
+                                "geo": {
+                                    "@type": "GeoCoordinates",
+                                    "latitude": location.latitude,
+                                    "longitude": location.longitude,
+                                },
+                            },
+                            {
+                                "@type": "FAQPage",
+                                "mainEntity": allFaqs.map(faq => ({
+                                    "@type": "Question",
+                                    "name": faq.question,
+                                    "acceptedAnswer": { "@type": "Answer", "text": faq.answer },
+                                })),
+                            },
+                        ],
+                    }}
+                />
+                <JsonLd
+                    data={{
+                        "@context": "https://schema.org",
+                        "@type": "BreadcrumbList",
+                        "itemListElement": [
+                            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
+                            ...(pillar ? [{ "@type": "ListItem", "position": 2, "name": pillar.text, "item": `https://xiri.ai${pillar.href}` }] : []),
+                            { "@type": "ListItem", "position": pillar ? 3 : 2, "name": industry.name, "item": `https://xiri.ai${pillar?.href || '/industries'}/${industry.slug}` },
+                            { "@type": "ListItem", "position": pillar ? 4 : 3, "name": `${townName}, NY` },
+                        ]
+                    }}
+                />
+
+                <AuthorityBreadcrumb
+                    items={[
+                        { label: industry.name, href: `${pillar?.href || '/industries'}/${industry.slug}` },
+                        { label: `${townName}, NY` },
+                    ]}
+                    pillar={pillar}
+                />
+
+                <Hero
+                    title={`${industry.name} Cleaning in ${location.name}`}
+                    subtitle={location.localInsight || `${industry.heroSubtitle} Proudly serving facilities near ${location.landmarks?.join(', ') || location.region}.`}
+                    ctaText={`Get a Quote for ${townName}`}
+                />
+
+                {/* Trust Bar */}
+                <section className="py-8 bg-slate-900 text-white">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                            <div>
+                                <div className="text-2xl font-bold text-sky-400">{location.medicalDensity?.split(' ')[0] || '10+'}</div>
+                                <div className="text-sm text-slate-300 mt-1">Facilities in Area</div>
+                            </div>
+                            <div>
+                                <div className="text-2xl font-bold text-sky-400">365</div>
+                                <div className="text-sm text-slate-300 mt-1">Nights/Year Coverage</div>
+                            </div>
+                            <div>
+                                <div className="text-2xl font-bold text-sky-400">100%</div>
+                                <div className="text-sm text-slate-300 mt-1">Insured & Bonded</div>
+                            </div>
+                            <div>
+                                <div className="text-2xl font-bold text-sky-400">1</div>
+                                <div className="text-sm text-slate-300 mt-1">Invoice Per Month</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Local Insight */}
+                <section className="py-16 bg-white">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="grid md:grid-cols-2 gap-12 items-start">
+                            <div>
+                                <div className="inline-block px-3 py-1 rounded-full bg-sky-100 text-sky-700 text-sm font-bold mb-6">
+                                    Local Market Intelligence
+                                </div>
+                                <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                                    Why {industry.name} in {townName} Requires a Specialist
+                                </h2>
+                                <p className="text-lg text-gray-600 mb-6">
+                                    {location.localInsight || `${townName} has unique facility management needs that generic cleaning companies can't address.`}
+                                </p>
+                                {location.serviceChallenges && (
+                                    <p className="text-lg text-gray-600 mb-6">
+                                        <strong className="text-gray-900">The Challenge:</strong> {location.serviceChallenges}
+                                    </p>
+                                )}
+                                {location.whyXiri && (
+                                    <p className="text-lg text-gray-600">
+                                        <strong className="text-gray-900">Our Advantage:</strong> {location.whyXiri}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="space-y-4">
+                                {location.facilityTypes && location.facilityTypes.length > 0 && (
+                                    <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
+                                        <h3 className="font-bold text-slate-900 mb-4">Facility Types We Serve in {townName}</h3>
+                                        <ul className="space-y-2">
+                                            {location.facilityTypes.map((ft, i) => (
+                                                <li key={i} className="flex items-center gap-2 text-slate-700">
+                                                    <span className="w-2 h-2 rounded-full bg-sky-500 flex-shrink-0" />
+                                                    {ft}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {location.keyIntersection && (
+                                    <div className="bg-sky-50 rounded-xl p-6 border border-sky-200">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <MapPin className="w-5 h-5 text-sky-600" />
+                                            <h3 className="font-bold text-slate-900">Service Corridor</h3>
+                                        </div>
+                                        <p className="text-slate-600">
+                                            Our teams operate along <strong>{location.keyIntersection}</strong> and the surrounding {location.region} area nightly.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <ValuePropsSection title={`Our Standard for ${townName}`} />
+
+                {/* FAQs */}
+                <section className="py-16 bg-slate-50">
+                    <div className="max-w-4xl mx-auto px-4">
+                        <h2 className="text-3xl font-bold text-slate-900 text-center mb-10">
+                            {industry.name} in {townName} — Frequently Asked Questions
+                        </h2>
+                        <div className="space-y-4">
+                            {allFaqs.map((faq, i) => (
+                                <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+                                    <h3 className="font-bold text-slate-900 mb-2">{faq.question}</h3>
+                                    <p className="text-slate-600">{faq.answer}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Zip Codes */}
+                {location.zipCodes && location.zipCodes.length > 0 && (
+                    <section className="py-10 bg-slate-900 text-white">
+                        <div className="max-w-4xl mx-auto px-4 text-center">
+                            <h3 className="font-bold text-lg mb-3">Zip Codes We Serve in {townName}</h3>
+                            <div className="flex flex-wrap justify-center gap-3">
+                                {location.zipCodes.map((zip, i) => (
+                                    <span key={i} className="px-4 py-1.5 bg-slate-800 rounded-full text-sm font-mono text-slate-300 border border-slate-700">
+                                        {zip}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* Nearby Areas */}
+                <NearbyAreas
+                    serviceSlug={industry.slug}
+                    serviceName={industry.name}
+                    nearbyCities={location.nearbyCities || []}
+                    currentLocationName={location.name}
+                    baseRoute="industries"
+                />
+            </main>
+        );
+    }
+
+    // ─── STANDARD INDUSTRY HUB VIEW ────────────────────────────────
     return (
         <main className="min-h-screen bg-slate-50">
+            {/* Structured Data */}
+            <JsonLd
+                data={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "Service",
+                            "@id": `https://xiri.ai${pillar?.href || '/industries'}/${industry.slug}#service`,
+                            "name": industry.heroTitle || `${industry.name} Facility Management`,
+                            "description": industry.heroSubtitle,
+                            "serviceType": `${industry.name} Cleaning`,
+                            "provider": {
+                                "@type": "Organization",
+                                "@id": "https://xiri.ai/#organization"
+                            },
+                            "areaServed": { "@type": "State", "name": "New York" },
+                            ...(pillar && {
+                                "isPartOf": {
+                                    "@type": "Service",
+                                    "@id": `https://xiri.ai${pillar.href}#service`
+                                }
+                            }),
+                        },
+                        ...(industry.faqs && industry.faqs.length > 0 ? [{
+                            "@type": "FAQPage",
+                            "mainEntity": industry.faqs.map((faq: any) => ({
+                                "@type": "Question",
+                                "name": faq.question,
+                                "acceptedAnswer": { "@type": "Answer", "text": faq.answer },
+                            })),
+                        }] : []),
+                    ],
+                }}
+            />
+            <JsonLd
+                data={{
+                    "@context": "https://schema.org",
+                    "@type": "BreadcrumbList",
+                    "itemListElement": [
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
+                        ...(pillar ? [{ "@type": "ListItem", "position": 2, "name": pillar.text, "item": `https://xiri.ai${pillar.href}` }] : []),
+                        { "@type": "ListItem", "position": pillar ? 3 : 2, "name": industry.name, "item": `https://xiri.ai${pillar?.href || '/industries'}/${industry.slug}` },
+                    ]
+                }}
+            />
+
             {/* Authority Funnel: Breadcrumb */}
-            <AuthorityBreadcrumb items={[{ label: industry.name }]} />
+            <AuthorityBreadcrumb
+                items={[{ label: industry.name }]}
+                pillar={pillar}
+            />
 
             {/* 1. HERO */}
             <Hero
@@ -50,7 +328,7 @@ export function IndustryHubPage({ industry }: IndustryHubPageProps) {
                             Complete Facility Management
                         </h2>
                         <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-                            Consolidate your vendor list. We manage every aspect of your facility's maintenance.
+                            Consolidate your vendor list. We manage every aspect of your facility&apos;s maintenance.
                         </p>
                     </div>
 
@@ -136,7 +414,7 @@ export function IndustryHubPage({ industry }: IndustryHubPageProps) {
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-lg">Nightly Audits</h4>
-                                        <p className="text-sky-200/80">We physically verify the work every night so you don't have to.</p>
+                                        <p className="text-sky-200/80">We physically verify the work every night so you don&apos;t have to.</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-4">
