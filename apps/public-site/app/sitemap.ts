@@ -117,6 +117,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
         sitemapEntries.push({ url: `${BASE_URL}/compare/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 });
     });
 
+    // 14. Referral Partner Pages (hub + 12 trade pages)
+    sitemapEntries.push({ url: `${BASE_URL}/refer`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 });
+    ['plumber-referral-partner', 'electrician-referral-partner', 'hvac-referral-partner',
+     'pest-control-referral-partner', 'fire-protection-referral-partner', 'elevator-service-referral-partner',
+     'locksmith-referral-partner', 'property-manager-referral-partner', 'commercial-real-estate-broker-referral-partner',
+     'accountant-referral-partner', 'insurance-agent-referral-partner', 'security-company-referral-partner',
+    ].forEach((slug) => {
+        sitemapEntries.push({ url: `${BASE_URL}/refer/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
+    });
+    // NOTE: Referral × Location cross-product pages (180) excluded from sitemap.
+    // Pages still live — just not submitted to Google.
+
     return sitemapEntries;
 }
 

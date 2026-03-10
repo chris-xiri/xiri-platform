@@ -58,7 +58,14 @@ export type EventName =
     | 'tool_filter'
     | 'tool_result_expand'
     | 'tool_external_click'
-    | 'tool_cta_click';
+    | 'tool_cta_click'
+
+    // Referral Partner Funnel
+    | 'referral_page_view'
+    | 'referral_form_view'
+    | 'referral_form_submit'
+    | 'referral_form_success'
+    | 'referral_form_error';
 
 export interface EventProperties {
     [key: string]: string | number | boolean | undefined;

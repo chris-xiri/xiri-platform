@@ -208,6 +208,14 @@ export default function Navigation() {
                             >
                                 For Contractors
                             </Link>
+
+                            <Link
+                                href="/refer"
+                                className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
+                                onClick={() => handleNavClick('/refer', 'Refer & Earn')}
+                            >
+                                Refer & Earn
+                            </Link>
                         </div>
 
                         {/* CTA Button + Mobile Hamburger */}
@@ -299,6 +307,7 @@ export default function Navigation() {
                             <div className="border-t border-gray-100 pt-3 space-y-3">
                                 <Link href="/calculator" className="block text-sm font-medium text-gray-700 hover:text-sky-600" onClick={() => setMobileOpen(false)}>Pricing</Link>
                                 <Link href="/contractors" className="block text-sm font-medium text-gray-700 hover:text-sky-600" onClick={() => setMobileOpen(false)}>For Contractors</Link>
+                                <Link href="/refer" className="block text-sm font-semibold text-emerald-600 hover:text-emerald-700" onClick={() => setMobileOpen(false)}>Refer & Earn $500</Link>
                             </div>
 
                             {/* Mobile CTA */}

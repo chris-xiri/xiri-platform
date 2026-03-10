@@ -60,6 +60,13 @@ const nextConfig: NextConfig = {
       });
     }
 
+    // /pricing → /calculator (nav label says "Pricing" but page lives at /calculator)
+    redirects.push({
+      source: '/pricing',
+      destination: '/calculator',
+      permanent: true,
+    });
+
     return redirects;
   },
 };

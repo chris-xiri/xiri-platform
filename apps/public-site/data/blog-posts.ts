@@ -812,4 +812,370 @@ Pressure washing runoff is regulated. You can't just wash chemicals and debris i
 
 [**Get Pressure Washing Included →**](/services/pressure-washing)`,
     },
+
+    // ══════════════════════════════════════════════════════════
+    // REFERRAL PARTNER CONTENT — Trade-targeted side income posts
+    // Infused with BLS.gov + trade association data
+    // ══════════════════════════════════════════════════════════
+    {
+        slug: 'plumber-side-income-ideas',
+        title: '5 Ways Plumbers Can Earn Extra Income in 2025 (Without More Plumbing)',
+        description: 'Plumbers earn a median of $62,970/year. Here are 5 proven ways to add $5,000-$10,000+ in side income using the relationships you already have.',
+        publishDate: '2025-10-29',
+        readTime: '7 min',
+        category: 'For Contractors',
+        leadMagnet: {
+            magnetName: 'plumber_referral_income_guide',
+            title: 'Download: Plumber Passive Income Calculator',
+            description: 'Calculate your potential referral income based on how many buildings you service. Includes a tracking spreadsheet.',
+            ctaText: 'Get the Calculator',
+            variant: 'green',
+        },
+        content: `## You Fix Pipes for $30/Hour. But You Walk Past $500 Every Day.
+
+According to the [Bureau of Labor Statistics](https://www.bls.gov/ooh/construction-and-extraction/plumbers-pipefitters-and-steamfitters.htm), plumbers earn a median wage of **$62,970/year** ($30.27/hour). The top 10% earn over $104,000. But those numbers only count plumbing income.
+
+What if you could earn **$5,000-$10,000+ per year** from the commercial buildings you're already inside — without picking up a wrench?
+
+## The Money You're Walking Past
+
+Every time you enter a commercial building to fix a leak, run a backflow test, or replace a water heater, you walk past an opportunity most plumbers never see:
+
+**The cleaning contract.**
+
+That building pays someone $1,500-$4,000/month for janitorial services. And the building manager? They're often unhappy with the company doing it. You know because you see the dirty restrooms while you're working on the pipes underneath them.
+
+## 5 Ways to Add Income Without More Plumbing
+
+### 1. Cleaning Company Referrals — $500+ Per Building
+
+This is the highest-ROI option for a working plumber. Here's why:
+- You're **already in the building** during service calls
+- You **already have rapport** with the facility manager
+- It takes **one conversation** — "I know a commercial cleaning company that does great work. Want me to connect you?"
+
+**Potential earnings:** XIRI pays a minimum of $500 per building that converts to a cleaning contract, plus $50/month recurring for the life of the contract. Refer 5 buildings = **$2,500 upfront + $250/month ongoing.**
+
+[**→ Learn about the XIRI Plumber Referral Program**](/refer/plumber-referral-partner)
+
+### 2. Maintenance Contract Upsells
+
+Many plumbing companies leave money on the table by only doing reactive work. Annual PM contracts for backflow testing, water heater flushing, and fixture inspections create recurring revenue.
+
+**Industry data:** The [Plumbing-Heating-Cooling Contractors Association (PHCC)](https://www.phccweb.org/) reports that contractors with maintenance agreements see 30-40% higher customer lifetime value.
+
+### 3. Selling Water Treatment/Filtration
+
+Commercial water filtration systems are a natural upsell when you're already discussing water quality. Margins are 40-60% on equipment with recurring filter replacement revenue.
+
+### 4. Emergency Response Partnerships
+
+Partner with restoration companies for water damage referrals. When you respond to a burst pipe, the building needs cleanup and restoration. Restoration companies pay $200-$500 per qualified referral.
+
+### 5. Subcontracting to Facility Management Companies
+
+Companies like XIRI contract plumbing work to local tradespeople. Instead of finding your own customers, you bid on work that's already sold.
+
+## The Math on Referral Income
+
+| Scenario | Year 1 Income | Ongoing Monthly |
+|----------|--------------|----------------|
+| 1 referral | $500 | $50/mo |
+| 3 referrals | $1,500 | $150/mo |
+| 5 referrals | $2,500 | $250/mo |
+| 10 referrals | $5,000 | $500/mo |
+
+**10 referrals over the course of a year adds $11,000+ in total income.** That's an 18% raise on the median plumber salary — from conversations, not callouts.
+
+## BLS Employment Outlook
+
+The BLS projects **2% growth** for plumbers through 2033, roughly keeping pace with average occupations. With 561,400 plumbers employed nationally, competition for service calls is real. Diversifying your income through referrals and partnerships protects you when the market gets tight.
+
+## Start Earning Today
+
+You don't need a license. You don't need to learn a new trade. You just need to mention a name the next time a building manager complains about their cleaning company.
+
+[**Join the XIRI Plumber Referral Program → Earn a minimum of $500 per building**](/refer/plumber-referral-partner)`,
+    },
+    {
+        slug: 'hvac-technician-extra-income',
+        title: 'How HVAC Technicians Can Make Money Between Seasonal Peaks',
+        description: 'HVAC techs earn $59,810/year median but face seasonal slowdowns. Here are strategies to maintain income year-round including referral programs.',
+        publishDate: '2025-11-05',
+        readTime: '7 min',
+        category: 'For Contractors',
+        content: `## It's November. Your Phone Isn't Ringing. Now What?
+
+According to the [Bureau of Labor Statistics](https://www.bls.gov/ooh/installation-maintenance-and-repair/heating-air-conditioning-and-refrigeration-mechanics-and-installers.htm), HVAC mechanics and installers earn a median wage of **$59,810/year** ($28.75/hour). But that number hides something every HVAC tech knows: **the money isn't evenly distributed.**
+
+Summer and winter are peak season. Spring and fall? Your phone goes quiet. The question isn't whether HVAC is good money — it's how to smooth out the valleys.
+
+## The HVAC Seasonality Problem
+
+| Quarter | Typical Call Volume | Income Pressure |
+|---------|-------------------|-----------------|
+| Q1 (Jan-Mar) | High — heating repairs | Strong |
+| Q2 (Apr-Jun) | Moderate — AC prep | Declining |
+| Q3 (Jul-Sep) | High — cooling emergencies | Strong |
+| Q4 (Oct-Dec) | Low-moderate | **Cash flow gap** |
+
+The [Air-Conditioning, Heating, and Refrigeration Institute (AHRI)](https://www.ahrinet.org/) reports that residential HVAC service volume drops **30-45%** during shoulder seasons. Commercial HVAC is more stable due to PM contracts, but independent techs still feel the squeeze.
+
+## 6 Income Strategies for the Slow Months
+
+### 1. Cleaning Company Referrals — $500+ Per Building
+
+You're in commercial buildings **every quarter** for filter changes and PM work. You walk the same hallways, see the same restrooms. When the cleaning quality is poor, the building manager knows it — and so do you.
+
+One sentence: "I've been coming here for 2 years. Have you thought about switching cleaning companies? I know someone really good."
+
+**What you earn:** A minimum of $500 per building that signs a cleaning contract with XIRI, plus $50/month recurring. 
+
+**Why it works for HVAC techs specifically:**
+- Your quarterly PM visits put you inside 15-30+ buildings per year
+- Indoor air quality and cleaning quality are directly related
+- Building managers already trust you with their HVAC systems — cleaning is a natural extension
+
+[**→ Learn about the XIRI HVAC Referral Program**](/refer/hvac-referral-partner)
+
+### 2. Indoor Air Quality (IAQ) Testing
+
+Commercial IAQ assessments are a high-margin service that complements HVAC work perfectly. Equipment costs $500-$2,000 for basic testing. Per-assessment fees run $300-$800.
+
+### 3. Duct Cleaning
+
+Commercial duct cleaning is a natural adjacency. National Air Duct Cleaners Association ([NADCA](https://nadca.com/)) certified techs charge $35-$50 per vent plus $200-$500 for main trunk lines.
+
+### 4. Energy Audits
+
+With your HVAC knowledge, you're uniquely positioned to offer commercial energy audits. Many utilities offer rebate programs that make audits free to the building — and pay the auditor directly.
+
+### 5. Building Automation System (BAS) Maintenance
+
+Older commercial buildings with Trane, Johnson Controls, or Honeywell systems need BAS maintenance. This is recurring, less seasonal, and pays $75-$125/hour.
+
+### 6. HVAC Subcontracting Through Facility Management
+
+Companies like XIRI contract quarterly filter changes and PM work to local HVAC technicians. This creates guaranteed recurring revenue outside your direct customer base.
+
+## The Referral Income Math
+
+Assume you visit 20 commercial buildings quarterly for PM work. If just **3 of those buildings** are unhappy with their cleaning:
+
+| Metric | Value |
+|--------|-------|
+| Referrals | 3 buildings |
+| Upfront income | $1,500 |
+| Monthly recurring | $150/mo |
+| Year 1 total | **$3,000+** |
+
+That's your slow-season gap — filled by conversations you're already having.
+
+## BLS Growth Outlook
+
+The BLS projects **9% growth** for HVAC technicians through 2033 — faster than average for all occupations. With 415,200 workers in the field, the trade is growing. But income diversification separates the techs who thrive from the ones who worry between seasons.
+
+[**Join the XIRI HVAC Referral Program → Earn a minimum of $500 per building**](/refer/hvac-referral-partner)`,
+    },
+    {
+        slug: 'electrician-passive-income-guide',
+        title: "The Electrician's Guide to Building Passive Income Streams",
+        description: 'Electricians earn $62,350/year median. Learn how to build passive income from the commercial buildings you already service.',
+        publishDate: '2025-11-12',
+        readTime: '8 min',
+        category: 'For Contractors',
+        content: `## You're Pulling Wire at $30/Hour. The Money You're Missing Doesn't Require a Permit.
+
+According to the [Bureau of Labor Statistics](https://www.bls.gov/ooh/construction-and-extraction/electricians.htm), electricians earn a median annual wage of **$62,350** ($30.00/hour). Journeyman electricians in the New York metro area earn significantly more — often $45-$65/hour with benefits. But even at those rates, your income stops when your hands stop.
+
+Passive income is the gap. And as a commercial electrician, you have an unfair advantage most people don't: **you're already inside the buildings.**
+
+## Why Electricians Have a Unique Passive Income Opportunity
+
+Consider what you see during a typical week of commercial work:
+
+- **Tenant improvement (TI) work** — New tenants moving into commercial spaces need everything from electrical to... cleaning.
+- **Panel upgrades and inspections** — You walk every floor, every corridor, and see the condition of the building.
+- **Emergency calls** — You build relationships with building managers under pressure. That trust is worth money.
+
+The [National Electrical Contractors Association (NECA)](https://www.necanet.org/) reports that member contractors average **4.2 commercial building relationships** per journeyman electrician. That's 4+ opportunities sitting in your contacts that most electricians never monetize.
+
+## 5 Passive Income Strategies for Electricians
+
+### 1. Commercial Cleaning Referrals — $500+ Per Building
+
+Every TI project you complete creates a new tenant who needs a cleaning company. Every emergency call puts you in front of a building manager who's dealing with vendor problems. These are natural referral moments.
+
+| When to Refer | The Conversation |
+|---------------|-----------------|
+| During TI work | "Who's going to clean this space? I know a great company." |
+| After emergency call | "By the way, I noticed the restrooms could use some attention. Want me to connect you with someone?" |
+| During annual inspection | "How's your cleaning company working out? I hear that a lot from other buildings." |
+
+**What you earn:** A minimum of $500 per building + $50/month recurring with XIRI.
+
+[**→ Learn about the XIRI Electrician Referral Program**](/refer/electrician-referral-partner)
+
+### 2. EV Charger Installations
+
+Electric vehicle adoption is accelerating. The Department of Energy (DOE) reports that EV charger installations for commercial buildings typically run $3,000-$15,000 per station. Many states offer tax credits and utility rebates. As an electrician, you're the only person who can do this work.
+
+### 3. Generator Maintenance Contracts
+
+Commercial buildings with backup generators need annual load bank testing, transfer switch exercise, and fuel system checks. This is recurring work — not one-time — and typically bills at premium rates.
+
+### 4. Smart Building / IoT Installation
+
+Lighting controls, occupancy sensors, and smart thermostats are increasingly common in commercial retrofits. The [International Association of Electrical Inspectors (IAEI)](https://iaei.org/) notes that smart building work commands premiums due to the programming knowledge required.
+
+### 5. Electrical Safety Inspections
+
+NFPA 70B recommends regular electrical maintenance inspections for commercial buildings. Many insurance companies offer premium reductions for buildings with documented electrical inspections — creating demand that you can fill.
+
+## The Numbers: Referral Income Calculator
+
+Based on your typical commercial building exposure:
+
+| Buildings in Your Network | Year 1 Referral Income | Year 2 (w/ recurring) |
+|---------------------------|----------------------|---------------------|
+| 5 | $2,500 + $250/mo | $5,500 |
+| 10 | $5,000 + $500/mo | $11,000 |
+| 20 | $10,000 + $1,000/mo | $22,000 |
+
+At 20 referrals over two years, you're looking at an additional **$22,000** — roughly a 35% boost on the median electrician salary. From conversations, not conduit.
+
+## BLS Employment Snapshot
+
+- **Total U.S. electricians:** 865,900
+- **Projected growth (2023-2033):** 6% (faster than average)
+- **New York metro area premium:** 25-40% above national median
+
+The demand for electricians is strong and growing. But the smartest electricians aren't just trading more hours for more money — they're building income streams that pay while they sleep.
+
+[**Join the XIRI Electrician Referral Program → Earn a minimum of $500 per building**](/refer/electrician-referral-partner)`,
+    },
+    {
+        slug: 'property-manager-vendor-referral-income',
+        title: 'Property Managers: How to Monetize Your Vendor Relationships',
+        description: "Property managers earn $66,700/year median. Here's how to add $3,000-$15,000+ in referral income from your existing portfolio.",
+        publishDate: '2025-11-19',
+        readTime: '6 min',
+        category: 'For Contractors',
+        content: `## You Manage 10 Buildings. How Many of Their Cleaning Companies Are You Actually Happy With?
+
+The [Bureau of Labor Statistics](https://www.bls.gov/ooh/management/property-real-estate-and-community-association-managers.htm) reports that property managers earn a **median salary of $66,700/year**. But the real number varies wildly: the top 10% earn over $134,000, while the bottom 10% earn under $33,000.
+
+What makes the difference? Portfolio size, markets served, and increasingly — **ancillary income from vendor partnerships.**
+
+## The Problem You're Already Solving
+
+As a property manager, you manage cleaning vendors as part of your daily work. You know which companies are reliable, which ones no-show, and which tenants are complaining. **You're already doing vendor evaluation for free.** Why not get paid for it?
+
+## How the Referral Model Works
+
+When a building in your portfolio needs a new cleaning company — or the current one underperforms — you're the person who sources the replacement. If you refer that building to XIRI:
+
+| Your Action | What Happens | What You Earn |
+|-------------|-------------|---------------|
+| Submit building info | XIRI quotes and closes | $500+ upfront |
+| Contract goes live | You get monthly bonus | $50/month recurring |
+| Building stays clean | Tenant satisfaction improves | Fewer complaints in your inbox |
+
+## Portfolio-Scale Math
+
+| Portfolio Size | Referrals (20% of portfolio) | Year 1 Income |
+|---------------|------------------------------|---------------|
+| 5 buildings | 1 referral | $500 + $600 |
+| 10 buildings | 2 referrals | $1,000 + $1,200 |
+| 25 buildings | 5 referrals | $2,500 + $3,000 |
+| 50 buildings | 10 referrals | $5,000 + $6,000 |
+
+The [Institute of Real Estate Management (IREM)](https://www.irem.org/) notes that the average CPM manages 15-20 properties. At a conservative 20% referral conversion rate, that's 3-4 referrals per year — **$1,500-$2,000 in upfront fees plus $1,800-$2,400 in annual recurring income.**
+
+## Why Property Managers Make the Best Referral Partners
+
+1. **You're the decision-maker** — In many cases, you select the cleaning vendor. The referral fee is earned by making a decision you'd make anyway.
+2. **You measure performance** — You know within 30 days whether a cleaning company is performing. Your referral credibility is rooted in experience.
+3. **You have the relationship** — Building owners trust your vendor recommendations. That trust is the most valuable thing in this equation.
+
+## What You Get Beyond the Check
+
+- **One vendor, less management overhead** — XIRI provides audit-ready cleaning logs, digital shift verification, and a single point of contact
+- **Tenant satisfaction** — Clean buildings retain tenants. Retained tenants mean stable management income.
+- **Compliance documentation** — OSHA, HIPAA, and CDC-compliant cleaning protocols, documented and available 24/7
+
+[**Join the XIRI Property Manager Referral Program → Earn a minimum of $500 per building**](/refer/property-manager-referral-partner)`,
+    },
+    {
+        slug: 'commercial-real-estate-broker-referral-income',
+        title: 'CRE Brokers: How to Earn Income Between Closings',
+        description: 'Commercial real estate brokers earn $72,280/year median but income is highly cyclical. Earn $500+ per building through cleaning referrals.',
+        publishDate: '2025-11-26',
+        readTime: '6 min',
+        category: 'For Contractors',
+        content: `## You Just Closed a Lease. But Your Income Timeline Looks Like This:
+
+According to the [Bureau of Labor Statistics](https://www.bls.gov/ooh/sales/real-estate-brokers-and-sales-agents.htm), commercial real estate brokers earn a **median annual wage of $72,280**. But every broker knows: that number is meaningless on a monthly basis. You might earn $30,000 in Q1 and $0 in Q2. Commercial brokerage is the definition of feast-or-famine income.
+
+The [CCIM Institute](https://www.ccim.com/) reports that the average commercial transaction takes **6-12 months** from LOI to close. During that pipeline waiting period, your cash flow often depends on deals done months ago.
+
+**What if every lease you closed also generated $500+ in immediate income — plus $50/month for as long as the tenant stays?**
+
+## Every Lease Creates a Cleaning Contract
+
+Think about what happens immediately after a commercial lease is signed:
+
+1. Tenant hires a buildout contractor
+2. Space gets renovated  
+3. Tenant moves in
+4. **Tenant needs a cleaning company** ← This is your $500
+
+Every single commercial lease you close creates a cleaning vendor selection event. The tenant needs to hire someone. You know about this need **weeks before anyone else** — because you negotiated the lease.
+
+## The Post-Close Conversation
+
+You've already done the hard work: finding the space, negotiating terms, managing due diligence. Now add one more step:
+
+> "Congratulations on the new space. By the way — I know a great commercial cleaning company that serves a lot of buildings in this area. Want me to make an intro? They'll send a free scope and quote."
+
+That 15-second conversation is worth a minimum of $500.
+
+## Income Modeling for CRE Brokers
+
+| Annual Transactions | Referrals (40% conversion) | Year 1 Referral Income |
+|--------------------|---------------------------|----------------------|
+| 5 deals | 2 referrals | $1,000 + $1,200 |
+| 10 deals | 4 referrals | $2,000 + $2,400 |
+| 20 deals | 8 referrals | $4,000 + $4,800 |
+| 50 deals | 20 referrals | $10,000 + $12,000 |
+
+At 50 deals/year with 40% referral conversion, you're adding **$22,000 in year one** — and the recurring compounds. By year 3, those 60 referred buildings generate **$36,000/year in recurring bonuses alone.**
+
+## Why CRE Brokers Are Ideal Referral Partners
+
+The [National Association of Realtors (NAR)](https://www.nar.realtor/) commercial survey shows that:
+- **67% of tenants** rely on their broker for vendor recommendations post-lease
+- **The average commercial lease value** is $150,000-$500,000, but the cleaning contract is worth $18,000-$48,000/year
+- Brokers who provide post-close value see **42% higher repeat business rates**
+
+Your referral isn't just earning you $500. It's building a repeatable relationship where your tenants come back to you for the next deal because you helped them beyond the lease.
+
+## What Types of Properties Qualify?
+
+Any single-tenant commercial building in Nassau County between 2,000-25,000 sqft:
+
+| Property Type | Avg. Annual Cleaning Contract | Your Referral Fee |
+|--------------|------------------------------|-------------------|
+| Medical Office | $24,000-$48,000 | $500+ flat + $50/mo |
+| Professional Office | $14,400-$24,000 | $500+ flat + $50/mo |
+| Dental Practice | $18,000-$36,000 | $500+ flat + $50/mo |
+| Retail Space | $12,000-$20,000 | $500+ flat + $50/mo |
+| Auto Dealership | $24,000-$48,000 | $500+ flat + $50/mo |
+
+## Start Earning Between Closings
+
+No prospecting. No cold calling. No marketing spend. Just add one sentence to your post-close workflow.
+
+[**Join the XIRI CRE Broker Referral Program → Earn a minimum of $500 per tenant you connect**](/refer/commercial-real-estate-broker-referral-partner)`,
+    },
 ];
