@@ -36,7 +36,8 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
     const [buildingName, setBuildingName] = useState('');
     const [buildingAddress, setBuildingAddress] = useState('');
     const [managerName, setManagerName] = useState('');
-    const [managerContact, setManagerContact] = useState('');
+    const [managerEmail, setManagerEmail] = useState('');
+    const [managerPhone, setManagerPhone] = useState('');
     const [notes, setNotes] = useState('');
 
     // ─── UI state ────────────────────────────────────────────────
@@ -70,7 +71,8 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                 buildingName,
                 buildingAddress,
                 managerName,
-                managerContact,
+                managerEmail,
+                managerPhone,
                 notes,
                 source: source || 'direct',
                 status: 'new',
@@ -82,13 +84,13 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                 // Business info — this is what the CRM displays as the lead title
                 businessName: buildingName,
                 address: buildingAddress,
-                // Contact info — manager if available, otherwise referrer
+                // Contact info — manager is the real prospect, referrer is just the introducer
                 name: managerName || name,
-                email: managerContact?.includes('@') ? managerContact : email,
-                phone: !managerContact?.includes('@') ? managerContact : phone,
+                email: managerEmail || email,
+                phone: managerPhone || phone,
                 contactName: managerName || name,
-                contactEmail: managerContact?.includes('@') ? managerContact : email,
-                contactPhone: !managerContact?.includes('@') ? managerContact : phone,
+                contactEmail: managerEmail || email,
+                contactPhone: managerPhone || phone,
                 // Lead metadata
                 type: 'referral',
                 source: 'referral',
@@ -158,7 +160,7 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                     <p className="text-xs text-slate-400 mt-3 border-t border-slate-100 pt-2">We&apos;ll email updates to <strong>{email}</strong></p>
                 </div>
                 <button
-                    onClick={() => { setSubmitted(false); setBuildingName(''); setBuildingAddress(''); setManagerName(''); setManagerContact(''); setNotes(''); setStep(2); }}
+                    onClick={() => { setSubmitted(false); setBuildingName(''); setBuildingAddress(''); setManagerName(''); setManagerEmail(''); setManagerPhone(''); setNotes(''); setStep(2); }}
                     className="text-emerald-600 font-semibold text-sm hover:text-emerald-700 underline"
                 >
                     Refer another building →
@@ -294,17 +296,23 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                                     className={inputClass}
                                 />
                             )}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <input
                                     type="text" value={managerName} onChange={(e) => setManagerName(e.target.value)}
-                                    placeholder="Manager name (optional)"
+                                    placeholder="Manager name"
                                     name="manager-name" id="referral-manager-name"
                                     className={inputClass}
                                 />
                                 <input
-                                    type="text" value={managerContact} onChange={(e) => setManagerContact(e.target.value)}
-                                    placeholder="Manager phone or email (optional)"
-                                    name="manager-contact" id="referral-manager-contact"
+                                    type="email" value={managerEmail} onChange={(e) => setManagerEmail(e.target.value)}
+                                    placeholder="Manager email"
+                                    name="manager-email" id="referral-manager-email"
+                                    className={inputClass}
+                                />
+                                <input
+                                    type="tel" value={managerPhone} onChange={(e) => setManagerPhone(formatPhone(e.target.value))}
+                                    placeholder="Manager phone"
+                                    name="manager-phone" id="referral-manager-phone"
                                     className={inputClass}
                                 />
                             </div>
