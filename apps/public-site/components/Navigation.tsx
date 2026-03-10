@@ -110,40 +110,33 @@ export default function Navigation() {
                                     </svg>
                                 </button>
 
-                                <div className={`absolute top-full -left-4 pt-4 w-[520px] transition-all duration-200 origin-top-left ${industriesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
+                                <div className={`absolute top-full -left-4 pt-4 w-[780px] transition-all duration-200 origin-top-left ${industriesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
                                     <div className="bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden ring-1 ring-black/5">
-                                        {/* Horizontal Pillar Links */}
-                                        <div className="flex items-center gap-1 px-3 pt-3 pb-2 border-b border-gray-100 overflow-x-auto">
-                                            {INDUSTRY_PILLARS.map((pillar) => (
-                                                <Link
-                                                    key={pillar.slug}
-                                                    href={`/industries/${pillar.slug}`}
-                                                    className="flex-shrink-0 px-3 py-1.5 text-xs font-bold rounded-full bg-sky-50 text-sky-700 hover:bg-sky-100 transition-colors whitespace-nowrap"
-                                                    onClick={() => handleNavClick(`/industries/${pillar.slug}`, pillar.name)}
-                                                >
-                                                    {pillar.name.replace(' Facilities', '').replace(' & ', ' & ')}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                        <div className="p-2 grid grid-cols-2 gap-x-2">
-                                            {/* Render Groups */}
-                                            {Object.entries(groupedFacilities).map(([group, facilities]) => (
-                                                <div key={group} className="pb-1">
-                                                    <div className="px-3 py-1 text-xs font-bold text-sky-500 uppercase tracking-wider">
-                                                        {group}
-                                                    </div>
-                                                    {facilities.map((facility) => (
+                                        <div className="p-4 grid grid-cols-5 gap-1">
+                                            {Object.entries(groupedFacilities).map(([group, facilities]) => {
+                                                const pillarSlug = facilities[0]?.pillar || '';
+                                                return (
+                                                    <div key={group}>
                                                         <Link
-                                                            key={facility.slug}
-                                                            href={getFacilityHref(facility)}
-                                                            className="block px-3 py-1.5 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 transition-colors"
-                                                            onClick={() => handleNavClick(`/${facility.slug}`, facility.label)}
+                                                            href={`/industries/${pillarSlug}`}
+                                                            className="px-2 py-1.5 text-xs font-bold text-sky-500 uppercase tracking-wider hover:text-sky-700 transition-colors block"
+                                                            onClick={() => handleNavClick(`/industries/${pillarSlug}`, group)}
                                                         >
-                                                            {facility.label}
+                                                            {group} →
                                                         </Link>
-                                                    ))}
-                                                </div>
-                                            ))}
+                                                        {facilities.map((facility) => (
+                                                            <Link
+                                                                key={facility.slug}
+                                                                href={getFacilityHref(facility)}
+                                                                className="block px-2 py-1.5 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 transition-colors"
+                                                                onClick={() => handleNavClick(getFacilityHref(facility), facility.label)}
+                                                            >
+                                                                {facility.label}
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                         <div className="bg-gray-50 px-4 py-3 text-xs text-gray-500 border-t border-gray-100">
                                             Serving medical, commercial, and specialized facilities
