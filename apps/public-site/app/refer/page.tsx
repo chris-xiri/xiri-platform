@@ -1,10 +1,10 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { REFERRAL_PARTNERS, REFERRAL_FEE, RECURRING_BONUS, ICP_QUALIFICATIONS, GENERAL_FAQS } from '@/data/dlp-referral-partners';
+import { REFERRAL_PARTNERS, REFERRAL_FEE, RECURRING_BONUS, WALKTHROUGH_BONUS, CLOSE_BONUS, ICP_QUALIFICATIONS, GENERAL_FAQS } from '@/data/dlp-referral-partners';
 import ReferralForm from '@/components/ReferralForm';
 import { FAQ } from '@/components/FAQ';
 import { SITE } from '@/lib/constants';
-import { DollarSign, ArrowRight, Building2, Handshake, CheckCircle } from 'lucide-react';
+import { DollarSign, ArrowRight, ArrowDown, Building2, Handshake, CheckCircle } from 'lucide-react';
 
 export const metadata: Metadata = {
     title: `Refer & Earn $${REFERRAL_FEE} Per Building | ${SITE.name}`,
@@ -64,7 +64,7 @@ export default function ReferralHubPage() {
                         {[
                             { step: '1', title: 'Refer a Building', desc: 'Fill out the form with the building info. Takes 60 seconds.', icon: Building2 },
                             { step: '2', title: 'We Win the Contract', desc: 'XIRI quotes, sells, and closes. You do zero selling.', icon: Handshake },
-                            { step: '3', title: 'You Get Paid', desc: `$${REFERRAL_FEE} after 60 days. Then $${RECURRING_BONUS}/month recurring.`, icon: DollarSign },
+                            { step: '3', title: 'You Get Paid', desc: `$${WALKTHROUGH_BONUS} when we do the walkthrough. $${CLOSE_BONUS} when we close. Then $${RECURRING_BONUS}/month recurring.`, icon: DollarSign },
                         ].map(({ step, title, desc, icon: Icon }) => (
                             <div key={step} className="text-center">
                                 <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
@@ -106,6 +106,17 @@ export default function ReferralHubPage() {
                             </div>
                         </Link>
                     ))}
+                </div>
+            </section>
+
+            {/* Mid-page CTA */}
+            <section className="bg-emerald-700 text-white">
+                <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 text-center">
+                    <h2 className="text-xl sm:text-2xl font-bold mb-3">Know a Building That Needs Cleaning?</h2>
+                    <p className="text-emerald-100 mb-5 text-sm sm:text-base">Fill out the form below — it takes 60 seconds and you could earn ${REFERRAL_FEE}+.</p>
+                    <a href="#refer-form" className="inline-flex items-center gap-2 bg-white text-emerald-700 px-6 py-3 rounded-xl font-semibold hover:bg-emerald-50 transition-colors">
+                        Refer a Building Now <ArrowDown className="w-4 h-4" />
+                    </a>
                 </div>
             </section>
 
@@ -172,12 +183,12 @@ export default function ReferralHubPage() {
             <section className="bg-slate-50">
                 <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
                     <h2 className="text-2xl font-bold text-slate-900 text-center mb-8">Frequently Asked Questions</h2>
-                    <FAQ items={GENERAL_FAQS} />
+                    <FAQ items={GENERAL_FAQS} hideTitle />
                 </div>
             </section>
 
             {/* Generic Referral Form */}
-            <section className="max-w-xl mx-auto px-4 sm:px-6 py-16">
+            <section id="refer-form" className="max-w-xl mx-auto px-4 sm:px-6 py-16">
                 <h2 className="text-2xl font-bold text-slate-900 text-center mb-2">Refer a Building Now</h2>
                 <p className="text-slate-500 text-center mb-8">
                     Don&apos;t see your trade above? Use this form — anyone can refer.

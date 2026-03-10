@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { REFERRAL_PARTNERS, REFERRAL_FEE, RECURRING_BONUS, ICP_QUALIFICATIONS, GENERAL_FAQS } from '@/data/dlp-referral-partners';
+import { REFERRAL_PARTNERS, REFERRAL_FEE, RECURRING_BONUS, WALKTHROUGH_BONUS, CLOSE_BONUS, ICP_QUALIFICATIONS, GENERAL_FAQS } from '@/data/dlp-referral-partners';
 import { LOCATIONS } from '@/lib/locations';
 import ReferralForm from '@/components/ReferralForm';
 import { FAQ } from '@/components/FAQ';
@@ -132,7 +132,7 @@ export default async function ReferralPartnerPage({ params }: Props) {
                         {[
                             { step: '1', title: 'Refer a Building', desc: 'Fill out the form below with the building name and manager contact. Takes 60 seconds.', icon: Building2 },
                             { step: '2', title: 'We Win the Contract', desc: 'XIRI quotes, sells, and closes the cleaning contract. You do nothing else.', icon: Handshake },
-                            { step: '3', title: 'You Get Paid', desc: `$${REFERRAL_FEE} after 60 days of active service. Then $${RECURRING_BONUS}/month recurring.`, icon: DollarSign },
+                            { step: '3', title: 'You Get Paid', desc: `$${WALKTHROUGH_BONUS} when we do the walkthrough. $${CLOSE_BONUS} when we close. Then $${RECURRING_BONUS}/month recurring.`, icon: DollarSign },
                         ].map(({ step, title, desc, icon: Icon }) => (
                             <div key={step} className="text-center">
                                 <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
@@ -248,7 +248,7 @@ export default async function ReferralPartnerPage({ params }: Props) {
             <section className="border-t border-slate-200">
                 <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
                     <h2 className="text-2xl font-bold text-slate-900 text-center mb-8">Frequently Asked Questions</h2>
-                    <FAQ items={allFaqs} />
+                    <FAQ items={allFaqs} hideTitle />
                 </div>
             </section>
 

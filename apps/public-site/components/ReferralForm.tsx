@@ -79,17 +79,34 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
 
             // Also add to main leads collection for CRM visibility
             await addDoc(collection(db, 'leads'), {
-                name,
-                email,
-                phone,
-                type: 'referral_partner',
-                source: `refer/${source || 'direct'}`,
-                trade: trade || 'other',
-                buildingName,
-                buildingAddress,
-                managerName,
-                managerContact,
-                notes,
+                // Business info — this is what the CRM displays as the lead title
+                businessName: buildingName,
+                address: buildingAddress,
+                // Contact info — manager if available, otherwise referrer
+                name: managerName || name,
+                email: managerContact?.includes('@') ? managerContact : email,
+                phone: !managerContact?.includes('@') ? managerContact : phone,
+                contactName: managerName || name,
+                contactEmail: managerContact?.includes('@') ? managerContact : email,
+                contactPhone: !managerContact?.includes('@') ? managerContact : phone,
+                // Lead metadata
+                type: 'referral',
+                source: 'referral',
+                // Attribution for CRM tracking
+                attribution: {
+                    source: 'referral',
+                    medium: 'partner',
+                    campaign: trade || 'general',
+                    landingPage: `/refer/${source || 'hub'}`,
+                },
+                // Referrer info (so you know who referred this lead)
+                referrer: {
+                    name,
+                    email,
+                    phone,
+                    trade: trade || 'other',
+                },
+                notes: notes ? `Referral note: ${notes}` : `Referred by ${name} (${email})`,
                 status: 'new',
                 createdAt: serverTimestamp(),
             });

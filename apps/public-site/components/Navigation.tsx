@@ -252,6 +252,14 @@ export default function Navigation() {
                                 >
                                     {loading ? 'Loading...' : 'See Available Jobs'}
                                 </button>
+                            ) : pathname?.startsWith('/refer') ? (
+                                <a
+                                    href="#refer-form"
+                                    className="hidden md:inline-flex bg-emerald-600 text-white px-6 py-2.5 rounded-full font-medium shadow-md shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
+                                    onClick={() => handleNavClick('#refer-form', 'Refer a Building')}
+                                >
+                                    💰 Refer a Building
+                                </a>
                             ) : (
                                 <>
                                     <span className="hidden lg:block text-sm font-medium text-gray-500">
