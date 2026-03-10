@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { SITE } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Free Compliance Readiness Checker — OSHA, HIPAA, CMS, AAAHC | XIRI',
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
         title: 'Facility Compliance Readiness Checker',
         description: 'Free compliance assessment for medical offices, surgery centers, dialysis clinics and more. Score your cleaning program across 5 major regulations.',
         url: 'https://xiri.ai/tools/compliance-checker',
-        siteName: 'XIRI Facility Solutions',
+        siteName: SITE.name,
         type: 'website',
     },
 };

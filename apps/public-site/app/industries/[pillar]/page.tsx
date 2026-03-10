@@ -8,6 +8,10 @@ import { AuthorityBreadcrumb } from '@/components/AuthorityBreadcrumb';
 import { ArrowRight, CheckCircle2, ShieldCheck, DollarSign, Clock, Building2 } from 'lucide-react';
 import seoData from '@/data/seo-data.json';
 import { INDUSTRY_PILLARS, PILLAR_SLUGS, type IndustryPillar } from '@/lib/industry-pillars';
+import { SITE } from '@/lib/constants';
+import { getNAICSMappings, DEFAULT_METRO_AREA } from '@/data/gov-data';
+import { getTotalEstablishments } from '@/lib/census';
+import { PillarMarketSnapshot } from '@/components/MarketSnapshot';
 
 // ─── STATIC PARAMS ─────────────────────────────────────────────────
 
@@ -26,12 +30,12 @@ export async function generateMetadata({ params }: { params: Promise<{ pillar: s
     return {
         title,
         description: pillar.description,
-        alternates: { canonical: `https://xiri.ai/industries/${pillar.slug}` },
+        alternates: { canonical: `${SITE.url}/industries/${pillar.slug}` },
         openGraph: {
             title,
             description: pillar.description,
-            url: `https://xiri.ai/industries/${pillar.slug}`,
-            siteName: 'XIRI Facility Solutions',
+            url: `${SITE.url}/industries/${pillar.slug}`,
+            siteName: SITE.name,
             type: 'website',
         },
     };
@@ -49,6 +53,12 @@ export default async function IndustryPillarPage({ params }: { params: Promise<{
         .map(slug => seoData.industries.find((i: any) => i.slug === slug))
         .filter(Boolean) as any[];
 
+    // Fetch Census establishment counts for this pillar's industries
+    const naicsMappings = getNAICSMappings(pillar.industries);
+    const censusData = naicsMappings.length > 0
+        ? await getTotalEstablishments(naicsMappings, DEFAULT_METRO_AREA)
+        : { total: 0, results: [] };
+
     return (
         <div className="min-h-screen bg-white">
             {/* ═══ STRUCTURED DATA ═══ */}
@@ -56,13 +66,13 @@ export default async function IndustryPillarPage({ params }: { params: Promise<{
                 data={{
                     "@context": "https://schema.org",
                     "@type": "Service",
-                    "@id": `https://xiri.ai/industries/${pillar.slug}#service`,
+                    "@id": `${SITE.url}/industries/${pillar.slug}#service`,
                     "name": `${pillar.name} Cleaning & Maintenance`,
                     "description": pillar.description,
                     "serviceType": `${pillar.name} Facility Services`,
                     "provider": {
                         "@type": "Organization",
-                        "@id": "https://xiri.ai/#organization"
+                        "@id": `${SITE.url}/#organization`
                     },
                     "areaServed": {
                         "@type": "State",
@@ -77,7 +87,7 @@ export default async function IndustryPillarPage({ params }: { params: Promise<{
                             "itemOffered": {
                                 "@type": "Service",
                                 "name": ind.name,
-                                "url": `https://xiri.ai/industries/${pillar.slug}/${ind.slug}`
+                                "url": `${SITE.url}/industries/${pillar.slug}/${ind.slug}`
                             }
                         }))
                     }
@@ -88,8 +98,8 @@ export default async function IndustryPillarPage({ params }: { params: Promise<{
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
-                        { "@type": "ListItem", "position": 2, "name": pillar.name, "item": `https://xiri.ai/industries/${pillar.slug}` },
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE.url },
+                        { "@type": "ListItem", "position": 2, "name": pillar.name, "item": `${SITE.url}/industries/${pillar.slug}` },
                     ]
                 }}
             />
@@ -106,6 +116,14 @@ export default async function IndustryPillarPage({ params }: { params: Promise<{
                 subtitle={pillar.description}
                 ctaText="Get a Facility Audit"
                 ctaLink="/#audit"
+            />
+
+            {/* Census Market Snapshot */}
+            <PillarMarketSnapshot
+                pillarName={pillar.name.toLowerCase()}
+                results={censusData.results}
+                total={censusData.total}
+                areaLabel={DEFAULT_METRO_AREA.display}
             />
 
             {/* Value Props */}

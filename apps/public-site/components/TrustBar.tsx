@@ -1,42 +1,11 @@
-import { Shield, Moon, Heart, UserCheck } from 'lucide-react';
-
-const TRUST_ITEMS = [
-    {
-        icon: Shield,
-        label: '100% Insured',
-        detail: '$1M liability verified',
-        color: 'text-sky-600',
-        bg: 'bg-sky-50',
-    },
-    {
-        icon: Moon,
-        label: 'Nightly Audits',
-        detail: 'Physically verified',
-        color: 'text-indigo-600',
-        bg: 'bg-indigo-50',
-    },
-    {
-        icon: Heart,
-        label: 'HIPAA-Aware',
-        detail: 'Medical-grade protocols',
-        color: 'text-rose-600',
-        bg: 'bg-rose-50',
-    },
-    {
-        icon: UserCheck,
-        label: 'Background Checked',
-        detail: 'Every contractor vetted',
-        color: 'text-emerald-600',
-        bg: 'bg-emerald-50',
-    },
-];
+import { TRUST_SIGNALS } from '@/data/trust-signals';
 
 export function TrustBar() {
     return (
         <section className="py-8 bg-gray-50 border-y border-gray-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    {TRUST_ITEMS.map((item) => {
+                    {TRUST_SIGNALS.map((item) => {
                         const Icon = item.icon;
                         return (
                             <div key={item.label} className="flex items-center gap-3">

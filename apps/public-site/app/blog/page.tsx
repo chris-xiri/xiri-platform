@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { JsonLd } from '@/components/JsonLd';
 import { getPublishedPosts } from '@/data/blog-posts';
+import { SITE, CTA } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Blog | XIRI Facility Solutions',
@@ -24,7 +25,7 @@ export default function BlogIndex() {
                     "description": "Facility management guides, cost comparisons, compliance tips, and best practices.",
                     "publisher": {
                         "@type": "Organization",
-                        "@id": "https://xiri.ai/#organization"
+                        "@id": `${SITE.url}/#organization`
                     }
                 }}
             />
@@ -33,7 +34,7 @@ export default function BlogIndex() {
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE.url },
                         { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://xiri.ai/blog" },
                     ]
                 }}
@@ -90,7 +91,7 @@ export default function BlogIndex() {
                         href="/#audit"
                         className="inline-flex items-center bg-white text-sky-900 px-8 py-4 rounded-full text-lg font-medium shadow-lg hover:bg-sky-50 transition-all"
                     >
-                        Get Your Building Scope
+                        {CTA.primary}
                     </Link>
                 </div>
             </section>

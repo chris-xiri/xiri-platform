@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { SITE } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Terms of Service',
@@ -20,7 +21,7 @@ export default function TermsOfServicePage() {
                         <h2 className="text-xl font-bold text-gray-900 mt-0">1. Acceptance of Terms</h2>
                         <p>
                             By accessing or using the XIRI Facility Solutions website at{' '}
-                            <a href="https://xiri.ai" className="text-sky-600 hover:underline">xiri.ai</a> (&quot;the Site&quot;),
+                            <a href={SITE.url} className="text-sky-600 hover:underline">xiri.ai</a> (&quot;the Site&quot;),
                             you agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to these
                             Terms, please do not use the Site.
                         </p>

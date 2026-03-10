@@ -3,6 +3,9 @@ import { Metadata } from 'next';
 import seoData from '@/data/seo-data.json';
 import { IndustryHubPage } from '@/components/IndustryHubPage';
 import { INDUSTRY_PILLARS, getPillarForIndustry } from '@/lib/industry-pillars';
+import { SITE } from '@/lib/constants';
+import { getNAICSMapping, DEFAULT_LOCAL_AREA } from '@/data/gov-data';
+import { getEstablishments } from '@/lib/census';
 
 type Props = {
     params: Promise<{ pillar: string; slug: string }>;
@@ -101,12 +104,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         return {
             title: `${(industry as any).heroTitle || (industry as any).name} | XIRI`,
             description: (industry as any).heroSubtitle,
-            alternates: { canonical: `https://xiri.ai/industries/${pillar.slug}/${(industry as any).slug}` },
+            alternates: { canonical: `${SITE.url}/industries/${pillar.slug}/${(industry as any).slug}` },
             openGraph: {
                 title: `${(industry as any).heroTitle || (industry as any).name} | XIRI`,
                 description: (industry as any).heroSubtitle,
-                url: `https://xiri.ai/industries/${pillar.slug}/${(industry as any).slug}`,
-                siteName: 'XIRI Facility Solutions',
+                url: `${SITE.url}/industries/${pillar.slug}/${(industry as any).slug}`,
+                siteName: SITE.name,
                 type: 'website',
             },
         };
@@ -120,8 +123,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         return {
             title,
             description,
-            alternates: { canonical: `https://xiri.ai/industries/${pillar.slug}/${slug}` },
-            openGraph: { title, description, url: `https://xiri.ai/industries/${pillar.slug}/${slug}` },
+            alternates: { canonical: `${SITE.url}/industries/${pillar.slug}/${slug}` },
+            openGraph: { title, description, url: `${SITE.url}/industries/${pillar.slug}/${slug}` },
         };
     }
 
@@ -138,21 +141,34 @@ export default async function IndustryDetailPage({ params }: Props) {
 
     if (parsed.type === 'INDUSTRY') {
         const { industry, pillar } = parsed.data!;
+        // Fetch Census data for this industry (from cache, zero API calls)
+        const naicsMapping = getNAICSMapping((industry as any).slug);
+        const censusResult = naicsMapping
+            ? getEstablishments(naicsMapping, DEFAULT_LOCAL_AREA)
+            : undefined;
         return (
             <IndustryHubPage
                 industry={industry as any}
                 pillar={{ href: `/industries/${pillar.slug}`, text: pillar.name }}
+                censusResult={censusResult}
+                censusPlural={naicsMapping?.plural}
             />
         );
     }
 
     if (parsed.type === 'INDUSTRY_LOCATION') {
         const { industry, location, pillar } = parsed.data!;
+        const naicsMapping = getNAICSMapping((industry as any).slug);
+        const censusResult = naicsMapping
+            ? getEstablishments(naicsMapping, DEFAULT_LOCAL_AREA)
+            : undefined;
         return (
             <IndustryHubPage
                 industry={industry as any}
                 pillar={{ href: `/industries/${pillar.slug}`, text: pillar.name }}
                 location={location}
+                censusResult={censusResult}
+                censusPlural={naicsMapping?.plural}
             />
         );
     }

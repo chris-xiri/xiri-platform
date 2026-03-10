@@ -10,6 +10,7 @@ import { FAQ } from '@/components/FAQ';
 import { NearbyAreas } from '@/components/NearbyAreas';
 import seoData from '@/data/seo-data.json';
 import { SeoService } from '@xiri/shared';
+import { SITE } from '@/lib/constants';
 // FIX: Add Lucide imports
 import { MapPin, Eye } from 'lucide-react';
 import { AuthorityBreadcrumb, getPillarForService } from '@/components/AuthorityBreadcrumb';
@@ -154,13 +155,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             title,
             description,
             alternates: {
-                canonical: `https://xiri.ai/services/${service.slug}`
+                canonical: `${SITE.url}/services/${service.slug}`
             },
             openGraph: {
                 title,
                 description,
-                url: `https://xiri.ai/services/${service.slug}`,
-                siteName: 'XIRI Facility Solutions',
+                url: `${SITE.url}/services/${service.slug}`,
+                siteName: SITE.name,
                 type: 'website',
             },
         };
@@ -179,13 +180,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             title,
             description,
             alternates: {
-                canonical: `https://xiri.ai/services/${slug}`
+                canonical: `${SITE.url}/services/${slug}`
             },
             openGraph: {
                 title,
                 description,
-                url: `https://xiri.ai/services/${slug}`,
-                siteName: 'XIRI Facility Solutions',
+                url: `${SITE.url}/services/${slug}`,
+                siteName: SITE.name,
                 type: 'website',
             },
         };
@@ -217,13 +218,13 @@ export default async function ServicePage({ params }: Props) {
                         "@graph": [
                             {
                                 "@type": "Service",
-                                "@id": `https://xiri.ai/services/${service.slug}#service`,
+                                "@id": `${SITE.url}/services/${service.slug}#service`,
                                 "name": service.heroTitle || service.name,
                                 "description": service.shortDescription,
                                 "serviceType": service.name,
                                 "provider": {
                                     "@type": "Organization",
-                                    "@id": "https://xiri.ai/#organization"
+                                    "@id": `${SITE.url}/#organization`
                                 },
                                 "areaServed": {
                                     "@type": "State",
@@ -232,7 +233,7 @@ export default async function ServicePage({ params }: Props) {
                                 ...(getPillarForService(service.slug).href !== `/services/${service.slug}` && {
                                     "isPartOf": {
                                         "@type": "Service",
-                                        "@id": `https://xiri.ai${getPillarForService(service.slug).href}#service`
+                                        "@id": `${SITE.url}${getPillarForService(service.slug).href}#service`
                                     }
                                 })
                             },
@@ -255,9 +256,9 @@ export default async function ServicePage({ params }: Props) {
                         "@context": "https://schema.org",
                         "@type": "BreadcrumbList",
                         "itemListElement": [
-                            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
-                            { "@type": "ListItem", "position": 2, "name": getPillarForService(service.slug).text, "item": `https://xiri.ai${getPillarForService(service.slug).href}` },
-                            { "@type": "ListItem", "position": 3, "name": service.name, "item": `https://xiri.ai/services/${service.slug}` },
+                            { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE.url },
+                            { "@type": "ListItem", "position": 2, "name": getPillarForService(service.slug).text, "item": `${SITE.url}${getPillarForService(service.slug).href}` },
+                            { "@type": "ListItem", "position": 3, "name": service.name, "item": `${SITE.url}/services/${service.slug}` },
                         ]
                     }}
                 />
@@ -268,7 +269,7 @@ export default async function ServicePage({ params }: Props) {
                     ctaText="Get a Quote"
                 />
                 <ValuePropsSection
-                    title={`Why Choose XIRI for ${service.name}`}
+                    title={`Why Choose ${SITE.shortName} for ${service.name}`}
                 />
                 {/* Features */}
                 <section className="py-16 bg-gray-50">
@@ -363,7 +364,7 @@ export default async function ServicePage({ params }: Props) {
                                     Explore Our Other Services
                                 </h2>
                                 <p className="text-gray-500 text-center mb-10 max-w-2xl mx-auto">
-                                    From daily janitorial to specialized floor care, XIRI manages every aspect of your facility under one roof.
+                                    From daily janitorial to specialized floor care, {SITE.shortName} manages every aspect of your facility under one roof.
                                 </p>
                                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {otherServices.map((s: any) => (
@@ -420,12 +421,12 @@ export default async function ServicePage({ params }: Props) {
         {
             '@context': 'https://schema.org',
             '@type': 'LocalBusiness',
-            '@id': `https://xiri.ai/services/${slug}#business`,
-            name: `XIRI ${service.name} — ${location.name}`,
+            '@id': `${SITE.url}/services/${slug}#business`,
+            name: `${SITE.shortName} ${service.name} — ${location.name}`,
             description: location.localInsight || service.shortDescription,
-            image: 'https://xiri.ai/xiri-logo-horizontal.svg',
-            url: `https://xiri.ai/services/${slug}`,
-            telephone: '+1-516-526-9585',
+            image: `${SITE.url}/xiri-logo-horizontal.svg`,
+            url: `${SITE.url}/services/${slug}`,
+            telephone: SITE.phone,
             priceRange: '$$',
             areaServed: {
                 '@type': 'Place',
@@ -457,12 +458,12 @@ export default async function ServicePage({ params }: Props) {
         {
             '@context': 'https://schema.org',
             '@type': 'Service',
-            '@id': `https://xiri.ai/services/${slug}#service`,
+            '@id': `${SITE.url}/services/${slug}#service`,
             name: `${service.name} in ${location.name}`,
             description: service.shortDescription,
             provider: {
                 '@type': 'LocalBusiness',
-                '@id': `https://xiri.ai/services/${slug}#business`,
+                '@id': `${SITE.url}/services/${slug}#business`,
             },
             areaServed: {
                 '@type': 'Place',
@@ -499,10 +500,10 @@ export default async function ServicePage({ params }: Props) {
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
-                        { "@type": "ListItem", "position": 2, "name": getPillarForService(service.slug).text, "item": `https://xiri.ai${getPillarForService(service.slug).href}` },
-                        { "@type": "ListItem", "position": 3, "name": service.name, "item": `https://xiri.ai/services/${service.slug}` },
-                        { "@type": "ListItem", "position": 4, "name": `${townName}, NY`, "item": `https://xiri.ai/services/${slug}` },
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE.url },
+                        { "@type": "ListItem", "position": 2, "name": getPillarForService(service.slug).text, "item": `${SITE.url}${getPillarForService(service.slug).href}` },
+                        { "@type": "ListItem", "position": 3, "name": service.name, "item": `${SITE.url}/services/${service.slug}` },
+                        { "@type": "ListItem", "position": 4, "name": `${townName}, NY`, "item": `${SITE.url}/services/${slug}` },
                     ]
                 }}
             />
@@ -605,7 +606,7 @@ export default async function ServicePage({ params }: Props) {
             <section className="py-16 bg-slate-50 border-y border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
-                        How {service.name} Works with XIRI
+                        How {service.name} Works with {SITE.shortName}
                     </h2>
                     <div className="grid md:grid-cols-3 gap-8">
                         {[

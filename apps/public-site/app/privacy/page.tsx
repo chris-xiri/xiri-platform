@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { SITE } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Privacy Policy',
@@ -22,7 +23,7 @@ export default function PrivacyPolicyPage() {
                             XIRI Facility Solutions (&quot;XIRI,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) respects your privacy and is committed to
                             protecting the personal information you share with us. This Privacy Policy explains how we
                             collect, use, disclose, and safeguard your information when you visit our website at{' '}
-                            <a href="https://xiri.ai" className="text-sky-600 hover:underline">xiri.ai</a> or use our services.
+                            <a href={SITE.url} className="text-sky-600 hover:underline">xiri.ai</a> or use our services.
                         </p>
                     </section>
 

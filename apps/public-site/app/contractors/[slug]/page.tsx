@@ -9,6 +9,7 @@ import { DLPSidebar } from '@/components/DLPSidebar';
 import { TRADES, getGeoPages, KEYWORD_PAGES, GUIDE_PAGES } from '@/data/dlp-contractors';
 import seoData from '@/data/seo-data.json';
 import { MapPin, ArrowRight, Briefcase, Building2 } from 'lucide-react';
+import { SITE } from '@/lib/constants';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -47,11 +48,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (cross) {
         const title = `${cross.trade.title} in ${cross.location.name} | XIRI Facility Solutions`;
         const description = `${cross.trade.metaDescription} Now hiring in ${cross.location.name}.`.slice(0, 155);
-        return { title, description, alternates: { canonical: `https://xiri.ai/contractors/${slug}` }, openGraph: { title, description, url: `https://xiri.ai/contractors/${slug}`, siteName: 'XIRI Facility Solutions', type: 'website' } };
+        return { title, description, alternates: { canonical: `${SITE.url}/contractors/${slug}` }, openGraph: { title, description, url: `${SITE.url}/contractors/${slug}`, siteName: SITE.name, type: 'website' } };
     }
     const page = TRADES[slug] || GEO_PAGES[slug] || KEYWORD_PAGES[slug] || GUIDE_PAGES[slug];
     if (!page) return {};
-    return { title: `${page.title} | XIRI Facility Solutions`, description: page.metaDescription, alternates: { canonical: `https://xiri.ai/contractors/${slug}` }, openGraph: { title: `${page.title} | XIRI`, description: page.metaDescription, url: `https://xiri.ai/contractors/${slug}`, siteName: 'XIRI Facility Solutions', type: 'website' } };
+    return { title: `${page.title} | XIRI Facility Solutions`, description: page.metaDescription, alternates: { canonical: `${SITE.url}/contractors/${slug}` }, openGraph: { title: `${page.title} | XIRI`, description: page.metaDescription, url: `${SITE.url}/contractors/${slug}`, siteName: SITE.name, type: 'website' } };
 }
 
 export default async function ContractorDLPPage({ params }: Props) {
@@ -59,11 +60,47 @@ export default async function ContractorDLPPage({ params }: Props) {
 
     // ── TRADE PAGES ──
     const trade = TRADES[slug];
+    // Helper: derive employment category from trade slug
+    const getTradeCategory = (s: string) => {
+        const map: Record<string, string> = {
+            'janitorial-subcontractor': 'Janitorial / Commercial Cleaning',
+            'hvac-subcontractor': 'HVAC Maintenance',
+            'landscaping-subcontractor': 'Landscaping / Grounds Maintenance',
+            'plumbing-subcontractor': 'Plumbing',
+            'electrical-subcontractor': 'Electrical Maintenance',
+            'handyman-subcontractor': 'General Maintenance / Handyman',
+        };
+        return map[s] || 'Facility Maintenance';
+    };
+
     if (trade) {
         return (
             <div className="min-h-screen bg-white">
-                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: trade.title, description: trade.metaDescription, url: `https://xiri.ai/contractors/${slug}` }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: trade.title, description: trade.metaDescription, url: `${SITE.url}/contractors/${slug}` }} />
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: trade.faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
+                {/* JobPosting schema — shows in Google Jobs */}
+                <JsonLd data={{
+                    '@context': 'https://schema.org',
+                    '@type': 'JobPosting',
+                    title: trade.h1,
+                    description: `${trade.subtitle} ${trade.valueProps.map(v => v.description).join(' ')}`,
+                    datePosted: '2026-01-01',
+                    validThrough: '2027-01-01',
+                    employmentType: 'CONTRACTOR',
+                    hiringOrganization: { '@type': 'Organization', '@id': `${SITE.url}/#organization`, name: SITE.name, sameAs: SITE.url },
+                    jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: 'Nassau County', addressRegion: 'NY', addressCountry: 'US' } },
+                    industry: getTradeCategory(slug),
+                    occupationalCategory: getTradeCategory(slug),
+                    qualifications: trade.faqs.find(f => f.question.toLowerCase().includes('certification') || f.question.toLowerCase().includes('license'))?.answer || 'Insurance and applicable trade licenses required.',
+                }} />
+                {/* BreadcrumbList */}
+                <JsonLd data={{
+                    '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+                        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+                        { '@type': 'ListItem', position: 2, name: 'Contractors', item: `${SITE.url}/contractors` },
+                        { '@type': 'ListItem', position: 3, name: trade.title, item: `${SITE.url}/contractors/${slug}` },
+                    ]
+                }} />
                 <Hero title={trade.h1} subtitle={trade.subtitle} ctaText="Apply Now" />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -105,8 +142,8 @@ export default async function ContractorDLPPage({ params }: Props) {
     if (geo) {
         return (
             <div className="min-h-screen bg-white">
-                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: geo.title, description: geo.metaDescription, url: `https://xiri.ai/contractors/${slug}` }} />
-                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'LocalBusiness', name: 'XIRI Facility Solutions', address: { '@type': 'PostalAddress', addressLocality: geo.title.replace('Cleaning Jobs in ', ''), addressRegion: 'NY' }, geo: { '@type': 'GeoCoordinates', latitude: geo.mapCenter.lat, longitude: geo.mapCenter.lng } }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: geo.title, description: geo.metaDescription, url: `${SITE.url}/contractors/${slug}` }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'LocalBusiness', name: SITE.name, address: { '@type': 'PostalAddress', addressLocality: geo.title.replace('Cleaning Jobs in ', ''), addressRegion: 'NY' }, geo: { '@type': 'GeoCoordinates', latitude: geo.mapCenter.lat, longitude: geo.mapCenter.lng } }} />
                 <Hero title={geo.h1} subtitle={geo.subtitle} ctaText="Apply Now" />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -156,7 +193,7 @@ export default async function ContractorDLPPage({ params }: Props) {
         const sidebarCat = isGuide ? 'contractor-guide' : 'contractor-keyword';
         return (
             <div className="min-h-screen bg-white">
-                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: page.title, description: page.metaDescription, url: `https://xiri.ai/contractors/${slug}` }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: page.title, description: page.metaDescription, url: `${SITE.url}/contractors/${slug}` }} />
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: page.faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
                 <Hero title={page.h1} subtitle={page.subtitle} ctaText="Apply Now" />
                 <section className="py-16">
@@ -192,11 +229,35 @@ export default async function ContractorDLPPage({ params }: Props) {
     const cross = parseTradeLocationSlug(slug);
     if (cross) {
         const { trade: crossTrade, tradeSlug, location } = cross;
+        const townName = location.name.split(',')[0];
         return (
             <div className="min-h-screen bg-white">
-                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: `${crossTrade.title} in ${location.name}`, description: crossTrade.metaDescription, url: `https://xiri.ai/contractors/${slug}` }} />
-                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'LocalBusiness', name: 'XIRI Facility Solutions', address: { '@type': 'PostalAddress', addressLocality: location.name.split(',')[0], addressRegion: location.state }, ...(location.latitude ? { geo: { '@type': 'GeoCoordinates', latitude: location.latitude, longitude: location.longitude } } : {}) }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: `${crossTrade.title} in ${location.name}`, description: crossTrade.metaDescription, url: `${SITE.url}/contractors/${slug}` }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'LocalBusiness', name: SITE.name, address: { '@type': 'PostalAddress', addressLocality: townName, addressRegion: location.state }, ...(location.latitude ? { geo: { '@type': 'GeoCoordinates', latitude: location.latitude, longitude: location.longitude } } : {}) }} />
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: crossTrade.faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
+                {/* JobPosting schema — location-specific Google Jobs */}
+                <JsonLd data={{
+                    '@context': 'https://schema.org',
+                    '@type': 'JobPosting',
+                    title: `${crossTrade.h1} in ${townName}`,
+                    description: `${crossTrade.subtitle} Now hiring in ${location.name}.`,
+                    datePosted: '2026-01-01',
+                    validThrough: '2027-01-01',
+                    employmentType: 'CONTRACTOR',
+                    hiringOrganization: { '@type': 'Organization', '@id': `${SITE.url}/#organization`, name: SITE.name, sameAs: SITE.url },
+                    jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: townName, addressRegion: location.state, addressCountry: 'US' }, ...(location.latitude ? { geo: { '@type': 'GeoCoordinates', latitude: location.latitude, longitude: location.longitude } } : {}) },
+                    industry: getTradeCategory(tradeSlug),
+                    occupationalCategory: getTradeCategory(tradeSlug),
+                }} />
+                {/* BreadcrumbList */}
+                <JsonLd data={{
+                    '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+                        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+                        { '@type': 'ListItem', position: 2, name: 'Contractors', item: `${SITE.url}/contractors` },
+                        { '@type': 'ListItem', position: 3, name: crossTrade.title, item: `${SITE.url}/contractors/${tradeSlug}` },
+                        { '@type': 'ListItem', position: 4, name: townName, item: `${SITE.url}/contractors/${slug}` },
+                    ]
+                }} />
                 <Hero title={`${crossTrade.h1} in ${location.name.split(',')[0]}`} subtitle={crossTrade.subtitle} ctaText="Apply Now" />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

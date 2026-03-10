@@ -5,6 +5,7 @@ import TrackingProvider from "@/components/TrackingProvider";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { GoogleAnalytics } from '@next/third-parties/google';
+import { SITE } from '@/lib/constants';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -19,12 +20,12 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://xiri.ai'),
+  metadataBase: new URL(SITE.url),
   title: {
-    default: "XIRI Facility Solutions | The New Standard",
-    template: "%s | XIRI Facility Solutions",
+    default: `${SITE.name} | The New Standard`,
+    template: `%s | ${SITE.name}`,
   },
-  description: "The facility management standard for single-tenant buildings. One partner. Zero headaches. Nightly verified.",
+  description: SITE.description,
   robots: {
     index: true,
     follow: true,
@@ -39,20 +40,20 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://xiri.ai',
-    siteName: 'XIRI Facility Solutions',
-    title: 'XIRI Facility Solutions | Medical-Grade Facility Management',
-    description: 'The facility management standard for single-tenant buildings. One partner. Zero headaches. Nightly verified.',
+    url: SITE.url,
+    siteName: SITE.name,
+    title: `${SITE.name} | Medical-Grade Facility Management`,
+    description: SITE.description,
     images: [{
-      url: 'https://xiri.ai/og-image.png',
+      url: `${SITE.url}/og-image.png`,
       width: 1200,
       height: 630,
-      alt: 'XIRI Facility Solutions — One Partner. Zero Headaches.',
+      alt: `${SITE.name} — ${SITE.tagline}`,
     }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'XIRI Facility Solutions',
+    title: SITE.name,
     description: 'Medical-grade facility management. One partner. Zero headaches.',
   },
   alternates: {
@@ -75,16 +76,16 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Organization",
-              "@id": "https://xiri.ai/#organization",
-              "name": "XIRI Facility Solutions",
-              "url": "https://xiri.ai",
-              "logo": "https://xiri.ai/icon.png",
+              "@id": `${SITE.url}/#organization`,
+              "name": SITE.name,
+              "url": SITE.url,
+              "logo": `${SITE.url}/icon.png`,
               "description": "Medical-grade facility management for single-tenant buildings.",
               "serviceType": "Facility Management",
-              "telephone": "+1-516-526-9585",
+              "telephone": SITE.phone,
               "sameAs": [
-                "https://www.facebook.com/xirifacilitysolutions/",
-                "https://www.linkedin.com/company/xiri-facility-solutions"
+                SITE.social.facebook,
+                SITE.social.linkedin
               ],
               "areaServed": {
                 "@type": "State",
@@ -93,8 +94,8 @@ export default function RootLayout({
               "contactPoint": {
                 "@type": "ContactPoint",
                 "contactType": "sales",
-                "email": "chris@xiri.ai",
-                "telephone": "+1-516-526-9585"
+                "email": SITE.email,
+                "telephone": SITE.phone
               }
             })
           }}
@@ -106,10 +107,10 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              "@id": "https://xiri.ai/#website",
-              "name": "XIRI Facility Solutions",
-              "alternateName": ["XIRI", "Xiri Facility Solutions", "XIRI FM"],
-              "url": "https://xiri.ai"
+              "@id": `${SITE.url}/#website`,
+              "name": SITE.name,
+              "alternateName": [SITE.shortName, "Xiri Facility Solutions", "XIRI FM"],
+              "url": SITE.url
             })
           }}
         />

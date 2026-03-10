@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight } from "lucide-react";
 import { isValidZip } from "@/data/validZips";
 import { trackEvent } from "@/lib/tracking";
+import { CTA } from '@/lib/constants';
 
 interface ClientLeadFormProps {
     industryName?: string;
@@ -74,7 +75,7 @@ export function ClientLeadForm({ industryName, prefilledService, className, onSt
         <div id="audit" className={`bg-white rounded-2xl shadow-xl border border-gray-100 p-8 ${className || ''}`}>
             <div className="mb-6">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    {industryName ? `Get Your ${industryName} Scope` : "Get Your Building Scope"}
+                    {industryName ? `Get Your ${industryName} Scope` : CTA.primary}
                 </h3>
                 <p className="text-gray-600">
                     Enter your zip and we&apos;ll build a custom cleaning plan for your facility — free.

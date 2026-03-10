@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { SITE } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Free Cleaning Chemical SDS Lookup — 50+ Chemicals, VOC & PPE Data | XIRI',
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
         title: 'Cleaning Chemical SDS Lookup',
         description: 'Free searchable database of common janitorial chemicals with VOC compliance, PPE, and regulatory notes.',
         url: 'https://xiri.ai/tools/sds-lookup',
-        siteName: 'XIRI Facility Solutions',
+        siteName: SITE.name,
         type: 'website',
     },
 };

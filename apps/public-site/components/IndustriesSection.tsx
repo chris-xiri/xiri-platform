@@ -2,7 +2,60 @@
 
 import Link from "next/link";
 import { trackEvent } from '@/lib/tracking';
+import { FACILITY_TYPES, getFacilityHref } from '@/data/facility-types';
 import { Hospital, Car, Baby } from 'lucide-react';
+
+// Featured industry cards — configured from the shared facility types
+const FEATURED_INDUSTRIES = [
+    {
+        slugs: ['medical-offices', 'urgent-care', 'surgery-centers'],
+        title: 'Medical Facilities',
+        description: 'Urgent Care, Surgery Centers, & Private Practice. Focused on High-Level Disinfection, Infection Control & JCAHO Compliance.',
+        cta: 'View Medical Solutions',
+        link: '/industries/healthcare/medical-offices',
+        icon: Hospital,
+        iconColor: 'text-sky-600',
+        bgColor: 'bg-sky-50',
+        borderColor: 'border-sky-100',
+        hoverColor: 'group-hover:text-sky-600',
+        ctaColor: 'text-sky-700',
+        watermark: 'Rx',
+        watermarkColor: 'text-sky-900',
+        trackingLabel: 'medical',
+    },
+    {
+        slugs: ['auto-dealerships'],
+        title: 'Auto Dealerships',
+        description: 'Showrooms & Service Centers. Focused on High-Gloss Floors & Customer Experience.',
+        cta: 'View Auto Solutions',
+        link: '/industries/automotive/auto-dealerships',
+        icon: Car,
+        iconColor: 'text-gray-700',
+        bgColor: 'bg-gray-50',
+        borderColor: 'border-gray-100',
+        hoverColor: 'group-hover:text-blue-600',
+        ctaColor: 'text-blue-700',
+        watermark: 'Au',
+        watermarkColor: 'text-gray-900',
+        trackingLabel: 'automotive',
+    },
+    {
+        slugs: ['daycare-preschool', 'private-schools'],
+        title: 'Education & Commercial',
+        description: 'Daycares, Schools, & Offices. Focused on Safety, Green Cleaning, & Reliability.',
+        cta: 'View Education Solutions',
+        link: '/industries/education/daycare-preschool',
+        icon: Baby,
+        iconColor: 'text-orange-600',
+        bgColor: 'bg-orange-50',
+        borderColor: 'border-orange-100',
+        hoverColor: 'group-hover:text-orange-600',
+        ctaColor: 'text-orange-700',
+        watermark: 'Ed',
+        watermarkColor: 'text-orange-900',
+        trackingLabel: 'education',
+    },
+];
 
 export function IndustriesSection() {
     return (
@@ -14,44 +67,22 @@ export function IndustriesSection() {
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8">
-                    {/* Medical Card */}
-                    <Link href="/industries/medical-offices" className="group block" onClick={() => trackEvent('industry_card_click', { industry: 'medical' })}>
-                        <div className="relative overflow-hidden rounded-2xl bg-sky-50 p-8 h-full border border-sky-100 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
-                            <div className="absolute top-0 right-0 p-4 opacity-10 text-9xl font-bold text-sky-900 leading-none -mr-8 -mt-8">Rx</div>
-                            <div className="relative z-10">
-                                <div className="w-16 h-16 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6"><Hospital className="w-8 h-8 text-sky-600" /></div>
-                                <h3 className="text-2xl font-bold font-heading text-gray-900 mb-2 group-hover:text-sky-600 transition-colors">Medical Facilities</h3>
-                                <p className="text-gray-600 mb-6">Urgent Care, Surgery Centers, &amp; Private Practice. Focused on High-Level Disinfection, Infection Control &amp; JCAHO Compliance.</p>
-                                <span className="text-sky-700 font-bold flex items-center gap-2">View Medical Solutions <span className="group-hover:translate-x-1 transition-transform">→</span></span>
-                            </div>
-                        </div>
-                    </Link>
-
-                    {/* Automotive Card */}
-                    <Link href="/industries/auto-dealerships" className="group block" onClick={() => trackEvent('industry_card_click', { industry: 'automotive' })}>
-                        <div className="relative overflow-hidden rounded-2xl bg-gray-50 p-8 h-full border border-gray-100 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
-                            <div className="absolute top-0 right-0 p-4 opacity-10 text-9xl font-bold text-gray-900 leading-none -mr-8 -mt-8">Au</div>
-                            <div className="relative z-10">
-                                <div className="w-16 h-16 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6"><Car className="w-8 h-8 text-gray-700" /></div>
-                                <h3 className="text-2xl font-bold font-heading text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Auto Dealerships</h3>
-                                <p className="text-gray-600 mb-6">Showrooms &amp; Service Centers. Focused on High-Gloss Floors &amp; Customer Experience.</p>
-                                <span className="text-blue-700 font-bold flex items-center gap-2">View Auto Solutions <span className="group-hover:translate-x-1 transition-transform">→</span></span>
-                            </div>
-                        </div>
-                    </Link>
-
-                    {/* Commercial/School Card */}
-                    <Link href="/industries/daycare-preschool" className="group block" onClick={() => trackEvent('industry_card_click', { industry: 'education' })}>
-                        <div className="relative overflow-hidden rounded-2xl bg-orange-50 p-8 h-full border border-orange-100 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
-                            <div className="absolute top-0 right-0 p-4 opacity-10 text-9xl font-bold text-orange-900 leading-none -mr-8 -mt-8">Ed</div>
-                            <div className="relative z-10">
-                                <div className="w-16 h-16 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6"><Baby className="w-8 h-8 text-orange-600" /></div>
-                                <h3 className="text-2xl font-bold font-heading text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">Education &amp; Commercial</h3>
-                                <p className="text-gray-600 mb-6">Daycares, Schools, &amp; Offices. Focused on Safety, Green Cleaning, &amp; Reliability.</p>
-                                <span className="text-orange-700 font-bold flex items-center gap-2">View Education Solutions <span className="group-hover:translate-x-1 transition-transform">→</span></span>
-                            </div>
-                        </div>
-                    </Link>
+                    {FEATURED_INDUSTRIES.map((industry) => {
+                        const Icon = industry.icon;
+                        return (
+                            <Link key={industry.trackingLabel} href={industry.link} className="group block" onClick={() => trackEvent('industry_card_click', { industry: industry.trackingLabel })}>
+                                <div className={`relative overflow-hidden rounded-2xl ${industry.bgColor} p-8 h-full border ${industry.borderColor} hover:shadow-xl hover:scale-[1.02] transition-all duration-300`}>
+                                    <div className={`absolute top-0 right-0 p-4 opacity-10 text-9xl font-bold ${industry.watermarkColor} leading-none -mr-8 -mt-8`}>{industry.watermark}</div>
+                                    <div className="relative z-10">
+                                        <div className="w-16 h-16 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6"><Icon className={`w-8 h-8 ${industry.iconColor}`} /></div>
+                                        <h3 className={`text-2xl font-bold font-heading text-gray-900 mb-2 ${industry.hoverColor} transition-colors`}>{industry.title}</h3>
+                                        <p className="text-gray-600 mb-6">{industry.description}</p>
+                                        <span className={`${industry.ctaColor} font-bold flex items-center gap-2`}>{industry.cta} <span className="group-hover:translate-x-1 transition-transform">→</span></span>
+                                    </div>
+                                </div>
+                            </Link>
+                        );
+                    })}
                 </div>
             </div>
         </section>

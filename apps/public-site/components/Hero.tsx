@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { LeadFormModal } from './LeadFormModal';
 import { Hospital, Car, GraduationCap, Building2 } from 'lucide-react';
+import { SITE, CTA } from '@/lib/constants';
 
 interface HeroProps {
     title: React.ReactNode;
@@ -29,7 +30,7 @@ const COMPANY_LOGOS = [
 export function Hero({
     title,
     subtitle,
-    ctaText = "Get Your Building Scope",
+    ctaText = CTA.primary,
     ctaLink = "#audit",
     industryIcon = "🏢",
     industryLabel = "Commercial • Medical • Auto",
@@ -63,7 +64,7 @@ export function Hero({
                         <h1 className={`text-4xl md:text-6xl font-heading font-bold tracking-tight leading-[1.1] mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                             {showBrandEyebrow && (
                                 <span className="block text-sm md:text-base font-semibold tracking-[0.2em] uppercase text-sky-600 mb-3">
-                                    XIRI Facility Solutions
+                                    {SITE.name}
                                 </span>
                             )}
                             {title}

@@ -1,0 +1,34 @@
+// ─── Site-Wide Constants ─────────────────────────────────────────
+// Single source of truth for company info, CTAs, and service area.
+// Import from here instead of hardcoding in pages/components.
+
+export const SITE = {
+    name: 'XIRI Facility Solutions',
+    shortName: 'XIRI',
+    url: 'https://xiri.ai',
+    phone: '+1-516-526-9585',
+    phoneDisplay: '(516) 526-9585',
+    email: 'chris@xiri.ai',
+    tagline: 'One Partner. One Invoice. Done.',
+    description: 'The facility management standard for single-tenant buildings. One partner. Zero headaches. Nightly verified.',
+    insurance: '$1M Liability Policy',
+    social: {
+        facebook: 'https://www.facebook.com/xirifacilitysolutions/',
+        linkedin: 'https://www.linkedin.com/company/xiri-facility-solutions',
+    },
+} as const;
+
+export const SERVICE_AREA = {
+    primary: 'Nassau County',
+    region: 'Long Island',
+    state: 'New York',
+    stateAbbr: 'NY',
+    description: 'Nassau County and the greater Long Island area',
+} as const;
+
+export const CTA = {
+    primary: 'Get Your Building Scope',
+    secondary: 'See If We Cover Your Area',
+    audit: 'Get a Free Site Audit',
+    href: '/#audit',
+} as const;

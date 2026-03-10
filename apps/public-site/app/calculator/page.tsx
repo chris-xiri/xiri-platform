@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import dynamic from 'next/dynamic';
 import { JsonLd } from '@/components/JsonLd';
 import { CTAButton } from '@/components/CTAButton';
+import { SITE } from '@/lib/constants';
 
 const PublicCalculator = dynamic(() => import('@/components/PublicCalculator'), {
     loading: () => (
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
         title: 'Janitorial Cleaning Cost Calculator (2026) | Free Instant Estimate',
         description: 'How much do janitorial services cost? Free calculator for commercial cleaning rates — office, medical, auto dealership & more. Instant estimate by sqft and state.',
         url: 'https://xiri.ai/calculator',
-        siteName: 'XIRI Facility Solutions',
+        siteName: SITE.name,
         type: 'website',
     },
 };
@@ -131,7 +132,7 @@ export default function CalculatorPage() {
                     },
                     author: {
                         '@type': 'Organization',
-                        name: 'XIRI Facility Solutions',
+                        name: SITE.name,
                     },
                 }}
             />
@@ -146,13 +147,13 @@ export default function CalculatorPage() {
                     dateModified: '2026-03-05',
                     author: {
                         '@type': 'Organization',
-                        name: 'XIRI Facility Solutions',
-                        url: 'https://xiri.ai',
+                        name: SITE.name,
+                        url: SITE.url,
                     },
                     publisher: {
                         '@type': 'Organization',
-                        name: 'XIRI Facility Solutions',
-                        url: 'https://xiri.ai',
+                        name: SITE.name,
+                        url: SITE.url,
                     },
                     mainEntityOfPage: 'https://xiri.ai/calculator',
                 }}

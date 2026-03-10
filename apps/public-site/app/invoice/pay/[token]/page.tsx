@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { trackEvent } from '@/lib/tracking';
+import { SITE } from '@/lib/constants';
 
 // Initialize Firebase (public-site config)
 const firebaseConfig = {
@@ -253,7 +254,7 @@ export default function InvoicePayPage() {
             {/* Footer */}
             <div className="text-center mt-8">
                 <p className="text-xs text-gray-400">
-                    XIRI Facility Solutions • <a href="https://xiri.ai" className="text-sky-600 hover:underline">xiri.ai</a>
+                    XIRI Facility Solutions • <a href={SITE.url} className="text-sky-600 hover:underline">xiri.ai</a>
                 </p>
                 <p className="text-xs text-gray-300 mt-1">
                     Questions? Contact <a href="mailto:chris@xiri.ai" className="text-sky-500 hover:underline">chris@xiri.ai</a>

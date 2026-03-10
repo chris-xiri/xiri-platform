@@ -2,12 +2,13 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { JsonLd } from '@/components/JsonLd';
 import seoData from '@/data/seo-data.json';
+import { SITE, CTA } from '@/lib/constants';
 
 export const metadata: Metadata = {
-    title: 'All Services | XIRI Facility Solutions',
+    title: `All Services | ${SITE.name}`,
     description: 'Explore all XIRI facility services — janitorial, floor care, HVAC, pest control, and more. One partner for every building need, nightly verified.',
     alternates: {
-        canonical: 'https://xiri.ai/services',
+        canonical: `${SITE.url}/services`,
     },
 };
 
@@ -43,8 +44,8 @@ export default function ServicesIndex() {
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
-                        { "@type": "ListItem", "position": 2, "name": "Services", "item": "https://xiri.ai/services" },
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE.url },
+                        { "@type": "ListItem", "position": 2, "name": "Services", "item": `${SITE.url}/services` },
                     ]
                 }}
             />
@@ -112,7 +113,7 @@ export default function ServicesIndex() {
                         href="/#audit"
                         className="inline-flex items-center bg-white text-sky-900 px-8 py-4 rounded-full text-lg font-medium shadow-lg hover:bg-sky-50 transition-all"
                     >
-                        Get Your Building Scope
+                        {CTA.primary}
                     </Link>
                 </div>
             </section>

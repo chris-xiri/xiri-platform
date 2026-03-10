@@ -2,34 +2,26 @@ import { MetadataRoute } from 'next';
 import seoData from '@/data/seo-data.json';
 import { DLP_SOLUTIONS, SPOKE_HUBS } from '@/data/dlp-solutions';
 import { TRADES, KEYWORD_PAGES, GUIDE_PAGES, getGeoPages } from '@/data/dlp-contractors';
-import { REGULATION_GUIDE_SLUGS } from '@/data/guides';
+import { GUIDES, REGULATION_GUIDE_SLUGS } from '@/data/guides';
 import { LOCATIONS } from '@/lib/locations';
 import { INDUSTRY_PILLARS, getPillarForIndustry } from '@/lib/industry-pillars';
+import { BLOG_POSTS } from '@/data/blog-posts';
+import { COMPARISON_PAGES } from '@/data/dlp-comparisons';
+import { SITE } from '@/lib/constants';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://xiri.ai';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || SITE.url;
 
 export default function sitemap(): MetadataRoute.Sitemap {
     const sitemapEntries: MetadataRoute.Sitemap = [];
     const toSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     // 1. Static Pages
-    ['', '/contractors', '/contact', '/directory/locations', '/directory/solutions', '/about', '/services', '/services/facility-management', '/solutions', '/industries', '/blog'].forEach((route) => {
+    ['', '/contractors', '/contact', '/directory/locations', '/directory/solutions', '/about', '/services', '/services/facility-management', '/solutions', '/industries', '/blog', '/calculator', '/pricing'].forEach((route) => {
         sitemapEntries.push({ url: `${BASE_URL}${route}`, lastModified: new Date(), changeFrequency: 'weekly', priority: route === '' ? 1.0 : 0.8 });
     });
 
-    // 1b. Blog Posts
-    [
-        'how-much-does-commercial-cleaning-cost', 'in-house-vs-outsourced-facility-management',
-        'medical-office-cleaning-compliance-checklist', 'how-to-evaluate-commercial-cleaning-company',
-        'jcaho-cleaning-requirements-guide', 'what-is-a-day-porter-and-do-you-need-one',
-        'commercial-floor-care-guide', 'how-to-reduce-facility-management-costs',
-        'nassau-county-commercial-cleaning-guide', 'what-to-expect-from-post-construction-cleaning',
-        'why-your-cleaning-company-keeps-no-showing', 'commercial-trash-recycling-mistakes',
-        'urgent-care-cleaning-requirements', 'green-cleaning-commercial-buildings',
-        'hvac-maintenance-schedule-commercial', 'dental-office-cleaning-osha-requirements',
-        'facility-management-for-auto-dealerships', 'daycare-cleaning-safety-guide',
-        'pressure-washing-for-commercial-properties',
-    ].forEach((slug) => {
+    // 1b. Blog Posts (imported from data/blog-posts.ts)
+    BLOG_POSTS.forEach(({ slug }) => {
         sitemapEntries.push({ url: `${BASE_URL}/blog/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
     });
 
@@ -102,10 +94,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // NOTE: Other trades × location (320 pages) excluded from sitemap.
     // Pages still live — just not submitted to Google.
 
-    // 10. Guide Pages
-    ['jcaho-cleaning-requirements', 'accreditation-360-preparation-guide', 'commercial-cleaning-cost-guide', 'inhouse-vs-outsourced-facility-management',
-        'osha-bloodborne-pathogen-cleaning-standard', 'hipaa-environmental-compliance-cleaning', 'nys-part-226-voc-cleaning-compliance', 'cms-conditions-for-coverage-cleaning', 'aaahc-surgery-center-cleaning-standards',
-    ].forEach((slug) => {
+    // 10. Guide Pages (imported from data/guides.ts)
+    Object.keys(GUIDES).forEach((slug) => {
         sitemapEntries.push({ url: `${BASE_URL}/guides/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 });
     });
 
@@ -120,6 +110,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // 12. Free Tools (backlink magnets)
     ['compliance-checker', 'sds-lookup'].forEach((tool) => {
         sitemapEntries.push({ url: `${BASE_URL}/tools/${tool}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 });
+    });
+
+    // 13. Comparison / Alternative Pages (AI citation magnets)
+    Object.keys(COMPARISON_PAGES).forEach((slug) => {
+        sitemapEntries.push({ url: `${BASE_URL}/compare/${slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 });
     });
 
     return sitemapEntries;

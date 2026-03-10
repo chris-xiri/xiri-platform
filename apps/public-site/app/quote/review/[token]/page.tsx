@@ -6,6 +6,7 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { trackEvent } from '@/lib/tracking';
+import { SITE } from '@/lib/constants';
 
 // Initialize Firebase (public-site has its own config)
 const firebaseConfig = {
@@ -180,7 +181,7 @@ export default function QuoteReviewPage() {
                         </>
                     )}
                     <div className="mt-6 pt-4 border-t">
-                        <p className="text-xs text-gray-400">XIRI Facility Solutions • <a href="https://xiri.ai" className="text-sky-600">xiri.ai</a></p>
+                        <p className="text-xs text-gray-400">XIRI Facility Solutions • <a href={SITE.url} className="text-sky-600">xiri.ai</a></p>
                     </div>
                 </div>
             </div>
@@ -316,7 +317,7 @@ export default function QuoteReviewPage() {
                 <div className="text-center pb-8">
                     <p className="text-xs text-gray-400">
                         XIRI Facility Solutions • Professional Facility Management<br />
-                        <a href="https://xiri.ai" className="text-sky-600 hover:underline">xiri.ai</a> • <a href="mailto:chris@xiri.ai" className="text-sky-600 hover:underline">chris@xiri.ai</a>
+                        <a href={SITE.url} className="text-sky-600 hover:underline">xiri.ai</a> • <a href="mailto:chris@xiri.ai" className="text-sky-600 hover:underline">chris@xiri.ai</a>
                     </p>
                 </div>
             </div>

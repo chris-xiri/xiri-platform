@@ -5,6 +5,7 @@ import { JsonLd } from '@/components/JsonLd';
 import { CTAButton } from '@/components/CTAButton';
 import { AuthorityBreadcrumb, PILLAR_FACILITY_HREF, PILLAR_FACILITY_TEXT } from '@/components/AuthorityBreadcrumb';
 import { ArrowRight, Wrench, Bug, Trash2, Car, Hammer, Droplets, Snowflake, CheckCircle2, ShieldCheck, DollarSign, Clock } from 'lucide-react';
+import { SITE } from '@/lib/constants';
 
 // ─── SEO METADATA ──────────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ export default function FacilityManagementPage() {
                     "serviceType": "Facility Management",
                     "provider": {
                         "@type": "Organization",
-                        "@id": "https://xiri.ai/#organization"
+                        "@id": `${SITE.url}/#organization`
                     },
                     "areaServed": {
                         "@type": "State",
@@ -106,7 +107,7 @@ export default function FacilityManagementPage() {
                             "itemOffered": {
                                 "@type": "Service",
                                 "name": svc.name,
-                                "url": `https://xiri.ai/services/${svc.slug}`
+                                "url": `${SITE.url}/services/${svc.slug}`
                             }
                         }))
                     }
@@ -118,8 +119,8 @@ export default function FacilityManagementPage() {
                     "@context": "https://schema.org",
                     "@type": "LocalBusiness",
                     "@id": "https://xiri.ai/#localbusiness",
-                    "name": "XIRI Facility Solutions",
-                    "url": "https://xiri.ai",
+                    "name": SITE.name,
+                    "url": SITE.url,
                     "telephone": "+1-516-243-9474",
                     "address": {
                         "@type": "PostalAddress",
@@ -167,8 +168,8 @@ export default function FacilityManagementPage() {
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
-                        { "@type": "ListItem", "position": 2, "name": PILLAR_FACILITY_TEXT, "item": `https://xiri.ai${PILLAR_FACILITY_HREF}` },
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE.url },
+                        { "@type": "ListItem", "position": 2, "name": PILLAR_FACILITY_TEXT, "item": `${SITE.url}${PILLAR_FACILITY_HREF}` },
                     ]
                 }}
             />

@@ -2,6 +2,7 @@ import { VendorLeadForm } from '@/components/VendorLeadForm';
 import { ContractorValueProps } from '@/components/ContractorValueProps';
 import { ContractorHero } from '@/components/ContractorHero';
 import { Search, DollarSign } from 'lucide-react';
+import { SITE } from '@/lib/constants';
 
 export const metadata = {
     title: 'Join the XIRI Contractor Network | Consistent Facility Jobs',
@@ -13,7 +14,7 @@ export const metadata = {
         title: 'Join the XIRI Contractor Network | Consistent Facility Jobs',
         description: 'Get consistent facility management jobs without the sales headaches. Join XIRI\'s vetted contractor network today.',
         url: 'https://xiri.ai/contractors',
-        siteName: 'XIRI Facility Solutions',
+        siteName: SITE.name,
         type: 'website',
     },
     twitter: {

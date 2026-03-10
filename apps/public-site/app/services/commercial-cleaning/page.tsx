@@ -5,6 +5,7 @@ import { JsonLd } from '@/components/JsonLd';
 import { CTAButton } from '@/components/CTAButton';
 import { AuthorityBreadcrumb, PILLAR_CLEANING_HREF, PILLAR_CLEANING_TEXT } from '@/components/AuthorityBreadcrumb';
 import { ArrowRight, Stethoscope, Building2, Sparkles, SprayCan, UserCheck, ShieldCheck, CheckCircle2, DollarSign, Clock, Footprints, Rows3, HeartPulse, Scissors, Baby } from 'lucide-react';
+import { SITE } from '@/lib/constants';
 
 // ─── SEO METADATA ──────────────────────────────────────────────────
 
@@ -119,7 +120,7 @@ export default function CommercialCleaningPage() {
                     "serviceType": "Commercial Cleaning",
                     "provider": {
                         "@type": "Organization",
-                        "@id": "https://xiri.ai/#organization"
+                        "@id": `${SITE.url}/#organization`
                     },
                     "areaServed": {
                         "@type": "State",
@@ -134,7 +135,7 @@ export default function CommercialCleaningPage() {
                             "itemOffered": {
                                 "@type": "Service",
                                 "name": svc.name,
-                                "url": `https://xiri.ai/services/${svc.slug}`
+                                "url": `${SITE.url}/services/${svc.slug}`
                             }
                         }))
                     },
@@ -165,8 +166,8 @@ export default function CommercialCleaningPage() {
                     "@context": "https://schema.org",
                     "@type": "LocalBusiness",
                     "@id": "https://xiri.ai/#localbusiness",
-                    "name": "XIRI Facility Solutions",
-                    "url": "https://xiri.ai",
+                    "name": SITE.name,
+                    "url": SITE.url,
                     "telephone": "+1-516-243-9474",
                     "address": {
                         "@type": "PostalAddress",
@@ -214,8 +215,8 @@ export default function CommercialCleaningPage() {
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
-                        { "@type": "ListItem", "position": 2, "name": PILLAR_CLEANING_TEXT, "item": `https://xiri.ai${PILLAR_CLEANING_HREF}` },
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE.url },
+                        { "@type": "ListItem", "position": 2, "name": PILLAR_CLEANING_TEXT, "item": `${SITE.url}${PILLAR_CLEANING_HREF}` },
                     ]
                 }}
             />

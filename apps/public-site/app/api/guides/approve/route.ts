@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { SITE } from '@/lib/constants';
 
 /**
  * POST /api/guides/approve?id=xxx&token=yyy
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             message: 'Guide published successfully!',
             slug: data.slug,
-            url: `https://xiri.ai/guides/${data.slug}`,
+            url: `${SITE.url}/guides/${data.slug}`,
         });
     } catch (error) {
         console.error('Guide approval error:', error);
@@ -141,6 +142,6 @@ function renderHtml(title: string, message: string, type: 'success' | 'error') {
 <div style="width:64px;height:64px;background:${accent};border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:white;font-size:28px">${type === 'success' ? '✓' : '✗'}</div>
 <h1 style="color:#0f172a;font-size:28px;margin:0 0 12px">${title}</h1>
 <p style="color:#475569;font-size:16px;line-height:1.6">${message}</p>
-<a href="https://xiri.ai" style="display:inline-block;margin-top:24px;padding:12px 24px;background:#0369a1;color:white;border-radius:8px;text-decoration:none;font-weight:600">Back to XIRI</a>
+<a href=SITE.url style="display:inline-block;margin-top:24px;padding:12px 24px;background:#0369a1;color:white;border-radius:8px;text-decoration:none;font-weight:600">Back to XIRI</a>
 </div></body></html>`;
 }

@@ -18,6 +18,7 @@ import {
     type GuideData,
 } from '@/data/guides';
 import { LOCATIONS } from '@/lib/locations';
+import { SITE } from '@/lib/constants';
 
 type Props = {
     params: Promise<{ slug: string }>;
@@ -105,12 +106,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         return {
             title: `${guide.title} | XIRI Facility Solutions`,
             description: guide.metaDescription,
-            alternates: { canonical: `https://xiri.ai/guides/${slug}` },
+            alternates: { canonical: `${SITE.url}/guides/${slug}` },
             openGraph: {
                 title: guide.title,
                 description: guide.metaDescription,
-                url: `https://xiri.ai/guides/${slug}`,
-                siteName: 'XIRI Facility Solutions',
+                url: `${SITE.url}/guides/${slug}`,
+                siteName: SITE.name,
                 type: 'article',
             },
         };
@@ -125,12 +126,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         return {
             title: `${title} | XIRI`,
             description: description.slice(0, 155),
-            alternates: { canonical: `https://xiri.ai/guides/${slug}` },
+            alternates: { canonical: `${SITE.url}/guides/${slug}` },
             openGraph: {
                 title,
                 description: description.slice(0, 155),
-                url: `https://xiri.ai/guides/${slug}`,
-                siteName: 'XIRI Facility Solutions',
+                url: `${SITE.url}/guides/${slug}`,
+                siteName: SITE.name,
                 type: 'article',
             },
         };
@@ -191,18 +192,18 @@ function GuideHubView({ guide, slug }: { guide: GuideData; slug: string }) {
                             '@type': 'Article',
                             headline: guide.title,
                             description: guide.metaDescription,
-                            url: `https://xiri.ai/guides/${slug}`,
+                            url: `${SITE.url}/guides/${slug}`,
                             ...(guide.datePublished && { datePublished: guide.datePublished }),
                             ...(guide.dateModified && { dateModified: guide.dateModified }),
                             author: {
                                 '@type': 'Organization',
-                                name: 'XIRI Facility Solutions',
-                                url: 'https://xiri.ai',
+                                name: SITE.name,
+                                url: SITE.url,
                             },
                             publisher: {
                                 '@type': 'Organization',
-                                name: 'XIRI Facility Solutions',
-                                url: 'https://xiri.ai',
+                                name: SITE.name,
+                                url: SITE.url,
                                 logo: {
                                     '@type': 'ImageObject',
                                     url: 'https://xiri.ai/logo-horizontal-color.svg',
@@ -210,7 +211,7 @@ function GuideHubView({ guide, slug }: { guide: GuideData; slug: string }) {
                             },
                             mainEntityOfPage: {
                                 '@type': 'WebPage',
-                                '@id': `https://xiri.ai/guides/${slug}`,
+                                '@id': `${SITE.url}/guides/${slug}`,
                             },
                         },
                         {
@@ -229,12 +230,12 @@ function GuideHubView({ guide, slug }: { guide: GuideData; slug: string }) {
                             '@type': 'Dataset',
                             name: guide.title,
                             description: guide.metaDescription,
-                            url: `https://xiri.ai/guides/${slug}`,
+                            url: `${SITE.url}/guides/${slug}`,
                             license: 'https://creativecommons.org/licenses/by/4.0/',
                             creator: {
                                 '@type': 'Organization',
-                                name: 'XIRI Facility Solutions',
-                                url: 'https://xiri.ai',
+                                name: SITE.name,
+                                url: SITE.url,
                             },
                             spatialCoverage: {
                                 '@type': 'Place',
@@ -430,30 +431,30 @@ function RegulationLocationView({
                             '@type': 'Article',
                             headline: guide.title,
                             description: guide.metaDescription,
-                            url: `https://xiri.ai/guides/${slug}`,
+                            url: `${SITE.url}/guides/${slug}`,
                             ...(guide.datePublished && { datePublished: guide.datePublished }),
                             ...(guide.dateModified && { dateModified: guide.dateModified }),
                             author: {
                                 '@type': 'Organization',
-                                name: 'XIRI Facility Solutions',
-                                url: 'https://xiri.ai',
+                                name: SITE.name,
+                                url: SITE.url,
                             },
                             publisher: {
                                 '@type': 'Organization',
-                                name: 'XIRI Facility Solutions',
-                                url: 'https://xiri.ai',
+                                name: SITE.name,
+                                url: SITE.url,
                                 logo: { '@type': 'ImageObject', url: 'https://xiri.ai/logo-horizontal-color.svg' },
                             },
                             mainEntityOfPage: {
                                 '@type': 'WebPage',
-                                '@id': `https://xiri.ai/guides/${slug}`,
+                                '@id': `${SITE.url}/guides/${slug}`,
                             },
                         },
                         {
                             '@type': 'LocalBusiness',
-                            '@id': `https://xiri.ai/guides/${slug}#business`,
+                            '@id': `${SITE.url}/guides/${slug}#business`,
                             name: `XIRI Facility Solutions — ${location.city}`,
-                            url: `https://xiri.ai/guides/${slug}`,
+                            url: `${SITE.url}/guides/${slug}`,
                             telephone: '+1-516-526-9585',
                             areaServed: {
                                 '@type': 'Place',
@@ -482,10 +483,10 @@ function RegulationLocationView({
                     '@context': 'https://schema.org',
                     '@type': 'BreadcrumbList',
                     itemListElement: [
-                        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://xiri.ai' },
+                        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
                         { '@type': 'ListItem', position: 2, name: 'Commercial Cleaning Services', item: 'https://xiri.ai/services/commercial-cleaning' },
-                        { '@type': 'ListItem', position: 3, name: guide.heroTitle, item: `https://xiri.ai/guides/${guideSlug}` },
-                        { '@type': 'ListItem', position: 4, name: `${location.city}, ${location.state}`, item: `https://xiri.ai/guides/${slug}` },
+                        { '@type': 'ListItem', position: 3, name: guide.heroTitle, item: `${SITE.url}/guides/${guideSlug}` },
+                        { '@type': 'ListItem', position: 4, name: `${location.city}, ${location.state}`, item: `${SITE.url}/guides/${slug}` },
                     ],
                 }}
             />

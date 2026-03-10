@@ -1,0 +1,163 @@
+{
+  "generatedAt": "2026-03-09T21:36:12.134Z",
+  "censusYear": 2022,
+  "source": "U.S. Census Bureau, County Business Patterns",
+  "entries": {
+    "medical-offices": {
+      "facilitySlug": "medical-offices",
+      "areas": {
+        "nyc-metro": {
+          "establishments": 15271,
+          "areaLabel": "New York Metro Area"
+        },
+        "nassau": {
+          "establishments": 1629,
+          "areaLabel": "Nassau County"
+        }
+      }
+    },
+    "dental-offices": {
+      "facilitySlug": "dental-offices",
+      "areas": {
+        "nyc-metro": {
+          "establishments": 9650,
+          "areaLabel": "New York Metro Area"
+        },
+        "nassau": {
+          "establishments": 969,
+          "areaLabel": "Nassau County"
+        }
+      }
+    },
+    "urgent-care": {
+      "facilitySlug": "urgent-care",
+      "areas": {
+        "nyc-metro": {
+          "establishments": 641,
+          "areaLabel": "New York Metro Area"
+        },
+        "nassau": {
+          "establishments": 66,
+          "areaLabel": "Nassau County"
+        }
+      }
+    },
+    "surgery-centers": {
+      "facilitySlug": "surgery-centers",
+      "areas": {
+        "nyc-metro": {
+          "establishments": 641,
+          "areaLabel": "New York Metro Area"
+        },
+        "nassau": {
+          "establishments": 66,
+          "areaLabel": "Nassau County"
+        }
+      }
+    },
+    "dialysis-centers": {
+      "facilitySlug": "dialysis-centers",
+      "areas": {
+        "nyc-metro": {
+          "establishments": 386,
+          "areaLabel": "New York Metro Area"
+        },
+        "nassau": {
+          "establishments": 20,
+          "areaLabel": "Nassau County"
+        }
+      }
+    },
+    "veterinary-clinics": {
+      "facilitySlug": "veterinary-clinics",
+      "areas": {
+        "nyc-metro": {
+          "establishments": 1224,
+          "areaLabel": "New York Metro Area"
+        },
+        "nassau": {
+          "establishments": 113,
+          "areaLabel": "Nassau County"
+        }
+      }
+    },
+    "auto-dealerships": {
+      "facilitySlug": "auto-dealerships",
+      "areas": {
+        "nyc-metro": {
+          "establishments": 1734,
+          "areaLabel": "New York Metro Area"
+        },
+        "nassau": {
+          "establishments": 190,
+          "areaLabel": "Nassau County"
+        }
+      }
+    },
+    "daycare-preschool": {
+      "facilitySlug": "daycare-preschool",
+      "areas": {
+        "nyc-metro": {
+          "establishments": 6391,
+          "areaLabel": "New York Metro Area"
+        },
+        "nassau": {
+          "establishments": 592,
+          "areaLabel": "Nassau County"
+        }
+      }
+    },
+    "private-schools": {
+      "facilitySlug": "private-schools",
+      "areas": {
+        "nyc-metro": {
+          "establishments": 1856,
+          "areaLabel": "New York Metro Area"
+        },
+        "nassau": {
+          "establishments": 102,
+          "areaLabel": "Nassau County"
+        }
+      }
+    },
+    "professional-offices": {
+      "facilitySlug": "professional-offices",
+      "areas": {
+        "nyc-metro": {
+          "establishments": 12971,
+          "areaLabel": "New York Metro Area"
+        },
+        "nassau": {
+          "establishments": 1677,
+          "areaLabel": "Nassau County"
+        }
+      }
+    },
+    "fitness-gyms": {
+      "facilitySlug": "fitness-gyms",
+      "areas": {
+        "nyc-metro": {
+          "establishments": 2840,
+          "areaLabel": "New York Metro Area"
+        },
+        "nassau": {
+          "establishments": 270,
+          "areaLabel": "Nassau County"
+        }
+      }
+    },
+    "retail-storefronts": {
+      "facilitySlug": "retail-storefronts",
+      "areas": {
+        "nyc-metro": {
+          "establishments": 71410,
+          "areaLabel": "New York Metro Area"
+        },
+        "nassau": {
+          "establishments": 5602,
+          "areaLabel": "Nassau County"
+        }
+      }
+    }
+  }
+}

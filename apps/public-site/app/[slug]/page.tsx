@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import seoData from "@/data/seo-data.json";
 import { IndustryHubPage } from "@/components/IndustryHubPage";
+import { SITE } from '@/lib/constants';
 
 // 1. Static Paths for Industries
 export async function generateStaticParams() {
@@ -21,13 +22,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
             title: `${industry.heroTitle} | XIRI`, // e.g. "Clinical-Grade Facility Management | XIRI"
             description: industry.heroSubtitle,
             alternates: {
-                canonical: `https://xiri.ai/${industry.slug}`
+                canonical: `${SITE.url}/${industry.slug}`
             },
             openGraph: {
                 title: `${industry.heroTitle} | XIRI`,
                 description: industry.heroSubtitle,
-                url: `https://xiri.ai/${industry.slug}`,
-                siteName: 'XIRI Facility Solutions',
+                url: `${SITE.url}/${industry.slug}`,
+                siteName: SITE.name,
                 type: 'website',
             },
         };

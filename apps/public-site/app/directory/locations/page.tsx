@@ -4,6 +4,7 @@ import { Hero } from '@/components/Hero';
 import { JsonLd } from '@/components/JsonLd';
 import seoData from '@/data/seo-data.json';
 import { MapPin, Building2, ArrowRight } from 'lucide-react';
+import { SITE } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Location Directory | XIRI Facility Solutions',
@@ -44,7 +45,7 @@ export default function LocationDirectory() {
                                     {/* LocalBusiness Schema */}
                                     <JsonLd data={{
                                         '@context': 'https://schema.org', '@type': 'LocalBusiness',
-                                        name: 'XIRI Facility Solutions', description: `Facility management services in ${loc.name}`,
+                                        name: SITE.name, description: `Facility management services in ${loc.name}`,
                                         address: { '@type': 'PostalAddress', addressLocality: loc.name.split(',')[0], addressRegion: loc.state, addressCountry: 'US' },
                                         geo: { '@type': 'GeoCoordinates', latitude: loc.latitude, longitude: loc.longitude },
                                         areaServed: { '@type': 'City', name: loc.name.split(',')[0] },

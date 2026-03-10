@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { JsonLd } from '@/components/JsonLd';
+import { SITE, CTA } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'About XIRI | Our Story & Mission',
@@ -19,7 +20,7 @@ export default function AboutPage() {
                     "@type": "AboutPage",
                     "mainEntity": {
                         "@type": "Organization",
-                        "@id": "https://xiri.ai/#organization"
+                        "@id": `${SITE.url}/#organization`
                     }
                 }}
             />
@@ -28,7 +29,7 @@ export default function AboutPage() {
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE.url },
                         { "@type": "ListItem", "position": 2, "name": "About", "item": "https://xiri.ai/about" },
                     ]
                 }}
@@ -121,7 +122,7 @@ export default function AboutPage() {
                                 href="/#audit"
                                 className="inline-flex justify-center items-center bg-sky-600 text-white px-8 py-4 rounded-full text-lg font-medium shadow-lg shadow-sky-600/20 hover:bg-sky-700 transition-all"
                             >
-                                Get Your Building Scope
+                                {CTA.primary}
                             </Link>
                             <Link
                                 href="/calculator"

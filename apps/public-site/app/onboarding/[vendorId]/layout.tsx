@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { SITE } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Partner Onboarding — XIRI Facility Solutions',
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
         title: 'Join the XIRI Partner Network',
         description:
             'Complete your 5-minute profile to start receiving facility service opportunities in your area. One point of contact, consistent work, fast payouts.',
-        siteName: 'XIRI Facility Solutions',
+        siteName: SITE.name,
         type: 'website',
         url: 'https://xiri.ai/onboarding',
         images: [

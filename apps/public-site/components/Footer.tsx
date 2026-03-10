@@ -1,35 +1,21 @@
 import Link from 'next/link';
+import { SITE } from '@/lib/constants';
+import { FACILITY_TYPES, getFacilityHref, SERVICE_GROUPS } from '@/data/facility-types';
 
+// Build footer sections from shared data
 const FOOTER_SECTIONS = [
     {
         title: 'Industries',
-        links: [
-            { label: 'Medical Offices', href: '/medical-offices' },
-            { label: 'Urgent Care', href: '/urgent-care' },
-            { label: 'Surgery Centers', href: '/surgery-centers' },
-            { label: 'Dental Offices', href: '/dental-offices' },
-            { label: 'Dialysis Centers', href: '/dialysis-centers' },
-            { label: 'Veterinary Clinics', href: '/veterinary-clinics' },
-            { label: 'Auto Dealerships', href: '/auto-dealerships' },
-            { label: 'Daycares & Preschools', href: '/daycare-preschool' },
-            { label: 'Private Schools', href: '/private-schools' },
-            { label: 'Professional Offices', href: '/professional-offices' },
-            { label: 'Fitness & Gyms', href: '/fitness-gyms' },
-            { label: 'Retail Storefronts', href: '/retail-storefronts' },
-        ],
+        links: FACILITY_TYPES.map(ft => ({
+            label: ft.label,
+            href: getFacilityHref(ft),
+        })),
     },
     {
         title: 'Services',
-        links: [
-            { label: 'Janitorial Services', href: '/services/janitorial-services' },
-            { label: 'Commercial Cleaning', href: '/services/commercial-cleaning' },
-            { label: 'Floor Care', href: '/services/floor-care' },
-            { label: 'Window Cleaning', href: '/services/window-cleaning' },
-            { label: 'HVAC Maintenance', href: '/services/hvac-maintenance' },
-            { label: 'Pest Control', href: '/services/pest-control' },
-            { label: 'Snow & Ice Removal', href: '/services/snow-ice-removal' },
-            { label: 'Disinfecting', href: '/services/disinfecting-services' },
-        ],
+        links: Object.values(SERVICE_GROUPS).flatMap(g =>
+            g.services.map(s => ({ label: s.label, href: `/services/${s.slug}` }))
+        ).slice(0, 8),
     },
     {
         title: 'Solutions & Guides',
@@ -64,22 +50,22 @@ export function Footer() {
                     {/* Brand Column */}
                     <div>
                         <Link href="/" className="text-white font-heading font-bold text-2xl tracking-tight">
-                            XIRI
+                            {SITE.shortName}
                         </Link>
                         <p className="mt-4 text-sm text-gray-400 leading-relaxed">
-                            The facility management standard for single-tenant buildings. One partner. Zero headaches. Nightly verified.
+                            {SITE.description}
                         </p>
                         <div className="mt-6">
                             <a
-                                href="mailto:chris@xiri.ai"
+                                href={`mailto:${SITE.email}`}
                                 className="text-sm text-sky-400 hover:text-sky-300 transition-colors font-medium"
                             >
-                                chris@xiri.ai
+                                {SITE.email}
                             </a>
                         </div>
                         <div className="flex items-center gap-4 mt-4">
                             <a
-                                href="https://www.facebook.com/xirifacilitysolutions/"
+                                href={SITE.social.facebook}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 aria-label="XIRI on Facebook"
@@ -88,7 +74,7 @@ export function Footer() {
                                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
                             </a>
                             <a
-                                href="https://www.linkedin.com/company/xiri-facility-solutions"
+                                href={SITE.social.linkedin}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 aria-label="XIRI on LinkedIn"
@@ -127,7 +113,7 @@ export function Footer() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                         <p className="text-xs text-gray-500">
-                            © {currentYear} XIRI Facility Solutions. All rights reserved.
+                            &copy; {currentYear} {SITE.name}. All rights reserved.
                         </p>
                         <div className="flex items-center gap-6">
                             <Link href="/privacy" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">

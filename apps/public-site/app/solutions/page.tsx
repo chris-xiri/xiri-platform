@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { JsonLd } from '@/components/JsonLd';
+import { SITE, CTA } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Solutions | XIRI Facility Solutions',
@@ -42,7 +43,7 @@ export default function SolutionsIndex() {
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE.url },
                         { "@type": "ListItem", "position": 2, "name": "Solutions", "item": "https://xiri.ai/solutions" },
                     ]
                 }}
@@ -98,7 +99,7 @@ export default function SolutionsIndex() {
                         href="/#audit"
                         className="inline-flex items-center bg-white text-sky-900 px-8 py-4 rounded-full text-lg font-medium shadow-lg hover:bg-sky-50 transition-all"
                     >
-                        Get Your Building Scope
+                        {CTA.primary}
                     </Link>
                 </div>
             </section>

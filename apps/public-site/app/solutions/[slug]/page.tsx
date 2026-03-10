@@ -191,6 +191,7 @@ const SOLUTIONS: Record<string, {
 };
 
 import { DLP_SOLUTIONS, SPOKE_HUBS } from '@/data/dlp-solutions';
+import { SITE } from '@/lib/constants';
 
 type Props = {
     params: Promise<{ slug: string }>;
@@ -237,8 +238,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         return {
             title,
             description,
-            alternates: { canonical: `https://xiri.ai/solutions/${slug}` },
-            openGraph: { title, description, url: `https://xiri.ai/solutions/${slug}`, siteName: 'XIRI Facility Solutions', type: 'website' },
+            alternates: { canonical: `${SITE.url}/solutions/${slug}` },
+            openGraph: { title, description, url: `${SITE.url}/solutions/${slug}`, siteName: SITE.name, type: 'website' },
         };
     }
 
@@ -248,13 +249,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title: `${page.title} | XIRI Facility Solutions`,
         description: page.metaDescription,
         alternates: {
-            canonical: `https://xiri.ai/solutions/${slug}`,
+            canonical: `${SITE.url}/solutions/${slug}`,
         },
         openGraph: {
             title: `${page.title} | XIRI`,
             description: page.metaDescription,
-            url: `https://xiri.ai/solutions/${slug}`,
-            siteName: 'XIRI Facility Solutions',
+            url: `${SITE.url}/solutions/${slug}`,
+            siteName: SITE.name,
             type: 'website',
         },
     };
@@ -271,7 +272,7 @@ export default async function SolutionPage({ params }: Props) {
         );
         return (
             <div className="min-h-screen bg-white">
-                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: solution.title, description: solution.metaDescription, url: `https://xiri.ai/solutions/${slug}` }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: solution.title, description: solution.metaDescription, url: `${SITE.url}/solutions/${slug}` }} />
                 <AuthorityBreadcrumb items={[{ label: 'Solutions', href: '/solutions' }, { label: solution.title }]} />
                 <Hero title={solution.heroTitle} subtitle={solution.heroSubtitle} ctaText="Get a Free Site Audit" />
                 <section className="py-16 bg-slate-50 border-y border-slate-200">
@@ -368,7 +369,7 @@ export default async function SolutionPage({ params }: Props) {
         const hubDlps = hub.dlpSlugs.map(s => ({ slug: s, ...DLP_SOLUTIONS[s] })).filter(Boolean);
         return (
             <div className="min-h-screen bg-white">
-                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', name: hub.title, description: hub.metaDescription, url: `https://xiri.ai/solutions/${slug}` }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', name: hub.title, description: hub.metaDescription, url: `${SITE.url}/solutions/${slug}` }} />
                 <AuthorityBreadcrumb items={[{ label: 'Solutions', href: '/solutions' }, { label: hub.title }]} />
                 <Hero title={hub.heroTitle} subtitle={hub.heroSubtitle} ctaText="Get a Free Site Audit" />
                 <section className="py-16">
@@ -409,7 +410,7 @@ export default async function SolutionPage({ params }: Props) {
         const relevantServices = seoData.services.filter(s => dlp.relevantServices.includes(s.slug));
         return (
             <div className="min-h-screen bg-white">
-                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: dlp.title, description: dlp.metaDescription, url: `https://xiri.ai/solutions/${slug}` }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: dlp.title, description: dlp.metaDescription, url: `${SITE.url}/solutions/${slug}` }} />
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: dlp.faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
                 <AuthorityBreadcrumb items={[{ label: 'Solutions', href: '/solutions' }, { label: dlp.title }]} />
                 <Hero title={dlp.heroTitle} subtitle={dlp.heroSubtitle} ctaText="Get a Free Site Audit" />
@@ -500,15 +501,15 @@ export default async function SolutionPage({ params }: Props) {
         const relevantServices = seoData.services.filter(s => dlp.relevantServices.includes(s.slug));
         return (
             <div className="min-h-screen bg-white">
-                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: `${dlp.title} in ${location.name}`, description: dlp.metaDescription, url: `https://xiri.ai/solutions/${slug}` }} />
+                <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: `${dlp.title} in ${location.name}`, description: dlp.metaDescription, url: `${SITE.url}/solutions/${slug}` }} />
                 <JsonLd data={{
                     '@context': 'https://schema.org',
                     '@type': 'LocalBusiness',
-                    '@id': `https://xiri.ai/solutions/${slug}#business`,
+                    '@id': `${SITE.url}/solutions/${slug}#business`,
                     name: `XIRI ${dlp.title} — ${location.name}`,
                     description: dlp.metaDescription,
                     image: 'https://xiri.ai/xiri-logo-horizontal.svg',
-                    url: `https://xiri.ai/solutions/${slug}`,
+                    url: `${SITE.url}/solutions/${slug}`,
                     telephone: '+1-516-526-9585',
                     priceRange: '$$',
                     address: { '@type': 'PostalAddress', addressLocality: location.name.split(',')[0], addressRegion: location.state, addressCountry: 'US' },
@@ -520,7 +521,7 @@ export default async function SolutionPage({ params }: Props) {
                     '@type': 'Service',
                     name: `${dlp.title} in ${location.name}`,
                     description: dlp.metaDescription,
-                    provider: { '@type': 'LocalBusiness', '@id': `https://xiri.ai/solutions/${slug}#business` },
+                    provider: { '@type': 'LocalBusiness', '@id': `${SITE.url}/solutions/${slug}#business` },
                     areaServed: { '@type': 'Place', name: `${location.name.split(',')[0]}, ${location.state}` },
                     serviceType: dlp.title,
                 }} />

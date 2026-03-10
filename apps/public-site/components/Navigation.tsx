@@ -4,32 +4,11 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { trackEvent } from '@/lib/tracking';
+import { CTA } from '@/lib/constants';
+import { FACILITY_TYPES, groupFacilityTypes, getFacilityHref, SERVICE_GROUPS } from '@/data/facility-types';
+import { INDUSTRY_PILLARS } from '@/lib/industry-pillars';
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
-// Ordered for 2-column nav: Medical | Everything Else
-const FACILITY_TYPES = [
-    // Healthcare
-    { group: "Healthcare", label: "Medical Offices", slug: "medical-offices", pillar: "healthcare" },
-    { group: "Healthcare", label: "Urgent Care Centers", slug: "urgent-care", pillar: "healthcare" },
-    { group: "Healthcare", label: "Surgery Centers", slug: "surgery-centers", pillar: "healthcare" },
-    { group: "Healthcare", label: "Dental Offices", slug: "dental-offices", pillar: "healthcare" },
-    { group: "Healthcare", label: "Dialysis Centers", slug: "dialysis-centers", pillar: "healthcare" },
-    { group: "Healthcare", label: "Veterinary Clinics", slug: "veterinary-clinics", pillar: "healthcare" },
-    { group: "Healthcare", label: "Converted Clinical Suites", slug: "converted-clinical-suites", pillar: "healthcare" },
-    // Automotive & Specialized
-    { group: "Automotive", label: "Auto Dealerships", slug: "auto-dealerships", pillar: "automotive" },
-    { group: "Specialized", label: "Labs & Cleanrooms", slug: "labs-cleanrooms", pillar: "specialized" },
-    { group: "Specialized", label: "Light Manufacturing", slug: "light-manufacturing", pillar: "specialized" },
-    // Education
-    { group: "Education", label: "Daycares & Preschools", slug: "daycare-preschool", pillar: "education" },
-    { group: "Education", label: "Private Schools", slug: "private-schools", pillar: "education" },
-    // Commercial
-    { group: "Commercial", label: "Professional Offices", slug: "professional-offices", pillar: "commercial" },
-    { group: "Commercial", label: "Fitness & Gyms", slug: "fitness-gyms", pillar: "commercial" },
-    { group: "Commercial", label: "Retail Storefronts", slug: "retail-storefronts", pillar: "commercial" },
-];
-
 import { LeadFormModal } from './LeadFormModal';
 
 export default function Navigation() {
@@ -76,38 +55,7 @@ export default function Navigation() {
         }
     };
 
-    // Group facilities by category
-    const groupedFacilities = FACILITY_TYPES.reduce((acc, facility) => {
-        if (!acc[facility.group]) {
-            acc[facility.group] = [];
-        }
-        acc[facility.group].push(facility);
-        return acc;
-    }, {} as Record<string, typeof FACILITY_TYPES>);
-
-    const SERVICE_LINKS = {
-        'Commercial Cleaning': [
-            { label: 'Janitorial Services', slug: 'janitorial-services' },
-            { label: 'Commercial Cleaning', slug: 'commercial-cleaning' },
-            { label: 'Floor Care', slug: 'floor-care' },
-            { label: 'Carpet & Upholstery', slug: 'carpet-upholstery' },
-            { label: 'Day Porters', slug: 'day-porter' },
-            { label: 'Disinfecting', slug: 'disinfecting-services' },
-        ],
-        'Facility Management': [
-            { label: 'Window Cleaning', slug: 'window-cleaning' },
-            { label: 'Pressure Washing', slug: 'pressure-washing' },
-            { label: 'HVAC Maintenance', slug: 'hvac-maintenance' },
-            { label: 'Pest Control', slug: 'pest-control' },
-            { label: 'Snow & Ice Removal', slug: 'snow-ice-removal' },
-            { label: 'Handyman Services', slug: 'handyman-services' },
-        ],
-    };
-
-    const GROUP_PILLAR_HREFS: Record<string, string> = {
-        'Commercial Cleaning': '/services/commercial-cleaning',
-        'Facility Management': '/services/facility-management',
-    };
+    const groupedFacilities = groupFacilityTypes();
 
 
 
@@ -162,8 +110,21 @@ export default function Navigation() {
                                     </svg>
                                 </button>
 
-                                <div className={`absolute top-full -left-4 pt-4 w-[480px] transition-all duration-200 origin-top-left ${industriesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
+                                <div className={`absolute top-full -left-4 pt-4 w-[520px] transition-all duration-200 origin-top-left ${industriesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
                                     <div className="bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden ring-1 ring-black/5">
+                                        {/* Horizontal Pillar Links */}
+                                        <div className="flex items-center gap-1 px-3 pt-3 pb-2 border-b border-gray-100 overflow-x-auto">
+                                            {INDUSTRY_PILLARS.map((pillar) => (
+                                                <Link
+                                                    key={pillar.slug}
+                                                    href={`/industries/${pillar.slug}`}
+                                                    className="flex-shrink-0 px-3 py-1.5 text-xs font-bold rounded-full bg-sky-50 text-sky-700 hover:bg-sky-100 transition-colors whitespace-nowrap"
+                                                    onClick={() => handleNavClick(`/industries/${pillar.slug}`, pillar.name)}
+                                                >
+                                                    {pillar.name.replace(' Facilities', '').replace(' & ', ' & ')}
+                                                </Link>
+                                            ))}
+                                        </div>
                                         <div className="p-2 grid grid-cols-2 gap-x-2">
                                             {/* Render Groups */}
                                             {Object.entries(groupedFacilities).map(([group, facilities]) => (
@@ -174,7 +135,7 @@ export default function Navigation() {
                                                     {facilities.map((facility) => (
                                                         <Link
                                                             key={facility.slug}
-                                                            href={`/industries/${facility.pillar}/${facility.slug}`}
+                                                            href={getFacilityHref(facility)}
                                                             className="block px-3 py-1.5 text-sm text-gray-700 rounded-lg hover:bg-sky-50 hover:text-sky-700 transition-colors"
                                                             onClick={() => handleNavClick(`/${facility.slug}`, facility.label)}
                                                         >
@@ -207,16 +168,16 @@ export default function Navigation() {
                                 <div className={`absolute top-full -left-4 pt-4 w-[480px] transition-all duration-200 origin-top-left ${servicesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
                                     <div className="bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden ring-1 ring-black/5">
                                         <div className="p-2 grid grid-cols-2 gap-1">
-                                            {Object.entries(SERVICE_LINKS).map(([group, services]) => (
+                                            {Object.entries(SERVICE_GROUPS).map(([group, groupData]) => (
                                                 <div key={group} className="pb-2">
                                                     <Link
-                                                        href={GROUP_PILLAR_HREFS[group] || '/services'}
+                                                        href={groupData.href}
                                                         className="px-3 py-1.5 text-xs font-bold text-sky-500 uppercase tracking-wider hover:text-sky-700 transition-colors block"
-                                                        onClick={() => handleNavClick(GROUP_PILLAR_HREFS[group] || '/services', group)}
+                                                        onClick={() => handleNavClick(groupData.href, group)}
                                                     >
                                                         {group} →
                                                     </Link>
-                                                    {services.map((service) => (
+                                                    {groupData.services.map((service) => (
                                                         <Link
                                                             key={service.slug}
                                                             href={`/services/${service.slug}`}
@@ -278,7 +239,7 @@ export default function Navigation() {
                                             setIsAuditModalOpen(true);
                                         }}
                                     >
-                                        Get Your Building Scope
+                                        {CTA.primary}
                                     </button>
                                 </>
                             )}
@@ -304,9 +265,22 @@ export default function Navigation() {
                             {/* Facility Types */}
                             <div>
                                 <p className="text-xs font-bold text-sky-500 uppercase tracking-wider mb-2">Facility Types</p>
+                                {/* Horizontal Pillar Links (Mobile) */}
+                                <div className="flex flex-wrap gap-1.5 mb-3">
+                                    {INDUSTRY_PILLARS.map(pillar => (
+                                        <Link
+                                            key={pillar.slug}
+                                            href={`/industries/${pillar.slug}`}
+                                            className="px-3 py-1 text-xs font-bold rounded-full bg-sky-50 text-sky-700 hover:bg-sky-100 transition-colors"
+                                            onClick={() => setMobileOpen(false)}
+                                        >
+                                            {pillar.name.replace(' Facilities', '').replace(' & ', ' & ')}
+                                        </Link>
+                                    ))}
+                                </div>
                                 <div className="grid grid-cols-2 gap-1">
                                     {FACILITY_TYPES.slice(0, 8).map(f => (
-                                        <Link key={f.slug} href={`/industries/${f.pillar}/${f.slug}`} className="text-sm text-gray-700 py-1.5 hover:text-sky-600" onClick={() => setMobileOpen(false)}>
+                                        <Link key={f.slug} href={getFacilityHref(f)} className="text-sm text-gray-700 py-1.5 hover:text-sky-600" onClick={() => setMobileOpen(false)}>
                                             {f.label}
                                         </Link>
                                     ))}
@@ -317,7 +291,7 @@ export default function Navigation() {
                             <div>
                                 <p className="text-xs font-bold text-sky-500 uppercase tracking-wider mb-2">Services</p>
                                 <div className="grid grid-cols-2 gap-1">
-                                    {Object.values(SERVICE_LINKS).flat().slice(0, 6).map(s => (
+                                    {Object.values(SERVICE_GROUPS).flatMap(g => g.services).slice(0, 6).map(s => (
                                         <Link key={s.slug} href={`/services/${s.slug}`} className="text-sm text-gray-700 py-1.5 hover:text-sky-600" onClick={() => setMobileOpen(false)}>
                                             {s.label}
                                         </Link>
@@ -343,7 +317,7 @@ export default function Navigation() {
                                     setIsAuditModalOpen(true);
                                 }}
                             >
-                                Get Your Building Scope
+                                {CTA.primary}
                             </button>
                         </div>
                     </div>

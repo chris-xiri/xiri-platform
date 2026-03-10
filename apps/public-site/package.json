@@ -6,7 +6,8 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "refresh-census": "npx ts-node --skip-project scripts/refresh-census-data.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

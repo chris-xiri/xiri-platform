@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { JsonLd } from '@/components/JsonLd';
 import PublicCalculator from '@/components/PublicCalculator';
+import { SITE } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Janitorial Bid Calculator (2026) | Free Pricing Tool for Cleaning Companies',
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
         title: 'Janitorial Bid Calculator | XIRI Contractor Network',
         description: 'Free bid calculator for cleaning companies. See what janitorial contracts are worth in your area.',
         url: 'https://xiri.ai/contractors/calculator',
-        siteName: 'XIRI Facility Solutions',
+        siteName: SITE.name,
         type: 'website',
     },
 };
@@ -68,7 +69,7 @@ export default function ContractorCalculatorPage() {
                     applicationCategory: 'BusinessApplication',
                     operatingSystem: 'Web',
                     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-                    author: { '@type': 'Organization', name: 'XIRI Facility Solutions' },
+                    author: { '@type': 'Organization', name: SITE.name },
                 }}
             />
             <JsonLd
@@ -77,8 +78,8 @@ export default function ContractorCalculatorPage() {
                     '@type': 'Article',
                     headline: 'Janitorial Bid Calculator (2026) — Free Pricing Tool for Cleaning Companies',
                     description: 'Calculate what to charge for janitorial contracts. Enter facility size, type, and state to see competitive bid pricing.',
-                    author: { '@type': 'Organization', name: 'XIRI Facility Solutions' },
-                    publisher: { '@type': 'Organization', name: 'XIRI Facility Solutions' },
+                    author: { '@type': 'Organization', name: SITE.name },
+                    publisher: { '@type': 'Organization', name: SITE.name },
                     datePublished: '2025-03-01',
                     dateModified: '2026-03-05',
                     mainEntityOfPage: 'https://xiri.ai/contractors/calculator',

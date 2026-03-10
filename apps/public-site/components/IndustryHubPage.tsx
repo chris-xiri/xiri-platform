@@ -9,6 +9,9 @@ import { ArrowRight, CheckCircle2, Wrench, Rocket, ShieldCheck, Moon, DollarSign
 import seoData from "@/data/seo-data.json";
 import { AuthorityBreadcrumb } from "@/components/AuthorityBreadcrumb";
 import { NearbyAreas } from "@/components/NearbyAreas";
+import { SITE } from '@/lib/constants';
+import { IndustryMarketStat } from '@/components/MarketSnapshot';
+import type { CensusEstablishmentResult } from '@/lib/census';
 
 interface Location {
     slug: string;
@@ -35,9 +38,13 @@ interface IndustryHubPageProps {
     industry: SeoIndustry;
     pillar?: { href: string; text: string };
     location?: Location;
+    /** Census establishment data (from cache, passed by server component) */
+    censusResult?: CensusEstablishmentResult;
+    /** Plural noun for Census stat, e.g. "physician offices" */
+    censusPlural?: string;
 }
 
-export function IndustryHubPage({ industry, pillar, location }: IndustryHubPageProps) {
+export function IndustryHubPage({ industry, pillar, location, censusResult, censusPlural }: IndustryHubPageProps) {
     // 1. Resolve Services (IDs to Objects)
     const allServices = (seoData.services || []) as SeoService[];
 
@@ -67,10 +74,10 @@ export function IndustryHubPage({ industry, pillar, location }: IndustryHubPageP
                         "@graph": [
                             {
                                 "@type": "LocalBusiness",
-                                "@id": `https://xiri.ai/industries/${pillar?.href?.split('/').pop()}/${industry.slug}-in-${location.slug}#business`,
+                                "@id": `${SITE.url}/industries/${pillar?.href?.split('/').pop()}/${industry.slug}-in-${location.slug}#business`,
                                 "name": `XIRI ${industry.name} Cleaning — ${location.name}`,
                                 "description": location.localInsight || industry.heroSubtitle,
-                                "url": `https://xiri.ai/industries/${pillar?.href?.split('/').pop()}/${industry.slug}`,
+                                "url": `${SITE.url}/industries/${pillar?.href?.split('/').pop()}/${industry.slug}`,
                                 "telephone": "+1-516-243-9474",
                                 "areaServed": {
                                     "@type": "Place",
@@ -104,9 +111,9 @@ export function IndustryHubPage({ industry, pillar, location }: IndustryHubPageP
                         "@context": "https://schema.org",
                         "@type": "BreadcrumbList",
                         "itemListElement": [
-                            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
-                            ...(pillar ? [{ "@type": "ListItem", "position": 2, "name": pillar.text, "item": `https://xiri.ai${pillar.href}` }] : []),
-                            { "@type": "ListItem", "position": pillar ? 3 : 2, "name": industry.name, "item": `https://xiri.ai${pillar?.href || '/industries'}/${industry.slug}` },
+                            { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE.url },
+                            ...(pillar ? [{ "@type": "ListItem", "position": 2, "name": pillar.text, "item": `${SITE.url}${pillar.href}` }] : []),
+                            { "@type": "ListItem", "position": pillar ? 3 : 2, "name": industry.name, "item": `${SITE.url}${pillar?.href || '/industries'}/${industry.slug}` },
                             { "@type": "ListItem", "position": pillar ? 4 : 3, "name": `${townName}, NY` },
                         ]
                     }}
@@ -262,19 +269,19 @@ export function IndustryHubPage({ industry, pillar, location }: IndustryHubPageP
                     "@graph": [
                         {
                             "@type": "Service",
-                            "@id": `https://xiri.ai${pillar?.href || '/industries'}/${industry.slug}#service`,
+                            "@id": `${SITE.url}${pillar?.href || '/industries'}/${industry.slug}#service`,
                             "name": industry.heroTitle || `${industry.name} Facility Management`,
                             "description": industry.heroSubtitle,
                             "serviceType": `${industry.name} Cleaning`,
                             "provider": {
                                 "@type": "Organization",
-                                "@id": "https://xiri.ai/#organization"
+                                "@id": `${SITE.url}/#organization`
                             },
                             "areaServed": { "@type": "State", "name": "New York" },
                             ...(pillar && {
                                 "isPartOf": {
                                     "@type": "Service",
-                                    "@id": `https://xiri.ai${pillar.href}#service`
+                                    "@id": `${SITE.url}${pillar.href}#service`
                                 }
                             }),
                         },
@@ -294,9 +301,9 @@ export function IndustryHubPage({ industry, pillar, location }: IndustryHubPageP
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
-                        ...(pillar ? [{ "@type": "ListItem", "position": 2, "name": pillar.text, "item": `https://xiri.ai${pillar.href}` }] : []),
-                        { "@type": "ListItem", "position": pillar ? 3 : 2, "name": industry.name, "item": `https://xiri.ai${pillar?.href || '/industries'}/${industry.slug}` },
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE.url },
+                        ...(pillar ? [{ "@type": "ListItem", "position": 2, "name": pillar.text, "item": `${SITE.url}${pillar.href}` }] : []),
+                        { "@type": "ListItem", "position": pillar ? 3 : 2, "name": industry.name, "item": `${SITE.url}${pillar?.href || '/industries'}/${industry.slug}` },
                     ]
                 }}
             />
@@ -314,6 +321,19 @@ export function IndustryHubPage({ industry, pillar, location }: IndustryHubPageP
                 ctaText="Get a Facility Audit"
                 ctaLink="#audit"
             />
+
+            {/* Census Market Stat */}
+            {censusResult && censusResult.establishments > 0 && censusPlural && (
+                <section className="py-8 bg-white border-b border-slate-100">
+                    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <IndustryMarketStat
+                            result={censusResult}
+                            plural={censusPlural}
+                            audienceFrame="owner"
+                        />
+                    </div>
+                </section>
+            )}
 
             {/* 2. VALUE PROPS (Generic XIRI Props) */}
             <ValuePropsSection

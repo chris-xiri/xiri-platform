@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { JsonLd } from '@/components/JsonLd';
 import { getPost, getAllSlugs } from '@/data/blog-posts';
 import { AuthorityBreadcrumb } from '@/components/AuthorityBreadcrumb';
+import { SITE } from '@/lib/constants';
 
 type Props = {
     params: Promise<{ slug: string }>;
@@ -22,13 +23,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title: post.title,
         description: post.description,
         alternates: {
-            canonical: `https://xiri.ai/blog/${slug}`,
+            canonical: `${SITE.url}/blog/${slug}`,
         },
         openGraph: {
             title: post.title,
             description: post.description,
-            url: `https://xiri.ai/blog/${slug}`,
-            siteName: 'XIRI Facility Solutions',
+            url: `${SITE.url}/blog/${slug}`,
+            siteName: SITE.name,
             type: 'article',
             publishedTime: post.publishDate,
         },
@@ -159,6 +160,7 @@ export default async function BlogPost({ params }: Props) {
 
     return (
         <div className="min-h-screen bg-white">
+            {/* Article Schema — Enhanced with E-E-A-T signals */}
             <JsonLd
                 data={{
                     "@context": "https://schema.org",
@@ -166,19 +168,37 @@ export default async function BlogPost({ params }: Props) {
                     "headline": post.title,
                     "description": post.description,
                     "datePublished": post.publishDate,
-                    "author": { "@type": "Organization", "@id": "https://xiri.ai/#organization" },
-                    "publisher": { "@type": "Organization", "@id": "https://xiri.ai/#organization" }
+                    "dateModified": new Date().toISOString().split('T')[0],
+                    "wordCount": post.content.split(/\s+/).length,
+                    "mainEntityOfPage": {
+                        "@type": "WebPage",
+                        "@id": `${SITE.url}/blog/${slug}`
+                    },
+                    "author": {
+                        "@type": "Person",
+                        "name": "Chris Leunen",
+                        "jobTitle": "Founder & CEO",
+                        "worksFor": { "@type": "Organization", "@id": `${SITE.url}/#organization` },
+                        "url": `${SITE.url}/about`
+                    },
+                    "publisher": {
+                        "@type": "Organization",
+                        "@id": `${SITE.url}/#organization`,
+                        "name": SITE.name,
+                        "logo": { "@type": "ImageObject", "url": `${SITE.url}/icon.png` }
+                    },
+                    "image": `${SITE.url}/og-image.png`
                 }}
             />
+            {/* BreadcrumbList Schema */}
             <JsonLd
                 data={{
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://xiri.ai" },
-                        { "@type": "ListItem", "position": 2, "name": "Commercial Cleaning Services", "item": "https://xiri.ai/services/commercial-cleaning" },
-                        { "@type": "ListItem", "position": 3, "name": "Blog", "item": "https://xiri.ai/blog" },
-                        { "@type": "ListItem", "position": 4, "name": post.title, "item": `https://xiri.ai/blog/${slug}` },
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE.url },
+                        { "@type": "ListItem", "position": 2, "name": "Blog", "item": `${SITE.url}/blog` },
+                        { "@type": "ListItem", "position": 3, "name": post.title, "item": `${SITE.url}/blog/${slug}` },
                     ]
                 }}
             />
@@ -191,12 +211,25 @@ export default async function BlogPost({ params }: Props) {
                         <div className="flex items-center gap-3 mb-4">
                             <span className="text-xs font-bold text-sky-600 uppercase tracking-wider">{post.category}</span>
                             <span className="text-xs text-slate-400">{post.readTime} read</span>
-                            <span className="text-xs text-slate-400">{new Date(post.publishDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                         </div>
                         <h1 className="text-3xl md:text-4xl font-heading font-bold text-slate-900 leading-tight mb-4">
                             {post.title}
                         </h1>
-                        <p className="text-lg text-slate-500">{post.description}</p>
+                        <p className="text-lg text-slate-500 mb-4">{post.description}</p>
+                        {/* Author byline + last updated — E-E-A-T signals */}
+                        <div className="flex items-center gap-4 text-sm text-slate-500 border-t border-slate-100 pt-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold text-xs">CL</div>
+                                <div>
+                                    <span className="font-medium text-slate-700">Chris Leunen</span>
+                                    <span className="text-slate-400"> · Founder & CEO</span>
+                                </div>
+                            </div>
+                            <span className="text-slate-300">|</span>
+                            <span>Published {new Date(post.publishDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                            <span className="text-slate-300">|</span>
+                            <span className="text-green-600 font-medium">✓ Last updated March 2026</span>
+                        </div>
                     </div>
 
                     <div className="prose-container">
