@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, FileText, Shield, AlertTriangle, Leaf, ExternalLink, ArrowRight, BookOpen } from 'lucide-react';
 import { AuthorityBreadcrumb } from '@/components/AuthorityBreadcrumb';
 import { SDS_DATABASE } from '@/data/sds-database';
 import type { SDSEntry } from '@/data/sds-types';
+import { trackEvent } from '@/lib/tracking';
 
 // ─── COMPONENT ─────────────────────────────────────────────────────
 
@@ -17,6 +18,32 @@ export default function SDSLookupPage() {
     const [filterEpaListN, setFilterEpaListN] = useState<boolean | null>(null);
     const [filterSaferChoice, setFilterSaferChoice] = useState<boolean | null>(null);
     const [expanded, setExpanded] = useState<string | null>(null);
+    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Track tool view on mount
+    useEffect(() => {
+        trackEvent('tool_view', { tool: 'sds_lookup' });
+    }, []);
+
+    // Debounced search tracking
+    const handleSearch = useCallback((value: string) => {
+        setSearchTerm(value);
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        if (value.length >= 3) {
+            searchTimerRef.current = setTimeout(() => {
+                trackEvent('tool_search', { tool: 'sds_lookup', query: value });
+            }, 800);
+        }
+    }, []);
+
+    // Track chemical expand
+    const handleExpand = useCallback((entry: SDSEntry) => {
+        const newExpanded = expanded === entry.id ? null : entry.id;
+        setExpanded(newExpanded);
+        if (newExpanded) {
+            trackEvent('tool_result_expand', { tool: 'sds_lookup', chemical: entry.name, manufacturer: entry.manufacturer });
+        }
+    }, [expanded]);
 
     const filtered = useMemo(() => {
         return SDS_DATABASE.filter(entry => {
@@ -80,7 +107,7 @@ export default function SDSLookupPage() {
                                 type="text"
                                 placeholder="Search by name, manufacturer, or ingredient..."
                                 value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
+                                onChange={e => handleSearch(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition-all text-slate-900"
                             />
                         </div>
@@ -90,7 +117,7 @@ export default function SDSLookupPage() {
                     <div className="flex flex-wrap gap-3 mt-4">
                         <select
                             value={filterCategory}
-                            onChange={e => setFilterCategory(e.target.value)}
+                            onChange={e => { setFilterCategory(e.target.value); trackEvent('tool_filter', { tool: 'sds_lookup', filter: 'category', value: e.target.value }); }}
                             className="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 bg-white"
                         >
                             <option value="all">All Categories</option>
@@ -103,7 +130,7 @@ export default function SDSLookupPage() {
                         </select>
 
                         <button
-                            onClick={() => setFilterVOC(filterVOC === true ? null : true)}
+                            onClick={() => { const v = filterVOC === true ? null : true; setFilterVOC(v); trackEvent('tool_filter', { tool: 'sds_lookup', filter: 'voc_compliant', value: String(v) }); }}
                             className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${filterVOC === true ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'border-slate-200 text-slate-500 hover:border-emerald-300'}`}
                         >
                             <Leaf className="w-3.5 h-3.5 inline mr-1" />
@@ -111,7 +138,7 @@ export default function SDSLookupPage() {
                         </button>
 
                         <button
-                            onClick={() => setFilterVOC(filterVOC === false ? null : false)}
+                            onClick={() => { const v = filterVOC === false ? null : false; setFilterVOC(v); trackEvent('tool_filter', { tool: 'sds_lookup', filter: 'voc_non_compliant', value: String(v) }); }}
                             className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${filterVOC === false ? 'bg-red-50 border-red-300 text-red-700' : 'border-slate-200 text-slate-500 hover:border-red-300'}`}
                         >
                             <AlertTriangle className="w-3.5 h-3.5 inline mr-1" />
@@ -161,7 +188,7 @@ export default function SDSLookupPage() {
                             <div key={entry.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                                 {/* Header */}
                                 <button
-                                    onClick={() => setExpanded(isExpanded ? null : entry.id)}
+                                    onClick={() => handleExpand(entry)}
                                     className="w-full text-left p-6 hover:bg-slate-50 transition-colors"
                                 >
                                     <div className="flex items-center justify-between">
@@ -276,6 +303,7 @@ export default function SDSLookupPage() {
                                                     href={entry.sdsUrl}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
+                                                    onClick={() => trackEvent('tool_external_click', { tool: 'sds_lookup', chemical: entry.name, url: entry.sdsUrl || '' })}
                                                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-lg font-semibold text-sm hover:bg-slate-800 transition-colors"
                                                 >
                                                     <FileText className="w-4 h-4" />
@@ -337,6 +365,7 @@ export default function SDSLookupPage() {
                     </p>
                     <Link
                         href="/#audit"
+                        onClick={() => trackEvent('tool_cta_click', { tool: 'sds_lookup', cta: 'chemical_audit' })}
                         className="inline-block bg-sky-500 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-sky-400 transition-colors"
                     >
                         Get a Free Chemical Audit →

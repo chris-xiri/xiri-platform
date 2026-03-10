@@ -14,7 +14,7 @@ export default function PrivacyPolicyPage() {
         <div className="min-h-screen bg-white">
             <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <h1 className="text-3xl font-bold font-heading text-gray-900 mb-2">Privacy Policy</h1>
-                <p className="text-sm text-gray-500 mb-10">Last updated: February 20, 2026</p>
+                <p className="text-sm text-gray-500 mb-10">Last updated: March 10, 2026</p>
 
                 <div className="prose prose-gray max-w-none space-y-8 text-gray-700 text-[15px] leading-relaxed">
                     <section>
@@ -64,7 +64,7 @@ export default function PrivacyPolicyPage() {
                         <p>We do not sell your personal information. We may share your information with:</p>
                         <ul className="list-disc pl-5 space-y-1">
                             <li><strong>Service Providers:</strong> Contractors assigned to your facility will receive your business name, address, and service requirements</li>
-                            <li><strong>Technology Partners:</strong> We use Google Cloud (Firebase) for data storage, Google Analytics for website analytics, and email service providers for communications</li>
+                            <li><strong>Technology Partners:</strong> We use Google Cloud (Firebase) for data storage, Google Analytics for website analytics, Microsoft Clarity for behavioral analytics (heatmaps and session recordings), and email service providers for communications</li>
                             <li><strong>Legal Requirements:</strong> We may disclose information to comply with applicable law, regulation, or legal process</li>
                         </ul>
                     </section>
@@ -78,6 +78,9 @@ export default function PrivacyPolicyPage() {
                         <ul className="list-disc pl-5 space-y-1">
                             <li><strong>Essential Cookies:</strong> Required for site functionality</li>
                             <li><strong>Analytics Cookies:</strong> Google Analytics to understand how visitors use our site</li>
+                            <li><strong>Behavioral Analytics:</strong> We partner with Microsoft Clarity to capture how you use and interact with our website through behavioral metrics, heatmaps, and session replay to improve and market our products and services. Website usage data is captured using first and third-party cookies and other tracking technologies to determine the popularity of products/services and online activity. Additionally, we use this information for site optimization, fraud/security purposes, and advertising. For more information about how Microsoft collects and uses your data, visit the{' '}
+                                <a href="https://www.microsoft.com/privacy/privacystatement" target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline">Microsoft Privacy Statement</a>.
+                            </li>
                             <li><strong>UTM Parameters:</strong> We track marketing attribution (source, medium, campaign) to measure our outreach effectiveness</li>
                         </ul>
                         <p>You can control cookies through your browser settings.</p>

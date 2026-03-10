@@ -10,6 +10,15 @@ export interface BlogPost {
     readTime: string;
     category: string;
     content: string;
+    /** Optional lead magnet to render at the bottom of the post */
+    leadMagnet?: {
+        magnetName: string;
+        title: string;
+        description: string;
+        ctaText?: string;
+        variant?: 'blue' | 'green' | 'dark';
+        downloadUrl?: string;
+    };
 }
 
 // Helper: returns only published posts (publishDate <= today)
@@ -44,6 +53,14 @@ export const BLOG_POSTS: BlogPost[] = [
         publishDate: '2025-09-01',
         readTime: '8 min',
         category: 'Pricing',
+        leadMagnet: {
+            magnetName: 'price_per_sqft_cheatsheet',
+            title: 'Download: Price-per-Sqft Cheat Sheet',
+            description: 'Get our one-page reference card with cost ranges by facility type, region, and frequency — print it and keep it on your desk.',
+            ctaText: 'Send the Cheat Sheet',
+            variant: 'blue',
+            downloadUrl: '/downloads/price-per-sqft-cheatsheet.pdf',
+        },
         content: `## Got Three Cleaning Quotes? Here's Why They're All Different.
 
 You asked three companies for a bid. One came back at $0.10/sqft. Another at $0.35/sqft. Nobody explained what's included — or what's not.
@@ -132,6 +149,14 @@ What if you got the cost savings of outsourcing without losing control? XIRI vet
         publishDate: '2025-09-05',
         readTime: '12 min',
         category: 'Compliance',
+        leadMagnet: {
+            magnetName: 'osha_compliance_checklist',
+            title: 'Download: Full OSHA + HIPAA Cleaning Checklist',
+            description: 'Get the complete printable checklist with all BBP, HIPAA, and CDC surface-disinfection requirements in one document.',
+            ctaText: 'Send the Checklist',
+            variant: 'blue',
+            downloadUrl: '/downloads/osha-hipaa-cleaning-checklist.pdf',
+        },
         content: `## Would Your Cleaning Pass an Unannounced OSHA Inspection?
 
 Imagine a surveyor walking your facility right now. Would your cleaning logs hold up? Would your contractor's training certificates be current? A dirty exam room isn't just unpleasant — it's a citation waiting to happen.
@@ -179,6 +204,14 @@ Imagine a surveyor walking your facility right now. Would your cleaning logs hol
         publishDate: '2025-09-08',
         readTime: '6 min',
         category: 'Guides',
+        leadMagnet: {
+            magnetName: 'rfp_template_7_questions',
+            title: 'Download: 7-Question RFP Template',
+            description: 'Copy-paste this template into your next vendor evaluation. Includes the exact questions, red-flag answers, and a scoring rubric.',
+            ctaText: 'Send the Template',
+            variant: 'dark',
+            downloadUrl: '/downloads/7-question-rfp-template.pdf',
+        },
         content: `## Every Cleaning Company Says They're "Reliable." Here's How to Check.
 
 You've seen the pitches: "Quality service. Reliable crews. Customer satisfaction." But when your lobby is dirty at 7 AM, those words don't help. Here are 7 questions that separate the pros from the no-shows.
@@ -220,6 +253,14 @@ Right answer: Month-to-month. Red flag: Multi-year with heavy termination fees.
         publishDate: '2025-09-10',
         readTime: '9 min',
         category: 'Compliance',
+        leadMagnet: {
+            magnetName: 'jcaho_90_day_prep',
+            title: 'Download: 90-Day JCAHO Prep Checklist',
+            description: 'A week-by-week countdown checklist covering cleaning logs, contractor credentials, SDS management, and mock walkthroughs.',
+            ctaText: 'Send the Prep Checklist',
+            variant: 'blue',
+            downloadUrl: '/downloads/90-day-jcaho-prep-checklist.pdf',
+        },
         content: `## The Question That Trips Up 90% of Facilities During a JCAHO Survey
 
 "Can I see your cleaning logs from the past 12 months?" That's usually the moment a survey goes sideways. Joint Commission surveyors don't just check if your facility looks clean. They check if you can *prove* it was cleaned — consistently, correctly, and on schedule.
@@ -363,6 +404,14 @@ Lock in annual pricing for savings, but ensure you can exit monthly. This gives 
         publishDate: '2025-09-20',
         readTime: '7 min',
         category: 'Local',
+        leadMagnet: {
+            magnetName: 'nassau_vendor_comparison',
+            title: 'Download: Nassau County Vendor Comparison Sheet',
+            description: 'Side-by-side comparison template for evaluating local cleaning vendors — pre-filled with Nassau County benchmarks.',
+            ctaText: 'Send the Comparison Sheet',
+            variant: 'green',
+            downloadUrl: '/downloads/nassau-county-vendor-comparison.pdf',
+        },
         content: `## Why Does Everything Cost More on Long Island? (And What to Do About It)
 
 Nassau County cleaning costs run 15-25% above national averages. That's the reality of higher prevailing wages, NY-mandated workers' comp, and a cost of living that makes your vendors charge more. But higher costs don't have to mean overpaying.

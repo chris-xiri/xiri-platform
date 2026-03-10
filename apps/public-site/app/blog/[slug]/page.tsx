@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { JsonLd } from '@/components/JsonLd';
 import { getPost, getAllSlugs } from '@/data/blog-posts';
 import { AuthorityBreadcrumb } from '@/components/AuthorityBreadcrumb';
+import { LeadMagnet } from '@/components/LeadMagnet';
 import { SITE } from '@/lib/constants';
 
 type Props = {
@@ -235,6 +236,18 @@ export default async function BlogPost({ params }: Props) {
                     <div className="prose-container">
                         {renderContent(post.content)}
                     </div>
+
+                    {/* Lead Magnet — renders for posts with a leadMagnet config */}
+                    {post.leadMagnet && (
+                        <LeadMagnet
+                            magnetName={post.leadMagnet.magnetName}
+                            title={post.leadMagnet.title}
+                            description={post.leadMagnet.description}
+                            ctaText={post.leadMagnet.ctaText}
+                            variant={post.leadMagnet.variant}
+                            downloadUrl={post.leadMagnet.downloadUrl}
+                        />
+                    )}
 
                     <div className="mt-12 pt-8 border-t border-slate-200">
                         <Link href="/blog" className="text-sm text-sky-600 font-medium hover:underline">

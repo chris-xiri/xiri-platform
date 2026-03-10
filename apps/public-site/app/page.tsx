@@ -6,6 +6,7 @@ import { TrustBar } from '@/components/TrustBar';
 import { IndustriesSection } from '@/components/IndustriesSection';
 import { Testimonials } from '@/components/Testimonials';
 import { HomepageFAQ } from '@/components/HomepageFAQ';
+import { MidPageCTA } from '@/components/MidPageCTA';
 
 export default function Home() {
   return (
@@ -21,13 +22,29 @@ export default function Home() {
 
       <ValuePropsSection />
 
+      {/* ── Mid-Page CTA #1: After Value Props ── */}
+      <MidPageCTA
+        headline="See if we cover your area"
+        subtext="Enter your zip code — we'll tell you if we can service your building and build a custom scope in 48 hours."
+        ctaText="Get Your Building Scope"
+        variant="gradient"
+        trackingId="after_value_props"
+      />
+
       <Testimonials />
+
+      {/* ── Mid-Page CTA #2: After Testimonials ── */}
+      <MidPageCTA
+        headline="Join the facilities that trust XIRI"
+        subtext="One partner replaces your cleaning company, handyman, and supply orders. No contracts. Cancel anytime."
+        ctaText="Get Started — Free Audit"
+        variant="dark"
+        trackingId="after_testimonials"
+      />
 
       <IndustriesSection />
 
-      <HomepageFAQ />
-
-      {/* LEAD FORM SECTION (Anchor: #audit) */}
+      {/* LEAD FORM SECTION (Anchor: #audit) — Moved ABOVE FAQ */}
       <section id="audit" className="py-24 bg-sky-900 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -82,7 +99,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <HomepageFAQ />
     </div>
   );
 }
-

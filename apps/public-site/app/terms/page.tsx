@@ -14,7 +14,7 @@ export default function TermsOfServicePage() {
         <div className="min-h-screen bg-white">
             <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <h1 className="text-3xl font-bold font-heading text-gray-900 mb-2">Terms of Service</h1>
-                <p className="text-sm text-gray-500 mb-10">Last updated: February 20, 2026</p>
+                <p className="text-sm text-gray-500 mb-10">Last updated: March 10, 2026</p>
 
                 <div className="prose prose-gray max-w-none space-y-8 text-gray-700 text-[15px] leading-relaxed">
                     <section>
@@ -123,7 +123,22 @@ export default function TermsOfServicePage() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900">10. Indemnification</h2>
+                        <h2 className="text-xl font-bold text-gray-900">10. Analytics & Behavioral Tracking</h2>
+                        <p>
+                            We improve our products and services by using Google Analytics and Microsoft Clarity to
+                            understand how you use our website. Microsoft Clarity captures behavioral metrics,
+                            heatmaps, and session replay data using first and third-party cookies and other tracking
+                            technologies. By using our Site, you agree that we and Microsoft can collect and use
+                            this data. Our{' '}
+                            <a href="/privacy" className="text-sky-600 hover:underline">Privacy Policy</a>{' '}
+                            has more details. For information about how Microsoft collects and uses your data, visit
+                            the{' '}
+                            <a href="https://www.microsoft.com/privacy/privacystatement" target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline">Microsoft Privacy Statement</a>.
+                        </p>
+                    </section>
+
+                    <section>
+                        <h2 className="text-xl font-bold text-gray-900">11. Indemnification</h2>
                         <p>
                             You agree to indemnify, defend, and hold harmless XIRI Facility Solutions and its
                             officers, directors, employees, and agents from any claims, losses, damages, liabilities,
@@ -133,7 +148,7 @@ export default function TermsOfServicePage() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900">11. Governing Law</h2>
+                        <h2 className="text-xl font-bold text-gray-900">12. Governing Law</h2>
                         <p>
                             These Terms shall be governed by and construed in accordance with the laws of the State
                             of New York, without regard to its conflict of law principles. Any legal action arising
@@ -143,7 +158,7 @@ export default function TermsOfServicePage() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900">12. Changes to These Terms</h2>
+                        <h2 className="text-xl font-bold text-gray-900">13. Changes to These Terms</h2>
                         <p>
                             We reserve the right to modify these Terms at any time. Changes will be effective
                             immediately upon posting to the Site. Your continued use of the Site after changes
@@ -152,7 +167,7 @@ export default function TermsOfServicePage() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-bold text-gray-900">13. Contact</h2>
+                        <h2 className="text-xl font-bold text-gray-900">14. Contact</h2>
                         <p>
                             Questions about these Terms? Contact us at:
                         </p>

@@ -50,7 +50,15 @@ export type EventName =
     | 'guide_view'
     | 'industry_card_click'
     | 'solution_page_view'
-    | 'contractor_page_view';
+    | 'contractor_page_view'
+
+    // Tools Engagement
+    | 'tool_view'
+    | 'tool_search'
+    | 'tool_filter'
+    | 'tool_result_expand'
+    | 'tool_external_click'
+    | 'tool_cta_click';
 
 export interface EventProperties {
     [key: string]: string | number | boolean | undefined;

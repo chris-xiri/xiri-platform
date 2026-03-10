@@ -5,6 +5,9 @@ import TrackingProvider from "@/components/TrackingProvider";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { GoogleAnalytics } from '@next/third-parties/google';
+import { ClarityProvider } from '@/components/ClarityProvider';
+import { StickyMobileCTA } from '@/components/StickyMobileCTA';
+import { ExitIntentPopup } from '@/components/ExitIntentPopup';
 import { SITE } from '@/lib/constants';
 
 const inter = Inter({
@@ -120,10 +123,13 @@ export default function RootLayout({
           <Navigation />
           {children}
           <Footer />
+          <ExitIntentPopup />
+          <StickyMobileCTA />
         </TrackingProvider>
         {process.env.NEXT_PUBLIC_GA_ID && (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
         )}
+        <ClarityProvider />
       </body>
     </html>
   );
