@@ -6,6 +6,9 @@ import { db } from '@/lib/firebase';
 import { trackEvent } from '@/lib/tracking';
 import { REFERRAL_PARTNERS, REFERRAL_FEE, WALKTHROUGH_BONUS, CLOSE_BONUS, RECURRING_BONUS } from '@/data/dlp-referral-partners';
 import { CheckCircle, Loader2, Send, DollarSign, Clock } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const GooglePlacesAutocomplete = dynamic(() => import('react-google-places-autocomplete'), { ssr: false });
 
 interface ReferralFormProps {
     /** Pre-selected trade slug, e.g. 'plumber-referral-partner' */
@@ -246,12 +249,34 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                                 autoFocus
                                 className={inputClass}
                             />
-                            <input
-                                type="text" value={buildingAddress} onChange={(e) => setBuildingAddress(e.target.value)}
-                                placeholder="Building address (optional — helps us find it faster)"
-                                autoComplete="street-address" name="address" id="referral-address"
-                                className={inputClass}
-                            />
+                            {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
+                                <div className="rounded-xl border border-slate-300 overflow-hidden">
+                                    <GooglePlacesAutocomplete
+                                        apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                                        autocompletionRequest={{
+                                            componentRestrictions: { country: ['us'] },
+                                        }}
+                                        selectProps={{
+                                            value: buildingAddress ? { label: buildingAddress, value: buildingAddress } : null,
+                                            onChange: (val: any) => setBuildingAddress(val?.label || ''),
+                                            placeholder: 'Building address (optional — helps us find it faster)',
+                                            isClearable: true,
+                                            styles: {
+                                                control: (base: any) => ({ ...base, minHeight: '44px', border: 'none', boxShadow: 'none', paddingLeft: '4px', fontSize: '14px' }),
+                                                placeholder: (base: any) => ({ ...base, color: '#94a3b8' }),
+                                                input: (base: any) => ({ ...base, fontSize: '14px' }),
+                                            },
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <input
+                                    type="text" value={buildingAddress} onChange={(e) => setBuildingAddress(e.target.value)}
+                                    placeholder="Building address (optional — helps us find it faster)"
+                                    autoComplete="street-address" name="address" id="referral-address"
+                                    className={inputClass}
+                                />
+                            )}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <input
                                     type="text" value={managerName} onChange={(e) => setManagerName(e.target.value)}

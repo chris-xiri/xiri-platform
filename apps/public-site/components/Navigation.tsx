@@ -16,6 +16,7 @@ export default function Navigation() {
     const router = useRouter();
     const [industriesOpen, setIndustriesOpen] = useState(false);
     const [servicesOpen, setServicesOpen] = useState(false);
+    const [partnersOpen, setPartnersOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -96,16 +97,16 @@ export default function Navigation() {
                         </Link>
 
                         {/* Navigation Links */}
-                        <div className="hidden md:flex items-center space-x-8">
+                        <div className="hidden md:flex items-center space-x-7">
                             {/* Industries Dropdown */}
                             <div
                                 className="relative group"
                                 onMouseEnter={() => setIndustriesOpen(true)}
                                 onMouseLeave={() => setIndustriesOpen(false)}
                             >
-                                <button className="text-gray-600 font-medium hover:text-sky-600 transition-colors flex items-center gap-1.5 py-2 group-hover:text-sky-600">
-                                    Facility Types
-                                    <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <button className="text-gray-600 text-[15px] font-medium hover:text-sky-600 transition-colors flex items-center gap-1 py-2 group-hover:text-sky-600">
+                                    Industries
+                                    <svg className="w-3.5 h-3.5 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </button>
@@ -151,9 +152,9 @@ export default function Navigation() {
                                 onMouseEnter={() => setServicesOpen(true)}
                                 onMouseLeave={() => setServicesOpen(false)}
                             >
-                                <button className="text-gray-600 font-medium hover:text-sky-600 transition-colors flex items-center gap-1.5 py-2 group-hover:text-sky-600">
+                                <button className="text-gray-600 text-[15px] font-medium hover:text-sky-600 transition-colors flex items-center gap-1 py-2 group-hover:text-sky-600">
                                     Services
-                                    <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-3.5 h-3.5 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </button>
@@ -183,39 +184,62 @@ export default function Navigation() {
                                                 </div>
                                             ))}
                                         </div>
-                                        <div className="bg-gray-50 px-4 py-3 border-t border-gray-100">
-                                            <Link href="/services" className="text-xs text-sky-600 font-semibold hover:text-sky-700 transition-colors">
+                                        <div className="bg-gray-50 px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+                                            <Link href="/services" className="text-xs text-sky-600 font-semibold hover:text-sky-700 transition-colors"
+                                                onClick={() => handleNavClick('/services', 'View All Services')}
+                                            >
                                                 View All Services →
+                                            </Link>
+                                            <Link href="/calculator" className="text-xs text-emerald-600 font-semibold hover:text-emerald-700 transition-colors flex items-center gap-1"
+                                                onClick={() => handleNavClick('/calculator', 'Pricing')}
+                                            >
+                                                💰 Get a Price Estimate →
                                             </Link>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-
-                            <Link
-                                href="/calculator"
-                                className="text-gray-600 font-medium hover:text-sky-600 transition-colors"
-                                onClick={() => handleNavClick('/calculator', 'Pricing')}
+                            {/* For Contractors Dropdown — signup + referrals */}
+                            <div
+                                className="relative group"
+                                onMouseEnter={() => setPartnersOpen(true)}
+                                onMouseLeave={() => setPartnersOpen(false)}
                             >
-                                Pricing
-                            </Link>
+                                <button className="text-gray-600 text-[15px] font-medium hover:text-sky-600 transition-colors flex items-center gap-1 py-2 group-hover:text-sky-600">
+                                    For Contractors
+                                    <svg className="w-3.5 h-3.5 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
 
-                            <Link
-                                href="/contractors"
-                                className="text-gray-600 font-medium hover:text-sky-600 transition-colors"
-                                onClick={() => handleNavClick('/contractors', 'Our Contractors')}
-                            >
-                                For Contractors
-                            </Link>
-
-                            <Link
-                                href="/refer"
-                                className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
-                                onClick={() => handleNavClick('/refer', 'Refer & Earn')}
-                            >
-                                Refer & Earn
-                            </Link>
+                                <div className={`absolute top-full right-0 pt-4 w-[340px] transition-all duration-200 origin-top-right ${partnersOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
+                                    <div className="bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden ring-1 ring-black/5 p-2">
+                                        <Link
+                                            href="/contractors"
+                                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-sky-50 transition-colors"
+                                            onClick={() => { setPartnersOpen(false); handleNavClick('/contractors', 'For Contractors'); }}
+                                        >
+                                            <span className="text-2xl mt-0.5">🧹</span>
+                                            <div>
+                                                <p className="font-semibold text-sm text-gray-900">For Contractors</p>
+                                                <p className="text-xs text-gray-500 mt-0.5">Join our cleaning crew network</p>
+                                            </div>
+                                        </Link>
+                                        <Link
+                                            href="/refer"
+                                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-emerald-50 transition-colors"
+                                            onClick={() => { setPartnersOpen(false); handleNavClick('/refer', 'Refer & Earn'); }}
+                                        >
+                                            <span className="text-2xl mt-0.5">💰</span>
+                                            <div>
+                                                <p className="font-semibold text-sm text-emerald-700">Refer &amp; Earn $500</p>
+                                                <p className="text-xs text-gray-500 mt-0.5">Refer a building, earn cash + recurring</p>
+                                            </div>
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {/* CTA Button + Mobile Hamburger */}
@@ -298,16 +322,21 @@ export default function Navigation() {
                                         </Link>
                                     ))}
                                 </div>
-                                <Link href="/services" className="text-xs text-sky-600 font-semibold mt-2 inline-block" onClick={() => setMobileOpen(false)}>
-                                    View All Services →
-                                </Link>
+                                <div className="flex items-center justify-between mt-2">
+                                    <Link href="/services" className="text-xs text-sky-600 font-semibold inline-block" onClick={() => setMobileOpen(false)}>
+                                        View All Services →
+                                    </Link>
+                                    <Link href="/calculator" className="text-xs text-emerald-600 font-semibold inline-block" onClick={() => setMobileOpen(false)}>
+                                        💰 Get a Price Estimate →
+                                    </Link>
+                                </div>
                             </div>
 
-                            {/* Direct Links */}
+                            {/* For Contractors */}
                             <div className="border-t border-gray-100 pt-3 space-y-3">
-                                <Link href="/calculator" className="block text-sm font-medium text-gray-700 hover:text-sky-600" onClick={() => setMobileOpen(false)}>Pricing</Link>
-                                <Link href="/contractors" className="block text-sm font-medium text-gray-700 hover:text-sky-600" onClick={() => setMobileOpen(false)}>For Contractors</Link>
-                                <Link href="/refer" className="block text-sm font-semibold text-emerald-600 hover:text-emerald-700" onClick={() => setMobileOpen(false)}>Refer & Earn $500</Link>
+                                <p className="text-xs font-bold text-sky-500 uppercase tracking-wider">For Contractors</p>
+                                <Link href="/contractors" className="block text-sm font-medium text-gray-700 hover:text-sky-600" onClick={() => setMobileOpen(false)}>🧹 Join Our Cleaning Network</Link>
+                                <Link href="/refer" className="block text-sm font-semibold text-emerald-600 hover:text-emerald-700" onClick={() => setMobileOpen(false)}>💰 Refer & Earn $500</Link>
                             </div>
 
                             {/* Mobile CTA */}
