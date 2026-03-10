@@ -130,4 +130,36 @@ export const COMPARISON_PAGES: Record<string, ComparisonPage> = {
             { question: 'My facility just had water damage. Who should I call?', answer: 'Call a restoration company (like SERVPRO) immediately for water extraction and remediation. Once the space is restored, contact XIRI to set up ongoing facility management to prevent recurring issues and maintain the space properly.' },
         ],
     },
+
+    // ── CONCEPT PAGES ──
+    'general-contractor-facility-maintenance': {
+        title: 'The General Contractor Model for Facility Maintenance',
+        h1: 'Why Your Building Needs a GC for Facility Maintenance — Not Just a Cleaning Company',
+        metaDescription: 'You hire a general contractor for construction. Why not for ongoing facility maintenance? See how the GC model — vetted subs, insurance, single point of contact — works for cleaning, HVAC, and maintenance.',
+        type: 'alternative',
+        intro: 'When you build or renovate a building, you don\'t hire the electrician, plumber, painter, and framer separately. You hire a General Contractor who vets the subs, carries the insurance, manages the schedule, and takes responsibility for the outcome. So why do building owners still manage 5 separate vendors for ongoing facility maintenance? XIRI applies the GC model to facility operations — and the results speak for themselves.',
+        comparisonTable: [
+            { feature: 'Number of Vendor Relationships', xiri: '1 — XIRI manages everything', competitor: '4-6 separate vendors (cleaning, HVAC, landscaping, handyman, snow, pest)' },
+            { feature: 'Insurance Verification', xiri: 'XIRI verifies COIs annually for every subcontractor', competitor: 'You verify each vendor individually (and hope they don\'t lapse)' },
+            { feature: 'Subcontractor Vetting', xiri: 'Background checks, reference checks, 90-day probation, Standard Track certification', competitor: 'You trust Google reviews and a handshake' },
+            { feature: 'Quality Control', xiri: 'Night Manager physically verifies work every shift', competitor: 'You walk the building yourself (or don\'t, and things slip)' },
+            { feature: 'Invoicing', xiri: 'One consolidated monthly invoice for all services', competitor: '4-6 separate invoices, payment schedules, and AP headaches' },
+            { feature: 'Accountability', xiri: 'XIRI is the single point of accountability — no finger-pointing', competitor: '"That\'s not our scope" — every vendor points to another' },
+            { feature: 'Compliance Documentation', xiri: 'OSHA, HIPAA, JCAHO documentation maintained and audit-ready', competitor: 'You compile documentation from each vendor (if they have any)' },
+            { feature: 'Backup Coverage', xiri: 'XIRI provides backup subcontractors if primary is unavailable', competitor: 'Your cleaner calls out sick — you scramble' },
+        ],
+        sections: [
+            { title: 'The GC Analogy Everyone Understands', content: 'In construction, nobody questions why you hire a General Contractor. The GC doesn\'t swing every hammer — they vet the subcontractors, verify insurance, manage the schedule, inspect the work, and take responsibility if something goes wrong. You pay one company, get one point of contact, and hold one entity accountable. XIRI does exactly the same thing — but for the ongoing life of your building instead of the construction phase.' },
+            { title: 'Why Multi-Vendor Management Fails', content: 'Most building owners manage facility maintenance the hard way: one company for cleaning, another for HVAC, a landscaper, a handyman, maybe a separate pest control vendor. Each has their own schedule, insurance, billing, and quality standards. When something falls through the cracks — and it always does — each vendor points to another. There\'s no single point of accountability. It\'s the same reason people stopped acting as their own GC on construction projects decades ago.' },
+            { title: 'What a Facility GC Actually Does', content: 'XIRI recruits, vets, insures, trains, schedules, audits, and manages every subcontractor that touches your building. Janitorial crews are background-checked and Standard Track certified. HVAC techs carry EPA 608. Landscapers have commercial insurance. Every night, our Night Manager physically inspects the work. You get one contract, one invoice, one call when something needs attention — and one company that\'s accountable for all of it.' },
+            { title: 'NNN Lease Owners: This Is Especially For You', content: 'If you own a single-tenant NNN lease property, you already understand the GC model from when the building was constructed or renovated. But once the tenant moves in, facility maintenance becomes fragmented across multiple vendors — and you lose the visibility and control you had during construction. XIRI brings it back: one managed partner handling all ongoing maintenance, with documented compliance and transparent pricing.' },
+        ],
+        verdict: 'You wouldn\'t build a building without a GC. You shouldn\'t maintain one without a facility management partner either. XIRI is the General Contractor for the ongoing life of your building — vetted subcontractors, verified insurance, nightly quality inspections, and one point of accountability for everything.',
+        faqs: [
+            { question: 'Is XIRI actually a General Contractor?', answer: 'XIRI applies the General Contractor operating model to facility maintenance services. Like a GC, we vet subcontractors, verify insurance, manage scheduling, inspect work quality, and serve as a single point of accountability. We don\'t hold a GC license — we manage ongoing facility operations, not construction projects.' },
+            { question: 'Why is the GC model better for facility maintenance?', answer: 'The same reasons it\'s better for construction: single point of accountability, verified insurance across all trades, quality control by an independent party, and simplified billing. Most building owners manage 4-6 separate maintenance vendors — XIRI consolidates all of them under one managed contract.' },
+            { question: 'How is this different from a property management company?', answer: 'Property management companies handle tenant relations, leasing, and rent collection. XIRI handles the physical operations: cleaning, HVAC maintenance, landscaping, handyman services, and compliance documentation. We complement property managers — we don\'t replace them.' },
+            { question: 'What types of buildings benefit most from this model?', answer: 'Medical offices, dental practices, surgery centers, auto dealerships, and any facility with compliance requirements or multiple maintenance needs. Single-tenant NNN lease properties benefit especially, as owners get construction-grade accountability for ongoing operations.' },
+        ],
+    },
 };
