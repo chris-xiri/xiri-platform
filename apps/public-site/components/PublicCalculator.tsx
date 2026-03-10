@@ -219,7 +219,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
             <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
                 {/* State + Cost Tier */}
                 <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div className="flex-1 min-w-[200px]">
+                    <div className="flex-1 min-w-[160px]">
                         <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Your State</label>
                         <select
                             value={stateCode}
@@ -239,7 +239,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                 </div>
 
                 {/* Facility Type + Sqft */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Facility Type</label>
                         <select
@@ -422,7 +422,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                                 {floorMode === 'percent' ? 'Switch to sqft' : 'Switch to %'}
                             </button>
                         </div>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             {FLOOR_TYPES.map(ft => {
                                 const entry = floorBreakdown.find(f => f.type === ft.key);
                                 const isActive = !!entry;
@@ -474,7 +474,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                     </div>
 
                     {/* Fixtures + Shift */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-3">
                             <h3 className="font-bold text-slate-900 flex items-center gap-2">
                                 <span className="text-lg"><ShowerHead className="w-5 h-5 inline" /></span> Fixtures
@@ -551,7 +551,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                         <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold">±20% accuracy</span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                         <div className="bg-white/10 rounded-xl p-4 text-center backdrop-blur-sm">
                             <p className={`text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
                                 {isContractor ? 'Per Visit' : 'Per Visit'}

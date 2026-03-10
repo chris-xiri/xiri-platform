@@ -220,7 +220,8 @@ export default function QuoteReviewPage() {
                     <div className="px-6 py-4 border-b bg-gray-50">
                         <h3 className="font-semibold text-gray-900">Proposed Services</h3>
                     </div>
-                    <table className="w-full">
+                    <div className="overflow-x-auto">
+                    <table className="w-full min-w-[480px]">
                         <thead>
                             <tr className="text-xs text-gray-500 uppercase border-b">
                                 <th className="text-left px-6 py-3 font-medium">Location</th>
@@ -240,6 +241,7 @@ export default function QuoteReviewPage() {
                             ))}
                         </tbody>
                     </table>
+                    </div>
                     <div className="px-6 py-4 bg-sky-50 border-t flex justify-between items-center">
                         <span className="font-medium text-gray-700">Total Monthly Investment</span>
                         <span className="text-2xl font-bold text-sky-700">{formatCurrency(quote.totalMonthlyRate)}<span className="text-sm font-normal text-gray-500">/month</span></span>
@@ -249,7 +251,7 @@ export default function QuoteReviewPage() {
                 {/* Terms */}
                 <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
                     <h3 className="font-semibold text-gray-900 mb-3">Agreement Terms</h3>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                         <div>
                             <p className="text-xs text-gray-400 uppercase mb-1">Duration</p>
                             <p className="font-medium">{quote.contractTenure} Months</p>
@@ -269,7 +271,7 @@ export default function QuoteReviewPage() {
                 {!showChangesForm ? (
                     <div className="bg-white rounded-xl shadow-sm border p-6 mb-8">
                         <h3 className="font-semibold text-gray-900 mb-4 text-center">How would you like to proceed?</h3>
-                        <div className="flex gap-4">
+                        <div className="flex flex-col sm:flex-row gap-4">
                             <button
                                 onClick={handleAccept}
                                 disabled={submitting}
