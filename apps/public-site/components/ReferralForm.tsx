@@ -80,37 +80,42 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
             });
 
             // Also add to main leads collection for CRM visibility
+            // Only building + manager info — referrer data stays in referral_leads
             await addDoc(collection(db, 'leads'), {
-                // Business info — this is what the CRM displays as the lead title
                 businessName: buildingName,
                 address: buildingAddress,
-                // Contact info — manager is the real prospect, referrer is just the introducer
-                name: managerName || name,
-                email: managerEmail || email,
-                phone: managerPhone || phone,
-                contactName: managerName || name,
-                contactEmail: managerEmail || email,
-                contactPhone: managerPhone || phone,
-                // Lead metadata
+                name: managerName,
+                email: managerEmail,
+                phone: managerPhone,
+                contactName: managerName,
+                contactEmail: managerEmail,
+                contactPhone: managerPhone,
                 type: 'referral',
                 source: 'referral',
-                // Attribution for CRM tracking
                 attribution: {
                     source: 'referral',
                     medium: 'partner',
                     campaign: trade || 'general',
                     landingPage: `/refer/${source || 'hub'}`,
                 },
-                // Referrer info (so you know who referred this lead)
-                referrer: {
-                    name,
-                    email,
-                    phone,
-                    trade: trade || 'other',
-                },
-                notes: notes ? `Referral note: ${notes}` : `Referred by ${name} (${email})`,
+                notes: notes || '',
                 status: 'new',
                 createdAt: serverTimestamp(),
+            });
+
+            // Also add the referrer to the contractor pipeline as a potential subcontractor
+            await addDoc(collection(db, 'vendors'), {
+                businessName: name,
+                contactName: name,
+                email,
+                phone,
+                trade: trade?.replace(/-referral-partner$/, '').replace(/-/g, ' ') || 'general',
+                capabilities: trade ? [trade.replace(/-referral-partner$/, '').replace(/-/g, ' ')] : [],
+                status: 'qualified',
+                source: 'referral_partner',
+                notes: `Referral partner who referred ${buildingName}`,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
             });
 
             trackEvent('referral_form_success', {
