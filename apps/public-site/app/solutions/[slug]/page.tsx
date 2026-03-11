@@ -233,8 +233,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // Cross-product: DLP × Location
     const cross = parseCrossProductSlug(slug);
     if (cross) {
+        const townName = cross.location.name.split(',')[0].trim();
         const title = `${cross.dlp.title} in ${cross.location.name} | XIRI Facility Solutions`;
-        const description = `${cross.dlp.metaDescription} Serving ${cross.location.name} and surrounding areas.`.slice(0, 155);
+        const localHook = (cross.location as any).localInsight
+            ? `${(cross.location as any).localInsight.slice(0, 50)} `
+            : '';
+        const description = `${localHook}${cross.dlp.title} in ${townName}, ${cross.location.region || 'NY'}. Compliance-grade protocols, $1M insured, nightly verified. Free site audit →`.slice(0, 155);
         return {
             title,
             description,

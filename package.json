@@ -36,6 +36,7 @@
         "@radix-ui/react-label": "^2.1.8",
         "firebase": "^12.9.0",
         "firebase-admin": "^13.6.1",
+        "googleapis": "^171.4.0",
         "node-fetch": "^2.7.0"
     },
     "overrides": {

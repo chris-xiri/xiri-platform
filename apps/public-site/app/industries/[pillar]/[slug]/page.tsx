@@ -118,8 +118,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (parsed.type === 'INDUSTRY_LOCATION') {
         const { industry, location, pillar } = parsed.data!;
         const townName = location.name.split(',')[0].trim();
-        const title = `${(industry as any).name} Cleaning in ${location.name} | XIRI`;
-        const description = `${(industry as any).heroSubtitle?.slice(0, 80) || ''} Serving ${townName} and ${location.region}. $1M insured, nightly verified.`.slice(0, 155);
+        const industryName = (industry as any).name || (industry as any).heroTitle;
+        const title = `${industryName} Cleaning in ${location.name} | XIRI`;
+        const localHook = (location as any).localInsight
+            ? `${(location as any).localInsight.slice(0, 60)} `
+            : '';
+        const description = `${localHook}${industryName} cleaning in ${townName}, ${location.region}. $1M insured, nightly verified, OSHA audit-ready. Free walkthrough →`.slice(0, 155);
         return {
             title,
             description,

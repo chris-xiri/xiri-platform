@@ -23394,10 +23394,33 @@ var resendWebhook = (0, import_https4.onRequest)({
       }
     });
     const entityCollection = entityType === "vendor" ? "vendors" : "leads";
+    const ENGAGEMENT_PRIORITY = {
+      delivered: 1,
+      opened: 2,
+      clicked: 3,
+      bounced: 0,
+      // bounced is a failure state, always record it
+      spam: 0
+    };
     const engagementUpdate = {
-      "emailEngagement.lastEvent": mapping.deliveryStatus,
       "emailEngagement.lastEventAt": /* @__PURE__ */ new Date()
     };
+    const newPriority = ENGAGEMENT_PRIORITY[mapping.deliveryStatus] ?? 0;
+    let shouldUpdateLastEvent = true;
+    try {
+      const entityDoc = await db19.collection(entityCollection).doc(entityId).get();
+      const currentEvent = entityDoc.data()?.emailEngagement?.lastEvent;
+      const currentPriority = ENGAGEMENT_PRIORITY[currentEvent] ?? -1;
+      if (newPriority > 0 && currentPriority >= newPriority) {
+        shouldUpdateLastEvent = false;
+        import_v22.logger.info(`${entityType} ${entityId}: skipping lastEvent downgrade (${currentEvent} \u2192 ${mapping.deliveryStatus})`);
+      }
+    } catch (readErr) {
+      import_v22.logger.warn(`Could not read current engagement for ${entityType} ${entityId}:`, readErr);
+    }
+    if (shouldUpdateLastEvent) {
+      engagementUpdate["emailEngagement.lastEvent"] = mapping.deliveryStatus;
+    }
     if (eventType === "email.opened") {
       engagementUpdate["emailEngagement.openCount"] = admin23.firestore.FieldValue.increment(1);
     } else if (eventType === "email.clicked") {
@@ -23412,7 +23435,7 @@ var resendWebhook = (0, import_https4.onRequest)({
     engagementUpdate["updatedAt"] = /* @__PURE__ */ new Date();
     try {
       await db19.collection(entityCollection).doc(entityId).update(engagementUpdate);
-      import_v22.logger.info(`${entityType} ${entityId}: emailEngagement updated (${mapping.deliveryStatus})`);
+      import_v22.logger.info(`${entityType} ${entityId}: emailEngagement updated (${mapping.deliveryStatus}, lastEvent=${shouldUpdateLastEvent ? "updated" : "preserved"})`);
     } catch (engErr) {
       import_v22.logger.warn(`Failed to update ${entityType} engagement:`, engErr);
     }

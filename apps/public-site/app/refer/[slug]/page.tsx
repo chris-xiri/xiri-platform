@@ -46,7 +46,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const locationSuffix = location ? ` in ${location.city}` : ' in Nassau County';
     const title = `${partner.title}${locationSuffix} | ${SITE.name}`;
-    const description = partner.metaDescription;
+
+    // Location-specific meta description for Google uniqueness
+    const description = location
+        ? `${partner.title.replace('Referral Partner', '')}in ${location.city}, ${location.state}: earn $${REFERRAL_FEE}+ referring commercial buildings for cleaning. ${location.city} tradespeople earn $${WALKTHROUGH_BONUS} per walkthrough + $${RECURRING_BONUS}/mo recurring. Join XIRI's referral network.`.slice(0, 155)
+        : partner.metaDescription;
 
     return {
         title,

@@ -177,7 +177,7 @@ export default async function BlogPost({ params }: Props) {
                     },
                     "author": {
                         "@type": "Person",
-                        "name": "Chris Leunen",
+                        "name": "Chris Leung",
                         "jobTitle": "Founder & CEO",
                         "worksFor": { "@type": "Organization", "@id": `${SITE.url}/#organization` },
                         "url": `${SITE.url}/about`
@@ -222,7 +222,7 @@ export default async function BlogPost({ params }: Props) {
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold text-xs">CL</div>
                                 <div>
-                                    <span className="font-medium text-slate-700">Chris Leunen</span>
+                                    <span className="font-medium text-slate-700">Chris Leung</span>
                                     <span className="text-slate-400"> · Founder & CEO</span>
                                 </div>
                             </div>

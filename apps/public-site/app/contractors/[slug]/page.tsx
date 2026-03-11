@@ -46,8 +46,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
     const cross = parseTradeLocationSlug(slug);
     if (cross) {
+        const townName = cross.location.name.split(',')[0].trim();
         const title = `${cross.trade.title} in ${cross.location.name} | XIRI Facility Solutions`;
-        const description = `${cross.trade.metaDescription} Now hiring in ${cross.location.name}.`.slice(0, 155);
+        const description = `${cross.trade.title} opportunities in ${townName}, NY. Join XIRI's vetted contractor network — $1M insured, steady commercial work in ${cross.location.region || townName}. Background-checked, W-9 crews only.`.slice(0, 155);
         return { title, description, alternates: { canonical: `${SITE.url}/contractors/${slug}` }, openGraph: { title, description, url: `${SITE.url}/contractors/${slug}`, siteName: SITE.name, type: 'website' } };
     }
     const page = TRADES[slug] || GEO_PAGES[slug] || KEYWORD_PAGES[slug] || GUIDE_PAGES[slug];

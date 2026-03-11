@@ -57,7 +57,7 @@ export default async function ComparisonPage({ params }: Props) {
                 dateModified: new Date().toISOString().split('T')[0],
                 author: {
                     '@type': 'Person',
-                    name: 'Chris Leunen',
+                    name: 'Chris Leung',
                     jobTitle: 'Founder & CEO',
                     worksFor: { '@type': 'Organization', '@id': `${SITE.url}/#organization` },
                     url: `${SITE.url}/about`,

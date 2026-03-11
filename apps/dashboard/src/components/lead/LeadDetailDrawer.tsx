@@ -54,12 +54,18 @@ const FACILITY_TYPE_LABELS: Record<string, string> = {
     'medical_private': 'Private Practice',
     'medical_surgery': 'Surgery Center',
     'medical_dialysis': 'Dialysis Center',
+    'medical_dental': 'Dental',
+    'medical_veterinary': 'Veterinary',
     'auto_dealer_showroom': 'Auto Dealership',
     'auto_service_center': 'Auto Service Center',
     'edu_daycare': 'Daycare',
     'edu_private_school': 'Private School',
+    'lab_cleanroom': 'Cleanroom (ISO)',
+    'lab_bsl': 'BSL-1/BSL-2 Lab',
+    'manufacturing_light': 'Manufacturing (Light)',
     'office_general': 'General Office',
     'fitness_gym': 'Fitness Gym',
+    'retail_storefront': 'Retail Storefront',
     'other': 'Other'
 };
 
@@ -499,6 +505,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                             className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
                                             aria-label="Facility type"
                                         >
+                                            <option value="">— Facility Type —</option>
                                             {Object.entries(FACILITY_TYPE_LABELS).map(([key, label]) => (
                                                 <option key={key} value={key}>{label}</option>
                                             ))}

@@ -185,7 +185,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [notes, setNotes] = useState("");
-    const [attributionSource, setAttributionSource] = useState("Referral");
+    const [attributionSource, setAttributionSource] = useState("__none");
     const [showContact, setShowContact] = useState(false);
 
     const handleAddressSelect = (selected: any) => {
@@ -287,7 +287,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                 notes: notes || null,
                 status: 'new',
                 attribution: {
-                    source: attributionSource,
+                    source: attributionSource === '__none' ? null : attributionSource,
                     medium: 'manual',
                     campaign: 'manual-entry',
                     landingPage: '/sales/crm',
@@ -312,7 +312,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
             setEmail("");
             setPhone("");
             setNotes("");
-            setAttributionSource("Referral");
+            setAttributionSource("__none");
 
             onOpenChange(false);
         } catch (error) {
@@ -522,9 +522,10 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                         <Label htmlFor="attribution">Lead Source</Label>
                         <Select value={attributionSource} onValueChange={setAttributionSource}>
                             <SelectTrigger>
-                                <SelectValue />
+                                <SelectValue placeholder="— Select —" />
                             </SelectTrigger>
                             <SelectContent>
+                                <SelectItem value="__none">— Select —</SelectItem>
                                 {ATTRIBUTION_SOURCES.map((source) => (
                                     <SelectItem key={source.value} value={source.value}>
                                         {source.label}

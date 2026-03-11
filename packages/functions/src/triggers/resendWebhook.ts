@@ -161,10 +161,42 @@ export const resendWebhook = onRequest({
 
         // ─── Update entity doc engagement cache ───
         const entityCollection = entityType === 'vendor' ? 'vendors' : 'leads';
+
+        // Priority map: higher number = higher engagement level. Never downgrade.
+        const ENGAGEMENT_PRIORITY: Record<string, number> = {
+            delivered: 1,
+            opened: 2,
+            clicked: 3,
+            bounced: 0,   // bounced is a failure state, always record it
+            spam: 0,
+        };
+
         const engagementUpdate: Record<string, any> = {
-            'emailEngagement.lastEvent': mapping.deliveryStatus,
             'emailEngagement.lastEventAt': new Date(),
         };
+
+        // Only update lastEvent if the new event is higher priority than current
+        const newPriority = ENGAGEMENT_PRIORITY[mapping.deliveryStatus] ?? 0;
+        let shouldUpdateLastEvent = true;
+
+        try {
+            const entityDoc = await db.collection(entityCollection).doc(entityId).get();
+            const currentEvent = entityDoc.data()?.emailEngagement?.lastEvent;
+            const currentPriority = ENGAGEMENT_PRIORITY[currentEvent] ?? -1;
+
+            if (newPriority > 0 && currentPriority >= newPriority) {
+                // Current engagement is already higher — don't downgrade
+                shouldUpdateLastEvent = false;
+                logger.info(`${entityType} ${entityId}: skipping lastEvent downgrade (${currentEvent} → ${mapping.deliveryStatus})`);
+            }
+        } catch (readErr) {
+            // If we can't read current state, still update (safe default)
+            logger.warn(`Could not read current engagement for ${entityType} ${entityId}:`, readErr);
+        }
+
+        if (shouldUpdateLastEvent) {
+            engagementUpdate['emailEngagement.lastEvent'] = mapping.deliveryStatus;
+        }
 
         if (eventType === 'email.opened') {
             engagementUpdate['emailEngagement.openCount'] = admin.firestore.FieldValue.increment(1);
@@ -184,7 +216,7 @@ export const resendWebhook = onRequest({
 
         try {
             await db.collection(entityCollection).doc(entityId).update(engagementUpdate);
-            logger.info(`${entityType} ${entityId}: emailEngagement updated (${mapping.deliveryStatus})`);
+            logger.info(`${entityType} ${entityId}: emailEngagement updated (${mapping.deliveryStatus}, lastEvent=${shouldUpdateLastEvent ? 'updated' : 'preserved'})`);
         } catch (engErr) {
             logger.warn(`Failed to update ${entityType} engagement:`, engErr);
         }
