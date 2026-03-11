@@ -79,37 +79,37 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db21, task) {
-  return db21.collection(COLLECTION).add({
+async function enqueueTask(db22, task) {
+  return db22.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db21) {
+async function fetchPendingTasks(db22) {
   const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db21.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db22.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function updateTaskStatus(db21, taskId, status, updates = {}) {
-  await db21.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db22, taskId, status, updates = {}) {
+  await db22.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db21, vendorId) {
-  const snapshot = await db21.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db21.batch();
+async function cancelVendorTasks(db22, vendorId) {
+  const snapshot = await db22.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db22.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadTasks(db21, leadId) {
-  const snapshot = await db21.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db21.batch();
+async function cancelLeadTasks(db22, leadId) {
+  const snapshot = await db22.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db22.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
@@ -11646,12 +11646,12 @@ var require_logging_utils = __commonJS({
             this.setFilters();
             this.filtersSet = true;
           }
-          let logger21 = this.cached.get(namespace);
-          if (!logger21) {
-            logger21 = this.makeLogger(namespace);
-            this.cached.set(namespace, logger21);
+          let logger22 = this.cached.get(namespace);
+          if (!logger22) {
+            logger22 = this.makeLogger(namespace);
+            this.cached.set(namespace, logger22);
           }
-          logger21(fields, ...args);
+          logger22(fields, ...args);
         } catch (e) {
           console.error(e);
         }
@@ -11788,7 +11788,7 @@ var require_logging_utils = __commonJS({
       } else if (cachedBackend === void 0) {
         cachedBackend = getNodeBackend();
       }
-      const logger21 = (() => {
+      const logger22 = (() => {
         let previousBackend = void 0;
         const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
           if (previousBackend !== cachedBackend) {
@@ -11803,8 +11803,8 @@ var require_logging_utils = __commonJS({
         });
         return newLogger;
       })();
-      loggerCache.set(namespace, logger21);
-      return logger21.func;
+      loggerCache.set(namespace, logger22);
+      return logger22.func;
     }
   }
 });
@@ -11868,14 +11868,14 @@ var require_src4 = __commonJS({
     var gaxios_1 = require_src2();
     var jsonBigint = require_json_bigint();
     var gcp_residency_1 = require_gcp_residency();
-    var logger21 = require_src3();
+    var logger22 = require_src3();
     exports2.BASE_PATH = "/computeMetadata/v1";
     exports2.HOST_ADDRESS = "http://169.254.169.254";
     exports2.SECONDARY_HOST_ADDRESS = "http://metadata.google.internal.";
     exports2.HEADER_NAME = "Metadata-Flavor";
     exports2.HEADER_VALUE = "Google";
     exports2.HEADERS = Object.freeze({ [exports2.HEADER_NAME]: exports2.HEADER_VALUE });
-    var log = logger21.log("gcp metadata");
+    var log = logger22.log("gcp metadata");
     exports2.METADATA_SERVER_DETECTION = Object.freeze({
       "assume-present": "don't try to ping the metadata server, but assume it's present",
       none: "don't try to ping the metadata server, but don't try to use it either",
@@ -18882,6 +18882,7 @@ __export(index_exports, {
   onLeadUpdated: () => onLeadUpdated,
   onOnboardingComplete: () => onOnboardingComplete,
   onQuoteAccepted: () => onQuoteAccepted,
+  onReferralLeadWritten: () => onReferralLeadWritten,
   onStaffUpdated: () => onStaffUpdated,
   onVendorAdvancedPastOutreach: () => onVendorAdvancedPastOutreach,
   onVendorApproved: () => onVendorApproved,
@@ -20736,8 +20737,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db21 = (0, import_firestore5.getFirestore)();
-    const docRef = db21.collection(collection).doc(documentId);
+    const db22 = (0, import_firestore5.getFirestore)();
+    const docRef = db22.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -20966,7 +20967,7 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
       logger6.error("Error sending vendor confirmation:", err);
     }
   }
-  const db21 = admin9.firestore();
+  const db22 = admin9.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -20993,9 +20994,9 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db21.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db22.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger6.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db21.collection("vendor_activities").add({
+  await db22.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -21871,10 +21872,10 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
   logger10.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
-  const db21 = admin15.firestore();
+  const db22 = admin15.firestore();
   let vendorData;
   try {
-    const vendorSnap = await db21.collection("vendors").doc(newVendorId).get();
+    const vendorSnap = await db22.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
       logger10.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
@@ -21887,7 +21888,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
   const salesTaxId = vendorData.compliance?.salesTaxId?.trim();
   if (!salesTaxId) {
     logger10.info(`[ST-120.1] Vendor ${newVendorId} has no salesTaxId \u2014 skipping certificate.`);
-    await db21.collection("vendor_activities").add({
+    await db22.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_SKIPPED",
       description: `ST-120.1 not generated for WO ${workOrderId} \u2014 vendor has no Sales Tax ID on file.`,
@@ -21899,7 +21900,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
   let leadData = {};
   if (after.leadId) {
     try {
-      const leadSnap = await db21.collection("leads").doc(after.leadId).get();
+      const leadSnap = await db22.collection("leads").doc(after.leadId).get();
       if (leadSnap.exists) {
         leadData = leadSnap.data();
       }
@@ -21909,7 +21910,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
   }
   let xiriData;
   try {
-    const settingsSnap = await db21.collection("settings").doc("corporate").get();
+    const settingsSnap = await db22.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
       logger10.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
@@ -21955,7 +21956,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
   const result = await (0, import_TaxCertificateService.generateST1201)(vendorCertData, xiriData, projectDataInput);
   if (!result.success || !result.pdfBytes) {
     logger10.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
-    await db21.collection("vendor_activities").add({
+    await db22.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
       description: `ST-120.1 generation failed for WO ${workOrderId}: ${result.error}`,
@@ -21989,7 +21990,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
     logger10.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err);
     return;
   }
-  await db21.collection("work_orders").doc(workOrderId).update({
+  await db22.collection("work_orders").doc(workOrderId).update({
     st1201CertificateUrl: pdfUrl,
     st1201IssueDate: result.issueDate,
     st1201ExpiryDate: result.expiryDate,
@@ -21998,7 +21999,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
   if (vendorCertData.email) {
     const vendorName = vendorCertData.businessName;
     const projectName = projectDataInput.projectName;
-    await db21.collection("mail_queue").add({
+    await db22.collection("mail_queue").add({
       to: vendorCertData.email,
       subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${projectName}`,
       templateType: "st_120_1_certificate",
@@ -22018,7 +22019,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
       createdAt: admin15.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db21.collection("vendor_activities").add({
+  await db22.collection("vendor_activities").add({
     vendorId: newVendorId,
     type: "TAX_CERTIFICATE_ISSUED",
     description: `ST-120.1 generated for project "${projectDataInput.projectName}" (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
@@ -22766,18 +22767,221 @@ function buildInternalNotificationEmail(leadId, contactName, contactEmail, busin
 </html>`;
 }
 
-// src/triggers/onAuditFailed.ts
+// src/triggers/referralPartnerNotifications.ts
 var import_firestore14 = require("firebase-functions/v2/firestore");
+var import_v2 = require("firebase-functions/v2");
+init_emailUtils();
 var admin20 = __toESM(require("firebase-admin"));
-var logger15 = __toESM(require("firebase-functions/logger"));
-if (!admin20.apps.length) {
-  admin20.initializeApp();
-}
 var db16 = admin20.firestore();
+var TIMEOUT_SECONDS2 = 120;
+var WALKTHROUGH_BONUS = 100;
+var CLOSE_BONUS = 400;
+var RECURRING_BONUS = 50;
+var PAYMENT_INFO_BASE = "https://xiri.ai/referral/payment-info";
+var onReferralLeadWritten = (0, import_firestore14.onDocumentWritten)({
+  document: "referral_leads/{referralId}",
+  secrets: ["RESEND_API_KEY"],
+  timeoutSeconds: TIMEOUT_SECONDS2
+}, async (event) => {
+  if (!event.data) return;
+  const referralId = event.params.referralId;
+  const before = event.data.before.data();
+  const after = event.data.after.data();
+  if (!after) return;
+  if (!before) {
+    await sendSubmissionConfirmation(referralId, after);
+    return;
+  }
+  const oldStatus = before.status;
+  const newStatus = after.status;
+  if (oldStatus === newStatus) return;
+  import_v2.logger.info(`[Referral] ${referralId} status: ${oldStatus} \u2192 ${newStatus}`);
+  switch (newStatus) {
+    case "walkthrough_scheduled":
+      await sendWalkthroughScheduled(referralId, after);
+      break;
+    case "walkthrough_paid":
+      await sendPaymentNotification(referralId, after, "walkthrough");
+      break;
+    case "close_paid":
+      await sendPaymentNotification(referralId, after, "close");
+      break;
+    default:
+      import_v2.logger.info(`[Referral] No email for status: ${newStatus}`);
+  }
+});
+async function sendSubmissionConfirmation(referralId, data) {
+  const { referrerName, referrerEmail, buildingName } = data;
+  if (!referrerEmail) return;
+  const firstName = referrerName?.split(" ")[0] || "there";
+  const subject = `Referral received \u2014 ${buildingName}`;
+  const html = wrapEmail(`
+        <h1 style="color: #059669; margin: 0 0 16px;">Thanks for the referral, ${firstName}!</h1>
+        <p style="color: #475569; line-height: 1.6;">
+            We've received your referral for <strong>${buildingName}</strong> and will reach out to them within <strong>24 hours</strong>.
+        </p>
+
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <p style="margin: 0 0 12px; font-weight: 600; color: #166534;">Your Payout Timeline</p>
+            ${payoutStep("1", "We contact the building", "Within 24 hours", false)}
+            ${payoutStep("2", "You join us for the walkthrough", `$${WALKTHROUGH_BONUS} paid to you`, false)}
+            ${payoutStep("3", "Cleaning contract goes live", `$${CLOSE_BONUS} paid to you`, false)}
+            ${payoutStep("4", "Recurring monthly payout", `$${RECURRING_BONUS}/mo for life of contract`, false)}
+        </div>
+
+        <p style="color: #475569; line-height: 1.6;">
+            We'll keep you updated by email at every step. If you have any questions, just reply to this email.
+        </p>
+
+        <p style="color: #475569;">
+            Know another building? <a href="https://xiri.ai/refer" style="color: #059669; font-weight: 600;">Refer another one \u2192</a>
+        </p>
+    `);
+  const result = await sendEmail(referrerEmail, subject, html);
+  await logActivity(referralId, "SUBMISSION_EMAIL_SENT", subject, referrerEmail, result.success);
+}
+async function sendWalkthroughScheduled(referralId, data) {
+  const { referrerName, referrerEmail, buildingName } = data;
+  if (!referrerEmail) return;
+  const firstName = referrerName?.split(" ")[0] || "there";
+  const paymentLink = `${PAYMENT_INFO_BASE}/${referralId}`;
+  const subject = `Great news \u2014 we're visiting ${buildingName}!`;
+  const html = wrapEmail(`
+        <h1 style="color: #059669; margin: 0 0 16px;">Walkthrough scheduled! \u{1F389}</h1>
+        <p style="color: #475569; line-height: 1.6;">
+            Hey ${firstName}, great news \u2014 we've scheduled a walkthrough at <strong>${buildingName}</strong>.
+            ${data.walkthroughDate ? `It's set for <strong>${data.walkthroughDate}</strong>.` : ""}
+        </p>
+
+        <p style="color: #475569; line-height: 1.6;">
+            When you join us for the walkthrough, we'll pay you <strong>$${WALKTHROUGH_BONUS}</strong>.
+        </p>
+
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <p style="margin: 0 0 12px; font-weight: 600; color: #166534;">Your Payout Timeline</p>
+            ${payoutStep("1", "We contact the building", "Done \u2713", true)}
+            ${payoutStep("2", "You join us for the walkthrough", `$${WALKTHROUGH_BONUS} paid to you`, false, true)}
+            ${payoutStep("3", "Cleaning contract goes live", `$${CLOSE_BONUS} paid to you`, false)}
+            ${payoutStep("4", "Recurring monthly payout", `$${RECURRING_BONUS}/mo for life of contract`, false)}
+        </div>
+
+        <p style="color: #475569; line-height: 1.6; font-weight: 600;">
+            Before the walkthrough, please submit your payment info so we can pay you fast:
+        </p>
+
+        <div style="text-align: center; margin: 24px 0;">
+            <a href="${paymentLink}"
+               style="display: inline-block; background: #059669; color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Submit Payment Info \u2192
+            </a>
+        </div>
+
+        <p style="color: #94a3b8; font-size: 13px;">
+            We accept Venmo, PayPal, or direct bank transfer (ACH).
+        </p>
+    `);
+  const result = await sendEmail(referrerEmail, subject, html);
+  await logActivity(referralId, "WALKTHROUGH_SCHEDULED_EMAIL_SENT", subject, referrerEmail, result.success);
+}
+async function sendPaymentNotification(referralId, data, type) {
+  const { referrerName, referrerEmail, buildingName } = data;
+  if (!referrerEmail) return;
+  const firstName = referrerName?.split(" ")[0] || "there";
+  const isWalkthrough = type === "walkthrough";
+  const amount = isWalkthrough ? WALKTHROUGH_BONUS : CLOSE_BONUS;
+  const subject = isWalkthrough ? `Your $${amount} walkthrough payment is on the way!` : `Your $${amount} payment is on the way \u2014 plus $${RECURRING_BONUS}/mo recurring!`;
+  const html = wrapEmail(`
+        <h1 style="color: #059669; margin: 0 0 16px;">
+            ${isWalkthrough ? "Walkthrough payment sent! \u{1F4B0}" : "Contract closed \u2014 payday! \u{1F389}\u{1F4B0}"}
+        </h1>
+        <p style="color: #475569; line-height: 1.6;">
+            Hey ${firstName}, we've sent <strong>$${amount}</strong> to your ${data.paymentInfo?.method || "account"} for your referral of <strong>${buildingName}</strong>.
+        </p>
+
+        ${isWalkthrough ? `
+        <p style="color: #475569; line-height: 1.6;">
+            Next up: when the cleaning contract goes live, you'll receive another <strong>$${CLOSE_BONUS}</strong> \u2014 plus <strong>$${RECURRING_BONUS}/mo</strong> recurring.
+        </p>
+        ` : `
+        <p style="color: #475569; line-height: 1.6;">
+            And now the best part \u2014 you'll receive <strong>$${RECURRING_BONUS} every month</strong> for the life of this contract. That's passive income just for making an introduction.
+        </p>
+        `}
+
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <p style="margin: 0 0 12px; font-weight: 600; color: #166534;">Your Payout Timeline</p>
+            ${payoutStep("1", "We contact the building", "Done \u2713", true)}
+            ${payoutStep("2", "Walkthrough bonus", `$${WALKTHROUGH_BONUS} ${isWalkthrough ? "PAID \u2713" : "Done \u2713"}`, true)}
+            ${payoutStep("3", "Contract close bonus", isWalkthrough ? `$${CLOSE_BONUS} \u2014 coming next` : `$${CLOSE_BONUS} PAID \u2713`, !isWalkthrough, !isWalkthrough)}
+            ${payoutStep("4", "Recurring monthly", `$${RECURRING_BONUS}/mo ${isWalkthrough ? "coming soon" : "starts now"}`, !isWalkthrough)}
+        </div>
+
+        <p style="color: #475569; line-height: 1.6;">
+            Know another building? Every referral is another income stream.
+            <a href="https://xiri.ai/refer" style="color: #059669; font-weight: 600;">Refer another one \u2192</a>
+        </p>
+    `);
+  const result = await sendEmail(referrerEmail, subject, html);
+  await logActivity(referralId, `${type.toUpperCase()}_PAYMENT_EMAIL_SENT`, subject, referrerEmail, result.success);
+}
+function wrapEmail(body) {
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 20px;">
+        <!-- Logo -->
+        <div style="margin-bottom: 24px;">
+            <img src="https://xiri.ai/logo.png" alt="XIRI" style="height: 32px;" />
+        </div>
+
+        ${body}
+
+        <!-- Footer -->
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+            <p style="margin: 0;">XIRI Facility Solutions \xB7 1225 Franklin Ave, Suite 325 \xB7 Garden City, NY 11530</p>
+            <p style="margin: 8px 0 0 0;">
+                <a href="mailto:chris@xiri.ai" style="color: #64748b; text-decoration: underline;">Contact Us</a>
+            </p>
+        </div>
+    </div>`;
+}
+function payoutStep(num, label, detail, done, current = false) {
+  const bgColor = done ? "#dcfce7" : current ? "#fef9c3" : "#f8fafc";
+  const textColor = done ? "#166534" : current ? "#854d0e" : "#475569";
+  const borderColor = done ? "#bbf7d0" : current ? "#fde68a" : "#e2e8f0";
+  return `
+    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; background: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 8px; margin-bottom: 6px;">
+        <span style="background: ${done ? "#059669" : current ? "#eab308" : "#cbd5e1"}; color: white; font-weight: 700; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">${done ? "\u2713" : num}</span>
+        <div>
+            <p style="margin: 0; font-weight: 600; color: ${textColor}; font-size: 14px;">${label}</p>
+            <p style="margin: 2px 0 0; color: ${textColor}; font-size: 13px; opacity: 0.8;">${detail}</p>
+        </div>
+    </div>`;
+}
+async function logActivity(referralId, type, subject, to, success) {
+  try {
+    await db16.collection("referral_leads").doc(referralId).collection("activities").add({
+      type: success ? type : type.replace("_SENT", "_FAILED"),
+      description: `${success ? "Email sent" : "Email failed"}: ${subject}`,
+      to,
+      subject,
+      createdAt: admin20.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (err) {
+    import_v2.logger.error(`[Referral] Failed to log activity for ${referralId}:`, err);
+  }
+}
+
+// src/triggers/onAuditFailed.ts
+var import_firestore15 = require("firebase-functions/v2/firestore");
+var admin21 = __toESM(require("firebase-admin"));
+var logger16 = __toESM(require("firebase-functions/logger"));
+if (!admin21.apps.length) {
+  admin21.initializeApp();
+}
+var db17 = admin21.firestore();
 var FAIL_THRESHOLD = 70;
 var SUSPENSION_THRESHOLD = 3;
 var INTERNAL_NOTIFY_EMAIL2 = "chris@xiri.ai";
-var onAuditFailed = (0, import_firestore14.onDocumentCreated)({
+var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
   document: "audits/{auditId}"
 }, async (event) => {
   const snap = event.data;
@@ -22790,20 +22994,20 @@ var onAuditFailed = (0, import_firestore14.onDocumentCreated)({
   const vendorId = data.vendorId;
   const locationName = data.locationName || data.location || "Unknown Location";
   const clientName = data.clientName || data.businessName || "";
-  logger15.info(`[AuditFailed] Audit ${auditId} scored ${overallScore}% (threshold: ${FAIL_THRESHOLD}%)`);
+  logger16.info(`[AuditFailed] Audit ${auditId} scored ${overallScore}% (threshold: ${FAIL_THRESHOLD}%)`);
   if (workOrderId) {
-    await db16.collection("work_orders").doc(workOrderId).update({
+    await db17.collection("work_orders").doc(workOrderId).update({
       status: "needs_remediation",
       failedAuditId: auditId,
       failedAuditScore: overallScore,
-      updatedAt: admin20.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin21.firestore.FieldValue.serverTimestamp()
     });
   }
   let remediationId = null;
   if (workOrderId) {
-    const woDoc = await db16.collection("work_orders").doc(workOrderId).get();
+    const woDoc = await db17.collection("work_orders").doc(workOrderId).get();
     const woData = woDoc.exists ? woDoc.data() : null;
-    const remRef = await db16.collection("work_orders").add({
+    const remRef = await db17.collection("work_orders").add({
       type: "remediation",
       originalWorkOrderId: workOrderId,
       auditId,
@@ -22814,7 +23018,7 @@ var onAuditFailed = (0, import_firestore14.onDocumentCreated)({
       description: `Remediation required: Audit scored ${overallScore}% at ${locationName}. Issues: ${data.failureNotes || data.notes || "See audit report."}`,
       status: "pending",
       priority: "high",
-      createdAt: admin20.firestore.FieldValue.serverTimestamp()
+      createdAt: admin21.firestore.FieldValue.serverTimestamp()
     });
     remediationId = remRef.id;
   }
@@ -22822,7 +23026,7 @@ var onAuditFailed = (0, import_firestore14.onDocumentCreated)({
   let vendorName = "Unknown Vendor";
   let vendorSuspended = false;
   if (vendorId) {
-    const vendorRef = db16.collection("vendors").doc(vendorId);
+    const vendorRef = db17.collection("vendors").doc(vendorId);
     const vendorDoc = await vendorRef.get();
     if (vendorDoc.exists) {
       const vendorData = vendorDoc.data();
@@ -22831,8 +23035,8 @@ var onAuditFailed = (0, import_firestore14.onDocumentCreated)({
       const updateData = {
         failedAuditCount: vendorFailCount,
         lastFailedAuditId: auditId,
-        lastFailedAuditDate: admin20.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin20.firestore.FieldValue.serverTimestamp()
+        lastFailedAuditDate: admin21.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin21.firestore.FieldValue.serverTimestamp()
       };
       if (vendorFailCount >= SUSPENSION_THRESHOLD) {
         updateData.status = "suspended";
@@ -22844,14 +23048,14 @@ var onAuditFailed = (0, import_firestore14.onDocumentCreated)({
   }
   let fsmEmail = INTERNAL_NOTIFY_EMAIL2;
   if (workOrderId) {
-    const woDoc = await db16.collection("work_orders").doc(workOrderId).get();
+    const woDoc = await db17.collection("work_orders").doc(workOrderId).get();
     const fsmId = woDoc.data()?.assignedFsmId;
     if (fsmId) {
-      const fsmDoc = await db16.collection("users").doc(fsmId).get();
+      const fsmDoc = await db17.collection("users").doc(fsmId).get();
       fsmEmail = fsmDoc.data()?.email || INTERNAL_NOTIFY_EMAIL2;
     }
   }
-  await db16.collection("mail_queue").add({
+  await db17.collection("mail_queue").add({
     to: fsmEmail,
     subject: `\u26A0\uFE0F Audit Failed: ${locationName} \u2014 ${overallScore}%`,
     templateType: "audit_failed",
@@ -22867,10 +23071,10 @@ var onAuditFailed = (0, import_firestore14.onDocumentCreated)({
       })
     },
     status: "pending",
-    createdAt: admin20.firestore.FieldValue.serverTimestamp()
+    createdAt: admin21.firestore.FieldValue.serverTimestamp()
   });
   if (vendorSuspended) {
-    await db16.collection("mail_queue").add({
+    await db17.collection("mail_queue").add({
       to: INTERNAL_NOTIFY_EMAIL2,
       subject: `\u{1F6AB} Vendor Suspended: ${vendorName} (${vendorFailCount} failed audits)`,
       templateType: "vendor_suspended",
@@ -22885,10 +23089,10 @@ var onAuditFailed = (0, import_firestore14.onDocumentCreated)({
                 </div>`
       },
       status: "pending",
-      createdAt: admin20.firestore.FieldValue.serverTimestamp()
+      createdAt: admin21.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db16.collection("activity_logs").add({
+  await db17.collection("activity_logs").add({
     type: "AUDIT_FAILED",
     auditId,
     workOrderId: workOrderId || null,
@@ -22898,9 +23102,9 @@ var onAuditFailed = (0, import_firestore14.onDocumentCreated)({
     vendorFailCount,
     vendorSuspended,
     description: `Audit failed at ${locationName} (${overallScore}%). Vendor: ${vendorName}. ${vendorSuspended ? "VENDOR AUTO-SUSPENDED." : ""}`,
-    createdAt: admin20.firestore.FieldValue.serverTimestamp()
+    createdAt: admin21.firestore.FieldValue.serverTimestamp()
   });
-  logger15.info(`[AuditFailed] Escalation complete: audit ${auditId}, score ${overallScore}%, vendor ${vendorName} (failures: ${vendorFailCount})${vendorSuspended ? " \u2014 SUSPENDED" : ""}`);
+  logger16.info(`[AuditFailed] Escalation complete: audit ${auditId}, score ${overallScore}%, vendor ${vendorName} (failures: ${vendorFailCount})${vendorSuspended ? " \u2014 SUSPENDED" : ""}`);
 });
 function buildAuditFailedEmail(data) {
   return `
@@ -22948,25 +23152,25 @@ function buildAuditFailedEmail(data) {
 
 // src/triggers/generateMonthlyInvoices.ts
 var import_scheduler3 = require("firebase-functions/v2/scheduler");
-var admin21 = __toESM(require("firebase-admin"));
-var logger16 = __toESM(require("firebase-functions/logger"));
-if (!admin21.apps.length) {
-  admin21.initializeApp();
+var admin22 = __toESM(require("firebase-admin"));
+var logger17 = __toESM(require("firebase-functions/logger"));
+if (!admin22.apps.length) {
+  admin22.initializeApp();
 }
-var db17 = admin21.firestore();
+var db18 = admin22.firestore();
 var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
   schedule: "0 6 1 * *",
   // 6 AM on 1st of every month
   timeZone: "America/New_York"
 }, async () => {
-  logger16.info("[MonthlyInvoices] Starting monthly invoice generation...");
+  logger17.info("[MonthlyInvoices] Starting monthly invoice generation...");
   const now = /* @__PURE__ */ new Date();
   const periodEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   const periodStart = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), 1);
   const periodLabel = periodStart.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const contractsSnap = await db17.collection("contracts").where("status", "==", "active").get();
+  const contractsSnap = await db18.collection("contracts").where("status", "==", "active").get();
   if (contractsSnap.empty) {
-    logger16.info("[MonthlyInvoices] No active contracts found. Done.");
+    logger17.info("[MonthlyInvoices] No active contracts found. Done.");
     return;
   }
   let invoicesCreated = 0;
@@ -22979,7 +23183,7 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
     const clientName = contract.clientBusinessName || contract.clientName || contract.businessName || "Client";
     const clientEmail = contract.contactEmail || contract.clientEmail || "";
     const contractLineItems = contract.lineItems || [];
-    let workOrdersQuery = db17.collection("work_orders").where("status", "==", "completed");
+    let workOrdersQuery = db18.collection("work_orders").where("status", "==", "completed");
     if (contract.leadId) {
       workOrdersQuery = workOrdersQuery.where("leadId", "==", contract.leadId);
     }
@@ -23035,7 +23239,7 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
     const totalAmount = invoiceLineItems.reduce((sum, li) => sum + li.rate, 0);
     const dueDate = new Date(now);
     dueDate.setDate(dueDate.getDate() + 30);
-    const invoiceRef = await db17.collection("invoices").add({
+    const invoiceRef = await db18.collection("invoices").add({
       contractId,
       leadId: leadId || null,
       clientName,
@@ -23052,10 +23256,10 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
       oneTimeItemCount: invoiceLineItems.filter((i) => i.billingType === "one_time").length,
       status: "draft",
       dueDate,
-      createdAt: admin21.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin21.firestore.FieldValue.serverTimestamp()
+      createdAt: admin22.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin22.firestore.FieldValue.serverTimestamp()
     });
-    await db17.collection("activity_logs").add({
+    await db18.collection("activity_logs").add({
       type: "INVOICE_AUTO_GENERATED",
       invoiceId: invoiceRef.id,
       contractId,
@@ -23065,19 +23269,19 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
       billingPeriod: periodLabel,
       workOrderCount: periodWOs.length,
       description: `Auto-generated draft invoice for ${clientName}: $${totalAmount.toLocaleString()} (${periodLabel}, ${invoiceLineItems.length} items)`,
-      createdAt: admin21.firestore.FieldValue.serverTimestamp()
+      createdAt: admin22.firestore.FieldValue.serverTimestamp()
     });
     invoicesCreated++;
-    logger16.info(`[MonthlyInvoices] Created invoice ${invoiceRef.id} for ${clientName}: $${totalAmount} (${invoiceLineItems.length} items: ${invoiceLineItems.filter((i) => i.billingType === "recurring").length} recurring, ${invoiceLineItems.filter((i) => i.billingType === "one_time").length} one-time)`);
+    logger17.info(`[MonthlyInvoices] Created invoice ${invoiceRef.id} for ${clientName}: $${totalAmount} (${invoiceLineItems.length} items: ${invoiceLineItems.filter((i) => i.billingType === "recurring").length} recurring, ${invoiceLineItems.filter((i) => i.billingType === "one_time").length} one-time)`);
   }
-  logger16.info(`[MonthlyInvoices] Complete: ${invoicesCreated} invoices created, ${invoicesSkipped} contracts skipped`);
+  logger17.info(`[MonthlyInvoices] Complete: ${invoicesCreated} invoices created, ${invoicesSkipped} contracts skipped`);
 });
 
 // src/triggers/resendWebhook.ts
 var import_https4 = require("firebase-functions/v2/https");
-var admin22 = __toESM(require("firebase-admin"));
-var import_v2 = require("firebase-functions/v2");
-var db18 = admin22.firestore();
+var admin23 = __toESM(require("firebase-admin"));
+var import_v22 = require("firebase-functions/v2");
+var db19 = admin23.firestore();
 var resendWebhook = (0, import_https4.onRequest)({
   cors: true,
   timeoutSeconds: 30,
@@ -23092,11 +23296,11 @@ var resendWebhook = (0, import_https4.onRequest)({
     const eventType = event?.type;
     const emailId = event?.data?.email_id;
     if (!eventType || !emailId) {
-      import_v2.logger.warn("Resend webhook: missing type or email_id", { body: JSON.stringify(event).substring(0, 500) });
+      import_v22.logger.warn("Resend webhook: missing type or email_id", { body: JSON.stringify(event).substring(0, 500) });
       res.status(400).json({ error: "Missing type or email_id" });
       return;
     }
-    import_v2.logger.info(`Resend webhook: ${eventType} for email ${emailId}`);
+    import_v22.logger.info(`Resend webhook: ${eventType} for email ${emailId}`);
     const statusMap = {
       "email.delivered": {
         deliveryStatus: "delivered",
@@ -23126,7 +23330,7 @@ var resendWebhook = (0, import_https4.onRequest)({
     };
     const mapping = statusMap[eventType];
     if (!mapping) {
-      import_v2.logger.info(`Resend webhook: unhandled event type ${eventType}`);
+      import_v22.logger.info(`Resend webhook: unhandled event type ${eventType}`);
       res.status(200).json({ ok: true, skipped: true });
       return;
     }
@@ -23152,32 +23356,32 @@ var resendWebhook = (0, import_https4.onRequest)({
         entityType = "lead";
       }
       if (entityId) {
-        import_v2.logger.info(`Resend webhook: resolved ${entityType}Id=${entityId} from tag`);
+        import_v22.logger.info(`Resend webhook: resolved ${entityType}Id=${entityId} from tag`);
       }
     }
     if (!entityId) {
-      const vendorSnap = await db18.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
+      const vendorSnap = await db19.collection("vendor_activities").where("metadata.resendId", "==", emailId).limit(1).get();
       if (!vendorSnap.empty) {
         entityId = vendorSnap.docs[0].data().vendorId;
         entityType = "vendor";
-        import_v2.logger.info(`Resend webhook: resolved vendorId=${entityId} from vendor_activities lookup`);
+        import_v22.logger.info(`Resend webhook: resolved vendorId=${entityId} from vendor_activities lookup`);
       } else {
-        const leadSnap = await db18.collection("lead_activities").where("metadata.resendId", "==", emailId).limit(1).get();
+        const leadSnap = await db19.collection("lead_activities").where("metadata.resendId", "==", emailId).limit(1).get();
         if (!leadSnap.empty) {
           entityId = leadSnap.docs[0].data().leadId;
           entityType = "lead";
-          import_v2.logger.info(`Resend webhook: resolved leadId=${entityId} from lead_activities lookup`);
+          import_v22.logger.info(`Resend webhook: resolved leadId=${entityId} from lead_activities lookup`);
         }
       }
     }
     if (!entityId || !entityType) {
-      import_v2.logger.warn(`Resend webhook: could not resolve entity for emailId ${emailId}`);
+      import_v22.logger.warn(`Resend webhook: could not resolve entity for emailId ${emailId}`);
       res.status(200).json({ ok: true, notFound: true });
       return;
     }
     const activitiesCollection = entityType === "vendor" ? "vendor_activities" : "lead_activities";
     const idField = entityType === "vendor" ? "vendorId" : "leadId";
-    await db18.collection(activitiesCollection).add({
+    await db19.collection(activitiesCollection).add({
       [idField]: entityId,
       type: mapping.activityType,
       description: mapping.description,
@@ -23195,9 +23399,9 @@ var resendWebhook = (0, import_https4.onRequest)({
       "emailEngagement.lastEventAt": /* @__PURE__ */ new Date()
     };
     if (eventType === "email.opened") {
-      engagementUpdate["emailEngagement.openCount"] = admin22.firestore.FieldValue.increment(1);
+      engagementUpdate["emailEngagement.openCount"] = admin23.firestore.FieldValue.increment(1);
     } else if (eventType === "email.clicked") {
-      engagementUpdate["emailEngagement.clickCount"] = admin22.firestore.FieldValue.increment(1);
+      engagementUpdate["emailEngagement.clickCount"] = admin23.firestore.FieldValue.increment(1);
     }
     if (eventType === "email.bounced") {
       engagementUpdate["outreachStatus"] = "FAILED";
@@ -23207,10 +23411,10 @@ var resendWebhook = (0, import_https4.onRequest)({
     }
     engagementUpdate["updatedAt"] = /* @__PURE__ */ new Date();
     try {
-      await db18.collection(entityCollection).doc(entityId).update(engagementUpdate);
-      import_v2.logger.info(`${entityType} ${entityId}: emailEngagement updated (${mapping.deliveryStatus})`);
+      await db19.collection(entityCollection).doc(entityId).update(engagementUpdate);
+      import_v22.logger.info(`${entityType} ${entityId}: emailEngagement updated (${mapping.deliveryStatus})`);
     } catch (engErr) {
-      import_v2.logger.warn(`Failed to update ${entityType} engagement:`, engErr);
+      import_v22.logger.warn(`Failed to update ${entityType} engagement:`, engErr);
     }
     try {
       let templateId = null;
@@ -23226,35 +23430,35 @@ var resendWebhook = (0, import_https4.onRequest)({
         templateId = getTag("templateId");
       }
       if (!templateId) {
-        const sentActivity = await db18.collection(activitiesCollection).where("metadata.resendId", "==", emailId).limit(1).get();
+        const sentActivity = await db19.collection(activitiesCollection).where("metadata.resendId", "==", emailId).limit(1).get();
         if (!sentActivity.empty) {
           templateId = sentActivity.docs[0].data().metadata?.templateId || null;
         }
       }
       if (templateId) {
         const statsField = mapping.deliveryStatus;
-        await db18.collection("templates").doc(templateId).update({
-          [`stats.${statsField}`]: admin22.firestore.FieldValue.increment(1),
+        await db19.collection("templates").doc(templateId).update({
+          [`stats.${statsField}`]: admin23.firestore.FieldValue.increment(1),
           "stats.lastUpdated": /* @__PURE__ */ new Date()
         });
-        import_v2.logger.info(`Template ${templateId}: stats.${statsField} incremented`);
+        import_v22.logger.info(`Template ${templateId}: stats.${statsField} incremented`);
       }
     } catch (statsErr) {
-      import_v2.logger.warn("Template stats update failed:", statsErr);
+      import_v22.logger.warn("Template stats update failed:", statsErr);
     }
-    import_v2.logger.info(`Resend webhook: processed ${eventType} for ${entityType} ${entityId}`);
+    import_v22.logger.info(`Resend webhook: processed ${eventType} for ${entityType} ${entityId}`);
     res.status(200).json({ ok: true, processed: eventType });
   } catch (error11) {
-    import_v2.logger.error("Resend webhook error:", error11);
+    import_v22.logger.error("Resend webhook error:", error11);
     res.status(500).json({ error: "Internal error" });
   }
 });
 
 // src/triggers/onLeadUpdated.ts
-var import_firestore15 = require("firebase-functions/v2/firestore");
-var import_v22 = require("firebase-functions/v2");
+var import_firestore16 = require("firebase-functions/v2/firestore");
+var import_v23 = require("firebase-functions/v2");
 var changed = (before, after, field) => after[field] && before[field] !== after[field];
-var onLeadUpdated = (0, import_firestore15.onDocumentUpdated)("leads/{leadId}", async (event) => {
+var onLeadUpdated = (0, import_firestore16.onDocumentUpdated)("leads/{leadId}", async (event) => {
   const before = event.data?.before?.data();
   const after = event.data?.after?.data();
   if (!before || !after) return;
@@ -23263,7 +23467,7 @@ var onLeadUpdated = (0, import_firestore15.onDocumentUpdated)("leads/{leadId}", 
   const emailChanged = changed(before, after, "email");
   const contactChanged = changed(before, after, "contactName");
   if (!nameChanged && !emailChanged && !contactChanged) return;
-  import_v22.logger.info(`[Cascade:Lead] ${leadId} \u2014 name:${nameChanged} email:${emailChanged} contact:${contactChanged}`);
+  import_v23.logger.info(`[Cascade:Lead] ${leadId} \u2014 name:${nameChanged} email:${emailChanged} contact:${contactChanged}`);
   const batch = db.batch();
   let count = 0;
   if (nameChanged) {
@@ -23309,10 +23513,10 @@ var onLeadUpdated = (0, import_firestore15.onDocumentUpdated)("leads/{leadId}", 
   }
   if (count > 0) {
     await batch.commit();
-    import_v22.logger.info(`[Cascade:Lead] Updated ${count} docs for "${after.businessName}"`);
+    import_v23.logger.info(`[Cascade:Lead] Updated ${count} docs for "${after.businessName}"`);
   }
 });
-var onVendorUpdated = (0, import_firestore15.onDocumentUpdated)("vendors/{vendorId}", async (event) => {
+var onVendorUpdated = (0, import_firestore16.onDocumentUpdated)("vendors/{vendorId}", async (event) => {
   const before = event.data?.before?.data();
   const after = event.data?.after?.data();
   if (!before || !after) return;
@@ -23320,7 +23524,7 @@ var onVendorUpdated = (0, import_firestore15.onDocumentUpdated)("vendors/{vendor
   const nameChanged = changed(before, after, "businessName");
   const emailChanged = changed(before, after, "email");
   if (!nameChanged && !emailChanged) return;
-  import_v22.logger.info(`[Cascade:Vendor] ${vendorId} \u2014 name:${nameChanged} email:${emailChanged}`);
+  import_v23.logger.info(`[Cascade:Vendor] ${vendorId} \u2014 name:${nameChanged} email:${emailChanged}`);
   const batch = db.batch();
   let count = 0;
   {
@@ -23357,10 +23561,10 @@ var onVendorUpdated = (0, import_firestore15.onDocumentUpdated)("vendors/{vendor
   }
   if (count > 0) {
     await batch.commit();
-    import_v22.logger.info(`[Cascade:Vendor] Updated ${count} docs for "${after.businessName}"`);
+    import_v23.logger.info(`[Cascade:Vendor] Updated ${count} docs for "${after.businessName}"`);
   }
 });
-var onStaffUpdated = (0, import_firestore15.onDocumentUpdated)("users/{userId}", async (event) => {
+var onStaffUpdated = (0, import_firestore16.onDocumentUpdated)("users/{userId}", async (event) => {
   const before = event.data?.before?.data();
   const after = event.data?.after?.data();
   if (!before || !after) return;
@@ -23369,7 +23573,7 @@ var onStaffUpdated = (0, import_firestore15.onDocumentUpdated)("users/{userId}",
   if (!nameChanged) return;
   const newName = after.displayName;
   const roles = after.roles || [];
-  import_v22.logger.info(`[Cascade:Staff] ${userId} displayName \u2192 "${newName}" (roles: ${roles.join(",")})`);
+  import_v23.logger.info(`[Cascade:Staff] ${userId} displayName \u2192 "${newName}" (roles: ${roles.join(",")})`);
   const batch = db.batch();
   let count = 0;
   if (roles.includes("fsm") || roles.includes("admin")) {
@@ -23398,27 +23602,27 @@ var onStaffUpdated = (0, import_firestore15.onDocumentUpdated)("users/{userId}",
   }
   if (count > 0) {
     await batch.commit();
-    import_v22.logger.info(`[Cascade:Staff] Updated ${count} docs for "${newName}"`);
+    import_v23.logger.info(`[Cascade:Staff] Updated ${count} docs for "${newName}"`);
   }
 });
 
 // src/triggers/aiTemplateOptimizer.ts
 var import_scheduler4 = require("firebase-functions/v2/scheduler");
 var import_https5 = require("firebase-functions/v2/https");
-var admin23 = __toESM(require("firebase-admin"));
-var logger19 = __toESM(require("firebase-functions/logger"));
+var admin24 = __toESM(require("firebase-admin"));
+var logger20 = __toESM(require("firebase-functions/logger"));
 init_promptUtils();
-if (!admin23.apps.length) {
-  admin23.initializeApp();
+if (!admin24.apps.length) {
+  admin24.initializeApp();
 }
-var db19 = admin23.firestore();
+var db20 = admin24.firestore();
 var weeklyTemplateOptimizer = (0, import_scheduler4.onSchedule)({
   schedule: "every monday 09:00",
   timeZone: "America/New_York",
   secrets: ["GEMINI_API_KEY"],
   memory: "512MiB"
 }, async () => {
-  logger19.info("Running weekly template optimization check...");
+  logger20.info("Running weekly template optimization check...");
   await optimizeUnderperformingTemplates();
 });
 var optimizeTemplate = (0, import_https5.onCall)({
@@ -23443,21 +23647,21 @@ var OPTIMIZABLE_CATEGORIES = ["vendor", "tenant_lead", "referral_partnership", "
 async function optimizeUnderperformingTemplates() {
   const optimized = [];
   for (const category of OPTIMIZABLE_CATEGORIES) {
-    const templatesSnap = await db19.collection("templates").where("category", "==", category).get();
+    const templatesSnap = await db20.collection("templates").where("category", "==", category).get();
     for (const doc of templatesSnap.docs) {
       const template = doc.data();
       const stats = template.stats;
       if (!stats || stats.sent < MIN_SENDS_FOR_ANALYSIS) continue;
       const openRate = stats.sent > 0 ? stats.opened / stats.sent : 0;
       if (openRate < LOW_OPEN_RATE_THRESHOLD) {
-        logger19.info(`Template ${doc.id} (${category}): ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
+        logger20.info(`Template ${doc.id} (${category}): ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
         await optimizeSingleTemplate(doc.id);
         optimized.push(doc.id);
       }
     }
   }
   if (optimized.length > 0) {
-    await db19.collection("notifications").add({
+    await db20.collection("notifications").add({
       type: "AI_TEMPLATE_OPTIMIZATION",
       title: `AI optimized ${optimized.length} template${optimized.length > 1 ? "s" : ""}`,
       message: `${optimized.length} underperforming template${optimized.length > 1 ? "s have" : " has"} new AI suggestions ready for your review.`,
@@ -23465,14 +23669,14 @@ async function optimizeUnderperformingTemplates() {
       read: false,
       createdAt: /* @__PURE__ */ new Date()
     });
-    logger19.info(`Notification created for ${optimized.length} optimized templates.`);
+    logger20.info(`Notification created for ${optimized.length} optimized templates.`);
   } else {
-    logger19.info("No underperforming templates found.");
+    logger20.info("No underperforming templates found.");
   }
   return optimized;
 }
 async function optimizeSingleTemplate(templateId) {
-  const templateDoc = await db19.collection("templates").doc(templateId).get();
+  const templateDoc = await db20.collection("templates").doc(templateId).get();
   if (!templateDoc.exists) {
     throw new import_https5.HttpsError("not-found", `Template ${templateId} not found`);
   }
@@ -23537,20 +23741,20 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
     const result = await response.json();
     const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
-      logger19.error("No response from Gemini for template optimization");
+      logger20.error("No response from Gemini for template optimization");
       throw new import_https5.HttpsError("internal", "Gemini returned empty response");
     }
     const cleanText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const suggestions = JSON.parse(cleanText);
-    await db19.collection("templates").doc(templateId).update({
-      aiSuggestions: admin23.firestore.FieldValue.arrayUnion({
+    await db20.collection("templates").doc(templateId).update({
+      aiSuggestions: admin24.firestore.FieldValue.arrayUnion({
         ...suggestions,
         generatedAt: /* @__PURE__ */ new Date(),
         performanceSnapshot: stats
       }),
       lastOptimizedAt: /* @__PURE__ */ new Date()
     });
-    logger19.info(`Template ${templateId}: AI suggestions stored (${suggestions.suggestions?.length || 0} variants)`);
+    logger20.info(`Template ${templateId}: AI suggestions stored (${suggestions.suggestions?.length || 0} variants)`);
     return {
       templateId,
       analysis: suggestions.analysis,
@@ -23558,26 +23762,26 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
       shortUrlTest: suggestions.shortUrlTest
     };
   } catch (err) {
-    logger19.error(`AI optimization failed for ${templateId}:`, err);
+    logger20.error(`AI optimization failed for ${templateId}:`, err);
     throw new import_https5.HttpsError("internal", `AI optimization failed: ${err}`);
   }
 }
 
 // src/triggers/startLeadSequence.ts
 var import_https6 = require("firebase-functions/v2/https");
-var admin24 = __toESM(require("firebase-admin"));
-var logger20 = __toESM(require("firebase-functions/logger"));
+var admin25 = __toESM(require("firebase-admin"));
+var logger21 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
-if (!admin24.apps.length) {
-  admin24.initializeApp();
+if (!admin25.apps.length) {
+  admin25.initializeApp();
 }
-var db20 = admin24.firestore();
+var db21 = admin25.firestore();
 var startLeadSequence = (0, import_https6.onCall)(async (request) => {
   const { leadId } = request.data;
   if (!leadId) {
     throw new import_https6.HttpsError("invalid-argument", "leadId is required");
   }
-  const leadDoc = await db20.collection("leads").doc(leadId).get();
+  const leadDoc = await db21.collection("leads").doc(leadId).get();
   if (!leadDoc.exists) {
     throw new import_https6.HttpsError("not-found", `Lead ${leadId} not found`);
   }
@@ -23585,7 +23789,7 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
   const businessName = lead.businessName || "Unknown";
   const contactEmail = lead.email;
   if (!contactEmail || contactEmail.trim().length === 0) {
-    await db20.collection("leads").doc(leadId).update({
+    await db21.collection("leads").doc(leadId).update({
       outreachStatus: "NEEDS_MANUAL"
     });
     throw new import_https6.HttpsError(
@@ -23594,12 +23798,12 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     );
   }
   const { cancelLeadTasks: cancelLeadTasks2 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
-  const cancelledCount = await cancelLeadTasks2(db20, leadId);
+  const cancelledCount = await cancelLeadTasks2(db21, leadId);
   if (cancelledCount > 0) {
-    logger20.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
+    logger21.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
   }
   const leadType = lead.leadType || "direct";
-  logger20.info(`[StartSequence] Manually starting ${leadType} sequence for lead ${leadId} (${businessName})`);
+  logger21.info(`[StartSequence] Manually starting ${leadType} sequence for lead ${leadId} (${businessName})`);
   const now = /* @__PURE__ */ new Date();
   let steps;
   if (leadType === "enterprise") {
@@ -23630,10 +23834,10 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     scheduledDate.setDate(scheduledDate.getDate() + step.dayOffset);
     scheduledDate.setHours(14, 0, 0, 0);
     const sendAt = step.dayOffset === 0 ? now : scheduledDate;
-    await enqueueTask(db20, {
+    await enqueueTask(db21, {
       leadId,
       type: "SEND",
-      scheduledAt: admin24.firestore.Timestamp.fromDate(sendAt),
+      scheduledAt: admin25.firestore.Timestamp.fromDate(sendAt),
       metadata: {
         sequence: step.sequence,
         businessName,
@@ -23648,14 +23852,14 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
       }
     });
   }
-  await db20.collection("leads").doc(leadId).update({
+  await db21.collection("leads").doc(leadId).update({
     status: lead.status === "new" ? "contacted" : lead.status,
     outreachStatus: "PENDING",
-    sequenceStartedAt: admin24.firestore.FieldValue.serverTimestamp(),
+    sequenceStartedAt: admin25.firestore.FieldValue.serverTimestamp(),
     sequenceStartedBy: request.auth?.uid || "manual"
   });
   const schedule = leadType === "enterprise" ? "Day 0/4/8/14/21" : leadType === "referral_partnership" ? "Day 0/4/10" : "Day 0/3/7/14";
-  await db20.collection("lead_activities").add({
+  await db21.collection("lead_activities").add({
     leadId,
     type: "SEQUENCE_STARTED",
     description: `${leadType} email sequence manually started for ${businessName}. Schedule: ${schedule}`,
@@ -23663,7 +23867,7 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     startedBy: request.auth?.uid || "manual",
     metadata: { leadType, stepCount: steps.length, schedule }
   });
-  logger20.info(`[StartSequence] ${leadType} sequence started for ${leadId}: ${steps.length} emails`);
+  logger21.info(`[StartSequence] ${leadType} sequence started for ${leadId}: ${steps.length} emails`);
   return {
     success: true,
     message: `${leadType} sequence started for ${businessName}`,
@@ -25528,6 +25732,7 @@ var getOutroPreview = (0, import_https10.onCall)({
   onLeadUpdated,
   onOnboardingComplete,
   onQuoteAccepted,
+  onReferralLeadWritten,
   onStaffUpdated,
   onVendorAdvancedPastOutreach,
   onVendorApproved,

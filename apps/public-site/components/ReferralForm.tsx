@@ -6,9 +6,7 @@ import { db } from '@/lib/firebase';
 import { trackEvent } from '@/lib/tracking';
 import { REFERRAL_PARTNERS, REFERRAL_FEE, WALKTHROUGH_BONUS, CLOSE_BONUS, RECURRING_BONUS } from '@/data/dlp-referral-partners';
 import { CheckCircle, Loader2, Send, DollarSign, Clock } from 'lucide-react';
-import dynamic from 'next/dynamic';
-
-const GooglePlacesAutocomplete = dynamic(() => import('react-google-places-autocomplete'), { ssr: false });
+import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 
 interface ReferralFormProps {
     /** Pre-selected trade slug, e.g. 'plumber-referral-partner' */
@@ -177,7 +175,7 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
 
     const inputClass = "w-full h-11 rounded-xl border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow outline-none";
     const canProceed = name && email && phone;
-    const canSubmit = canProceed && buildingName;
+    const canSubmit = canProceed && buildingName && buildingAddress;
 
     return (
         <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl shadow-lg overflow-hidden">
@@ -283,7 +281,7 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                                         selectProps={{
                                             value: buildingAddress ? { label: buildingAddress, value: buildingAddress } : null,
                                             onChange: (val: any) => setBuildingAddress(val?.label || ''),
-                                            placeholder: 'Building address (optional — helps us find it faster)',
+                                            placeholder: 'Building address *',
                                             isClearable: true,
                                             styles: {
                                                 control: (base: any) => ({ ...base, minHeight: '44px', border: 'none', boxShadow: 'none', paddingLeft: '4px', fontSize: '14px' }),
@@ -295,8 +293,8 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                                 </div>
                             ) : (
                                 <input
-                                    type="text" value={buildingAddress} onChange={(e) => setBuildingAddress(e.target.value)}
-                                    placeholder="Building address (optional — helps us find it faster)"
+                                    type="text" required value={buildingAddress} onChange={(e) => setBuildingAddress(e.target.value)}
+                                    placeholder="Building address *"
                                     autoComplete="street-address" name="address" id="referral-address"
                                     className={inputClass}
                                 />
@@ -345,7 +343,7 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                         </button>
 
                         <p className="text-xs text-slate-400 text-center">
-                            Only the building name is required. We&apos;ll email you at <strong>{email}</strong> with updates.
+                            Building name and address are required. We&apos;ll email you at <strong>{email}</strong> with updates.
                         </p>
                     </div>
                 )}

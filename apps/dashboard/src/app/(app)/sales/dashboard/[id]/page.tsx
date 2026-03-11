@@ -115,6 +115,8 @@ export default function LeadDetailPage() {
     const [sequenceMessage, setSequenceMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [activities, setActivities] = useState<{ id: string; type: string; description: string; createdAt: any; metadata?: any }[]>([]);
+    const [referralDoc, setReferralDoc] = useState<{ id: string; status: string; paymentInfo?: any; referrerName?: string; referrerEmail?: string; referrerPhone?: string } | null>(null);
+    const [updatingReferralStatus, setUpdatingReferralStatus] = useState(false);
 
     const fetchLead = async () => {
         try {
@@ -157,6 +159,40 @@ export default function LeadDetailPage() {
         fetchLead();
         fetchActivities();
     }, [leadId]);
+
+    // Fetch linked referral_leads record when lead is from referral
+    useEffect(() => {
+        if (!lead?.attribution?.source || lead.attribution.source !== 'referral') return;
+        const fetchReferral = async () => {
+            try {
+                const q = query(
+                    collection(db, 'referral_leads'),
+                    where('buildingName', '==', lead.businessName || ''),
+                );
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    const d = snap.docs[0];
+                    setReferralDoc({ id: d.id, ...d.data() } as any);
+                }
+            } catch (err) {
+                console.error('Error fetching referral doc:', err);
+            }
+        };
+        fetchReferral();
+    }, [lead]);
+
+    const handleReferralStatusChange = async (newStatus: string) => {
+        if (!referralDoc) return;
+        setUpdatingReferralStatus(true);
+        try {
+            await updateDoc(doc(db, 'referral_leads', referralDoc.id), { status: newStatus });
+            setReferralDoc({ ...referralDoc, status: newStatus });
+        } catch (error) {
+            console.error('Error updating referral status:', error);
+        } finally {
+            setUpdatingReferralStatus(false);
+        }
+    };
 
     const handleStatusChange = async (newStatus: string) => {
         if (!lead) return;
@@ -375,6 +411,88 @@ export default function LeadDetailPage() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Referral Attribution (in overview for quick visibility) */}
+                        {lead.attribution?.source && (
+                            <Card className="border-amber-200 bg-amber-50/30">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="flex items-center gap-2 text-base">
+                                        <TrendingUp className="w-4 h-4 text-amber-600" />
+                                        Referral Attribution
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <div>
+                                            <label className="text-xs font-medium text-muted-foreground">Source</label>
+                                            <p className="text-sm font-semibold capitalize">{lead.attribution.source}</p>
+                                        </div>
+                                        {lead.attribution.medium && (
+                                            <div>
+                                                <label className="text-xs font-medium text-muted-foreground">Medium</label>
+                                                <p className="text-sm font-semibold capitalize">{lead.attribution.medium}</p>
+                                            </div>
+                                        )}
+                                        {lead.attribution.campaign && (
+                                            <div>
+                                                <label className="text-xs font-medium text-muted-foreground">Campaign / Trade</label>
+                                                <p className="text-sm font-semibold capitalize">{lead.attribution.campaign.replace(/-/g, ' ')}</p>
+                                            </div>
+                                        )}
+                                        {lead.attribution.landingPage && (
+                                            <div>
+                                                <label className="text-xs font-medium text-muted-foreground">Landing Page</label>
+                                                <p className="text-sm font-semibold text-blue-600">{lead.attribution.landingPage}</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Referral Partner Payout Status */}
+                                    {referralDoc && (
+                                        <div className="border-t border-amber-200 pt-3 space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-sm font-semibold text-amber-900">Partner Payout Status</p>
+                                                <Select
+                                                    value={referralDoc.status}
+                                                    onValueChange={handleReferralStatusChange}
+                                                    disabled={updatingReferralStatus}
+                                                >
+                                                    <SelectTrigger className="w-[200px] h-8 text-xs">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="new">New (Awaiting Contact)</SelectItem>
+                                                        <SelectItem value="contacted">Building Contacted</SelectItem>
+                                                        <SelectItem value="walkthrough_scheduled">Walkthrough Scheduled</SelectItem>
+                                                        <SelectItem value="walkthrough_paid">Walkthrough Paid ($100)</SelectItem>
+                                                        <SelectItem value="close_paid">Close Paid ($400)</SelectItem>
+                                                        <SelectItem value="declined">Declined / Not Qualified</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                                                <div>
+                                                    <label className="font-medium text-muted-foreground">Partner Name</label>
+                                                    <p className="font-semibold">{referralDoc.referrerName || '—'}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="font-medium text-muted-foreground">Partner Email</label>
+                                                    <p className="font-semibold">{referralDoc.referrerEmail || '—'}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="font-medium text-muted-foreground">Payment Info</label>
+                                                    <p className="font-semibold">
+                                                        {referralDoc.paymentInfo
+                                                            ? `${referralDoc.paymentInfo.method === 'venmo' ? 'Venmo' : referralDoc.paymentInfo.method === 'paypal' ? 'PayPal' : 'ACH'} ✓`
+                                                            : 'Not submitted'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Audit Booking Details */}
                         <Card>

@@ -14,5 +14,17 @@ service cloud.firestore {
       // update your rules.
       allow read, write: if request.time < timestamp.date(2026, 4, 6);
     }
+
+    // ── Referral leads (public form + payment info page) ──
+    // These rules will take effect when the blanket rule above expires.
+    match /referral_leads/{referralId} {
+      // Anyone can create a new referral (public form)
+      allow create: if true;
+      // Anyone with the doc ID can read (payment info page)
+      allow read: if true;
+      // Payment info page can update only payment fields
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['paymentInfo', 'paymentInfoUpdatedAt']);
+    }
   }
 }

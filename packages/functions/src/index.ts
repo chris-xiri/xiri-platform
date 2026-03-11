@@ -22,6 +22,7 @@ export { onLeadQualified } from "./triggers/onLeadQualified";
 export { onQuoteAccepted, onInvoicePaid, onWorkOrderHandoff, onClientCancelled } from "./triggers/commissionTriggers";
 export { processCommissionPayouts, calculateNrr } from "./triggers/commissionScheduled";
 export { onAuditSubmitted } from "./triggers/onAuditSubmitted";
+export { onReferralLeadWritten } from "./triggers/referralPartnerNotifications";
 export { onAuditFailed } from "./triggers/onAuditFailed";
 export { generateMonthlyInvoices } from "./triggers/generateMonthlyInvoices";
 export { resendWebhook } from "./triggers/resendWebhook";
