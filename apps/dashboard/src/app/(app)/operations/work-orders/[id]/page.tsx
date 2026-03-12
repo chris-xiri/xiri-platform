@@ -459,35 +459,59 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                         </CardContent>
                     </Card>
 
-                    {/* Task Checklist */}
-                    {wo.tasks && wo.tasks.length > 0 && (
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-base flex items-center gap-2">
-                                    <Shield className="w-4 h-4 text-muted-foreground" /> Task Checklist
-                                </CardTitle>
-                                <CardDescription>{wo.tasks.length} tasks</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                                {wo.tasks.map((task, i) => (
-                                    <div key={task.id || i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30">
-                                        <div className={`w-5 h-5 rounded border flex items-center justify-center mt-0.5 ${task.verifiedAt ? 'bg-green-100 border-green-500' : 'border-muted-foreground/30'}`}>
-                                            {task.verifiedAt && <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />}
+                    {/* Task Checklist — grouped by room */}
+                    {wo.tasks && wo.tasks.length > 0 && (() => {
+                        // Group tasks by roomName (fall back to 'General Tasks' for legacy flat tasks)
+                        const roomGroups: { roomName: string; tasks: typeof wo.tasks }[] = [];
+                        for (const task of wo.tasks) {
+                            const rn = (task as any).roomName || 'General Tasks';
+                            const existing = roomGroups.find(g => g.roomName === rn);
+                            if (existing) {
+                                existing.tasks.push(task);
+                            } else {
+                                roomGroups.push({ roomName: rn, tasks: [task] });
+                            }
+                        }
+
+                        return (
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <Shield className="w-4 h-4 text-muted-foreground" /> Task Checklist
+                                    </CardTitle>
+                                    <CardDescription>{wo.tasks.length} tasks across {roomGroups.length} {roomGroups.length === 1 ? 'area' : 'areas'}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {roomGroups.map((group) => (
+                                        <div key={group.roomName}>
+                                            <div className="flex items-center gap-2 mb-2 pb-1 border-b border-border/50">
+                                                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{group.roomName}</span>
+                                                <span className="text-[10px] text-muted-foreground/60">({group.tasks.length})</span>
+                                            </div>
+                                            <div className="space-y-1 ml-1">
+                                                {group.tasks.map((task, i) => (
+                                                    <div key={task.id || i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30">
+                                                        <div className={`w-5 h-5 rounded border flex items-center justify-center mt-0.5 ${task.verifiedAt ? 'bg-green-100 border-green-500' : 'border-muted-foreground/30'}`}>
+                                                            {task.verifiedAt && <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-medium">
+                                                                {task.name}
+                                                                {task.required && <span className="text-red-500 ml-1">*</span>}
+                                                            </p>
+                                                            {task.description && (
+                                                                <p className="text-xs text-muted-foreground">{task.description}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-medium">
-                                                {task.name}
-                                                {task.required && <span className="text-red-500 ml-1">*</span>}
-                                            </p>
-                                            {task.description && (
-                                                <p className="text-xs text-muted-foreground">{task.description}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-                    )}
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        );
+                    })()}
 
                     {/* Vendor History */}
                     {wo.vendorHistory && wo.vendorHistory.length > 0 && (
