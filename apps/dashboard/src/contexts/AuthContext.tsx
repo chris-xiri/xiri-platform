@@ -18,6 +18,7 @@ export interface UserProfile {
     email: string;
     displayName: string;
     roles: UserRole[];
+    companyId?: string;
     createdAt: Date;
     updatedAt: Date;
     lastLogin: Date;
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     email: data.email,
                     displayName: data.displayName,
                     roles: data.roles,
+                    companyId: data.companyId,
                     createdAt: data.createdAt?.toDate(),
                     updatedAt: data.updatedAt?.toDate(),
                     lastLogin: data.lastLogin?.toDate(),

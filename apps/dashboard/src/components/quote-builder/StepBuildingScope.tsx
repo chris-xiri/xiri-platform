@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useAuth } from '@/contexts/AuthContext';
 import {
     type Lead,
     type RoomScope,
@@ -72,8 +71,7 @@ export default function StepBuildingScope({
 }: StepBuildingScopeProps) {
 
     // ─── Company defaults from Firestore ─────────────────────────────
-    const { profile } = useAuth();
-    const companyId = (profile as any)?.companyId;
+    const companyId = 'xiri-facility-solutions'; // single-tenant
     const companyDefaultsLoaded = useRef(false);
 
     // ─── Derive defaults from the selected lead ──────────────────────

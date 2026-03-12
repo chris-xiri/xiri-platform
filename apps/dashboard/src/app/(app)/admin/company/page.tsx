@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { PROPOSAL_TERM_FIELDS, FREQUENCIES, DEFAULT_INPUTS } from '@xiri-facility-solutions/shared';
@@ -19,22 +19,44 @@ export default function CompanySettingsPage() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [data, setData] = useState<Record<string, any>>({});
-
-    const companyId = (profile as any)?.companyId;
+    const [companyId, setCompanyId] = useState<string | null>(null);
 
     useEffect(() => {
         async function load() {
-            if (!companyId) { setLoading(false); return; }
+            if (!profile) { setLoading(false); return; }
+
+            // Single-tenant: XIRI Facility Solutions
+            const cid = 'xiri-facility-solutions';
+            setCompanyId(cid);
+
             try {
-                const snap = await getDoc(doc(db, 'companies', companyId));
-                if (snap.exists()) setData(snap.data());
+                const companyRef = doc(db, 'companies', cid);
+                const snap = await getDoc(companyRef);
+                if (snap.exists()) {
+                    setData(snap.data());
+                } else {
+                    // Auto-create the company doc on first visit
+                    const initialData = {
+                        name: 'XIRI Facility Solutions',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                        createdBy: profile.uid,
+                    };
+                    await setDoc(companyRef, initialData);
+                    setData(initialData);
+                }
+
+                // Ensure user profile is linked to company
+                if (!profile.companyId) {
+                    await updateDoc(doc(db, 'users', profile.uid), { companyId: cid });
+                }
             } catch (err) {
                 console.error('Failed to load company settings:', err);
             }
             setLoading(false);
         }
         load();
-    }, [companyId]);
+    }, [profile]);
 
     const update = (key: string, value: string | boolean | number) => {
         setData(prev => ({ ...prev, [key]: value }));
@@ -85,8 +107,8 @@ export default function CompanySettingsPage() {
             <div className="max-w-2xl mx-auto py-8">
                 <Card>
                     <CardContent className="py-12 text-center">
-                        <p className="text-muted-foreground">No company associated with your account.</p>
-                        <p className="text-xs text-muted-foreground mt-1">Contact admin to set up your company profile.</p>
+                        <p className="text-muted-foreground">Unable to load company settings.</p>
+                        <p className="text-xs text-muted-foreground mt-1">Please try refreshing the page.</p>
                     </CardContent>
                 </Card>
             </div>
