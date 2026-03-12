@@ -53,7 +53,7 @@ export function InviteVendorModal({ vendor, open, onOpenChange, onSuccess }: Inv
                 </DialogHeader>
 
                 <div className="py-4">
-                    <RadioGroup value={inviteType} onValueChange={(v) => setInviteType(v as "URGENT" | "STANDARD")} className="gap-4">
+                    <RadioGroup value={inviteType} onValueChange={(v: string) => setInviteType(v as "URGENT" | "STANDARD")} className="gap-4">
                         <div className={`flex items-start space-x-3 space-y-0 rounded-md border p-4 cursor-pointer hover:bg-muted/50 transition-colors ${inviteType === "URGENT" ? "border-primary bg-primary/5" : "border-input"}`}>
                             <RadioGroupItem value="URGENT" id="urgent" className="mt-1" />
                             <div className="flex-1 space-y-1">

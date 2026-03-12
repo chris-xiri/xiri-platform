@@ -495,6 +495,7 @@ export interface VendorContact {
     role: 'Owner' | 'Dispatch' | 'Billing' | 'Sales' | 'Other';
     phone?: string;
     email?: string;
+    isPrimary?: boolean;
 }
 
 // --- BROKERAGE CORE (CRM) ---
@@ -914,6 +915,7 @@ export interface WorkOrder {
     serviceType: string;
     scopeTemplateId?: string;
     tasks: WorkOrderTask[];
+    qrCodeSecret?: string;
 
     vendorId?: string;
     vendorRate?: number;

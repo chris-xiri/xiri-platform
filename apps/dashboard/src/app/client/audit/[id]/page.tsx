@@ -62,7 +62,7 @@ export default function ClientAuditPage() {
                         variant: "destructive",
                         title: "Error",
                         description: "Audit request not found. Redirecting..."
-                    });
+                    } as any);
                     setTimeout(() => window.location.href = "https://xiri.ai", 2000);
                 }
             } catch (err) {
@@ -71,7 +71,7 @@ export default function ClientAuditPage() {
                     variant: "destructive",
                     title: "Error",
                     description: "Failed to load audit request."
-                });
+                } as any);
             } finally {
                 setLoading(false);
             }
@@ -95,7 +95,7 @@ export default function ClientAuditPage() {
                 variant: "destructive",
                 title: "Save Failed",
                 description: "Could not save your progress. Please try again."
-            });
+            } as any);
         } finally {
             setSubmitting(false);
         }
@@ -230,8 +230,8 @@ export default function ClientAuditPage() {
                                         onChange: setAddress,
                                         placeholder: 'Start typing address...',
                                         styles: {
-                                            control: (provided) => ({ ...provided, border: 'none', boxShadow: 'none' }),
-                                            input: (provided) => ({ ...provided, border: 'none' }),
+                                            control: (provided: any) => ({ ...provided, border: 'none', boxShadow: 'none' }),
+                                            input: (provided: any) => ({ ...provided, border: 'none' }),
                                         }
                                     }}
                                 />

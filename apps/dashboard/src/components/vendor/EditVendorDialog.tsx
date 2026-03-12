@@ -53,7 +53,7 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
         status: vendor.status || 'pending_review',
         onboardingTrack: vendor.onboardingTrack || 'STANDARD',
         preferredLanguage: vendor.preferredLanguage || 'en',
-        capabilities: [...(vendor.capabilities || [])],
+        capabilities: [...(vendor.capabilities || [])] as string[],
         notes: (vendor as any).notes || (vendor as any).description || '',
     });
 

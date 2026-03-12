@@ -28,8 +28,10 @@ const STATUS_COLORS: Record<LeadStatus, string> = {
     'qualified': 'bg-green-100 text-green-800 border-green-200',
     'walkthrough': 'bg-purple-100 text-purple-800 border-purple-200',
     'proposal': 'bg-orange-100 text-orange-800 border-orange-200',
+    'quoted': 'bg-indigo-100 text-indigo-800 border-indigo-200',
     'won': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    'lost': 'bg-gray-100 text-gray-800 border-gray-200'
+    'lost': 'bg-gray-100 text-gray-800 border-gray-200',
+    'churned': 'bg-red-100 text-red-800 border-red-200',
 };
 
 const FACILITY_TYPE_LABELS: Record<string, string> = {
