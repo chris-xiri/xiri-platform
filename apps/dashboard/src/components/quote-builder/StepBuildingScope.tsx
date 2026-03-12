@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
     type Lead,
     type RoomScope,
@@ -16,6 +16,7 @@ import {
     DEFAULT_INPUTS,
     getDefaultRooms,
     getTaskFrequencyOptions,
+    resolveTaskFrequency,
     getStateDefaults,
     calculate,
 } from '@xiri-facility-solutions/shared';
@@ -131,6 +132,9 @@ export default function StepBuildingScope({
     );
     const [locationAddress, setLocationAddress] = useState(leadAddress);
 
+    // Track whether user manually edited an individual room's sqft
+    const manualRoomSqftEdit = useRef(false);
+
     // Auto-fill wage from state data on state change
     useEffect(() => {
         if (leadState) {
@@ -146,39 +150,26 @@ export default function StepBuildingScope({
         if (rooms.length === 0 && buildingTypeId && sqft > 0) {
             const defaultRooms = getDefaultRooms(buildingTypeId, sqft);
             setRooms(defaultRooms.map((r: RoomScope) => ({ ...r, id: makeRoomId() })));
+            manualRoomSqftEdit.current = false;
         }
     }, [buildingTypeId, sqft]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ─── Auto-distribute sqft across rooms ───────────────────────────
-    // When total sqft changes and rooms exist, distribute proportionally
-    // based on ROOM_AREA_RATIOS from the building type config
+    // Always redistribute when total sqft changes, unless user manually edited a room
     useEffect(() => {
         if (sqft <= 0 || rooms.length === 0) return;
+        if (manualRoomSqftEdit.current) return; // User manually edited a room — don't override
+
         const ratios = ROOM_AREA_RATIOS[buildingTypeId];
         if (!ratios) return;
 
-        // Get area ratios for each room's type
-        const roomsWithRatios = rooms.map(room => {
-            const ratio = ratios[room.roomTypeId] || 0.10;
-            return { room, ratio };
-        });
-        const totalRatio = roomsWithRatios.reduce((sum, r) => sum + r.ratio, 0);
+        const totalRatio = rooms.reduce((sum, r) => sum + (ratios[r.roomTypeId] || 0.10), 0);
         if (totalRatio <= 0) return;
 
-        // Only redistribute if all rooms have zero sqft or all match previous distribution
-        const allZero = rooms.every(r => !r.sqft || r.sqft === 0);
-        const allMatchPrevDistribution = rooms.every(r => {
+        setRooms(prev => prev.map(r => {
             const ratio = ratios[r.roomTypeId] || 0.10;
-            const expected = Math.round(sqft * ratio / totalRatio);
-            return r.sqft === expected;
-        });
-
-        if (allZero || allMatchPrevDistribution) {
-            setRooms(prev => prev.map(r => {
-                const ratio = ratios[r.roomTypeId] || 0.10;
-                return { ...r, sqft: Math.round(sqft * ratio / totalRatio) };
-            }));
-        }
+            return { ...r, sqft: Math.round(sqft * ratio / totalRatio) };
+        }));
     }, [sqft, rooms.length, buildingTypeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ─── Calculator results ──────────────────────────────────────────
@@ -194,7 +185,7 @@ export default function StepBuildingScope({
         supplyPolicy: 'company' as const,
     }), [buildingTypeId, sqft, frequency, wageRate, overheadPercent, profitPercent]);
 
-    const results = useMemo(() => {
+    const rawResults = useMemo(() => {
         if (rooms.length === 0 || sqft <= 0) return null;
         try {
             return calculate(inputs, rooms);
@@ -202,6 +193,37 @@ export default function StepBuildingScope({
             return null;
         }
     }, [inputs, rooms, sqft]);
+
+    // Apply hours override → recalculate pricing downstream
+    const results = useMemo(() => {
+        if (!rawResults) return null;
+        if (hoursOverride === null) return rawResults;
+
+        // Recalculate everything based on overridden hours
+        const newTotalHoursPerMonth = hoursOverride * rawResults.visitsPerMonth;
+        const newLaborCostPerMonth = newTotalHoursPerMonth * wageRate;
+        const newPayrollTaxCost = newLaborCostPerMonth * (DEFAULT_INPUTS.payrollTaxPercent / 100);
+        const newSubtotalDirect = newLaborCostPerMonth + newPayrollTaxCost + rawResults.supplyCostPerMonth;
+        const newOverheadCost = newSubtotalDirect * (overheadPercent / 100);
+        const newTotalCost = newSubtotalDirect + newOverheadCost;
+        const newProfitAmount = newTotalCost * (profitPercent / 100);
+        const newTotalPrice = Math.round((newTotalCost + newProfitAmount) * 100) / 100;
+
+        return {
+            ...rawResults,
+            hoursPerVisit: hoursOverride,
+            totalHoursPerMonth: newTotalHoursPerMonth,
+            laborCostPerMonth: Math.round(newLaborCostPerMonth * 100) / 100,
+            payrollTaxCost: Math.round(newPayrollTaxCost * 100) / 100,
+            overheadCost: Math.round(newOverheadCost * 100) / 100,
+            totalCostPerMonth: Math.round(newTotalCost * 100) / 100,
+            profitAmount: Math.round(newProfitAmount * 100) / 100,
+            totalPricePerMonth: newTotalPrice,
+            pricePerVisit: rawResults.visitsPerMonth > 0 ? Math.round(newTotalPrice / rawResults.visitsPerMonth * 100) / 100 : newTotalPrice,
+            pricePerSqft: sqft > 0 ? Math.round(newTotalPrice / sqft * 1000) / 1000 : 0,
+            effectiveHourlyRate: newTotalHoursPerMonth > 0 ? Math.round(newTotalPrice / newTotalHoursPerMonth * 100) / 100 : 0,
+        };
+    }, [rawResults, hoursOverride, wageRate, overheadPercent, profitPercent, sqft]);
 
     // ─── Propagate scope changes ─────────────────────────────────────
     const propagate = useCallback(() => {
@@ -622,6 +644,7 @@ export default function StepBuildingScope({
                                                     value={room.sqft ? fmtNumber(room.sqft) : ''}
                                                     onChange={e => {
                                                         const raw = e.target.value.replace(/[^0-9]/g, '');
+                                                        manualRoomSqftEdit.current = true;
                                                         updateRoom(room.id, { sqft: parseInt(raw) || 0 });
                                                     }}
                                                     className="h-7 text-xs mt-0.5"
@@ -642,6 +665,7 @@ export default function StepBuildingScope({
                                                     const isEditing = editingTask?.roomId === room.id && editingTask?.taskId === task.id;
                                                     const displayName = room.taskOverrides?.[task.id]?.name || task.name;
                                                     const isOverridden = !!room.taskOverrides?.[task.id]?.name;
+                                                    const taskFreq = room.taskFrequencies?.[task.id] || resolveTaskFrequency(task.recommendedFrequency, frequency);
 
                                                     return (
                                                         <div
@@ -678,6 +702,25 @@ export default function StepBuildingScope({
                                                                     <span className={`truncate flex-1 ${isOverridden ? 'italic' : ''}`}>
                                                                         {displayName}
                                                                     </span>
+                                                                    {isOn && (
+                                                                        <select
+                                                                            value={taskFreq}
+                                                                            onChange={e => {
+                                                                                updateRoom(room.id, {
+                                                                                    taskFrequencies: {
+                                                                                        ...(room.taskFrequencies || {}),
+                                                                                        [task.id]: e.target.value,
+                                                                                    },
+                                                                                });
+                                                                            }}
+                                                                            onClick={e => e.stopPropagation()}
+                                                                            className="h-5 px-1 text-[10px] border border-input rounded bg-background flex-shrink-0 w-16"
+                                                                        >
+                                                                            {freqOptions.map((fo: { value: string; label: string }) => (
+                                                                                <option key={fo.value} value={fo.value}>{fo.label}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                    )}
                                                                     <button
                                                                         onClick={(e) => { e.stopPropagation(); startEditingTask(room.id, task.id); }}
                                                                         className="opacity-40 hover:opacity-100 text-muted-foreground hover:text-foreground p-0.5 flex-shrink-0 transition-opacity"
