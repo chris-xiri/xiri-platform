@@ -7,8 +7,10 @@ import {
     type CalculatorInputs,
     type CalculatorResults,
     type Frequency,
+    type CustomTask,
     BUILDING_TYPES,
     ROOM_TYPES,
+    ROOM_AREA_RATIOS,
     CLEANING_TASKS,
     FREQUENCIES,
     DEFAULT_INPUTS,
@@ -23,9 +25,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import {
     Building2, Plus, Trash2, ChevronDown, ChevronRight,
-    DollarSign, Clock, MapPin,
+    DollarSign, Clock, MapPin, Pencil, X, Check,
 } from 'lucide-react';
 
 // ─── Props ────────────────────────────────────────────────────────────
@@ -46,8 +49,11 @@ interface StepBuildingScopeProps {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────
-const fmt = (n: number) =>
+const fmtCurrency = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
+
+const fmtNumber = (n: number) =>
+    new Intl.NumberFormat('en-US').format(n);
 
 let nextRoomId = 1;
 function makeRoomId() {
@@ -80,7 +86,7 @@ export default function StepBuildingScope({
         if (lower.includes('gym') || lower.includes('fitness')) return 'gym';
         if (lower.includes('hotel') || lower.includes('hospitality')) return 'hotel';
         if (lower.includes('daycare') || lower.includes('child')) return 'daycare';
-        return 'office'; // default
+        return 'office';
     };
 
     // ─── State ───────────────────────────────────────────────────────
@@ -107,6 +113,18 @@ export default function StepBuildingScope({
         initialData?.calculatorInputs?.profitPercent ?? DEFAULT_INPUTS.profitPercent
     );
 
+    // Override states (null = use calculated)
+    const [hoursOverride, setHoursOverride] = useState<number | null>(null);
+    const [priceOverride, setPriceOverride] = useState<number | null>(null);
+
+    // Task editing state
+    const [editingTask, setEditingTask] = useState<{ roomId: string; taskId: string } | null>(null);
+    const [editingTaskName, setEditingTaskName] = useState('');
+
+    // Custom task input state
+    const [addingCustomTask, setAddingCustomTask] = useState<string | null>(null); // roomId
+    const [customTaskName, setCustomTaskName] = useState('');
+
     // Location
     const [locationName, setLocationName] = useState(
         selectedLead?.businessName || ''
@@ -130,6 +148,38 @@ export default function StepBuildingScope({
             setRooms(defaultRooms.map((r: RoomScope) => ({ ...r, id: makeRoomId() })));
         }
     }, [buildingTypeId, sqft]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ─── Auto-distribute sqft across rooms ───────────────────────────
+    // When total sqft changes and rooms exist, distribute proportionally
+    // based on ROOM_AREA_RATIOS from the building type config
+    useEffect(() => {
+        if (sqft <= 0 || rooms.length === 0) return;
+        const ratios = ROOM_AREA_RATIOS[buildingTypeId];
+        if (!ratios) return;
+
+        // Get area ratios for each room's type
+        const roomsWithRatios = rooms.map(room => {
+            const ratio = ratios[room.roomTypeId] || 0.10;
+            return { room, ratio };
+        });
+        const totalRatio = roomsWithRatios.reduce((sum, r) => sum + r.ratio, 0);
+        if (totalRatio <= 0) return;
+
+        // Only redistribute if all rooms have zero sqft or all match previous distribution
+        const allZero = rooms.every(r => !r.sqft || r.sqft === 0);
+        const allMatchPrevDistribution = rooms.every(r => {
+            const ratio = ratios[r.roomTypeId] || 0.10;
+            const expected = Math.round(sqft * ratio / totalRatio);
+            return r.sqft === expected;
+        });
+
+        if (allZero || allMatchPrevDistribution) {
+            setRooms(prev => prev.map(r => {
+                const ratio = ratios[r.roomTypeId] || 0.10;
+                return { ...r, sqft: Math.round(sqft * ratio / totalRatio) };
+            }));
+        }
+    }, [sqft, rooms.length, buildingTypeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ─── Calculator results ──────────────────────────────────────────
     const inputs: CalculatorInputs = useMemo(() => ({
@@ -209,14 +259,140 @@ export default function StepBuildingScope({
         }));
     };
 
+    // ─── Task overrides (edit task name) ─────────────────────────────
+    const startEditingTask = (roomId: string, taskId: string) => {
+        const room = rooms.find(r => r.id === roomId);
+        const task = CLEANING_TASKS.find(t => t.id === taskId);
+        const overrideName = room?.taskOverrides?.[taskId]?.name;
+        setEditingTask({ roomId, taskId });
+        setEditingTaskName(overrideName || task?.name || '');
+    };
+
+    const saveTaskEdit = () => {
+        if (!editingTask) return;
+        const { roomId, taskId } = editingTask;
+        const task = CLEANING_TASKS.find(t => t.id === taskId);
+        const isDefault = editingTaskName === task?.name || editingTaskName.trim() === '';
+
+        setRooms(prev => prev.map(r => {
+            if (r.id !== roomId) return r;
+            const overrides = { ...(r.taskOverrides || {}) };
+            if (isDefault) {
+                delete overrides[taskId];
+            } else {
+                overrides[taskId] = { name: editingTaskName.trim() };
+            }
+            return { ...r, taskOverrides: Object.keys(overrides).length > 0 ? overrides : undefined };
+        }));
+        setEditingTask(null);
+        setEditingTaskName('');
+    };
+
+    // ─── Custom tasks ────────────────────────────────────────────────
+    const addCustomTask = (roomId: string) => {
+        if (!customTaskName.trim()) return;
+        const newTask: CustomTask = {
+            id: `custom_${Date.now()}`,
+            name: customTaskName.trim(),
+        };
+        setRooms(prev => prev.map(r => {
+            if (r.id !== roomId) return r;
+            return { ...r, customTasks: [...(r.customTasks || []), newTask] };
+        }));
+        setCustomTaskName('');
+        setAddingCustomTask(null);
+    };
+
+    const removeCustomTask = (roomId: string, taskId: string) => {
+        setRooms(prev => prev.map(r => {
+            if (r.id !== roomId) return r;
+            return { ...r, customTasks: (r.customTasks || []).filter(t => t.id !== taskId) };
+        }));
+    };
+
     // Available frequency options based on bid frequency
     const freqOptions = getTaskFrequencyOptions(frequency);
 
     // ─── Building type info ──────────────────────────────────────────
     const buildingType = BUILDING_TYPES.find(bt => bt.id === buildingTypeId);
 
+    // Effective hours (override or calculated)
+    const displayHours = hoursOverride ?? results?.hoursPerVisit ?? null;
+
     return (
         <div className="space-y-6">
+            {/* ═══ PRICING SUMMARY — STICKY AT TOP ═══ */}
+            {results && (() => {
+                const calcPrice = results.totalPricePerMonth;
+                const low = Math.round(calcPrice * 0.8);
+                const high = Math.round(calcPrice * 1.2);
+                const finalPrice = priceOverride ?? calcPrice;
+                return (
+                    <Card className="border-primary/30 bg-card sticky top-0 z-10 shadow-sm">
+                        <CardContent className="py-3 px-4 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-6">
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Final Monthly Price</p>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-lg text-muted-foreground">$</span>
+                                            <Input
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={priceOverride !== null ? fmtNumber(priceOverride) : fmtNumber(Math.round(calcPrice))}
+                                                onChange={e => {
+                                                    const raw = e.target.value.replace(/[^0-9]/g, '');
+                                                    setPriceOverride(parseInt(raw) || null);
+                                                }}
+                                                className="w-28 h-8 text-xl font-bold text-primary"
+                                            />
+                                            <span className="text-sm text-muted-foreground">/mo</span>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground">
+                                            ISSA range: {fmtCurrency(low)} – {fmtCurrency(high)}
+                                            {priceOverride !== null && (
+                                                <button onClick={() => setPriceOverride(null)} className="ml-1 text-destructive hover:underline">(reset)</button>
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Per Visit</p>
+                                        <p className="text-sm font-semibold">{fmtCurrency(Math.round(finalPrice / results.visitsPerMonth))}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Hrs/Visit</p>
+                                        <div className="flex items-center gap-1">
+                                            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                                            {hoursOverride !== null ? (
+                                                <span className="text-sm font-semibold">
+                                                    {hoursOverride.toFixed(1)}
+                                                    <span className="text-[9px] text-muted-foreground ml-0.5">(override)</span>
+                                                </span>
+                                            ) : (
+                                                <span className="text-sm font-semibold">{results.hoursPerVisit.toFixed(1)}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Eff. Rate</p>
+                                        <p className="text-sm font-semibold">{fmtCurrency(Math.round(finalPrice / results.totalHoursPerMonth))}/hr</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Full cost breakdown */}
+                            <div className="flex items-center gap-3 text-[10px] text-muted-foreground border-t pt-2 border-dashed">
+                                <span>Labor: {fmtCurrency(results.laborCostPerMonth)}</span>
+                                <span>Payroll Tax: {fmtCurrency(results.payrollTaxCost)}</span>
+                                <span>Supplies: {fmtCurrency(results.supplyCostPerMonth)}</span>
+                                <span>Overhead: {fmtCurrency(results.overheadCost)}</span>
+                                <span>Profit: {fmtCurrency(results.profitAmount)}</span>
+                                <span className="font-medium text-foreground">= {fmtCurrency(results.totalPricePerMonth)}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })()}
+
             {/* ═══ LOCATION ═══ */}
             <Card>
                 <CardHeader className="pb-2">
@@ -264,7 +440,6 @@ export default function StepBuildingScope({
                                 value={buildingTypeId}
                                 onChange={e => {
                                     setBuildingTypeId(e.target.value);
-                                    // Re-seed rooms for new building type
                                     if (sqft > 0) {
                                         const defaultRooms = getDefaultRooms(e.target.value, sqft);
                                         setRooms(defaultRooms.map((r: RoomScope) => ({ ...r, id: makeRoomId() })));
@@ -286,17 +461,21 @@ export default function StepBuildingScope({
                         <div>
                             <Label className="text-xs">Total Square Footage</Label>
                             <Input
-                                type="number"
-                                value={sqft || ''}
-                                onChange={e => setSqft(parseInt(e.target.value) || 0)}
+                                type="text"
+                                inputMode="numeric"
+                                value={sqft > 0 ? fmtNumber(sqft) : ''}
+                                onChange={e => {
+                                    const raw = e.target.value.replace(/[^0-9]/g, '');
+                                    setSqft(parseInt(raw) || 0);
+                                }}
                                 placeholder="e.g. 10,000"
                                 className="mt-1"
                             />
                         </div>
                     </div>
 
-                    {/* Frequency and key params */}
-                    <div className="grid grid-cols-3 gap-3">
+                    {/* Frequency, wage, overhead, hours override */}
+                    <div className="grid grid-cols-4 gap-3">
                         <div>
                             <Label className="text-xs">Cleaning Frequency</Label>
                             <select
@@ -329,11 +508,35 @@ export default function StepBuildingScope({
                                 className="mt-1"
                             />
                         </div>
+                        <div>
+                            <Label className="text-xs">
+                                Hours Override
+                                {hoursOverride !== null && (
+                                    <button
+                                        onClick={() => setHoursOverride(null)}
+                                        className="ml-1 text-[9px] text-destructive hover:underline"
+                                    >
+                                        (reset)
+                                    </button>
+                                )}
+                            </Label>
+                            <Input
+                                type="number"
+                                step="0.5"
+                                value={hoursOverride ?? ''}
+                                onChange={e => {
+                                    const v = parseFloat(e.target.value);
+                                    setHoursOverride(isNaN(v) ? null : v);
+                                }}
+                                placeholder={results?.hoursPerVisit?.toFixed(1) || 'auto'}
+                                className="mt-1"
+                            />
+                        </div>
                     </div>
 
                     {buildingType && (
                         <p className="text-xs text-muted-foreground">
-                            ISSA production rate: {buildingType.productionRate.toLocaleString()} sqft/hr
+                            ISSA production rate: {fmtNumber(buildingType.productionRate)} sqft/hr
                             {buildingType.complexityMultiplier > 1 && ` · ${buildingType.complexityMultiplier}x complexity`}
                         </p>
                     )}
@@ -345,7 +548,10 @@ export default function StepBuildingScope({
                 <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-sm">Rooms & Task Scope</CardTitle>
-                        <span className="text-xs text-muted-foreground">{rooms.length} room{rooms.length !== 1 ? 's' : ''}</span>
+                        <span className="text-xs text-muted-foreground">
+                            {rooms.length} room{rooms.length !== 1 ? 's' : ''}
+                            {sqft > 0 && ` · ${fmtNumber(rooms.reduce((s, r) => s + (r.sqft || 0), 0))} of ${fmtNumber(sqft)} sqft assigned`}
+                        </span>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -379,10 +585,13 @@ export default function StepBuildingScope({
                                         <span className="text-sm font-medium">
                                             {room.customName || roomType?.name || room.roomTypeId}
                                         </span>
+                                        {room.sqft ? (
+                                            <span className="text-[10px] text-muted-foreground">({fmtNumber(room.sqft)} sqft)</span>
+                                        ) : null}
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className="text-xs text-muted-foreground">
-                                            {room.tasks.length} task{room.tasks.length !== 1 ? 's' : ''}
+                                            {room.tasks.length + (room.customTasks?.length || 0)} task{(room.tasks.length + (room.customTasks?.length || 0)) !== 1 ? 's' : ''}
                                         </span>
                                         <button
                                             className="text-destructive/60 hover:text-destructive p-0.5"
@@ -408,9 +617,13 @@ export default function StepBuildingScope({
                                             <div>
                                                 <Label className="text-[10px]">Sqft</Label>
                                                 <Input
-                                                    type="number"
-                                                    value={room.sqft || ''}
-                                                    onChange={e => updateRoom(room.id, { sqft: parseInt(e.target.value) || 0 })}
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={room.sqft ? fmtNumber(room.sqft) : ''}
+                                                    onChange={e => {
+                                                        const raw = e.target.value.replace(/[^0-9]/g, '');
+                                                        updateRoom(room.id, { sqft: parseInt(raw) || 0 });
+                                                    }}
                                                     className="h-7 text-xs mt-0.5"
                                                 />
                                             </div>
@@ -418,30 +631,112 @@ export default function StepBuildingScope({
 
                                         <Separator />
 
-                                        {/* Task checklist */}
+                                        {/* Task checklist with edit capability */}
                                         <div>
-                                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Tasks</p>
-                                            <div className="grid grid-cols-2 gap-1">
+                                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+                                                Standard Tasks
+                                            </p>
+                                            <div className="grid grid-cols-1 gap-0.5">
                                                 {availableTasks.map(task => {
                                                     const isOn = room.tasks.includes(task.id);
+                                                    const isEditing = editingTask?.roomId === room.id && editingTask?.taskId === task.id;
+                                                    const displayName = room.taskOverrides?.[task.id]?.name || task.name;
+                                                    const isOverridden = !!room.taskOverrides?.[task.id]?.name;
+
                                                     return (
-                                                        <label
+                                                        <div
                                                             key={task.id}
-                                                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs cursor-pointer transition-colors ${
-                                                                isOn ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted/50'
+                                                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
+                                                                isOn ? 'bg-primary/10' : 'text-muted-foreground'
                                                             }`}
                                                         >
                                                             <input
                                                                 type="checkbox"
                                                                 checked={isOn}
                                                                 onChange={() => toggleTask(room.id, task.id)}
-                                                                className="rounded border-input"
+                                                                className="rounded border-input flex-shrink-0"
                                                             />
-                                                            <span className="truncate">{task.name}</span>
-                                                        </label>
+                                                            {isEditing ? (
+                                                                <div className="flex items-center gap-1 flex-1">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={editingTaskName}
+                                                                        onChange={e => setEditingTaskName(e.target.value)}
+                                                                        onKeyDown={e => { if (e.key === 'Enter') saveTaskEdit(); if (e.key === 'Escape') setEditingTask(null); }}
+                                                                        className="flex-1 h-5 px-1 text-xs border border-input rounded bg-background"
+                                                                        autoFocus
+                                                                    />
+                                                                    <button onClick={saveTaskEdit} className="text-primary hover:text-primary/80">
+                                                                        <Check className="w-3 h-3" />
+                                                                    </button>
+                                                                    <button onClick={() => setEditingTask(null)} className="text-muted-foreground hover:text-foreground">
+                                                                        <X className="w-3 h-3" />
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <span className={`truncate flex-1 ${isOverridden ? 'italic' : ''}`}>
+                                                                        {displayName}
+                                                                    </span>
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); startEditingTask(room.id, task.id); }}
+                                                                        className="opacity-0 group-hover:opacity-100 hover:!opacity-100 text-muted-foreground hover:text-foreground p-0.5 flex-shrink-0"
+                                                                        title="Edit task name"
+                                                                        style={{ opacity: isOverridden ? 0.6 : undefined }}
+                                                                    >
+                                                                        <Pencil className="w-2.5 h-2.5" />
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
                                                     );
                                                 })}
                                             </div>
+                                        </div>
+
+                                        {/* Custom Tasks */}
+                                        <div>
+                                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+                                                Custom Tasks
+                                            </p>
+                                            {(room.customTasks || []).map(ct => (
+                                                <div key={ct.id} className="flex items-center gap-1.5 px-2 py-1 rounded text-xs bg-amber-500/10">
+                                                    <span className="text-[10px] text-amber-600">★</span>
+                                                    <span className="truncate flex-1">{ct.name}</span>
+                                                    <button
+                                                        onClick={() => removeCustomTask(room.id, ct.id)}
+                                                        className="text-destructive/60 hover:text-destructive flex-shrink-0"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {addingCustomTask === room.id ? (
+                                                <div className="flex items-center gap-1 mt-1">
+                                                    <input
+                                                        type="text"
+                                                        value={customTaskName}
+                                                        onChange={e => setCustomTaskName(e.target.value)}
+                                                        onKeyDown={e => { if (e.key === 'Enter') addCustomTask(room.id); if (e.key === 'Escape') { setAddingCustomTask(null); setCustomTaskName(''); } }}
+                                                        className="flex-1 h-6 px-2 text-xs border border-input rounded bg-background"
+                                                        placeholder="Enter custom task name..."
+                                                        autoFocus
+                                                    />
+                                                    <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => addCustomTask(room.id)}>
+                                                        Add
+                                                    </Button>
+                                                    <button onClick={() => { setAddingCustomTask(null); setCustomTaskName(''); }} className="text-muted-foreground hover:text-foreground">
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setAddingCustomTask(room.id)}
+                                                    className="flex items-center gap-1 px-2 py-1 mt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                                >
+                                                    <Plus className="w-3 h-3" /> Add custom task
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -467,56 +762,6 @@ export default function StepBuildingScope({
                     </div>
                 </CardContent>
             </Card>
-
-            {/* ═══ PRICING SUMMARY ═══ */}
-            {results && (
-                <Card className="bg-primary/5 border-primary/20">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center gap-1.5">
-                            <DollarSign className="w-4 h-4" /> Scope Summary
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <p className="text-xs text-muted-foreground">Monthly Price</p>
-                                <p className="text-2xl font-bold text-primary">{fmt(results.totalPricePerMonth)}</p>
-                                <p className="text-xs text-muted-foreground">
-                                    {fmt(results.pricePerVisit)}/visit × {results.visitsPerMonth} visits
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted-foreground">Hours Per Visit</p>
-                                <p className="text-2xl font-bold flex items-center gap-1">
-                                    <Clock className="w-5 h-5 text-muted-foreground" />
-                                    {results.hoursPerVisit.toFixed(1)}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {results.totalHoursPerMonth.toFixed(0)} hrs/month
-                                </p>
-                            </div>
-                        </div>
-                        <Separator className="my-3" />
-                        <div className="grid grid-cols-3 gap-3 text-xs">
-                            <div>
-                                <span className="text-muted-foreground">Labor Cost</span>
-                                <p className="font-medium">{fmt(results.laborCostPerMonth)}/mo</p>
-                            </div>
-                            <div>
-                                <span className="text-muted-foreground">Overhead</span>
-                                <p className="font-medium">{fmt(results.overheadCost)}/mo</p>
-                            </div>
-                            <div>
-                                <span className="text-muted-foreground">Profit</span>
-                                <p className="font-medium">{fmt(results.profitAmount)}/mo</p>
-                            </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            Effective rate: {fmt(results.pricePerSqft)}/sqft · Rate: {fmt(results.effectiveHourlyRate)}/hr
-                        </p>
-                    </CardContent>
-                </Card>
-            )}
         </div>
     );
 }

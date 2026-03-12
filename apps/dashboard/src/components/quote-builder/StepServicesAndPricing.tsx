@@ -219,9 +219,18 @@ export default function StepServicesAndPricing({
                                     ) : (
                                         <div key={item.id} className={`border rounded-lg p-4 bg-muted/20 space-y-3 border-l-4 ${SERVICE_COLORS[itemIdx % SERVICE_COLORS.length]}`}>
                                             {/* Service Number Header */}
-                                            <div className="flex items-center gap-2 pb-1 mb-1 border-b border-dashed">
-                                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Service #{itemIdx + 1}</span>
-                                                {item.serviceType && <span className="text-xs text-muted-foreground">— {item.serviceType}</span>}
+                                            <div className="flex items-center justify-between pb-1 mb-1 border-b border-dashed">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Service #{itemIdx + 1}</span>
+                                                    {item.serviceType && <span className="text-xs text-muted-foreground">— {item.serviceType}</span>}
+                                                </div>
+                                                <button
+                                                    onClick={() => onRemoveLineItem(item.id)}
+                                                    className="text-destructive/60 hover:text-destructive p-1 rounded hover:bg-destructive/10 transition-colors"
+                                                    title="Remove service"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
                                             </div>
                                             {/* Row 1: Service Type + Rate */}
                                             <div className="grid grid-cols-12 gap-3 items-end">
