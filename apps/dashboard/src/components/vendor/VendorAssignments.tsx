@@ -1,6 +1,6 @@
 'use client';
 
-import { Vendor } from '@xiri/shared';
+import { Vendor } from '@xiri-facility-solutions/shared';
 import { Briefcase } from 'lucide-react';
 
 interface VendorAssignmentsProps {

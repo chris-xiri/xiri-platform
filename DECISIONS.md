@@ -337,3 +337,67 @@ Maintained by: @architect-cto
 > - **RULE: When adding new social profiles, update both `layout.tsx` sameAs schema AND Footer.tsx social icons.**
 > - Status: **Active**
 
+> - Date: 2026-03-09
+> - Decision: **Facility Types Dropdown — 5-Column Grouped Layout**
+> - Rationale: The "Facility Types" dropdown in `Navigation.tsx` was restructured from a flat list to a **5-column layout** matching the "Services" dropdown style. Columns are organized by group headers: Medical, Education, Commercial, Industrial/Auto, Specialty. This groups ~18 facility types into logical categories so users can find their building type faster, reducing cognitive load and improving navigation.
+> - Status: **Active**
+
+> - Date: 2026-03-09
+> - Decision: **Comparison Pages — `/compare/[slug]` Template System**
+> - Rationale: Created programmatic comparison pages at `/compare/[slug]` for SEO targeting "XIRI vs [Competitor]" and "[Service] for [Facility Type]" queries. Pages are defined in `dlp-comparisons.ts` with structured data (headline, intro, comparison points, FAQ, CTA). Initial pages: "XIRI vs ServPro" and "GC for Facility Maintenance". Sitemap updated to include all comparison slugs. This targets bottom-of-funnel search queries where prospects are actively evaluating alternatives.
+> - Status: **Active**
+
+> - Date: 2026-03-09
+> - Decision: **AI Search Bot Rules — Explicit Allow in robots.txt**
+> - Rationale: Updated `robots.txt` with explicit `Allow` rules for AI search crawlers: `GPTBot`, `ChatGPT-User`, `Google-Extended`, `Anthropic-ai`, `ClaudeBot`, `PerplexityBot`, `Applebot-Extended`, `Meta-ExternalAgent`, `Bytespider`. Each is explicitly allowed to crawl all paths. This ensures XIRI content can be cited in AI-generated answers (ChatGPT, Perplexity, Google AI Overviews). While most bots crawl unless blocked, explicit allow rules future-proof against default-deny changes.
+> - Status: **Active**
+
+> - Date: 2026-03-09
+> - Decision: **Enhanced Schema Markup — JobPosting + BreadcrumbList + E-E-A-T**
+> - Rationale: Multiple schema enhancements for SEO:
+>   1. **JobPosting schema** added to contractor DLP pages (`/contractors/[slug]`) — includes title, description, employment type, location, salary range (projected from state wage data), and hiring organization.
+>   2. **BreadcrumbList schema** added to contractor pages for Google search breadcrumb display.
+>   3. **Blog Article schema enhanced** with E-E-A-T signals: author (Chris Leung, CEO), dateModified, publisher with logo, wordCount. This strengthens content authority signals for Google ranking.
+> - Status: **Active**
+
+> - Date: 2026-03-10
+> - Decision: **GA4 Event Architecture — 41 Events Across 8 Categories**
+> - Rationale: Comprehensive GA4 event tracking system with 41 events defined in `tracking.ts` across 8 categories: Lead Funnel (10 events), Calculator (5), Onboarding (5), Quote/Invoice (6), Waitlist (2), Content (4), Tools (6), General (3). Three core funnels defined for GA4 Explore: Property Owner (page_view → lead_form_view → lead_zip_submit → lead_submission_start → lead_submission_success), Calculator (calculator_view → calculator_estimate → calculator_cta_click → calculator_email_submit), Contractor (contractor_page_view → onboarding_start → onboarding_step_complete → onboarding_submit → onboarding_success). Events seeded via **Measurement Protocol API** (not browser injection) for reliability. 6 key events marked for conversion tracking: `generate_lead`, `audit_start`, `calculator_estimate`, `calculator_cta_click`, `onboarding_start`, `onboarding_step_complete`.
+> - **RULE: When adding new `trackEvent()` calls, add the event name to `EventName` type in `tracking.ts`. Seed new events via Measurement Protocol API using the GA4 API secret.**
+> - Status: **Active**
+
+> - Date: 2026-03-10
+> - Decision: **Tool Engagement Tracking — SDS Lookup Instrumented**
+> - Rationale: The SDS Lookup tool (`/tools/sds-lookup`) was instrumented with 6 GA4 events: `tool_view` (on mount), `tool_search` (debounced, 500ms), `tool_filter` (category/VOC changes), `tool_result_expand` (chemical card expansion), `tool_external_click` (SDS PDF link clicks), `tool_cta_click` (bottom CTA). Same pattern should be applied to the Compliance Checker and any future tools. Events were seeded on production via Measurement Protocol API.
+> - **RULE: All public tools must have `tool_view` on mount, `tool_search` (debounced) for search inputs, and `tool_cta_click` for conversion CTAs. Follow the SDS Lookup implementation as the reference pattern.**
+> - Status: **Active**
+
+> - Date: 2026-03-10
+> - Decision: **Microsoft Clarity — Behavioral Analytics (Heatmaps + Session Replay)**
+> - Rationale: Installed `@microsoft/clarity` and initialized via `ClarityProvider` component (client-side `useEffect`). Project ID: `vtpukex31u`. Added to `layout.tsx` alongside `GoogleAnalytics`. Clarity provides heatmaps, session recordings, and scroll depth analysis — complements GA4 (which shows *what* happened) by showing *why* users behave a certain way. Privacy disclosures added to both Privacy Policy (Section 5: Cookies & Tracking, with "Behavioral Analytics" bullet and Microsoft Privacy Statement link) and Terms of Service (new Section 10: Analytics & Behavioral Tracking). Both pages updated to March 10, 2026.
+> - **RULE: Privacy Policy and Terms of Service must be updated whenever new third-party tracking/analytics tools are added.**
+> - Status: **Active**
+
+> - Date: 2026-03-10
+> - Decision: **Homepage CTA Optimization — Mid-Page CTAs + Form Repositioning**
+> - Rationale: Homepage audit revealed the lead form (#audit) was ~4,000px down with zero intermediate CTAs across 5 sections (TrustBar, ValueProps, Testimonials, Industries, FAQ). ~78% bounce rate attributed to this. Fix: Created a reusable `MidPageCTA` component with 3 visual variants (`light`, `dark`, `gradient`), built-in `LeadFormModal` trigger, and GA4 `click_cta` tracking with a `trackingId` param for position attribution. Two instances added: (1) gradient CTA after ValueProps — "See if we cover your area", (2) dark CTA after Testimonials — "Join the facilities that trust XIRI". Lead form section moved above FAQ to reduce scroll depth. New page order: Hero → TrustBar → ValueProps → **CTA #1** → Testimonials → **CTA #2** → Industries → **Lead Form** → FAQ.
+> - **RULE: Every marketing page should have a CTA visible within 2 scroll-lengths. Never bury the lead form below FAQ or informational content without intermediate conversion touchpoints.**
+> - Status: **Active**
+
+> - Date: 2026-03-10
+> - Decision: **Google Business Profile — Service-Area Business (Brokerage Model)**
+> - Rationale: XIRI operates as a brokerage (no owned equipment or storefront) but should register as a **Service-Area Business (SAB)** on Google Business Profile. Category: "Facility Management Company" or "Commercial Cleaning Service". Address is used for verification only (not displayed publicly). Service area set to Nassau County + Long Island. For photos (since no trucks/uniforms): use logo, platform screenshots (calculator, audit reports, dashboard), before/after facility photos from contractor work, team headshots, and branded trust graphics. Business description (~750 chars) should include service keywords + location. Reviews are the #1 local ranking factor once GBP is live.
+> - Status: **Planned**
+
+> - Date: 2026-03-12
+> - Decision: **xiriOS → `@xiri-facility-solutions/shared` — Internal Tools as a Product**
+> - Rationale: XIRI has a separate internal operating system repo ("xiri-pro" / xiriOS) with mature business logic: ISSA-calibrated bid calculator, room/task scope engine, proposal/PDF generator, metro wage data, and company T&C templates. Rather than keeping this logic locked to our internal ops, we are extracting it into the published npm package `@xiri-facility-solutions/shared` so it can be consumed by **both** repos (xiri-platform for our SaaS dashboard, xiri-pro for internal ops). This creates a new revenue stream: independent cleaning business owners can subscribe to the xiri-platform dashboard and get access to the same professional tools we use internally — ISSA-based pricing, branded proposal generation, scope management, and NFC proof-of-work tracking. The shared package is the bridge: types, calculator engine, proposal generator, and defaults logic in one place, UI stays per-app.
+> - **RULE: All portable business logic (types, calculator, proposal generation, market data) MUST live in `@xiri-facility-solutions/shared`. Application-specific UI stays in each app. When adding new features to xiri-pro, always evaluate whether the logic can be extracted to shared for reuse in xiri-platform.**
+> - Status: **Active**
+
+> - Date: 2026-03-12
+> - Decision: **Phase 0.5: Calculator-Driven Quote Flow (Calculator IS the Scope Step)**
+> - Rationale: The QuoteBuilder wizard previously had the calculator as a sidebar helper. In Phase 0.5, the ISSA calculator becomes Step 2 itself ("Building Scope"): building type → auto-seed rooms → task checklists → real-time pricing → auto-generate line items. New step flow: `Select Client → Building Scope → Review & Pricing → Terms & T&C`. Calculator rooms, inputs, and results are stored on `QuoteLineItem` and flow downstream to work orders (room-aware tasks). Company T&C defaults (from Firestore `companies/{id}`) pre-fill per-quote `ProposalTerms` with toggle/edit overrides. The old `JanitorialPricingCalc.tsx` is retired in favor of `StepBuildingScope.tsx`.
+> - **RULE: Janitorial quotes MUST go through the calculator scope step. The calculator is the source of truth for room layout, task scope, and ISSA-based pricing. Manual rate entry is still allowed as a ±20% override on the Review step.**
+> - Status: **Active**
+

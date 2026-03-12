@@ -1,4 +1,4 @@
-import { QuoteLineItem } from '@xiri/shared';
+import { QuoteLineItem } from '@xiri-facility-solutions/shared';
 
 // ─── Pure Helper Functions ────────────────────────────────────────────
 // All functions here are pure (no side effects, no React hooks, no Firebase).

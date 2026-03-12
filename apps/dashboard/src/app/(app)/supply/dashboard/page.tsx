@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import VendorList from '@/components/VendorList';
 import VendorDetailDrawer from '@/components/vendor/VendorDetailDrawer';
 import { AddContractorDialog } from '@/components/AddContractorDialog';
-import { Vendor } from '@xiri/shared';
+import { Vendor } from '@xiri-facility-solutions/shared';
 import {
     Users, CheckCircle, Mail, Eye, MousePointerClick, ArrowRight,
     Loader2, TrendingUp, AlertTriangle, UserCheck, Clock, XCircle,

@@ -20,7 +20,7 @@ import {
 import {
     CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, ExternalLink, Phone, Globe, MapPin, X, RotateCcw, Plus, Rocket, Loader2, Search, Zap, ShieldCheck, Database, Star, Clock
 } from 'lucide-react';
-import { Vendor } from '@xiri/shared';
+import { Vendor } from '@xiri-facility-solutions/shared';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/lib/firebase';
 import ReactGoogleAutocomplete from 'react-google-autocomplete';

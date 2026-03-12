@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { QuoteLineItem, getTaxRate, calculateTax } from '@xiri/shared';
-import { Lead } from '@xiri/shared';
+import { QuoteLineItem, getTaxRate, calculateTax, ROOM_TYPES, CLEANING_TASKS } from '@xiri-facility-solutions/shared';
+import { Lead } from '@xiri-facility-solutions/shared';
 import { XIRI_SERVICES, SERVICE_CATEGORIES, ServiceCategory } from '@/data/serviceTypes';
 import { SCOPE_TEMPLATES } from '@/data/scopeTemplates';
-import JanitorialPricingCalc from '@/components/JanitorialPricingCalc';
 import { Location, DAY_LABELS, SERVICE_COLORS } from './types';
 import { formatCurrency, computeTotals } from './helpers';
 import { quoteLogger } from './logger';
@@ -261,14 +260,40 @@ export default function StepServicesAndPricing({
                                                         />
                                                     </div>
                                                 </div>
-                                                {/* Janitorial Pricing Calculator */}
-                                                {item.serviceCategory === 'janitorial' && (
+                                                {/* Calculator Scope Summary (for items generated from Building Scope step) */}
+                                                {item.rooms && item.rooms.length > 0 && (
                                                     <div className="col-span-12">
-                                                        <JanitorialPricingCalc
-                                                            facilityType={selectedLead?.facilityType}
-                                                            initialSqft={item.sqft || selectedLead?.propertySourcing?.squareFootage}
-                                                            onApplyRate={(rate, sqft) => onUpdateLineItem(item.id, { clientRate: rate, sqft })}
-                                                        />
+                                                        <div className="rounded-lg border bg-primary/5 p-3 space-y-2">
+                                                            <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                                                                🏢 ISSA Calculator Scope
+                                                                <span className="text-[10px] font-normal text-muted-foreground">
+                                                                    {item.rooms.length} room{item.rooms.length !== 1 ? 's' : ''}
+                                                                    {item.calculatorResults && ` · ${item.calculatorResults.hoursPerVisit.toFixed(1)} hrs/visit`}
+                                                                </span>
+                                                            </p>
+                                                            <div className="grid grid-cols-2 gap-1">
+                                                                {item.rooms.map(room => {
+                                                                    const rt = ROOM_TYPES.find(r => r.id === room.roomTypeId);
+                                                                    return (
+                                                                        <div key={room.id} className="flex items-center gap-1.5 text-[11px]">
+                                                                            <span className="text-muted-foreground">•</span>
+                                                                            <span className="font-medium">{room.customName || rt?.name || room.roomTypeId}</span>
+                                                                            <span className="text-muted-foreground">
+                                                                                ({room.tasks.length} task{room.tasks.length !== 1 ? 's' : ''})
+                                                                            </span>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                            {item.calculatorResults && (
+                                                                <div className="flex gap-4 text-[10px] text-muted-foreground pt-1 border-t border-dashed">
+                                                                    <span>Labor: {formatCurrency(item.calculatorResults.laborCostPerMonth)}/mo</span>
+                                                                    <span>Overhead: {formatCurrency(item.calculatorResults.overheadCost)}/mo</span>
+                                                                    <span>Profit: {formatCurrency(item.calculatorResults.profitAmount)}/mo</span>
+                                                                    <span>Rate: {formatCurrency(item.calculatorResults.effectiveHourlyRate)}/hr</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 )}
                                                 {/* Tax info */}

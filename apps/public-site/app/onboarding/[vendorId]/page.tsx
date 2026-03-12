@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../../../lib/firebase";
-import { Vendor } from "@xiri/shared";
+import { Vendor } from "@xiri-facility-solutions/shared";
 import { Loader2, CheckCircle, Upload, ChevronRight, ChevronLeft, Globe, Calendar, Clock, Phone } from "lucide-react";
 import { translations, t, type Language } from "./translations";
 import { addDays, addHours, addMinutes, startOfDay, format } from "date-fns";

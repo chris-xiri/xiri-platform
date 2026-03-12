@@ -14,7 +14,7 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
-            '@xiri/shared': path.resolve(__dirname, '../../packages/shared/src'),
+            '@xiri-facility-solutions/shared': path.resolve(__dirname, '../../packages/shared/src'),
         },
     },
 });

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Vendor } from "@xiri/shared";
+import { Vendor } from "@xiri-facility-solutions/shared";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";

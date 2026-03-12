@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { WorkOrder, InvoiceLineItem, VendorPayout, getTaxRate, calculateTax, isEligibleForST120 } from '@xiri/shared';
+import { WorkOrder, InvoiceLineItem, VendorPayout, getTaxRate, calculateTax, isEligibleForST120 } from '@xiri-facility-solutions/shared';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

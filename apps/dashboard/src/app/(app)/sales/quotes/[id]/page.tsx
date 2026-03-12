@@ -6,7 +6,7 @@ import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, serv
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Quote, QuoteLineItem, QuoteRevision } from '@xiri/shared';
+import { Quote, QuoteLineItem, QuoteRevision, ROOM_TYPES, CLEANING_TASKS } from '@xiri-facility-solutions/shared';
 import { SCOPE_TEMPLATES } from '@/data/scopeTemplates';
 import QuoteBuilder from '@/components/QuoteBuilder';
 
@@ -409,10 +409,26 @@ export default function QuoteDetailPage({ params }: PageProps) {
 
             // 2. Create Work Orders ONLY for newly accepted (pending) items
             for (const item of pendingItems) {
-                // Prefer scopeTasks stored on the line item (includes custom tasks);
-                // fall back to template lookup for backwards compatibility
+                // Prefer room-level tasks from calculator, then scopeTasks, then template
                 let tasks;
-                if (item.scopeTasks && item.scopeTasks.length > 0) {
+                if ((item as any).rooms && (item as any).rooms.length > 0) {
+                    // Flatten room tasks into WorkOrderTask format with room context
+                    tasks = (item as any).rooms.flatMap((room: any) => {
+                        const roomType = ROOM_TYPES.find(rt => rt.id === room.roomTypeId);
+                        const roomLabel = room.customName || roomType?.name || room.roomTypeId;
+                        return room.tasks.map((taskId: string) => {
+                            const taskDef = CLEANING_TASKS.find((t: any) => t.id === taskId);
+                            return {
+                                id: `${room.id}_${taskId}`,
+                                name: taskDef?.name || taskId,
+                                description: taskDef?.description || '',
+                                required: true,
+                                roomId: room.id,
+                                roomName: roomLabel,
+                            };
+                        });
+                    });
+                } else if (item.scopeTasks && item.scopeTasks.length > 0) {
                     tasks = item.scopeTasks.map((t: any, i: number) => ({
                         id: `task_${i}`, name: t.name, description: t.description || '', required: t.required,
                     }));
@@ -438,6 +454,10 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     serviceType: item.serviceType,
                     scopeTemplateId: item.scopeTemplateId || null,
                     tasks,
+                    // Calculator scope snapshot (for NFC checklists)
+                    rooms: (item as any).rooms || null,
+                    calculatorInputs: (item as any).calculatorInputs || null,
+                    calculatorResults: (item as any).calculatorResults || null,
                     vendorId: null,
                     vendorRate: null,
                     vendorHistory: [],
@@ -769,6 +789,49 @@ export default function QuoteDetailPage({ params }: PageProps) {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Building Scope Summary (ISSA Calculator) */}
+                {(quote as any).buildingScope && (
+                    <Card className="print:border print:shadow-none">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm flex items-center gap-2">
+                                🏢 Building Scope (ISSA Calculator)
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                                {(quote as any).buildingScope.inputs?.sqft?.toLocaleString() || '—'} sq ft
+                                {' · '}
+                                {(quote as any).buildingScope.rooms?.length || 0} room{(quote as any).buildingScope.rooms?.length !== 1 ? 's' : ''}
+                                {(quote as any).buildingScope.results?.hoursPerVisit &&
+                                    ` · ${(quote as any).buildingScope.results.hoursPerVisit.toFixed(1)} hrs/visit`
+                                }
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {(quote as any).buildingScope.rooms?.map((room: any) => {
+                                    const rt = ROOM_TYPES.find(r => r.id === room.roomTypeId);
+                                    return (
+                                        <div key={room.id} className="rounded-lg border p-2">
+                                            <p className="text-xs font-medium">{room.customName || rt?.name || room.roomTypeId}</p>
+                                            <p className="text-[10px] text-muted-foreground">
+                                                {room.tasks?.length || 0} tasks
+                                                {room.sqft ? ` · ${room.sqft} sqft` : ''}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            {(quote as any).buildingScope.results && (
+                                <div className="flex gap-4 text-[10px] text-muted-foreground pt-2 border-t border-dashed">
+                                    <span>Labor: {formatCurrency((quote as any).buildingScope.results.laborCostPerMonth)}/mo</span>
+                                    <span>Overhead: {formatCurrency((quote as any).buildingScope.results.overheadCost)}/mo</span>
+                                    <span>Price/Visit: {formatCurrency((quote as any).buildingScope.results.pricePerVisit)}</span>
+                                    <span>Rate: {formatCurrency((quote as any).buildingScope.results.effectiveHourlyRate)}/hr</span>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Service Breakdown by Location */}
                 {Array.from(locationMap.entries()).map(([locId, items]) => (

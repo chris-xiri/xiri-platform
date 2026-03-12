@@ -1,4 +1,4 @@
-import { SeoIndustry, SeoService } from "@xiri/shared";
+import { SeoIndustry, SeoService } from "@xiri-facility-solutions/shared";
 import { Hero } from "@/components/Hero";
 import { ValuePropsSection } from "@/components/ValueProps";
 import { ClientLeadForm } from "@/components/ClientLeadForm";

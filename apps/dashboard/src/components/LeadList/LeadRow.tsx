@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Lead, LeadStatus, LeadType } from '@xiri/shared';
+import { Lead, LeadStatus, LeadType } from '@xiri-facility-solutions/shared';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';

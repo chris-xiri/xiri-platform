@@ -1,4 +1,4 @@
-import { ScopeTemplate } from '@xiri/shared';
+import { ScopeTemplate } from '@xiri-facility-solutions/shared';
 
 /**
  * Starter scope templates for the three primary facility verticals.

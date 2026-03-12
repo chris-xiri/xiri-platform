@@ -1,18 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs, getDoc, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Lead, QuoteLineItem, getTaxRate, calculateTax } from '@xiri/shared';
+import {
+    Lead, QuoteLineItem, getTaxRate, calculateTax,
+    type RoomScope, type CalculatorInputs, type CalculatorResults, type ProposalTerms,
+    CLEANING_TASKS,
+} from '@xiri-facility-solutions/shared';
 
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 
 import {
     QuoteBuilderProps, Location, STEPS,
-    StepSelectClient, StepLocations, StepServicesAndPricing, StepTermsAndSubmit,
+    StepSelectClient, StepBuildingScope, StepLocations, StepServicesAndPricing, StepTermsAndSubmit,
     stripUndefined, computeTotals, quoteLogger,
 } from './quote-builder';
 
@@ -31,10 +35,18 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
     const [leads, setLeads] = useState<(Lead & { id: string })[]>([]);
     const [selectedLead, setSelectedLead] = useState<(Lead & { id: string }) | null>(null);
 
-    // Step 2: Locations
+    // Step 1 → Building Scope (calculator-as-scope)
+    const [scope, setScope] = useState<{
+        rooms: RoomScope[];
+        inputs: CalculatorInputs;
+        results: CalculatorResults;
+        location: Location;
+    } | null>(null);
+
+    // Step 2: Locations (from scope or manual)
     const [locations, setLocations] = useState<Location[]>(existingQuote?.locations || []);
 
-    // Step 3: Line items
+    // Step 2: Line items
     const [lineItems, setLineItems] = useState<QuoteLineItem[]>(existingQuote?.lineItems || []);
 
     // Step 4: Terms
@@ -42,6 +54,8 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
     const [paymentTerms, setPaymentTerms] = useState(existingQuote?.paymentTerms || 'Pay on the 25th');
     const [exitClause, setExitClause] = useState(existingQuote?.exitClause || '30-day written notice');
     const [notes, setNotes] = useState(existingQuote?.notes || '');
+    const [proposalTerms, setProposalTerms] = useState<ProposalTerms | null>(null);
+    const [companyData, setCompanyData] = useState<Record<string, any> | null>(null);
 
     // Commission assignment
     const [assignedTo, setAssignedTo] = useState(profile?.uid || '');
@@ -87,6 +101,23 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
         }
         fetchSalesUsers();
     }, []);
+
+    // Fetch company data for T&C defaults
+    useEffect(() => {
+        async function fetchCompanyData() {
+            try {
+                const companyId = (profile as any)?.companyId;
+                if (!companyId) return;
+                const companyDoc = await getDoc(doc(db, 'companies', companyId));
+                if (companyDoc.exists()) {
+                    setCompanyData(companyDoc.data());
+                }
+            } catch (err) {
+                console.warn('Could not fetch company data for T&C defaults:', err);
+            }
+        }
+        fetchCompanyData();
+    }, [(profile as any)?.companyId]);
 
     // When a lead is selected, pre-populate locations
     useEffect(() => {
@@ -205,12 +236,69 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
     // ─── Step Navigation ───────────────────────────────────────────────
     const handleStepChange = (newStep: number) => {
         quoteLogger.stepChange(step, newStep);
+
+        // Auto-generate line items when advancing from Building Scope → Review
+        if (step === 1 && newStep === 2 && scope) {
+            // Set location from scope
+            setLocations([scope.location]);
+            // Generate janitorial line item from calculator scope
+            const userId = profile?.uid || profile?.email || 'unknown';
+            const isFsm = profile?.roles?.some((r: string) => r === 'fsm');
+            const scopeTasks = scope.rooms.flatMap(room =>
+                room.tasks.map((taskId: string) => {
+                    const taskDef = CLEANING_TASKS.find((t: any) => t.id === taskId);
+                    return {
+                        name: taskDef?.name || taskId,
+                        description: taskDef?.description || '',
+                        required: true,
+                    };
+                })
+            );
+            // Deduplicate tasks by name
+            const seen = new Set<string>();
+            const uniqueTasks = scopeTasks.filter(t => {
+                if (seen.has(t.name)) return false;
+                seen.add(t.name);
+                return true;
+            });
+
+            const janItem: QuoteLineItem = {
+                id: `li_${Date.now()}_jan`,
+                locationId: scope.location.id,
+                locationName: scope.location.name,
+                locationAddress: scope.location.address,
+                locationCity: scope.location.city,
+                locationState: scope.location.state,
+                locationZip: scope.location.zip,
+                serviceType: 'Janitorial',
+                serviceCategory: 'janitorial' as any,
+                frequency: 'custom_days',
+                daysOfWeek: Array(7).fill(false).map((_, i) => i > 0 && i < 6) as boolean[],
+                clientRate: scope.results.totalPricePerMonth,
+                sqft: scope.inputs.sqft,
+                scopeTasks: uniqueTasks,
+                rooms: scope.rooms,
+                calculatorInputs: scope.inputs,
+                calculatorResults: scope.results,
+                lineItemStatus: 'pending' as const,
+                addedBy: userId,
+                addedByRole: (isFsm ? 'fsm' : 'sales') as 'sales' | 'fsm',
+                isUpsell: false,
+            };
+
+            // Replace any existing pre-filled janitorial item, keep other line items
+            setLineItems(prev => {
+                const nonJan = prev.filter(li => li.serviceType !== 'Janitorial' || !li.rooms);
+                return [janItem, ...nonJan];
+            });
+        }
+
         setStep(newStep);
     };
 
     const canAdvance = () => {
         if (step === 0) return (selectedLead !== null && !existingQuoteId) || isEditing;
-        if (step === 1) return locations.length > 0;
+        if (step === 1) return scope !== null && scope.rooms.length > 0;
         if (step === 2) return lineItems.length > 0 && lineItems.every(li => li.serviceType && li.clientRate > 0);
         return true;
     };
@@ -261,6 +349,16 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                     totalMonthlyRate: totals.totalMonthly, oneTimeCharges: totals.totalOneTime,
                     subtotalBeforeTax: totals.subtotalBeforeTax, totalTax: totals.totalTax,
                     contractTenure, paymentTerms, exitClause, notes,
+                    // Calculator scope snapshot (if available)
+                    ...(scope ? {
+                        buildingScope: {
+                            rooms: scope.rooms,
+                            inputs: scope.inputs,
+                            results: scope.results,
+                        },
+                    } : {}),
+                    // Proposal T&C (if edited)
+                    ...(proposalTerms ? { proposalTerms } : {}),
                     version: 1, revisionHistory: [], status: 'draft',
                     createdBy: profile.uid || profile.email || 'unknown',
                     assignedTo: assignedTo || profile.uid || profile.email || 'unknown',
@@ -322,11 +420,10 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                         />
                     )}
                     {step === 1 && (
-                        <StepLocations
-                            locations={locations}
-                            onAddLocation={addLocation}
-                            onRemoveLocation={removeLocation}
-                            selectedLeadName={selectedLead?.businessName}
+                        <StepBuildingScope
+                            selectedLead={selectedLead}
+                            initialData={initialData}
+                            onScopeChange={setScope}
                         />
                     )}
                     {step === 2 && (
@@ -360,6 +457,9 @@ export default function QuoteBuilder({ onClose, onCreated, existingQuote, initia
                             onExitClauseChange={setExitClause}
                             onNotesChange={setNotes}
                             onAssignedToChange={setAssignedTo}
+                            proposalTerms={proposalTerms}
+                            onProposalTermsChange={setProposalTerms}
+                            companyData={companyData}
                         />
                     )}
                 </div>

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Rocket, Loader2, Database, MapPin } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "@/lib/firebase";
-import { Vendor } from "@xiri/shared";
+import { Vendor } from "@xiri-facility-solutions/shared";
 
 import ReactGoogleAutocomplete from "react-google-autocomplete";
 

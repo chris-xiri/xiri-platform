@@ -195,7 +195,7 @@ export default function SalesDashboardPage() {
     // Status filter for LeadList
     const statusFilters = useMemo(() => {
         if (activeTab === 'all') return undefined;
-        return [activeTab] as import('@xiri/shared').LeadStatus[];
+        return [activeTab] as import('@xiri-facility-solutions/shared').LeadStatus[];
     }, [activeTab]);
 
     const typeLabel = (t: string) => {

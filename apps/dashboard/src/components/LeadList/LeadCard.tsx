@@ -1,6 +1,6 @@
 "use client";
 
-import { Lead, LeadStatus } from '@xiri/shared';
+import { Lead, LeadStatus } from '@xiri-facility-solutions/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';

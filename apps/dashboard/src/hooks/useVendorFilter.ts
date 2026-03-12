@@ -1,6 +1,6 @@
 
 import { useState, useMemo } from "react";
-import { Vendor } from "@xiri/shared";
+import { Vendor } from "@xiri-facility-solutions/shared";
 
 export function useVendorFilter(vendors: Vendor[], statusFilters?: string[]) {
     const [searchQuery, setSearchQuery] = useState("");

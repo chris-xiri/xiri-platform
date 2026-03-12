@@ -9,7 +9,7 @@ import { JsonLd } from '@/components/JsonLd';
 import { FAQ } from '@/components/FAQ';
 import { NearbyAreas } from '@/components/NearbyAreas';
 import seoData from '@/data/seo-data.json';
-import { SeoService } from '@xiri/shared';
+import { SeoService } from '@xiri-facility-solutions/shared';
 import { SITE } from '@/lib/constants';
 // FIX: Add Lucide imports
 import { MapPin, Eye } from 'lucide-react';

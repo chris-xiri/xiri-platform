@@ -11,7 +11,7 @@ import {
 import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { WorkOrder } from '@xiri/shared';
+import { WorkOrder } from '@xiri-facility-solutions/shared';
 import Link from 'next/link';
 
 const formatCurrency = (n: number) =>

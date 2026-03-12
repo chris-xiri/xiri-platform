@@ -1,5 +1,5 @@
 
-import { Vendor } from "@xiri/shared";
+import { Vendor } from "@xiri-facility-solutions/shared";
 
 export const getStatusColor = (status: Vendor['status'], outreachStatus?: string) => {
     switch (status) {

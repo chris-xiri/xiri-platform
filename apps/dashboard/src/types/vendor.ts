@@ -1,1 +1,1 @@
-export type { Vendor, ComplianceDoc, OutreachEvent } from "@xiri/shared";
+export type { Vendor, ComplianceDoc, OutreachEvent } from "@xiri-facility-solutions/shared";

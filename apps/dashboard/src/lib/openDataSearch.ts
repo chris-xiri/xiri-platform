@@ -10,7 +10,7 @@
  * Data only enters Firestore when user clicks "Approve".
  */
 
-import type { PreviewProperty } from '@xiri/shared';
+import type { PreviewProperty } from '@xiri-facility-solutions/shared';
 
 // ── Constants ──
 

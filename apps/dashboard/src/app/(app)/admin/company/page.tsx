@@ -1,0 +1,243 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { PROPOSAL_TERM_FIELDS } from '@xiri-facility-solutions/shared';
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Building2, Save, CheckCircle, Loader2 } from 'lucide-react';
+
+export default function CompanySettingsPage() {
+    const { profile } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [data, setData] = useState<Record<string, any>>({});
+
+    const companyId = (profile as any)?.companyId;
+
+    useEffect(() => {
+        async function load() {
+            if (!companyId) { setLoading(false); return; }
+            try {
+                const snap = await getDoc(doc(db, 'companies', companyId));
+                if (snap.exists()) setData(snap.data());
+            } catch (err) {
+                console.error('Failed to load company settings:', err);
+            }
+            setLoading(false);
+        }
+        load();
+    }, [companyId]);
+
+    const update = (key: string, value: string | boolean) => {
+        setData(prev => ({ ...prev, [key]: value }));
+        setSaved(false);
+    };
+
+    const handleSave = async () => {
+        if (!companyId) return;
+        setSaving(true);
+        try {
+            await updateDoc(doc(db, 'companies', companyId), {
+                ...data,
+                updatedAt: serverTimestamp(),
+            });
+            setSaved(true);
+            setTimeout(() => setSaved(false), 3000);
+        } catch (err) {
+            console.error('Failed to save company settings:', err);
+            alert('Failed to save. Check console for details.');
+        }
+        setSaving(false);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    if (!companyId) {
+        return (
+            <div className="max-w-2xl mx-auto py-8">
+                <Card>
+                    <CardContent className="py-12 text-center">
+                        <p className="text-muted-foreground">No company associated with your account.</p>
+                        <p className="text-xs text-muted-foreground mt-1">Contact admin to set up your company profile.</p>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    return (
+        <div className="max-w-3xl mx-auto py-8 space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <Building2 className="w-6 h-6" /> Company Settings
+                    </h1>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Default proposal terms &amp; company info. These pre-fill every new quote.
+                    </p>
+                </div>
+                <Button onClick={handleSave} disabled={saving} className="gap-2">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                    {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
+                </Button>
+            </div>
+
+            {/* Company Info */}
+            <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Company Information</CardTitle>
+                    <CardDescription className="text-xs">Used on proposals and contracts</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <Label className="text-xs">Company Name</Label>
+                            <Input
+                                value={data.name || ''}
+                                onChange={e => update('name', e.target.value)}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs">Legal Entity Name</Label>
+                            <Input
+                                value={data.legalName || ''}
+                                onChange={e => update('legalName', e.target.value)}
+                                placeholder="e.g. XIRI Facility Solutions LLC"
+                                className="mt-1"
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <div>
+                            <Label className="text-xs">Phone</Label>
+                            <Input value={data.phone || ''} onChange={e => update('phone', e.target.value)} className="mt-1" />
+                        </div>
+                        <div>
+                            <Label className="text-xs">Email</Label>
+                            <Input value={data.email || ''} onChange={e => update('email', e.target.value)} className="mt-1" />
+                        </div>
+                        <div>
+                            <Label className="text-xs">Address</Label>
+                            <Input value={data.address || ''} onChange={e => update('address', e.target.value)} className="mt-1" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Proposal Terms & Conditions */}
+            <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Default Proposal Terms</CardTitle>
+                    <CardDescription className="text-xs">
+                        These defaults pre-fill the T&amp;C section on every new quote. Adjustable per-deal.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {PROPOSAL_TERM_FIELDS.map(field => (
+                        <div key={field.key}>
+                            <Label className="text-xs">{field.label}</Label>
+                            <textarea
+                                className="w-full min-h-[60px] rounded-md border border-input bg-background px-3 py-2 text-xs mt-1 resize-none"
+                                value={data[field.key] || ''}
+                                onChange={e => update(field.key, e.target.value)}
+                                placeholder={`Enter default ${field.label.toLowerCase()}...`}
+                            />
+                        </div>
+                    ))}
+
+                    <Separator />
+
+                    {/* Supplies Policy */}
+                    <div>
+                        <Label className="text-xs">Supplies Policy</Label>
+                        <select
+                            className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm mt-1"
+                            value={data.suppliesPolicy || 'we_provide'}
+                            onChange={e => update('suppliesPolicy', e.target.value)}
+                        >
+                            <option value="we_provide">We Provide All Supplies</option>
+                            <option value="customer_provides">Customer Provides Supplies</option>
+                            <option value="both">Shared (Both Provide)</option>
+                        </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <Label className="text-xs">Supplies We Provide</Label>
+                            <textarea
+                                className="w-full min-h-[50px] rounded-md border border-input bg-background px-3 py-2 text-xs mt-1 resize-none"
+                                value={data.suppliesWeProvide || ''}
+                                onChange={e => update('suppliesWeProvide', e.target.value)}
+                                placeholder="e.g. Cleaning chemicals, paper products..."
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs">Supplies Customer Provides</Label>
+                            <textarea
+                                className="w-full min-h-[50px] rounded-md border border-input bg-background px-3 py-2 text-xs mt-1 resize-none"
+                                value={data.suppliesCustomerProvides || ''}
+                                onChange={e => update('suppliesCustomerProvides', e.target.value)}
+                                placeholder="e.g. Specialty products, towels..."
+                            />
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Boolean toggles */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="flex items-center gap-2 rounded-lg border p-3 cursor-pointer hover:bg-muted/30 transition-colors">
+                            <input
+                                type="checkbox"
+                                checked={data.bonded ?? false}
+                                onChange={e => update('bonded', e.target.checked)}
+                                className="rounded border-input"
+                            />
+                            <div>
+                                <span className="text-xs font-medium">Bonded</span>
+                                <p className="text-[10px] text-muted-foreground">Include bond info in proposals</p>
+                            </div>
+                        </label>
+                        <label className="flex items-center gap-2 rounded-lg border p-3 cursor-pointer hover:bg-muted/30 transition-colors">
+                            <input
+                                type="checkbox"
+                                checked={data.uniformedPersonnel ?? false}
+                                onChange={e => update('uniformedPersonnel', e.target.checked)}
+                                className="rounded border-input"
+                            />
+                            <div>
+                                <span className="text-xs font-medium">Uniformed Personnel</span>
+                                <p className="text-[10px] text-muted-foreground">Staff wear company uniforms</p>
+                            </div>
+                        </label>
+                    </div>
+                    {data.bonded && (
+                        <div>
+                            <Label className="text-xs">Bond Amount</Label>
+                            <Input
+                                value={data.bondAmount || ''}
+                                onChange={e => update('bondAmount', e.target.value)}
+                                placeholder="e.g. $1,000,000"
+                                className="mt-1"
+                            />
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    );
+}

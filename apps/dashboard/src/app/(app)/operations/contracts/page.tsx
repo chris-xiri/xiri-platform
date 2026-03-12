@@ -6,7 +6,7 @@ import { collection, query, orderBy, onSnapshot, where, getDocs } from 'firebase
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { CLIENT_COLORS } from '@/lib/constants';
-import { Contract } from '@xiri/shared';
+import { Contract } from '@xiri-facility-solutions/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

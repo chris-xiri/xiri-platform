@@ -1,6 +1,6 @@
 'use client';
 
-import { QuoteLineItem } from '@xiri/shared';
+import { QuoteLineItem } from '@xiri-facility-solutions/shared';
 
 interface ContractPreviewProps {
     contract: any;

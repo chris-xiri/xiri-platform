@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Lead, LeadStatus } from '@xiri/shared';
+import { Lead, LeadStatus } from '@xiri-facility-solutions/shared';
 
 export function useLeadFilter(leads: Lead[], statusFilters?: LeadStatus[]) {
     const [searchQuery, setSearchQuery] = useState('');

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { VendorRemittance, PaymentMethod } from '@xiri/shared';
+import { VendorRemittance, PaymentMethod } from '@xiri-facility-solutions/shared';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

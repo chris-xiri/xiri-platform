@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Invoice, PaymentMethod, VendorRemittance } from '@xiri/shared';
+import { Invoice, PaymentMethod, VendorRemittance } from '@xiri-facility-solutions/shared';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

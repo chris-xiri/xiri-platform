@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, query, where, getDocs, getDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { SiteVisit, AreaRating, SiteVisitActionItem, WorkOrder } from '@xiri/shared';
+import { SiteVisit, AreaRating, SiteVisitActionItem, WorkOrder } from '@xiri-facility-solutions/shared';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

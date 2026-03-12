@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { CLIENT_COLORS } from '@/lib/constants';
 import { X } from 'lucide-react';
-import { WorkOrder } from '@xiri/shared';
+import { WorkOrder } from '@xiri-facility-solutions/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

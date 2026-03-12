@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { stripUndefined, getOrdinalSuffix, FrequencyDisplay, formatCurrency, computeTotals } from '../helpers';
-import { QuoteLineItem } from '@xiri/shared';
+import { QuoteLineItem } from '@xiri-facility-solutions/shared';
 
 // ─── stripUndefined ───────────────────────────────────────────────────
 describe('stripUndefined', () => {

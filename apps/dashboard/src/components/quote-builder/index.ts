@@ -1,5 +1,6 @@
 // Barrel export for quote-builder module
 export { default as StepSelectClient } from './StepSelectClient';
+export { default as StepBuildingScope } from './StepBuildingScope';
 export { default as StepLocations } from './StepLocations';
 export { default as StepServicesAndPricing } from './StepServicesAndPricing';
 export { default as StepTermsAndSubmit } from './StepTermsAndSubmit';

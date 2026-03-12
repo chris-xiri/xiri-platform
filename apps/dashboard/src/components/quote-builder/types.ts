@@ -1,4 +1,4 @@
-import { QuoteLineItem } from '@xiri/shared';
+import { QuoteLineItem, RoomScope, CalculatorInputs } from '@xiri-facility-solutions/shared';
 
 // ─── Props ────────────────────────────────────────────────────────────
 export interface QuoteBuilderProps {
@@ -23,6 +23,8 @@ export interface QuoteBuilderProps {
         sqft?: number;
         facilityType?: string;
         facilityName?: string;
+        rooms?: RoomScope[];
+        calculatorInputs?: CalculatorInputs;
     };
 }
 
@@ -36,7 +38,7 @@ export interface Location {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────
-export const STEPS = ['Select Client', 'Locations', 'Services & Pricing', 'Terms & Submit'] as const;
+export const STEPS = ['Select Client', 'Building Scope', 'Review & Pricing', 'Terms & Submit'] as const;
 
 export const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 

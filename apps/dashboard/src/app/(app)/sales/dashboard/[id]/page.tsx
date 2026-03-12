@@ -6,7 +6,7 @@ import { doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs } fr
 import { httpsCallable } from 'firebase/functions';
 import { db } from '@/lib/firebase';
 import { functions } from '@/lib/firebase';
-import { Lead, LeadType } from '@xiri/shared';
+import { Lead, LeadType } from '@xiri-facility-solutions/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

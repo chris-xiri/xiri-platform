@@ -35,7 +35,7 @@ import {
 import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight, ChevronDown, MapPin, Settings2, Tag } from "lucide-react";
 import { collection, onSnapshot, query, orderBy, limit, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Lead, LeadStatus, LeadType } from "@xiri/shared";
+import { Lead, LeadStatus, LeadType } from "@xiri-facility-solutions/shared";
 import { useLeadFilter } from "@/hooks/useLeadFilter";
 import { LeadRow, ColumnKey } from "./LeadList/LeadRow";
 import { LeadCard } from "./LeadList/LeadCard";

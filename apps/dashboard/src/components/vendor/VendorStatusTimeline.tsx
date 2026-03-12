@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Vendor } from '@xiri/shared';
+import { Vendor } from '@xiri-facility-solutions/shared';
 import {
     CheckCircle2, Circle, ChevronDown, ChevronUp, Clock,
     Search, CheckCircle, Mail, FileText, ShieldCheck,

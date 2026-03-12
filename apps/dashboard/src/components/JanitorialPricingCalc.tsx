@@ -20,7 +20,7 @@ import {
     SHIFT_LABELS,
     ADD_ON_LABELS,
 } from '@/data/janitorialPricing';
-import type { FacilityType } from '@xiri/shared';
+import type { FacilityType } from '@xiri-facility-solutions/shared';
 
 // ─── Facility type labels for the dropdown ───────────────────────────
 const FACILITY_LABELS: Record<string, string> = {

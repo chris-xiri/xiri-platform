@@ -28,7 +28,7 @@ import {
 import { Users, Loader2, X, Search, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Settings2 } from "lucide-react";
 import { collection, onSnapshot, query, orderBy, limit, doc, updateDoc, serverTimestamp, writeBatch, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Vendor } from "@xiri/shared";
+import { Vendor } from "@xiri-facility-solutions/shared";
 import { useVendorFilter } from "@/hooks/useVendorFilter";
 import { VendorRow, VendorColumnKey } from "./VendorList/VendorRow";
 import { VendorCard } from "./VendorList/VendorCard";

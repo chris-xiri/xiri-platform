@@ -22,7 +22,7 @@ import {
     Building2, MapPin, Ruler, User, Phone, DollarSign, Calendar,
     Database, Globe, ChevronLeft, ChevronRight, Check, Star,
 } from 'lucide-react';
-import { PreviewProperty } from '@xiri/shared';
+import { PreviewProperty } from '@xiri-facility-solutions/shared';
 import ReactGoogleAutocomplete from 'react-google-autocomplete';
 import { searchOpenData, AVAILABLE_COUNTIES, PROPERTY_CLASS_OPTIONS, PLUTO_BLDG_CLASS_OPTIONS, RECOMMENDED_CODES, RECOMMENDED_PLUTO_CODES, type OpenDataSearchParams, ENRICHMENT_SOURCES, searchDOHFacilities, searchDMVDealers, searchOCFSChildcare, searchDOBPermits, matchEnrichmentToProperty, matchIntentToProperty, type EnrichmentMatch, type IntentSignal, type EnrichmentSource, calculateFitScore, type FitScoreBreakdown } from '@/lib/openDataSearch';
 import { enrichWithGooglePlaces, type PlacesEnrichment } from '@/lib/googlePlaces';

@@ -1,3 +1,11 @@
+import type { RoomScope, CalculatorInputs, CalculatorResults } from './calculator';
+import type { ProposalTerms } from './generateProposal';
+
+export * from "./calculator";
+export * from "./metro-wages";
+export * from "./generateProposal";
+export * from "./proposalDefaults";
+
 // --- SHARED DOMAIN TYPES ---
 
 export type IndustryVertical = 'medical' | 'auto' | 'education' | 'lab' | 'manufacturing' | 'general';
@@ -740,6 +748,11 @@ export interface QuoteLineItem {
     sqft?: number;
     serviceDate?: string;  // ISO date — start date (recurring) or service date (one-off)
 
+    // Calculator-driven scope (rooms + inputs → flows to WorkOrder)
+    rooms?: RoomScope[];                      // Full room scope from calculator
+    calculatorInputs?: CalculatorInputs;      // Bid params (wage, overhead, frequency)
+    calculatorResults?: CalculatorResults;     // Computed totals
+
     // Versioning & acceptance tracking
     lineItemStatus?: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'modified';
     acceptedInVersion?: number;  // which quote version this was accepted in
@@ -810,6 +823,14 @@ export interface Quote {
     notes?: string;
     createdAt: any;
     updatedAt: any;
+
+    // Calculator-driven scope snapshot
+    buildingScope?: {
+        rooms: RoomScope[];
+        inputs: CalculatorInputs;
+        results: CalculatorResults;
+    };
+    proposalTerms?: ProposalTerms;    // Per-quote T&C (defaults from company, editable per deal)
 }
 
 
