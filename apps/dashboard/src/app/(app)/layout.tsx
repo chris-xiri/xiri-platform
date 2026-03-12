@@ -231,6 +231,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             show: showAdminNav,
             dividerAbove: true,
             items: [
+                { label: 'Company', href: '/admin/company', icon: <Building2 className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'User Manager', href: '/admin/users', icon: <Users className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'AI Agents', href: '/admin/agents', icon: <Bot className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'Pricing', href: '/admin/pricing', icon: <DollarSign className="w-4 h-4" />, subGroup: 'Settings' },

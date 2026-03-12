@@ -4,14 +4,14 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { PROPOSAL_TERM_FIELDS } from '@xiri-facility-solutions/shared';
+import { PROPOSAL_TERM_FIELDS, FREQUENCIES, DEFAULT_INPUTS } from '@xiri-facility-solutions/shared';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Building2, Save, CheckCircle, Loader2 } from 'lucide-react';
+import { Building2, Save, CheckCircle, Loader2, Calculator } from 'lucide-react';
 
 export default function CompanySettingsPage() {
     const { profile } = useAuth();
@@ -36,8 +36,20 @@ export default function CompanySettingsPage() {
         load();
     }, [companyId]);
 
-    const update = (key: string, value: string | boolean) => {
+    const update = (key: string, value: string | boolean | number) => {
         setData(prev => ({ ...prev, [key]: value }));
+        setSaved(false);
+    };
+
+    // Nested update for calculatorDefaults.* keys
+    const updateCalc = (field: string, value: string | number) => {
+        setData(prev => ({
+            ...prev,
+            calculatorDefaults: {
+                ...(prev.calculatorDefaults || {}),
+                [field]: value,
+            },
+        }));
         setSaved(false);
     };
 
@@ -57,6 +69,8 @@ export default function CompanySettingsPage() {
         }
         setSaving(false);
     };
+
+    const calcDefaults = data.calculatorDefaults || {};
 
     if (loading) {
         return (
@@ -136,6 +150,110 @@ export default function CompanySettingsPage() {
                             <Input value={data.address || ''} onChange={e => update('address', e.target.value)} className="mt-1" />
                         </div>
                     </div>
+                </CardContent>
+            </Card>
+
+            {/* Quote Calculator Defaults */}
+            <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                        <Calculator className="w-4 h-4" /> Quote Calculator Defaults
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                        These values pre-fill the Building Scope calculator when creating new quotes.
+                        State-based wages still auto-fill when a lead&apos;s state is known.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-3 gap-3">
+                        <div>
+                            <Label className="text-xs">Default Wage Rate ($/hr)</Label>
+                            <Input
+                                type="number"
+                                step="0.50"
+                                min="0"
+                                value={calcDefaults.wageRate ?? DEFAULT_INPUTS.wageRate}
+                                onChange={e => updateCalc('wageRate', parseFloat(e.target.value) || 0)}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs">Payroll Tax %</Label>
+                            <Input
+                                type="number"
+                                step="0.5"
+                                min="0"
+                                max="50"
+                                value={calcDefaults.payrollTaxPercent ?? DEFAULT_INPUTS.payrollTaxPercent}
+                                onChange={e => updateCalc('payrollTaxPercent', parseFloat(e.target.value) || 0)}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs">Overhead %</Label>
+                            <Input
+                                type="number"
+                                step="1"
+                                min="0"
+                                max="100"
+                                value={calcDefaults.overheadPercent ?? DEFAULT_INPUTS.overheadPercent}
+                                onChange={e => updateCalc('overheadPercent', parseFloat(e.target.value) || 0)}
+                                className="mt-1"
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <div>
+                            <Label className="text-xs">Profit Margin %</Label>
+                            <Input
+                                type="number"
+                                step="1"
+                                min="0"
+                                max="100"
+                                value={calcDefaults.profitPercent ?? DEFAULT_INPUTS.profitPercent}
+                                onChange={e => updateCalc('profitPercent', parseFloat(e.target.value) || 0)}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs">Supply Cost ($/sqft/visit)</Label>
+                            <Input
+                                type="number"
+                                step="0.0001"
+                                min="0"
+                                value={calcDefaults.supplyCostPerSqft ?? DEFAULT_INPUTS.supplyCostPerSqft}
+                                onChange={e => updateCalc('supplyCostPerSqft', parseFloat(e.target.value) || 0)}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs">Default Frequency</Label>
+                            <select
+                                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm mt-1"
+                                value={calcDefaults.frequency || DEFAULT_INPUTS.frequency}
+                                onChange={e => updateCalc('frequency', e.target.value)}
+                            >
+                                {FREQUENCIES.filter(f => f.group === 'recurring').map(f => (
+                                    <option key={f.value} value={f.value}>{f.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <Label className="text-xs">Default Supply Policy</Label>
+                        <select
+                            className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm mt-1"
+                            value={calcDefaults.supplyPolicy || DEFAULT_INPUTS.supplyPolicy}
+                            onChange={e => updateCalc('supplyPolicy', e.target.value)}
+                        >
+                            <option value="company">Company Provides All</option>
+                            <option value="client">Client Provides</option>
+                            <option value="shared">Shared (50/50)</option>
+                        </select>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                        💡 State-based wage auto-fill from BLS data will override this default when a lead&apos;s state is known.
+                    </p>
                 </CardContent>
             </Card>
 

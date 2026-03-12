@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import {
     type Lead,
     type RoomScope,
@@ -68,6 +71,11 @@ export default function StepBuildingScope({
     onScopeChange,
 }: StepBuildingScopeProps) {
 
+    // ─── Company defaults from Firestore ─────────────────────────────
+    const { profile } = useAuth();
+    const companyId = (profile as any)?.companyId;
+    const companyDefaultsLoaded = useRef(false);
+
     // ─── Derive defaults from the selected lead ──────────────────────
     const leadFacilityType = initialData?.facilityType || selectedLead?.facilityType || '';
     const leadSqft = initialData?.sqft || (selectedLead as any)?.propertySourcing?.squareFootage || 0;
@@ -134,6 +142,31 @@ export default function StepBuildingScope({
 
     // Track whether user manually edited an individual room's sqft
     const manualRoomSqftEdit = useRef(false);
+
+    // ─── Fetch company calculator defaults on mount ──────────────────
+    useEffect(() => {
+        if (!companyId || companyDefaultsLoaded.current) return;
+        companyDefaultsLoaded.current = true;
+
+        (async () => {
+            try {
+                const snap = await getDoc(doc(db, 'companies', companyId));
+                if (!snap.exists()) return;
+                const cd = snap.data()?.calculatorDefaults;
+                if (!cd) return;
+
+                // Only apply defaults if no initialData overrides exist
+                if (!initialData?.calculatorInputs) {
+                    if (cd.wageRate != null) setWageRate(cd.wageRate);
+                    if (cd.overheadPercent != null) setOverheadPercent(cd.overheadPercent);
+                    if (cd.profitPercent != null) setProfitPercent(cd.profitPercent);
+                    if (cd.frequency) setFrequency(cd.frequency);
+                }
+            } catch (err) {
+                console.error('Failed to load company calculator defaults:', err);
+            }
+        })();
+    }, [companyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Auto-fill wage from state data on state change
     useEffect(() => {

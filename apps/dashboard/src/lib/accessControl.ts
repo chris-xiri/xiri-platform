@@ -37,6 +37,7 @@ const ACCESS_MAP: Record<string, string[]> = {
 
     // Admin (QA can view but not modify)
     'admin/settings': ['admin', 'qa'],
+    'admin/company': ['admin', 'qa'],
     'admin/users': ['admin', 'qa'],
     'admin/templates': ['admin', 'qa'],
     'admin/agents': ['admin', 'qa'],
