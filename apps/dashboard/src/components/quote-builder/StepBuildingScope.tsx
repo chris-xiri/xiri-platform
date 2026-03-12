@@ -716,8 +716,8 @@ export default function StepBuildingScope({
                                                                             onClick={e => e.stopPropagation()}
                                                                             className="h-5 px-1 text-[10px] border border-input rounded bg-background flex-shrink-0 w-16"
                                                                         >
-                                                                            {freqOptions.map((fo: { value: string; label: string }) => (
-                                                                                <option key={fo.value} value={fo.value}>{fo.label}</option>
+                                                                            {getTaskFrequencyOptions(frequency).map(f => (
+                                                                                <option key={f.value} value={f.value}>{f.label}</option>
                                                                             ))}
                                                                         </select>
                                                                     )}
