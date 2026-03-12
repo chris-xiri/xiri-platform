@@ -330,12 +330,12 @@ export default function StepServicesAndPricing({
                                                 {/* ±20% Price Band (internal only) */}
                                                 {item.clientRate > 0 && !item.isConsumable && item.frequency !== 'one_time' && (
                                                     <div className="col-span-12">
-                                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900">
-                                                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">📊 Internal Range:</span>
-                                                            <span className="text-xs font-semibold text-blue-800 dark:text-blue-300">
+                                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                                            <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">📊 Internal Range:</span>
+                                                            <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                                                                 {formatCurrency(Math.round(item.clientRate * 0.8))} – {formatCurrency(Math.round(item.clientRate * 1.2))}/mo
                                                             </span>
-                                                            <span className="text-[10px] text-blue-500">(±20%)</span>
+                                                            <span className="text-[10px] text-slate-500 dark:text-slate-400">(±20%)</span>
                                                         </div>
                                                     </div>
                                                 )}
