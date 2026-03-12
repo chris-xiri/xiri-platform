@@ -680,9 +680,8 @@ export default function StepBuildingScope({
                                                                     </span>
                                                                     <button
                                                                         onClick={(e) => { e.stopPropagation(); startEditingTask(room.id, task.id); }}
-                                                                        className="opacity-0 group-hover:opacity-100 hover:!opacity-100 text-muted-foreground hover:text-foreground p-0.5 flex-shrink-0"
+                                                                        className="opacity-40 hover:opacity-100 text-muted-foreground hover:text-foreground p-0.5 flex-shrink-0 transition-opacity"
                                                                         title="Edit task name"
-                                                                        style={{ opacity: isOverridden ? 0.6 : undefined }}
                                                                     >
                                                                         <Pencil className="w-2.5 h-2.5" />
                                                                     </button>
