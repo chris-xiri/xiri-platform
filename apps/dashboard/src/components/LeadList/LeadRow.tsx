@@ -19,6 +19,11 @@ import {
     Rocket,
     Loader2,
     CheckCircle2,
+    MousePointerClick,
+    MailOpen,
+    MailCheck,
+    AlertTriangle,
+    Ban,
 } from 'lucide-react';
 
 export type ColumnKey = 'business' | 'type' | 'contact' | 'location' | 'auditTime' | 'status' | 'source' | 'created' | 'actions';
@@ -79,6 +84,41 @@ function toDate(value: any): Date | null {
     }
 }
 
+// ─── Engagement signal helpers ───
+function getEngagementSignal(lead: Lead) {
+    const eng = (lead as any).emailEngagement;
+    if (!eng) return null;
+
+    switch (eng.lastEvent) {
+        case 'clicked':
+            return { icon: MousePointerClick, label: 'Clicked', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
+        case 'opened':
+            return { icon: MailOpen, label: `Opened${eng.openCount > 1 ? ` ×${eng.openCount}` : ''}`, color: 'text-blue-600 bg-blue-50 border-blue-200' };
+        case 'delivered':
+            return { icon: MailCheck, label: 'Delivered', color: 'text-gray-500 bg-gray-50 border-gray-200' };
+        case 'bounced':
+            return { icon: AlertTriangle, label: 'Bounced', color: 'text-red-600 bg-red-50 border-red-200' };
+        case 'spam':
+            return { icon: Ban, label: 'Spam', color: 'text-red-700 bg-red-50 border-red-200' };
+        default:
+            return null;
+    }
+}
+
+function timeAgo(timestamp: any): string {
+    if (!timestamp) return '';
+    const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+}
+
 export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visibleColumns = ALL_COLUMNS }: LeadRowProps) {
     const router = useRouter();
     const [startingSequence, setStartingSequence] = useState(false);
@@ -113,6 +153,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
 
     const createdDate = toDate(lead.createdAt);
     const show = (col: ColumnKey) => visibleColumns.has(col);
+    const engagement = getEngagementSignal(lead);
 
     return (
         <TableRow className="hover:bg-muted/50 transition-colors">
@@ -221,12 +262,23 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
 
             {show('status') && (
                 <TableCell className="text-center cursor-pointer" onClick={handleClick}>
-                    <Badge
-                        variant="outline"
-                        className={`text-xs font-medium ${STATUS_COLORS[lead.status]}`}
-                    >
-                        {lead.status}
-                    </Badge>
+                    <div className="flex flex-col items-center gap-1">
+                        <Badge
+                            variant="outline"
+                            className={`text-xs font-medium ${STATUS_COLORS[lead.status]}`}
+                        >
+                            {lead.status}
+                        </Badge>
+                        {engagement && (
+                            <div className={`inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full border ${engagement.color}`}>
+                                <engagement.icon className="w-3 h-3" />
+                                {engagement.label}
+                                {(lead as any).emailEngagement?.lastEventAt && (
+                                    <span className="opacity-70">{timeAgo((lead as any).emailEngagement.lastEventAt)}</span>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </TableCell>
             )}
 
