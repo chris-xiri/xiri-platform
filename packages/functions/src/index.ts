@@ -58,3 +58,6 @@ export {
 
 // ── NFC Site Key & Session (onCall) ──
 export { validateSiteKey, updateZoneScan, completeNfcSession, getComplianceLog } from "./functions/nfc";
+
+// ── NFC Monitoring & Morning Reports (scheduled + onCall) ──
+export { checkNightlyStatus, generateMorningReports, sendTestMorningReport } from "./functions/monitoring";
