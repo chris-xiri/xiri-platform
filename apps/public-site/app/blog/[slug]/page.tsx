@@ -50,6 +50,12 @@ export default async function BlogPost({ params }: Props) {
         let i = 0;
         let key = 0;
 
+        const inlineFormat = (text: string) =>
+            text
+                .replace(/\*\*(.+?)\*\*/g, '<strong class="text-slate-900">$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" class="text-sky-600 hover:underline">$1</a>');
+
         while (i < lines.length) {
             const line = lines[i].trim();
 
@@ -77,7 +83,7 @@ export default async function BlogPost({ params }: Props) {
                                     <tr key={j} className={j % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                                         {row.map((cell, k) => (
                                             <td key={k} className="px-4 py-2.5 border-b border-slate-100 text-slate-600"
-                                                dangerouslySetInnerHTML={{ __html: cell.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') }}
+                                                dangerouslySetInnerHTML={{ __html: inlineFormat(cell) }}
                                             />
                                         ))}
                                     </tr>
@@ -90,43 +96,69 @@ export default async function BlogPost({ params }: Props) {
             }
 
             // Headings
+            if (line.startsWith('### ')) {
+                elements.push(<h3 key={key++} className="text-xl font-heading font-semibold text-slate-800 mt-8 mb-3">{line.slice(4)}</h3>);
+                i++;
+                continue;
+            }
             if (line.startsWith('## ')) {
                 elements.push(<h2 key={key++} className="text-2xl font-heading font-bold text-slate-900 mt-10 mb-4">{line.slice(3)}</h2>);
                 i++;
                 continue;
             }
 
-            // Checklist items
+            // Checklist items — collect consecutive items
             if (line.startsWith('- [ ]')) {
+                const items: string[] = [];
+                while (i < lines.length && lines[i].trim().startsWith('- [ ]')) {
+                    const checkText = inlineFormat(lines[i].trim().slice(5).trim());
+                    items.push(checkText);
+                    i++;
+                }
                 elements.push(
-                    <div key={key++} className="flex items-start gap-2 my-1.5 ml-2">
-                        <span className="w-4 h-4 mt-0.5 rounded border border-slate-300 flex-shrink-0" />
-                        <span className="text-slate-600">{line.slice(5).trim()}</span>
+                    <div key={key++} className="my-3">
+                        {items.map((html, j) => (
+                            <div key={j} className="flex items-start gap-2 my-1.5 ml-2">
+                                <span className="w-4 h-4 mt-0.5 rounded border border-slate-300 flex-shrink-0" />
+                                <span className="text-slate-600" dangerouslySetInnerHTML={{ __html: html }} />
+                            </div>
+                        ))}
                     </div>
                 );
-                i++;
                 continue;
             }
 
-            // Bold list items
-            if (line.startsWith('- **') || line.startsWith('- ')) {
+            // Bullet list items — collect consecutive and wrap in <ul>
+            if (line.startsWith('- ')) {
+                const items: string[] = [];
+                while (i < lines.length && lines[i].trim().startsWith('- ') && !lines[i].trim().startsWith('- [ ]')) {
+                    items.push(inlineFormat(lines[i].trim().slice(2)));
+                    i++;
+                }
                 elements.push(
-                    <li key={key++} className="text-slate-600 ml-4 my-1"
-                        dangerouslySetInnerHTML={{ __html: line.slice(2).replace(/\*\*(.+?)\*\*/g, '<strong class="text-slate-900">$1</strong>') }}
-                    />
+                    <ul key={key++} className="list-disc ml-6 my-4 space-y-1">
+                        {items.map((html, j) => (
+                            <li key={j} className="text-slate-600" dangerouslySetInnerHTML={{ __html: html }} />
+                        ))}
+                    </ul>
                 );
-                i++;
                 continue;
             }
 
-            // Numbered items
+            // Numbered list items — collect consecutive and wrap in <ol>
             if (/^\d+\.\s/.test(line)) {
+                const items: string[] = [];
+                while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+                    items.push(inlineFormat(lines[i].trim().replace(/^\d+\.\s/, '')));
+                    i++;
+                }
                 elements.push(
-                    <li key={key++} className="text-slate-600 ml-4 my-1.5 list-decimal"
-                        dangerouslySetInnerHTML={{ __html: line.replace(/^\d+\.\s/, '').replace(/\*\*(.+?)\*\*/g, '<strong class="text-slate-900">$1</strong>') }}
-                    />
+                    <ol key={key++} className="list-decimal ml-6 my-4 space-y-1.5">
+                        {items.map((html, j) => (
+                            <li key={j} className="text-slate-600" dangerouslySetInnerHTML={{ __html: html }} />
+                        ))}
+                    </ol>
                 );
-                i++;
                 continue;
             }
 
@@ -150,7 +182,7 @@ export default async function BlogPost({ params }: Props) {
             if (line.length > 0) {
                 elements.push(
                     <p key={key++} className="text-slate-600 leading-relaxed my-4"
-                        dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.+?)\*\*/g, '<strong class="text-slate-900">$1</strong>').replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" class="text-sky-600 hover:underline">$1</a>') }}
+                        dangerouslySetInnerHTML={{ __html: inlineFormat(line) }}
                     />
                 );
             }

@@ -5,6 +5,7 @@
 export const DASHBOARD_CORS = [
     "http://localhost:3001",     // Dashboard Dev
     "http://localhost:3000",     // Public Site Dev
+    "http://localhost:3002",     // Public Site Dev (alt port)
     "https://xiri.ai",          // Public Site Production
     "https://www.xiri.ai",      // Public Site WWW
     "https://app.xiri.ai",      // Dashboard Production

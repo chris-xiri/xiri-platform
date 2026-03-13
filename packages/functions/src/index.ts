@@ -55,3 +55,6 @@ export {
     regeneratePostCaption,
     getOutroPreview,
 } from "./functions/social";
+
+// ── NFC Site Key & Session (onCall) ──
+export { validateSiteKey, updateZoneScan, completeNfcSession, getComplianceLog } from "./functions/nfc";

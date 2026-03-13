@@ -401,3 +401,53 @@ Maintained by: @architect-cto
 > - **RULE: Janitorial quotes MUST go through the calculator scope step. The calculator is the source of truth for room layout, task scope, and ISSA-based pricing. Manual rate entry is still allowed as a ±20% override on the Review step.**
 > - Status: **Active**
 
+> - Date: 2026-03-13
+> - Decision: **Blue Ocean Strategy — Accountability Over Quality**
+> - Rationale: Applied Blue Ocean Strategy ERRC framework to XIRI's competitive positioning. The commercial cleaning market is a red ocean — competing on price, quality claims, and long-standing relationships is unwinnable for a new entrant. XIRI's blue ocean is **cleaning verification and accountability**:
+>   - **Eliminate**: "We clean better" claims — every competitor says this, nobody can prove it. Zero marketing spend on quality claims.
+>   - **Reduce**: Price competition — stop underbidding and discounting. Price at market rate; the verification system justifies any premium.
+>   - **Raise**: Verification and documentation — NFC proof of work ($0.50/tag, near-zero marginal cost) + digital compliance logs as standard on every contract.
+>   - **Create**: "Trust shift" — prospects go from *trusting* their cleaner to *verifying* their cleaner. XIRI is the only company offering this, creating a category of one.
+>   - The net effect: redirect spend from quality claims and price wars into proof-of-work technology that makes XIRI impossible to compare with commodity cleaning companies.
+> - **RULE: Never position XIRI against competitors on price or quality. Always lead with accountability and verification. The pitch starts with "Do you know if your building actually got cleaned last night?"**
+> - Status: **Active — Strategic Foundation**
+
+> - Date: 2026-03-13
+> - Decision: **NFC Tag as In-Person Sales Pitch Tool**
+> - Rationale: The NFC tag is not just an operational feature — it is the **primary sales differentiator** for door-to-door outreach. During in-person visits, the salesperson taps an NFC tag to the prospect's phone, opening a live demo showing: (1) NFC Tap Landing screen, (2) Live Check-In with zone/task checklist, (3) Morning Report showing compliance data. This creates a tangible, memorable "wow moment" that no competitor can replicate with a brochure. The 3-screen demo flow was wireframed and planned for development. NFC tags cost ~$0.50 each from GoToTags (NTAG213, 38mm circle).
+> - **RULE: Sales materials should always include an NFC demo tag. The physical tap-and-show experience is the hook — not slides, not brochures.**
+> - Status: **Active**
+
+> - Date: 2026-03-13
+> - Decision: **"Keep Your Cleaner" Overlay Service — Per-Zone Pricing**
+> - Rationale: Added a new service tier where prospects keep their existing cleaning vendor and XIRI installs the NFC verification system on top. Pricing model: **flat per-zone monthly fee** ($25-50/zone/month). Recommended over % of contract (requires knowing their cost, feels like a "tax") and flat monthly (might underprice large facilities). Per-zone scales naturally with facility size, requires no knowledge of the existing cleaning contract, and makes the value proposition dead simple: "$35/zone/month — you have 6 zones? That's $210/month for complete accountability." This eliminates the biggest sales objection ("we already have a cleaning company we like") by making XIRI complementary rather than competitive.
+> - **RULE: The "keep your cleaner" pitch must always end with: "If they're doing a great job, the data will prove it. If they're not — you'll know."**
+> - Status: **Active**
+
+> - Date: 2026-03-13
+> - Decision: **Outreach Messaging Pivot — Accountability-First Templates**
+> - Rationale: All outreach email templates (tenant lead 4-step, referral partnership 3-step) and AI sales prompts (outreach + follow-up) were rewritten to lead with the accountability hook. Old messaging: "We clean better, save money, consolidate vendors." New messaging: "Do you know if your building actually got cleaned last night?" Key changes:
+>   - Every subject line plants doubt about verification, not quality
+>   - Step 3 social proof is now a story about a client who *discovered* what their cleaner was actually doing once they had data (rooms skipped, sessions too short)
+>   - AI prompts require NFC proof-of-work as the #1 differentiator and forbid "we clean better than your current vendor" claims
+>   - Follow-up prompts emphasize compliance log concept, not generic value adds
+>   - Files updated: `scripts/seed-lead-templates.js`, `scripts/seed-templates.js`
+> - Status: **Active**
+
+> - Date: 2026-03-13
+> - Decision: **Content-Led Data File Refactoring — The Blog-Post-to-Markdown Pattern**
+> - Rationale: Large monolithic TypeScript data files (1,000-2,000+ lines) were refactored into smaller, more manageable formats:
+>   - `blog-posts.ts` (2,300+ lines) → 38 individual Markdown files in `content/blog/*.md` with YAML frontmatter, loaded dynamically via `gray-matter`
+>   - `guides.ts` (744 lines) → 9 individual JSON files in `content/guides/*.json`, loaded dynamically at build time
+>   - `sds-database.ts` (2,164 lines) → `data/sds-database.json` (54 entries), imported directly
+>   - `SOLUTIONS` object (307 lines inline in page.tsx) → `data/solutions.ts` (separate file with TypeScript interface)
+>   - **Total reduction**: ~5,500 lines of inline data moved to content files
+>   - This pattern enables future workflow improvements: markdown blog posts can be authored directly, guides can be generated by the SEO agent, SDS data can be updated independently.
+> - **RULE: New blog posts should be created as Markdown files in `content/blog/`. New guides should be JSON files in `content/guides/`. Never add large inline data objects to page components.**
+> - Status: **Active**
+
+> - Date: 2026-03-13
+> - Decision: **Cleaning Verification Hub — Content Pillar Page**
+> - Rationale: Created `/solutions/cleaning-verification` as the pillar page for all accountability-related content. This hub links to 3 verification solution pages (NFC Proof of Work, Digital Compliance Logs, Keep Your Cleaner) and 7 accountability blog posts. The hub is the single page that outreach emails, NFC demo tags, and door-knock conversations all point to. It's positioned first on the `/solutions` index page. The hub structure creates a content moat around the term "cleaning verification" — a keyword category XIRI is defining before any competitor targets it. The page includes: problem framing (the accountability gap), how-it-works (4 steps), solution path cards, audience segments, related blog content grid, and dual CTAs.
+> - Status: **Active**
+

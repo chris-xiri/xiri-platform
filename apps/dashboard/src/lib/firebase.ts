@@ -21,8 +21,8 @@ export const functions = getFunctions(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 
-// Connect to emulators in development
-if (process.env.NODE_ENV === "development") {
+// Connect to emulators only when explicitly opted in via NEXT_PUBLIC_USE_EMULATORS=true
+if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_EMULATORS === "true") {
     console.log("Connecting to Firebase Emulators...");
     connectFirestoreEmulator(db, "127.0.0.1", 8085);
     connectFunctionsEmulator(functions, "127.0.0.1", 5001);

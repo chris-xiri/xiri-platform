@@ -367,136 +367,6 @@ var init_emailUtils = __esm({
   }
 });
 
-// ../shared/src/TaxCertificateService.js
-var require_TaxCertificateService = __commonJS({
-  "../shared/src/TaxCertificateService.js"(exports2) {
-    "use strict";
-    var __createBinding = exports2 && exports2.__createBinding || (Object.create ? (function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m, k);
-      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m[k];
-        } };
-      }
-      Object.defineProperty(o, k2, desc);
-    }) : (function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      o[k2] = m[k];
-    }));
-    var __setModuleDefault = exports2 && exports2.__setModuleDefault || (Object.create ? (function(o, v) {
-      Object.defineProperty(o, "default", { enumerable: true, value: v });
-    }) : function(o, v) {
-      o["default"] = v;
-    });
-    var __importStar = exports2 && exports2.__importStar || /* @__PURE__ */ (function() {
-      var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function(o2) {
-          var ar = [];
-          for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
-          return ar;
-        };
-        return ownKeys(o);
-      };
-      return function(mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) {
-          for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        }
-        __setModuleDefault(result, mod);
-        return result;
-      };
-    })();
-    Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.generateST1201 = generateST12012;
-    var pdf_lib_1 = require("pdf-lib");
-    var fs = __importStar(require("fs"));
-    var path = __importStar(require("path"));
-    var CERT_VALIDITY_YEARS = 3;
-    async function generateST12012(vendorData, xiriData, projectData) {
-      if (!vendorData.salesTaxId || vendorData.salesTaxId.trim().length === 0) {
-        return {
-          success: false,
-          error: "Vendor does not have a valid Sales Tax ID (Certificate of Authority). Cannot generate ST-120.1."
-        };
-      }
-      try {
-        const now = /* @__PURE__ */ new Date();
-        const issueDate = now.toLocaleDateString("en-US");
-        const expiry = new Date(now);
-        expiry.setFullYear(expiry.getFullYear() + CERT_VALIDITY_YEARS);
-        const expiryDate = expiry.toISOString().split("T")[0];
-        const templatePath = path.resolve(__dirname, "templates", "st120_1_template.pdf");
-        const templateBytes = fs.readFileSync(templatePath);
-        const pdfDoc = await pdf_lib_1.PDFDocument.load(templateBytes);
-        const form = pdfDoc.getForm();
-        form.getTextField("name of vendor").setText(vendorData.businessName);
-        form.getTextField("street address1").setText(vendorData.address || "");
-        form.getTextField("city1").setText(vendorData.city || "");
-        form.getTextField("state1").setText(vendorData.state || "");
-        form.getTextField("zip code 1").setText(vendorData.zip || "");
-        form.getTextField("enter your sales tax vendor id number").setText(vendorData.salesTaxId);
-        form.getTextField("name of purchasing contractor").setText(xiriData.businessName);
-        form.getTextField("street address2").setText(xiriData.address);
-        form.getTextField("city2").setText(xiriData.city);
-        form.getTextField("state2").setText(xiriData.state);
-        form.getTextField("zip code 2").setText(xiriData.zip);
-        form.getTextField("line 2 1").setText(projectData.projectName);
-        const fullProjectAddress = [
-          projectData.projectAddress,
-          projectData.projectCity,
-          projectData.projectState,
-          projectData.projectZip
-        ].filter(Boolean).join(", ");
-        form.getTextField("line 2 2").setText(fullProjectAddress);
-        form.getTextField("line 2 3").setText(projectData.ownerName);
-        form.getTextField("line 2 4").setText(projectData.ownerAddress);
-        form.getCheckBox("box m").check();
-        form.getTextField("type or print name and title of owner").setText(`${xiriData.signerName}, ${xiriData.signerTitle}`);
-        form.getTextField("date prepared").setText(issueDate);
-        if (xiriData.signatureImageBase64) {
-          try {
-            const sigBytes = Buffer.from(xiriData.signatureImageBase64, "base64");
-            let sigImage;
-            try {
-              sigImage = await pdfDoc.embedPng(sigBytes);
-            } catch {
-              sigImage = await pdfDoc.embedJpg(sigBytes);
-            }
-            const pages = pdfDoc.getPages();
-            const lastPage = pages[pages.length - 1];
-            const { height } = lastPage.getSize();
-            lastPage.drawImage(sigImage, {
-              x: 72,
-              y: height - 720,
-              // near bottom of form
-              width: 150,
-              height: 40
-            });
-          } catch (sigErr) {
-            console.warn("Could not embed signature image:", sigErr);
-          }
-        }
-        form.flatten();
-        const pdfBytes = await pdfDoc.save();
-        return {
-          success: true,
-          pdfBytes,
-          issueDate: now.toISOString().split("T")[0],
-          // ISO for storage
-          expiryDate
-        };
-      } catch (error11) {
-        return {
-          success: false,
-          error: `Failed to generate ST-120.1: ${error11.message}`
-        };
-      }
-    }
-  }
-});
-
 // src/utils/facebookApi.ts
 var facebookApi_exports = {};
 __export(facebookApi_exports, {
@@ -1620,14 +1490,14 @@ var require_url_state_machine = __commonJS({
       return url.replace(/\u0009|\u000A|\u000D/g, "");
     }
     function shortenPath(url) {
-      const path = url.path;
-      if (path.length === 0) {
+      const path2 = url.path;
+      if (path2.length === 0) {
         return;
       }
-      if (url.scheme === "file" && path.length === 1 && isNormalizedWindowsDriveLetter(path[0])) {
+      if (url.scheme === "file" && path2.length === 1 && isNormalizedWindowsDriveLetter(path2[0])) {
         return;
       }
-      path.pop();
+      path2.pop();
     }
     function includesCredentials(url) {
       return url.username !== "" || url.password !== "";
@@ -6419,7 +6289,7 @@ function consumeBody() {
   let accum = [];
   let accumBytes = 0;
   let abort = false;
-  return new Body.Promise(function(resolve, reject) {
+  return new Body.Promise(function(resolve2, reject) {
     let resTimeout;
     if (_this4.timeout) {
       resTimeout = setTimeout(function() {
@@ -6453,7 +6323,7 @@ function consumeBody() {
       }
       clearTimeout(resTimeout);
       try {
-        resolve(Buffer.concat(accum, accumBytes));
+        resolve2(Buffer.concat(accum, accumBytes));
       } catch (err) {
         reject(new FetchError(`Could not create Buffer from response body for ${_this4.url}: ${err.message}`, "system", err));
       }
@@ -6716,7 +6586,7 @@ function fetch2(url, opts) {
     throw new Error("native promise missing, set fetch.Promise to your favorite alternative");
   }
   Body.Promise = fetch2.Promise;
-  return new fetch2.Promise(function(resolve, reject) {
+  return new fetch2.Promise(function(resolve2, reject) {
     const request = new Request(url, opts);
     const options = getNodeRequestOptions(request);
     const send = (options.protocol === "https:" ? import_https7.default : import_http.default).request;
@@ -6849,7 +6719,7 @@ function fetch2(url, opts) {
               requestOpts.body = void 0;
               requestOpts.headers.delete("content-length");
             }
-            resolve(fetch2(new Request(locationURL, requestOpts)));
+            resolve2(fetch2(new Request(locationURL, requestOpts)));
             finalize();
             return;
         }
@@ -6870,7 +6740,7 @@ function fetch2(url, opts) {
       const codings = headers.get("Content-Encoding");
       if (!request.compress || request.method === "HEAD" || codings === null || res.statusCode === 204 || res.statusCode === 304) {
         response = new Response(body, response_options);
-        resolve(response);
+        resolve2(response);
         return;
       }
       const zlibOptions = {
@@ -6880,7 +6750,7 @@ function fetch2(url, opts) {
       if (codings == "gzip" || codings == "x-gzip") {
         body = body.pipe(import_zlib.default.createGunzip(zlibOptions));
         response = new Response(body, response_options);
-        resolve(response);
+        resolve2(response);
         return;
       }
       if (codings == "deflate" || codings == "x-deflate") {
@@ -6892,12 +6762,12 @@ function fetch2(url, opts) {
             body = body.pipe(import_zlib.default.createInflateRaw());
           }
           response = new Response(body, response_options);
-          resolve(response);
+          resolve2(response);
         });
         raw.on("end", function() {
           if (!response) {
             response = new Response(body, response_options);
-            resolve(response);
+            resolve2(response);
           }
         });
         return;
@@ -6905,11 +6775,11 @@ function fetch2(url, opts) {
       if (codings == "br" && typeof import_zlib.default.createBrotliDecompress === "function") {
         body = body.pipe(import_zlib.default.createBrotliDecompress());
         response = new Response(body, response_options);
-        resolve(response);
+        resolve2(response);
         return;
       }
       response = new Response(body, response_options);
-      resolve(response);
+      resolve2(response);
     });
     writeToStream(req, request);
   });
@@ -7890,8 +7760,8 @@ var require_retry = __commonJS({
       }
       const delay = getNextRetryDelay(config2);
       err.config.retryConfig.currentRetryAttempt += 1;
-      const backoff = config2.retryBackoff ? config2.retryBackoff(err, delay) : new Promise((resolve) => {
-        setTimeout(resolve, delay);
+      const backoff = config2.retryBackoff ? config2.retryBackoff(err, delay) : new Promise((resolve2) => {
+        setTimeout(resolve2, delay);
       });
       if (config2.onRetryAttempt) {
         config2.onRetryAttempt(err);
@@ -8789,8 +8659,8 @@ var require_helpers = __commonJS({
     function req(url, opts = {}) {
       const href = typeof url === "string" ? url : url.href;
       const req2 = (href.startsWith("https:") ? https3 : http2).request(url, opts);
-      const promise = new Promise((resolve, reject) => {
-        req2.once("response", resolve).once("error", reject).end();
+      const promise = new Promise((resolve2, reject) => {
+        req2.once("response", resolve2).once("error", reject).end();
       });
       req2.then = promise.then.bind(promise);
       return req2;
@@ -8967,7 +8837,7 @@ var require_parse_proxy_response = __commonJS({
     var debug_1 = __importDefault(require_src());
     var debug = (0, debug_1.default)("https-proxy-agent:parse-proxy-response");
     function parseProxyResponse(socket) {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve2, reject) => {
         let buffersLength = 0;
         const buffers = [];
         function read() {
@@ -9033,7 +8903,7 @@ var require_parse_proxy_response = __commonJS({
           }
           debug("got proxy server response: %o %o", firstLine, headers);
           cleanup();
-          resolve({
+          resolve2({
             connect: {
               statusCode,
               statusText,
@@ -9334,11 +9204,11 @@ var require_gaxios = __commonJS({
           if (!opts.validateStatus(translatedResponse.status)) {
             if (opts.responseType === "stream") {
               let response = "";
-              await new Promise((resolve) => {
+              await new Promise((resolve2) => {
                 (translatedResponse === null || translatedResponse === void 0 ? void 0 : translatedResponse.data).on("data", (chunk) => {
                   response += chunk;
                 });
-                (translatedResponse === null || translatedResponse === void 0 ? void 0 : translatedResponse.data).on("end", resolve);
+                (translatedResponse === null || translatedResponse === void 0 ? void 0 : translatedResponse.data).on("end", resolve2);
               });
               translatedResponse.data = response;
             }
@@ -12290,22 +12160,22 @@ var require_crypto2 = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.NodeCrypto = void 0;
-    var crypto2 = require("crypto");
+    var crypto3 = require("crypto");
     var NodeCrypto = class {
       async sha256DigestBase64(str) {
-        return crypto2.createHash("sha256").update(str).digest("base64");
+        return crypto3.createHash("sha256").update(str).digest("base64");
       }
       randomBytesBase64(count) {
-        return crypto2.randomBytes(count).toString("base64");
+        return crypto3.randomBytes(count).toString("base64");
       }
       async verify(pubkey, data, signature) {
-        const verifier = crypto2.createVerify("RSA-SHA256");
+        const verifier = crypto3.createVerify("RSA-SHA256");
         verifier.update(data);
         verifier.end();
         return verifier.verify(pubkey, signature, "base64");
       }
       async sign(privateKey, data) {
-        const signer = crypto2.createSign("RSA-SHA256");
+        const signer = crypto3.createSign("RSA-SHA256");
         signer.update(data);
         signer.end();
         return signer.sign(privateKey, "base64");
@@ -12323,7 +12193,7 @@ var require_crypto2 = __commonJS({
        *   string in hexadecimal encoding.
        */
       async sha256DigestHex(str) {
-        return crypto2.createHash("sha256").update(str).digest("hex");
+        return crypto3.createHash("sha256").update(str).digest("hex");
       }
       /**
        * Computes the HMAC hash of a message using the provided crypto key and the
@@ -12335,7 +12205,7 @@ var require_crypto2 = __commonJS({
        */
       async signWithHmacSha256(key, msg) {
         const cryptoKey = typeof key === "string" ? key : toBuffer(key);
-        return toArrayBuffer(crypto2.createHmac("sha256", cryptoKey).update(msg).digest());
+        return toArrayBuffer(crypto3.createHmac("sha256", cryptoKey).update(msg).digest());
       }
     };
     exports2.NodeCrypto = NodeCrypto;
@@ -13114,10 +12984,10 @@ var require_oauth2client = __commonJS({
        * https://github.com/googleapis/google-auth-library-nodejs/blob/main/samples/oauth2-codeVerifier.js
        */
       async generateCodeVerifierAsync() {
-        const crypto2 = (0, crypto_1.createCrypto)();
-        const randomString = crypto2.randomBytesBase64(96);
+        const crypto3 = (0, crypto_1.createCrypto)();
+        const randomString = crypto3.randomBytesBase64(96);
         const codeVerifier = randomString.replace(/\+/g, "~").replace(/=/g, "_").replace(/\//g, "-");
-        const unencodedCodeChallenge = await crypto2.sha256DigestBase64(codeVerifier);
+        const unencodedCodeChallenge = await crypto3.sha256DigestBase64(codeVerifier);
         const codeChallenge = unencodedCodeChallenge.split("=")[0].replace(/\+/g, "-").replace(/\//g, "_");
         return { codeVerifier, codeChallenge };
       }
@@ -13561,7 +13431,7 @@ var require_oauth2client = __commonJS({
        * @return Returns a promise resolving to LoginTicket on verification.
        */
       async verifySignedJwtWithCertsAsync(jwt, certs, requiredAudience, issuers, maxExpiry) {
-        const crypto2 = (0, crypto_1.createCrypto)();
+        const crypto3 = (0, crypto_1.createCrypto)();
         if (!maxExpiry) {
           maxExpiry = _OAuth2Client.DEFAULT_MAX_TOKEN_LIFETIME_SECS_;
         }
@@ -13574,7 +13444,7 @@ var require_oauth2client = __commonJS({
         let envelope;
         let payload;
         try {
-          envelope = JSON.parse(crypto2.decodeBase64StringUtf8(segments[0]));
+          envelope = JSON.parse(crypto3.decodeBase64StringUtf8(segments[0]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token envelope: ${segments[0]}': ${err.message}`;
@@ -13585,7 +13455,7 @@ var require_oauth2client = __commonJS({
           throw new Error("Can't parse token envelope: " + segments[0]);
         }
         try {
-          payload = JSON.parse(crypto2.decodeBase64StringUtf8(segments[1]));
+          payload = JSON.parse(crypto3.decodeBase64StringUtf8(segments[1]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token payload '${segments[0]}`;
@@ -13602,7 +13472,7 @@ var require_oauth2client = __commonJS({
         if (envelope.alg === "ES256") {
           signature = formatEcdsa.joseToDer(signature, "ES256").toString("base64");
         }
-        const verified = await crypto2.verify(cert, signed, signature);
+        const verified = await crypto3.verify(cert, signed, signature);
         if (!verified) {
           throw new Error("Invalid token signature: " + jwt);
         }
@@ -13972,14 +13842,14 @@ var require_jwa = __commonJS({
   "../../node_modules/jwa/index.js"(exports2, module2) {
     "use strict";
     var Buffer2 = require_safe_buffer().Buffer;
-    var crypto2 = require("crypto");
+    var crypto3 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto2.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto3.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -14069,17 +13939,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto2.createHmac("sha" + bits, secret);
+        var hmac = crypto3.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto2 ? function timingSafeEqual2(a, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto3 ? function timingSafeEqual2(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto2.timingSafeEqual(a, b);
+      return crypto3.timingSafeEqual(a, b);
     } : function timingSafeEqual2(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -14096,7 +13966,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto2.createSign("RSA-SHA" + bits);
+        var signer = crypto3.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -14106,7 +13976,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto2.createVerify("RSA-SHA" + bits);
+        var verifier = crypto3.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -14115,11 +13985,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto2.createSign("RSA-SHA" + bits);
+        var signer = crypto3.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto3.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto3.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -14129,12 +13999,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto2.createVerify("RSA-SHA" + bits);
+        var verifier = crypto3.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto3.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto3.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -14458,12 +14328,12 @@ var require_src5 = __commonJS({
     var _GoogleToken_requestToken;
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.GoogleToken = void 0;
-    var fs = require("fs");
+    var fs2 = require("fs");
     var gaxios_1 = require_src2();
     var jws = require_jws();
-    var path = require("path");
+    var path2 = require("path");
     var util_1 = require("util");
-    var readFile = fs.readFile ? (0, util_1.promisify)(fs.readFile) : async () => {
+    var readFile = fs2.readFile ? (0, util_1.promisify)(fs2.readFile) : async () => {
       throw new ErrorWithCode("use key rather than keyFile.", "MISSING_CREDENTIALS");
     };
     var GOOGLE_TOKEN_URL = "https://www.googleapis.com/oauth2/v4/token";
@@ -14549,7 +14419,7 @@ var require_src5 = __commonJS({
        * @returns an object with privateKey and clientEmail properties
        */
       async getCredentials(keyFile) {
-        const ext = path.extname(keyFile);
+        const ext = path2.extname(keyFile);
         switch (ext) {
           case ".json": {
             const key = await readFile(keyFile, "utf8");
@@ -14841,7 +14711,7 @@ var require_jwtaccess = __commonJS({
         }
       }
       fromStreamAsync(inputStream) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           if (!inputStream) {
             reject(new Error("Must pass in a stream containing the service account auth settings."));
           }
@@ -14850,7 +14720,7 @@ var require_jwtaccess = __commonJS({
             try {
               const data = JSON.parse(s);
               this.fromJSON(data);
-              resolve();
+              resolve2();
             } catch (err) {
               reject(err);
             }
@@ -15069,7 +14939,7 @@ var require_jwtclient = __commonJS({
         }
       }
       fromStreamAsync(inputStream) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           if (!inputStream) {
             throw new Error("Must pass in a stream containing the service account auth settings.");
           }
@@ -15078,7 +14948,7 @@ var require_jwtclient = __commonJS({
             try {
               const data = JSON.parse(s);
               this.fromJSON(data);
-              resolve();
+              resolve2();
             } catch (e) {
               reject(e);
             }
@@ -15198,7 +15068,7 @@ var require_refreshclient = __commonJS({
         }
       }
       async fromStreamAsync(inputStream) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           if (!inputStream) {
             return reject(new Error("Must pass in a stream containing the user refresh token."));
           }
@@ -15207,7 +15077,7 @@ var require_refreshclient = __commonJS({
             try {
               const data = JSON.parse(s);
               this.fromJSON(data);
-              return resolve();
+              return resolve2();
             } catch (err) {
               return reject(err);
             }
@@ -16020,12 +15890,12 @@ var require_filesubjecttokensupplier = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.FileSubjectTokenSupplier = void 0;
     var util_1 = require("util");
-    var fs = require("fs");
-    var readFile = (0, util_1.promisify)((_a = fs.readFile) !== null && _a !== void 0 ? _a : (() => {
+    var fs2 = require("fs");
+    var readFile = (0, util_1.promisify)((_a = fs2.readFile) !== null && _a !== void 0 ? _a : (() => {
     }));
-    var realpath = (0, util_1.promisify)((_b = fs.realpath) !== null && _b !== void 0 ? _b : (() => {
+    var realpath = (0, util_1.promisify)((_b = fs2.realpath) !== null && _b !== void 0 ? _b : (() => {
     }));
-    var lstat = (0, util_1.promisify)((_c = fs.lstat) !== null && _c !== void 0 ? _c : (() => {
+    var lstat = (0, util_1.promisify)((_c = fs2.lstat) !== null && _c !== void 0 ? _c : (() => {
     }));
     var FileSubjectTokenSupplier = class {
       /**
@@ -16296,14 +16166,14 @@ var require_awsrequestsigner = __commonJS({
       }
     };
     exports2.AwsRequestSigner = AwsRequestSigner;
-    async function sign(crypto2, key, msg) {
-      return await crypto2.signWithHmacSha256(key, msg);
+    async function sign(crypto3, key, msg) {
+      return await crypto3.signWithHmacSha256(key, msg);
     }
-    async function getSigningKey(crypto2, key, dateStamp, region, serviceName) {
-      const kDate = await sign(crypto2, `AWS4${key}`, dateStamp);
-      const kRegion = await sign(crypto2, kDate, region);
-      const kService = await sign(crypto2, kRegion, serviceName);
-      const kSigning = await sign(crypto2, kService, "aws4_request");
+    async function getSigningKey(crypto3, key, dateStamp, region, serviceName) {
+      const kDate = await sign(crypto3, `AWS4${key}`, dateStamp);
+      const kRegion = await sign(crypto3, kDate, region);
+      const kService = await sign(crypto3, kRegion, serviceName);
+      const kSigning = await sign(crypto3, kService, "aws4_request");
       return kSigning;
     }
     async function generateAuthenticationHeaderMap(options) {
@@ -16743,7 +16613,7 @@ var require_pluggable_auth_handler = __commonJS({
     var pluggable_auth_client_1 = require_pluggable_auth_client();
     var executable_response_1 = require_executable_response();
     var childProcess = require("child_process");
-    var fs = require("fs");
+    var fs2 = require("fs");
     var PluggableAuthHandler = class _PluggableAuthHandler {
       /**
        * Instantiates a PluggableAuthHandler instance using the provided
@@ -16768,7 +16638,7 @@ var require_pluggable_auth_handler = __commonJS({
        * @return A promise that resolves with the executable response.
        */
       retrieveResponseFromExecutable(envMap) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           const child = childProcess.spawn(this.commandComponents[0], this.commandComponents.slice(1), {
             env: { ...process.env, ...Object.fromEntries(envMap) }
           });
@@ -16790,7 +16660,7 @@ var require_pluggable_auth_handler = __commonJS({
               try {
                 const responseJson = JSON.parse(output);
                 const response = new executable_response_1.ExecutableResponse(responseJson);
-                return resolve(response);
+                return resolve2(response);
               } catch (error11) {
                 if (error11 instanceof executable_response_1.ExecutableResponseError) {
                   return reject(error11);
@@ -16813,14 +16683,14 @@ var require_pluggable_auth_handler = __commonJS({
         }
         let filePath;
         try {
-          filePath = await fs.promises.realpath(this.outputFile);
+          filePath = await fs2.promises.realpath(this.outputFile);
         } catch (_a) {
           return void 0;
         }
-        if (!(await fs.promises.lstat(filePath)).isFile()) {
+        if (!(await fs2.promises.lstat(filePath)).isFile()) {
           return void 0;
         }
-        const responseString = await fs.promises.readFile(filePath, {
+        const responseString = await fs2.promises.readFile(filePath, {
           encoding: "utf8"
         });
         if (responseString === "") {
@@ -17241,10 +17111,10 @@ var require_googleauth = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.GoogleAuth = exports2.GoogleAuthExceptionMessages = exports2.CLOUD_SDK_CLIENT_ID = void 0;
     var child_process_1 = require("child_process");
-    var fs = require("fs");
+    var fs2 = require("fs");
     var gcpMetadata = require_src4();
     var os = require("os");
-    var path = require("path");
+    var path2 = require("path");
     var crypto_1 = require_crypto3();
     var transporters_1 = require_transporters();
     var computeclient_1 = require_computeclient();
@@ -17505,12 +17375,12 @@ var require_googleauth = __commonJS({
         } else {
           const home = process.env["HOME"];
           if (home) {
-            location = path.join(home, ".config");
+            location = path2.join(home, ".config");
           }
         }
         if (location) {
-          location = path.join(location, "gcloud", "application_default_credentials.json");
-          if (!fs.existsSync(location)) {
+          location = path2.join(location, "gcloud", "application_default_credentials.json");
+          if (!fs2.existsSync(location)) {
             location = null;
           }
         }
@@ -17531,8 +17401,8 @@ var require_googleauth = __commonJS({
           throw new Error("The file path is invalid.");
         }
         try {
-          filePath = fs.realpathSync(filePath);
-          if (!fs.lstatSync(filePath).isFile()) {
+          filePath = fs2.realpathSync(filePath);
+          if (!fs2.lstatSync(filePath).isFile()) {
             throw new Error();
           }
         } catch (err) {
@@ -17541,7 +17411,7 @@ var require_googleauth = __commonJS({
           }
           throw err;
         }
-        const readStream = fs.createReadStream(filePath);
+        const readStream = fs2.createReadStream(filePath);
         return this.fromStream(readStream, options);
       }
       /**
@@ -17640,7 +17510,7 @@ var require_googleauth = __commonJS({
         }
       }
       fromStreamAsync(inputStream, options) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           if (!inputStream) {
             throw new Error("Must pass in a stream containing the Google auth settings.");
           }
@@ -17650,7 +17520,7 @@ var require_googleauth = __commonJS({
               try {
                 const data = JSON.parse(chunks.join(""));
                 const r = this._cacheClientFromJSON(data, options);
-                return resolve(r);
+                return resolve2(r);
               } catch (err) {
                 if (!this.keyFilename)
                   throw err;
@@ -17660,7 +17530,7 @@ var require_googleauth = __commonJS({
                 });
                 this.cachedCredential = client;
                 this.setGapicJWTValues(client);
-                return resolve(client);
+                return resolve2(client);
               }
             } catch (err) {
               return reject(err);
@@ -17696,17 +17566,17 @@ var require_googleauth = __commonJS({
        * Run the Google Cloud SDK command that prints the default project ID
        */
       async getDefaultServiceProjectId() {
-        return new Promise((resolve) => {
+        return new Promise((resolve2) => {
           (0, child_process_1.exec)("gcloud config config-helper --format json", (err, stdout) => {
             if (!err && stdout) {
               try {
                 const projectId = JSON.parse(stdout).configuration.properties.core.project;
-                resolve(projectId);
+                resolve2(projectId);
                 return;
               } catch (e) {
               }
             }
-            resolve(null);
+            resolve2(null);
           });
         });
       }
@@ -17888,24 +17758,24 @@ var require_googleauth = __commonJS({
           const signed = await client.sign(data);
           return signed.signedBlob;
         }
-        const crypto2 = (0, crypto_1.createCrypto)();
+        const crypto3 = (0, crypto_1.createCrypto)();
         if (client instanceof jwtclient_1.JWT && client.key) {
-          const sign = await crypto2.sign(client.key, data);
+          const sign = await crypto3.sign(client.key, data);
           return sign;
         }
         const creds = await this.getCredentials();
         if (!creds.client_email) {
           throw new Error("Cannot sign data without `client_email`.");
         }
-        return this.signBlob(crypto2, creds.client_email, data, endpoint);
+        return this.signBlob(crypto3, creds.client_email, data, endpoint);
       }
-      async signBlob(crypto2, emailOrUniqueId, data, endpoint) {
+      async signBlob(crypto3, emailOrUniqueId, data, endpoint) {
         const url = new URL(endpoint + `${emailOrUniqueId}:signBlob`);
         const res = await this.request({
           method: "POST",
           url: url.href,
           data: {
-            payload: crypto2.encodeBase64StringUtf8(data)
+            payload: crypto3.encodeBase64StringUtf8(data)
           },
           retry: true,
           retryConfig: {
@@ -17927,8 +17797,8 @@ var require_googleauth = __commonJS({
       if (this.jsonContent) {
         return this._cacheClientFromJSON(this.jsonContent, this.clientOptions);
       } else if (this.keyFilename) {
-        const filePath = path.resolve(this.keyFilename);
-        const stream = fs.createReadStream(filePath);
+        const filePath = path2.resolve(this.keyFilename);
+        const stream = fs2.createReadStream(filePath);
         return await this.fromStreamAsync(stream, this.clientOptions);
       } else if (this.apiKey) {
         const client = await this.fromAPIKey(this.apiKey, this.clientOptions);
@@ -18864,10 +18734,12 @@ __export(index_exports, {
   calculateNrr: () => calculateNrr,
   changeMyPassword: () => changeMyPassword,
   clearPipeline: () => clearPipeline,
+  completeNfcSession: () => completeNfcSession,
   deleteFacebookPost: () => deleteFacebookPost,
   enrichFromWebsite: () => enrichFromWebsite,
   generateLeads: () => generateLeads,
   generateMonthlyInvoices: () => generateMonthlyInvoices,
+  getComplianceLog: () => getComplianceLog,
   getFacebookPosts: () => getFacebookPosts,
   getFacebookReels: () => getFacebookReels,
   getOutroPreview: () => getOutroPreview,
@@ -18913,6 +18785,8 @@ __export(index_exports, {
   testSendEmail: () => testSendEmail,
   triggerSocialContentGeneration: () => triggerSocialContentGeneration,
   updateSocialConfig: () => updateSocialConfig,
+  updateZoneScan: () => updateZoneScan,
+  validateSiteKey: () => validateSiteKey,
   weeklyTemplateOptimizer: () => weeklyTemplateOptimizer
 });
 module.exports = __toCommonJS(index_exports);
@@ -20252,17 +20126,17 @@ var https = __toESM(require("https"));
 init_promptUtils();
 var genAI2 = new import_generative_ai3.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 function downloadFileAsBuffer(url) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve2, reject) => {
     https.get(url, (res) => {
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        return downloadFileAsBuffer(res.headers.location).then(resolve).catch(reject);
+        return downloadFileAsBuffer(res.headers.location).then(resolve2).catch(reject);
       }
       if (res.statusCode !== 200) {
         return reject(new Error(`Download failed with status ${res.statusCode}`));
       }
       const chunks = [];
       res.on("data", (chunk) => chunks.push(chunk));
-      res.on("end", () => resolve(Buffer.concat(chunks)));
+      res.on("end", () => resolve2(Buffer.concat(chunks)));
       res.on("error", reject);
     }).on("error", reject);
   });
@@ -21856,7 +21730,96 @@ function buildVendorRemittanceEmail(data) {
 var import_firestore10 = require("firebase-functions/v2/firestore");
 var admin15 = __toESM(require("firebase-admin"));
 var logger10 = __toESM(require("firebase-functions/logger"));
-var import_TaxCertificateService = __toESM(require_TaxCertificateService());
+
+// ../shared/src/TaxCertificateService.ts
+var import_pdf_lib = require("pdf-lib");
+var fs = __toESM(require("fs"));
+var path = __toESM(require("path"));
+var CERT_VALIDITY_YEARS = 3;
+async function generateST1201(vendorData, xiriData, projectData) {
+  if (!vendorData.salesTaxId || vendorData.salesTaxId.trim().length === 0) {
+    return {
+      success: false,
+      error: "Vendor does not have a valid Sales Tax ID (Certificate of Authority). Cannot generate ST-120.1."
+    };
+  }
+  try {
+    const now = /* @__PURE__ */ new Date();
+    const issueDate = now.toLocaleDateString("en-US");
+    const expiry = new Date(now);
+    expiry.setFullYear(expiry.getFullYear() + CERT_VALIDITY_YEARS);
+    const expiryDate = expiry.toISOString().split("T")[0];
+    const templatePath = path.resolve(__dirname, "templates", "st120_1_template.pdf");
+    const templateBytes = fs.readFileSync(templatePath);
+    const pdfDoc = await import_pdf_lib.PDFDocument.load(templateBytes);
+    const form = pdfDoc.getForm();
+    form.getTextField("name of vendor").setText(vendorData.businessName);
+    form.getTextField("street address1").setText(vendorData.address || "");
+    form.getTextField("city1").setText(vendorData.city || "");
+    form.getTextField("state1").setText(vendorData.state || "");
+    form.getTextField("zip code 1").setText(vendorData.zip || "");
+    form.getTextField("enter your sales tax vendor id number").setText(vendorData.salesTaxId);
+    form.getTextField("name of purchasing contractor").setText(xiriData.businessName);
+    form.getTextField("street address2").setText(xiriData.address);
+    form.getTextField("city2").setText(xiriData.city);
+    form.getTextField("state2").setText(xiriData.state);
+    form.getTextField("zip code 2").setText(xiriData.zip);
+    form.getTextField("line 2 1").setText(projectData.projectName);
+    const fullProjectAddress = [
+      projectData.projectAddress,
+      projectData.projectCity,
+      projectData.projectState,
+      projectData.projectZip
+    ].filter(Boolean).join(", ");
+    form.getTextField("line 2 2").setText(fullProjectAddress);
+    form.getTextField("line 2 3").setText(projectData.ownerName);
+    form.getTextField("line 2 4").setText(projectData.ownerAddress);
+    form.getCheckBox("box m").check();
+    form.getTextField("type or print name and title of owner").setText(
+      `${xiriData.signerName}, ${xiriData.signerTitle}`
+    );
+    form.getTextField("date prepared").setText(issueDate);
+    if (xiriData.signatureImageBase64) {
+      try {
+        const sigBytes = Buffer.from(xiriData.signatureImageBase64, "base64");
+        let sigImage;
+        try {
+          sigImage = await pdfDoc.embedPng(sigBytes);
+        } catch {
+          sigImage = await pdfDoc.embedJpg(sigBytes);
+        }
+        const pages = pdfDoc.getPages();
+        const lastPage = pages[pages.length - 1];
+        const { height } = lastPage.getSize();
+        lastPage.drawImage(sigImage, {
+          x: 72,
+          y: height - 720,
+          // near bottom of form
+          width: 150,
+          height: 40
+        });
+      } catch (sigErr) {
+        console.warn("Could not embed signature image:", sigErr);
+      }
+    }
+    form.flatten();
+    const pdfBytes = await pdfDoc.save();
+    return {
+      success: true,
+      pdfBytes,
+      issueDate: now.toISOString().split("T")[0],
+      // ISO for storage
+      expiryDate
+    };
+  } catch (error11) {
+    return {
+      success: false,
+      error: `Failed to generate ST-120.1: ${error11.message}`
+    };
+  }
+}
+
+// src/triggers/onVendorReady.ts
 if (!admin15.apps.length) {
   admin15.initializeApp();
 }
@@ -21953,7 +21916,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
     ownerName,
     ownerAddress
   };
-  const result = await (0, import_TaxCertificateService.generateST1201)(vendorCertData, xiriData, projectDataInput);
+  const result = await generateST1201(vendorCertData, xiriData, projectDataInput);
   if (!result.success || !result.pdfBytes) {
     logger10.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
     await db22.collection("vendor_activities").add({
@@ -23949,7 +23912,7 @@ Duration: 8 seconds. Smooth tracking shots. Professional quality. No text, no ti
     let pollCount = 0;
     const maxPolls = 30;
     while (!operation.done && pollCount < maxPolls) {
-      await new Promise((resolve) => setTimeout(resolve, 15e3));
+      await new Promise((resolve2) => setTimeout(resolve2, 15e3));
       operation = await client.operations.getVideosOperation({ operation });
       pollCount++;
       console.log(`[Veo] Poll ${pollCount}/${maxPolls} \u2014 ${operation.done ? "DONE" : "generating..."}`);
@@ -24487,6 +24450,8 @@ var DASHBOARD_CORS = [
   // Dashboard Dev
   "http://localhost:3000",
   // Public Site Dev
+  "http://localhost:3002",
+  // Public Site Dev (alt port)
   "https://xiri.ai",
   // Public Site Production
   "https://www.xiri.ai",
@@ -25086,7 +25051,7 @@ var MockPropertyProvider = class {
   }
   async search(params) {
     console.log(`[MockPropertyProvider] Searching "${params.query}" in "${params.location}"...`);
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve2) => setTimeout(resolve2, 800));
     const mockProperties = [
       {
         name: "Williston Park Medical Plaza",
@@ -25538,14 +25503,14 @@ var publishPostNow = (0, import_https10.onCall)({
           const { generateOutroFrame: generateOutroFrame2 } = await Promise.resolve().then(() => (init_reelOutroGenerator(), reelOutroGenerator_exports));
           const { writeFileSync, unlinkSync, existsSync } = await import("fs");
           const { execSync } = await import("child_process");
-          const path = await import("path");
+          const path2 = await import("path");
           const os = await import("os");
           const tmpDir = os.tmpdir();
-          const outroPng = path.join(tmpDir, `outro-${postId}.png`);
-          const outroMp4 = path.join(tmpDir, `outro-${postId}.mp4`);
-          const originalMp4 = path.join(tmpDir, `original-${postId}.mp4`);
-          const concatList = path.join(tmpDir, `concat-${postId}.txt`);
-          const finalMp4 = path.join(tmpDir, `final-${postId}.mp4`);
+          const outroPng = path2.join(tmpDir, `outro-${postId}.png`);
+          const outroMp4 = path2.join(tmpDir, `outro-${postId}.mp4`);
+          const originalMp4 = path2.join(tmpDir, `original-${postId}.mp4`);
+          const concatList = path2.join(tmpDir, `concat-${postId}.txt`);
+          const finalMp4 = path2.join(tmpDir, `final-${postId}.mp4`);
           const outroPngBuffer = await generateOutroFrame2(outroPresetId);
           writeFileSync(outroPng, outroPngBuffer);
           const videoResp = await fetch(post.videoUrl);
@@ -25555,7 +25520,7 @@ var publishPostNow = (0, import_https10.onCall)({
             `ffmpeg -y -loop 1 -i "${outroPng}" -c:v libx264 -t 3 -pix_fmt yuv420p -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2" -r 30 "${outroMp4}"`,
             { timeout: 3e4 }
           );
-          const normalizedMp4 = path.join(tmpDir, `norm-${postId}.mp4`);
+          const normalizedMp4 = path2.join(tmpDir, `norm-${postId}.mp4`);
           execSync(
             `ffmpeg -y -i "${originalMp4}" -c:v libx264 -pix_fmt yuv420p -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2" -r 30 -an "${normalizedMp4}"`,
             { timeout: 6e4 }
@@ -25567,8 +25532,8 @@ file '${outroMp4}'
             `ffmpeg -y -f concat -safe 0 -i "${concatList}" -c copy "${finalMp4}"`,
             { timeout: 3e4 }
           );
-          const { readFileSync } = await import("fs");
-          const finalBuffer = readFileSync(finalMp4);
+          const { readFileSync: readFileSync2 } = await import("fs");
+          const finalBuffer = readFileSync2(finalMp4);
           const storageBucket = (await import("firebase-admin/storage")).getStorage().bucket();
           const fileName = `social-videos/reel-${postId}-with-outro.mp4`;
           const file = storageBucket.file(fileName);
@@ -25730,6 +25695,227 @@ var getOutroPreview = (0, import_https10.onCall)({
   const url = await getOrCreateOutroFrameUrl2(presetId);
   return { url };
 });
+
+// src/functions/nfc.ts
+var import_https11 = require("firebase-functions/v2/https");
+var crypto2 = __toESM(require("crypto"));
+function hashSiteKey(plainKey) {
+  return crypto2.createHash("sha256").update(plainKey).digest("hex");
+}
+function generateSessionToken() {
+  return crypto2.randomUUID();
+}
+var validateSiteKey = (0, import_https11.onCall)({
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  const { locationId, siteKey, personName } = request.data;
+  if (!locationId || typeof locationId !== "string") {
+    throw new import_https11.HttpsError("invalid-argument", "locationId is required");
+  }
+  if (!siteKey || typeof siteKey !== "string") {
+    throw new import_https11.HttpsError("invalid-argument", "Site key is required");
+  }
+  if (!personName || typeof personName !== "string" || personName.trim().length === 0) {
+    throw new import_https11.HttpsError("invalid-argument", "Name is required");
+  }
+  const siteDoc = await db.collection("nfc_sites").doc(locationId).get();
+  if (!siteDoc.exists) {
+    throw new import_https11.HttpsError("not-found", "Location not found. Check with your supervisor.");
+  }
+  const siteData = siteDoc.data();
+  if (siteData.revokedAt) {
+    throw new import_https11.HttpsError("permission-denied", "Access has been revoked. Contact your supervisor for a new site key.");
+  }
+  const hashedInput = hashSiteKey(siteKey.trim());
+  let personRole;
+  if (hashedInput === siteData.siteKeyHash) {
+    personRole = "cleaner";
+  } else if (siteData.managerKeyHash && hashedInput === siteData.managerKeyHash) {
+    personRole = "night_manager";
+  } else {
+    throw new import_https11.HttpsError("permission-denied", "Invalid site key. Please check and try again.");
+  }
+  const sessionId = generateSessionToken();
+  const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1e3);
+  await db.collection("nfc_sessions").doc(sessionId).set({
+    id: sessionId,
+    siteLocationId: locationId,
+    locationName: siteData.locationName,
+    personName: personName.trim(),
+    personRole,
+    clockInAt: /* @__PURE__ */ new Date(),
+    clockOutAt: null,
+    zoneScanResults: [],
+    auditScore: null,
+    auditNotes: null,
+    deviceFingerprint: request.data.deviceFingerprint || null,
+    expiresAt,
+    createdAt: /* @__PURE__ */ new Date()
+  });
+  return {
+    sessionId,
+    personRole,
+    locationName: siteData.locationName,
+    vendorName: siteData.vendorName,
+    bidFrequency: siteData.bidFrequency || null,
+    daysOfWeek: siteData.daysOfWeek || null,
+    zones: (siteData.zones || []).map((z) => ({
+      id: z.id,
+      name: z.name,
+      tagId: z.tagId,
+      tagLocationHint: z.tagLocationHint || null,
+      roomTypeNames: z.roomIds || z.roomTypeNames || [],
+      tasks: z.tasks || []
+    })),
+    expiresAt: expiresAt.toISOString()
+  };
+});
+var updateZoneScan = (0, import_https11.onCall)({
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  const { sessionId, zoneId, zoneName, tasksCompleted } = request.data;
+  if (!sessionId || typeof sessionId !== "string") {
+    throw new import_https11.HttpsError("invalid-argument", "sessionId is required");
+  }
+  if (!zoneId || typeof zoneId !== "string") {
+    throw new import_https11.HttpsError("invalid-argument", "zoneId is required");
+  }
+  const sessionDoc = await db.collection("nfc_sessions").doc(sessionId).get();
+  if (!sessionDoc.exists) {
+    throw new import_https11.HttpsError("not-found", "Session not found. Please tap the Start tag again.");
+  }
+  const sessionData = sessionDoc.data();
+  const expiresAt = sessionData.expiresAt?.toDate?.() || sessionData.expiresAt;
+  if (expiresAt && /* @__PURE__ */ new Date() > new Date(expiresAt)) {
+    throw new import_https11.HttpsError("permission-denied", "Session expired. Please tap the Start tag to clock in again.");
+  }
+  const scanResult = {
+    zoneId,
+    zoneName: zoneName || zoneId,
+    scannedAt: /* @__PURE__ */ new Date(),
+    tasksCompleted: tasksCompleted || []
+  };
+  const existingResults = sessionData.zoneScanResults || [];
+  const existingIndex = existingResults.findIndex((r) => r.zoneId === zoneId);
+  if (existingIndex >= 0) {
+    existingResults[existingIndex] = scanResult;
+  } else {
+    existingResults.push(scanResult);
+  }
+  await db.collection("nfc_sessions").doc(sessionId).update({
+    zoneScanResults: existingResults
+  });
+  const personRole = request.data.personRole;
+  if (sessionData.siteLocationId) {
+    const taskNotes = {};
+    for (const task of tasksCompleted || []) {
+      taskNotes[task.taskId] = {
+        taskName: task.taskName,
+        auditStatus: task.auditStatus || null,
+        note: task.note || null,
+        photo: task.photo || null,
+        completed: task.completed ?? false
+      };
+    }
+    if (Object.keys(taskNotes).length > 0 || request.data.auditNotes) {
+      const feedbackDocId = `${zoneId}_${personRole}`;
+      await db.collection("nfc_sites").doc(sessionData.siteLocationId).collection("audit_feedback").doc(feedbackDocId).set({
+        zoneId,
+        personRole,
+        tasks: taskNotes,
+        submittedAt: /* @__PURE__ */ new Date(),
+        scanStartedAt: request.data.scanStartedAt || null,
+        auditNotes: request.data.auditNotes || null,
+        sessionId
+      });
+    }
+  }
+  const siteDoc = await db.collection("nfc_sites").doc(sessionData.siteLocationId).get();
+  const totalZones = siteDoc.exists ? (siteDoc.data().zones || []).length : 0;
+  const scannedZones = existingResults.length;
+  return {
+    success: true,
+    zonesCompleted: scannedZones,
+    zonesTotal: totalZones,
+    allZonesDone: scannedZones >= totalZones
+  };
+});
+var completeNfcSession = (0, import_https11.onCall)({
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  const { sessionId, auditScore, auditNotes } = request.data;
+  if (!sessionId) {
+    throw new import_https11.HttpsError("invalid-argument", "sessionId is required");
+  }
+  const sessionDoc = await db.collection("nfc_sessions").doc(sessionId).get();
+  if (!sessionDoc.exists) {
+    throw new import_https11.HttpsError("not-found", "Session not found.");
+  }
+  await db.collection("nfc_sessions").doc(sessionId).update({
+    clockOutAt: /* @__PURE__ */ new Date(),
+    auditScore: auditScore || null,
+    auditNotes: auditNotes || null
+  });
+  return { success: true, message: "Session completed. Thank you!" };
+});
+function getInitials(name) {
+  return name.split(/\s+/).map((w) => w.charAt(0).toUpperCase()).join("").slice(0, 2) || "?";
+}
+var getComplianceLog = (0, import_https11.onCall)({
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  const { locationId } = request.data;
+  if (!locationId || typeof locationId !== "string") {
+    throw new import_https11.HttpsError("invalid-argument", "locationId is required");
+  }
+  const siteDoc = await db.collection("nfc_sites").doc(locationId).get();
+  if (!siteDoc.exists) {
+    throw new import_https11.HttpsError("not-found", "Location not found.");
+  }
+  const siteData = siteDoc.data();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3);
+  const sessionsSnap = await db.collection("nfc_sessions").where("siteLocationId", "==", locationId).where("createdAt", ">=", thirtyDaysAgo).orderBy("createdAt", "desc").limit(100).get();
+  let totalZonesCompleted = 0;
+  let totalZonesExpected = 0;
+  const sessions = sessionsSnap.docs.filter((d) => {
+    const role = d.data().personRole;
+    return role === "cleaner" || role === "night_manager";
+  }).map((d) => {
+    const data = d.data();
+    const zones = data.zoneScanResults || [];
+    const totalSiteZones = (siteData.zones || []).length;
+    totalZonesCompleted += zones.length;
+    totalZonesExpected += totalSiteZones;
+    return {
+      initials: getInitials(data.personName || "Unknown"),
+      role: data.personRole,
+      clockInAt: data.clockInAt?.toDate?.()?.toISOString() || null,
+      clockOutAt: data.clockOutAt?.toDate?.()?.toISOString() || null,
+      zonesCompleted: zones.length,
+      zonesTotal: totalSiteZones,
+      zones: zones.map((z) => ({
+        zoneName: z.zoneName || z.zoneId,
+        scannedAt: z.scannedAt?.toDate?.()?.toISOString() || null,
+        tasks: (z.tasksCompleted || []).map((t) => ({
+          name: t.taskName,
+          completed: t.completed,
+          hasPhoto: !!t.photo
+        }))
+      }))
+    };
+  });
+  return {
+    locationName: siteData.locationName,
+    vendorName: siteData.vendorName,
+    totalZones: (siteData.zones || []).length,
+    sessions,
+    summary: {
+      totalSessions: sessions.filter((s) => s.role === "cleaner").length,
+      totalAudits: sessions.filter((s) => s.role === "night_manager").length,
+      completionRate: totalZonesExpected > 0 ? Math.round(totalZonesCompleted / totalZonesExpected * 100) : 0
+    }
+  };
+});
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   adminCreateUser,
@@ -25737,10 +25923,12 @@ var getOutroPreview = (0, import_https10.onCall)({
   calculateNrr,
   changeMyPassword,
   clearPipeline,
+  completeNfcSession,
   deleteFacebookPost,
   enrichFromWebsite,
   generateLeads,
   generateMonthlyInvoices,
+  getComplianceLog,
   getFacebookPosts,
   getFacebookReels,
   getOutroPreview,
@@ -25786,6 +25974,8 @@ var getOutroPreview = (0, import_https10.onCall)({
   testSendEmail,
   triggerSocialContentGeneration,
   updateSocialConfig,
+  updateZoneScan,
+  validateSiteKey,
   weeklyTemplateOptimizer
 });
 /*! Bundled license information:

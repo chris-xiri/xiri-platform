@@ -1,0 +1,83 @@
+{
+  "title": "AAAHC Cleaning Standards for Ambulatory Surgery Centers",
+  "heroTitle": "AAAHC Accreditation: Environmental Cleaning Standards for Surgery Centers",
+  "heroSubtitle": "Your AAAHC accreditation depends on demonstrable environmental cleaning quality. Surveyors observe your process, question your staff, and review your documentation. Here is what passes — and what does not.",
+  "metaDescription": "Guide to AAAHC cleaning standards for ambulatory surgery centers. Learn environmental cleaning requirements, terminal cleaning protocols, and how to prepare for AAAHC accreditation surveys.",
+  "datePublished": "2026-03-09",
+  "dateModified": "2026-03-09",
+  "sections": [
+    {
+      "title": "What Is AAAHC Accreditation?",
+      "content": "The Accreditation Association for Ambulatory Health Care (AAAHC) accredits over 6,100 ambulatory surgery centers (ASCs), office-based surgery facilities, and outpatient care organizations across the United States. AAAHC accreditation is often required by state licensing boards and insurance payers as a condition of operating. Unlike CMS surveys that are government-mandated, AAAHC is a voluntary accreditation — but losing it can mean losing payer contracts and, in some states, your license to operate."
+    },
+    {
+      "title": "How AAAHC Evaluates Environmental Cleaning",
+      "content": "AAAHC evaluates environmental cleaning under Chapter 7 (Facilities and Environment) and Chapter 9 (Infection Prevention and Control/Safety) of its accreditation standards. The evaluation is weighted heavily toward direct observation and staff competency:",
+      "items": [
+        "Direct Observation — Surveyors watch your cleaning process in real-time. They observe operating room turnover cleaning, instrument processing, and terminal cleaning procedures. Technique matters, not just documentation",
+        "Staff Interviews — Surveyors ask cleaning staff to explain their protocols. Can your crew describe proper disinfectant dwell times? Do they know the difference between cleaning, disinfection, and sterilization?",
+        "Policy Review — Written environmental cleaning policies must align with actual practice. If your policy says you use ATP testing but you do not have an ATP monitor, that is a deficiency",
+        "Infection Control Integration — Cleaning must be integrated into your overall infection prevention program with documented oversight by your Infection Control Officer"
+      ]
+    },
+    {
+      "title": "Terminal Cleaning Requirements for Operating Rooms",
+      "content": "Terminal cleaning of operating rooms is the single most scrutinized cleaning process in an AAAHC survey. For ASCs, terminal cleaning follows AORN (Association of periOperative Registered Nurses) guidelines:",
+      "items": [
+        "All horizontal surfaces cleaned and disinfected — surgical tables, instrument stands, Mayo stands, anesthesia equipment, overhead lights and tracks",
+        "Floors wet-mopped with EPA-registered hospital-grade disinfectant — working from cleanest to dirtiest areas, from far wall toward the door",
+        "Walls spot-cleaned for visible contamination — full wall washing per facility protocol (typically weekly or monthly, not after every case)",
+        "Waste and linen removed before surface disinfection begins",
+        "Adequate dwell time documented — the disinfectant must remain wet on surfaces for the manufacturer-specified contact time. Wiping too soon renders it ineffective",
+        "Room verified before next case — visual inspection by circulating nurse or designated staff member before the next patient enters"
+      ]
+    },
+    {
+      "title": "Common AAAHC Survey Deficiencies in Environmental Cleaning",
+      "content": "Based on AAAHC survey trends, these environmental cleaning issues are cited most frequently:",
+      "items": [
+        "Insufficient dwell time — Staff wipe surfaces before the disinfectant has fully acted. This is the number one observed deficiency",
+        "No documented terminal cleaning schedule — Surveyors ask for cleaning logs. If you cannot show who cleaned the OR, when, and with what product, it is a deficiency",
+        "Staff cannot articulate protocols — When asked, cleaning staff should be able to describe their process without referring to a manual. Verbal competency is expected",
+        "Cleaning products not appropriate for surgical environments — Standard commercial cleaners do not meet the requirements for OR environments. Products must be EPA-registered, healthcare-grade, and effective against surgical site infection pathogens",
+        "No integration with infection control — Cleaning exists in isolation from the facility's infection prevention program, with no formal oversight or reporting structure"
+      ]
+    },
+    {
+      "title": "How to Prepare for Your AAAHC Environmental Survey",
+      "content": "AAAHC surveys occur every 3 years (initial) or annually (in some cases). Preparation should be continuous, not cramped into the weeks before a survey:",
+      "items": [
+        "Conduct monthly internal audits — Walk the facility with your infection control officer and evaluate cleaning quality using the same criteria AAAHC surveyors use",
+        "Train for verbal competency — Quiz cleaning staff periodically. They should explain dwell times, product selection, and the terminal cleaning sequence without hesitation",
+        "Maintain 12 months of cleaning logs — Digital logs with timestamps, staff names, products used, and areas cleaned. Surveyors may ask for any date range",
+        "Align policies with practice — Review your written cleaning policies quarterly. Update them when you change products, procedures, or staffing models",
+        "Practice live observation — Have your infection control officer observe terminal cleaning as if they were a surveyor. Identify and correct technique issues before the real survey"
+      ]
+    }
+  ],
+  "calloutTitle": "How XIRI Keeps Your ASC Accreditation-Ready",
+  "calloutContent": "Our Night Managers audit terminal cleaning in every ASC we service — verifying dwell times, technique, and product usage with photographic documentation. We train our contractors on AORN-based OR cleaning protocols and conduct verbal competency checks quarterly. When your AAAHC surveyor walks in, your cleaning documentation is already digital, current, and accessible.",
+  "relatedServices": [
+    "surgery-center-cleaning",
+    "medical-office-cleaning",
+    "disinfecting-services"
+  ],
+  "faqs": [
+    {
+      "question": "What cleaning standards does AAAHC require for surgery centers?",
+      "answer": "AAAHC evaluates environmental cleaning under Chapter 7 (Facilities and Environment) and Chapter 9 (Infection Prevention and Control). Surgery centers must demonstrate terminal cleaning protocols aligned with AORN guidelines, documented cleaning schedules, trained staff who can articulate their protocols, and integration with the facility's infection prevention program."
+    },
+    {
+      "question": "Do AAAHC surveyors watch cleaning in real-time?",
+      "answer": "Yes. Unlike some accrediting bodies that focus primarily on documentation, AAAHC surveyors conduct direct observation of cleaning processes during their survey. They watch operating room turnover, interview cleaning staff, and evaluate whether actual practice matches written policies."
+    },
+    {
+      "question": "What is the most common cleaning deficiency in AAAHC surveys?",
+      "answer": "Insufficient disinfectant dwell time. Staff commonly wipe surfaces before the disinfectant has had enough contact time to be effective. AAAHC surveyors specifically watch for this. The fix: train crews on manufacturer-specified dwell times and audit compliance during internal quality checks."
+    },
+    {
+      "question": "Can we use our existing commercial cleaner in the OR?",
+      "answer": "In most cases, no. Operating rooms require EPA-registered, hospital-grade disinfectants effective against surgical site infection pathogens (including MRSA, VRE, and C. diff). Standard commercial cleaners do not meet these requirements. Your cleaning vendor should use products from the EPA List H (hospital/healthcare disinfectants) or equivalent."
+    }
+  ]
+}

@@ -121,18 +121,20 @@ You are writing a B2B sales outreach email for XIRI Facility Solutions to a busi
 **About XIRI:**
 - We are a single-source facility management partner for medical offices, urgent care clinics, surgery centers, dialysis centers, and auto dealerships.
 - We replace the chaos of managing 5-10 separate vendors with ONE point of contact and ONE consolidated monthly invoice.
-- We provide nightly quality audits and weekly site visits — no other FM company does this at our price point.
+- We provide NFC-verified proof of work — cleaning crews tap into each room, complete task checklists, and clock out. Facility managers get a digital compliance log showing exactly what was done, room by room, with timestamps. No other cleaning company offers this.
+- Our hook question: "Do you know if your building actually got cleaned last night?" Use this or a variation as the email opener.
 - We handle everything from janitorial to HVAC, plumbing, electrical, pest control, and exterior maintenance.
 
 **Target Audience:**
 - Medical practice owners, office managers, property managers
 - Auto dealership GMs, operations managers
 - Responsible for their own building maintenance (Single-Tenant NNN lease)
-- Pain points: too many vendors, inconsistent quality, multiple invoices, compliance headaches (HIPAA/OSHA)
+- Pain points: no verification that cleaning happened, too many vendors, inconsistent quality, multiple invoices, compliance headaches (HIPAA/OSHA)
 
 **Tone Guidelines:**
 - Professional and consultative (executive-grade, NOT blue-collar)
-- Empathetic to their pain ("We know how frustrating it is to chase vendors...")
+- Lead with the accountability angle, NOT the "we clean better" angle
+- Never claim "we clean better than your current vendor" — instead, emphasize verification and transparency
 - Confident but not salesy — position as a peer/partner, not a pitch
 - Use industry-specific language ("medical suite", "patient-facing areas", "compliance-ready")
 
@@ -145,9 +147,9 @@ Address: {{address}}
 
 **Instructions:**
 1. Write a concise, consultative email (max 250 words)
-2. Open with a specific pain point relevant to their facility type
-3. Present XIRI as the solution — emphasize "One Call, One Invoice"
-4. Include 2-3 specific benefits (e.g., nightly audits, HIPAA-compliant cleaning, cost savings)
+2. Open with the accountability hook — the prospect should not be able to verify their current cleaning
+3. Present XIRI as the solution — emphasize verified cleaning + "One Call, One Invoice"
+4. Include the NFC proof-of-work system as the #1 differentiator, followed by consolidation benefits
 5. End with a soft CTA: offer a free facility walkthrough, no pressure
 6. Sign off professionally
 
@@ -155,21 +157,21 @@ Address: {{address}}
 Return ONLY JSON:
 {
   "email": {
-    "subject": "string (clear, benefit-focused, max 60 chars)",
+    "subject": "string (clear, accountability-focused, max 60 chars)",
     "body": "string (professional, consultative, max 250 words)"
   }
 }
 
 **Example Subject Lines (DO NOT COPY - use as inspiration):**
-- "One call for all your facility needs"
-- "Stop juggling vendors — there's a better way"
-- "Your medical suite deserves better maintenance"
+- "Do you know if your building got cleaned last night?"
+- "What happens in your facility at midnight?"
+- "The one question your cleaner can't answer"
 `;
 
     const SALES_FOLLOWUP_PROMPT = `
 You are writing a follow-up email for XIRI Facility Solutions to a business owner or property manager who has not yet responded to our initial outreach.
 
-**About XIRI:** Single-source facility management for medical and commercial facilities. One point of contact, one invoice, nightly audits.
+**About XIRI:** Single-source facility management for medical and commercial facilities. NFC-verified proof of work — cleaning crews tap into each room, work a checklist, clock out. Facility managers get a compliance log showing what was done, room by room, with timestamps. One point of contact, one invoice.
 
 **Context:**
 Business Name: {{businessName}}
@@ -178,15 +180,16 @@ Facility Type: {{facilityType}}
 Follow-up Number: {{sequence}} (1 = first follow-up, 2 = second, 3 = final)
 
 **Tone:**
-- Follow-up 1: Warm, value-adding — share a specific benefit or stat
-- Follow-up 2: Social proof — reference similar facilities that made the switch
-- Follow-up 3: Respectful final check-in — no pressure, leave the door open
+- Follow-up 1: Share the compliance log concept — "here's what your morning report looks like" with specific zone/task/timestamp examples
+- Follow-up 2: Social proof — reference facilities that discovered what their cleaner was actually doing once they had data (e.g., rooms being skipped, sessions too short)
+- Follow-up 3: Respectful final check-in — "If you ever need to verify, I'm here"
 
 **Instructions:**
 1. Do NOT repeat the original email. Add new value each time.
 2. Keep it SHORT (max 150 words for follow-ups)
 3. Reference their specific facility type
-4. End with a soft CTA (walkthrough, quick call, reply)
+4. Always tie back to the proof-of-work / accountability angle
+5. End with a soft CTA (walkthrough, quick call, reply)
 
 **Format:**
 Return ONLY JSON:

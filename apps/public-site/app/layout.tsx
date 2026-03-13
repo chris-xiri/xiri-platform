@@ -7,7 +7,9 @@ import { Footer } from "@/components/Footer";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { ClarityProvider } from '@/components/ClarityProvider';
 import { StickyMobileCTA } from '@/components/StickyMobileCTA';
-import { ExitIntentPopup } from '@/components/ExitIntentPopup';
+
+import { MarketingShell } from '@/components/MarketingShell';
+import { BodyClassProvider } from '@/components/BodyClassProvider';
 import { SITE } from '@/lib/constants';
 
 const inter = Inter({
@@ -118,19 +120,23 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.variable} ${outfit.variable} font-sans antialiased text-gray-900 bg-white pt-[112px]`}>
+      <BodyClassProvider className={`${inter.variable} ${outfit.variable} font-sans antialiased text-gray-900 bg-white pt-[112px]`}>
         <TrackingProvider>
-          <Navigation />
+          <MarketingShell>
+            <Navigation />
+          </MarketingShell>
           {children}
-          <Footer />
-          <ExitIntentPopup />
-          <StickyMobileCTA />
+          <MarketingShell>
+            <Footer />
+
+            <StickyMobileCTA />
+          </MarketingShell>
         </TrackingProvider>
         {process.env.NEXT_PUBLIC_GA_ID && (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
         )}
         <ClarityProvider />
-      </body>
+      </BodyClassProvider>
     </html>
   );
 }

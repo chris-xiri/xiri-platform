@@ -1,0 +1,69 @@
+{
+  "title": "JCAHO Cleaning Requirements for Medical Offices",
+  "heroTitle": "JCAHO Cleaning Requirements: What Your Medical Office Needs to Know",
+  "heroSubtitle": "A practical guide to meeting Joint Commission environmental cleaning standards — and maintaining compliance between surveys.",
+  "metaDescription": "Complete guide to JCAHO cleaning requirements for medical offices. Learn terminal cleaning protocols, documentation standards, and how to stay survey-ready year-round.",
+  "datePublished": "2025-09-15",
+  "dateModified": "2026-03-09",
+  "sections": [
+    {
+      "title": "Why JCAHO Cleaning Standards Matter",
+      "content": "The Joint Commission (formerly JCAHO) evaluates healthcare facilities on Environmental Care standards as part of their accreditation surveys. A failed environmental cleaning element can trigger a Requirement for Improvement (RFI) that jeopardizes your accreditation — and with it, your ability to bill Medicare and most insurance plans."
+    },
+    {
+      "title": "The Five Pillars of JCAHO-Compliant Cleaning",
+      "content": "The Joint Commission evaluates environmental cleaning across these core areas:",
+      "items": [
+        "Terminal Cleaning Protocols — End-of-day deep disinfection of all patient care areas using EPA-registered, hospital-grade products following CDC Guidelines for Environmental Infection Control",
+        "Chemical Management — Proper storage, labeling, and Safety Data Sheet (SDS) documentation for all cleaning chemicals used in your facility",
+        "Staff Training — Documented training records showing cleaning staff are trained in bloodborne pathogen handling (OSHA 29 CFR 1910.1030), PPE usage, and proper disinfection techniques",
+        "Quality Monitoring — A systematic process for verifying that cleaning is done correctly — not just that it was done. This can include visual inspection, ATP testing, or fluorescent marker programs",
+        "Documentation & Records — Cleaning logs with dates, times, areas cleaned, chemicals used, and staff identification that can be produced during an unannounced survey"
+      ]
+    },
+    {
+      "title": "Common Survey Deficiencies in Environmental Cleaning",
+      "content": "Based on Joint Commission survey data, the most frequently cited environmental cleaning deficiencies include:",
+      "items": [
+        "No documented cleaning schedule or scope of work",
+        "Cleaning products not on the EPA List N or appropriate for healthcare settings",
+        "No evidence of ongoing staff training or competency verification",
+        "Lack of a quality monitoring program for cleaning effectiveness",
+        "Expired SDS sheets or improperly labeled chemical containers",
+        "No evidence that high-touch surfaces are cleaned with appropriate frequency"
+      ]
+    },
+    {
+      "title": "How to Build a Survey-Ready Cleaning Program",
+      "content": "A compliant program isn't built during survey prep — it's built into your daily operations. Here's the framework:",
+      "items": [
+        "Create a written Scope of Work that specifies cleaning tasks, frequencies, and responsible parties for every room and area",
+        "Use only EPA-registered hospital-grade disinfectants with documented dwell times",
+        "Implement a log system (digital preferred) that records every cleaning session with timestamps and staff identification",
+        "Schedule quarterly training refreshers for all cleaning staff on infection control and chemical safety",
+        "Implement a quality verification program — either internal spot-checks or an independent auditing system like XIRI's Night Manager program"
+      ]
+    }
+  ],
+  "calloutTitle": "How XIRI Keeps You Survey-Ready",
+  "calloutContent": "Our Night Managers independently audit every clean in your facility with photographic documentation. Your FSM maintains digital cleaning logs, chemical SDS sheets, and training records — giving you instant access to 12 months of compliance documentation for any survey or inspection.",
+  "relatedServices": [
+    "medical-office-cleaning",
+    "surgery-center-cleaning",
+    "disinfecting-services"
+  ],
+  "faqs": [
+    {
+      "question": "Does XIRI provide JCAHO-compliant cleaning documentation?",
+      "answer": "Yes. We maintain timestamped digital logs of every cleaning session, chemical SDS sheets, contractor training records, and Night Manager audit photos. Your FSM can generate a compliance report on demand."
+    },
+    {
+      "question": "How often does the Joint Commission survey for cleaning?",
+      "answer": "JCAHO conducts unannounced surveys every 2–3 years for accredited organizations. Environmental cleaning is evaluated during every survey under the Environment of Care (EC) standards."
+    },
+    {
+      "question": "Can your documentation replace our internal quality monitoring?",
+      "answer": "Our Night Manager audit program satisfies the JCAHO requirement for a quality monitoring system for environmental cleaning. Each audit includes photographic evidence and a standardized checklist that documents cleaning effectiveness."
+    }
+  ]
+}

@@ -676,6 +676,77 @@ export interface VendorRemittance {
     };
 }
 
+// --- NFC ZONES ---
+
+export interface NfcZone {
+    id: string;
+    name: string;                // "Lobby", "Restrooms", "Office Floor 2"
+    tagId: string;               // Physical NFC tag UID (or simulated ID)
+    tagLocationHint?: string;    // "Behind the front desk", "Above paper towel dispenser"
+    roomIds: string[];           // Maps to room IDs from building scope
+}
+
+export interface WorkOrderNfcZone {
+    zoneId: string;
+    zoneName: string;
+    tagId: string;
+    tagLocationHint?: string;
+    roomIds: string[];
+    tasks: WorkOrderTask[];      // Tasks scoped to this zone's rooms
+    scannedAt?: any;             // Timestamp when NFC was tapped
+    scannedBy?: string;
+}
+
+export interface ZoneScanResult {
+    zoneId: string;
+    zoneName: string;
+    scannedAt: any;
+    tasksCompleted: CheckInTask[];
+}
+
+export interface NfcZoneConfig {
+    leadId: string;
+    locationId: string;
+    locationName: string;
+    zones: NfcZone[];
+    createdBy: string;
+    createdAt: any;
+    updatedAt: any;
+}
+
+/** Per-location NFC site configuration — stored in nfc_sites/{locationId} */
+export interface NfcSiteConfig {
+    siteKey: string;                // Hashed secret password (bcrypt)
+    locationId: string;
+    locationName: string;
+    leadId: string;
+    vendorName: string;             // Subcontractor company name
+    vendorId?: string;              // Linked vendor record
+    startTagId: string;             // Start tag NFC UID
+    startTagLocationHint?: string;  // "Inside front door, left wall"
+    zones: NfcZone[];               // Zone tags (tasks)
+    createdBy: string;              // FM who set it up
+    createdAt: any;
+    updatedAt: any;
+    revokedAt?: any;                // Set when site key is rotated
+}
+
+/** Per-shift NFC session — stored in nfc_sessions/{sessionId} */
+export interface NfcSession {
+    id: string;
+    siteLocationId: string;         // Links to nfc_sites locationId
+    locationName: string;
+    personName: string;
+    personRole: 'cleaner' | 'night_manager';
+    clockInAt: any;
+    clockOutAt?: any;
+    zoneScanResults: ZoneScanResult[];
+    auditScore?: number;
+    auditNotes?: string;
+    deviceFingerprint?: string;     // For multi-device tracking
+    createdAt: any;
+}
+
 // --- NIGHT MANAGER AUDITS ---
 
 export interface CheckInTask {
@@ -707,6 +778,9 @@ export interface CheckIn {
     vendorId?: string;
     vendorName?: string;
     checkInDate: string; // YYYY-MM-DD
+
+    // NFC zone scan results (when location has NFC zones)
+    zoneScanResults?: ZoneScanResult[];
 
     createdAt: any;
 }
@@ -916,6 +990,7 @@ export interface WorkOrder {
     scopeTemplateId?: string;
     tasks: WorkOrderTask[];
     qrCodeSecret?: string;
+    nfcZones?: WorkOrderNfcZone[];  // NFC zone check-in data
 
     vendorId?: string;
     vendorRate?: number;

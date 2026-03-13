@@ -1,0 +1,71 @@
+{
+  "title": "HIPAA Environmental Compliance for Janitorial Vendors",
+  "heroTitle": "HIPAA and Your Cleaning Crew: What Janitorial Vendors Need to Know",
+  "heroSubtitle": "Your cleaning contractor has access to your facility after hours. That means access to patient charts, prescription labels, and computer screens. Here is how to keep your practice HIPAA-compliant.",
+  "metaDescription": "Guide to HIPAA environmental compliance for cleaning and janitorial vendors. Learn PHI exposure risks, Business Associate requirements, training mandates, and how to protect patient data.",
+  "datePublished": "2026-03-09",
+  "dateModified": "2026-03-09",
+  "sections": [
+    {
+      "title": "Why HIPAA Applies to Your Cleaning Contractor",
+      "content": "The Health Insurance Portability and Accountability Act (HIPAA) protects patient health information — and that protection extends to anyone who could access it, including your after-hours cleaning crew. Under the HIPAA Security Rule and Privacy Rule, a janitorial vendor who enters a medical office with access to Protected Health Information (PHI) may qualify as a Business Associate. Penalties for HIPAA violations range from $141 to $2,134,831 per violation category, with a maximum of $2,134,831 per identical violation per year (2024 HHS penalty schedule). An unlocked chart room and a cleaning crew without training is all it takes."
+    },
+    {
+      "title": "When Your Cleaning Vendor Is a Business Associate",
+      "content": "Not every cleaning contractor qualifies as a Business Associate under HIPAA — but many do. The determining factor is access, not intent:",
+      "items": [
+        "If your cleaning crew has unsupervised access to areas where PHI is stored, displayed, or accessible — they are likely a Business Associate",
+        "If your crew can see patient names on sign-in sheets, prescription labels in trash, or information on unattended computer screens — that constitutes potential PHI exposure",
+        "If PHI exposure is \"reasonably anticipated\" during cleaning operations, a Business Associate Agreement (BAA) is required under 45 CFR 164.502(e)",
+        "A BAA does not need to be complex — it establishes that the vendor will safeguard PHI, report breaches, and train their employees accordingly"
+      ]
+    },
+    {
+      "title": "The 4 HIPAA Risks Your Cleaning Crew Creates",
+      "content": "These are the four most common HIPAA exposure vectors created by after-hours cleaning operations:",
+      "items": [
+        "Visual Exposure — Patient charts left on desks, sign-in sheets at reception, lab results on counters, or patient information visible on unlocked computer screens",
+        "Trash and Shredding — Prescription labels, appointment slips, EOBs, and printed patient records in regular trash instead of secure shredding bins",
+        "Unlocked Access — Cleaning crew given master key or code access to records rooms, file cabinets, or medication storage without need-to-know justification",
+        "Photography — Cleaning crews using personal phones to photograph task completion in areas where PHI is visible in the background"
+      ]
+    },
+    {
+      "title": "How to HIPAA-Proof Your Cleaning Program",
+      "content": "Protecting PHI during cleaning operations requires controls on both sides — your practice and your vendor. Here is the practical framework:",
+      "items": [
+        "Execute a BAA — If your cleaning vendor has unsupervised access to areas with PHI, execute a Business Associate Agreement before they start. This is a legal requirement, not a best practice",
+        "Define restricted zones — Not every room needs to be accessible to cleaning. Lock records rooms, medication cabinets, and server rooms. Provide access only to the areas that need cleaning",
+        "Implement a clean-desk policy — Require staff to secure PHI before leaving for the night. Flip charts face-down, log out of computers, close file drawers. This is your responsibility, not the cleaner's",
+        "Train your cleaning crew — Conduct HIPAA awareness training covering: what PHI looks like, what to do if they see it, and the absolute prohibition on reading, photographing, or discussing patient information",
+        "Ban personal phones in PHI areas — Require cleaning crews to leave personal devices in a designated area when working in patient care zones. XIRI enforces this in all our medical facility protocols",
+        "Audit compliance — Your facility should periodically verify that PHI is properly secured before the cleaning crew arrives, and that the crew follows restricted-zone protocols"
+      ]
+    }
+  ],
+  "calloutTitle": "How XIRI Protects Your PHI",
+  "calloutContent": "Every XIRI contractor deployed to a medical facility signs a Business Associate Agreement and completes HIPAA awareness training. We enforce a no-personal-phone policy in patient care areas, define restricted zones in every cleaning scope, and our Night Managers verify that PHI is not visible or accessible during their nightly audits.",
+  "relatedServices": [
+    "medical-office-cleaning",
+    "surgery-center-cleaning",
+    "urgent-care-cleaning"
+  ],
+  "faqs": [
+    {
+      "question": "Does my cleaning company need a Business Associate Agreement?",
+      "answer": "If your cleaning vendor has unsupervised access to areas where Protected Health Information is stored, displayed, or reasonably accessible — yes. Under 45 CFR 164.502(e), a BAA is required before they begin work. This includes most after-hours cleaning arrangements in medical offices, dental practices, and behavioral health clinics."
+    },
+    {
+      "question": "What HIPAA training should cleaning staff receive?",
+      "answer": "At minimum: what PHI looks like (patient names, dates of birth, diagnosis codes, prescription labels), what to do if they encounter it (do not read, do not move, report to supervisor), and the consequences of unauthorized access or disclosure. Training should be documented with signed acknowledgments."
+    },
+    {
+      "question": "Is the practice or the cleaning company liable for a HIPAA breach?",
+      "answer": "Both can be liable. The covered entity (your practice) is responsible for executing a BAA and implementing reasonable safeguards. The Business Associate (cleaning vendor) is responsible for training their staff and following the BAA terms. HHS can impose penalties on both parties depending on the nature of the breach."
+    },
+    {
+      "question": "What should I do if my cleaning crew sees patient information?",
+      "answer": "If PHI was visible but not accessed, used, or disclosed — document it as a potential incident, implement corrective action (better clean-desk enforcement or restricted access), and brief the crew. If PHI was read, copied, photographed, or shared, it constitutes a potential breach that must be reported under your HIPAA breach notification procedures."
+    }
+  ]
+}

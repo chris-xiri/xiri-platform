@@ -1,5 +1,7 @@
 "use client";
 
+import { Fragment } from "react";
+
 import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -498,7 +500,7 @@ export default function LeadList({
                                 <TableBody>
                                     {groupByAddress && addressGroups ? (
                                         addressGroups.map(group => (
-                                            <>
+                                            <Fragment key={group.key}>
                                                 <TableRow
                                                     key={`group-${group.key}`}
                                                     className={`cursor-pointer hover:bg-muted/50 border-b ${group.leads.length > 1 ? 'bg-amber-500/5' : 'bg-muted/20'
@@ -531,7 +533,7 @@ export default function LeadList({
                                                         visibleColumns={visibleColumns}
                                                     />
                                                 ))}
-                                            </>
+                                            </Fragment>
                                         ))
                                     ) : (
                                         paginatedLeads.map((lead, index) => (

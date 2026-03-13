@@ -18,8 +18,8 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// Connect to emulators in development
-if (process.env.NODE_ENV === 'development') {
+// Connect to emulators only when explicitly enabled
+if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
     console.log('Connecting to Firebase Emulators...');
     connectFirestoreEmulator(db, '127.0.0.1', 8085);
     connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });

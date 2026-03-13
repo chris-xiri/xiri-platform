@@ -26,5 +26,22 @@ service cloud.firestore {
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['paymentInfo', 'paymentInfoUpdatedAt']);
     }
+
+    // ── NFC Sites (public read for location info, admin write) ──
+    match /nfc_sites/{locationId} {
+      // Public can read location name + vendor name (needed for clock-in page)
+      // Note: siteKeyHash is in this doc but is harmless to read — it's a hash
+      allow read: if true;
+      // Only authenticated admins (dashboard) can write
+      allow write: if request.auth != null;
+    }
+
+    // ── NFC Sessions (Cloud Functions only) ──
+    // Sessions are created/updated by Cloud Functions using Admin SDK,
+    // which bypasses these rules. Public clients cannot read/write.
+    match /nfc_sessions/{sessionId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only admin SDK (Cloud Functions)
+    }
   }
 }

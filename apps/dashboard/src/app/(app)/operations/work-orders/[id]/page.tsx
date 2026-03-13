@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
     ArrowLeft, MapPin, Clock, DollarSign, User2, CheckCircle2,
-    AlertCircle, Search, Calendar, Shield, Truck, Star, Printer, Moon, Pencil
+    AlertCircle, Search, Calendar, Shield, Truck, Star, Printer, Moon, Pencil, Package
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -476,10 +476,20 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
                         return (
                             <Card>
                                 <CardHeader className="pb-3">
-                                    <CardTitle className="text-base flex items-center gap-2">
-                                        <Shield className="w-4 h-4 text-muted-foreground" /> Task Checklist
-                                    </CardTitle>
-                                    <CardDescription>{wo.tasks.length} tasks across {roomGroups.length} {roomGroups.length === 1 ? 'area' : 'areas'}</CardDescription>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <CardTitle className="text-base flex items-center gap-2">
+                                                <Shield className="w-4 h-4 text-muted-foreground" /> Task Checklist
+                                            </CardTitle>
+                                            <CardDescription>{wo.tasks.length} tasks across {roomGroups.length} {roomGroups.length === 1 ? 'area' : 'areas'}</CardDescription>
+                                        </div>
+                                        <Link href={`/operations/nfc-zones?woId=${params.id}`}>
+                                            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                                                <Package className="w-3.5 h-3.5" />
+                                                {wo.nfcZones && wo.nfcZones.length > 0 ? 'Edit NFC Zones' : 'Setup NFC Zones'}
+                                            </Button>
+                                        </Link>
+                                    </div>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {roomGroups.map((group) => (

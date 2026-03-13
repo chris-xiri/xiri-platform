@@ -1,0 +1,78 @@
+{
+  "title": "NYS DEC Part 226 VOC Compliance for Commercial Cleaning",
+  "heroTitle": "NYS Part 226: VOC Limits That Affect Every Cleaning Company in New York",
+  "heroSubtitle": "New York State regulates volatile organic compounds in cleaning solvents. If your janitorial vendor uses non-compliant products, your facility is at risk.",
+  "metaDescription": "Guide to NYS DEC Part 226 VOC compliance for commercial cleaning operations. Learn VOC limits for cleaning solvents, product compliance requirements, and how to avoid violations in New York.",
+  "datePublished": "2026-03-09",
+  "dateModified": "2026-03-09",
+  "sections": [
+    {
+      "title": "What Is NYS DEC Part 226?",
+      "content": "New York State Department of Environmental Conservation (DEC) Part 226 establishes limits on Volatile Organic Compounds (VOCs) in consumer and commercial products — including cleaning solvents, degreasers, glass cleaners, and general-purpose cleaners used by janitorial companies. VOCs contribute to ground-level ozone formation, which causes respiratory harm and violates federal Clean Air Act standards. Part 226 sets enforceable VOC content limits (measured as grams of VOC per liter of product) for each product category. Using non-compliant products in New York is a violation regardless of whether the product was purchased out of state."
+    },
+    {
+      "title": "VOC Limits for Common Cleaning Products",
+      "content": "Part 226 specifies maximum VOC content by product category. These are the limits most relevant to commercial cleaning operations:",
+      "items": [
+        "General Purpose Cleaner — Maximum 0.5% VOC by weight for ready-to-use products",
+        "Glass Cleaner — Maximum 4.0% VOC by weight",
+        "Heavy-Duty Hand Cleaner — Maximum 8.0% VOC by weight",
+        "Bathroom and Tile Cleaner — Maximum 5.0% VOC by weight",
+        "Carpet and Upholstery Cleaner — Maximum 0.1% VOC by weight",
+        "Floor Polish and Finish — Maximum 7.0% VOC by weight for resilient flooring products",
+        "Degreaser (non-aerosol) — Maximum 3.5% VOC by weight"
+      ]
+    },
+    {
+      "title": "Why This Matters for Your Facility",
+      "content": "Part 226 compliance is the cleaning vendor's responsibility — but the consequences affect your facility too. If inspectors find non-compliant products being used in your building, both the vendor and the facility operator can face enforcement action. Beyond regulatory risk, high-VOC cleaning products degrade indoor air quality, which matters especially in healthcare, childcare, laboratory, and food service environments where occupants are vulnerable."
+    },
+    {
+      "title": "How to Verify Your Cleaning Vendor Is Compliant",
+      "content": "Most facility managers never check their cleaning vendor's chemical inventory. Here is how to verify compliance without becoming a chemist:",
+      "items": [
+        "Request the product list — Ask your cleaning vendor for a complete list of every product they use in your facility, including brand names and product numbers",
+        "Check Safety Data Sheets (SDS) — Section 9 of the SDS includes VOC content. Compare against Part 226 limits for the product category",
+        "Look for low-VOC certifications — Products with Green Seal (GS-37 or GS-53), EPA Safer Choice, or UL ECOLOGO certifications typically comply with Part 226 limits",
+        "Require substitution reporting — If your vendor switches products, they should notify you and provide the SDS for the new product before using it",
+        "Include Part 226 compliance in your cleaning contract — Make VOC compliance an explicit contractual requirement, not an assumption"
+      ]
+    },
+    {
+      "title": "Special Considerations for Sensitive Environments",
+      "content": "Certain facilities have even stricter practical requirements beyond Part 226 minimums:",
+      "items": [
+        "Laboratories and Cleanrooms — High-VOC solvents can contaminate air quality readings, interfere with sensitive experiments, and compromise cleanroom classifications (ISO 14644-1)",
+        "Medical Offices — Patients with respiratory conditions (asthma, COPD) are disproportionately affected by VOCs. Low-VOC products protect patients and reduce liability",
+        "Daycares and Schools — Children are more susceptible to VOC exposure than adults. Green Seal GS-37 certified products are the practical standard for childcare environments",
+        "Food Service and Manufacturing — VOC residue on food preparation surfaces creates FDA compliance risk in addition to DEC enforcement risk"
+      ]
+    }
+  ],
+  "calloutTitle": "How XIRI Handles VOC Compliance",
+  "calloutContent": "We maintain a centralized chemical inventory for every facility we manage. Every product is verified against Part 226 limits before deployment, and our contractors are prohibited from substituting products without FSM approval. For sensitive environments — labs, medical offices, and daycares — we default to Green Seal certified, low-VOC products that exceed Part 226 requirements.",
+  "relatedServices": [
+    "commercial-cleaning",
+    "janitorial-services",
+    "medical-office-cleaning",
+    "daycare-cleaning"
+  ],
+  "faqs": [
+    {
+      "question": "Does NYS Part 226 apply to cleaning companies?",
+      "answer": "Yes. Part 226 applies to any commercial product sold, offered for sale, or used in New York that falls within its regulated categories — including general-purpose cleaners, glass cleaners, degreasers, floor polishes, and carpet cleaners. If your cleaning vendor uses these products in your New York facility, the products must comply with Part 226 VOC limits."
+    },
+    {
+      "question": "What happens if non-compliant cleaning products are used in my building?",
+      "answer": "The NYS DEC can issue notices of violation, require corrective action, and impose civil penalties. While the primary obligation falls on the product distributor and user (your cleaning vendor), facility operators can also face scrutiny during environmental inspections — especially in healthcare and laboratory settings where air quality is regulated."
+    },
+    {
+      "question": "How do I know if a cleaning product complies with Part 226?",
+      "answer": "Check the product's Safety Data Sheet (SDS), Section 9, for VOC content in grams per liter or percentage by weight. Compare against the Part 226 limit for that product category. Products with Green Seal GS-37, GS-53, or EPA Safer Choice certifications generally comply with Part 226 limits."
+    },
+    {
+      "question": "Are \"green\" cleaning products automatically Part 226 compliant?",
+      "answer": "Not necessarily. \"Green\" and \"eco-friendly\" are marketing terms with no regulatory definition. A product can be marketed as green and still exceed Part 226 VOC limits. Always verify with the SDS or look for specific certifications (Green Seal, EPA Safer Choice, UL ECOLOGO) that have enforceable VOC standards."
+    }
+  ]
+}

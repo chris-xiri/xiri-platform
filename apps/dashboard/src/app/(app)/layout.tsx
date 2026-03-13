@@ -213,6 +213,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             dividerAbove: true,
             items: [
                 ...(canAccess('operations/audits', profile.roles) ? [{ label: 'Audits', href: '/operations/audits', icon: <Shield className="w-4 h-4" /> }] : []),
+                ...(canAccess('operations/nfc-zones', profile.roles) ? [{ label: 'NFC Zones', href: '/operations/nfc-zones', icon: <Package className="w-4 h-4" /> }] : []),
                 ...(canAccess('operations/site-visits', profile.roles) ? [{ label: 'Site Visits', href: '/operations/site-visits', icon: <MapPin className="w-4 h-4" /> }] : []),
             ],
         },

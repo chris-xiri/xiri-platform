@@ -10,185 +10,8 @@ import seoData from '@/data/seo-data.json';
 import { CheckCircle, ArrowRight, Building2, Stethoscope, Shield, Users, FileText, Phone } from 'lucide-react';
 import { AuthorityBreadcrumb } from '@/components/AuthorityBreadcrumb';
 
-// ── Solutions Data ──
-const SOLUTIONS: Record<string, {
-    title: string;
-    heroTitle: string;
-    heroSubtitle: string;
-    metaDescription: string;
-    problemTitle: string;
-    problemPoints: string[];
-    solutionTitle: string;
-    solutionPoints: { title: string; description: string }[];
-    relevantServices: string[];
-    faqs: { question: string; answer: string }[];
-    comparisonTable?: { category: string; diy: string; software: string; xiri: string }[];
-}> = {
-    'medical-facility-management': {
-        title: 'Medical Facility Management',
-        heroTitle: 'Facility Management Built for Medical Practices',
-        heroSubtitle: 'JCAHO-compliant cleaning, documented audits, and one invoice — so you can focus on patient care, not janitorial logistics.',
-        metaDescription: 'Professional facility management for medical offices, urgent care centers, and surgery centers. JCAHO-compliant cleaning with nightly audits and one consolidated invoice.',
-        problemTitle: 'The Hidden Cost of "Managing It Yourself"',
-        problemPoints: [
-            'Your office manager spends 5+ hours/week coordinating vendors, chasing invoices, and handling complaints',
-            'Missed cleans go unnoticed until a patient or surveyor notices — putting your accreditation at risk',
-            'Generic cleaning companies don\'t understand bloodborne pathogen protocols or terminal cleaning standards',
-            'Multiple vendors mean multiple invoices, multiple insurance certificates to track, and multiple points of failure',
-            'When a vendor no-shows, you\'re scrambling to find a replacement while patients walk into a dirty facility',
-        ],
-        solutionTitle: 'How XIRI Solves It',
-        solutionPoints: [
-            {
-                title: 'One Point of Contact',
-                description: 'Your dedicated Facility Solutions Manager handles everything — vendor coordination, scheduling, complaints, and compliance documentation. You make one call, ever.',
-            },
-            {
-                title: 'Nightly Audits, Not Promises',
-                description: 'Our Night Managers physically verify every clean in your facility. You get photographic proof every morning — not just a contractor\'s word.',
-            },
-            {
-                title: 'JCAHO & OSHA Compliance Built In',
-                description: 'We maintain digital cleaning logs, chemical SDS sheets, and audit documentation that\'s ready for your next accreditation survey or state inspection.',
-            },
-            {
-                title: 'One Invoice, Every Service',
-                description: 'Janitorial, floor care, pest control, waste management, HVAC filters — all consolidated into one monthly invoice with transparent line items.',
-            },
-        ],
-        relevantServices: ['medical-office-cleaning', 'urgent-care-cleaning', 'surgery-center-cleaning', 'disinfecting-services', 'floor-care', 'waste-management'],
-        faqs: [
-            {
-                question: 'How is XIRI different from hiring a cleaning company directly?',
-                answer: 'A cleaning company sends a crew. XIRI sends a crew, a Night Manager who audits their work, and a dedicated FSM who manages everything. We verify quality independently — the auditor is never the cleaner.',
-            },
-            {
-                question: 'Can you handle a multi-location medical practice?',
-                answer: 'Yes. We manage multi-site medical groups with coordinated cleaning schedules, standardized quality metrics, and one consolidated invoice across all locations.',
-            },
-            {
-                question: 'What happens if we have a compliance survey tomorrow?',
-                answer: 'Because our Night Managers audit nightly with photographic documentation, your facility is always survey-ready. We can pull 12 months of cleaning logs, chemical records, and audit photos within minutes.',
-            },
-            {
-                question: 'How quickly can you start service?',
-                answer: 'From initial site audit to first clean is typically 5–7 business days. Emergency start for facilities with urgent needs can be coordinated in as little as 48 hours.',
-            },
-        ],
-    },
-    'single-tenant-maintenance': {
-        title: 'Single-Tenant Building Maintenance',
-        heroTitle: 'Stop Juggling Vendors for Your Building',
-        heroSubtitle: 'If you\'re a single-tenant occupier responsible for your own building maintenance, you need a system — not another spreadsheet.',
-        metaDescription: 'Complete building maintenance for single-tenant NNN lease occupiers. One vendor, one invoice, and one point of contact for janitorial, HVAC, snow removal, and everything between the roof and floor.',
-        problemTitle: 'The NNN Tenant\'s Nightmare',
-        problemPoints: [
-            'Triple-net lease means you\'re responsible for everything — but you\'re not a property manager, you\'re a business owner',
-            'You have 4–7 different vendors for cleaning, snow, HVAC, pest control, and handyman — and none of them talk to each other',
-            'Tracking insurance certificates, scheduling, and invoices for each vendor consumes your admin staff\'s time',
-            'When a vendor doesn\'t show up, nobody notices until Monday morning — and now it\'s your problem',
-            'You\'re paying retail for each service because no single vendor manages enough of your building to give you leverage',
-        ],
-        solutionTitle: 'One Call Covers Your Entire Building',
-        solutionPoints: [
-            {
-                title: 'Roof to Floor Coverage',
-                description: 'Janitorial, floor care, windows, HVAC filters, pest control, snow removal, parking lot maintenance, handyman — all managed under one agreement.',
-            },
-            {
-                title: 'Your FSM Is Your Building Manager',
-                description: 'Your dedicated Facility Solutions Manager handles all vendor coordination, scheduling, quality control, and issue resolution. Weekly site visits ensure nothing slips.',
-            },
-            {
-                title: 'One Invoice, Zero Surprises',
-                description: 'Every service consolidated into one predictable monthly invoice. No more tracking 7 vendors, 7 insurance certs, and 7 payment schedules.',
-            },
-            {
-                title: 'Verified Quality, Every Night',
-                description: 'Night Managers physically audit contractor work and submit photographic documentation. You see proof of quality — not just promises.',
-            },
-        ],
-        relevantServices: ['janitorial-services', 'floor-care', 'window-cleaning', 'hvac-maintenance', 'pest-control', 'snow-ice-removal', 'parking-lot-maintenance', 'handyman-services'],
-        faqs: [
-            {
-                question: 'What is a triple-net (NNN) lease and why does it matter for maintenance?',
-                answer: 'In a NNN lease, the tenant is responsible for all building operating expenses including maintenance, insurance, and taxes — not the landlord. That means you need to source and manage every vendor yourself, or partner with XIRI to handle it all.',
-            },
-            {
-                question: 'We\'re a small business — can we afford this?',
-                answer: 'Most clients find that consolidating vendors through XIRI actually reduces total cost. You eliminate redundant service visits, get volume pricing across services, and reclaim the admin hours your staff spends chasing vendors.',
-            },
-            {
-                question: 'How does pricing work?',
-                answer: 'We build a custom scope based on your facility size, service needs, and frequency. You get one flat monthly rate that covers all included services — no hourly billing, no surprise charges, no per-incident fees.',
-            },
-            {
-                question: 'Can we start with just cleaning and add services later?',
-                answer: 'Absolutely. Most clients start with janitorial as the foundation and add floor care, pest control, HVAC, and seasonal services over time. Your FSM recommends additions based on what they observe during weekly site visits.',
-            },
-        ],
-    },
-    'vendor-management-alternative': {
-        title: 'The Vendor Management Alternative',
-        heroTitle: 'Stop Managing Vendors. Start Managing Results.',
-        heroSubtitle: 'You don\'t need vendor management software. You need someone to manage the vendors for you.',
-        metaDescription: 'Tired of spreadsheets and software to manage cleaning and maintenance vendors? XIRI replaces vendor management tools with actual vendor management — one contact, one invoice, verified quality.',
-        problemTitle: 'Software Can\'t Fix a People Problem',
-        problemPoints: [
-            'You tried spreadsheets — tracking 5+ vendors, their schedules, insurance expiration dates, and invoices across tabs that nobody updates',
-            'You looked at CMMS or FM software — $200–500/month tools that still require you to find, vet, and manage every vendor yourself',
-            'The software shows you what\'s broken. It doesn\'t fix it. You still make the calls, chase the quotes, and follow up on no-shows',
-            'Your admin staff spends 8–10 hours/week on vendor coordination that isn\'t their actual job',
-            'When quality drops, software can\'t walk your building at midnight to verify the cleaning was actually done',
-        ],
-        solutionTitle: 'We Replace the Software AND the Work',
-        solutionPoints: [
-            {
-                title: 'We Find & Vet the Vendors',
-                description: 'You don\'t source contractors. We recruit, background-check, verify insurance, and match the right vendor to your facility. You approve — we do the legwork.',
-            },
-            {
-                title: 'We Manage the Schedule',
-                description: 'No more tracking who comes on which night. Your FSM builds the schedule, coordinates all vendors, and handles any no-shows or substitutions automatically.',
-            },
-            {
-                title: 'We Verify the Quality',
-                description: 'Software can\'t walk your building at midnight. Our Night Managers physically audit every clean and submit photographic proof before morning.',
-            },
-            {
-                title: 'We Send One Invoice',
-                description: 'Stop reconciling 5 vendor invoices every month. One XIRI invoice covers everything — janitorial, floor care, pest, snow, HVAC, and more.',
-            },
-        ],
-        relevantServices: ['janitorial-services', 'commercial-cleaning', 'floor-care', 'window-cleaning', 'pest-control', 'hvac-maintenance'],
-        comparisonTable: [
-            { category: 'Monthly Cost', diy: 'Your staff\'s time', software: '$200–$500/mo + vendor costs', xiri: 'One flat monthly invoice' },
-            { category: 'Vendor Sourcing', diy: 'You do it', software: 'You do it', xiri: 'We do it' },
-            { category: 'Insurance Tracking', diy: 'You track it', software: 'You upload it', xiri: 'We verify it' },
-            { category: 'Quality Verification', diy: 'Hope for the best', software: 'Self-reported checklists', xiri: 'Night Manager audits nightly' },
-            { category: 'No-Show Coverage', diy: 'You scramble', software: 'Alerts you', xiri: 'Auto-dispatches backup' },
-            { category: 'Single Invoice', diy: '5–7 separate bills', software: 'Still 5–7 bills', xiri: 'One invoice, all services' },
-        ],
-        faqs: [
-            {
-                question: 'How is XIRI different from facility management software?',
-                answer: 'Software gives you tools to manage vendors yourself. XIRI actually manages the vendors for you. We source them, schedule them, audit their work nightly, and consolidate everything into one invoice. You get the result without the work.',
-            },
-            {
-                question: 'What if I already have vendors I want to keep?',
-                answer: 'We can work with your existing vendors or replace them — your choice. If you want to keep a vendor you trust, we simply add them to our management and auditing system.',
-            },
-            {
-                question: 'Is this more expensive than managing it ourselves?',
-                answer: 'When you factor in the admin hours your staff spends on vendor coordination (8–10 hrs/week at $25–40/hr), plus the cost of missed quality issues and emergency replacements, most clients find XIRI is cost-neutral or saves money.',
-            },
-            {
-                question: 'How quickly can we transition from our current setup?',
-                answer: 'Typical transition takes 2–3 weeks. Your FSM conducts a site audit, builds the scope, identifies needed vendors, and coordinates the switchover with minimal disruption to your operations.',
-            },
-        ],
-    },
-};
+import { SOLUTIONS } from '@/data/solutions';
+
 
 import { DLP_SOLUTIONS, SPOKE_HUBS } from '@/data/dlp-solutions';
 import { SITE } from '@/lib/constants';
@@ -277,6 +100,19 @@ export default async function SolutionPage({ params }: Props) {
         return (
             <div className="min-h-screen bg-white">
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: solution.title, description: solution.metaDescription, url: `${SITE.url}/solutions/${slug}` }} />
+                {slug === 'nfc-proof-of-work' && (
+                    <JsonLd data={{
+                        '@context': 'https://schema.org',
+                        '@type': 'DefinedTerm',
+                        name: 'Proof of Work (Commercial Cleaning)',
+                        description: 'Verifiable, tamper-proof evidence that a cleaning crew was physically present in a facility and completed the contracted scope of work. In commercial cleaning, proof of work uses NFC (Near Field Communication) tags mounted in facility zones to create timestamped, zone-level records of cleaning activity.',
+                        inDefinedTermSet: {
+                            '@type': 'DefinedTermSet',
+                            name: 'Facility Management Terms',
+                        },
+                        url: `${SITE.url}/solutions/nfc-proof-of-work`,
+                    }} />
+                )}
                 <AuthorityBreadcrumb items={[{ label: 'Solutions', href: '/solutions' }, { label: solution.title }]} />
                 <Hero title={solution.heroTitle} subtitle={solution.heroSubtitle} ctaText="Get a Free Site Audit" />
                 <section className="py-16 bg-slate-50 border-y border-slate-200">

@@ -1,0 +1,77 @@
+{
+  "title": "CMS Conditions for Coverage: Cleaning Requirements for Dialysis Centers",
+  "heroTitle": "CMS Conditions for Coverage: What Your Dialysis Center Cleaning Program Must Include",
+  "heroSubtitle": "CMS ties your Medicare reimbursement to infection control — and your environmental cleaning program is the first thing surveyors evaluate. Here is what your cleaning vendor needs to know.",
+  "metaDescription": "Complete guide to CMS Conditions for Coverage cleaning requirements for dialysis and ESRD facilities. Learn infection control mandates, station turnover protocols, and documentation standards.",
+  "datePublished": "2026-03-09",
+  "dateModified": "2026-03-09",
+  "sections": [
+    {
+      "title": "What Are CMS Conditions for Coverage?",
+      "content": "The Centers for Medicare & Medicaid Services (CMS) publishes Conditions for Coverage (CoC) that every End-Stage Renal Disease (ESRD) facility must meet to participate in the Medicare program — which represents the majority of dialysis center revenue. Under 42 CFR Part 494 (specifically §494.30), ESRD facilities must maintain an active infection control program that includes environmental cleaning as a core component. Failure to meet CMS CoC during a state survey can result in termination from the Medicare program — effectively closing the facility."
+    },
+    {
+      "title": "Why Environmental Cleaning Is the First Line of Defense",
+      "content": "Dialysis patients are among the most infection-vulnerable populations in outpatient healthcare. They undergo repeated vascular access procedures, often have compromised immune systems, and spend 3–4 hours per session in close proximity to other patients. Bloodborne pathogen exposure is not theoretical — it is a routine operational reality. The CDC reports that dialysis patients are at significantly elevated risk for hepatitis B (HBV) and hepatitis C (HCV) compared to the general population. Your environmental cleaning program is the primary barrier between a routine treatment session and a reportable infection control event."
+    },
+    {
+      "title": "CMS Cleaning Requirements for Dialysis Facilities",
+      "content": "Under 42 CFR §494.30 and the CMS ESRD Interpretive Guidance, these environmental cleaning requirements are mandatory:",
+      "items": [
+        "Station Turnover Cleaning — Every dialysis station must be cleaned and disinfected between patients. All external surfaces of the dialysis machine, the chair or bed, side tables, and any shared equipment must be wiped with an EPA-registered intermediate-level disinfectant with documented dwell time",
+        "Terminal Cleaning — End-of-day deep cleaning of the entire treatment area including floors, walls (splash zones), sinks, restrooms, and common areas",
+        "Isolation Room Protocols — Facilities must have a dedicated isolation area for HBV-positive patients. This area requires separate cleaning equipment (mops, buckets, cloths) that is never used in the general treatment area",
+        "Spill Response — Immediate cleanup of blood spills using EPA-registered disinfectant with appropriate dwell time. All cleaning staff must be trained in OSHA BBP protocols (29 CFR 1910.1030)",
+        "Water Treatment Area — The water treatment room requires separate cleaning protocols to prevent contamination of the reverse osmosis system and dialysate preparation"
+      ]
+    },
+    {
+      "title": "What CMS Surveyors Look for in Your Cleaning Program",
+      "content": "State survey agencies conduct recertification surveys on behalf of CMS every 9–15 months. During the environmental cleaning portion, surveyors evaluate:",
+      "items": [
+        "Direct observation of station turnover cleaning — they will watch your crew clean between patients and verify proper disinfectant use and dwell time",
+        "Written infection control policies that specifically address environmental cleaning procedures, frequencies, and products",
+        "Training documentation showing cleaning staff completed initial and annual infection control training",
+        "Logs demonstrating consistent daily cleaning with dates, times, staff identification, and areas cleaned",
+        "Evidence that isolation area cleaning equipment is separated from general equipment — labeled, color-coded, or stored separately",
+        "Water treatment area cleaning logs maintained separately from general facility cleaning documentation"
+      ]
+    },
+    {
+      "title": "Building a CMS-Compliant Cleaning Program",
+      "content": "Most dialysis centers outsource environmental cleaning but remain directly responsible for CMS compliance. Here is the framework:",
+      "items": [
+        "Write a cleaning-specific infection control policy — generic \"we follow manufacturer instructions\" language will not pass a CMS survey. Specify products, dwell times, and procedures by area",
+        "Separate station turnover from terminal cleaning — these are two distinct processes with different scopes, frequencies, and documentation requirements",
+        "Color-code isolation equipment — use a dedicated color (typically red) for all mops, buckets, and cloths used in HBV isolation areas",
+        "Document everything digitally — CMS surveyors ask for 30+ days of cleaning logs. Paper logs get lost. Digital systems with timestamps and staff IDs satisfy surveyor expectations",
+        "Train cleaning staff on your specific dialysis environment — generic janitorial training is not sufficient. Staff need to understand station layout, machine external surfaces, waste handling, and isolation protocols specific to your facility"
+      ]
+    }
+  ],
+  "calloutTitle": "How XIRI Protects Your CMS Compliance",
+  "calloutContent": "Our contractors deployed to dialysis facilities receive facility-specific infection control training before their first shift. We maintain digital cleaning logs with timestamps and staff IDs, enforce color-coded isolation cleaning equipment, and our Night Managers verify station turnover and terminal cleaning compliance nightly. Your FSM can generate a survey-ready compliance report on demand.",
+  "relatedServices": [
+    "medical-office-cleaning",
+    "disinfecting-services",
+    "commercial-cleaning"
+  ],
+  "faqs": [
+    {
+      "question": "Can a dialysis center lose CMS certification for cleaning issues?",
+      "answer": "Yes. Environmental cleaning falls under 42 CFR §494.30 (Infection Control). A deficiency in this area can result in a Condition-level citation, which triggers a Plan of Correction. If the facility fails to correct the deficiency, CMS can terminate the facility's Medicare provider agreement — which ends Medicare reimbursement and effectively closes most dialysis centers."
+    },
+    {
+      "question": "How often are dialysis facilities surveyed by CMS?",
+      "answer": "State survey agencies conduct recertification surveys every 9 to 15 months on behalf of CMS. Surveys are unannounced. Additionally, CMS can initiate a complaint-based survey at any time if a patient, employee, or other party files a complaint about infection control practices."
+    },
+    {
+      "question": "Does XIRI handle station turnover cleaning between patient shifts?",
+      "answer": "Yes. We provide split-shift and day porter services specifically designed for dialysis center workflows. Our contractors handle station turnover cleaning between patient shifts using EPA-registered intermediate-level disinfectants with documented dwell times, and terminal cleaning after the final patient shift of the day."
+    },
+    {
+      "question": "What is the difference between station turnover and terminal cleaning?",
+      "answer": "Station turnover cleaning occurs between patients during the operating day — it covers the dialysis machine exterior, chair, table, and immediate area. Terminal cleaning occurs after the last patient session and covers the entire treatment area including floors, walls, sinks, restrooms, and common spaces. Both are required under CMS CoC."
+    }
+  ]
+}

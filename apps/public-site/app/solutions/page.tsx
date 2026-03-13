@@ -13,6 +13,14 @@ export const metadata: Metadata = {
 
 const SOLUTIONS = [
     {
+        slug: 'cleaning-verification',
+        title: 'Cleaning Verification',
+        subtitle: 'Your blue ocean advantage.',
+        description: 'NFC proof of work, digital compliance logs, and the option to keep your existing cleaner while adding accountability. The verification system no other cleaning company offers.',
+        features: ['NFC Proof of Work', 'Digital Compliance Logs', 'Keep Your Cleaner Option'],
+        featured: true,
+    },
+    {
         slug: 'medical-facility-management',
         title: 'Medical Facility Management',
         subtitle: 'OSHA + HIPAA compliant facility management built for medical practices.',
@@ -32,6 +40,27 @@ const SOLUTIONS = [
         subtitle: 'We replace the software AND the work.',
         description: 'Most vendor management platforms make you manage the platform. XIRI does the actual work — vetting contractors, verifying shifts, handling escalations, and sending one bill.',
         features: ['No Software to Learn', 'We Handle Escalations', 'Real-Time Quality Audits'],
+    },
+    {
+        slug: 'keep-your-cleaner',
+        title: 'Keep Your Cleaner, Add Accountability',
+        subtitle: 'No vendor change required.',
+        description: 'Love your cleaning crew but can\'t verify their work? We install NFC tags, train your existing crew in 10 minutes, and you get a compliance log every morning.',
+        features: ['Keep Your Existing Vendor', 'Per-Zone Pricing', '30-Minute Setup'],
+    },
+    {
+        slug: 'nfc-proof-of-work',
+        title: 'NFC Proof of Work',
+        subtitle: 'Tamper-proof cleaning verification.',
+        description: 'NFC tags in every zone. Cleaners scan in, complete tasks, and leave a timestamped record. No paper logs, no GPS spoofing, no guessing if the crew showed up.',
+        features: ['Zone-by-Zone Verification', 'Timestamped Records', 'Photo Documentation'],
+    },
+    {
+        slug: 'digital-compliance-log',
+        title: 'Digital Compliance Logs',
+        subtitle: 'Always inspector-ready.',
+        description: 'Automatic, NFC-verified cleaning logs your inspectors can access via URL — no binders, no spreadsheets, no chasing your vendor for documentation.',
+        features: ['Auto-Generated Records', 'Public Compliance URL', 'Completion Rate Tracking'],
     },
 ];
 
@@ -54,7 +83,7 @@ export default function SolutionsIndex() {
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <p className="text-sm font-bold text-sky-600 tracking-widest uppercase mb-3">Solutions</p>
                     <h1 className="text-4xl md:text-5xl font-heading font-bold text-slate-900 mb-4">
-                        Facility management that actually manages
+                        Facility management that actually delivers
                     </h1>
                     <p className="text-xl text-slate-600 max-w-2xl mx-auto">
                         Choose the solution that fits how your building operates.

@@ -1,0 +1,78 @@
+{
+  "title": "OSHA Bloodborne Pathogen Cleaning Requirements (29 CFR 1910.1030)",
+  "heroTitle": "OSHA Bloodborne Pathogen Standard: What Every Cleaning Contractor Must Follow",
+  "heroSubtitle": "A practical guide to OSHA 29 CFR 1910.1030 compliance for janitorial teams working in medical offices, urgent care centers, and any facility where blood or bodily fluids are present.",
+  "metaDescription": "Complete guide to OSHA Bloodborne Pathogen Standard (29 CFR 1910.1030) for cleaning contractors. Learn exposure control, PPE requirements, training mandates, and documentation standards.",
+  "datePublished": "2026-03-09",
+  "dateModified": "2026-03-09",
+  "sections": [
+    {
+      "title": "What Is the OSHA Bloodborne Pathogen Standard?",
+      "content": "OSHA's Bloodborne Pathogen Standard (29 CFR 1910.1030) is a federal regulation that protects workers from health hazards caused by exposure to blood and other potentially infectious materials (OPIM). It applies to every employee who could reasonably anticipate contact with blood during their work — including janitorial and cleaning staff in medical offices, dental practices, urgent care centers, dialysis clinics, veterinary facilities, and laboratories. Violation penalties range from $16,131 per serious violation to $161,323 for willful or repeated violations (2024 OSHA penalty schedule)."
+    },
+    {
+      "title": "Why This Standard Applies to Cleaning Contractors",
+      "content": "Many facility managers assume the Bloodborne Pathogen Standard only applies to healthcare workers. It does not. OSHA explicitly includes any employee with \"reasonably anticipated\" occupational exposure — and cleaning crews in medical environments meet this threshold every shift. Mopping an exam room floor, emptying sharps-adjacent trash, or handling red-bag waste all constitute potential exposure events."
+    },
+    {
+      "title": "The 5 Requirements That Apply to Your Cleaning Program",
+      "content": "If your cleaning contractors work in any environment where blood or OPIM could be present, these five requirements under 29 CFR 1910.1030 are non-negotiable:",
+      "items": [
+        "Written Exposure Control Plan (ECP) — You must maintain a written plan identifying which job classifications have occupational exposure, how you will minimize exposure, and your post-exposure procedures. This plan must be reviewed and updated annually",
+        "Universal Precautions — Cleaning crews must treat all blood and bodily fluids as if they are infectious. No exceptions, no judgment calls. Every surface that could carry blood gets treated with EPA-registered hospital-grade disinfectant",
+        "Personal Protective Equipment (PPE) — Employers must provide gloves, face shields, gowns, and eye protection at no cost to the worker. PPE must be appropriate to the task — nitrile gloves for routine cleaning, face shields for splash risk",
+        "Hepatitis B Vaccination — Employers must offer the Hepatitis B vaccine series to all employees with occupational exposure within 10 working days of initial assignment — at no cost to the employee",
+        "Training and Recordkeeping — Initial training before first assignment, annual refresher training, and detailed records of all training sessions, exposure incidents, and medical evaluations. Training records must be retained for 3 years"
+      ]
+    },
+    {
+      "title": "Common OSHA Violations in Cleaning Operations",
+      "content": "Based on OSHA enforcement data, the most frequently cited violations for cleaning contractors include:",
+      "items": [
+        "No written Exposure Control Plan — or a plan that has not been updated in the past 12 months",
+        "PPE not provided or not appropriate — using latex gloves instead of nitrile, or no face protection for splash-risk tasks",
+        "No documentation of annual training — OSHA requires records showing each employee completed BBP training, signed an acknowledgment, and can demonstrate competency",
+        "Hepatitis B vaccination not offered — even if the employee declines, the offer must be documented with a signed declination form",
+        "Improper sharps handling — cleaning crew members reaching into sharps containers or handling sharps without needle-resistant gloves",
+        "No post-exposure incident procedure — lacking a documented process for what happens when an exposure event occurs"
+      ]
+    },
+    {
+      "title": "How to Build a Compliant Cleaning Program",
+      "content": "A compliant program starts before the first mop hits the floor. Here is the framework your cleaning operation needs:",
+      "items": [
+        "Write your ECP — Document every job task with potential exposure, the controls in place, and the responsible person. Review it every January",
+        "Train before deploying — No cleaning contractor should enter a medical facility without documented BBP training. Cover PPE selection, spill response, sharps avoidance, and hand hygiene",
+        "Provide and inspect PPE — Stock nitrile gloves (multiple sizes), face shields, disposable gowns, and eye protection. Inspect before each shift",
+        "Post the exposure response protocol — Every supply closet should have a laminated card with the post-exposure steps: wash site, report to supervisor, seek medical evaluation within 24 hours",
+        "Log every training session — Name, date, topics covered, trainer qualifications, and signed acknowledgment. Keep records for a minimum of 3 years beyond the last date of employment"
+      ]
+    }
+  ],
+  "calloutTitle": "How XIRI Handles Bloodborne Pathogen Compliance",
+  "calloutContent": "Every XIRI contractor deployed to a medical facility completes documented BBP training before their first shift. We maintain Exposure Control Plans, PPE inventories, and training records digitally — accessible to your facility manager on demand. Our Night Managers verify PPE usage and proper disinfection technique during every nightly audit.",
+  "relatedServices": [
+    "medical-office-cleaning",
+    "surgery-center-cleaning",
+    "urgent-care-cleaning",
+    "disinfecting-services"
+  ],
+  "faqs": [
+    {
+      "question": "Does OSHA 29 CFR 1910.1030 apply to janitorial companies?",
+      "answer": "Yes. The Bloodborne Pathogen Standard applies to any employee with reasonably anticipated occupational exposure to blood or other potentially infectious materials. Cleaning crews in medical offices, dental practices, urgent care centers, and labs all fall under this standard — regardless of whether they are direct employees or subcontracted vendors."
+    },
+    {
+      "question": "Who is responsible for BBP compliance — the facility or the cleaning company?",
+      "answer": "Both. OSHA holds the employer of record responsible for their own employees. If your cleaning crew is employed by a contractor, that contractor must have their own Exposure Control Plan, provide PPE, and conduct training. However, the facility owner has a general duty to ensure safe working conditions. XIRI handles all BBP compliance for our deployed contractors."
+    },
+    {
+      "question": "How often must BBP training be renewed?",
+      "answer": "Annually. OSHA requires initial BBP training before first assignment and refresher training at least once every 12 months. Additional training is required when new tasks or procedures affect occupational exposure. XIRI conducts refresher training every January and maintains signed records."
+    },
+    {
+      "question": "What happens if our cleaning contractor does not follow the Bloodborne Pathogen Standard?",
+      "answer": "OSHA penalties for BBP violations range from $16,131 per serious violation to $161,323 for willful or repeated violations (2024 penalty schedule). Beyond fines, a violation can trigger a facility-wide inspection that uncovers additional issues — creating a cascade of compliance risk."
+    }
+  ]
+}
