@@ -15,7 +15,7 @@ const SOLUTIONS = [
     {
         slug: 'cleaning-verification',
         title: 'Cleaning Verification',
-        subtitle: 'Your blue ocean advantage.',
+        subtitle: 'Know exactly what happened. Every night.',
         description: 'NFC proof of work, digital compliance logs, and the option to keep your existing cleaner while adding accountability. The verification system no other cleaning company offers.',
         features: ['NFC Proof of Work', 'Digital Compliance Logs', 'Keep Your Cleaner Option'],
         featured: true,
