@@ -13,11 +13,11 @@ export default function Home() {
     <div className="min-h-screen bg-white font-sans">
       <Hero
         title={<>Was Your Building Actually<br /><span className="text-sky-600">Cleaned Last Night?</span></>}
-        subtitle="XIRI installs NFC tags in every zone and gives you verified proof of what was cleaned, when, and by whom. One partner for cleaning, maintenance, supplies, and compliance."
+        subtitle="XIRI gives you verified proof of what was cleaned, when, and by whom. One partner for cleaning, maintenance, supplies, and compliance."
         ctaText="Get Verified Cleaning"
         ctaLink="#audit"
         features={[
-          { text: 'NFC Verified' },
+          { text: 'Proof of Work' },
           { text: '100% Insured' },
           { text: 'Compliance Ready' },
         ]}
