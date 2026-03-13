@@ -62,8 +62,8 @@ export function Hero({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                     {/* Text Content */}
-                    <div className="max-w-2xl">
-                        <h1 className={`text-4xl md:text-6xl font-heading font-bold tracking-tight leading-[1.1] mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    <div className="max-w-xl">
+                        <h1 className={`text-4xl md:text-5xl font-heading font-bold tracking-tight leading-[1.1] mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                             {showBrandEyebrow && (
                                 <span className="block text-sm md:text-base font-semibold tracking-[0.2em] uppercase text-sky-600 mb-3">
                                     {SITE.name}
@@ -71,7 +71,7 @@ export function Hero({
                             )}
                             {title}
                         </h1>
-                        <p className={`text-lg md:text-xl mb-8 leading-relaxed max-w-lg ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                        <p className={`text-base md:text-lg mb-8 leading-relaxed max-w-lg ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
                             {subtitle}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">

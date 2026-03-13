@@ -12,8 +12,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white font-sans">
       <Hero
-        title={<>Do You Know If Your Building<br /><span className="text-sky-600">Got Cleaned Last Night?</span></>}
-        subtitle="NFC-verified proof that every zone was cleaned, every task completed, every night. Plus one partner for cleaning, maintenance, supplies, and compliance — so you have one throat to choke."
+        title={<>Was Your Building Actually<br /><span className="text-sky-600">Cleaned Last Night?</span></>}
+        subtitle="XIRI installs NFC tags in every zone and gives you verified proof of what was cleaned, when, and by whom. One partner for cleaning, maintenance, supplies, and compliance."
         ctaText="Get Verified Cleaning"
         ctaLink="#audit"
         features={[
