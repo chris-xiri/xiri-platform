@@ -6,7 +6,7 @@ readTime: "6 min"
 category: "Operations"
 ---
 
-## Your Cleaning Company Claims They Were There. Can You Prove They're Lying?
+## Your Cleaning Company Claims They Were There. Can They Prove It?
 
 Cleaning fraud takes many forms. Sometimes it's a full no-show with a forged sign-in sheet. Sometimes it's a crew that clocks in, does half the building, and leaves early. Sometimes it's a subcontracted crew sent without your knowledge.
 
