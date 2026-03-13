@@ -88,35 +88,47 @@ const CARDS: ValuePropCard[] = [
         )
     },
     {
-        id: "audit-ready",
-        outcome: "Audit-Ready Confidence",
-        angle: "Protocol governance, not just cleaning.",
-        headline: "Verified Protocols. Every Morning.",
-        reliefTitle: "Compliance You Can Prove",
-        relief: "Your dashboard shows that your vendor followed CDC Guidelines for Healthcare Facilities and OSHA's Bloodborne Pathogen Standard (29 CFR 1910.1030). We verify and document the protocols so you have proof — not promises.",
-        focusTitle: "Governed, Not Just Cleaned",
-        singleTenantFocus: "Stop doing \"spot-checks.\" Our Quality Management System verifies high-level disinfection protocols, supply restocking, and scope compliance — every single night, with digital proof by morning.",
-        badge: "Nightly Verification",
-        role: "Night Auditor",
+        id: "proof-of-work",
+        outcome: "Verified Every Night",
+        angle: "NFC-verified accountability.",
+        headline: "Proof of Work. Every Zone. Every Night.",
+        reliefTitle: "Know — Don't Wonder",
+        relief: "Every zone in your building has an NFC tag. Cleaners tap their phone to check in, then follow a zone-specific task checklist. You see exactly what happened — which rooms, which tasks, how long — before you walk in the next morning.",
+        focusTitle: "Compliance Built In",
+        singleTenantFocus: "NFC check-ins generate a digital compliance log automatically. OSHA self-certification prompts, SDS acknowledgment, and PPE confirmations are built into the flow — no binders, no spreadsheets, no chasing paperwork.",
+        badge: "NFC Proof of Work",
+        role: "Verification System",
         visual: (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
-                <div className="bg-black text-white p-3 flex justify-between items-center">
-                    <span className="text-[10px] font-mono">LIVE FEED • 02:14 AM</span>
-                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                </div>
-                <div className="p-4 grid grid-cols-2 gap-2 text-center">
-                    <div className="bg-gray-50 rounded p-2">
-                        <p className="text-[10px] text-gray-500">High-Level Disinfection</p>
-                        <p className="text-xs font-bold text-teal-600">VERIFIED</p>
-                    </div>
-                    <div className="bg-gray-50 rounded p-2">
-                        <p className="text-[10px] text-gray-500">Quality Score</p>
-                        <p className="text-xs font-bold text-teal-600">PASSED (98%)</p>
+                <div className="bg-slate-900 text-white p-3 flex justify-between items-center">
+                    <span className="text-[10px] font-mono">ZONE REPORT • Last Night</span>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                        <span className="text-[10px] font-bold text-green-300">10/10 Complete</span>
                     </div>
                 </div>
-                <div className="border-t border-gray-100 p-2 bg-gray-50 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <span className="text-[10px] font-bold text-gray-700">Sent to Client Dashboard</span>
+                <div className="p-3 space-y-1.5">
+                    {[
+                        { zone: 'Lobby', time: '7:02 PM', tasks: '4/4' },
+                        { zone: 'Restroom A', time: '7:18 PM', tasks: '6/6' },
+                        { zone: 'Break Room', time: '7:35 PM', tasks: '5/5' },
+                        { zone: 'Conference Rm', time: '7:48 PM', tasks: '3/3' },
+                    ].map((z, i) => (
+                        <div key={i} className="flex items-center justify-between text-[11px] py-1 border-b border-gray-50 last:border-0">
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-[9px] font-bold">✓</div>
+                                <span className="font-medium text-gray-800">{z.zone}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-gray-500">
+                                <span>{z.tasks} tasks</span>
+                                <span className="font-mono text-[10px]">{z.time}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="border-t border-gray-100 p-2 bg-sky-50 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-sky-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                    <span className="text-[10px] font-bold text-sky-800">OSHA self-cert + SDS confirmed at check-in</span>
                 </div>
             </div>
         )
@@ -235,7 +247,7 @@ export function ValuePropsSection({ title }: Props) {
             visual: getBlindSpotVisual()
         },
         CARDS[1], // Admin-Zero (unchanged)
-        CARDS[2]  // Audit-Ready (unchanged)
+        CARDS[2]  // Proof-of-Work (NFC verification)
     ];
 
     const activeCardWithVisual = CARDS_WITH_DYNAMIC_VISUAL.find(card => card.id === activeTab) || CARDS_WITH_DYNAMIC_VISUAL[0];

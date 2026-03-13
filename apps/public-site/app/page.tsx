@@ -12,10 +12,16 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white font-sans">
       <Hero
-        title={<>Stop Managing 5 Vendors<br /><span className="text-sky-600">for 1 Building</span></>}
-        subtitle="XIRI replaces your cleaning company, handyman, supply orders, and compliance paperwork with one verified partner."
-        ctaText="See If We Cover Your Area"
+        title={<>Do You Know If Your Building<br /><span className="text-sky-600">Got Cleaned Last Night?</span></>}
+        subtitle="NFC-verified proof that every zone was cleaned, every task completed, every night. Plus one partner for cleaning, maintenance, supplies, and compliance — so you have one throat to choke."
+        ctaText="Get Verified Cleaning"
         ctaLink="#audit"
+        features={[
+          { text: 'NFC Verified' },
+          { text: '100% Insured' },
+          { text: 'Compliance Ready' },
+        ]}
+        secondaryCta={{ text: 'See How Verification Works →', href: '/solutions/cleaning-verification' }}
       />
 
       <TrustBar />

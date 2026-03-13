@@ -200,6 +200,17 @@ export default function Navigation() {
                                 </div>
                             </div>
 
+                            {/* Solutions Link */}
+                            <Link
+                                href="/solutions"
+                                className={`text-[15px] font-medium transition-colors hover:text-sky-600 ${
+                                    pathname?.startsWith('/solutions') ? 'text-sky-600' : 'text-gray-600'
+                                }`}
+                                onClick={() => handleNavClick('/solutions', 'Solutions')}
+                            >
+                                Solutions
+                            </Link>
+
                             {/* For Contractors Dropdown — signup + referrals */}
                             <div
                                 className="relative group"
@@ -338,6 +349,18 @@ export default function Navigation() {
                                         💰 Get a Price Estimate →
                                     </Link>
                                 </div>
+                            </div>
+
+                            {/* Solutions */}
+                            <div className="border-t border-gray-100 pt-3">
+                                <Link href="/solutions" className="block text-sm font-semibold text-sky-600 hover:text-sky-700 py-1.5" onClick={() => setMobileOpen(false)}
+                                >
+                                    🛡️ Cleaning Verification Hub
+                                </Link>
+                                <Link href="/solutions/keep-your-cleaner" className="block text-sm text-gray-700 hover:text-sky-600 py-1.5" onClick={() => setMobileOpen(false)}
+                                >
+                                    Keep Your Cleaner
+                                </Link>
                             </div>
 
                             {/* For Contractors */}

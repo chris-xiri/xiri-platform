@@ -18,6 +18,7 @@ interface HeroProps {
     variant?: 'light' | 'dark';
     showBrandEyebrow?: boolean;
     onCtaClick?: (e: React.MouseEvent) => void;
+    secondaryCta?: { text: string; href: string };
 }
 
 const COMPANY_LOGOS = [
@@ -38,7 +39,8 @@ export function Hero({
     showSecondaryBtn = true,
     variant = 'light',
     showBrandEyebrow = true,
-    onCtaClick
+    onCtaClick,
+    secondaryCta
 }: HeroProps) {
     const [logoIndex, setLogoIndex] = useState<number>(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -88,14 +90,21 @@ export function Hero({
                                     {ctaText}
                                 </button>
                             )}
-                            {showSecondaryBtn && (
+                            {secondaryCta ? (
+                                <Link
+                                    href={secondaryCta.href}
+                                    className="inline-flex justify-center items-center px-8 py-4 rounded-full text-lg font-medium text-sky-600 hover:text-sky-700 hover:bg-sky-50 transition-all duration-300 border border-sky-200"
+                                >
+                                    {secondaryCta.text}
+                                </Link>
+                            ) : showSecondaryBtn ? (
                                 <Link
                                     href="/contractors"
                                     className="inline-flex justify-center items-center px-8 py-4 rounded-full text-lg font-medium text-gray-600 hover:text-sky-600 hover:bg-sky-50 transition-all duration-300"
                                 >
                                     For Contractors
                                 </Link>
-                            )}
+                            ) : null}
                         </div>
 
                         <div className="mt-8 flex items-center gap-6 text-sm text-gray-500 font-medium">
