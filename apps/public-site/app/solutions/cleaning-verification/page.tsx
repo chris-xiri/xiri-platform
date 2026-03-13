@@ -50,12 +50,15 @@ const VERIFICATION_SOLUTIONS = [
 /* ── Related blog posts (accountability cluster) ── */
 const RELATED_POSTS = [
     { slug: 'what-is-proof-of-work-in-cleaning', title: 'What Is Proof of Work in Commercial Cleaning?' },
-    { slug: 'how-nfc-tags-prevent-cleaning-fraud', title: 'How NFC Tags Prevent Cleaning Fraud' },
+    { slug: 'how-nfc-tags-prevent-cleaning-fraud', title: 'How NFC Tags Keep Cleaning Crews on Track' },
     { slug: 'paper-cleaning-logs-vs-nfc-verification', title: 'Paper Cleaning Logs vs. NFC Verification' },
     { slug: 'why-gps-tracking-doesnt-prove-cleaning', title: 'Why GPS Tracking Doesn\'t Prove Cleaning' },
     { slug: 'how-to-know-if-building-was-cleaned', title: 'How to Know If Your Building Was Actually Cleaned' },
     { slug: 'inspector-ready-cleaning-documentation', title: 'Inspector-Ready Cleaning Documentation' },
     { slug: 'things-your-cleaning-company-isnt-doing', title: 'Things Your Cleaning Company Isn\'t Doing' },
+    { slug: 'osha-self-certification-cleaning-crews', title: 'OSHA Self-Certification for Cleaning Crews' },
+    { slug: 'is-your-cleaning-company-cutting-corners', title: 'Is Your Cleaning Company Cutting Corners?' },
+    { slug: 'why-cleaning-crews-miss-tasks', title: 'Why Cleaning Crews Miss Tasks (And How to Fix It)' },
 ];
 
 /* ── How It Works steps ── */
