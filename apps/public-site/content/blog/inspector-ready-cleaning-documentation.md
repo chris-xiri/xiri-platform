@@ -1,7 +1,7 @@
 ---
 title: "Inspector-Ready Cleaning Documentation: What Surveyors Actually Want to See"
 description: "State inspectors and JCAHO surveyors want proof your facility is consistently cleaned. Here's exactly what format they expect and how to always be ready."
-publishDate: "2026-03-26"
+publishDate: "2026-03-13"
 readTime: "7 min"
 category: "Compliance"
 leadMagnet:

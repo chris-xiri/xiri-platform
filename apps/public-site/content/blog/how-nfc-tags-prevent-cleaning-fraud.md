@@ -1,7 +1,7 @@
 ---
 title: "How NFC Tags Prevent Cleaning Fraud (And What GPS Can't Do)"
 description: "NFC tags mounted inside facility zones are the only tamper-proof way to verify cleaning. GPS, QR codes, and apps all have exploitable weaknesses."
-publishDate: "2026-03-14"
+publishDate: "2026-03-13"
 readTime: "6 min"
 category: "Operations"
 ---

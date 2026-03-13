@@ -1,7 +1,7 @@
 ---
 title: "Why GPS Tracking Doesn't Prove Your Building Was Cleaned"
 description: "GPS cleaning verification sounds good in theory. In practice, it proves a phone was near your building — not that anyone cleaned anything."
-publishDate: "2026-03-19"
+publishDate: "2026-03-13"
 readTime: "5 min"
 category: "Operations"
 ---

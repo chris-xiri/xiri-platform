@@ -1,7 +1,7 @@
 ---
 title: "The 10 Things Your Cleaning Company Isn't Doing (That They Should Be)"
 description: "They empty the trash and vacuum the carpet. But what about light switches, door handles, coffee machines, and the underside of your desk? Here are the 10 tasks most cleaning companies skip."
-publishDate: "2026-03-20"
+publishDate: "2026-03-13"
 readTime: "5 min"
 category: "Guides"
 ---
