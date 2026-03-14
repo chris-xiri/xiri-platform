@@ -1028,7 +1028,13 @@ export default function OnboardingPage() {
                         </button>
                     ) : (
                         <button
-                            onClick={currentStep === 4 ? handleNext : handleSubmit}
+                            onClick={() => {
+                                if (currentStep === 4 && !isStep4Valid()) {
+                                    setStep4Attempted(true);
+                                    return;
+                                }
+                                handleSubmit();
+                            }}
                             disabled={submitting}
                             className={`px-8 py-3 rounded-lg font-bold transition-all ${submitting
                                 ? 'bg-slate-400 text-white cursor-not-allowed'
