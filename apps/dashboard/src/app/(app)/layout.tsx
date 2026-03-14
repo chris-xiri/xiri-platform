@@ -191,7 +191,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Pipeline', href: '/sales/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Referral Partners', href: '/sales/referrals', icon: <Share2 className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/quotes', profile.roles) ? [{ label: 'Quotes', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> }] : []),
-                ...(canAccess('sales/quotes', profile.roles) ? [{ label: 'Calculator', href: '/sales/calculator', icon: <DollarSign className="w-4 h-4" /> }] : []),
+
                 ...(canAccess('operations/contracts', profile.roles) ? [{ label: 'Contracts', href: '/operations/contracts', icon: <FileText className="w-4 h-4" /> }] : []),
                 ...(canAccess('operations/work-orders', profile.roles) ? [{ label: 'Work Orders', href: '/operations/work-orders', icon: <ClipboardList className="w-4 h-4" /> }] : []),
             ],
