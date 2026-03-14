@@ -91,6 +91,121 @@ export const onOnboardingComplete = onDocumentUpdated({
         logger.error('Error sending onboarding notification:', err);
     }
 
+    // ─── Google Chat Notification Card ───
+    const VENDOR_CHAT_WEBHOOK = "https://chat.googleapis.com/v1/spaces/AAQAYd8NzdA/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=WFryLEM_LRyVmM5I0m5A0KghBN8yL3Fw8vZMLgBDjOQ";
+
+    const complianceItems = [
+        compliance.hasBusinessEntity ? "✅ Business Entity" : "❌ Business Entity",
+        compliance.generalLiability?.hasInsurance ? "✅ General Liability" : "❌ General Liability",
+        compliance.workersComp?.hasInsurance ? "✅ Workers' Comp" : "❌ Workers' Comp",
+        compliance.autoInsurance?.hasInsurance ? "✅ Auto Insurance" : "❌ Auto Insurance",
+    ].join("  •  ");
+
+    const acordStatus = compliance.acord25?.url ? "✅ Uploaded" : "⏳ Not yet";
+
+    const chatCard = {
+        header: {
+            title: "🏗️  New Contractor Registered",
+            subtitle: businessName,
+            imageUrl: "https://xiri.ai/icon.png",
+            imageType: "CIRCLE",
+        },
+        sections: [
+            {
+                widgets: [
+                    {
+                        decoratedText: {
+                            topLabel: "BUSINESS NAME",
+                            text: businessName,
+                            startIcon: { knownIcon: "PERSON" },
+                        },
+                    },
+                    {
+                        decoratedText: {
+                            topLabel: "EMAIL",
+                            text: email,
+                            startIcon: { knownIcon: "EMAIL" },
+                        },
+                    },
+                    {
+                        decoratedText: {
+                            topLabel: "PHONE",
+                            text: phone,
+                            startIcon: { knownIcon: "PHONE" },
+                        },
+                    },
+                    {
+                        decoratedText: {
+                            topLabel: "ONBOARDING TRACK",
+                            text: track === "FAST_TRACK" ? "⚡ Express Contract" : "🤝 Partner Network",
+                            startIcon: { knownIcon: "BOOKMARK" },
+                        },
+                    },
+                    {
+                        decoratedText: {
+                            topLabel: "LANGUAGE",
+                            text: lang === "es" ? "🇪🇸 Spanish" : "🇺🇸 English",
+                            startIcon: { knownIcon: "DESCRIPTION" },
+                        },
+                    },
+                ],
+            },
+            {
+                header: "Compliance Summary",
+                widgets: [
+                    { textParagraph: { text: complianceItems } },
+                    {
+                        decoratedText: {
+                            topLabel: "ACORD 25",
+                            text: acordStatus,
+                            startIcon: { knownIcon: "DOCUMENT" },
+                        },
+                    },
+                ],
+            },
+            {
+                widgets: [
+                    {
+                        buttonList: {
+                            buttons: [
+                                {
+                                    text: "📋 Review in CRM",
+                                    onClick: { openLink: { url: dashboardLink } },
+                                },
+                                ...(phone && phone !== "N/A" ? [{
+                                    text: "📞 Call",
+                                    onClick: { openLink: { url: `tel:${phone}` } },
+                                }] : []),
+                                ...(email && email !== "N/A" ? [{
+                                    text: "📧 Email",
+                                    onClick: { openLink: { url: `mailto:${email}` } },
+                                }] : []),
+                            ],
+                        },
+                    },
+                ],
+            },
+        ],
+    };
+
+    try {
+        const chatResp = await fetch(VENDOR_CHAT_WEBHOOK, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                text: `New contractor registered: ${businessName} (${email})`,
+                cardsV2: [{ cardId: `vendor-onboard-${vendorId}`, card: chatCard }],
+            }),
+        });
+        if (!chatResp.ok) {
+            logger.error(`Google Chat webhook failed (${chatResp.status}):`, await chatResp.text());
+        } else {
+            logger.info(`Google Chat notification sent for vendor ${vendorId}`);
+        }
+    } catch (chatErr) {
+        logger.error("Google Chat notification error:", chatErr);
+    }
+
     // ─── Vendor Confirmation Email ───
     if (email && email !== 'N/A') {
         const isSpanish = lang === 'es';
