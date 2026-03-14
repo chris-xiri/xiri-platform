@@ -7,12 +7,19 @@
  *
  * Data flow:
  *   work_orders → nfc_sessions (tonight's data) → morning_reports (log) → Resend email
+ *
+ * Uses the existing WorkOrder schema from @xiri-facility-solutions/shared:
+ *   - schedule.startTime  = agreed start time (e.g. "19:00")
+ *   - schedule.daysOfWeek = boolean[7] (Sun–Sat)
+ *   - leadId              = linked lead (has clientEmail)
+ *   - nfcZones            = zone configuration
  */
 
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { db } from "../utils/firebase";
-import { sendEmail } from "../utils/emailUtils";
+import { googleChatWebhookSecret, notifyLateWarning, notifyNoShow, sendText, makeThreadKey } from "../utils/googleChatUtils";
+import { sendEmail, sendBatchEmails } from "../utils/emailUtils";
 import {
     buildMorningReportHtml,
     buildSubjectLine,
@@ -28,16 +35,74 @@ const REPORT_FROM = 'XIRI Facility Solutions <reports@xiri.ai>';
 const OPS_EMAIL = 'chris@xiri.ai';
 const TIMEZONE = 'America/New_York';
 
-/** Get today's day name in ET */
-function getTodayName(): string {
-    return new Date().toLocaleDateString('en-US', { weekday: 'short', timeZone: TIMEZONE });
+// Fallback defaults — overridden by Firestore settings/monitoring
+const FALLBACK_GRACE_MINUTES = 60;
+const FALLBACK_NO_SHOW_MINUTES = 120;
+const FALLBACK_LATE_REMINDER_INTERVAL = 15;
+const FALLBACK_ESCALATION_REMINDER_INTERVAL = 15;
+
+/** Global monitoring settings from Firestore settings/monitoring */
+interface MonitoringConfig {
+    graceMinutes: number;
+    noShowMinutes: number;
+    lateReminderIntervalMinutes: number;
+    escalationReminderIntervalMinutes: number;
+}
+
+/** Load monitoring settings from Firestore, falling back to defaults */
+async function loadMonitoringConfig(): Promise<MonitoringConfig> {
+    try {
+        const snap = await db.collection('settings').doc('monitoring').get();
+        if (snap.exists) {
+            const data = snap.data()!;
+            return {
+                graceMinutes: data.graceMinutes ?? FALLBACK_GRACE_MINUTES,
+                noShowMinutes: data.noShowMinutes ?? FALLBACK_NO_SHOW_MINUTES,
+                lateReminderIntervalMinutes: data.lateReminderIntervalMinutes ?? FALLBACK_LATE_REMINDER_INTERVAL,
+                escalationReminderIntervalMinutes: data.escalationReminderIntervalMinutes ?? FALLBACK_ESCALATION_REMINDER_INTERVAL,
+            };
+        }
+    } catch (err) {
+        console.error('Failed to load monitoring config, using defaults:', err);
+    }
+    return {
+        graceMinutes: FALLBACK_GRACE_MINUTES,
+        noShowMinutes: FALLBACK_NO_SHOW_MINUTES,
+        lateReminderIntervalMinutes: FALLBACK_LATE_REMINDER_INTERVAL,
+        escalationReminderIntervalMinutes: FALLBACK_ESCALATION_REMINDER_INTERVAL,
+    };
+}
+
+// ─── Day helpers ─────────────────────────────────────────────────────
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** Get current day index (0=Sun) in ET */
+function getTodayIndex(): number {
+    return new Date().toLocaleDateString('en-US', { timeZone: TIMEZONE, weekday: 'short' }) === 'Sun' ? 0
+        : DAY_NAMES.indexOf(
+            new Date().toLocaleDateString('en-US', { timeZone: TIMEZONE, weekday: 'short' })
+        );
+}
+
+/** Check if a boolean[7] schedule includes today */
+function isScheduledToday(daysOfWeek: boolean[]): boolean {
+    return daysOfWeek[getTodayIndex()] === true;
+}
+
+/** Check if a boolean[7] schedule included yesterday */
+function wasScheduledYesterday(daysOfWeek: boolean[]): boolean {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const idx = DAY_NAMES.indexOf(
+        yesterday.toLocaleDateString('en-US', { timeZone: TIMEZONE, weekday: 'short' })
+    );
+    return daysOfWeek[idx] === true;
 }
 
 /** Get a Date object for today at a given HH:MM in ET */
 function getTimeToday(timeStr: string): Date {
     const [h, m] = timeStr.split(':').map(Number);
     const now = new Date();
-    // Create date in ET
     const etStr = now.toLocaleDateString('en-US', { timeZone: TIMEZONE });
     const etDate = new Date(etStr);
     etDate.setHours(h, m, 0, 0);
@@ -64,42 +129,96 @@ function formatDate(date: Date): string {
     });
 }
 
-// ─── Work Order types ────────────────────────────────────────────────
+// ─── Resolved Work Order (hydrated with lead data) ───────────────────
 
-interface WorkOrder {
+interface ResolvedWorkOrder {
     id: string;
-    buildingId: string;        // → nfc_sites locationId
-    vendorId?: string;
+    leadId: string;
+    locationName: string;
+    buildingId: string;        // nfc_sites locationId (from leadId or work order)
     vendorName: string;
-    buildingName: string;
-    agreedStartTime: string;   // "19:00"
-    graceMinutes: number;      // default 30
-    noShowMinutes: number;     // default 60
-    schedule: string[];        // ["Mon","Tue","Wed","Thu","Fri"]
+    vendorPhone: string;
+    startTime: string;         // "19:00"
+    daysOfWeek: boolean[];
+    graceMinutes: number;
+    noShowMinutes: number;
     clientEmail: string;
     clientName: string;
-    opsAlertEmail?: string;
-    morningReportTime?: string; // "05:30"
-    status: 'active' | 'paused';
+    opsAlertEmail: string;
+    nfcZones: any[];
+    status: string;
+}
+
+/** Hydrate a work order doc with lead data */
+async function resolveWorkOrder(doc: FirebaseFirestore.DocumentSnapshot): Promise<ResolvedWorkOrder | null> {
+    const wo = doc.data();
+    if (!wo || wo.status !== 'active') return null;
+
+    // Get client email from the linked lead
+    let clientEmail = '';
+    let clientName = '';
+    if (wo.leadId) {
+        const leadDoc = await db.collection("leads").doc(wo.leadId).get();
+        if (leadDoc.exists) {
+            const lead = leadDoc.data()!;
+            clientEmail = lead.email || lead.contactEmail || '';
+            clientName = lead.contactName || lead.businessName || '';
+        }
+    }
+
+    // Look up vendor phone number
+    let vendorPhone = '';
+    const vendorId = wo.assignedVendorId || wo.vendorHistory?.[0]?.vendorId;
+    if (vendorId) {
+        try {
+            const vendorDoc = await db.collection('vendors').doc(vendorId).get();
+            if (vendorDoc.exists) {
+                vendorPhone = vendorDoc.data()?.phone || '';
+            }
+        } catch { /* no vendor phone */ }
+    }
+
+    // Prefer explicit nfcSiteId → falls back to leadId for older records
+    const buildingId = wo.nfcSiteId || wo.locationId || wo.leadId;
+
+    return {
+        id: doc.id,
+        leadId: wo.leadId,
+        locationName: wo.locationName || '',
+        buildingId,
+        vendorName: wo.vendorHistory?.[0]?.vendorName || 'Unknown Vendor',
+        vendorPhone,
+        startTime: wo.schedule?.startTime || '19:00',
+        daysOfWeek: wo.schedule?.daysOfWeek || [false, true, true, true, true, true, false],
+        graceMinutes: wo.monitoringGraceMinutes || 0,  // 0 = use global config
+        noShowMinutes: wo.monitoringNoShowMinutes || 0, // 0 = use global config
+        clientEmail,
+        clientName,
+        opsAlertEmail: OPS_EMAIL,
+        nfcZones: wo.nfcZones || [],
+        status: wo.status,
+    };
 }
 
 // ─── 1. Nightly Status Check ─────────────────────────────────────────
 
 /**
- * Runs every 15 minutes from 6 PM to 1 AM ET.
+ * Runs every 15 minutes from 6 PM to midnight ET.
  * Checks for no-shows and late starts on active work orders.
  */
 export const checkNightlyStatus = onSchedule({
-    schedule: "*/15 18-23 * * *", // Every 15 min, 6 PM - midnight
+    schedule: "*/15 18-23 * * *",
     timeZone: TIMEZONE,
     region: "us-central1",
+    secrets: [googleChatWebhookSecret],
 }, async () => {
-    const today = getTodayName();
     const now = new Date();
+    console.log(`🔍 Nightly check @ ${formatTime(now)}`);
 
-    console.log(`🔍 Nightly check @ ${formatTime(now)} (${today})`);
+    // Load global config from Firestore
+    const config = await loadMonitoringConfig();
+    console.log(`📋 Config: grace=${config.graceMinutes}m, noShow=${config.noShowMinutes}m, lateReminder=${config.lateReminderIntervalMinutes}m, escalation=${config.escalationReminderIntervalMinutes}m`);
 
-    // Get active work orders scheduled for today
     const woSnap = await db.collection("work_orders")
         .where("status", "==", "active")
         .get();
@@ -109,19 +228,23 @@ export const checkNightlyStatus = onSchedule({
         return;
     }
 
-    for (const doc of woSnap.docs) {
-        const wo = { id: doc.id, ...doc.data() } as WorkOrder;
+    for (const woDoc of woSnap.docs) {
+        const wo = await resolveWorkOrder(woDoc);
+        if (!wo) continue;
+        if (!isScheduledToday(wo.daysOfWeek)) continue;
 
-        // Skip if not scheduled for today
-        if (!wo.schedule.includes(today)) continue;
+        // Use per-WO overrides or global config
+        const graceMin = wo.graceMinutes || config.graceMinutes;
+        const noShowMin = wo.noShowMinutes || config.noShowMinutes;
 
-        const agreedStart = getTimeToday(wo.agreedStartTime);
-        const warningTime = new Date(agreedStart.getTime() + wo.graceMinutes * 60 * 1000);
-        const noShowTime = new Date(agreedStart.getTime() + wo.noShowMinutes * 60 * 1000);
+        const agreedStart = getTimeToday(wo.startTime);
+        const warningTime = new Date(agreedStart.getTime() + graceMin * 60 * 1000);
+        const noShowTime = new Date(agreedStart.getTime() + noShowMin * 60 * 1000);
+        const minutesSinceStart = Math.floor((now.getTime() - agreedStart.getTime()) / 60000);
 
-        // Check if there's a session tonight
+        // Check if there's an NFC session tonight
         const startOfEvening = new Date(agreedStart);
-        startOfEvening.setHours(startOfEvening.getHours() - 2); // Look 2h before
+        startOfEvening.setHours(startOfEvening.getHours() - 2);
 
         const sessionsSnap = await db.collection("nfc_sessions")
             .where("siteLocationId", "==", wo.buildingId)
@@ -130,65 +253,142 @@ export const checkNightlyStatus = onSchedule({
             .limit(1)
             .get();
 
-        const hasSession = !sessionsSnap.empty;
+        if (!sessionsSnap.empty) continue; // Crew checked in — skip
 
-        if (hasSession) {
-            // Crew checked in — nothing to alert on
-            continue;
-        }
+        // Only process if we're past the scheduled start time
+        if (minutesSinceStart < 0) continue;
 
-        // No session yet — check timing
+        const threadKey = makeThreadKey(wo.buildingId);
+
         if (now >= noShowTime) {
-            // 🔴 NO-SHOW
-            console.log(`🔴 NO-SHOW: ${wo.buildingName} (expected by ${formatTime(agreedStart)})`);
+            // ── NO-SHOW ──────────────────────────────────────────
+            console.log(`🔴 NO-SHOW: ${wo.locationName}`);
 
-            // Log event
-            await db.collection("monitoring_events").add({
-                workOrderId: wo.id,
-                buildingId: wo.buildingId,
-                buildingName: wo.buildingName,
-                type: "no_show",
-                detectedAt: now,
-                agreedStartTime: wo.agreedStartTime,
-                message: `No NFC check-in detected. Expected by ${formatTime(agreedStart)}.`,
-            });
-
-            // Alert ops (only once - check if already alerted)
-            const existingAlert = await db.collection("monitoring_events")
+            const existing = await db.collection("monitoring_events")
                 .where("workOrderId", "==", wo.id)
                 .where("type", "==", "no_show")
                 .where("detectedAt", ">=", startOfEvening)
-                .limit(2)
+                .limit(1)
                 .get();
 
-            if (existingAlert.size <= 1) {
-                // First no-show alert — send to ops
-                await sendEmail(
-                    wo.opsAlertEmail || OPS_EMAIL,
-                    `🔴 NO-SHOW: ${wo.buildingName}`,
-                    `<p><strong>No NFC check-in detected</strong> at ${wo.buildingName}.</p>
-                     <p>Expected start: ${formatTime(agreedStart)}<br>
-                     Current time: ${formatTime(now)}</p>
-                     <p>Crew: ${wo.vendorName}</p>
-                     <p><strong>Action:</strong> Contact the crew lead or dispatch backup.</p>`,
-                    undefined,
-                    REPORT_FROM,
-                );
-            }
-
-        } else if (now >= warningTime) {
-            // ⚠️ WARNING
-            console.log(`⚠️ WARNING: ${wo.buildingName} — no check-in yet (grace expired)`);
+            if (!existing.empty) continue;
 
             await db.collection("monitoring_events").add({
                 workOrderId: wo.id,
                 buildingId: wo.buildingId,
-                buildingName: wo.buildingName,
-                type: "late_warning",
+                type: "no_show",
                 detectedAt: now,
-                agreedStartTime: wo.agreedStartTime,
-                message: `No check-in after grace period. Expected by ${formatTime(agreedStart)}.`,
+                message: `No NFC check-in. Expected by ${formatTime(agreedStart)}.`,
             });
+
+            await sendEmail(
+                wo.opsAlertEmail,
+                `🔴 NO-SHOW: ${wo.locationName}`,
+                `<p><strong>No NFC check-in</strong> at ${wo.locationName}.</p>
+                 <p>Expected: ${formatTime(agreedStart)} | Now: ${formatTime(now)}</p>
+                 <p>Vendor: ${wo.vendorName}</p>
+                 <p><strong>Action:</strong> Contact crew lead or dispatch backup.</p>`,
+                undefined,
+                REPORT_FROM,
+            );
+
+            notifyNoShow({
+                siteLocationId: wo.buildingId,
+                locationName: wo.locationName,
+                vendorName: wo.vendorName,
+                vendorPhone: wo.vendorPhone || undefined,
+                expectedTime: formatTime(agreedStart),
+                workOrderId: wo.id,
+            }).catch(console.error);
+
+        } else if (now >= warningTime) {
+            // ── LATE WARNING (grace period expired) ──────────────
+            console.log(`⚠️ WARNING: ${wo.locationName} — no check-in yet`);
+
+            const existing = await db.collection("monitoring_events")
+                .where("workOrderId", "==", wo.id)
+                .where("type", "==", "late_warning")
+                .where("detectedAt", ">=", startOfEvening)
+                .limit(1)
+                .get();
+
+            if (existing.empty) {
+                // First time hitting grace — send the card
+                await db.collection("monitoring_events").add({
+                    workOrderId: wo.id,
+                    buildingId: wo.buildingId,
+                    type: "late_warning",
+                    detectedAt: now,
+                    message: `No check-in after ${graceMin}min grace. Expected by ${formatTime(agreedStart)}.`,
+                });
+
+                notifyLateWarning({
+                    siteLocationId: wo.buildingId,
+                    locationName: wo.locationName,
+                    expectedTime: formatTime(agreedStart),
+                    workOrderId: wo.id,
+                    vendorName: wo.vendorName,
+                    vendorPhone: wo.vendorPhone || undefined,
+                }).catch(console.error);
+            }
+
+            // ── ESCALATION REMINDERS (between grace and no-show) ──
+            if (config.escalationReminderIntervalMinutes > 0) {
+                const minutesSinceGrace = Math.floor((now.getTime() - warningTime.getTime()) / 60000);
+                const reminderSlot = Math.floor(minutesSinceGrace / config.escalationReminderIntervalMinutes);
+                if (reminderSlot > 0) {
+                    const reminderKey = `escalation_${reminderSlot}`;
+                    const existingReminder = await db.collection("monitoring_events")
+                        .where("workOrderId", "==", wo.id)
+                        .where("type", "==", reminderKey)
+                        .where("detectedAt", ">=", startOfEvening)
+                        .limit(1)
+                        .get();
+
+                    if (existingReminder.empty) {
+                        await db.collection("monitoring_events").add({
+                            workOrderId: wo.id,
+                            buildingId: wo.buildingId,
+                            type: reminderKey,
+                            detectedAt: now,
+                            message: `Escalation reminder #${reminderSlot}`,
+                        });
+
+                        const minutesLate = minutesSinceStart;
+                        sendText(threadKey, `🚨 *Escalation — ${wo.locationName}*\nCrew is now *${minutesLate} min late*. Grace period expired. Consider dispatching backup vendor.`)
+                            .catch(console.error);
+                        console.log(`🚨 Escalation reminder #${reminderSlot} for ${wo.locationName}`);
+                    }
+                }
+            }
+
+        } else if (now > agreedStart) {
+            // ── LATE REMINDERS (between scheduled start and grace) ──
+            if (config.lateReminderIntervalMinutes > 0 && minutesSinceStart >= config.lateReminderIntervalMinutes) {
+                const reminderSlot = Math.floor(minutesSinceStart / config.lateReminderIntervalMinutes);
+                const reminderKey = `late_reminder_${reminderSlot}`;
+
+                const existingReminder = await db.collection("monitoring_events")
+                    .where("workOrderId", "==", wo.id)
+                    .where("type", "==", reminderKey)
+                    .where("detectedAt", ">=", startOfEvening)
+                    .limit(1)
+                    .get();
+
+                if (existingReminder.empty) {
+                    await db.collection("monitoring_events").add({
+                        workOrderId: wo.id,
+                        buildingId: wo.buildingId,
+                        type: reminderKey,
+                        detectedAt: now,
+                        message: `Late reminder — ${minutesSinceStart}min since start`,
+                    });
+
+                    sendText(threadKey, `🔔 *Reminder — ${wo.locationName}*\nCrew hasn't checked in yet. *${minutesSinceStart} min* since scheduled start (${formatTime(agreedStart)}).`)
+                        .catch(console.error);
+                    console.log(`🔔 Late reminder #${reminderSlot} for ${wo.locationName}`);
+                }
+            }
         }
     }
 });
@@ -196,86 +396,111 @@ export const checkNightlyStatus = onSchedule({
 // ─── 2. Morning Report Generator ─────────────────────────────────────
 
 /**
- * Runs at 5:30 AM ET. Generates and sends the morning report email
- * for each active work order that was scheduled last night.
+ * Runs at 5:30 AM ET. Generates Green/Amber/Red morning report for each
+ * active work order scheduled last night, then sends ALL reports in one
+ * Resend batch API call (up to 100 per batch, avoids rate limits).
  */
 export const generateMorningReports = onSchedule({
-    schedule: "30 5 * * *", // 5:30 AM every day
+    schedule: "30 5 * * *",
     timeZone: TIMEZONE,
     region: "us-central1",
 }, async () => {
     console.log("📧 Generating morning reports...");
 
-    // Get yesterday's day name (since we're running at 5:30 AM)
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const yesterdayName = yesterday.toLocaleDateString('en-US', { weekday: 'short', timeZone: TIMEZONE });
+    const config = await loadMonitoringConfig();
 
     const woSnap = await db.collection("work_orders")
         .where("status", "==", "active")
         .get();
 
-    if (woSnap.empty) {
-        console.log("No active work orders.");
+    // Phase 1: Build all reports
+    const pendingReports: {
+        wo: ResolvedWorkOrder;
+        reportData: MorningReportData;
+        html: string;
+        subject: string;
+    }[] = [];
+
+    for (const doc of woSnap.docs) {
+        const wo = await resolveWorkOrder(doc);
+        if (!wo) continue;
+        if (!wasScheduledYesterday(wo.daysOfWeek)) continue;
+        if (!wo.clientEmail) {
+            console.log(`⏭️ ${wo.locationName}: no client email, skipping`);
+            continue;
+        }
+
+        try {
+            const graceMin = wo.graceMinutes || config.graceMinutes;
+            const reportData = await buildReportData(wo, yesterday, graceMin);
+            const html = buildMorningReportHtml(reportData);
+            const subject = buildSubjectLine(reportData);
+            pendingReports.push({ wo, reportData, html, subject });
+        } catch (err) {
+            console.error(`❌ ${wo.locationName}: failed to build report`, err);
+        }
+    }
+
+    if (pendingReports.length === 0) {
+        console.log("No reports to send.");
         return;
     }
 
-    for (const doc of woSnap.docs) {
-        const wo = { id: doc.id, ...doc.data() } as WorkOrder;
+    // Phase 2: Batch send all emails (one API call, up to 100 emails)
+    console.log(`📨 Sending ${pendingReports.length} reports via batch API...`);
 
-        // Skip if not scheduled for yesterday
-        if (!wo.schedule.includes(yesterdayName)) continue;
+    const batchPayload = pendingReports.map(r => ({
+        to: r.wo.clientEmail,
+        subject: r.subject,
+        html: r.html,
+        from: REPORT_FROM,
+        replyTo: OPS_EMAIL,
+    }));
 
-        try {
-            const reportData = await buildReportData(wo, yesterday);
-            const html = buildMorningReportHtml(reportData);
-            const subject = buildSubjectLine(reportData);
+    // Resend batch limit is 100. Split into chunks if needed.
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < batchPayload.length; i += BATCH_SIZE) {
+        const chunk = batchPayload.slice(i, i + BATCH_SIZE);
+        const result = await sendBatchEmails(chunk);
 
-            // Send to client
-            const result = await sendEmail(
-                wo.clientEmail,
-                subject,
-                html,
-                undefined,
-                REPORT_FROM,
-            );
-
-            // Log the report
-            await db.collection("morning_reports").add({
-                workOrderId: wo.id,
-                buildingId: wo.buildingId,
-                buildingName: wo.buildingName,
-                clientEmail: wo.clientEmail,
-                tier: reportData.tier,
-                subject,
-                sentAt: new Date(),
-                resendId: result.resendId || null,
-                reportData: {
-                    zonesCompleted: reportData.zonesCompleted,
-                    zonesTotal: reportData.zonesTotal,
-                    crewName: reportData.crewName,
-                    clockIn: reportData.clockIn,
-                    clockOut: reportData.clockOut,
-                    issues: reportData.issues,
-                },
-            });
-
-            console.log(`✅ ${wo.buildingName}: ${reportData.tier.toUpperCase()} report sent to ${wo.clientEmail}`);
-        } catch (err) {
-            console.error(`❌ Failed to generate report for ${wo.buildingName}:`, err);
+        if (!result.success) {
+            console.error(`❌ Batch ${i / BATCH_SIZE + 1} failed:`, result.error);
         }
     }
+
+    // Phase 3: Log all reports to Firestore
+    const batch = db.batch();
+    for (const r of pendingReports) {
+        const ref = db.collection("morning_reports").doc();
+        batch.set(ref, {
+            workOrderId: r.wo.id,
+            leadId: r.wo.leadId,
+            buildingId: r.wo.buildingId,
+            locationName: r.wo.locationName,
+            clientEmail: r.wo.clientEmail,
+            tier: r.reportData.tier,
+            subject: r.subject,
+            sentAt: new Date(),
+            zonesCompleted: r.reportData.zonesCompleted,
+            zonesTotal: r.reportData.zonesTotal,
+        });
+    }
+    await batch.commit();
+
+    console.log(`✅ ${pendingReports.length} morning reports sent and logged.`);
 });
 
-// ─── Build report data from session ──────────────────────────────────
+// ─── Build report data ───────────────────────────────────────────────
 
-async function buildReportData(wo: WorkOrder, dateRef: Date): Promise<MorningReportData> {
-    // Look for sessions from last night (roughly 4 PM yesterday to 6 AM today)
+async function buildReportData(wo: ResolvedWorkOrder, dateRef: Date, graceMin: number): Promise<MorningReportData> {
     const windowStart = new Date(dateRef);
-    windowStart.setHours(16, 0, 0, 0); // 4 PM yesterday
+    windowStart.setHours(16, 0, 0, 0);
     const windowEnd = new Date(dateRef);
     windowEnd.setDate(windowEnd.getDate() + 1);
-    windowEnd.setHours(6, 0, 0, 0); // 6 AM today
+    windowEnd.setHours(6, 0, 0, 0);
 
+    // Get NFC sessions from last night
     const sessionsSnap = await db.collection("nfc_sessions")
         .where("siteLocationId", "==", wo.buildingId)
         .where("createdAt", ">=", windowStart)
@@ -289,21 +514,18 @@ async function buildReportData(wo: WorkOrder, dateRef: Date): Promise<MorningRep
     const siteData = siteDoc.exists ? siteDoc.data()! : { zones: [] };
     const totalZones = (siteData.zones || []).length;
 
-    // Get monitoring events from last night
-    const eventsSnap = await db.collection("monitoring_events")
+    // Get monitoring events (query kept for future backup-dispatch detection)
+    await db.collection("monitoring_events")
         .where("workOrderId", "==", wo.id)
         .where("detectedAt", ">=", windowStart)
         .where("detectedAt", "<=", windowEnd)
         .get();
 
-    const monitoringEvents = eventsSnap.docs.map(d => d.data());
-
-    // ─── No session at all = no-show ────────────────────────────
+    // ── No session = no-show ──
     if (sessionsSnap.empty) {
-        const hasNoShow = monitoringEvents.some(e => e.type === 'no_show');
         return {
             tier: 'red',
-            buildingName: wo.buildingName,
+            buildingName: wo.locationName,
             reportDate: formatDate(dateRef),
             crewName: 'No crew checked in',
             clockIn: '—',
@@ -315,26 +537,19 @@ async function buildReportData(wo: WorkOrder, dateRef: Date): Promise<MorningRep
                 type: 'no_show',
                 summary: 'No crew checked in last night',
                 resolved: false,
-                actionNeeded: hasNoShow
-                    ? 'XIRI Ops has been notified. We are arranging coverage.'
-                    : 'Please contact XIRI if this is unexpected.',
+                actionNeeded: 'XIRI Ops has been notified and is arranging coverage.',
             }],
         };
     }
 
-    // ─── Session exists — analyze completeness ──────────────────
-    // Use the first cleaner session (most recent)
-    const cleanerSessions = sessionsSnap.docs
-        .filter(d => d.data().personRole === 'cleaner');
-    const session = cleanerSessions.length > 0
-        ? cleanerSessions[0].data()
-        : sessionsSnap.docs[0].data();
+    // ── Session exists ──
+    const cleanerSessions = sessionsSnap.docs.filter(d => d.data().personRole === 'cleaner');
+    const session = cleanerSessions.length > 0 ? cleanerSessions[0].data() : sessionsSnap.docs[0].data();
 
     const clockIn = session.clockInAt?.toDate?.() || session.clockInAt;
     const clockOut = session.clockOutAt?.toDate?.() || session.clockOutAt;
     const zoneScanResults = session.zoneScanResults || [];
 
-    // Build zone results
     const zones: ZoneResult[] = (siteData.zones || []).map((siteZone: any) => {
         const scan = zoneScanResults.find((s: any) => s.zoneId === siteZone.id);
         return {
@@ -348,61 +563,44 @@ async function buildReportData(wo: WorkOrder, dateRef: Date): Promise<MorningRep
     });
 
     const zonesCompleted = zoneScanResults.length;
-
-    // Determine issues
     const issues: ReportIssue[] = [];
 
-    // Check for late start
-    const agreedStart = getTimeToday(wo.agreedStartTime);
+    // Late start?
+    const agreedStart = getTimeToday(wo.startTime);
     agreedStart.setDate(dateRef.getDate());
     agreedStart.setMonth(dateRef.getMonth());
     agreedStart.setFullYear(dateRef.getFullYear());
 
-    if (clockIn && new Date(clockIn) > new Date(agreedStart.getTime() + wo.graceMinutes * 60 * 1000)) {
-        const delayMinutes = Math.round((new Date(clockIn).getTime() - agreedStart.getTime()) / 60000);
+    if (clockIn && new Date(clockIn) > new Date(agreedStart.getTime() + graceMin * 60 * 1000)) {
+        const delayMin = Math.round((new Date(clockIn).getTime() - agreedStart.getTime()) / 60000);
         issues.push({
             type: 'late_start',
-            summary: `Crew arrived ${delayMinutes} minutes late (${formatTime(new Date(clockIn))} vs ${formatTime(agreedStart)} agreed)`,
-            resolved: zonesCompleted >= totalZones, // Resolved if all zones done
-        });
-    }
-
-    // Check for backup dispatched
-    if (monitoringEvents.some(e => e.type === 'backup_dispatched')) {
-        issues.push({
-            type: 'backup_dispatched',
-            summary: 'Original crew unavailable. Backup crew dispatched.',
+            summary: `Crew arrived ${delayMin} minutes late (${formatTime(new Date(clockIn))} vs ${formatTime(agreedStart)} agreed)`,
             resolved: zonesCompleted >= totalZones,
         });
     }
 
-    // Check for partial completion
+    // Partial completion?
     if (zonesCompleted < totalZones && zonesCompleted > 0) {
-        const missedZones = (siteData.zones || [])
+        const missed = (siteData.zones || [])
             .filter((z: any) => !zoneScanResults.some((s: any) => s.zoneId === z.id))
             .map((z: any) => z.name || z.id);
-
         issues.push({
             type: 'partial_completion',
-            summary: `${zonesCompleted}/${totalZones} zones completed. Missed: ${missedZones.join(', ')}`,
+            summary: `${zonesCompleted}/${totalZones} zones completed. Missed: ${missed.join(', ')}`,
             resolved: false,
-            actionNeeded: missedZones.length > 0
-                ? `Were these areas locked or inaccessible? Reply to let us know.`
-                : undefined,
+            actionNeeded: 'Were these areas locked or inaccessible? Reply to let us know.',
         });
     }
 
-    // ─── Determine tier ─────────────────────────────────────────
+    // Determine tier
     let tier: ReportTier = 'green';
-    if (issues.some(i => !i.resolved)) {
-        tier = 'red';
-    } else if (issues.length > 0) {
-        tier = 'amber';
-    }
+    if (issues.some(i => !i.resolved)) tier = 'red';
+    else if (issues.length > 0) tier = 'amber';
 
     return {
         tier,
-        buildingName: wo.buildingName,
+        buildingName: wo.locationName,
         reportDate: formatDate(dateRef),
         crewName: session.personName || 'Unknown',
         clockIn: clockIn ? formatTime(new Date(clockIn)) : '—',
@@ -418,10 +616,8 @@ async function buildReportData(wo: WorkOrder, dateRef: Date): Promise<MorningRep
 // ─── 3. Manual trigger for testing ───────────────────────────────────
 
 /**
- * onCall function to manually trigger a morning report for a specific work order.
- * Used for internal testing and demos.
- *
- * Input: { workOrderId, recipientEmail? }
+ * onCall: manually trigger a morning report for testing/demos.
+ * Input: { workOrderId, recipientEmail?, scenario? }
  */
 export const sendTestMorningReport = onCall({
     cors: true,
@@ -437,12 +633,17 @@ export const sendTestMorningReport = onCall({
         throw new HttpsError("not-found", "Work order not found");
     }
 
-    const wo = { id: woDoc.id, ...woDoc.data() } as WorkOrder;
+    const wo = await resolveWorkOrder(woDoc);
+    if (!wo) {
+        throw new HttpsError("failed-precondition", "Work order is not active");
+    }
+
+    const config = await loadMonitoringConfig();
+    const graceMin = wo.graceMinutes || config.graceMinutes;
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const reportData = await buildReportData(wo, yesterday, graceMin);
 
-    const reportData = await buildReportData(wo, yesterday);
-
-    // Override scenario if requested
+    // Override scenario for testing
     if (scenario === 'green') {
         reportData.tier = 'green';
         reportData.issues = [];
@@ -466,7 +667,7 @@ export const sendTestMorningReport = onCall({
 
     const html = buildMorningReportHtml(reportData);
     const subject = buildSubjectLine(reportData);
-    const to = recipientEmail || wo.clientEmail;
+    const to = recipientEmail || wo.clientEmail || OPS_EMAIL;
 
     const result = await sendEmail(to, subject, html, undefined, REPORT_FROM);
 

@@ -333,3 +333,45 @@ export async function sendEmail(
         return { success: false };
     }
 }
+
+/**
+ * Send multiple emails in a single API call (Resend Batch API).
+ * Accepts up to 100 emails per call. Avoids rate-limit issues (2 req/s on free tier).
+ *
+ * Returns an array of { id } for each sent email, or an error.
+ */
+export async function sendBatchEmails(
+    emails: {
+        to: string;
+        subject: string;
+        html: string;
+        from?: string;
+        replyTo?: string;
+    }[]
+): Promise<{ success: boolean; ids?: string[]; error?: string }> {
+    if (emails.length === 0) return { success: true, ids: [] };
+
+    try {
+        const payload = emails.map(e => ({
+            from: e.from || 'XIRI Facility Solutions <reports@xiri.ai>',
+            replyTo: e.replyTo || 'chris@xiri.ai',
+            to: e.to,
+            subject: e.subject,
+            html: e.html,
+        }));
+
+        const { data, error } = await resend.batch.send(payload);
+
+        if (error) {
+            console.error('❌ Batch send error:', error);
+            return { success: false, error: (error as any).message || String(error) };
+        }
+
+        const ids = (data as any)?.data?.map((d: any) => d.id) || [];
+        console.log(`✅ Batch sent ${emails.length} emails (IDs: ${ids.join(', ')})`);
+        return { success: true, ids };
+    } catch (err: any) {
+        console.error('❌ Batch send error:', err);
+        return { success: false, error: err.message };
+    }
+}

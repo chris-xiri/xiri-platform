@@ -218,6 +218,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             ],
         },
         {
+            label: 'Command Center',
+            icon: <Monitor className="w-3.5 h-3.5" />,
+            show: showFieldOpsNav,
+            dividerAbove: true,
+            items: [
+                { label: 'Live Status', href: '/operations/command-center', icon: <LayoutDashboard className="w-4 h-4" /> },
+            ],
+        },
+        {
             label: 'Finance',
             icon: <Receipt className="w-3.5 h-3.5" />,
             show: showFinanceNav,
@@ -233,6 +242,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             dividerAbove: true,
             items: [
                 { label: 'Company', href: '/admin/company', icon: <Building2 className="w-4 h-4" />, subGroup: 'Settings' },
+                { label: 'Monitoring', href: '/admin/monitoring', icon: <Monitor className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'User Manager', href: '/admin/users', icon: <Users className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'AI Agents', href: '/admin/agents', icon: <Bot className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'Pricing', href: '/admin/pricing', icon: <DollarSign className="w-4 h-4" />, subGroup: 'Settings' },

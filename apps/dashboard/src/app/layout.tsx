@@ -18,6 +18,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "XIRI Dashboard",
   description: "AI-powered vendor and sales management",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "XIRI",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
+  themeColor: "#0284c7",
   robots: {
     index: false,
     follow: false,
@@ -29,6 +40,12 @@ export const metadata: Metadata = {
 };
 
 export const runtime = 'nodejs';
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export default function RootLayout({
   children,

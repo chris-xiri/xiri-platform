@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-    doc, getDoc, setDoc, serverTimestamp,
+    doc, getDoc, setDoc, updateDoc, serverTimestamp,
     collection, query, where, getDocs,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -387,6 +387,7 @@ function NfcZoneSetup() {
                 locationId,
                 locationName: wo.locationName,
                 leadId: wo.leadId,
+                workOrderId: wo.id,             // ← Explicit back-ref
                 vendorName: vendorName.trim(),
                 startTagId: startTag.tagId,
                 ...(startTag.locationHint ? { startTagLocationHint: startTag.locationHint } : {}),
@@ -398,6 +399,11 @@ function NfcZoneSetup() {
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             }, { merge: true });
+
+            // Write nfcSiteId back to the work order
+            await updateDoc(doc(db, 'work_orders', wo.id), {
+                nfcSiteId: locationId,
+            });
 
             // Show the site key to the FM so they can share it
             setShowSiteKey(true);

@@ -28,6 +28,7 @@ interface StoredSiteAuth {
     locationName: string;
     vendorName: string;
     personName: string;
+    personPhone: string;
     siteKeyStored: string;
     onboardedAt: string;
 }
@@ -72,11 +73,14 @@ export default function StartPage({ params }: { params: Promise<{ locationId: st
     // Form state
     const [siteKey, setSiteKey] = useState('');
     const [personName, setPersonName] = useState('');
+    const [personPhone, setPersonPhone] = useState('');
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [clockedIn, setClockedIn] = useState(false);
     const [session, setSession] = useState<SessionInfo | null>(null);
+    const [clockingOut, setClockingOut] = useState(false);
+    const [sessionComplete, setSessionComplete] = useState(false);
 
     // Load site info + check stored auth
     useEffect(() => {
@@ -113,6 +117,7 @@ export default function StartPage({ params }: { params: Promise<{ locationId: st
             if (auth) {
                 setStoredAuth(auth);
                 setPersonName(auth.personName);
+                setPersonPhone(auth.personPhone || '');
                 setSiteKey(auth.siteKeyStored);
             }
 
@@ -131,6 +136,10 @@ export default function StartPage({ params }: { params: Promise<{ locationId: st
             setError('Please enter your name.');
             return;
         }
+        if (!storedAuth && !personPhone.trim()) {
+            setError('Please enter your phone number.');
+            return;
+        }
 
         setSubmitting(true);
         setError('');
@@ -143,6 +152,7 @@ export default function StartPage({ params }: { params: Promise<{ locationId: st
                 locationId,
                 siteKey: siteKey.trim().toUpperCase(),
                 personName: personName.trim(),
+                personPhone: personPhone.trim() || undefined,
                 deviceFingerprint: navigator.userAgent,
             });
 
@@ -154,6 +164,7 @@ export default function StartPage({ params }: { params: Promise<{ locationId: st
                 locationName: sessionData.locationName,
                 vendorName: sessionData.vendorName,
                 personName: personName.trim(),
+                personPhone: personPhone.trim(),
                 siteKeyStored: siteKey.trim().toUpperCase(),
                 onboardedAt: new Date().toISOString(),
             });
@@ -193,9 +204,74 @@ export default function StartPage({ params }: { params: Promise<{ locationId: st
         );
     }
 
+    // Check if all zones are done
+    const allZonesDone = !!session && session.zones.length > 0 && session.zones.every(zone => {
+        try {
+            return !!localStorage.getItem(`xiri_zone_${session.sessionId}_${zone.id}`);
+        } catch { return false; }
+    });
+
+    const handleClockOut = async () => {
+        if (!session) return;
+        setClockingOut(true);
+        try {
+            const functions = getFunctions(app);
+            const completeFn = httpsCallable(functions, 'completeNfcSession');
+            await completeFn({ sessionId: session.sessionId });
+            // Clear local session
+            localStorage.removeItem(`xiri_session_${locationId}`);
+            setSessionComplete(true);
+        } catch (err: any) {
+            console.error('Clock-out failed:', err);
+            setError(err?.message || 'Clock-out failed. Please try again.');
+        } finally {
+            setClockingOut(false);
+        }
+    };
+
     // ─── Clocked In ──────────────────────────────────────────
     if (clockedIn && session) {
+
+    // ─── Session Complete ─────────────────────────────────────
+    if (sessionComplete) {
         return (
+            <div className="max-w-sm mx-auto px-4 py-6 space-y-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 text-center">
+                        <div className="w-20 h-20 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-4">
+                            <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h1 className="text-2xl font-bold text-gray-900">All Done! 🎉</h1>
+                        <p className="text-sm text-gray-500 mt-2">
+                            You&apos;ve completed all {session.zones.length} zones and clocked out.
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                            Clocked out at {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                    </div>
+                    <div className="p-5">
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                            <div className="text-2xl">📍</div>
+                            <div>
+                                <p className="text-sm font-semibold text-gray-900">{session.locationName}</p>
+                                <p className="text-xs text-gray-500">{session.vendorName}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <a
+                    href={`/c/${locationId}`}
+                    className="block w-full text-center py-3 rounded-xl bg-gray-100 text-sm font-medium text-gray-600 hover:bg-gray-200 transition-colors"
+                >
+                    📋 View Compliance Log
+                </a>
+            </div>
+        );
+    }
+
+    return (
             <div className="max-w-sm mx-auto px-4 py-6 space-y-6">
                 {/* Success */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -277,13 +353,28 @@ export default function StartPage({ params }: { params: Promise<{ locationId: st
                             );
                         })}
                     </div>
-                    <p className="text-xs text-gray-400 text-center pt-2">
-                        Walk to each zone and tap the NFC tag to check in.
-                    </p>
+
+                    {allZonesDone ? (
+                        <button
+                            onClick={handleClockOut}
+                            disabled={clockingOut}
+                            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {clockingOut ? (
+                                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Clocking out...</>
+                            ) : (
+                                <>✅ Complete Session & Clock Out</>
+                            )}
+                        </button>
+                    ) : (
+                        <p className="text-xs text-gray-400 text-center pt-2">
+                            Walk to each zone and tap the NFC tag to check in.
+                        </p>
+                    )}
                 </div>
             </div>
         );
-    }
+    } // end if (clockedIn && session)
 
     // ─── Error (no site found) ───────────────────────────────
     if (!siteInfo) {
@@ -371,6 +462,25 @@ export default function StartPage({ params }: { params: Promise<{ locationId: st
                         </div>
                     )}
 
+                    {/* Phone */}
+                    {!isReturningUser && (
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                                📞 Phone Number
+                            </label>
+                            <input
+                                type="tel"
+                                value={personPhone}
+                                onChange={e => setPersonPhone(e.target.value)}
+                                placeholder="Enter your phone number"
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                            />
+                            <p className="text-[10px] text-gray-400 text-center">
+                                So we can reach you if needed
+                            </p>
+                        </div>
+                    )}
+
 
 
                     {/* Error */}
@@ -383,7 +493,7 @@ export default function StartPage({ params }: { params: Promise<{ locationId: st
                     {/* Submit */}
                     <button
                         onClick={handleClockIn}
-                        disabled={submitting || (!isReturningUser && (!siteKey.trim() || !personName.trim()))}
+                        disabled={submitting || (!isReturningUser && (!siteKey.trim() || !personName.trim() || !personPhone.trim()))}
                         className="w-full py-3.5 rounded-xl text-white font-semibold text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' }}
                     >

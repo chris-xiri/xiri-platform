@@ -720,6 +720,7 @@ export interface NfcSiteConfig {
     locationId: string;
     locationName: string;
     leadId: string;
+    workOrderId?: string;           // Explicit back-ref to work_orders doc
     vendorName: string;             // Subcontractor company name
     vendorId?: string;              // Linked vendor record
     startTagId: string;             // Start tag NFC UID
@@ -735,6 +736,7 @@ export interface NfcSiteConfig {
 export interface NfcSession {
     id: string;
     siteLocationId: string;         // Links to nfc_sites locationId
+    workOrderId?: string;           // Explicit ref to work_orders doc
     locationName: string;
     personName: string;
     personRole: 'cleaner' | 'night_manager';
@@ -991,6 +993,7 @@ export interface WorkOrder {
     tasks: WorkOrderTask[];
     qrCodeSecret?: string;
     nfcZones?: WorkOrderNfcZone[];  // NFC zone check-in data
+    nfcSiteId?: string;             // nfc_sites doc ID (set during NFC setup)
 
     vendorId?: string;
     vendorRate?: number;

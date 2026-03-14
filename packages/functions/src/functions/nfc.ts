@@ -10,6 +10,16 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { db } from "../utils/firebase";
 import { DASHBOARD_CORS } from "../utils/cors";
 import * as crypto from "crypto";
+import {
+    googleChatWebhookSecret,
+    notifyShiftStarted,
+    notifyManagerClockIn,
+    notifyZoneScanned,
+    notifyAllZonesDone,
+    notifyManagerAuditZone,
+    notifyCleanerClockOut,
+    notifyShiftVerified,
+} from "../utils/googleChatUtils";
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -40,8 +50,9 @@ function generateSessionToken(): string {
  */
 export const validateSiteKey = onCall({
     cors: DASHBOARD_CORS,
+    secrets: [googleChatWebhookSecret],
 }, async (request) => {
-    const { locationId, siteKey, personName } = request.data;
+    const { locationId, siteKey, personName, personPhone } = request.data;
 
     // Validate input
     if (!locationId || typeof locationId !== "string") {
@@ -88,6 +99,7 @@ export const validateSiteKey = onCall({
         siteLocationId: locationId,
         locationName: siteData.locationName,
         personName: personName.trim(),
+        personPhone: personPhone?.trim() || null,
         personRole,
         clockInAt: new Date(),
         clockOutAt: null,
@@ -98,6 +110,24 @@ export const validateSiteKey = onCall({
         expiresAt,
         createdAt: new Date(),
     });
+
+    // ── Google Chat notification (fire-and-forget) ──
+    const workOrderId = siteData.workOrderId || null;
+    if (personRole === 'cleaner') {
+        notifyShiftStarted({
+            siteLocationId: locationId,
+            locationName: siteData.locationName,
+            crewName: personName.trim(),
+            crewPhone: personPhone?.trim() || null,
+            workOrderId,
+        }).catch(console.error);
+    } else {
+        notifyManagerClockIn({
+            siteLocationId: locationId,
+            locationName: siteData.locationName,
+            managerName: personName.trim(),
+        });
+    }
 
     // Return session info (no sensitive data like siteKeyHash)
     return {
@@ -130,6 +160,7 @@ export const validateSiteKey = onCall({
  */
 export const updateZoneScan = onCall({
     cors: DASHBOARD_CORS,
+    secrets: [googleChatWebhookSecret],
 }, async (request) => {
     const { sessionId, zoneId, zoneName, tasksCompleted } = request.data;
 
@@ -211,6 +242,31 @@ export const updateZoneScan = onCall({
     const totalZones = siteDoc.exists ? (siteDoc.data()!.zones || []).length : 0;
     const scannedZones = existingResults.length;
 
+    // ── Google Chat notification (fire-and-forget) ──
+    const isManager = sessionData.personRole === 'night_manager';
+    if (isManager) {
+        notifyManagerAuditZone({
+            siteLocationId: sessionData.siteLocationId,
+            zoneName: zoneName || zoneId,
+            zonesCompleted: scannedZones,
+            zonesTotal: totalZones,
+        });
+    } else {
+        notifyZoneScanned({
+            siteLocationId: sessionData.siteLocationId,
+            zoneName: zoneName || zoneId,
+            zonesCompleted: scannedZones,
+            zonesTotal: totalZones,
+        });
+    }
+
+    if (scannedZones >= totalZones && !isManager) {
+        notifyAllZonesDone({
+            siteLocationId: sessionData.siteLocationId,
+            locationName: sessionData.locationName,
+        });
+    }
+
     return {
         success: true,
         zonesCompleted: scannedZones,
@@ -228,6 +284,7 @@ export const updateZoneScan = onCall({
  */
 export const completeNfcSession = onCall({
     cors: DASHBOARD_CORS,
+    secrets: [googleChatWebhookSecret],
 }, async (request) => {
     const { sessionId, auditScore, auditNotes } = request.data;
 
@@ -245,6 +302,27 @@ export const completeNfcSession = onCall({
         auditScore: auditScore || null,
         auditNotes: auditNotes || null,
     });
+
+    // ── Google Chat notification (fire-and-forget) ──
+    const sessionData = sessionDoc.data()!;
+    if (sessionData.personRole === 'night_manager') {
+        // Look up workOrderId from nfc_sites
+        const siteDoc = await db.collection("nfc_sites").doc(sessionData.siteLocationId).get();
+        const workOrderId = siteDoc.exists ? (siteDoc.data()?.workOrderId || null) : null;
+        notifyShiftVerified({
+            siteLocationId: sessionData.siteLocationId,
+            locationName: sessionData.locationName,
+            managerName: sessionData.personName,
+            auditScore: auditScore || undefined,
+            workOrderId,
+        }).catch(console.error);
+    } else {
+        notifyCleanerClockOut({
+            siteLocationId: sessionData.siteLocationId,
+            locationName: sessionData.locationName,
+            crewName: sessionData.personName,
+        });
+    }
 
     return { success: true, message: "Session completed. Thank you!" };
 });
