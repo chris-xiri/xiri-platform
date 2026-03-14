@@ -289,7 +289,7 @@ export default function Navigation() {
 
                             {/* Mobile Hamburger */}
                             <button
-                                className="md:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5"
+                                className="md:hidden flex flex-col justify-center items-center w-12 h-12 gap-1.5"
                                 onClick={() => setMobileOpen(!mobileOpen)}
                                 aria-label="Toggle menu"
                             >

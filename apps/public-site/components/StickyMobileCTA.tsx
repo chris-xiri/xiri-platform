@@ -13,6 +13,7 @@ import { trackEvent } from '@/lib/tracking';
  *   - "tenant"     → zip code input + "Get Free Audit" (for homepage, industries, services, blog)
  *   - "contractor"  → single "Apply Now — 5 Min" button (for /contractors/* pages)
  *
+ * Scroll-aware: hides when scrolling down, shows when scrolling up (Intercom pattern).
  * Appears after scrolling past 400px. Dismissable per session.
  */
 export function StickyMobileCTA() {
@@ -23,6 +24,8 @@ export function StickyMobileCTA() {
     const [zip, setZip] = useState('');
     const [loading, setLoading] = useState(false);
     const tracked = useRef(false);
+    const lastScrollY = useRef(0);
+    const scrollDirection = useRef<'up' | 'down'>('up');
 
     // Determine mode from pathname
     const isContractorPage = pathname.startsWith('/contractors');
@@ -36,7 +39,25 @@ export function StickyMobileCTA() {
         if (isSuppressed || dismissed) return;
 
         const handleScroll = () => {
-            setVisible(window.scrollY > 400);
+            const currentY = window.scrollY;
+            const threshold = 400;
+
+            // Determine scroll direction (with 5px deadzone to prevent jitter)
+            if (currentY > lastScrollY.current + 5) {
+                scrollDirection.current = 'down';
+            } else if (currentY < lastScrollY.current - 5) {
+                scrollDirection.current = 'up';
+            }
+
+            lastScrollY.current = currentY;
+
+            // Show: scrolled past threshold AND scrolling up
+            // Hide: scrolling down OR haven't scrolled past threshold
+            if (currentY > threshold && scrollDirection.current === 'up') {
+                setVisible(true);
+            } else if (scrollDirection.current === 'down' || currentY <= threshold) {
+                setVisible(false);
+            }
         };
 
         window.addEventListener('scroll', handleScroll, { passive: true });
@@ -51,7 +72,7 @@ export function StickyMobileCTA() {
         }
     }, [visible, mode]);
 
-    if (isSuppressed || dismissed || !visible) return null;
+    if (isSuppressed || dismissed) return null;
 
     const handleTenantSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -81,17 +102,19 @@ export function StickyMobileCTA() {
     };
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden animate-in slide-in-from-bottom duration-300">
+        <div className={`fixed bottom-0 left-0 right-0 z-50 md:hidden transition-transform duration-300 ease-out ${
+            visible ? 'translate-y-0' : 'translate-y-full'
+        }`}>
             {/* Dismiss button */}
             <button
                 onClick={() => setDismissed(true)}
-                className="absolute -top-8 right-3 p-1 bg-white/90 rounded-full shadow-md border border-slate-200"
+                className="absolute -top-9 right-3 p-1.5 bg-white/90 rounded-full shadow-md border border-slate-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
                 aria-label="Dismiss"
             >
                 <X className="w-4 h-4 text-slate-500" />
             </button>
 
-            <div className={`px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] border-t ${
+            <div className={`px-4 py-3.5 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] border-t ${
                 mode === 'contractor'
                     ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 border-emerald-600'
                     : 'bg-gradient-to-r from-sky-700 to-sky-800 border-sky-600'
@@ -104,12 +127,12 @@ export function StickyMobileCTA() {
                             onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
                             placeholder="Zip Code"
                             maxLength={5}
-                            className="flex-1 h-10 px-3 rounded-lg bg-white/95 text-slate-900 text-sm font-bold placeholder:text-slate-400 placeholder:font-normal focus:ring-2 focus:ring-white/50 outline-none"
+                            className="flex-1 h-12 px-4 rounded-lg bg-white/95 text-slate-900 text-base font-bold placeholder:text-slate-400 placeholder:font-normal focus:ring-2 focus:ring-white/50 outline-none"
                         />
                         <button
                             type="submit"
                             disabled={loading || zip.length < 5}
-                            className="h-10 px-4 bg-white text-sky-700 font-bold text-sm rounded-lg hover:bg-sky-50 transition-colors disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap"
+                            className="h-12 px-5 bg-white text-sky-700 font-bold text-sm rounded-lg hover:bg-sky-50 active:bg-sky-100 transition-colors disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                                 <>
@@ -122,7 +145,7 @@ export function StickyMobileCTA() {
                 ) : (
                     <button
                         onClick={handleContractorClick}
-                        className="w-full h-11 bg-white text-emerald-700 font-bold text-sm rounded-lg hover:bg-emerald-50 transition-colors flex items-center justify-center gap-2"
+                        className="w-full h-12 bg-white text-emerald-700 font-bold text-sm rounded-lg hover:bg-emerald-50 active:bg-emerald-100 transition-colors flex items-center justify-center gap-2"
                     >
                         Apply Now — Takes 5 Minutes
                         <ArrowRight className="w-4 h-4" />
