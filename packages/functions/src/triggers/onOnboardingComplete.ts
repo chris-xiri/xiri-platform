@@ -158,7 +158,7 @@ export const onOnboardingComplete = onDocumentUpdated({
                         decoratedText: {
                             topLabel: "ACORD 25",
                             text: acordStatus,
-                            startIcon: { knownIcon: "DOCUMENT" },
+                            startIcon: { knownIcon: "DESCRIPTION" },
                         },
                     },
                 ],
