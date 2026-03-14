@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { trackEvent } from '@/lib/tracking';
@@ -54,6 +54,10 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
     const [emailName, setEmailName] = useState('');
     const [emailSubmitting, setEmailSubmitting] = useState(false);
     const [emailSubmitted, setEmailSubmitted] = useState(false);
+
+    // ─── Auto-scroll ref ──────────────────────────────────────────────
+    const resultsRef = useRef<HTMLDivElement>(null);
+    const didAutoScroll = useRef(false);
 
     // ─── GA: track page view ──────────────────────────────────────────
     const tracked = useRef(false);
@@ -152,6 +156,30 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
         });
     }, [estimate, stateCode, facilityType, sqft, daysPerWeek, mode, showAdvanced]);
 
+    // ─── Auto-scroll to results when estimate first appears ───────────
+    useEffect(() => {
+        if (estimate && sqft > 0 && !didAutoScroll.current) {
+            didAutoScroll.current = true;
+            // Small delay to let DOM render the results
+            setTimeout(() => {
+                resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 150);
+        }
+        if (!estimate || sqft <= 0) {
+            didAutoScroll.current = false;
+        }
+    }, [estimate, sqft]);
+
+    // ─── Scroll after mobile keyboard dismisses ───────────────────────
+    const handleSqftBlur = useCallback(() => {
+        if (sqft > 0) {
+            // Wait for keyboard to animate away
+            setTimeout(() => {
+                resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 350);
+        }
+    }, [sqft]);
+
     // ─── Email submission ─────────────────────────────────────────────
     const handleEmailSubmit = async () => {
         if (!email || !estimate) return;
@@ -220,8 +248,9 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                 {/* State + Cost Tier */}
                 <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex-1 min-w-[160px]">
-                        <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Your State</label>
+                        <label htmlFor="calc-state" className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Your State</label>
                         <select
+                            id="calc-state"
                             value={stateCode}
                             onChange={(e) => setStateCode(e.target.value)}
                             className="w-full h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow"
@@ -241,8 +270,9 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                 {/* Facility Type + Sqft */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Facility Type</label>
+                        <label htmlFor="calc-facility" className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Facility Type</label>
                         <select
+                            id="calc-facility"
                             value={facilityType}
                             onChange={(e) => setFacilityType(e.target.value)}
                             className="w-full h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm focus:ring-2 focus:ring-sky-500 transition-shadow"
@@ -253,11 +283,14 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                         </select>
                     </div>
                     <div>
-                        <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Square Footage</label>
+                        <label htmlFor="calc-sqft" className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Square Footage</label>
                         <input
-                            type="number"
-                            value={sqft || ''}
-                            onChange={(e) => setSqft(parseInt(e.target.value) || 0)}
+                            id="calc-sqft"
+                            type="text"
+                            inputMode="numeric"
+                            value={sqft ? sqft.toLocaleString('en-US') : ''}
+                            onChange={(e) => setSqft(parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0)}
+                            onBlur={handleSqftBlur}
                             placeholder="e.g. 10,000"
                             className="w-full h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm focus:ring-2 focus:ring-sky-500 transition-shadow"
                         />
@@ -271,32 +304,37 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                         {/* Nightly */}
                         <button
                             onClick={() => setDaysPerWeek(7)}
-                            className={`text-left p-3 rounded-xl border-2 transition-all ${daysPerWeek === 7
+                            className={`text-left p-3 rounded-xl border-2 transition-all select-none active:scale-[0.98] ${daysPerWeek === 7
                                 ? `${isContractor ? 'border-emerald-500 bg-emerald-50' : 'border-sky-500 bg-sky-50'} shadow-md`
                                 : 'border-slate-200 bg-white hover:border-slate-300'
                                 }`}
                         >
                             <div className="flex items-center justify-between mb-1">
                                 <span className={`text-sm font-bold ${daysPerWeek === 7 ? (isContractor ? 'text-emerald-700' : 'text-sky-700') : 'text-slate-800'}`}>Nightly</span>
-                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${daysPerWeek === 7 ? (isContractor ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700') : 'bg-slate-100 text-slate-500'}`}>7x/wk</span>
+                                <span className={`text-xs font-semibold px-3 py-1 rounded-full ${daysPerWeek === 7 ? (isContractor ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700') : 'bg-slate-100 text-slate-500'}`}>7x/wk</span>
                             </div>
                             <p className="text-[11px] text-slate-500 leading-snug">Medical, food service, high-traffic lobbies</p>
                         </button>
 
                         {/* Standard */}
-                        <div className={`p-3 rounded-xl border-2 transition-all ${[5, 6].includes(daysPerWeek)
+                        <button
+                            type="button"
+                            onClick={() => { if (![5, 6].includes(daysPerWeek)) setDaysPerWeek(5); }}
+                            className={`text-left p-3 rounded-xl border-2 transition-all select-none active:scale-[0.98] ${[5, 6].includes(daysPerWeek)
                             ? `${isContractor ? 'border-emerald-500 bg-emerald-50' : 'border-sky-500 bg-sky-50'} shadow-md`
-                            : 'border-slate-200 bg-white'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
                             }`}
                         >
                             <div className="flex items-center justify-between mb-1">
                                 <span className={`text-sm font-bold ${[5, 6].includes(daysPerWeek) ? (isContractor ? 'text-emerald-700' : 'text-sky-700') : 'text-slate-800'}`}>Standard</span>
-                                <div className="flex gap-1">
+                                <div className="flex gap-1.5">
                                     {[6, 5].map(d => (
-                                        <button
+                                        <span
                                             key={d}
-                                            onClick={() => setDaysPerWeek(d)}
-                                            className={`text-xs font-semibold px-2 py-0.5 rounded-full transition-all ${daysPerWeek === d
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={(e) => { e.stopPropagation(); setDaysPerWeek(d); }}
+                                            className={`text-xs font-semibold px-3 py-1 rounded-full transition-all min-w-[36px] text-center ${daysPerWeek === d
                                                 ? (isContractor ? 'bg-emerald-600 text-white' : 'bg-sky-600 text-white')
                                                 : [5, 6].includes(daysPerWeek)
                                                     ? (isContractor ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200' : 'bg-sky-100 text-sky-600 hover:bg-sky-200')
@@ -304,27 +342,32 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                                                 }`}
                                         >
                                             {d}x
-                                        </button>
+                                        </span>
                                     ))}
                                 </div>
                             </div>
                             <p className="text-[11px] text-slate-500 leading-snug">Most offices, retail, commercial spaces</p>
-                        </div>
+                        </button>
 
                         {/* Low Traffic */}
-                        <div className={`p-3 rounded-xl border-2 transition-all ${[3, 4].includes(daysPerWeek)
+                        <button
+                            type="button"
+                            onClick={() => { if (![3, 4].includes(daysPerWeek)) setDaysPerWeek(3); }}
+                            className={`text-left p-3 rounded-xl border-2 transition-all select-none active:scale-[0.98] ${[3, 4].includes(daysPerWeek)
                             ? `${isContractor ? 'border-emerald-500 bg-emerald-50' : 'border-sky-500 bg-sky-50'} shadow-md`
-                            : 'border-slate-200 bg-white'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
                             }`}
                         >
                             <div className="flex items-center justify-between mb-1">
                                 <span className={`text-sm font-bold ${[3, 4].includes(daysPerWeek) ? (isContractor ? 'text-emerald-700' : 'text-sky-700') : 'text-slate-800'}`}>Low Traffic</span>
-                                <div className="flex gap-1">
+                                <div className="flex gap-1.5">
                                     {[4, 3].map(d => (
-                                        <button
+                                        <span
                                             key={d}
-                                            onClick={() => setDaysPerWeek(d)}
-                                            className={`text-xs font-semibold px-2 py-0.5 rounded-full transition-all ${daysPerWeek === d
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={(e) => { e.stopPropagation(); setDaysPerWeek(d); }}
+                                            className={`text-xs font-semibold px-3 py-1 rounded-full transition-all min-w-[36px] text-center ${daysPerWeek === d
                                                 ? (isContractor ? 'bg-emerald-600 text-white' : 'bg-sky-600 text-white')
                                                 : [3, 4].includes(daysPerWeek)
                                                     ? (isContractor ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200' : 'bg-sky-100 text-sky-600 hover:bg-sky-200')
@@ -332,27 +375,32 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                                                 }`}
                                         >
                                             {d}x
-                                        </button>
+                                        </span>
                                     ))}
                                 </div>
                             </div>
                             <p className="text-[11px] text-slate-500 leading-snug">Small offices, low-foot-traffic areas</p>
-                        </div>
+                        </button>
 
                         {/* Weekly */}
-                        <div className={`p-3 rounded-xl border-2 transition-all ${[1, 2].includes(daysPerWeek)
+                        <button
+                            type="button"
+                            onClick={() => { if (![1, 2].includes(daysPerWeek)) setDaysPerWeek(1); }}
+                            className={`text-left p-3 rounded-xl border-2 transition-all select-none active:scale-[0.98] ${[1, 2].includes(daysPerWeek)
                             ? `${isContractor ? 'border-emerald-500 bg-emerald-50' : 'border-sky-500 bg-sky-50'} shadow-md`
-                            : 'border-slate-200 bg-white'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
                             }`}
                         >
                             <div className="flex items-center justify-between mb-1">
                                 <span className={`text-sm font-bold ${[1, 2].includes(daysPerWeek) ? (isContractor ? 'text-emerald-700' : 'text-sky-700') : 'text-slate-800'}`}>Weekly</span>
-                                <div className="flex gap-1">
+                                <div className="flex gap-1.5">
                                     {[2, 1].map(d => (
-                                        <button
+                                        <span
                                             key={d}
-                                            onClick={() => setDaysPerWeek(d)}
-                                            className={`text-xs font-semibold px-2 py-0.5 rounded-full transition-all ${daysPerWeek === d
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={(e) => { e.stopPropagation(); setDaysPerWeek(d); }}
+                                            className={`text-xs font-semibold px-3 py-1 rounded-full transition-all min-w-[36px] text-center ${daysPerWeek === d
                                                 ? (isContractor ? 'bg-emerald-600 text-white' : 'bg-sky-600 text-white')
                                                 : [1, 2].includes(daysPerWeek)
                                                     ? (isContractor ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200' : 'bg-sky-100 text-sky-600 hover:bg-sky-200')
@@ -360,12 +408,12 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                                                 }`}
                                         >
                                             {d}x
-                                        </button>
+                                        </span>
                                     ))}
                                 </div>
                             </div>
                             <p className="text-[11px] text-slate-500 leading-snug">Warehouses, storage, seasonal spaces</p>
-                        </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -539,8 +587,9 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
             )}
 
             {/* ═══ ESTIMATE RESULT ═══ */}
+            <div ref={resultsRef} />
             {estimate && sqft > 0 ? (
-                <div className={`rounded-2xl p-8 text-white shadow-xl ${isContractor
+                <div className={`rounded-2xl p-5 sm:p-8 text-white shadow-xl ${isContractor
                     ? 'bg-gradient-to-br from-emerald-600 to-emerald-800'
                     : 'bg-gradient-to-br from-sky-600 to-sky-800'
                     }`}>
@@ -551,32 +600,32 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                         <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold">±20% accuracy</span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                        <div className="bg-white/10 rounded-xl p-4 text-center backdrop-blur-sm">
-                            <p className={`text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+                        <div className="bg-white/10 rounded-xl p-3 sm:p-4 text-center backdrop-blur-sm">
+                            <p className={`text-[10px] sm:text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
                                 {isContractor ? 'Per Visit' : 'Per Visit'}
                             </p>
-                            <p className="text-2xl font-bold mt-1">{fmt(estimate.perVisit)}</p>
+                            <p className="text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1">{fmt(estimate.perVisit)}</p>
                         </div>
-                        <div className="bg-white/10 rounded-xl p-4 text-center backdrop-blur-sm">
-                            <p className={`text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>Visits / Month</p>
-                            <p className="text-2xl font-bold mt-1">{estimate.daysPerMonth}</p>
-                            <p className={`text-[10px] ${isContractor ? 'text-emerald-300' : 'text-sky-300'}`}>{daysPerWeek}x/wk × 4.33</p>
+                        <div className="bg-white/10 rounded-xl p-3 sm:p-4 text-center backdrop-blur-sm">
+                            <p className={`text-[10px] sm:text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>Visits / Mo</p>
+                            <p className="text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1">{estimate.daysPerMonth}</p>
+                            <p className={`text-[9px] sm:text-[10px] ${isContractor ? 'text-emerald-300' : 'text-sky-300'}`}>{daysPerWeek}x/wk × 4.33</p>
                         </div>
-                        <div className="bg-white/10 rounded-xl p-4 text-center backdrop-blur-sm">
-                            <p className={`text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
-                                {isContractor ? 'Annual Earnings' : 'Annual Estimate'}
+                        <div className="bg-white/10 rounded-xl p-3 sm:p-4 text-center backdrop-blur-sm">
+                            <p className={`text-[10px] sm:text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
+                                {isContractor ? 'Annual' : 'Annual'}
                             </p>
-                            <p className="text-2xl font-bold mt-1">{fmt(estimate.monthly.mid * 12)}</p>
+                            <p className="text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1">{fmt(estimate.monthly.mid * 12)}</p>
                         </div>
                     </div>
 
                     {/* Monthly total */}
-                    <div className="bg-white rounded-2xl p-6 text-center text-slate-900">
-                        <p className="text-sm text-slate-500 mb-1">
+                    <div className="bg-white rounded-2xl p-4 sm:p-6 text-center text-slate-900">
+                        <p className="text-xs sm:text-sm text-slate-500 mb-0.5 sm:mb-1">
                             {isContractor ? 'Estimated Monthly Earnings' : 'Estimated Monthly Cost'}
                         </p>
-                        <p className="text-4xl font-bold">
+                        <p className="text-3xl sm:text-4xl font-bold">
                             {fmt(estimate.monthly.low)} – {fmt(estimate.monthly.high)}
                         </p>
                         <p className="text-sm text-slate-500 mt-2">
@@ -609,7 +658,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                                 : 'bg-white text-sky-700 hover:bg-sky-50'
                                 }`}
                         >
-                            <Mail className="w-5 h-5 inline mr-1" /> Email Me a Detailed Breakdown
+                            <Mail className="w-5 h-5 inline mr-1" /> Get My Free Cost Report
                         </button>
                         <p className={`text-xs ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
                             Includes per-sqft costs, frequency comparison, and {isContractor ? 'bidding tips' : 'industry benchmarks'}.
@@ -628,7 +677,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                     </div>
                 </div>
             ) : (
-                <div className="bg-white rounded-2xl p-12 text-center border-2 border-dashed border-slate-200">
+                <div className="bg-white rounded-2xl p-6 sm:p-12 text-center border-2 border-dashed border-slate-200">
                     <div className="text-4xl mb-3"><Calculator className="w-10 h-10 mx-auto text-slate-400" /></div>
                     <p className="text-slate-500 font-medium">Enter your square footage above to see an instant estimate</p>
                     <p className="text-slate-400 text-sm mt-1">Results update in real-time as you adjust inputs</p>
@@ -638,7 +687,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
             {/* ═══ EMAIL MODAL ═══ */}
             {showEmailModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !emailSubmitting && setShowEmailModal(false)}>
-                    <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-white rounded-2xl p-5 sm:p-8 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
                         {emailSubmitted ? (
                             <div className="text-center">
                                 <div className="text-5xl mb-4"><CheckCircle className="w-12 h-12 mx-auto text-emerald-500" /></div>

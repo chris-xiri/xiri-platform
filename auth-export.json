@@ -1,0 +1,103 @@
+{"users": [
+{
+  "localId": "BpbvQZiCtUgzDGr1Gq2j8nONvri2",
+  "email": "chris+qa@xiri.ai",
+  "emailVerified": false,
+  "passwordHash": "8YtYId7b7hQnARW4loYNprUh3uMIla/ZE2vSAQk290ALqETpHoTeIMVNVbzz3J4OFtWdEnw4QPb+O+ArE1oHLA==",
+  "salt": "wnFy/yVrdGCt7g==",
+  "displayName": "QA",
+  "lastSignedInAt": "1772820919977",
+  "createdAt": "1772818394159",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "admin-001",
+  "email": "chris@xiri.ai",
+  "emailVerified": true,
+  "passwordHash": "Iklq3WunZYEH++ihinsAAk1NmTGAQvEoEFIgTLE8EjOskj/+/oKOGbDctKo7x/Q5O9LwpJag3+iAZuZ5kA3hDQ==",
+  "salt": "qC4Br8xqzAK1xQ==",
+  "displayName": "Chris Leung",
+  "lastSignedInAt": "1773443496989",
+  "createdAt": "1771618879997",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "fsm-001",
+  "email": "fsm1@xiri.ai",
+  "emailVerified": true,
+  "passwordHash": "kud+/zblO1Mkt8DQcDN/TQ/s5XE8yip2ZMPwsuKx45S1LT2ieibA0U53x0rky4enKfdh45gxqJGYhkrmRb4H4Q==",
+  "salt": "GsjV/3F11ZSHKA==",
+  "displayName": "Marcus Chen",
+  "lastSignedInAt": "1772813974229",
+  "createdAt": "1771618881702",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "fsm-002",
+  "email": "fsm2@xiri.ai",
+  "emailVerified": true,
+  "passwordHash": "Y7ANWh0wVLwnAAkRhfZmqhwYHmp1orFaeARjYOig3MMUDbfJffrqv3awBl7bXmFiak7FGPDSwpnMVqm1Ccm73Q==",
+  "salt": "EXzj6qVTvZCybw==",
+  "displayName": "Sarah Okonkwo",
+  "lastSignedInAt": "1771624904821",
+  "createdAt": "1771618882250",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "nightmgr-001",
+  "email": "night1@xiri.ai",
+  "emailVerified": true,
+  "passwordHash": "BwFAu6kx19lNFMw8JkjnHsPPVofCtqh20iH9VVUEIsHo8utUgN6C++/MhAT6w2cbIcmD4iuu0FTB68jmfkTZow==",
+  "salt": "bMD0IBsaBhFeUw==",
+  "displayName": "David Torres",
+  "lastSignedInAt": "1771626198846",
+  "createdAt": "1771618882851",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "nightmgr-002",
+  "email": "night2@xiri.ai",
+  "emailVerified": true,
+  "passwordHash": "cuoWbDCeunf4teVhzVfQS4viUS1hA0WINf1dgMOpjXED0PYsuxTjbOcAtdmqC2APoBckOrjmigtzoUUxMyyTFA==",
+  "salt": "gKZzIVrHwGjTyw==",
+  "displayName": "Lisa Patel",
+  "createdAt": "1771618883402",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "oX9gUoSADgPLTEcGS4ea2BWffVw1",
+  "email": "chris+scoutqa@xiri.ai",
+  "emailVerified": false,
+  "displayName": "Scout QA",
+  "createdAt": "1772814468003",
+  "disabled": false
+},
+{
+  "localId": "sales-001",
+  "email": "sales1@xiri.ai",
+  "emailVerified": true,
+  "passwordHash": "4KFFgIZf9IwW6uO4AT/9A/MT1ZUp3VtaI76UrQ4yQtAlZi9JFMF3nh4VT3qJ/y4fSmhAMB/YXbeExDGNf8jPEQ==",
+  "salt": "H2nrztz1bzoi+A==",
+  "displayName": "Alex Rivera",
+  "lastSignedInAt": "1771706170117",
+  "createdAt": "1771618880556",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "sales-002",
+  "email": "sales2@xiri.ai",
+  "emailVerified": true,
+  "passwordHash": "LKRW7WM3EW0TzDeLLONSBw6yhyKPpxqmz6kOvQv1Mo13PEjoM7mE4WMYaBSE+yX9HSpP8qvnnEBrFFXU7VW/dw==",
+  "salt": "8JKfYbPaojLuxw==",
+  "displayName": "Jordan Kim",
+  "createdAt": "1771618881084",
+  "disabled": false,
+  "providerUserInfo": []
+}]}

@@ -15,11 +15,21 @@ export function BodyClassProvider({
 }) {
     const pathname = usePathname();
     const isNfcPage = pathname.startsWith('/s/') || pathname.startsWith('/z/') || pathname.startsWith('/c/') || pathname.startsWith('/onboarding/');
+    const isContractorPage = pathname.startsWith('/contractors');
+    const isCalculatorPage = pathname.startsWith('/calculator');
+
+    // NFC pages: no nav at all → 0 padding
+    // Contractor/calculator pages: no trust bar → reduced padding (112 - 36 = 76px)
+    const dynamicStyle = isNfcPage
+        ? { paddingTop: 0 }
+        : (isContractorPage || isCalculatorPage)
+            ? { paddingTop: '76px' }
+            : undefined;
 
     return (
         <body
             className={className}
-            style={isNfcPage ? { paddingTop: 0 } : undefined}
+            style={dynamicStyle}
         >
             {children}
         </body>

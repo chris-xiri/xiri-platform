@@ -4,6 +4,7 @@ import "./globals.css";
 import TrackingProvider from "@/components/TrackingProvider";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { ConditionalFooter } from "@/components/ConditionalFooter";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { ClarityProvider } from '@/components/ClarityProvider';
 import { StickyMobileCTA } from '@/components/StickyMobileCTA';
@@ -127,7 +128,9 @@ export default function RootLayout({
           </MarketingShell>
           {children}
           <MarketingShell>
-            <Footer />
+            <ConditionalFooter>
+              <Footer />
+            </ConditionalFooter>
 
             <StickyMobileCTA />
           </MarketingShell>

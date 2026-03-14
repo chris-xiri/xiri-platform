@@ -27,6 +27,13 @@
                 "-y",
                 "@anthropic-ai/gcloud-mcp@latest"
             ]
+        },
+        "clarity": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@microsoft/clarity-mcp-server"
+            ]
         }
     }
 }

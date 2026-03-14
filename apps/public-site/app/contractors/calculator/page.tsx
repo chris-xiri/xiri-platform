@@ -87,7 +87,7 @@ export default function ContractorCalculatorPage() {
             />
 
             {/* ═══ HERO ═══ */}
-            <section className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-slate-900 text-white py-20">
+            <section className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-slate-900 text-white py-10 sm:py-20">
                 <div className="max-w-4xl mx-auto px-4 text-center">
                     <div className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-sm font-semibold mb-6 border border-emerald-500/30">
                         Free Tool for Cleaning Companies

@@ -62,3 +62,6 @@ export { validateSiteKey, updateZoneScan, completeNfcSession, getComplianceLog }
 
 // ── NFC Monitoring & Morning Reports (scheduled + onCall) ──
 export { checkNightlyStatus, generateMorningReports, sendTestMorningReport } from "./functions/monitoring";
+
+// ── Clarity UX Analysis (scheduled + onCall) ──
+export { dailyClarityReport, triggerClarityReport } from "./triggers/clarityAnalysis";

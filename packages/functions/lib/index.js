@@ -144,8 +144,8 @@ async function getTemplate(templateId) {
       return null;
     }
     return doc.data();
-  } catch (error11) {
-    console.error("Error fetching template:", error11);
+  } catch (error12) {
+    console.error("Error fetching template:", error12);
     return null;
   }
 }
@@ -197,8 +197,8 @@ BODY:
       subject: subjectMatch[1].trim(),
       body: bodyMatch[1].trim()
     };
-  } catch (error11) {
-    console.error("Error generating email:", error11);
+  } catch (error12) {
+    console.error("Error generating email:", error12);
     return null;
   }
 }
@@ -266,8 +266,8 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
       });
       resendId = data?.id;
       console.log(`\u2705 Email sent to ${vendor?.companyName}: ${email.subject} (Resend ID: ${data?.id})`);
-    } catch (error11) {
-      console.error("\u274C Resend API error:", error11);
+    } catch (error12) {
+      console.error("\u274C Resend API error:", error12);
       await db3.collection("vendor_activities").add({
         vendorId,
         type: "EMAIL_FAILED",
@@ -277,7 +277,7 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
           templateId,
           subject: email.subject,
           to: vendor?.email || "unknown",
-          error: String(error11)
+          error: String(error12)
         }
       });
       return;
@@ -298,8 +298,8 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
         // NEW: Track Resend email ID
       }
     });
-  } catch (error11) {
-    console.error("Error sending email:", error11);
+  } catch (error12) {
+    console.error("Error sending email:", error12);
   }
 }
 function buildEmailFooter(entityId, entityType) {
@@ -332,7 +332,7 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
       headers["List-Unsubscribe"] = `<${unsubscribeUrl}>`;
       headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
     }
-    const { data, error: error11 } = await resend.emails.send({
+    const { data, error: error12 } = await resend.emails.send({
       from: from || "XIRI Facility Solutions <onboarding@xiri.ai>",
       replyTo: "chris@xiri.ai",
       to,
@@ -342,8 +342,8 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
       headers,
       ...tags.length > 0 ? { tags } : {}
     });
-    if (error11) {
-      console.error("\u274C Resend API error:", error11);
+    if (error12) {
+      console.error("\u274C Resend API error:", error12);
       return { success: false };
     }
     console.log(`\u2705 Email sent to ${to}: ${subject} (ID: ${data?.id})`);
@@ -363,10 +363,10 @@ async function sendBatchEmails(emails) {
       subject: e.subject,
       html: e.html
     }));
-    const { data, error: error11 } = await resend.batch.send(payload);
-    if (error11) {
-      console.error("\u274C Batch send error:", error11);
-      return { success: false, error: error11.message || String(error11) };
+    const { data, error: error12 } = await resend.batch.send(payload);
+    if (error12) {
+      console.error("\u274C Batch send error:", error12);
+      return { success: false, error: error12.message || String(error12) };
     }
     const ids = data?.data?.map((d) => d.id) || [];
     console.log(`\u2705 Batch sent ${emails.length} emails (IDs: ${ids.join(", ")})`);
@@ -448,12 +448,12 @@ async function publishPost(message, link, imageUrl, placeId) {
       success: true,
       postUrl: `https://facebook.com/${postId}`
     };
-  } catch (error11) {
-    console.error("Facebook publish error:", error11);
+  } catch (error12) {
+    console.error("Facebook publish error:", error12);
     return {
       id: "",
       success: false,
-      error: error11.message || "Failed to publish to Facebook"
+      error: error12.message || "Failed to publish to Facebook"
     };
   }
 }
@@ -523,12 +523,12 @@ async function publishReel(videoUrl, description, placeId) {
       success: true,
       postUrl: `https://facebook.com/reel/${finishData.id || videoId}`
     };
-  } catch (error11) {
-    console.error("[FB Reels] Publish error:", error11);
+  } catch (error12) {
+    console.error("[FB Reels] Publish error:", error12);
     return {
       id: "",
       success: false,
-      error: error11.message || "Failed to publish reel"
+      error: error12.message || "Failed to publish reel"
     };
   }
 }
@@ -546,8 +546,8 @@ async function searchFacebookPlaces(query, lat, lng) {
       return [];
     }
     return data.data || [];
-  } catch (error11) {
-    console.error("[FB Places] Search error:", error11);
+  } catch (error12) {
+    console.error("[FB Places] Search error:", error12);
     return [];
   }
 }
@@ -582,12 +582,12 @@ async function schedulePost(message, scheduledTime, link) {
       id: data.id,
       success: true
     };
-  } catch (error11) {
-    console.error("Facebook schedule error:", error11);
+  } catch (error12) {
+    console.error("Facebook schedule error:", error12);
     return {
       id: "",
       success: false,
-      error: error11.message || "Failed to schedule post"
+      error: error12.message || "Failed to schedule post"
     };
   }
 }
@@ -609,8 +609,8 @@ async function getRecentPosts(limit = 10) {
       return !url.includes("/reel/") && !url.includes("/videos/");
     });
     return posts.slice(0, limit);
-  } catch (error11) {
-    console.error("Facebook get posts error:", error11);
+  } catch (error12) {
+    console.error("Facebook get posts error:", error12);
     return [];
   }
 }
@@ -636,8 +636,8 @@ async function getRecentReels(limit = 10) {
       comments: reel.comments,
       duration: reel.length
     }));
-  } catch (error11) {
-    console.error("Facebook get reels error:", error11);
+  } catch (error12) {
+    console.error("Facebook get reels error:", error12);
     return [];
   }
 }
@@ -662,8 +662,8 @@ async function getPageInsights(period = "week") {
       }
     }
     return insights;
-  } catch (error11) {
-    console.error("Facebook insights error:", error11);
+  } catch (error12) {
+    console.error("Facebook insights error:", error12);
     return {};
   }
 }
@@ -676,8 +676,8 @@ async function deletePost(postId) {
     );
     const data = await response.json();
     return data.success === true;
-  } catch (error11) {
-    console.error("Facebook delete post error:", error11);
+  } catch (error12) {
+    console.error("Facebook delete post error:", error12);
     return false;
   }
 }
@@ -1052,21 +1052,21 @@ var require_tr46 = __commonJS({
         label = punycode.toUnicode(label);
         processing_option = PROCESSING_OPTIONS.NONTRANSITIONAL;
       }
-      var error11 = false;
+      var error12 = false;
       if (normalize(label) !== label || label[3] === "-" && label[4] === "-" || label[0] === "-" || label[label.length - 1] === "-" || label.indexOf(".") !== -1 || label.search(combiningMarksRegex) === 0) {
-        error11 = true;
+        error12 = true;
       }
       var len = countSymbols(label);
       for (var i = 0; i < len; ++i) {
         var status = findStatus(label.codePointAt(i));
         if (processing === PROCESSING_OPTIONS.TRANSITIONAL && status[1] !== "valid" || processing === PROCESSING_OPTIONS.NONTRANSITIONAL && status[1] !== "valid" && status[1] !== "deviation") {
-          error11 = true;
+          error12 = true;
           break;
         }
       }
       return {
         label,
-        error: error11
+        error: error12
       };
     }
     function processing(domain_name, useSTD3, processing_option) {
@@ -6283,8 +6283,8 @@ function Body(body) {
   this.timeout = timeout;
   if (body instanceof import_stream.default) {
     body.on("error", function(err) {
-      const error11 = err.name === "AbortError" ? err : new FetchError(`Invalid response body while trying to fetch ${_this.url}: ${err.message}`, "system", err);
-      _this[INTERNALS].error = error11;
+      const error12 = err.name === "AbortError" ? err : new FetchError(`Invalid response body while trying to fetch ${_this.url}: ${err.message}`, "system", err);
+      _this[INTERNALS].error = error12;
     });
   }
 }
@@ -6617,13 +6617,13 @@ function fetch2(url, opts) {
     const signal = request.signal;
     let response = null;
     const abort = function abort2() {
-      let error11 = new AbortError("The user aborted a request.");
-      reject(error11);
+      let error12 = new AbortError("The user aborted a request.");
+      reject(error12);
       if (request.body && request.body instanceof import_stream.default.Readable) {
-        destroyStream(request.body, error11);
+        destroyStream(request.body, error12);
       }
       if (!response || !response.body) return;
-      response.body.emit("error", error11);
+      response.body.emit("error", error12);
     };
     if (signal && signal.aborted) {
       abort();
@@ -7625,12 +7625,12 @@ var require_common = __commonJS({
         }
         return Function.prototype[Symbol.hasInstance].call(_GaxiosError, instance);
       }
-      constructor(message, config2, response, error11) {
+      constructor(message, config2, response, error12) {
         var _b;
         super(message);
         this.config = config2;
         this.response = response;
-        this.error = error11;
+        this.error = error12;
         this[_a] = util_1.pkg.version;
         this.config = (0, extend_1.default)(true, {}, config2);
         if (this.response) {
@@ -7643,8 +7643,8 @@ var require_common = __commonJS({
           }
           this.status = this.response.status;
         }
-        if (error11 && "code" in error11 && error11.code) {
-          this.code = error11.code;
+        if (error12 && "code" in error12 && error12.code) {
+          this.code = error12.code;
         }
         if (config2.errorRedactor) {
           config2.errorRedactor({
@@ -8021,12 +8021,12 @@ var require_common2 = __commonJS({
             args.unshift("%O");
           }
           let index = 0;
-          args[0] = args[0].replace(/%([a-zA-Z%])/g, (match, format2) => {
+          args[0] = args[0].replace(/%([a-zA-Z%])/g, (match, format3) => {
             if (match === "%%") {
               return "%";
             }
             index++;
-            const formatter = createDebug.formatters[format2];
+            const formatter = createDebug.formatters[format3];
             if (typeof formatter === "function") {
               const val = args[index];
               match = formatter.call(self2, val);
@@ -8289,14 +8289,14 @@ var require_browser = __commonJS({
         } else {
           exports2.storage.removeItem("debug");
         }
-      } catch (error11) {
+      } catch (error12) {
       }
     }
     function load2() {
       let r;
       try {
         r = exports2.storage.getItem("debug") || exports2.storage.getItem("DEBUG");
-      } catch (error11) {
+      } catch (error12) {
       }
       if (!r && typeof process !== "undefined" && "env" in process) {
         r = process.env.DEBUG;
@@ -8306,7 +8306,7 @@ var require_browser = __commonJS({
     function localstorage() {
       try {
         return localStorage;
-      } catch (error11) {
+      } catch (error12) {
       }
     }
     module2.exports = require_common2()(exports2);
@@ -8314,8 +8314,8 @@ var require_browser = __commonJS({
     formatters.j = function(v) {
       try {
         return JSON.stringify(v);
-      } catch (error11) {
-        return "[UnexpectedJSONParseError]: " + error11.message;
+      } catch (error12) {
+        return "[UnexpectedJSONParseError]: " + error12.message;
       }
     };
   }
@@ -8536,7 +8536,7 @@ var require_node = __commonJS({
           221
         ];
       }
-    } catch (error11) {
+    } catch (error12) {
     }
     exports2.inspectOpts = Object.keys(process.env).filter((key) => {
       return /^debug_/i.test(key);
@@ -10123,7 +10123,7 @@ var require_bignumber = __commonJS({
             return q;
           };
         })();
-        function format2(n, i, rm, id) {
+        function format3(n, i, rm, id) {
           var c0, e, ne, len, str;
           if (rm == null) rm = ROUNDING_MODE;
           else intCheck(rm, 0, 8);
@@ -10709,33 +10709,33 @@ var require_bignumber = __commonJS({
             intCheck(dp, 0, MAX);
             dp++;
           }
-          return format2(this, dp, rm, 1);
+          return format3(this, dp, rm, 1);
         };
         P.toFixed = function(dp, rm) {
           if (dp != null) {
             intCheck(dp, 0, MAX);
             dp = dp + this.e + 1;
           }
-          return format2(this, dp, rm);
+          return format3(this, dp, rm);
         };
-        P.toFormat = function(dp, rm, format3) {
+        P.toFormat = function(dp, rm, format4) {
           var str, x = this;
-          if (format3 == null) {
+          if (format4 == null) {
             if (dp != null && rm && typeof rm == "object") {
-              format3 = rm;
+              format4 = rm;
               rm = null;
             } else if (dp && typeof dp == "object") {
-              format3 = dp;
+              format4 = dp;
               dp = rm = null;
             } else {
-              format3 = FORMAT;
+              format4 = FORMAT;
             }
-          } else if (typeof format3 != "object") {
-            throw Error(bignumberError + "Argument not an object: " + format3);
+          } else if (typeof format4 != "object") {
+            throw Error(bignumberError + "Argument not an object: " + format4);
           }
           str = x.toFixed(dp, rm);
           if (x.c) {
-            var i, arr = str.split("."), g1 = +format3.groupSize, g2 = +format3.secondaryGroupSize, groupSeparator = format3.groupSeparator || "", intPart = arr[0], fractionPart = arr[1], isNeg = x.s < 0, intDigits = isNeg ? intPart.slice(1) : intPart, len = intDigits.length;
+            var i, arr = str.split("."), g1 = +format4.groupSize, g2 = +format4.secondaryGroupSize, groupSeparator = format4.groupSeparator || "", intPart = arr[0], fractionPart = arr[1], isNeg = x.s < 0, intDigits = isNeg ? intPart.slice(1) : intPart, len = intDigits.length;
             if (g2) {
               i = g1;
               g1 = g2;
@@ -10749,12 +10749,12 @@ var require_bignumber = __commonJS({
               if (g2 > 0) intPart += groupSeparator + intDigits.slice(i);
               if (isNeg) intPart = "-" + intPart;
             }
-            str = fractionPart ? intPart + (format3.decimalSeparator || "") + ((g2 = +format3.fractionGroupSize) ? fractionPart.replace(
+            str = fractionPart ? intPart + (format4.decimalSeparator || "") + ((g2 = +format4.fractionGroupSize) ? fractionPart.replace(
               new RegExp("\\d{" + g2 + "}\\B", "g"),
-              "$&" + (format3.fractionGroupSeparator || "")
+              "$&" + (format4.fractionGroupSeparator || "")
             ) : fractionPart) : intPart;
           }
-          return (format3.prefix || "") + str + (format3.suffix || "");
+          return (format4.prefix || "") + str + (format4.suffix || "");
         };
         P.toFraction = function(md) {
           var d, d0, d1, d2, e, exp, n, n0, n1, q, r, s, x = this, xc = x.c;
@@ -10803,7 +10803,7 @@ var require_bignumber = __commonJS({
         };
         P.toPrecision = function(sd, rm) {
           if (sd != null) intCheck(sd, 1, MAX);
-          return format2(this, sd, rm, 2);
+          return format3(this, sd, rm, 2);
         };
         P.toString = function(b) {
           var str, n = this, s = n.s, e = n.e;
@@ -11082,7 +11082,7 @@ var require_parse = __commonJS({
         n: "\n",
         r: "\r",
         t: "	"
-      }, text, error11 = function(m) {
+      }, text, error12 = function(m) {
         throw {
           name: "SyntaxError",
           message: m,
@@ -11091,7 +11091,7 @@ var require_parse = __commonJS({
         };
       }, next = function(c) {
         if (c && c !== ch) {
-          error11("Expected '" + c + "' instead of '" + ch + "'");
+          error12("Expected '" + c + "' instead of '" + ch + "'");
         }
         ch = text.charAt(at);
         at += 1;
@@ -11126,7 +11126,7 @@ var require_parse = __commonJS({
         }
         number2 = +string2;
         if (!isFinite(number2)) {
-          error11("Bad number");
+          error12("Bad number");
         } else {
           if (BigNumber == null) BigNumber = require_bignumber();
           if (string2.length > 15)
@@ -11166,7 +11166,7 @@ var require_parse = __commonJS({
             }
           }
         }
-        error11("Bad string");
+        error12("Bad string");
       }, white = function() {
         while (ch && ch <= " ") {
           next();
@@ -11193,7 +11193,7 @@ var require_parse = __commonJS({
             next("l");
             return null;
         }
-        error11("Unexpected '" + ch + "'");
+        error12("Unexpected '" + ch + "'");
       }, value, array = function() {
         var array2 = [];
         if (ch === "[") {
@@ -11214,7 +11214,7 @@ var require_parse = __commonJS({
             white();
           }
         }
-        error11("Bad array");
+        error12("Bad array");
       }, object = function() {
         var key, object2 = /* @__PURE__ */ Object.create(null);
         if (ch === "{") {
@@ -11229,11 +11229,11 @@ var require_parse = __commonJS({
             white();
             next(":");
             if (_options.strict === true && Object.hasOwnProperty.call(object2, key)) {
-              error11('Duplicate key "' + key + '"');
+              error12('Duplicate key "' + key + '"');
             }
             if (suspectProtoRx.test(key) === true) {
               if (_options.protoAction === "error") {
-                error11("Object contains forbidden prototype property");
+                error12("Object contains forbidden prototype property");
               } else if (_options.protoAction === "ignore") {
                 value();
               } else {
@@ -11241,7 +11241,7 @@ var require_parse = __commonJS({
               }
             } else if (suspectConstructorRx.test(key) === true) {
               if (_options.constructorAction === "error") {
-                error11("Object contains forbidden constructor property");
+                error12("Object contains forbidden constructor property");
               } else if (_options.constructorAction === "ignore") {
                 value();
               } else {
@@ -11259,7 +11259,7 @@ var require_parse = __commonJS({
             white();
           }
         }
-        error11("Bad object");
+        error12("Bad object");
       };
       value = function() {
         white();
@@ -11284,7 +11284,7 @@ var require_parse = __commonJS({
         result = value();
         white();
         if (ch) {
-          error11("Syntax error");
+          error12("Syntax error");
         }
         return typeof reviver === "function" ? (function walk(holder, key) {
           var k, v, value2 = holder[key];
@@ -11540,12 +11540,12 @@ var require_logging_utils = __commonJS({
             this.setFilters();
             this.filtersSet = true;
           }
-          let logger22 = this.cached.get(namespace);
-          if (!logger22) {
-            logger22 = this.makeLogger(namespace);
-            this.cached.set(namespace, logger22);
+          let logger24 = this.cached.get(namespace);
+          if (!logger24) {
+            logger24 = this.makeLogger(namespace);
+            this.cached.set(namespace, logger24);
           }
-          logger22(fields, ...args);
+          logger24(fields, ...args);
         } catch (e) {
           console.error(e);
         }
@@ -11682,7 +11682,7 @@ var require_logging_utils = __commonJS({
       } else if (cachedBackend === void 0) {
         cachedBackend = getNodeBackend();
       }
-      const logger22 = (() => {
+      const logger24 = (() => {
         let previousBackend = void 0;
         const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
           if (previousBackend !== cachedBackend) {
@@ -11697,8 +11697,8 @@ var require_logging_utils = __commonJS({
         });
         return newLogger;
       })();
-      loggerCache.set(namespace, logger22);
-      return logger22.func;
+      loggerCache.set(namespace, logger24);
+      return logger24.func;
     }
   }
 });
@@ -11762,14 +11762,14 @@ var require_src4 = __commonJS({
     var gaxios_1 = require_src2();
     var jsonBigint = require_json_bigint();
     var gcp_residency_1 = require_gcp_residency();
-    var logger22 = require_src3();
+    var logger24 = require_src3();
     exports2.BASE_PATH = "/computeMetadata/v1";
     exports2.HOST_ADDRESS = "http://169.254.169.254";
     exports2.SECONDARY_HOST_ADDRESS = "http://metadata.google.internal.";
     exports2.HEADER_NAME = "Metadata-Flavor";
     exports2.HEADER_VALUE = "Google";
     exports2.HEADERS = Object.freeze({ [exports2.HEADER_NAME]: exports2.HEADER_VALUE });
-    var log = logger22.log("gcp metadata");
+    var log = logger24.log("gcp metadata");
     exports2.METADATA_SERVER_DETECTION = Object.freeze({
       "assume-present": "don't try to ping the metadata server, but assume it's present",
       none: "don't try to ping the metadata server, but don't try to use it either",
@@ -13346,13 +13346,13 @@ var require_oauth2client = __commonJS({
           },
           url: this.endpoints.tokenInfoUrl.toString()
         });
-        const info18 = Object.assign({
+        const info19 = Object.assign({
           expiry_date: (/* @__PURE__ */ new Date()).getTime() + data.expires_in * 1e3,
           scopes: data.scope.split(" ")
         }, data);
-        delete info18.expires_in;
-        delete info18.scope;
-        return info18;
+        delete info19.expires_in;
+        delete info19.scope;
+        return info19;
       }
       getFederatedSignonCerts(callback) {
         if (callback) {
@@ -13363,13 +13363,13 @@ var require_oauth2client = __commonJS({
       }
       async getFederatedSignonCertsAsync() {
         const nowTime = (/* @__PURE__ */ new Date()).getTime();
-        const format2 = (0, crypto_1.hasBrowserCrypto)() ? CertificateFormat.JWK : CertificateFormat.PEM;
-        if (this.certificateExpiry && nowTime < this.certificateExpiry.getTime() && this.certificateCacheFormat === format2) {
-          return { certs: this.certificateCache, format: format2 };
+        const format3 = (0, crypto_1.hasBrowserCrypto)() ? CertificateFormat.JWK : CertificateFormat.PEM;
+        if (this.certificateExpiry && nowTime < this.certificateExpiry.getTime() && this.certificateCacheFormat === format3) {
+          return { certs: this.certificateCache, format: format3 };
         }
         let res;
         let url;
-        switch (format2) {
+        switch (format3) {
           case CertificateFormat.PEM:
             url = this.endpoints.oauth2FederatedSignonPemCertsUrl.toString();
             break;
@@ -13377,7 +13377,7 @@ var require_oauth2client = __commonJS({
             url = this.endpoints.oauth2FederatedSignonJwkCertsUrl.toString();
             break;
           default:
-            throw new Error(`Unsupported certificate format ${format2}`);
+            throw new Error(`Unsupported certificate format ${format3}`);
         }
         try {
           res = await this.transporter.request({
@@ -13400,7 +13400,7 @@ var require_oauth2client = __commonJS({
           }
         }
         let certificates = {};
-        switch (format2) {
+        switch (format3) {
           case CertificateFormat.PEM:
             certificates = res.data;
             break;
@@ -13410,13 +13410,13 @@ var require_oauth2client = __commonJS({
             }
             break;
           default:
-            throw new Error(`Unsupported certificate format ${format2}`);
+            throw new Error(`Unsupported certificate format ${format3}`);
         }
         const now = /* @__PURE__ */ new Date();
         this.certificateExpiry = cacheAge === -1 ? null : new Date(now.getTime() + cacheAge);
         this.certificateCache = certificates;
-        this.certificateCacheFormat = format2;
-        return { certs: certificates, format: format2, res };
+        this.certificateCacheFormat = format3;
+        return { certs: certificates, format: format3, res };
       }
       getIapPublicKeys(callback) {
         if (callback) {
@@ -15241,21 +15241,21 @@ var require_impersonated = __commonJS({
             tokens: this.credentials,
             res
           };
-        } catch (error11) {
-          if (!(error11 instanceof Error))
-            throw error11;
+        } catch (error12) {
+          if (!(error12 instanceof Error))
+            throw error12;
           let status = 0;
           let message = "";
-          if (error11 instanceof gaxios_1.GaxiosError) {
-            status = (_c = (_b = (_a = error11 === null || error11 === void 0 ? void 0 : error11.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.error) === null || _c === void 0 ? void 0 : _c.status;
-            message = (_f = (_e = (_d = error11 === null || error11 === void 0 ? void 0 : error11.response) === null || _d === void 0 ? void 0 : _d.data) === null || _e === void 0 ? void 0 : _e.error) === null || _f === void 0 ? void 0 : _f.message;
+          if (error12 instanceof gaxios_1.GaxiosError) {
+            status = (_c = (_b = (_a = error12 === null || error12 === void 0 ? void 0 : error12.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.error) === null || _c === void 0 ? void 0 : _c.status;
+            message = (_f = (_e = (_d = error12 === null || error12 === void 0 ? void 0 : error12.response) === null || _d === void 0 ? void 0 : _d.data) === null || _e === void 0 ? void 0 : _e.error) === null || _f === void 0 ? void 0 : _f.message;
           }
           if (status && message) {
-            error11.message = `${status}: unable to impersonate: ${message}`;
-            throw error11;
+            error12.message = `${status}: unable to impersonate: ${message}`;
+            throw error12;
           } else {
-            error11.message = `unable to impersonate: ${error11}`;
-            throw error11;
+            error12.message = `unable to impersonate: ${error12}`;
+            throw error12;
           }
         }
       }
@@ -15518,15 +15518,15 @@ var require_stscredentials = __commonJS({
           const stsSuccessfulResponse = response.data;
           stsSuccessfulResponse.res = response;
           return stsSuccessfulResponse;
-        } catch (error11) {
-          if (error11 instanceof gaxios_1.GaxiosError && error11.response) {
+        } catch (error12) {
+          if (error12 instanceof gaxios_1.GaxiosError && error12.response) {
             throw (0, oauth2common_1.getErrorFromOAuthErrorResponse)(
-              error11.response.data,
+              error12.response.data,
               // Preserve other fields from the original error.
-              error11
+              error12
             );
           }
-          throw error11;
+          throw error12;
         }
       }
     };
@@ -16685,9 +16685,9 @@ var require_pluggable_auth_handler = __commonJS({
                 const responseJson = JSON.parse(output);
                 const response = new executable_response_1.ExecutableResponse(responseJson);
                 return resolve2(response);
-              } catch (error11) {
-                if (error11 instanceof executable_response_1.ExecutableResponseError) {
-                  return reject(error11);
+              } catch (error12) {
+                if (error12 instanceof executable_response_1.ExecutableResponseError) {
+                  return reject(error12);
                 }
                 return reject(new executable_response_1.ExecutableResponseError(`The executable returned an invalid response: ${output}`));
               }
@@ -16727,9 +16727,9 @@ var require_pluggable_auth_handler = __commonJS({
             return new executable_response_1.ExecutableResponse(responseJson);
           }
           return void 0;
-        } catch (error11) {
-          if (error11 instanceof executable_response_1.ExecutableResponseError) {
-            throw error11;
+        } catch (error12) {
+          if (error12 instanceof executable_response_1.ExecutableResponseError) {
+            throw error12;
           }
           throw new executable_response_1.ExecutableResponseError(`The output file contained an invalid response: ${responseString}`);
         }
@@ -16977,15 +16977,15 @@ var require_externalAccountAuthorizedUserClient = __commonJS({
           const tokenRefreshResponse = response.data;
           tokenRefreshResponse.res = response;
           return tokenRefreshResponse;
-        } catch (error11) {
-          if (error11 instanceof gaxios_1.GaxiosError && error11.response) {
+        } catch (error12) {
+          if (error12 instanceof gaxios_1.GaxiosError && error12.response) {
             throw (0, oauth2common_1.getErrorFromOAuthErrorResponse)(
-              error11.response.data,
+              error12.response.data,
               // Preserve other fields from the original error.
-              error11
+              error12
             );
           }
-          throw error11;
+          throw error12;
         }
       }
     };
@@ -18497,8 +18497,8 @@ async function searchNycDca(query, location, dcaCategory, limit = 50) {
       rating: void 0,
       user_ratings_total: void 0
     }));
-  } catch (error11) {
-    console.error("[SODA/NYC] Error:", error11.message);
+  } catch (error12) {
+    console.error("[SODA/NYC] Error:", error12.message);
     return [];
   }
 }
@@ -18533,8 +18533,8 @@ async function searchNyState(query, location, limit = 50) {
       rating: void 0,
       user_ratings_total: void 0
     }));
-  } catch (error11) {
-    console.error("[SODA/NYS] Error:", error11.message);
+  } catch (error12) {
+    console.error("[SODA/NYS] Error:", error12.message);
     return [];
   }
 }
@@ -18760,6 +18760,7 @@ __export(index_exports, {
   checkNightlyStatus: () => checkNightlyStatus,
   clearPipeline: () => clearPipeline,
   completeNfcSession: () => completeNfcSession,
+  dailyClarityReport: () => dailyClarityReport,
   deleteFacebookPost: () => deleteFacebookPost,
   enrichFromWebsite: () => enrichFromWebsite,
   generateLeads: () => generateLeads,
@@ -18807,9 +18808,11 @@ __export(index_exports, {
   sendOnboardingInvite: () => sendOnboardingInvite,
   sendQuoteEmail: () => sendQuoteEmail,
   sendTestMorningReport: () => sendTestMorningReport,
+  sendVendorBookingConfirmation: () => sendVendorBookingConfirmation,
   sourceProperties: () => sourceProperties,
   startLeadSequence: () => startLeadSequence,
   testSendEmail: () => testSendEmail,
+  triggerClarityReport: () => triggerClarityReport,
   triggerSocialContentGeneration: () => triggerSocialContentGeneration,
   updateSocialConfig: () => updateSocialConfig,
   updateZoneScan: () => updateZoneScan,
@@ -18837,8 +18840,8 @@ if (!admin.apps.length) {
 var db = admin.firestore();
 try {
   db.settings({ ignoreUndefinedProperties: true });
-} catch (error11) {
-  console.log("Firestore settings usage note:", error11);
+} catch (error12) {
+  console.log("Firestore settings usage note:", error12);
 }
 
 // src/utils/websiteScraper.ts
@@ -18923,8 +18926,8 @@ async function scrapeWebsite(url, geminiApiKey) {
     }
     combinedData.confidence = determineConfidence(structuredData, patternData, mergedContact, linkData);
     return { success: true, data: combinedData };
-  } catch (error11) {
-    return { success: false, error: error11.message };
+  } catch (error12) {
+    return { success: false, error: error12.message };
   }
 }
 function extractMailtoAndTel($) {
@@ -19109,8 +19112,8 @@ Website content:
       };
     }
     return {};
-  } catch (error11) {
-    console.error("AI extraction error:", error11);
+  } catch (error12) {
+    console.error("AI extraction error:", error12);
     return {};
   }
 }
@@ -19182,8 +19185,8 @@ async function deepMailtoScan(baseUrl) {
       if (foundEmail) break;
     }
     return { email: foundEmail, phone: foundPhone, pagesScanned: visited.size };
-  } catch (error11) {
-    console.error("Deep mailto scan error:", error11);
+  } catch (error12) {
+    console.error("Deep mailto scan error:", error12);
     return { pagesScanned: visited.size };
   }
 }
@@ -19238,8 +19241,8 @@ async function searchWebForEmail(businessName, location, domain, serperApiKey) {
           return { phone: kg.phone, source: "serper_knowledge_graph" };
         }
       }
-    } catch (error11) {
-      console.error(`Serper search error for query "${query}":`, error11);
+    } catch (error12) {
+      console.error(`Serper search error for query "${query}":`, error12);
     }
   }
   return { source: "serper_exhausted" };
@@ -19259,7 +19262,7 @@ async function verifyEmail(email) {
     } else {
       return { valid: true, deliverable: false, reason: "No MX records found" };
     }
-  } catch (error11) {
+  } catch (error12) {
     return { valid: true, deliverable: false, reason: "Domain not found" };
   }
 }
@@ -19269,7 +19272,7 @@ async function resolveMX(domain) {
   const resolveMx = promisify(dns.resolveMx);
   try {
     return await resolveMx(domain);
-  } catch (error11) {
+  } catch (error12) {
     return [];
   }
 }
@@ -19601,8 +19604,8 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
       vendorId,
       vendorName ? "No email found \u2014 web search exhausted, no website on file" : "No email, no website, no business name \u2014 cannot enrich"
     );
-  } catch (error11) {
-    logger2.error("Error in enrich pipeline:", error11);
+  } catch (error12) {
+    logger2.error("Error in enrich pipeline:", error12);
   }
 }
 async function checkProfileCompleteness(vendorId, vendorData) {
@@ -19766,8 +19769,8 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
         }
       }
     }
-  } catch (error11) {
-    logger3.error("Fatal error in queue processor:", error11);
+  } catch (error12) {
+    logger3.error("Fatal error in queue processor:", error12);
   }
 });
 async function handleGenerate(task) {
@@ -20234,11 +20237,11 @@ Verify compliance and extract key data. Return JSON:
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON found in response");
     return JSON.parse(jsonMatch[0]);
-  } catch (error11) {
-    console.error("AI Verification Failed:", error11);
+  } catch (error12) {
+    console.error("AI Verification Failed:", error12);
     return {
       valid: false,
-      reasoning: "AI Verification Failed: " + error11,
+      reasoning: "AI Verification Failed: " + error12,
       extracted: {}
     };
   }
@@ -20295,11 +20298,11 @@ Return JSON with valid, reasoning, flags, and extracted fields.`;
     }
     logger4.info(`ACORD 25 verification result: valid=${parsed.valid}, flags=${parsed.flags.length}`);
     return parsed;
-  } catch (error11) {
-    logger4.error("ACORD 25 verification failed:", error11);
+  } catch (error12) {
+    logger4.error("ACORD 25 verification failed:", error12);
     return {
       valid: false,
-      reasoning: `AI verification failed: ${error11}`,
+      reasoning: `AI verification failed: ${error12}`,
       extracted: {},
       flags: ["AI_PROCESSING_ERROR"]
     };
@@ -20363,13 +20366,13 @@ var onDocumentUploaded = (0, import_firestore3.onDocumentUpdated)({
       if (status === "FLAGGED") {
         await sendFlagNotification(vendorId, vendorName, result.flags, result.reasoning);
       }
-    } catch (error11) {
-      logger5.error(`ACORD 25 verification failed for ${vendorId}:`, error11);
+    } catch (error12) {
+      logger5.error(`ACORD 25 verification failed for ${vendorId}:`, error12);
       await db5.doc(`vendors/${vendorId}`).update({
         "compliance.acord25.status": "FLAGGED",
         "compliance.acord25.aiAnalysis": {
           valid: false,
-          reasoning: `Verification error: ${error11}`,
+          reasoning: `Verification error: ${error12}`,
           extracted: {}
         },
         updatedAt: admin7.firestore.FieldValue.serverTimestamp()
@@ -20416,8 +20419,8 @@ async function runLegacyVerification(vendorId, docType, vendorData) {
         documentType: docType === "COI" ? "Certificate of Insurance" : "W-9 Form"
       });
     }
-  } catch (error11) {
-    logger5.error(`Verification failed for ${docType}:`, error11);
+  } catch (error12) {
+    logger5.error(`Verification failed for ${docType}:`, error12);
   }
 }
 async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
@@ -20452,8 +20455,8 @@ async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
             </div>`
     });
     logger5.info(`Flag notification sent for vendor ${vendorId}`);
-  } catch (error11) {
-    logger5.error("Failed to send flag notification:", error11);
+  } catch (error12) {
+    logger5.error("Failed to send flag notification:", error12);
   }
 }
 
@@ -20558,9 +20561,119 @@ END:VEVENT
 END:VCALENDAR`;
 }
 
+// src/triggers/sendVendorBookingConfirmation.ts
+var import_firestore5 = require("firebase-functions/v2/firestore");
+init_emailUtils();
+var import_date_fns2 = require("date-fns");
+var logger6 = __toESM(require("firebase-functions/logger"));
+var sendVendorBookingConfirmation = (0, import_firestore5.onDocumentUpdated)({
+  document: "vendors/{vendorId}",
+  secrets: ["RESEND_API_KEY"]
+}, async (event) => {
+  const before = event.data?.before?.data();
+  const after = event.data?.after?.data();
+  if (!before || !after) return;
+  const hadCallTime = !!before.onboardingCallTime;
+  const hasCallTime = !!after.onboardingCallTime;
+  if (hadCallTime || !hasCallTime) return;
+  const vendorId = event.params.vendorId;
+  const businessName = after.businessName || "Contractor";
+  const email = after.email;
+  const phone = after.phone || "N/A";
+  const callTimeStr = after.onboardingCallTime;
+  logger6.info(`Vendor ${vendorId} (${businessName}) booked onboarding call at ${callTimeStr}`);
+  const startTime = new Date(callTimeStr);
+  const duration = 30;
+  const endTime = (0, import_date_fns2.addMinutes)(startTime, duration);
+  const icsContent = generateICS2({
+    start: startTime,
+    end: endTime,
+    summary: `XIRI Onboarding Call: ${businessName}`,
+    description: `Onboarding call with ${businessName}.
+
+Contact: ${email}
+Phone: ${phone}
+
+Power to the Facilities!`,
+    location: "Phone Call",
+    organizer: { name: "XIRI Facility Solutions", email: "onboarding@xiri.ai" }
+  });
+  if (email) {
+    const vendorHtml = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 22px;">You're Booked! \u{1F4C5}</h1>
+            </div>
+            <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+                <p>Hi <strong>${businessName}</strong>,</p>
+                <p>Your onboarding call has been confirmed:</p>
+                <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center;">
+                    <p style="margin: 0; font-size: 20px; font-weight: bold; color: #0c4a6e;">
+                        ${(0, import_date_fns2.format)(startTime, "EEEE, MMMM do")}
+                    </p>
+                    <p style="margin: 8px 0 0; font-size: 16px; color: #334155;">
+                        ${(0, import_date_fns2.format)(startTime, "h:mm a")} \u2022 ${duration} minutes
+                    </p>
+                </div>
+                <p style="font-size: 14px; color: #64748b;">A calendar invitation is attached to this email. We look forward to speaking with you!</p>
+                <p style="margin-top: 24px;">Best regards,<br/><strong>XIRI Facility Solutions Team</strong></p>
+            </div>
+        </div>`;
+    const vendorSent = await sendEmail(email, `\u{1F4C5} Onboarding Call Confirmed \u2014 ${(0, import_date_fns2.format)(startTime, "EEEE, MMMM do 'at' h:mm a")}`, vendorHtml, [
+      { filename: "xiri-onboarding-call.ics", content: icsContent }
+    ]);
+    if (vendorSent) {
+      logger6.info(`Calendar invite sent to vendor ${email}`);
+    } else {
+      logger6.error(`Failed to send calendar invite to vendor ${email}`);
+    }
+  }
+  const adminHtml = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #0c4a6e;">\u{1F4C5} Onboarding Call Booked</h2>
+        <p><strong>${businessName}</strong> has booked an onboarding call.</p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <p style="margin: 4px 0;"><strong>When:</strong> ${(0, import_date_fns2.format)(startTime, "EEEE, MMMM do 'at' h:mm a")}</p>
+            <p style="margin: 4px 0;"><strong>Email:</strong> ${email || "N/A"}</p>
+            <p style="margin: 4px 0;"><strong>Phone:</strong> ${phone}</p>
+        </div>
+        <p style="font-size: 12px; color: #94a3b8;">Vendor ID: ${vendorId}</p>
+    </div>`;
+  const adminSent = await sendEmail("chris@xiri.ai", `\u{1F4C5} Onboarding Call: ${businessName} \u2014 ${(0, import_date_fns2.format)(startTime, "MMM do 'at' h:mm a")}`, adminHtml, [
+    { filename: "xiri-onboarding-call.ics", content: icsContent }
+  ]);
+  if (adminSent) {
+    logger6.info("Calendar invite sent to chris@xiri.ai");
+  } else {
+    logger6.error("Failed to send calendar invite to chris@xiri.ai");
+  }
+});
+function generateICS2(event) {
+  const formatDate2 = (date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//XIRI//Facility Solutions//EN
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+UID:${Date.now()}@xiri.ai
+DTSTAMP:${formatDate2(/* @__PURE__ */ new Date())}
+DTSTART:${formatDate2(event.start)}
+DTEND:${formatDate2(event.end)}
+SUMMARY:${event.summary}
+DESCRIPTION:${event.description.replace(/\n/g, "\\n")}
+LOCATION:${event.location}
+ORGANIZER;CN=${event.organizer.name}:mailto:${event.organizer.email}
+ATTENDEE;CN=${event.organizer.name};RSVP=TRUE:mailto:${event.organizer.email}
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+END:VCALENDAR`;
+}
+
 // src/triggers/enrichFromWebsite.ts
 var import_https = require("firebase-functions/v2/https");
-var import_firestore5 = require("firebase-admin/firestore");
+var import_firestore6 = require("firebase-admin/firestore");
 var import_params2 = require("firebase-functions/params");
 var GEMINI_API_KEY2 = (0, import_params2.defineSecret)("GEMINI_API_KEY");
 var enrichFromWebsite = (0, import_https.onCall)({
@@ -20638,7 +20751,7 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db22 = (0, import_firestore5.getFirestore)();
+    const db22 = (0, import_firestore6.getFirestore)();
     const docRef = db22.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
@@ -20647,7 +20760,7 @@ var enrichFromWebsite = (0, import_https.onCall)({
     const existingData = docSnap.data();
     const enrichedFields = [];
     const updateData = {
-      updatedAt: import_firestore5.FieldValue.serverTimestamp()
+      updatedAt: import_firestore6.FieldValue.serverTimestamp()
     };
     if (verifiedEmail && !existingData.email) {
       updateData.email = verifiedEmail;
@@ -20684,7 +20797,7 @@ var enrichFromWebsite = (0, import_https.onCall)({
       }
     }
     updateData.enrichment = {
-      lastEnriched: import_firestore5.FieldValue.serverTimestamp(),
+      lastEnriched: import_firestore6.FieldValue.serverTimestamp(),
       enrichedFields,
       enrichmentSource: "manual",
       scrapedWebsite: website,
@@ -20708,24 +20821,24 @@ var enrichFromWebsite = (0, import_https.onCall)({
         confidence: scrapedData.confidence
       }
     };
-  } catch (error11) {
-    console.error("Enrichment error:", error11);
-    if (error11 instanceof import_https.HttpsError) {
-      throw error11;
+  } catch (error12) {
+    console.error("Enrichment error:", error12);
+    if (error12 instanceof import_https.HttpsError) {
+      throw error12;
     }
-    throw new import_https.HttpsError("internal", `Enrichment failed: ${error11.message}`);
+    throw new import_https.HttpsError("internal", `Enrichment failed: ${error12.message}`);
   }
 });
 
 // src/triggers/onOnboardingComplete.ts
-var import_firestore6 = require("firebase-functions/v2/firestore");
+var import_firestore7 = require("firebase-functions/v2/firestore");
 var admin9 = __toESM(require("firebase-admin"));
-var logger6 = __toESM(require("firebase-functions/logger"));
+var logger7 = __toESM(require("firebase-functions/logger"));
 var import_resend2 = require("resend");
 if (!admin9.apps.length) {
   admin9.initializeApp();
 }
-var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
+var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   document: "vendors/{vendorId}",
   secrets: ["RESEND_API_KEY"]
 }, async (event) => {
@@ -20740,7 +20853,7 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
   const phone = after.phone || "N/A";
   const track = after.onboardingTrack || "STANDARD";
   const lang = after.preferredLanguage || "en";
-  logger6.info(`Vendor ${vendorId} (${businessName}) completed onboarding. Sending notification.`);
+  logger7.info(`Vendor ${vendorId} (${businessName}) completed onboarding. Sending notification.`);
   const resend2 = new import_resend2.Resend(process.env.RESEND_API_KEY);
   const compliance = after.compliance || {};
   const complianceLines = [
@@ -20779,19 +20892,128 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
         </p>
     </div>`;
   try {
-    const { data, error: error11 } = await resend2.emails.send({
+    const { data, error: error12 } = await resend2.emails.send({
       from: "XIRI Facility Solutions <onboarding@xiri.ai>",
       to: "chris@xiri.ai",
       subject: `\u{1F3D7}\uFE0F Vendor Onboarded: ${businessName}`,
       html
     });
-    if (error11) {
-      logger6.error("Failed to send onboarding notification:", error11);
+    if (error12) {
+      logger7.error("Failed to send onboarding notification:", error12);
     } else {
-      logger6.info(`Notification sent to chris@xiri.ai (Resend ID: ${data?.id})`);
+      logger7.info(`Notification sent to chris@xiri.ai (Resend ID: ${data?.id})`);
     }
   } catch (err) {
-    logger6.error("Error sending onboarding notification:", err);
+    logger7.error("Error sending onboarding notification:", err);
+  }
+  const VENDOR_CHAT_WEBHOOK = "https://chat.googleapis.com/v1/spaces/AAQAYd8NzdA/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=WFryLEM_LRyVmM5I0m5A0KghBN8yL3Fw8vZMLgBDjOQ";
+  const complianceItems = [
+    compliance.hasBusinessEntity ? "\u2705 Business Entity" : "\u274C Business Entity",
+    compliance.generalLiability?.hasInsurance ? "\u2705 General Liability" : "\u274C General Liability",
+    compliance.workersComp?.hasInsurance ? "\u2705 Workers' Comp" : "\u274C Workers' Comp",
+    compliance.autoInsurance?.hasInsurance ? "\u2705 Auto Insurance" : "\u274C Auto Insurance"
+  ].join("  \u2022  ");
+  const acordStatus = compliance.acord25?.url ? "\u2705 Uploaded" : "\u23F3 Not yet";
+  const chatCard = {
+    header: {
+      title: "\u{1F3D7}\uFE0F  New Contractor Registered",
+      subtitle: businessName,
+      imageUrl: "https://xiri.ai/icon.png",
+      imageType: "CIRCLE"
+    },
+    sections: [
+      {
+        widgets: [
+          {
+            decoratedText: {
+              topLabel: "BUSINESS NAME",
+              text: businessName,
+              startIcon: { knownIcon: "PERSON" }
+            }
+          },
+          {
+            decoratedText: {
+              topLabel: "EMAIL",
+              text: email,
+              startIcon: { knownIcon: "EMAIL" }
+            }
+          },
+          {
+            decoratedText: {
+              topLabel: "PHONE",
+              text: phone,
+              startIcon: { knownIcon: "PHONE" }
+            }
+          },
+          {
+            decoratedText: {
+              topLabel: "ONBOARDING TRACK",
+              text: track === "FAST_TRACK" ? "\u26A1 Express Contract" : "\u{1F91D} Partner Network",
+              startIcon: { knownIcon: "BOOKMARK" }
+            }
+          },
+          {
+            decoratedText: {
+              topLabel: "LANGUAGE",
+              text: lang === "es" ? "\u{1F1EA}\u{1F1F8} Spanish" : "\u{1F1FA}\u{1F1F8} English",
+              startIcon: { knownIcon: "DESCRIPTION" }
+            }
+          }
+        ]
+      },
+      {
+        header: "Compliance Summary",
+        widgets: [
+          { textParagraph: { text: complianceItems } },
+          {
+            decoratedText: {
+              topLabel: "ACORD 25",
+              text: acordStatus,
+              startIcon: { knownIcon: "DESCRIPTION" }
+            }
+          }
+        ]
+      },
+      {
+        widgets: [
+          {
+            buttonList: {
+              buttons: [
+                {
+                  text: "\u{1F4CB} Review in CRM",
+                  onClick: { openLink: { url: dashboardLink } }
+                },
+                ...phone && phone !== "N/A" ? [{
+                  text: "\u{1F4DE} Call",
+                  onClick: { openLink: { url: `tel:${phone}` } }
+                }] : [],
+                ...email && email !== "N/A" ? [{
+                  text: "\u{1F4E7} Email",
+                  onClick: { openLink: { url: `mailto:${email}` } }
+                }] : []
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  };
+  try {
+    const chatResp = await fetch(VENDOR_CHAT_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: `New contractor registered: ${businessName} (${email})`,
+        cardsV2: [{ cardId: `vendor-onboard-${vendorId}`, card: chatCard }]
+      })
+    });
+    if (!chatResp.ok) {
+      logger7.error(`Google Chat webhook failed (${chatResp.status}):`, await chatResp.text());
+    } else {
+      logger7.info(`Google Chat notification sent for vendor ${vendorId}`);
+    }
+  } catch (chatErr) {
+    logger7.error("Google Chat notification error:", chatErr);
   }
   if (email && email !== "N/A") {
     const isSpanish = lang === "es";
@@ -20860,12 +21082,12 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
         html: vendorHtml
       });
       if (vendorError) {
-        logger6.error("Failed to send vendor confirmation:", vendorError);
+        logger7.error("Failed to send vendor confirmation:", vendorError);
       } else {
-        logger6.info(`Vendor confirmation sent to ${email}`);
+        logger7.info(`Vendor confirmation sent to ${email}`);
       }
     } catch (err) {
-      logger6.error("Error sending vendor confirmation:", err);
+      logger7.error("Error sending vendor confirmation:", err);
     }
   }
   const db22 = admin9.firestore();
@@ -20896,7 +21118,7 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
     complianceUpdate.status = "onboarding_scheduled";
   }
   await db22.collection("vendors").doc(vendorId).update(complianceUpdate);
-  logger6.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
+  logger7.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
   await db22.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
@@ -20907,15 +21129,15 @@ var onOnboardingComplete = (0, import_firestore6.onDocumentUpdated)({
 });
 
 // src/triggers/dripScheduler.ts
-var import_firestore7 = require("firebase-functions/v2/firestore");
+var import_firestore8 = require("firebase-functions/v2/firestore");
 var admin10 = __toESM(require("firebase-admin"));
-var logger7 = __toESM(require("firebase-functions/logger"));
+var logger8 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
 if (!admin10.apps.length) {
   admin10.initializeApp();
 }
 var db7 = admin10.firestore();
-var onAwaitingOnboarding = (0, import_firestore7.onDocumentUpdated)({
+var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
   document: "vendors/{vendorId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -20925,7 +21147,7 @@ var onAwaitingOnboarding = (0, import_firestore7.onDocumentUpdated)({
   if (after.status !== "awaiting_onboarding") return;
   const vendorId = event.params.vendorId;
   const businessName = after.businessName || "Unknown";
-  logger7.info(`Scheduling drip campaign for vendor ${vendorId} (${businessName})`);
+  logger8.info(`Scheduling drip campaign for vendor ${vendorId} (${businessName})`);
   const now = /* @__PURE__ */ new Date();
   const followUps = [
     { dayOffset: 3, sequence: 1, subject: "Quick reminder \u2014 complete your XIRI profile" },
@@ -20963,7 +21185,7 @@ var onAwaitingOnboarding = (0, import_firestore7.onDocumentUpdated)({
       metadata: { sequence: fu.sequence, dayOffset: fu.dayOffset, subject: fu.subject }
     });
   }
-  logger7.info(`Drip campaign scheduled for ${vendorId}: 4 follow-ups at days 3, 7, 14, 21`);
+  logger8.info(`Drip campaign scheduled for ${vendorId}: 4 follow-ups at days 3, 7, 14, 21`);
 });
 var STAGES_PAST_OUTREACH = /* @__PURE__ */ new Set([
   "compliance_review",
@@ -20972,7 +21194,7 @@ var STAGES_PAST_OUTREACH = /* @__PURE__ */ new Set([
   "ready_for_assignment",
   "active"
 ]);
-var onVendorAdvancedPastOutreach = (0, import_firestore7.onDocumentUpdated)({
+var onVendorAdvancedPastOutreach = (0, import_firestore8.onDocumentUpdated)({
   document: "vendors/{vendorId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -20984,7 +21206,7 @@ var onVendorAdvancedPastOutreach = (0, import_firestore7.onDocumentUpdated)({
   if (!wasInOutreach || !nowPastOutreach) return;
   const vendorId = event.params.vendorId;
   const businessName = after.businessName || "Unknown";
-  logger7.info(`Vendor ${vendorId} (${businessName}) advanced to '${after.status}' \u2014 cancelling scheduled outreach emails.`);
+  logger8.info(`Vendor ${vendorId} (${businessName}) advanced to '${after.status}' \u2014 cancelling scheduled outreach emails.`);
   const cancelledCount = await cancelVendorTasks(db7, vendorId);
   if (cancelledCount > 0) {
     await db7.collection("vendor_activities").add({
@@ -20998,14 +21220,14 @@ var onVendorAdvancedPastOutreach = (0, import_firestore7.onDocumentUpdated)({
         cancelledCount
       }
     });
-    logger7.info(`Cancelled ${cancelledCount} pending outreach tasks for vendor ${vendorId}.`);
+    logger8.info(`Cancelled ${cancelledCount} pending outreach tasks for vendor ${vendorId}.`);
   }
 });
 
 // src/triggers/handleUnsubscribe.ts
 var import_https2 = require("firebase-functions/v2/https");
 var admin11 = __toESM(require("firebase-admin"));
-var logger8 = __toESM(require("firebase-functions/logger"));
+var logger9 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
 if (!admin11.apps.length) {
   admin11.initializeApp();
@@ -21031,7 +21253,7 @@ var handleUnsubscribe = (0, import_https2.onRequest)({
       await handleVendorUnsubscribe(entityId, res);
     }
   } catch (err) {
-    logger8.error(`Error processing unsubscribe for ${entityType} ${entityId}:`, err);
+    logger9.error(`Error processing unsubscribe for ${entityType} ${entityId}:`, err);
     res.status(500).send(renderPage(
       "Something Went Wrong",
       'We encountered an error processing your request. Please try again or contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.',
@@ -21078,7 +21300,7 @@ async function handleVendorUnsubscribe(vendorId, res) {
       cancelledTasks: cancelledCount
     }
   });
-  logger8.info(`Vendor ${vendorId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
+  logger9.info(`Vendor ${vendorId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
   res.status(200).send(renderPage(
     "Unsubscribed Successfully",
     `${businessName} has been removed from our outreach list. You won't receive any more emails from XIRI Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
@@ -21125,7 +21347,7 @@ async function handleLeadUnsubscribe(leadId, res) {
       cancelledTasks: cancelledCount
     }
   });
-  logger8.info(`Lead ${leadId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
+  logger9.info(`Lead ${leadId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
   res.status(200).send(renderPage(
     "Unsubscribed Successfully",
     `${businessName} has been removed from our outreach list. You won't receive any more emails from XIRI Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
@@ -21162,11 +21384,11 @@ function renderPage(title, message, success) {
 }
 
 // src/triggers/sendOnboardingInvite.ts
-var import_firestore8 = require("firebase-functions/v2/firestore");
+var import_firestore9 = require("firebase-functions/v2/firestore");
 var admin12 = __toESM(require("firebase-admin"));
-var logger9 = __toESM(require("firebase-functions/logger"));
+var logger10 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
-var import_date_fns2 = require("date-fns");
+var import_date_fns3 = require("date-fns");
 var import_date_fns_tz = require("date-fns-tz");
 if (!admin12.apps.length) {
   admin12.initializeApp();
@@ -21174,7 +21396,7 @@ if (!admin12.apps.length) {
 var db9 = admin12.firestore();
 var ADMIN_EMAIL = "chris@xiri.ai";
 var EASTERN_TZ = "America/New_York";
-var sendOnboardingInvite = (0, import_firestore8.onDocumentUpdated)({
+var sendOnboardingInvite = (0, import_firestore9.onDocumentUpdated)({
   document: "vendors/{vendorId}",
   secrets: ["RESEND_API_KEY"]
 }, async (event) => {
@@ -21189,18 +21411,18 @@ var sendOnboardingInvite = (0, import_firestore8.onDocumentUpdated)({
   const contactName = after.contactName || businessName;
   const vendorId = event.params.vendorId;
   if (!callTime) {
-    logger9.warn(`Vendor ${vendorId} moved to onboarding_scheduled but no onboardingCallTime set.`);
+    logger10.warn(`Vendor ${vendorId} moved to onboarding_scheduled but no onboardingCallTime set.`);
     return;
   }
   if (!vendorEmail) {
-    logger9.warn(`Vendor ${vendorId} has no email. Skipping invite.`);
+    logger10.warn(`Vendor ${vendorId} has no email. Skipping invite.`);
     return;
   }
-  logger9.info(`Sending onboarding invite for vendor ${vendorId} (${businessName}) at ${callTime}`);
+  logger10.info(`Sending onboarding invite for vendor ${vendorId} (${businessName}) at ${callTime}`);
   const startTime = new Date(callTime);
   const duration = 30;
-  const endTime = (0, import_date_fns2.addMinutes)(startTime, duration);
-  const icsContent = generateICS2({
+  const endTime = (0, import_date_fns3.addMinutes)(startTime, duration);
+  const icsContent = generateICS3({
     start: startTime,
     end: endTime,
     summary: `XIRI Onboarding Call: ${businessName}`,
@@ -21271,9 +21493,9 @@ Power to the Facilities!`,
       emailSent: vendorSent
     }
   });
-  logger9.info(`Onboarding invite sent for vendor ${vendorId}. Vendor: ${vendorSent ? "\u2705" : "\u274C"}`);
+  logger10.info(`Onboarding invite sent for vendor ${vendorId}. Vendor: ${vendorSent ? "\u2705" : "\u274C"}`);
 });
-function generateICS2(event) {
+function generateICS3(event) {
   const formatDate2 = (date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   let attendeeLines = "";
   if (event.attendees) {
@@ -21568,11 +21790,11 @@ var respondToQuote = (0, import_https3.onCall)({
 });
 
 // src/triggers/processMailQueue.ts
-var import_firestore9 = require("firebase-functions/v2/firestore");
+var import_firestore10 = require("firebase-functions/v2/firestore");
 var admin14 = __toESM(require("firebase-admin"));
 init_emailUtils();
 var db11 = admin14.firestore();
-var processMailQueue = (0, import_firestore9.onDocumentCreated)({
+var processMailQueue = (0, import_firestore10.onDocumentCreated)({
   document: "mail_queue/{docId}",
   secrets: ["RESEND_API_KEY"]
 }, async (event) => {
@@ -21616,11 +21838,11 @@ var processMailQueue = (0, import_firestore9.onDocumentCreated)({
       await docRef.update({ status: "failed", error: "Resend API returned failure" });
       console.error(`\u274C Mail failed: ${templateType} \u2192 ${to}`);
     }
-  } catch (error11) {
-    console.error("Error processing mail_queue:", error11);
+  } catch (error12) {
+    console.error("Error processing mail_queue:", error12);
     await docRef.update({
       status: "failed",
-      error: error11.message || "Unknown error",
+      error: error12.message || "Unknown error",
       failedAt: admin14.firestore.FieldValue.serverTimestamp()
     });
   }
@@ -21754,9 +21976,9 @@ function buildVendorRemittanceEmail(data) {
 }
 
 // src/triggers/onVendorReady.ts
-var import_firestore10 = require("firebase-functions/v2/firestore");
+var import_firestore11 = require("firebase-functions/v2/firestore");
 var admin15 = __toESM(require("firebase-admin"));
-var logger10 = __toESM(require("firebase-functions/logger"));
+var logger11 = __toESM(require("firebase-functions/logger"));
 
 // ../shared/src/TaxCertificateService.ts
 var import_pdf_lib = require("pdf-lib");
@@ -21838,10 +22060,10 @@ async function generateST1201(vendorData, xiriData, projectData) {
       // ISO for storage
       expiryDate
     };
-  } catch (error11) {
+  } catch (error12) {
     return {
       success: false,
-      error: `Failed to generate ST-120.1: ${error11.message}`
+      error: `Failed to generate ST-120.1: ${error12.message}`
     };
   }
 }
@@ -21851,7 +22073,7 @@ if (!admin15.apps.length) {
   admin15.initializeApp();
 }
 var STORAGE_PATH = "tax-certificates/st-120-1";
-var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
+var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   document: "work_orders/{workOrderId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -21861,23 +22083,23 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
   const newVendorId = after.vendorId || null;
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
-  logger10.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
+  logger11.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
   const db22 = admin15.firestore();
   let vendorData;
   try {
     const vendorSnap = await db22.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
-      logger10.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
+      logger11.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
     }
     vendorData = vendorSnap.data();
   } catch (err) {
-    logger10.error(`[ST-120.1] Error loading vendor ${newVendorId}:`, err);
+    logger11.error(`[ST-120.1] Error loading vendor ${newVendorId}:`, err);
     return;
   }
   const salesTaxId = vendorData.compliance?.salesTaxId?.trim();
   if (!salesTaxId) {
-    logger10.info(`[ST-120.1] Vendor ${newVendorId} has no salesTaxId \u2014 skipping certificate.`);
+    logger11.info(`[ST-120.1] Vendor ${newVendorId} has no salesTaxId \u2014 skipping certificate.`);
     await db22.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_SKIPPED",
@@ -21895,7 +22117,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
         leadData = leadSnap.data();
       }
     } catch (err) {
-      logger10.warn(`[ST-120.1] Could not load lead ${after.leadId}:`, err);
+      logger11.warn(`[ST-120.1] Could not load lead ${after.leadId}:`, err);
     }
   }
   let xiriData;
@@ -21903,7 +22125,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
     const settingsSnap = await db22.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
-      logger10.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
+      logger11.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
       return;
     }
     xiriData = {
@@ -21918,7 +22140,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
       signerTitle: settings.signerTitle || ""
     };
   } catch (err) {
-    logger10.error("[ST-120.1] Error loading corporate settings:", err);
+    logger11.error("[ST-120.1] Error loading corporate settings:", err);
     return;
   }
   const vendorCertData = {
@@ -21945,7 +22167,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
   };
   const result = await generateST1201(vendorCertData, xiriData, projectDataInput);
   if (!result.success || !result.pdfBytes) {
-    logger10.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
+    logger11.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
     await db22.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
@@ -21977,7 +22199,7 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
     });
     pdfUrl = signedUrl;
   } catch (err) {
-    logger10.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err);
+    logger11.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err);
     return;
   }
   await db22.collection("work_orders").doc(workOrderId).update({
@@ -22024,19 +22246,19 @@ var onWorkOrderAssigned = (0, import_firestore10.onDocumentUpdated)({
       pdfUrl
     }
   });
-  logger10.info(`[ST-120.1] Certificate generated and emailed for WO ${workOrderId}, vendor ${newVendorId}.`);
+  logger11.info(`[ST-120.1] Certificate generated and emailed for WO ${workOrderId}, vendor ${newVendorId}.`);
 });
 
 // src/triggers/onLeadQualified.ts
-var import_firestore11 = require("firebase-functions/v2/firestore");
+var import_firestore12 = require("firebase-functions/v2/firestore");
 var admin16 = __toESM(require("firebase-admin"));
-var logger11 = __toESM(require("firebase-functions/logger"));
+var logger12 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
 if (!admin16.apps.length) {
   admin16.initializeApp();
 }
 var db12 = admin16.firestore();
-var onLeadQualified = (0, import_firestore11.onDocumentUpdated)({
+var onLeadQualified = (0, import_firestore12.onDocumentUpdated)({
   document: "leads/{leadId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -22048,7 +22270,7 @@ var onLeadQualified = (0, import_firestore11.onDocumentUpdated)({
   const businessName = after.businessName || "Unknown";
   const contactEmail = after.email;
   if (!contactEmail || contactEmail.trim().length === 0) {
-    logger11.warn(`[SalesOutreach] Lead ${leadId} (${businessName}) has no email \u2014 marking NEEDS_MANUAL.`);
+    logger12.warn(`[SalesOutreach] Lead ${leadId} (${businessName}) has no email \u2014 marking NEEDS_MANUAL.`);
     await db12.collection("leads").doc(leadId).update({
       outreachStatus: "NEEDS_MANUAL"
     });
@@ -22060,7 +22282,7 @@ var onLeadQualified = (0, import_firestore11.onDocumentUpdated)({
     });
     return;
   }
-  logger11.info(`[SalesOutreach] Scheduling drip campaign for lead ${leadId} (${businessName})`);
+  logger12.info(`[SalesOutreach] Scheduling drip campaign for lead ${leadId} (${businessName})`);
   const now = /* @__PURE__ */ new Date();
   const leadType = after.leadType || "direct";
   let steps;
@@ -22121,13 +22343,13 @@ var onLeadQualified = (0, import_firestore11.onDocumentUpdated)({
     createdAt: /* @__PURE__ */ new Date(),
     metadata: { followUpCount: steps.length, schedule, leadType }
   });
-  logger11.info(`[SalesOutreach] ${leadType} drip campaign scheduled for lead ${leadId}: ${steps.length} emails (${schedule})`);
+  logger12.info(`[SalesOutreach] ${leadType} drip campaign scheduled for lead ${leadId}: ${steps.length} emails (${schedule})`);
 });
 
 // src/triggers/commissionTriggers.ts
-var import_firestore12 = require("firebase-functions/v2/firestore");
+var import_firestore13 = require("firebase-functions/v2/firestore");
 var admin17 = __toESM(require("firebase-admin"));
-var logger12 = __toESM(require("firebase-functions/logger"));
+var logger13 = __toESM(require("firebase-functions/logger"));
 if (!admin17.apps.length) {
   admin17.initializeApp();
 }
@@ -22155,7 +22377,7 @@ async function getCommissionConfig() {
   }
   return DEFAULTS;
 }
-var onQuoteAccepted = (0, import_firestore12.onDocumentUpdated)({
+var onQuoteAccepted = (0, import_firestore13.onDocumentUpdated)({
   document: "quotes/{quoteId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -22166,7 +22388,7 @@ var onQuoteAccepted = (0, import_firestore12.onDocumentUpdated)({
   const quoteId = event.params.quoteId;
   const existingComm = await db13.collection("commissions").where("quoteId", "==", quoteId).limit(1).get();
   if (!existingComm.empty) {
-    logger12.info(`[Commission] Commission already exists for quote ${quoteId} \u2014 skipping duplicate`);
+    logger13.info(`[Commission] Commission already exists for quote ${quoteId} \u2014 skipping duplicate`);
     return;
   }
   const cfg = await getCommissionConfig();
@@ -22243,9 +22465,9 @@ var onQuoteAccepted = (0, import_firestore12.onDocumentUpdated)({
     commissionType: type,
     createdAt: admin17.firestore.FieldValue.serverTimestamp()
   });
-  logger12.info(`[Commission] Created ${type} commission for staff ${assignedTo}: $${totalCommission} (${(rate * 100).toFixed(0)}% of $${acv} ACV) \u2014 quote ${quoteId}`);
+  logger13.info(`[Commission] Created ${type} commission for staff ${assignedTo}: $${totalCommission} (${(rate * 100).toFixed(0)}% of $${acv} ACV) \u2014 quote ${quoteId}`);
 });
-var onInvoicePaid = (0, import_firestore12.onDocumentUpdated)({
+var onInvoicePaid = (0, import_firestore13.onDocumentUpdated)({
   document: "invoices/{invoiceId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -22264,7 +22486,7 @@ var onInvoicePaid = (0, import_firestore12.onDocumentUpdated)({
         const freshDoc = await txn.get(commDoc.ref);
         const freshData = freshDoc.data();
         if (!freshData || freshData.status !== "PENDING") {
-          logger12.info(`[Commission] Commission ${commDoc.id} already activated (status: ${freshData?.status}) \u2014 skipping`);
+          logger13.info(`[Commission] Commission ${commDoc.id} already activated (status: ${freshData?.status}) \u2014 skipping`);
           return;
         }
         const schedule2 = [...freshData.payoutSchedule];
@@ -22291,13 +22513,13 @@ var onInvoicePaid = (0, import_firestore12.onDocumentUpdated)({
         description: `Payout 1 of ${schedule.length}: $${schedule[0].amount.toFixed(2)} (${schedule[0].percentage}%) \u2014 triggered by invoice payment`,
         createdAt: now
       });
-      logger12.info(`[Commission] Activated commission ${commDoc.id}: Payout 1 of $${schedule[0].amount} paid`);
+      logger13.info(`[Commission] Activated commission ${commDoc.id}: Payout 1 of $${schedule[0].amount} paid`);
     } catch (txnErr) {
-      logger12.error(`[Commission] Transaction failed for commission ${commDoc.id}:`, txnErr.message);
+      logger13.error(`[Commission] Transaction failed for commission ${commDoc.id}:`, txnErr.message);
     }
   }
 });
-var onWorkOrderHandoff = (0, import_firestore12.onDocumentUpdated)({
+var onWorkOrderHandoff = (0, import_firestore13.onDocumentUpdated)({
   document: "work_orders/{workOrderId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -22325,7 +22547,7 @@ var onWorkOrderHandoff = (0, import_firestore12.onDocumentUpdated)({
     description: `Account handed off from Sales to FSM (first work order assigned)`,
     createdAt: admin17.firestore.FieldValue.serverTimestamp()
   });
-  logger12.info(`[Handoff] Lead ${leadId} handed off to FSM ${fsmId} via work order ${event.params.workOrderId}`);
+  logger13.info(`[Handoff] Lead ${leadId} handed off to FSM ${fsmId} via work order ${event.params.workOrderId}`);
   try {
     const fsmDoc = await db13.collection("users").doc(fsmId).get();
     const fsmEmail = fsmDoc.data()?.email || "chris@xiri.ai";
@@ -22374,12 +22596,12 @@ var onWorkOrderHandoff = (0, import_firestore12.onDocumentUpdated)({
       status: "pending",
       createdAt: admin17.firestore.FieldValue.serverTimestamp()
     });
-    logger12.info(`[Handoff] FSM notification email queued to ${fsmEmail} for client ${clientName}`);
+    logger13.info(`[Handoff] FSM notification email queued to ${fsmEmail} for client ${clientName}`);
   } catch (emailErr) {
-    logger12.error(`[Handoff] Failed to send FSM email:`, emailErr.message);
+    logger13.error(`[Handoff] Failed to send FSM email:`, emailErr.message);
   }
 });
-var onClientCancelled = (0, import_firestore12.onDocumentUpdated)({
+var onClientCancelled = (0, import_firestore13.onDocumentUpdated)({
   document: "leads/{leadId}"
 }, async (event) => {
   const before = event.data?.before?.data();
@@ -22395,7 +22617,7 @@ var onClientCancelled = (0, import_firestore12.onDocumentUpdated)({
     const commission = commDoc.data();
     const clawbackEnd = commission.clawbackWindowEnd?.toDate?.() || commission.clawbackWindowEnd;
     if (!clawbackEnd || now > new Date(clawbackEnd)) {
-      logger12.info(`[Clawback] Commission ${commDoc.id} past clawback window \u2014 no action`);
+      logger13.info(`[Clawback] Commission ${commDoc.id} past clawback window \u2014 no action`);
       continue;
     }
     const schedule = [...commission.payoutSchedule];
@@ -22420,14 +22642,14 @@ var onClientCancelled = (0, import_firestore12.onDocumentUpdated)({
       description: `Client churned within clawback window. $${cancelledAmount.toFixed(2)} in unpaid payouts cancelled.`,
       createdAt: now
     });
-    logger12.info(`[Clawback] Commission ${commDoc.id}: $${cancelledAmount} in unpaid payouts cancelled (client churn)`);
+    logger13.info(`[Clawback] Commission ${commDoc.id}: $${cancelledAmount} in unpaid payouts cancelled (client churn)`);
   }
 });
 
 // src/triggers/commissionScheduled.ts
 var import_scheduler2 = require("firebase-functions/v2/scheduler");
 var admin18 = __toESM(require("firebase-admin"));
-var logger13 = __toESM(require("firebase-functions/logger"));
+var logger14 = __toESM(require("firebase-functions/logger"));
 if (!admin18.apps.length) {
   admin18.initializeApp();
 }
@@ -22448,7 +22670,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
   timeZone: "America/New_York"
 }, async () => {
   const now = /* @__PURE__ */ new Date();
-  logger13.info(`[CommissionPayouts] Processing scheduled payouts for ${now.toISOString()}`);
+  logger14.info(`[CommissionPayouts] Processing scheduled payouts for ${now.toISOString()}`);
   const commSnap = await db14.collection("commissions").where("status", "==", "ACTIVE").get();
   let processed = 0;
   let paid = 0;
@@ -22465,7 +22687,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
       if (leadData?.status === "churned" || leadData?.status === "lost") {
         entry.status = "CANCELLED";
         changed2 = true;
-        logger13.info(`[CommissionPayouts] Skipping payout \u2014 client ${commission.leadId} is ${leadData?.status}`);
+        logger14.info(`[CommissionPayouts] Skipping payout \u2014 client ${commission.leadId} is ${leadData?.status}`);
         continue;
       }
       entry.status = "PAID";
@@ -22480,7 +22702,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
         description: `Scheduled payout: $${entry.amount.toFixed(2)} (${entry.percentage}%)`,
         createdAt: now
       });
-      logger13.info(`[CommissionPayouts] Paid $${entry.amount} to ${commission.staffId} (commission ${commDoc.id})`);
+      logger14.info(`[CommissionPayouts] Paid $${entry.amount} to ${commission.staffId} (commission ${commDoc.id})`);
     }
     if (changed2) {
       const allDone = schedule.every((e) => e.status === "PAID" || e.status === "CANCELLED");
@@ -22500,7 +22722,7 @@ var processCommissionPayouts = (0, import_scheduler2.onSchedule)({
       processed++;
     }
   }
-  logger13.info(`[CommissionPayouts] Done: ${processed} commissions processed, ${paid} payouts made`);
+  logger14.info(`[CommissionPayouts] Done: ${processed} commissions processed, ${paid} payouts made`);
 });
 var calculateNrr = (0, import_scheduler2.onSchedule)({
   schedule: "0 0 1 1,4,7,10 *",
@@ -22521,7 +22743,7 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
     // Oct → calc Q3
   };
   const quarter = quarterMap[currentMonth] || `${currentYear}-Q${Math.ceil((currentMonth + 1) / 3)}`;
-  logger13.info(`[NRR] Calculating Net Revenue Retention for ${quarter}`);
+  logger14.info(`[NRR] Calculating Net Revenue Retention for ${quarter}`);
   const leadsSnap = await db14.collection("leads").where("handedOffToFsm", "!=", null).get();
   const fsmPortfolios = /* @__PURE__ */ new Map();
   for (const leadDoc of leadsSnap.docs) {
@@ -22618,21 +22840,21 @@ var calculateNrr = (0, import_scheduler2.onSchedule)({
         createdAt: now
       });
     }
-    logger13.info(`[NRR] FSM ${fsmId}: NRR=${(nrr * 100).toFixed(1)}%, portfolio=$${portfolio.currentMrr}/mo, bonus=$${bonusAmount}`);
+    logger14.info(`[NRR] FSM ${fsmId}: NRR=${(nrr * 100).toFixed(1)}%, portfolio=$${portfolio.currentMrr}/mo, bonus=$${bonusAmount}`);
   }
-  logger13.info(`[NRR] Completed NRR calculation for ${quarter}: ${fsmPortfolios.size} FSMs processed`);
+  logger14.info(`[NRR] Completed NRR calculation for ${quarter}: ${fsmPortfolios.size} FSMs processed`);
 });
 
 // src/triggers/onAuditSubmitted.ts
-var import_firestore13 = require("firebase-functions/v2/firestore");
+var import_firestore14 = require("firebase-functions/v2/firestore");
 var admin19 = __toESM(require("firebase-admin"));
-var logger14 = __toESM(require("firebase-functions/logger"));
+var logger15 = __toESM(require("firebase-functions/logger"));
 if (!admin19.apps.length) {
   admin19.initializeApp();
 }
 var db15 = admin19.firestore();
 var INTERNAL_NOTIFY_EMAIL = "chris@xiri.ai";
-var onAuditSubmitted = (0, import_firestore13.onDocumentCreated)({
+var onAuditSubmitted = (0, import_firestore14.onDocumentCreated)({
   document: "leads/{leadId}"
 }, async (event) => {
   const snap = event.data;
@@ -22645,7 +22867,7 @@ var onAuditSubmitted = (0, import_firestore13.onDocumentCreated)({
   const contactEmail = data.email || data.contactEmail;
   const address = data.address || data.location || "";
   if (!contactEmail) {
-    logger14.warn(`[AuditSubmitted] Lead ${leadId} has no email \u2014 skipping confirmation`);
+    logger15.warn(`[AuditSubmitted] Lead ${leadId} has no email \u2014 skipping confirmation`);
     return;
   }
   await db15.collection("mail_queue").add({
@@ -22676,7 +22898,7 @@ var onAuditSubmitted = (0, import_firestore13.onDocumentCreated)({
     description: `New audit lead from ${businessName} (${contactEmail})`,
     createdAt: admin19.firestore.FieldValue.serverTimestamp()
   });
-  logger14.info(`[AuditSubmitted] Confirmation + internal alert sent for lead ${leadId} (${businessName})`);
+  logger15.info(`[AuditSubmitted] Confirmation + internal alert sent for lead ${leadId} (${businessName})`);
 });
 function buildAuditConfirmationEmail(contactName, businessName) {
   const greeting = contactName ? `Hi ${contactName}` : "Hello";
@@ -22758,7 +22980,7 @@ function buildInternalNotificationEmail(leadId, contactName, contactEmail, busin
 }
 
 // src/triggers/referralPartnerNotifications.ts
-var import_firestore14 = require("firebase-functions/v2/firestore");
+var import_firestore15 = require("firebase-functions/v2/firestore");
 var import_v2 = require("firebase-functions/v2");
 init_emailUtils();
 var admin20 = __toESM(require("firebase-admin"));
@@ -22768,7 +22990,7 @@ var WALKTHROUGH_BONUS = 100;
 var CLOSE_BONUS = 400;
 var RECURRING_BONUS = 50;
 var PAYMENT_INFO_BASE = "https://xiri.ai/referral/payment-info";
-var onReferralLeadWritten = (0, import_firestore14.onDocumentWritten)({
+var onReferralLeadWritten = (0, import_firestore15.onDocumentWritten)({
   document: "referral_leads/{referralId}",
   secrets: ["RESEND_API_KEY"],
   timeoutSeconds: TIMEOUT_SECONDS2
@@ -22961,9 +23183,9 @@ async function logActivity(referralId, type, subject, to, success) {
 }
 
 // src/triggers/onAuditFailed.ts
-var import_firestore15 = require("firebase-functions/v2/firestore");
+var import_firestore16 = require("firebase-functions/v2/firestore");
 var admin21 = __toESM(require("firebase-admin"));
-var logger16 = __toESM(require("firebase-functions/logger"));
+var logger17 = __toESM(require("firebase-functions/logger"));
 if (!admin21.apps.length) {
   admin21.initializeApp();
 }
@@ -22971,7 +23193,7 @@ var db17 = admin21.firestore();
 var FAIL_THRESHOLD = 70;
 var SUSPENSION_THRESHOLD = 3;
 var INTERNAL_NOTIFY_EMAIL2 = "chris@xiri.ai";
-var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
+var onAuditFailed = (0, import_firestore16.onDocumentCreated)({
   document: "audits/{auditId}"
 }, async (event) => {
   const snap = event.data;
@@ -22984,7 +23206,7 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
   const vendorId = data.vendorId;
   const locationName = data.locationName || data.location || "Unknown Location";
   const clientName = data.clientName || data.businessName || "";
-  logger16.info(`[AuditFailed] Audit ${auditId} scored ${overallScore}% (threshold: ${FAIL_THRESHOLD}%)`);
+  logger17.info(`[AuditFailed] Audit ${auditId} scored ${overallScore}% (threshold: ${FAIL_THRESHOLD}%)`);
   if (workOrderId) {
     await db17.collection("work_orders").doc(workOrderId).update({
       status: "needs_remediation",
@@ -23094,7 +23316,7 @@ var onAuditFailed = (0, import_firestore15.onDocumentCreated)({
     description: `Audit failed at ${locationName} (${overallScore}%). Vendor: ${vendorName}. ${vendorSuspended ? "VENDOR AUTO-SUSPENDED." : ""}`,
     createdAt: admin21.firestore.FieldValue.serverTimestamp()
   });
-  logger16.info(`[AuditFailed] Escalation complete: audit ${auditId}, score ${overallScore}%, vendor ${vendorName} (failures: ${vendorFailCount})${vendorSuspended ? " \u2014 SUSPENDED" : ""}`);
+  logger17.info(`[AuditFailed] Escalation complete: audit ${auditId}, score ${overallScore}%, vendor ${vendorName} (failures: ${vendorFailCount})${vendorSuspended ? " \u2014 SUSPENDED" : ""}`);
 });
 function buildAuditFailedEmail(data) {
   return `
@@ -23143,7 +23365,7 @@ function buildAuditFailedEmail(data) {
 // src/triggers/generateMonthlyInvoices.ts
 var import_scheduler3 = require("firebase-functions/v2/scheduler");
 var admin22 = __toESM(require("firebase-admin"));
-var logger17 = __toESM(require("firebase-functions/logger"));
+var logger18 = __toESM(require("firebase-functions/logger"));
 if (!admin22.apps.length) {
   admin22.initializeApp();
 }
@@ -23153,14 +23375,14 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
   // 6 AM on 1st of every month
   timeZone: "America/New_York"
 }, async () => {
-  logger17.info("[MonthlyInvoices] Starting monthly invoice generation...");
+  logger18.info("[MonthlyInvoices] Starting monthly invoice generation...");
   const now = /* @__PURE__ */ new Date();
   const periodEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   const periodStart = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), 1);
   const periodLabel = periodStart.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const contractsSnap = await db18.collection("contracts").where("status", "==", "active").get();
   if (contractsSnap.empty) {
-    logger17.info("[MonthlyInvoices] No active contracts found. Done.");
+    logger18.info("[MonthlyInvoices] No active contracts found. Done.");
     return;
   }
   let invoicesCreated = 0;
@@ -23262,9 +23484,9 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
       createdAt: admin22.firestore.FieldValue.serverTimestamp()
     });
     invoicesCreated++;
-    logger17.info(`[MonthlyInvoices] Created invoice ${invoiceRef.id} for ${clientName}: $${totalAmount} (${invoiceLineItems.length} items: ${invoiceLineItems.filter((i) => i.billingType === "recurring").length} recurring, ${invoiceLineItems.filter((i) => i.billingType === "one_time").length} one-time)`);
+    logger18.info(`[MonthlyInvoices] Created invoice ${invoiceRef.id} for ${clientName}: $${totalAmount} (${invoiceLineItems.length} items: ${invoiceLineItems.filter((i) => i.billingType === "recurring").length} recurring, ${invoiceLineItems.filter((i) => i.billingType === "one_time").length} one-time)`);
   }
-  logger17.info(`[MonthlyInvoices] Complete: ${invoicesCreated} invoices created, ${invoicesSkipped} contracts skipped`);
+  logger18.info(`[MonthlyInvoices] Complete: ${invoicesCreated} invoices created, ${invoicesSkipped} contracts skipped`);
 });
 
 // src/triggers/resendWebhook.ts
@@ -23461,17 +23683,17 @@ var resendWebhook = (0, import_https4.onRequest)({
     }
     import_v22.logger.info(`Resend webhook: processed ${eventType} for ${entityType} ${entityId}`);
     res.status(200).json({ ok: true, processed: eventType });
-  } catch (error11) {
-    import_v22.logger.error("Resend webhook error:", error11);
+  } catch (error12) {
+    import_v22.logger.error("Resend webhook error:", error12);
     res.status(500).json({ error: "Internal error" });
   }
 });
 
 // src/triggers/onLeadUpdated.ts
-var import_firestore16 = require("firebase-functions/v2/firestore");
+var import_firestore17 = require("firebase-functions/v2/firestore");
 var import_v23 = require("firebase-functions/v2");
 var changed = (before, after, field) => after[field] && before[field] !== after[field];
-var onLeadUpdated = (0, import_firestore16.onDocumentUpdated)("leads/{leadId}", async (event) => {
+var onLeadUpdated = (0, import_firestore17.onDocumentUpdated)("leads/{leadId}", async (event) => {
   const before = event.data?.before?.data();
   const after = event.data?.after?.data();
   if (!before || !after) return;
@@ -23529,7 +23751,7 @@ var onLeadUpdated = (0, import_firestore16.onDocumentUpdated)("leads/{leadId}", 
     import_v23.logger.info(`[Cascade:Lead] Updated ${count} docs for "${after.businessName}"`);
   }
 });
-var onVendorUpdated = (0, import_firestore16.onDocumentUpdated)("vendors/{vendorId}", async (event) => {
+var onVendorUpdated = (0, import_firestore17.onDocumentUpdated)("vendors/{vendorId}", async (event) => {
   const before = event.data?.before?.data();
   const after = event.data?.after?.data();
   if (!before || !after) return;
@@ -23577,7 +23799,7 @@ var onVendorUpdated = (0, import_firestore16.onDocumentUpdated)("vendors/{vendor
     import_v23.logger.info(`[Cascade:Vendor] Updated ${count} docs for "${after.businessName}"`);
   }
 });
-var onStaffUpdated = (0, import_firestore16.onDocumentUpdated)("users/{userId}", async (event) => {
+var onStaffUpdated = (0, import_firestore17.onDocumentUpdated)("users/{userId}", async (event) => {
   const before = event.data?.before?.data();
   const after = event.data?.after?.data();
   if (!before || !after) return;
@@ -23623,7 +23845,7 @@ var onStaffUpdated = (0, import_firestore16.onDocumentUpdated)("users/{userId}",
 var import_scheduler4 = require("firebase-functions/v2/scheduler");
 var import_https5 = require("firebase-functions/v2/https");
 var admin24 = __toESM(require("firebase-admin"));
-var logger20 = __toESM(require("firebase-functions/logger"));
+var logger21 = __toESM(require("firebase-functions/logger"));
 init_promptUtils();
 if (!admin24.apps.length) {
   admin24.initializeApp();
@@ -23635,7 +23857,7 @@ var weeklyTemplateOptimizer = (0, import_scheduler4.onSchedule)({
   secrets: ["GEMINI_API_KEY"],
   memory: "512MiB"
 }, async () => {
-  logger20.info("Running weekly template optimization check...");
+  logger21.info("Running weekly template optimization check...");
   await optimizeUnderperformingTemplates();
 });
 var optimizeTemplate = (0, import_https5.onCall)({
@@ -23667,7 +23889,7 @@ async function optimizeUnderperformingTemplates() {
       if (!stats || stats.sent < MIN_SENDS_FOR_ANALYSIS) continue;
       const openRate = stats.sent > 0 ? stats.opened / stats.sent : 0;
       if (openRate < LOW_OPEN_RATE_THRESHOLD) {
-        logger20.info(`Template ${doc.id} (${category}): ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
+        logger21.info(`Template ${doc.id} (${category}): ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
         await optimizeSingleTemplate(doc.id);
         optimized.push(doc.id);
       }
@@ -23682,9 +23904,9 @@ async function optimizeUnderperformingTemplates() {
       read: false,
       createdAt: /* @__PURE__ */ new Date()
     });
-    logger20.info(`Notification created for ${optimized.length} optimized templates.`);
+    logger21.info(`Notification created for ${optimized.length} optimized templates.`);
   } else {
-    logger20.info("No underperforming templates found.");
+    logger21.info("No underperforming templates found.");
   }
   return optimized;
 }
@@ -23754,7 +23976,7 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
     const result = await response.json();
     const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
-      logger20.error("No response from Gemini for template optimization");
+      logger21.error("No response from Gemini for template optimization");
       throw new import_https5.HttpsError("internal", "Gemini returned empty response");
     }
     const cleanText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
@@ -23767,7 +23989,7 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
       }),
       lastOptimizedAt: /* @__PURE__ */ new Date()
     });
-    logger20.info(`Template ${templateId}: AI suggestions stored (${suggestions.suggestions?.length || 0} variants)`);
+    logger21.info(`Template ${templateId}: AI suggestions stored (${suggestions.suggestions?.length || 0} variants)`);
     return {
       templateId,
       analysis: suggestions.analysis,
@@ -23775,7 +23997,7 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
       shortUrlTest: suggestions.shortUrlTest
     };
   } catch (err) {
-    logger20.error(`AI optimization failed for ${templateId}:`, err);
+    logger21.error(`AI optimization failed for ${templateId}:`, err);
     throw new import_https5.HttpsError("internal", `AI optimization failed: ${err}`);
   }
 }
@@ -23783,7 +24005,7 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
 // src/triggers/startLeadSequence.ts
 var import_https6 = require("firebase-functions/v2/https");
 var admin25 = __toESM(require("firebase-admin"));
-var logger21 = __toESM(require("firebase-functions/logger"));
+var logger22 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
 if (!admin25.apps.length) {
   admin25.initializeApp();
@@ -23813,10 +24035,10 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
   const { cancelLeadTasks: cancelLeadTasks2 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
   const cancelledCount = await cancelLeadTasks2(db21, leadId);
   if (cancelledCount > 0) {
-    logger21.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
+    logger22.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
   }
   const leadType = lead.leadType || "direct";
-  logger21.info(`[StartSequence] Manually starting ${leadType} sequence for lead ${leadId} (${businessName})`);
+  logger22.info(`[StartSequence] Manually starting ${leadType} sequence for lead ${leadId} (${businessName})`);
   const now = /* @__PURE__ */ new Date();
   let steps;
   if (leadType === "enterprise") {
@@ -23880,7 +24102,7 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     startedBy: request.auth?.uid || "manual",
     metadata: { leadType, stepCount: steps.length, schedule }
   });
-  logger21.info(`[StartSequence] ${leadType} sequence started for ${leadId}: ${steps.length} emails`);
+  logger22.info(`[StartSequence] ${leadType} sequence started for ${leadId}: ${steps.length} emails`);
   return {
     success: true,
     message: `${leadType} sequence started for ${businessName}`,
@@ -24450,11 +24672,11 @@ async function publishScheduledPosts() {
         });
         console.error(`[SocialPublisher] Failed to publish ${doc.id}: ${result.error}`);
       }
-    } catch (error11) {
-      console.error(`[SocialPublisher] Error publishing ${doc.id}:`, error11);
+    } catch (error12) {
+      console.error(`[SocialPublisher] Error publishing ${doc.id}:`, error12);
       await doc.ref.update({
         status: "failed",
-        error: error11.message || "Unexpected error",
+        error: error12.message || "Unexpected error",
         failedAt: /* @__PURE__ */ new Date()
       });
     }
@@ -24516,9 +24738,9 @@ var adminUpdateAuthUser = (0, import_https8.onCall)({
   try {
     await (0, import_auth.getAuth)().updateUser(uid, updatePayload);
     return { success: true, message: `Auth updated for ${uid}` };
-  } catch (error11) {
-    console.error("adminUpdateAuthUser error:", error11);
-    throw new import_https8.HttpsError("internal", error11.message || "Failed to update Auth user");
+  } catch (error12) {
+    console.error("adminUpdateAuthUser error:", error12);
+    throw new import_https8.HttpsError("internal", error12.message || "Failed to update Auth user");
   }
 });
 var adminCreateUser = (0, import_https8.onCall)({
@@ -24610,12 +24832,12 @@ var adminCreateUser = (0, import_https8.onCall)({
       emailSent,
       message: emailSent ? `User ${email} created and invite email sent with login credentials.` : `User ${email} created. Email failed \u2014 share the temp password manually.`
     };
-  } catch (error11) {
-    console.error("adminCreateUser error:", error11);
-    if (error11.code === "auth/email-already-exists") {
+  } catch (error12) {
+    console.error("adminCreateUser error:", error12);
+    if (error12.code === "auth/email-already-exists") {
       throw new import_https8.HttpsError("already-exists", "A user with this email already exists");
     }
-    throw new import_https8.HttpsError("internal", error11.message || "Failed to create user");
+    throw new import_https8.HttpsError("internal", error12.message || "Failed to create user");
   }
 });
 var changeMyPassword = (0, import_https8.onCall)({
@@ -24629,9 +24851,9 @@ var changeMyPassword = (0, import_https8.onCall)({
   try {
     await (0, import_auth.getAuth)().updateUser(request.auth.uid, { password: newPassword });
     return { success: true, message: "Password updated" };
-  } catch (error11) {
-    console.error("changeMyPassword error:", error11);
-    throw new import_https8.HttpsError("internal", error11.message || "Failed to change password");
+  } catch (error12) {
+    console.error("changeMyPassword error:", error12);
+    throw new import_https8.HttpsError("internal", error12.message || "Failed to change password");
   }
 });
 
@@ -25026,10 +25248,10 @@ var searchVendors = async (query, location, provider = "google_maps", dcaCategor
     }));
     googleResults = rawVendors.filter((v) => v.rating === void 0 || v.rating >= 3.5);
     console.log(`Filtered ${rawVendors.length} -> ${googleResults.length} vendors (Rating >= 3.5 or N/A).`);
-  } catch (error11) {
-    console.error("Error searching vendors via Google:", error11.message);
+  } catch (error12) {
+    console.error("Error searching vendors via Google:", error12.message);
     if (provider !== "all") {
-      throw new Error(`Failed to source vendors: ${error11.message}`);
+      throw new Error(`Failed to source vendors: ${error12.message}`);
     }
   }
   if (provider === "all") {
@@ -25232,9 +25454,9 @@ var searchProperties = async (query, location, providerName = "mock") => {
     const singleTenant = properties.filter((p) => !p.tenantCount || p.tenantCount === 1);
     console.log(`[PropertySourcer] After single-tenant filter: ${singleTenant.length}`);
     return singleTenant;
-  } catch (error11) {
-    console.error(`[PropertySourcer] Error sourcing properties: ${error11.message}`);
-    throw new Error(`Failed to source properties: ${error11.message}`);
+  } catch (error12) {
+    console.error(`[PropertySourcer] Error sourcing properties: ${error12.message}`);
+    throw new Error(`Failed to source properties: ${error12.message}`);
   }
 };
 
@@ -25265,9 +25487,9 @@ var generateLeads = (0, import_https9.onCall)({
       analysis: result,
       vendors: previewOnly ? result.vendors : void 0
     };
-  } catch (error11) {
-    console.error("Error in generateLeads:", error11);
-    throw new import_https9.HttpsError("internal", error11.message || "An internal error occurred.");
+  } catch (error12) {
+    console.error("Error in generateLeads:", error12);
+    throw new import_https9.HttpsError("internal", error12.message || "An internal error occurred.");
   }
 });
 var clearPipeline = (0, import_https9.onCall)({
@@ -25292,8 +25514,8 @@ var clearPipeline = (0, import_https9.onCall)({
     chunks.push(currentBatch.commit());
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
-  } catch (error11) {
-    throw new import_https9.HttpsError("internal", error11.message);
+  } catch (error12) {
+    throw new import_https9.HttpsError("internal", error12.message);
   }
 });
 var runRecruiterAgent = (0, import_https9.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
@@ -25317,9 +25539,9 @@ var testSendEmail = (0, import_https9.onCall)({
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
-  } catch (error11) {
-    console.error("Error sending test email:", error11);
-    throw new import_https9.HttpsError("internal", error11.message || "Failed to send email");
+  } catch (error12) {
+    console.error("Error sending test email:", error12);
+    throw new import_https9.HttpsError("internal", error12.message || "Failed to send email");
   }
 });
 var sourceProperties = (0, import_https9.onCall)({
@@ -25341,9 +25563,9 @@ var sourceProperties = (0, import_https9.onCall)({
       sourced: properties.length,
       properties
     };
-  } catch (error11) {
-    console.error("[sourceProperties] Error:", error11);
-    throw new import_https9.HttpsError("internal", error11.message || "Failed to source properties.");
+  } catch (error12) {
+    console.error("[sourceProperties] Error:", error12);
+    throw new import_https9.HttpsError("internal", error12.message || "Failed to source properties.");
   }
 });
 
@@ -25383,9 +25605,9 @@ var publishFacebookPost = (0, import_https10.onCall)({
       createdAt: /* @__PURE__ */ new Date()
     });
     return result;
-  } catch (error11) {
-    console.error("[Facebook] Publish error:", error11);
-    throw new import_https10.HttpsError("internal", error11.message || "Failed to publish to Facebook");
+  } catch (error12) {
+    console.error("[Facebook] Publish error:", error12);
+    throw new import_https10.HttpsError("internal", error12.message || "Failed to publish to Facebook");
   }
 });
 var getFacebookPosts = (0, import_https10.onCall)({
@@ -25398,9 +25620,9 @@ var getFacebookPosts = (0, import_https10.onCall)({
     const posts = await getRecentPosts(limit || 10);
     const insights = await getPageInsights("week");
     return { posts, insights };
-  } catch (error11) {
-    console.error("[Facebook] Get posts error:", error11);
-    throw new import_https10.HttpsError("internal", error11.message || "Failed to get Facebook posts");
+  } catch (error12) {
+    console.error("[Facebook] Get posts error:", error12);
+    throw new import_https10.HttpsError("internal", error12.message || "Failed to get Facebook posts");
   }
 });
 var getFacebookReels = (0, import_https10.onCall)({
@@ -25413,9 +25635,9 @@ var getFacebookReels = (0, import_https10.onCall)({
     const { getRecentReels: getRecentReels2 } = await Promise.resolve().then(() => (init_facebookApi(), facebookApi_exports));
     const reels = await getRecentReels2(limit || 10);
     return { reels };
-  } catch (error11) {
-    console.error("[Facebook] Get reels error:", error11);
-    throw new import_https10.HttpsError("internal", error11.message || "Failed to get Facebook reels");
+  } catch (error12) {
+    console.error("[Facebook] Get reels error:", error12);
+    throw new import_https10.HttpsError("internal", error12.message || "Failed to get Facebook reels");
   }
 });
 var deleteFacebookPost = (0, import_https10.onCall)({
@@ -25436,9 +25658,9 @@ var deleteFacebookPost = (0, import_https10.onCall)({
       });
     }
     return { success };
-  } catch (error11) {
-    console.error("[Facebook] Delete error:", error11);
-    throw new import_https10.HttpsError("internal", error11.message || "Failed to delete Facebook post");
+  } catch (error12) {
+    console.error("[Facebook] Delete error:", error12);
+    throw new import_https10.HttpsError("internal", error12.message || "Failed to delete Facebook post");
   }
 });
 var triggerSocialContentGeneration = (0, import_https10.onCall)({
@@ -27007,6 +27229,287 @@ var sendTestMorningReport = (0, import_https12.onCall)({
     resendId: result.resendId
   };
 });
+
+// src/triggers/clarityAnalysis.ts
+var import_scheduler8 = require("firebase-functions/v2/scheduler");
+var import_https13 = require("firebase-functions/v2/https");
+var import_params4 = require("firebase-functions/params");
+var import_v24 = require("firebase-functions/v2");
+
+// src/utils/clarityUtils.ts
+var CLARITY_API_BASE = "https://www.clarity.ms/export-data/api/v1";
+var CLARITY_PROJECT_ID = "vtpukex31u";
+var CLARITY_DASHBOARD = `https://clarity.microsoft.com/projects/view/${CLARITY_PROJECT_ID}`;
+async function fetchClarityInsights(apiToken, days = 3) {
+  const url = `${CLARITY_API_BASE}/project-live-insights?numOfDays=${days}&projectId=${CLARITY_PROJECT_ID}`;
+  const resp = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${apiToken}`,
+      "Content-Type": "application/json"
+    }
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`Clarity API error (${resp.status}): ${errText}`);
+  }
+  const data = await resp.json();
+  const getInfo = (name) => {
+    const metric = data.find((m) => m.metricName === name);
+    return metric?.information?.[0] ?? {};
+  };
+  const traffic = getInfo("Traffic");
+  const scroll = getInfo("ScrollDepth");
+  const engagement = getInfo("EngagementTime");
+  const deadClicks = getInfo("DeadClickCount");
+  const rageClicks = getInfo("RageClickCount");
+  const quickbacks = getInfo("QuickbackClick");
+  const excessiveScroll = getInfo("ExcessiveScroll");
+  const errorClicks = getInfo("ErrorClickCount");
+  const popularPagesMetric = data.find((m) => m.metricName === "PopularPages");
+  const topPages = (popularPagesMetric?.information ?? []).slice(0, 10).map((p) => ({
+    url: p.url || "unknown",
+    sessions: parseInt(p.visitsCount || "0", 10),
+    deadClicks: 0,
+    rageClicks: 0,
+    scrollDepth: 0
+  }));
+  return {
+    totalSessions: parseInt(traffic.totalSessionCount || "0", 10),
+    distinctUsers: parseInt(traffic.distinctUserCount || "0", 10),
+    pagesPerSession: parseFloat(traffic.pagesPerSessionPercentage || "0"),
+    scrollDepth: parseFloat(scroll.averageScrollDepth || "0"),
+    activeTime: parseInt(engagement.activeTime || "0", 10),
+    deadClickCount: parseInt(deadClicks.subTotal || "0", 10),
+    deadClickSessionPct: parseFloat(deadClicks.sessionsWithMetricPercentage || "0"),
+    rageClickCount: parseInt(rageClicks.subTotal || "0", 10),
+    rageClickSessionPct: parseFloat(rageClicks.sessionsWithMetricPercentage || "0"),
+    quickbackCount: parseInt(quickbacks.subTotal || "0", 10),
+    excessiveScrollCount: parseInt(excessiveScroll.subTotal || "0", 10),
+    errorClickCount: parseInt(errorClicks.subTotal || "0", 10),
+    topPages,
+    fetchedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    daysQueried: days
+  };
+}
+function clarityDateParam(days) {
+  return `Last%20${days === 1 ? "24%20hours" : `${days}%20days`}`;
+}
+function getClarityLinks(days) {
+  const date = clarityDateParam(days);
+  return {
+    dashboard: `${CLARITY_DASHBOARD}/dashboard?date=${date}`,
+    deadClicks: `${CLARITY_DASHBOARD}/impressions?date=${date}&deadClickCount=1`,
+    rageClicks: `${CLARITY_DASHBOARD}/impressions?date=${date}&rageClickCount=1`,
+    quickbacks: `${CLARITY_DASHBOARD}/impressions?date=${date}&quickbackCount=1`,
+    recordings: `${CLARITY_DASHBOARD}/impressions?date=${date}`
+  };
+}
+function buildClarityChatCard(metrics) {
+  const m = metrics;
+  const links = getClarityLinks(m.daysQueried);
+  const sections = [];
+  sections.push({
+    widgets: [{
+      decoratedText: {
+        topLabel: `LAST ${m.daysQueried} DAYS`,
+        text: `<b>${m.totalSessions}</b> sessions  \u2022  <b>${m.distinctUsers}</b> users  \u2022  <b>${m.pagesPerSession.toFixed(1)}</b> pages/session`,
+        startIcon: { knownIcon: "BOOKMARK" }
+      }
+    }, {
+      columns: {
+        columnItems: [
+          {
+            horizontalSizeStyle: "FILL_AVAILABLE_SPACE",
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "CENTER",
+            widgets: [{
+              decoratedText: {
+                topLabel: "DEAD CLICKS",
+                text: `<font color="#dc2626"><b>${m.deadClickCount}</b></font> (${m.deadClickSessionPct.toFixed(1)}%)`
+              }
+            }]
+          },
+          {
+            horizontalSizeStyle: "FILL_AVAILABLE_SPACE",
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "CENTER",
+            widgets: [{
+              decoratedText: {
+                topLabel: "RAGE CLICKS",
+                text: `<font color="#ea580c"><b>${m.rageClickCount}</b></font> (${m.rageClickSessionPct.toFixed(1)}%)`
+              }
+            }]
+          },
+          {
+            horizontalSizeStyle: "FILL_AVAILABLE_SPACE",
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "CENTER",
+            widgets: [{
+              decoratedText: {
+                topLabel: "SCROLL DEPTH",
+                text: `<b>${Math.round(m.scrollDepth)}%</b>`
+              }
+            }]
+          }
+        ]
+      }
+    }]
+  });
+  const extras = [];
+  if (m.quickbackCount > 0) extras.push(`Quick-backs: <b>${m.quickbackCount}</b>`);
+  if (m.excessiveScrollCount > 0) extras.push(`Excessive scrolls: <b>${m.excessiveScrollCount}</b>`);
+  if (m.errorClickCount > 0) extras.push(`Error clicks: <b>${m.errorClickCount}</b>`);
+  extras.push(`Active time: <b>${m.activeTime}s</b>`);
+  sections.push({
+    widgets: [{
+      textParagraph: { text: extras.join("  \u2022  ") }
+    }]
+  });
+  if (m.topPages.length > 0) {
+    const pageLines = m.topPages.slice(0, 5).map((p) => {
+      const shortUrl = p.url.replace("https://xiri.ai", "");
+      return `\u2022 <b>${p.sessions}</b> visits \u2014 ${shortUrl || "/"}`;
+    }).join("\n");
+    sections.push({
+      header: "\u{1F4C4} Top Pages",
+      widgets: [{
+        textParagraph: { text: pageLines }
+      }]
+    });
+  }
+  sections.push({
+    header: "\u{1F517} Investigate in Clarity",
+    widgets: [{
+      buttonList: {
+        buttons: [
+          {
+            text: `\u{1F534} Dead Clicks (${m.deadClickCount})`,
+            onClick: { openLink: { url: links.deadClicks } }
+          },
+          {
+            text: `\u{1F7E0} Rage Clicks (${m.rageClickCount})`,
+            onClick: { openLink: { url: links.rageClicks } }
+          },
+          {
+            text: `\u26A1 Quick-backs (${m.quickbackCount})`,
+            onClick: { openLink: { url: links.quickbacks } }
+          },
+          {
+            text: "\u{1F4CA} Full Dashboard",
+            onClick: { openLink: { url: links.dashboard } }
+          }
+        ]
+      }
+    }]
+  });
+  sections.push({
+    header: "\u{1F4CB} Paste-ready links",
+    widgets: [{
+      textParagraph: {
+        text: [
+          `Dead clicks: ${links.deadClicks}`,
+          `Rage clicks: ${links.rageClicks}`,
+          `Quick-backs: ${links.quickbacks}`,
+          `All recordings: ${links.recordings}`
+        ].join("\n")
+      }
+    }]
+  });
+  return {
+    header: {
+      title: "\u{1F4CA}  Daily UX Report \u2014 xiri.ai",
+      subtitle: (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "America/New_York"
+      })
+    },
+    sections
+  };
+}
+async function postClarityReportToChat(metrics, webhookUrl) {
+  const card = buildClarityChatCard(metrics);
+  const links = getClarityLinks(metrics.daysQueried);
+  const resp = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: `\u{1F4CA} Daily UX: ${metrics.totalSessions} sessions, ${metrics.deadClickCount} dead clicks, ${metrics.rageClickCount} rage clicks \u2014 ${links.dashboard}`,
+      cardsV2: [{ cardId: `clarity-${Date.now()}`, card }]
+    })
+  });
+  if (!resp.ok) {
+    console.error(`Chat webhook failed (${resp.status}):`, await resp.text());
+  }
+}
+
+// src/triggers/clarityAnalysis.ts
+var CLARITY_API_TOKEN = (0, import_params4.defineSecret)("CLARITY_API_TOKEN");
+var CLARITY_CHAT_WEBHOOK = (0, import_params4.defineSecret)("CLARITY_CHAT_WEBHOOK_URL");
+var TIMEZONE3 = "America/New_York";
+var dailyClarityReport = (0, import_scheduler8.onSchedule)({
+  schedule: "0 9 * * *",
+  // 9:00 AM ET every day
+  timeZone: TIMEZONE3,
+  region: "us-central1",
+  secrets: [CLARITY_API_TOKEN, CLARITY_CHAT_WEBHOOK],
+  timeoutSeconds: 60
+}, async () => {
+  import_v24.logger.info("\u{1F4CA} Starting daily Clarity report...");
+  try {
+    const metrics = await fetchClarityInsights(CLARITY_API_TOKEN.value(), 3);
+    import_v24.logger.info(`Clarity: ${metrics.totalSessions} sessions, ${metrics.deadClickCount} dead clicks, ${metrics.rageClickCount} rage clicks`);
+    await postClarityReportToChat(metrics, CLARITY_CHAT_WEBHOOK.value());
+    import_v24.logger.info("\u2705 Posted to Google Chat");
+    await db.collection("clarity_reports").add({
+      createdAt: /* @__PURE__ */ new Date(),
+      ...metrics
+    });
+    import_v24.logger.info("\u2705 Logged to Firestore");
+  } catch (err) {
+    import_v24.logger.error("\u274C Clarity report failed:", err);
+    throw err;
+  }
+});
+var triggerClarityReport = (0, import_https13.onCall)({
+  cors: true,
+  secrets: [CLARITY_API_TOKEN, CLARITY_CHAT_WEBHOOK],
+  timeoutSeconds: 60
+}, async (request) => {
+  const days = request.data?.days || 3;
+  const postToChat = request.data?.postToChat !== false;
+  import_v24.logger.info(`\u{1F9EA} Manual Clarity report (${days} days, chat=${postToChat})`);
+  try {
+    const metrics = await fetchClarityInsights(CLARITY_API_TOKEN.value(), days);
+    if (postToChat) {
+      await postClarityReportToChat(metrics, CLARITY_CHAT_WEBHOOK.value());
+    }
+    await db.collection("clarity_reports").add({
+      createdAt: /* @__PURE__ */ new Date(),
+      manual: true,
+      ...metrics
+    });
+    const links = getClarityLinks(days);
+    return {
+      success: true,
+      metrics: {
+        sessions: metrics.totalSessions,
+        users: metrics.distinctUsers,
+        deadClicks: metrics.deadClickCount,
+        rageClicks: metrics.rageClickCount,
+        scrollDepth: Math.round(metrics.scrollDepth),
+        quickbacks: metrics.quickbackCount
+      },
+      links
+    };
+  } catch (err) {
+    import_v24.logger.error("\u274C Manual Clarity report failed:", err);
+    throw new import_https13.HttpsError("internal", err.message || "Clarity report failed");
+  }
+});
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   adminCreateUser,
@@ -27016,6 +27519,7 @@ var sendTestMorningReport = (0, import_https12.onCall)({
   checkNightlyStatus,
   clearPipeline,
   completeNfcSession,
+  dailyClarityReport,
   deleteFacebookPost,
   enrichFromWebsite,
   generateLeads,
@@ -27063,9 +27567,11 @@ var sendTestMorningReport = (0, import_https12.onCall)({
   sendOnboardingInvite,
   sendQuoteEmail,
   sendTestMorningReport,
+  sendVendorBookingConfirmation,
   sourceProperties,
   startLeadSequence,
   testSendEmail,
+  triggerClarityReport,
   triggerSocialContentGeneration,
   updateSocialConfig,
   updateZoneScan,

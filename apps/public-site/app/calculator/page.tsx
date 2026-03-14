@@ -160,7 +160,7 @@ export default function CalculatorPage() {
             />
 
             {/* ═══ HERO ═══ */}
-            <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 text-white py-20">
+            <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 text-white py-10 sm:py-20">
                 <div className="max-w-4xl mx-auto px-4 text-center">
                     <div className="inline-block px-4 py-1.5 rounded-full bg-sky-500/20 text-sky-300 text-sm font-semibold mb-6 border border-sky-500/30">
                         Free Tool — No Sign-up Required
