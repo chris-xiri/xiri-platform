@@ -895,7 +895,7 @@ export default function OnboardingPage() {
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step4.title', language)}</h2>
                                 <p className="text-slate-600">
-                                    Upload your ACORD 25 (Certificate of Liability Insurance). Our AI will verify your coverage automatically.
+                                    Upload your ACORD 25 (Certificate of Liability Insurance). We'll verify your coverage after submission.
                                 </p>
                             </div>
 
@@ -922,7 +922,7 @@ export default function OnboardingPage() {
                                             <CheckCircle className="w-10 h-10 text-green-600 mx-auto" />
                                             <p className="font-semibold text-green-800">ACORD 25 Uploaded</p>
                                             <p className="text-sm text-green-700">{acordFile?.name}</p>
-                                            <p className="text-xs text-green-600">AI verification will begin after submission</p>
+                                            <p className="text-xs text-green-600">Your document will be reviewed after submission</p>
                                         </div>
                                     ) : uploading ? (
                                         <div className="space-y-3">
