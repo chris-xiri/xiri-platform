@@ -1,0 +1,102 @@
+{
+  "title": "Commercial Cleaning Pricing Models Explained: Flat Rate vs Per Square Foot vs Hourly",
+  "heroTitle": "Commercial Cleaning Pricing Models Explained",
+  "heroSubtitle": "How do cleaning companies price their services? This guide breaks down the three main pricing models — flat rate, per square foot, and hourly — so you can evaluate proposals accurately and choose the model that protects your budget.",
+  "metaDescription": "Commercial cleaning pricing models compared: flat rate vs per square foot vs hourly. Learn how cleaning companies calculate costs, which model is best for your facility, and what pricing red flags to watch for in 2026.",
+  "datePublished": "2026-03-14",
+  "dateModified": "2026-03-14",
+  "sections": [
+    {
+      "title": "Why Pricing Model Matters More Than the Price",
+      "content": "Two cleaning companies can quote the same monthly number and deliver wildly different value — because they're using different pricing models under the hood. **The pricing model determines how costs scale, what's included, and where surprises hide.** Understanding how cleaning companies calculate their prices is the most important financial skill for any building manager or tenant evaluating cleaning proposals. The commercial cleaning industry in the U.S. generates over $112 billion annually, and pricing transparency remains one of the biggest pain points for buyers. This guide explains exactly how the math works."
+    },
+    {
+      "title": "Flat Rate (Fixed Monthly Price)",
+      "content": "**Flat rate pricing** is a single, fixed monthly price for a defined scope of work. The price doesn't change based on hours worked or actual square footage cleaned — you pay the same amount every month regardless.",
+      "items": [
+        "How It Works — The cleaning company estimates the labor hours needed based on a facility walkthrough, multiplies by their loaded labor rate (wages + benefits + overhead + margin), and presents a flat monthly fee. A well-run company uses production rates (square feet per hour) by task type to calculate labor needs precisely",
+        "Typical Rates — Flat rate proposals for standard offices typically work out to $0.08–$0.20/sqft per visit. A 10,000 sqft office cleaned 3x/week: $1,000–$2,400/month flat rate. The actual per-visit math is embedded in the quote",
+        "Advantages — Budget predictability (same cost every month). No surprise hours or overruns. Easy to compare vendors apples-to-apples when scope is identical. The vendor bears the risk of underestimating labor — if a task takes longer than expected, that's their problem, not yours",
+        "Disadvantages — If the scope changes (new tenant areas, renovations, headcount shifts), the price must be renegotiated. Some flat-rate vendors gradually reduce labor hours over time to protect margins ('scope creep in reverse'). Without a detailed SOW, flat rate pricing can mask what's actually included",
+        "Best For — Established facilities with stable square footage and consistent cleaning needs. Building managers who value budget predictability. Multi-year vendor relationships where the scope is well-understood",
+        "Red Flag — A flat rate proposal without a detailed room-by-room scope of work. If you can't see exactly what's included, the vendor has room to cut corners while staying within their contractual obligations"
+      ]
+    },
+    {
+      "title": "Per Square Foot Pricing",
+      "content": "**Per-square-foot pricing** charges a rate based on the total cleanable area of your facility. This is the most common model in the commercial cleaning industry and the easiest to benchmark across vendors.",
+      "items": [
+        "How It Works — The cleaning company quotes a per-square-foot rate for each visit or per month. You multiply the rate by your cleanable square footage to get the cost. Example: $0.12/sqft × 10,000 sqft = $1,200 per visit, or $3,600/month for 3x/week",
+        "Typical Rates by Facility Type — Standard office: $0.08–$0.18/sqft per visit. Medical office: $0.15–$0.35/sqft per visit. Retail: $0.10–$0.22/sqft per visit. Industrial/warehouse (office area): $0.03–$0.08/sqft per visit. These rates are for the New York metro area in 2026",
+        "Advantages — Easy to benchmark across vendors and across the industry. Scales naturally as your facility grows — add a floor, and the cost increase is proportional. Transparent: you can verify the math by confirming your square footage",
+        "Disadvantages — Square footage doesn't capture complexity. A 5,000 sqft medical office is 2–3x more work per sqft than a 5,000 sqft empty call center. Vendors may use different definitions of 'cleanable square footage' (some include storage rooms, some don't) leading to non-comparable quotes. Per-sqft rates don't distinguish between easy areas (open floor plans) and hard areas (multiple small exam rooms)",
+        "Best For — Comparing proposals (require all vendors to quote the same total sqft). Facilities with straightforward layouts. Industry benchmarking and budget planning",
+        "Critical Detail — Always confirm what square footage the vendor is using. Request that they match the number from your lease or floor plan. Some vendors use Rentable Square Footage (RSF), others use Usable Square Footage (USF) — these can differ by 15–20%, creating a significant price difference"
+      ]
+    },
+    {
+      "title": "Hourly Pricing",
+      "content": "**Hourly pricing** charges based on the actual labor hours spent cleaning your facility. This model is most common for day porter services, supplemental cleaning, and specialty/project work.",
+      "items": [
+        "How It Works — The cleaning company bills a per-hour rate per cleaner. You pay for actual hours worked. Example: $28/hour × 4 hours × 3 cleaners = $336 per visit, or approximately $4,368/month for 3x/week (13 visits)",
+        "Typical Rates — General janitorial staff: $22–$35/hour. Day porter: $18–$28/hour. Floor care technician: $30–$50/hour. Supervisor: $28–$40/hour. Post-construction specialist: $30–$45/hour. These are billed rates (what you pay), not the worker's wage. The billed rate includes wages, benefits, taxes, insurance, supplies, overhead, and profit margin",
+        "Advantages — You pay for actual work performed — no padding. Easy to adjust up or down based on seasonal needs. Great for variable-scope work like day porter services where daily needs fluctuate. Transparent: you can see exactly how many hours were worked",
+        "Disadvantages — Unpredictable monthly costs if hours fluctuate. No incentive for the vendor to work efficiently — taking longer means higher revenue. Requires you to verify hours worked (timesheets, NFC check-ins, or other tracking). If the cleaning company's crew is slow or inexperienced, you pay for their inefficiency",
+        "Best For — Day porter services, supplemental cleaning (event cleanup, overflow support), project-based work (deep cleaning, post-construction), and situations where the scope is unpredictable",
+        "Red Flag — An hourly proposal for routine nightly janitorial. If a vendor insists on hourly billing for predictable, recurring work, they either can't estimate their own labor needs (which signals inexperience) or they're deliberately creating a structure where you bear all the risk"
+      ]
+    },
+    {
+      "title": "How Cleaning Companies Calculate Their Prices",
+      "content": "Understanding the vendor's cost structure helps you evaluate whether a proposal is reasonable. Here's how the math works behind a cleaning quote:",
+      "items": [
+        "Labor Cost (60–70% of total price) — The cleaning worker's hourly wage plus employer-paid taxes (FICA, FUTA, SUTA), workers' compensation insurance, and any benefits. If a cleaner earns $17/hour, the fully loaded labor cost is typically $22–$26/hour depending on the state's workers' comp rates and benefit structure. This is why minimum wage directly affects cleaning costs — and why prices vary significantly by state",
+        "Supplies and Equipment (8–12%) — Cleaning chemicals, paper products (if vendor-supplied), equipment depreciation, and microfiber replacement. Green cleaning products cost 10–20% more than conventional products",
+        "Overhead (10–15%) — Office rent, administrative staff, vehicles, insurance (general liability, commercial auto), technology systems (scheduling, payroll, quality tracking), management salaries, and training costs",
+        "Profit Margin (8–15%) — The vendor's profit. Healthy companies operate at 10–15% net margin. Companies quoting below 8% margin are likely cutting corners on labor, supplies, or insurance. Extremely low bids often signal undocumented workers, insufficient insurance, or unsustainable labor practices",
+        "Total Markup from Labor — A typical cleaning company charges 1.6–2.2x their loaded labor cost as the billing rate. So a cleaner earning $17/hour with a loaded cost of $24/hour is billed at $38–$53/hour. Anything below 1.5x should raise questions about whether the company is covering its overhead and compliance costs"
+      ]
+    },
+    {
+      "title": "Which Pricing Model Is Right for Your Facility?",
+      "content": "Use this decision framework based on your facility type, service needs, and management preferences:",
+      "items": [
+        "Standard Office (Recurring Janitorial) — Flat rate or per-sqft pricing. Both work well for predictable, recurring scope. Get quotes in both formats so you can compare and benchmark. Choose flat rate if you want absolute budget certainty; choose per-sqft if you want easy benchmarking",
+        "Medical Office — Flat rate with a detailed, compliance-specific SOW. Medical cleaning is too complex for simple per-sqft pricing — the rate must account for terminal cleaning protocols, disinfection requirements, and specialized supplies. Per-sqft rates for medical should be quoted separately from general office areas",
+        "Day Porter Services — Hourly pricing. Day porters inherently work variable hours and respond to unpredictable needs. Hourly billing aligns the cost structure with the service model. Budget a monthly cap to prevent runaway costs",
+        "Project Work (Floor Care, Post-Construction, Deep Cleaning) — Per-sqft pricing for defined projects. This makes it easy to compare quotes across vendors for the same scope. Request a fixed-price quote rather than hourly for project work — it transfers the risk of underestimation to the vendor",
+        "Multi-Service Bundle (Janitorial + Day Porter + Floor Care) — Flat rate for the janitorial base, hourly for day porter, and per-project pricing for floor care and specialty services. This hybrid model gives you budget predictability on the recurring base while maintaining flexibility on variable services"
+      ]
+    }
+  ],
+  "calloutTitle": "Get a Transparent Cleaning Proposal",
+  "calloutContent": "XIRI provides flat-rate pricing with room-by-room scope documentation, line-item cost breakdowns, and no hidden fees. Every proposal includes a detailed SOW, SLA, and NFC-verified quality reporting — so you know exactly what you're paying for and can verify it's being delivered.",
+  "relatedServices": [
+    "commercial-cleaning",
+    "janitorial-services",
+    "day-porter",
+    "floor-care"
+  ],
+  "faqs": [
+    {
+      "question": "How do commercial cleaning companies price their services?",
+      "answer": "Commercial cleaning companies use three pricing models: flat rate (fixed monthly price for a defined scope), per square foot ($0.08–$0.35/sqft per visit depending on facility type), and hourly ($22–$50/hour depending on role). Labor is 60–70% of the cost, with supplies, overhead, and profit making up the rest."
+    },
+    {
+      "question": "Is flat rate or per square foot better for commercial cleaning?",
+      "answer": "Flat rate is better for budget predictability — same cost every month. Per square foot is better for benchmarking and comparing vendors. For recurring janitorial, either works well. For complex facilities (medical, multi-use), flat rate with a detailed scope of work is preferred because per-sqft rates don't capture cleaning complexity differences between areas."
+    },
+    {
+      "question": "What is the average hourly rate for commercial cleaning?",
+      "answer": "The average billed rate (what you pay) for commercial cleaning in 2026 is $22–$35/hour for general janitorial staff, $18–$28/hour for day porters, $30–$50/hour for floor care technicians, and $30–$45/hour for post-construction specialists. These are billed rates, not the worker's wage — they include labor cost, supplies, overhead, and profit."
+    },
+    {
+      "question": "Why are some cleaning companies so much cheaper?",
+      "answer": "Extremely low bids typically indicate: underpaying workers (below market wage), insufficient insurance coverage, using undocumented labor, cutting corners on supplies, or operating at unsustainable margins. A healthy cleaning company operates at 10–15% net margin. Companies quoting below 1.5x their loaded labor cost are likely cutting compliance costs."
+    },
+    {
+      "question": "What is a fair profit margin for a cleaning company?",
+      "answer": "A healthy commercial cleaning company operates at 10–15% net profit margin. The total markup from loaded labor cost is typically 1.6–2.2x. So if a cleaner's fully loaded cost (wages + taxes + benefits + insurance) is $24/hour, the billed rate should be $38–$53/hour to cover overhead and provide sustainable margins."
+    }
+  ]
+}

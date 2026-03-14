@@ -1,0 +1,129 @@
+{
+  "title": "What Is Facility Management? A Complete Guide for Building Owners & Tenants",
+  "heroTitle": "Facility Management 101: Everything You Need to Know",
+  "heroSubtitle": "A plain-English guide to facility management — what it covers, how much it costs, when to hire a facility manager, and how to evaluate whether you need one.",
+  "metaDescription": "Learn what facility management is, what it includes, how much it costs, and when to hire an FM company. Covers maintenance, compliance, vendor management, and best practices for commercial buildings.",
+  "datePublished": "2026-03-14",
+  "dateModified": "2026-03-14",
+  "sections": [
+    {
+      "title": "What Is Facility Management?",
+      "content": "**Facility management (FM)** is the coordination of all services required to keep a building operational, safe, compliant, and comfortable for its occupants. According to the International Facility Management Association (IFMA), FM integrates people, places, processes, and technology to ensure the built environment functions effectively. In practical terms, facility management means making sure the lights work, the building is clean, the HVAC runs properly, vendors show up and do their jobs, compliance requirements are met, and everything gets documented. It's the operational layer between owning or leasing a building and actually using it for your business."
+    },
+    {
+      "title": "What Does Facility Management Include?",
+      "content": "Facility management covers a broad range of services. The specific scope depends on the building type, industry, and lease structure, but these are the core categories:",
+      "items": [
+        "Cleaning & Janitorial — Nightly or scheduled cleaning of all interior spaces. For medical facilities, includes terminal disinfection and compliance documentation. The most visible FM service and the one most directly tied to occupant satisfaction",
+        "HVAC & Mechanical Maintenance — Preventive and reactive maintenance of heating, cooling, and ventilation systems. Includes filter changes, coil cleaning, refrigerant management, and seasonal changeovers. Typically the highest-cost maintenance category",
+        "Floor Care & Surface Maintenance — Strip-and-wax, carpet cleaning, concrete polishing, tile restoration, and ongoing hard-floor maintenance. Extends the lifespan of flooring assets and maintains professional appearance",
+        "Vendor Management — Coordinating, scheduling, and quality-checking all third-party vendors including cleaners, HVAC technicians, electricians, plumbers, pest control, landscapers, and snow removal contractors",
+        "Compliance & Safety — Ensuring the building meets OSHA workplace safety standards, fire codes, ADA accessibility requirements, and industry-specific regulations (JCAHO, HIPAA, CMS, FDA). Maintaining documentation for inspections and surveys",
+        "Handyman & Repairs — Addressing day-to-day maintenance issues: plumbing, electrical, drywall, painting, fixture replacement, door adjustments, and general upkeep",
+        "Exterior & Grounds Maintenance — Landscaping, parking lot maintenance, pressure washing, snow removal, exterior lighting, and curb appeal",
+        "Pest Control — Proactive pest management to prevent infestations. Particularly critical for medical facilities, food service environments, schools, and daycares",
+        "Capital Planning — Long-term planning for major replacements (HVAC systems, roofing, flooring, parking lot resurfacing) with budgeting and timeline management"
+      ]
+    },
+    {
+      "title": "Facility Management vs. Property Management: What's the Difference?",
+      "content": "People frequently confuse facility management with property management. They're related but serve different purposes and different stakeholders.",
+      "items": [
+        "Property Management focuses on the real estate asset — the landlord's interests. It handles leasing, rent collection, lease enforcement, property taxes, insurance, and maintaining property value. The property manager works for the building owner",
+        "Facility Management focuses on the operational environment — the occupant's interests. It handles cleaning, maintenance, compliance, vendor coordination, and ensuring the building works for the people inside it. The facility manager works for the business using the space",
+        "In multi-tenant buildings, property management typically handles common areas and building systems, while tenants manage their own suites",
+        "In single-tenant buildings (especially NNN leases), there is often no property manager. The tenant must handle both facility management and many property management responsibilities — or hire someone to do it"
+      ]
+    },
+    {
+      "title": "How Much Does Facility Management Cost?",
+      "content": "Facility management costs vary widely based on building size, type, and services included. Here are realistic budgets based on data from commercial facilities in the New York metro area.",
+      "items": [
+        "Total FM Spend (all-in): $4.00–$12.00 per square foot annually for a comprehensive program. This includes all maintenance categories (cleaning, HVAC, floors, pest, repairs, grounds)",
+        "Cleaning Only: $1.50–$4.00 per sqft annually. The largest single line item in most FM budgets, representing 30–40% of total spend",
+        "HVAC Maintenance: $0.15–$0.50 per sqft annually for preventive maintenance contracts. Emergency repairs can double this in a bad year",
+        "Floor Care: $0.10–$0.30 per sqft annually for scheduled strip-and-wax, carpet cleaning, and burnishing programs",
+        "General Repairs & Handyman: $0.25–$0.75 per sqft annually, varying widely based on building age and condition",
+        "FM Management Fee (if using a management company): Typically 10–15% of total vendor spend, or a flat monthly fee ranging from $1,500–$5,000 depending on facility size and complexity"
+      ]
+    },
+    {
+      "title": "When Do You Need a Facility Manager?",
+      "content": "Not every building needs a dedicated facility manager or FM company. Here's a framework for deciding whether to self-manage or bring in professional help.",
+      "items": [
+        "Self-Manage If: You have 1–2 vendors, fewer than 5,000 sqft, no regulatory compliance requirements, and someone on staff with bandwidth to handle vendor calls, scheduling, and quality issues",
+        "Consider FM Help If: You're juggling 3+ vendors, spending more than 5 hours per month on maintenance coordination, experiencing recurring quality problems, facing compliance requirements (JCAHO, OSHA, CMS), or your staff is frustrated by maintenance distractions from their core job",
+        "Definitely Need FM If: You have regulatory surveys approaching, your building has multiple service needs you can't keep coordinated, vendor turnover is disrupting your operations, or nobody on your team has the expertise to manage building systems properly"
+      ]
+    },
+    {
+      "title": "In-House Facility Manager vs. FM Company",
+      "content": "If you've decided you need help, the next decision is whether to hire an in-house facility manager or outsource to a facility management company.",
+      "items": [
+        "In-House FM Hire — Best for large facilities (25,000+ sqft) or multi-building portfolios. A full-time facility manager costs $55,000–$90,000 annually in salary, plus benefits. Provides dedicated on-site presence and deep building knowledge. Limitation: one person can't be an expert in every trade",
+        "FM Company — Best for small-to-mid-size facilities (under 25,000 sqft) where a full-time hire isn't justified. An FM company manages all vendor relationships, quality verification, and compliance documentation for a management fee. Provides access to a team of specialists rather than relying on one person",
+        "Hybrid Approach — Some organizations hire an in-house FM coordinator and use an FM company for vendor management and quality auditing. Common in healthcare systems with multiple locations"
+      ]
+    },
+    {
+      "title": "Key Performance Indicators for Facility Management",
+      "content": "Whether you self-manage or hire a company, these KPIs help you measure whether your facility management program is working.",
+      "items": [
+        "Work Order Response Time — How quickly are maintenance requests acknowledged and resolved? Target: acknowledged within 4 hours, resolved within 24–48 hours for non-emergencies",
+        "Vendor No-Show Rate — What percentage of scheduled services are missed? Industry average is 5–8%. Best-in-class programs achieve under 2%",
+        "Cleaning Quality Scores — Based on regular inspections using a standardized checklist. Target: 90%+ pass rate on random inspections",
+        "Preventive vs. Reactive Maintenance Ratio — What percentage of maintenance is scheduled vs. emergency? Target: 70%+ preventive. A ratio below 50% indicates reactive management that costs 3–5x more",
+        "Occupant Satisfaction — Regular surveys of building occupants about cleanliness, temperature, maintenance responsiveness, and overall satisfaction. Target: 80%+ satisfaction",
+        "Compliance Readiness — Can you produce required documentation within 24 hours of a survey or inspection request? If not, you're not compliant in practice",
+        "Cost Per Square Foot — Track total FM spend per sqft annually and benchmark against industry standards for your facility type"
+      ]
+    },
+    {
+      "title": "Facility Management Technology in 2026",
+      "content": "Technology is transforming how facilities are managed. These tools improve efficiency, reduce costs, and provide better data for decision-making.",
+      "items": [
+        "CMMS (Computerized Maintenance Management Systems) — Software for tracking work orders, scheduling preventive maintenance, and managing vendor relationships. Essential for facilities with multiple service contracts",
+        "NFC/RFID Verification — Physical tags in each room or zone that cleaning crews scan during service, creating timestamped proof of completion. Eliminates the 'trust us' model of quality verification",
+        "IoT Sensors — Smart sensors monitoring HVAC performance, restroom supply levels, occupancy patterns, and environmental conditions (temperature, humidity, CO2). Enable predictive maintenance and demand-based cleaning",
+        "Mobile Work Order Systems — Allow occupants to submit maintenance requests via mobile app with photos and priority levels. Improves response time and documentation",
+        "Automated Reporting — Morning reports, monthly summaries, and compliance dashboards generated automatically from verified quality data and work order history"
+      ]
+    }
+  ],
+  "calloutTitle": "Let XIRI Manage Your Facility",
+  "calloutContent": "XIRI provides comprehensive facility management for single-tenant commercial buildings — cleaning, maintenance, compliance documentation, and vendor management under one managed agreement. One point of contact. One invoice. One morning report that tells you everything you need to know.",
+  "relatedServices": [
+    "facility-management",
+    "commercial-cleaning",
+    "janitorial-services",
+    "hvac-maintenance",
+    "floor-care",
+    "handyman-services"
+  ],
+  "faqs": [
+    {
+      "question": "What is facility management?",
+      "answer": "Facility management (FM) is the coordination of all services required to keep a building operational, safe, compliant, and comfortable. It encompasses cleaning, HVAC maintenance, floor care, vendor management, compliance documentation, repairs, pest control, and grounds maintenance. FM integrates people, processes, and technology to ensure the built environment functions effectively for its occupants."
+    },
+    {
+      "question": "What is the difference between facility management and property management?",
+      "answer": "Property management focuses on the real estate asset from the landlord's perspective — lease administration, rent collection, and property value. Facility management focuses on the operational environment from the occupant's perspective — cleaning, maintenance, compliance, and ensuring the building works for the people inside it. In single-tenant buildings, the tenant often handles both roles."
+    },
+    {
+      "question": "How much does facility management cost?",
+      "answer": "Comprehensive facility management costs $4.00–$12.00 per square foot annually, including all maintenance categories. Cleaning alone represents $1.50–$4.00/sqft (30–40% of total FM spend). FM management companies typically charge 10–15% of total vendor spend or a flat monthly fee of $1,500–$5,000 depending on facility size and complexity."
+    },
+    {
+      "question": "When should I hire a facility management company?",
+      "answer": "Consider hiring an FM company when you're managing 3+ vendors, spending more than 5 hours monthly on maintenance coordination, experiencing recurring quality issues, or facing regulatory compliance requirements. For facilities under 25,000 sqft, an FM company is typically more cost-effective than hiring a full-time in-house facility manager."
+    },
+    {
+      "question": "What does a facility manager do?",
+      "answer": "A facility manager coordinates all building maintenance services, manages vendor relationships, ensures regulatory compliance, handles work orders and repair requests, plans preventive maintenance schedules, manages the maintenance budget, and serves as the single point of contact for all building operations. They ensure the building is clean, safe, comfortable, and compliant."
+    },
+    {
+      "question": "What are the most important facility management KPIs?",
+      "answer": "Key facility management KPIs include: work order response time (target: under 24 hours), vendor no-show rate (target: under 2%), cleaning quality scores (target: 90%+ pass rate), preventive vs. reactive maintenance ratio (target: 70%+ preventive), occupant satisfaction (target: 80%+), and cost per square foot benchmarked against industry standards."
+    }
+  ]
+}

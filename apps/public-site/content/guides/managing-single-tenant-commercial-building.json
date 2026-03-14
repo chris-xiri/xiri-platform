@@ -1,0 +1,135 @@
+{
+  "title": "Managing a Single-Tenant Commercial Building: The Complete Facility Guide",
+  "heroTitle": "How to Manage a Single-Tenant Commercial Building",
+  "heroSubtitle": "The definitive guide for NNN lease tenants, building owners, and office managers responsible for maintaining a single-occupant commercial property — from vendor management to compliance.",
+  "metaDescription": "Complete guide to managing single-tenant commercial buildings. Covers NNN lease responsibilities, vendor management, maintenance budgeting, compliance, and facility management best practices.",
+  "datePublished": "2026-03-14",
+  "dateModified": "2026-03-14",
+  "sections": [
+    {
+      "title": "What Is Single-Tenant Building Management?",
+      "content": "**Single-tenant building management** is the oversight and maintenance of a commercial property occupied by one business. Unlike multi-tenant buildings managed by property management companies, single-tenant facilities place most maintenance responsibilities directly on the tenant — especially under triple-net (NNN) leases, where the tenant pays property taxes, insurance, and all maintenance costs. This means the office manager, practice administrator, or business owner becomes the de facto facility manager, often without formal training in building operations."
+    },
+    {
+      "title": "Who Is Responsible for What? Understanding NNN Lease Obligations",
+      "content": "Under a triple-net (NNN) lease — the most common lease structure for single-tenant commercial buildings — the tenant is responsible for virtually everything except the building's structural shell. Misunderstanding these obligations is the single most expensive mistake tenants make.",
+      "items": [
+        "Tenant Responsibility: HVAC maintenance, repair, and eventual replacement — including filter changes, coil cleaning, and seasonal service contracts",
+        "Tenant Responsibility: Interior and exterior cleaning, trash removal, recycling, and pest control",
+        "Tenant Responsibility: Parking lot maintenance including sweeping, striping, pothole repair, snow removal, and lighting",
+        "Tenant Responsibility: Plumbing, electrical, and general handyman repairs for interior systems",
+        "Tenant Responsibility: Compliance with ADA, OSHA, fire code, and industry-specific regulations (JCAHO, HIPAA, etc.)",
+        "Landlord Responsibility (typically): Roof structure, exterior walls, and foundation — but tenants often must maintain roof drains and gutters",
+        "Shared/Negotiable: Landscaping, exterior signage, and capital improvements vary by lease terms"
+      ]
+    },
+    {
+      "title": "The 7 Core Areas of Single-Tenant Facility Management",
+      "content": "Managing a single-tenant building effectively requires attention to seven interconnected areas. Neglecting any one creates cascading problems — a failing HVAC system leads to moisture issues, which leads to mold, which leads to compliance failures and tenant complaints.",
+      "items": [
+        "Janitorial & Cleaning — Nightly or regular cleaning of offices, restrooms, break rooms, and common areas. For medical facilities, this includes terminal disinfection and compliance documentation",
+        "HVAC & Mechanical Systems — Preventive maintenance schedules for heating, cooling, ventilation, and air quality. Budget $0.15–$0.30 per square foot annually for HVAC maintenance alone",
+        "Floor Care — Regular maintenance of VCT, carpet, tile, concrete, or specialty flooring. Strip-and-wax cycles, carpet extraction, and daily spot maintenance",
+        "Exterior & Grounds — Parking lot sweeping, pressure washing, landscaping, snow removal, and exterior lighting maintenance",
+        "Pest Control — Proactive pest management to prevent infestations. Critical for medical, food service, and childcare facilities",
+        "Handyman & Repairs — Plumbing, electrical, drywall, painting, fixture replacement, and general maintenance tasks",
+        "Compliance & Documentation — Maintaining records required by OSHA, JCAHO, HIPAA, fire marshals, and local health departments"
+      ]
+    },
+    {
+      "title": "How Much Does It Cost to Maintain a Single-Tenant Building?",
+      "content": "Based on our analysis of hundreds of single-tenant commercial facilities on Long Island and throughout the New York metro area, here are realistic annual maintenance budgets per square foot. These figures include all vendor costs but exclude rent, property taxes, and insurance.",
+      "items": [
+        "Professional Office (5,000–15,000 sqft): $3.50–$6.00 per sqft/year — includes janitorial, floor care, HVAC, basic repairs",
+        "Medical Office (3,000–10,000 sqft): $5.00–$9.00 per sqft/year — includes compliance-grade cleaning, terminal disinfection, waste management, HVAC",
+        "Auto Dealership (15,000–40,000 sqft): $2.50–$4.50 per sqft/year — includes showroom cleaning, shop floor degreasing, exterior maintenance",
+        "Retail Storefront (2,000–8,000 sqft): $2.00–$4.00 per sqft/year — includes nightly cleaning, window washing, exterior maintenance",
+        "Light Industrial (10,000–30,000 sqft): $1.50–$3.50 per sqft/year — includes floor scrubbing, waste management, HVAC, basic janitorial"
+      ]
+    },
+    {
+      "title": "Self-Managing vs. Hiring a Facility Management Company",
+      "content": "Most single-tenant building occupants start by self-managing their facility — hiring individual vendors for cleaning, HVAC, pest control, and repairs. This works at first but becomes unsustainable as vendor relationships multiply and compliance requirements grow. Here's when each approach makes sense:",
+      "items": [
+        "Self-Managing Works When: You have 1–2 vendors, fewer than 5,000 sqft, no compliance requirements, and someone on staff with time to manage vendor relationships",
+        "Facility Management Makes Sense When: You're juggling 3+ vendors, compliance documentation is required, vendor quality is inconsistent, or nobody on staff has time to manage maintenance",
+        "The Cost of Self-Management Is Hidden: Time spent calling vendors, following up on no-shows, resolving quality issues, and managing invoices typically costs 5–10 hours per month of staff time — time that could be spent on your core business",
+        "Consolidated Management Reduces Cost: A single managed service that coordinates all vendors under one agreement typically costs the same or less than hiring vendors individually — while eliminating the management burden from your team"
+      ]
+    },
+    {
+      "title": "How to Choose Vendors for Your Building",
+      "content": "Whether you self-manage or use a facility management company, the vendors servicing your building directly impact your operations. The wrong cleaning company can damage your reputation; the wrong HVAC contractor can cost you thousands in emergency repairs.",
+      "items": [
+        "Always require proof of insurance — general liability and workers' compensation at minimum. If a vendor's employee is injured in your building without proper coverage, you're exposed",
+        "Check references from facilities similar to yours — a vendor who cleans retail stores may not understand medical office compliance requirements",
+        "Demand a written scope of work — not just 'cleaning services' but room-by-room task lists with frequencies. Vague scopes lead to disputes about what's included",
+        "Require a walkthrough before accepting any quote — any vendor who quotes based on square footage alone without visiting your building is guessing",
+        "Verify quality independently — ask how the vendor proves the work was done. Photos, NFC check-in systems, or inspection reports are baseline expectations in 2026",
+        "Plan for turnover — 40% of cleaning companies experience crew turnover within the first 90 days. Ask how the vendor handles transitions and backup coverage"
+      ]
+    },
+    {
+      "title": "Compliance Requirements You Can't Ignore",
+      "content": "Single-tenant buildings often fall through the compliance cracks — there's no property manager enforcing standards, and tenants may not know what's required until a surveyor or inspector shows up. The compliance requirements you face depend on your industry, but some are universal.",
+      "items": [
+        "OSHA (all businesses): Maintain safe walking surfaces, proper chemical storage (SDS sheets), adequate ventilation, and emergency exits. OSHA can fine businesses up to $16,131 per violation",
+        "Fire Safety (all businesses): Annual fire extinguisher inspections, clear egress paths, proper exit signage, and fire alarm maintenance. Your local fire marshal inspects these",
+        "ADA Compliance (all public-facing businesses): Accessible entrances, restrooms, and parking. Non-compliance exposes you to lawsuits averaging $25,000–$75,000",
+        "JCAHO/CMS (healthcare): Environmental cleaning documentation, infection control protocols, and facility condition assessments. Loss of accreditation means loss of insurance reimbursement",
+        "HIPAA (healthcare): Environmental safeguards for protected health information — including how cleaning vendors access areas where PHI is visible",
+        "NYS Part 226 (New York): Limits on volatile organic compounds in commercial cleaning products. Your cleaning vendor must use compliant products"
+      ]
+    },
+    {
+      "title": "Building a Preventive Maintenance Schedule",
+      "content": "Reactive maintenance — fixing things when they break — costs 3–5x more than preventive maintenance. A basic preventive schedule for a single-tenant commercial building should include these recurring tasks:",
+      "items": [
+        "Monthly: HVAC filter inspection/replacement, pest control treatment, fire extinguisher visual check, exterior lighting inspection",
+        "Quarterly: HVAC coil cleaning and refrigerant check, floor care (strip-and-wax or burnishing), gutter and drain cleaning, parking lot inspection",
+        "Semi-Annual: HVAC seasonal changeover (heating to cooling and back), carpet deep extraction, window cleaning (interior and exterior), roof inspection",
+        "Annual: HVAC full system inspection and certification, fire extinguisher professional inspection and tagging, backflow preventer testing, parking lot seal coating and striping"
+      ]
+    }
+  ],
+  "calloutTitle": "Let Someone Else Manage Your Building",
+  "calloutContent": "XIRI consolidates all your building maintenance under one managed agreement — cleaning, HVAC, floor care, pest control, repairs, and compliance documentation. One point of contact. One invoice. No more chasing vendors.",
+  "relatedServices": [
+    "commercial-cleaning",
+    "janitorial-services",
+    "facility-management",
+    "hvac-maintenance",
+    "floor-care",
+    "handyman-services"
+  ],
+  "faqs": [
+    {
+      "question": "What is a single-tenant commercial building?",
+      "answer": "A single-tenant commercial building is a standalone commercial property occupied by one business. Common examples include medical offices, dental practices, auto dealerships, veterinary clinics, and professional offices. Unlike multi-tenant office buildings, a single-tenant property typically operates under a triple-net (NNN) lease where the tenant is responsible for all maintenance, taxes, and insurance."
+    },
+    {
+      "question": "Who is responsible for maintenance in a NNN lease?",
+      "answer": "Under a triple-net (NNN) lease, the tenant is responsible for virtually all maintenance including HVAC, cleaning, pest control, parking lot upkeep, plumbing, electrical, and interior repairs. The landlord typically covers only the structural shell — roof structure, exterior walls, and foundation. However, specific obligations vary by lease, so always review your lease terms carefully."
+    },
+    {
+      "question": "How much does it cost to maintain a commercial building?",
+      "answer": "Annual maintenance costs for single-tenant commercial buildings typically range from $1.50 to $9.00 per square foot, depending on facility type. Professional offices average $3.50–$6.00/sqft, medical offices $5.00–$9.00/sqft, and retail spaces $2.00–$4.00/sqft. These figures include janitorial, HVAC, floor care, pest control, and general repairs."
+    },
+    {
+      "question": "Should I hire a facility management company for a single building?",
+      "answer": "If you're managing 3 or more vendors, spending 5+ hours per month on maintenance coordination, or facing compliance requirements (JCAHO, OSHA, HIPAA), a facility management company typically saves both time and money. The primary benefit isn't cost reduction — it's eliminating the management burden so you can focus on your core business."
+    },
+    {
+      "question": "What compliance requirements apply to commercial buildings?",
+      "answer": "All commercial buildings must comply with OSHA workplace safety standards, fire codes, and ADA accessibility requirements. Healthcare facilities face additional requirements from JCAHO, CMS, and HIPAA. In New York, NYS Part 226 regulates VOC content in commercial cleaning products. Non-compliance fines range from $16,131 per OSHA violation to potential loss of healthcare accreditation."
+    },
+    {
+      "question": "How often should HVAC be serviced in a commercial building?",
+      "answer": "HVAC in commercial buildings should receive monthly filter changes, quarterly coil cleaning and refrigerant checks, semi-annual seasonal changeovers, and an annual full system inspection. Budget $0.15–$0.30 per square foot annually for HVAC maintenance. Neglecting preventive HVAC maintenance can result in emergency repairs costing 3–5x more."
+    },
+    {
+      "question": "What is the difference between facility management and property management?",
+      "answer": "Property management focuses on the real estate asset — collecting rent, managing leases, and maintaining property value for the landlord. Facility management focuses on the operational environment — ensuring the building is clean, maintained, compliant, and functional for the people who work inside it. In a single-tenant building, there's often no property manager, making facility management the tenant's direct responsibility."
+    }
+  ]
+}
