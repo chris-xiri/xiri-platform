@@ -63,10 +63,12 @@ export default function Navigation() {
     return (
         <header className="fixed top-0 z-50 w-full font-sans shadow-md">
             {/* Trust Bar - Sticky Top */}
-            <div className="bg-[#0f172a] text-white text-[14px] md:text-[14px] font-bold tracking-[0.15em] text-center py-2.5 relative z-50 border-b border-white/10">
+            <div className="bg-[#0f172a] text-white text-[12px] md:text-[14px] font-bold tracking-[0.15em] text-center py-2 md:py-2.5 relative z-50 border-b border-white/10">
                 <div className="max-w-7xl mx-auto px-4 flex items-center justify-center">
-                    {/* Mobile: Short single line */}
-                    <span className="md:hidden">NATIONWIDE SCALE · FULLY INSURED</span>
+                    {/* Mobile: Compact two-signal version */}
+                    <span className="md:hidden">BONDED & INSURED</span>
+                    <span className="md:hidden mx-2 text-sky-500 opacity-60">·</span>
+                    <span className="md:hidden text-sky-400">AUDIT-READY 24/7</span>
 
                     {/* Desktop: Full message */}
                     <span className="hidden md:inline">NATIONWIDE SCALE</span>
@@ -74,11 +76,8 @@ export default function Navigation() {
                     <span className="hidden md:inline">LOCAL PRECISION</span>
                     <span className="hidden md:inline mx-4 text-sky-500 opacity-60">|</span>
                     <span className="hidden md:inline">FULLY BONDED & INSURED</span>
-
-                    <span className="mx-2 md:mx-4 text-sky-500 opacity-60">|</span>
-
-                    {/* Compliance Section */}
-                    <span className="text-sky-400">AUDIT-READY 24/7</span>
+                    <span className="hidden md:inline mx-4 text-sky-500 opacity-60">|</span>
+                    <span className="hidden md:inline text-sky-400">AUDIT-READY 24/7</span>
                 </div>
             </div>
 
@@ -93,7 +92,7 @@ export default function Navigation() {
                             onClick={() => handleNavClick('/', 'XIRI')}
                         >
                             XIRI
-                            <span className="text-xs font-sans font-normal text-gray-500 mt-1.5 hidden sm:block">FACILITY SOLUTIONS</span>
+                            <span className="text-xs font-sans font-normal text-gray-500 mt-1.5">FACILITY SOLUTIONS</span>
                         </Link>
 
                         {/* Navigation Links */}
@@ -304,75 +303,81 @@ export default function Navigation() {
 
                 {/* Mobile Menu Panel */}
                 {mobileOpen && (
-                    <div className="md:hidden border-t border-gray-100 bg-white max-h-[70vh] overflow-y-auto">
-                        <div className="px-4 py-4 space-y-4">
-                            {/* Facility Types */}
-                            <div>
-                                <p className="text-xs font-bold text-sky-500 uppercase tracking-wider mb-2">Facility Types</p>
-                                {/* Horizontal Pillar Links (Mobile) */}
-                                <div className="flex flex-wrap gap-1.5 mb-3">
+                    <div className="md:hidden border-t border-gray-100 bg-gray-50 max-h-[75vh] overflow-y-auto">
+                        <div className="p-4 space-y-3">
+
+                            {/* Industries Section */}
+                            <div className="bg-white rounded-xl p-4 shadow-sm">
+                                <p className="text-[11px] font-bold text-sky-600 uppercase tracking-widest mb-3">Industries</p>
+                                <div className="flex flex-wrap gap-2 mb-3">
                                     {INDUSTRY_PILLARS.map(pillar => (
                                         <Link
                                             key={pillar.slug}
                                             href={`/industries/${pillar.slug}`}
-                                            className="px-3 py-1 text-xs font-bold rounded-full bg-sky-50 text-sky-700 hover:bg-sky-100 transition-colors"
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-full bg-sky-50 text-sky-700 hover:bg-sky-100 active:bg-sky-200 transition-colors"
                                             onClick={() => setMobileOpen(false)}
                                         >
                                             {pillar.name.replace(' Facilities', '').replace(' & ', ' & ')}
                                         </Link>
                                     ))}
                                 </div>
-                                <div className="grid grid-cols-2 gap-1">
+                                <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                                     {FACILITY_TYPES.slice(0, 8).map(f => (
-                                        <Link key={f.slug} href={getFacilityHref(f)} className="text-sm text-gray-700 py-1.5 hover:text-sky-600" onClick={() => setMobileOpen(false)}>
+                                        <Link key={f.slug} href={getFacilityHref(f)} className="text-sm text-gray-600 py-1.5 hover:text-sky-600 active:text-sky-700 transition-colors" onClick={() => setMobileOpen(false)}>
                                             {f.label}
                                         </Link>
                                     ))}
                                 </div>
                             </div>
 
-                            {/* Services */}
-                            <div>
-                                <p className="text-xs font-bold text-sky-500 uppercase tracking-wider mb-2">Services</p>
-                                <div className="grid grid-cols-2 gap-1">
+                            {/* Services Section */}
+                            <div className="bg-white rounded-xl p-4 shadow-sm">
+                                <p className="text-[11px] font-bold text-sky-600 uppercase tracking-widest mb-3">Services</p>
+                                <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                                     {Object.values(SERVICE_GROUPS).flatMap(g => g.services).slice(0, 6).map(s => (
-                                        <Link key={s.slug} href={`/services/${s.slug}`} className="text-sm text-gray-700 py-1.5 hover:text-sky-600" onClick={() => setMobileOpen(false)}>
+                                        <Link key={s.slug} href={`/services/${s.slug}`} className="text-sm text-gray-600 py-1.5 hover:text-sky-600 active:text-sky-700 transition-colors" onClick={() => setMobileOpen(false)}>
                                             {s.label}
                                         </Link>
                                     ))}
                                 </div>
-                                <div className="flex items-center justify-between mt-2">
-                                    <Link href="/services" className="text-xs text-sky-600 font-semibold inline-block" onClick={() => setMobileOpen(false)}>
-                                        View All Services →
+                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                                    <Link href="/services" className="text-xs text-sky-600 font-semibold" onClick={() => setMobileOpen(false)}>
+                                        All Services →
                                     </Link>
-                                    <Link href="/calculator" className="text-xs text-emerald-600 font-semibold inline-block" onClick={() => setMobileOpen(false)}>
-                                        💰 Get a Price Estimate →
+                                    <Link href="/calculator" className="text-xs text-emerald-600 font-semibold" onClick={() => setMobileOpen(false)}>
+                                        💰 Price Estimate →
                                     </Link>
                                 </div>
                             </div>
 
-                            {/* Solutions */}
-                            <div className="border-t border-gray-100 pt-3">
-                                <Link href="/solutions" className="block text-sm font-semibold text-sky-600 hover:text-sky-700 py-1.5" onClick={() => setMobileOpen(false)}
-                                >
-                                    🛡️ Cleaning Verification Hub
+                            {/* Quick Links */}
+                            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                                <Link href="/solutions" className="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-gray-700 hover:bg-sky-50 active:bg-sky-100 transition-colors border-b border-gray-50" onClick={() => setMobileOpen(false)}>
+                                    <span className="text-lg">🛡️</span>
+                                    Cleaning Verification Hub
                                 </Link>
-                                <Link href="/solutions/keep-your-cleaner" className="block text-sm text-gray-700 hover:text-sky-600 py-1.5" onClick={() => setMobileOpen(false)}
-                                >
+                                <Link href="/solutions/keep-your-cleaner" className="flex items-center gap-3 px-4 py-3.5 text-sm text-gray-600 hover:bg-sky-50 active:bg-sky-100 transition-colors" onClick={() => setMobileOpen(false)}>
+                                    <span className="text-lg">✨</span>
                                     Keep Your Cleaner
                                 </Link>
                             </div>
 
                             {/* For Contractors */}
-                            <div className="border-t border-gray-100 pt-3 space-y-3">
-                                <p className="text-xs font-bold text-sky-500 uppercase tracking-wider">For Contractors</p>
-                                <Link href="/contractors" className="block text-sm font-medium text-gray-700 hover:text-sky-600" onClick={() => setMobileOpen(false)}>🧹 Join Our Cleaning Network</Link>
-                                <Link href="/refer" className="block text-sm font-semibold text-emerald-600 hover:text-emerald-700" onClick={() => setMobileOpen(false)}>💰 Refer & Earn $500</Link>
+                            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                                <p className="text-[11px] font-bold text-sky-600 uppercase tracking-widest px-4 pt-4 pb-2">For Contractors</p>
+                                <Link href="/contractors" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-sky-50 active:bg-sky-100 transition-colors border-b border-gray-50" onClick={() => setMobileOpen(false)}>
+                                    <span className="text-lg">🧹</span>
+                                    Join Our Cleaning Network
+                                </Link>
+                                <Link href="/refer" className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 transition-colors" onClick={() => setMobileOpen(false)}>
+                                    <span className="text-lg">💰</span>
+                                    Refer & Earn $500
+                                </Link>
                             </div>
 
                             {/* Mobile CTA */}
                             <button
-                                className="w-full bg-sky-600 text-white py-3 rounded-xl font-medium text-sm shadow-md"
+                                className="w-full bg-sky-600 text-white py-3.5 rounded-xl font-semibold text-sm shadow-md shadow-sky-600/20 active:bg-sky-700 transition-colors"
                                 onClick={() => {
                                     setMobileOpen(false);
                                     handleNavClick('modal_open', 'Get Building Scope');
