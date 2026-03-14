@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -66,6 +66,8 @@ export default function OnboardingPage() {
     const [acordDownloadUrl, setAcordDownloadUrl] = useState<string | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploading, setUploading] = useState(false);
+    const [step4Attempted, setStep4Attempted] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // State-based requirements
     const vendorState = vendor?.state || 'NY';
@@ -180,6 +182,8 @@ export default function OnboardingPage() {
         // Skip Step 4 for Partner Network
         if (currentStep === 3 && currentTrack === 'STANDARD') {
             handleSubmit();
+        } else if (currentStep === 4 && !isStep4Valid()) {
+            setStep4Attempted(true);
         } else if (currentStep < totalSteps) {
             trackEvent('onboarding_step_complete', { step_number: String(currentStep), track: currentTrack, vendor_id: vendorId });
             setCurrentStep(currentStep + 1);
@@ -516,7 +520,7 @@ export default function OnboardingPage() {
     return (
         <div className="min-h-screen bg-slate-50 font-sans">
             {/* Header */}
-            <header className="bg-sky-900 text-white py-8 px-6">
+            <header className="bg-sky-900 text-white py-4 md:py-8 px-4 md:px-6">
                 <div className="max-w-2xl mx-auto">
                     <h1 className="text-2xl md:text-3xl font-bold">Join the XIRI Partner Network</h1>
                     <p className="text-sky-200 mt-2">Complete your profile to start receiving opportunities</p>
@@ -543,8 +547,8 @@ export default function OnboardingPage() {
                 </div>
             </div>
 
-            <main className="max-w-2xl mx-auto px-6 py-12">
-                <div className="bg-white rounded-xl shadow-lg p-8">
+            <main className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-12 pb-28 md:pb-12">
+                <div className="bg-white rounded-xl shadow-lg p-4 md:p-8">
                     {/* STEP 0: Language Selection */}
                     {currentStep === 0 && (
                         <div className="space-y-8 text-center">
@@ -933,22 +937,33 @@ export default function OnboardingPage() {
                                             <p className="text-xs text-sky-600">{Math.round(uploadProgress)}%</p>
                                         </div>
                                     ) : (
-                                        <div className="space-y-3">
+                                        <div
+                                            className="space-y-3 cursor-pointer"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            role="button"
+                                            tabIndex={0}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
+                                        >
                                             <Upload className="w-10 h-10 text-sky-600 mx-auto" />
                                             <div>
-                                                <p className="font-semibold text-sky-900">Upload ACORD 25</p>
+                                                <p className="font-semibold text-sky-900">Tap to Upload ACORD 25</p>
                                                 <p className="text-xs text-sky-700">Certificate of Liability Insurance</p>
                                             </div>
                                             <input
+                                                ref={fileInputRef}
                                                 type="file"
                                                 accept=".pdf,.jpg,.jpeg,.png"
+                                                className="hidden"
                                                 onChange={(e) => {
                                                     if (e.target.files?.[0]) {
                                                         handleAcord25Upload(e.target.files[0]);
                                                     }
                                                 }}
-                                                className="text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-sky-600 file:text-white hover:file:bg-sky-700 file:cursor-pointer"
                                             />
+                                            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white rounded-lg text-sm font-medium hover:bg-sky-700 transition-colors">
+                                                <Upload className="w-4 h-4" />
+                                                Choose File
+                                            </div>
                                             <p className="text-xs text-slate-500">PDF, JPG, or PNG • Max 10MB</p>
                                         </div>
                                     )}
@@ -966,7 +981,7 @@ export default function OnboardingPage() {
                                 </ul>
                             </div>
 
-                            {!isStep4Valid() && !uploading && (
+                            {step4Attempted && !isStep4Valid() && !uploading && (
                                 <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
                                     Please upload your ACORD 25 to continue.
                                 </div>
@@ -974,55 +989,57 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {/* Navigation Buttons */}
-                    <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-200">
-                        {currentStep > 1 ? (
-                            <button
-                                onClick={handleBack}
-                                className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
-                            >
-                                <ChevronLeft className="w-5 h-5" />
-                                {t('common.back', language)}
-                            </button>
-                        ) : (
-                            <div />
-                        )}
-
-                        {currentStep < totalSteps && !(currentStep === 3 && currentTrack === 'STANDARD') ? (
-                            <button
-                                onClick={handleNext}
-                                disabled={
-                                    (currentStep === 1 && !isStep1Valid()) ||
-                                    (currentStep === 2 && !isStep2Valid()) ||
-                                    (currentStep === 3 && !isStep3Valid()) ||
-                                    (currentStep === 4 && !isStep4Valid())
-                                }
-                                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${(currentStep === 1 && isStep1Valid()) ||
-                                    (currentStep === 2 && isStep2Valid()) ||
-                                    (currentStep === 3 && isStep3Valid()) ||
-                                    (currentStep === 4 && isStep4Valid())
-                                    ? 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg hover:shadow-xl'
-                                    : 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                                    }`}
-                            >
-                                {t('common.continue', language)}
-                                <ChevronRight className="w-5 h-5" />
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleSubmit}
-                                disabled={submitting || (currentStep === 4 && !isStep4Valid())}
-                                className={`px-8 py-3 rounded-lg font-bold transition-all ${submitting || (currentStep === 4 && !isStep4Valid())
-                                    ? 'bg-slate-400 text-white cursor-not-allowed'
-                                    : 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg hover:shadow-xl'
-                                    }`}
-                            >
-                                {submitting ? t('common.loading', language) : t('common.submit', language)}
-                            </button>
-                        )}
-                    </div>
                 </div>
             </main>
+
+            {/* Sticky Bottom Navigation — app-like */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 md:px-6 py-3 md:py-4 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] z-50">
+                <div className="max-w-2xl mx-auto flex items-center justify-between">
+                    {currentStep > 1 ? (
+                        <button
+                            onClick={handleBack}
+                            className="flex items-center gap-2 px-4 py-2.5 text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                            {t('common.back', language)}
+                        </button>
+                    ) : (
+                        <div />
+                    )}
+
+                    {currentStep < totalSteps && !(currentStep === 3 && currentTrack === 'STANDARD') ? (
+                        <button
+                            onClick={handleNext}
+                            disabled={
+                                (currentStep === 1 && !isStep1Valid()) ||
+                                (currentStep === 2 && !isStep2Valid()) ||
+                                (currentStep === 3 && !isStep3Valid())
+                            }
+                            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${(currentStep === 1 && isStep1Valid()) ||
+                                (currentStep === 2 && isStep2Valid()) ||
+                                (currentStep === 3 && isStep3Valid()) ||
+                                (currentStep === 4 && isStep4Valid())
+                                ? 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg hover:shadow-xl'
+                                : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                                }`}
+                        >
+                            {t('common.continue', language)}
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    ) : (
+                        <button
+                            onClick={currentStep === 4 ? handleNext : handleSubmit}
+                            disabled={submitting}
+                            className={`px-8 py-3 rounded-lg font-bold transition-all ${submitting
+                                ? 'bg-slate-400 text-white cursor-not-allowed'
+                                : 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg hover:shadow-xl'
+                                }`}
+                        >
+                            {submitting ? t('common.loading', language) : t('common.submit', language)}
+                        </button>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

@@ -9,7 +9,7 @@ import { usePathname } from 'next/navigation';
  */
 export function MarketingShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const isNfcPage = pathname.startsWith('/s/') || pathname.startsWith('/z/') || pathname.startsWith('/c/');
+    const isNfcPage = pathname.startsWith('/s/') || pathname.startsWith('/z/') || pathname.startsWith('/c/') || pathname.startsWith('/onboarding/');
 
     if (isNfcPage) return null;
 
