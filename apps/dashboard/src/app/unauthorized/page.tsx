@@ -14,7 +14,7 @@ export default function UnauthorizedPage() {
         if (profile?.roles.includes('admin')) {
             router.push('/');
         } else if (profile?.roles.includes('recruiter')) {
-            router.push('/supply/recruitment');
+            router.push('/supply/dashboard');
         } else if (profile?.roles.includes('sales')) {
             router.push('/sales/dashboard');
         } else {

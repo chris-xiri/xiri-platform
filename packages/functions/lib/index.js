@@ -132,6 +132,7 @@ __export(emailUtils_exports, {
   getTemplate: () => getTemplate,
   parseAddress: () => parseAddress,
   replaceVariables: () => replaceVariables,
+  sendBatchEmails: () => sendBatchEmails,
   sendEmail: () => sendEmail,
   sendTemplatedEmail: () => sendTemplatedEmail
 });
@@ -350,6 +351,29 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
   } catch (err) {
     console.error("Error sending raw email:", err);
     return { success: false };
+  }
+}
+async function sendBatchEmails(emails) {
+  if (emails.length === 0) return { success: true, ids: [] };
+  try {
+    const payload = emails.map((e) => ({
+      from: e.from || "XIRI Facility Solutions <reports@xiri.ai>",
+      replyTo: e.replyTo || "chris@xiri.ai",
+      to: e.to,
+      subject: e.subject,
+      html: e.html
+    }));
+    const { data, error: error11 } = await resend.batch.send(payload);
+    if (error11) {
+      console.error("\u274C Batch send error:", error11);
+      return { success: false, error: error11.message || String(error11) };
+    }
+    const ids = data?.data?.map((d) => d.id) || [];
+    console.log(`\u2705 Batch sent ${emails.length} emails (IDs: ${ids.join(", ")})`);
+    return { success: true, ids };
+  } catch (err) {
+    console.error("\u274C Batch send error:", err);
+    return { success: false, error: err.message };
   }
 }
 var admin5, import_generative_ai2, import_resend, db3, genAI, resend, FUNCTIONS_BASE_URL;
@@ -18733,12 +18757,14 @@ __export(index_exports, {
   adminUpdateAuthUser: () => adminUpdateAuthUser,
   calculateNrr: () => calculateNrr,
   changeMyPassword: () => changeMyPassword,
+  checkNightlyStatus: () => checkNightlyStatus,
   clearPipeline: () => clearPipeline,
   completeNfcSession: () => completeNfcSession,
   deleteFacebookPost: () => deleteFacebookPost,
   enrichFromWebsite: () => enrichFromWebsite,
   generateLeads: () => generateLeads,
   generateMonthlyInvoices: () => generateMonthlyInvoices,
+  generateMorningReports: () => generateMorningReports,
   getComplianceLog: () => getComplianceLog,
   getFacebookPosts: () => getFacebookPosts,
   getFacebookReels: () => getFacebookReels,
@@ -18780,6 +18806,7 @@ __export(index_exports, {
   sendBookingConfirmation: () => sendBookingConfirmation,
   sendOnboardingInvite: () => sendOnboardingInvite,
   sendQuoteEmail: () => sendQuoteEmail,
+  sendTestMorningReport: () => sendTestMorningReport,
   sourceProperties: () => sourceProperties,
   startLeadSequence: () => startLeadSequence,
   testSendEmail: () => testSendEmail,
@@ -20510,7 +20537,7 @@ Power to the Facilities!`,
   });
 });
 function generateICS(event) {
-  const formatDate = (date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const formatDate2 = (date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   return `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//XIRI//Facility Solutions//EN
@@ -20518,9 +20545,9 @@ CALSCALE:GREGORIAN
 METHOD:REQUEST
 BEGIN:VEVENT
 UID:${Date.now()}@xiri.ai
-DTSTAMP:${formatDate(/* @__PURE__ */ new Date())}
-DTSTART:${formatDate(event.start)}
-DTEND:${formatDate(event.end)}
+DTSTAMP:${formatDate2(/* @__PURE__ */ new Date())}
+DTSTART:${formatDate2(event.start)}
+DTEND:${formatDate2(event.end)}
 SUMMARY:${event.summary}
 DESCRIPTION:${event.description.replace(/\n/g, "\\n")}
 LOCATION:${event.location}
@@ -21247,7 +21274,7 @@ Power to the Facilities!`,
   logger9.info(`Onboarding invite sent for vendor ${vendorId}. Vendor: ${vendorSent ? "\u2705" : "\u274C"}`);
 });
 function generateICS2(event) {
-  const formatDate = (date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const formatDate2 = (date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   let attendeeLines = "";
   if (event.attendees) {
     attendeeLines = event.attendees.map((a) => `ATTENDEE;CN=${a.name};RSVP=TRUE:mailto:${a.email}`).join("\r\n");
@@ -21259,9 +21286,9 @@ CALSCALE:GREGORIAN
 METHOD:REQUEST
 BEGIN:VEVENT
 UID:onboarding-${Date.now()}@xiri.ai
-DTSTAMP:${formatDate(/* @__PURE__ */ new Date())}
-DTSTART:${formatDate(event.start)}
-DTEND:${formatDate(event.end)}
+DTSTAMP:${formatDate2(/* @__PURE__ */ new Date())}
+DTSTART:${formatDate2(event.start)}
+DTEND:${formatDate2(event.end)}
 SUMMARY:${event.summary}
 DESCRIPTION:${event.description.replace(/\n/g, "\\n")}
 LOCATION:${event.location}
@@ -21317,10 +21344,10 @@ var sendQuoteEmail = (0, import_https3.onCall)({
   });
   const reviewUrl = `https://xiri.ai/quote/review/${reviewToken}`;
   const formatCurrency = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n);
-  const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const DAY_NAMES2 = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const formatFrequency = (freq, daysOfWeek) => {
     if (freq === "custom_days" && daysOfWeek) {
-      const days = daysOfWeek.map((on, i) => on ? DAY_NAMES[i] : null).filter(Boolean);
+      const days = daysOfWeek.map((on, i) => on ? DAY_NAMES2[i] : null).filter(Boolean);
       const monFri = [false, true, true, true, true, true, false];
       if (JSON.stringify(daysOfWeek) === JSON.stringify(monFri)) return "Mon\u2013Fri";
       return days.join(", ") || "Custom";
@@ -25699,6 +25726,383 @@ var getOutroPreview = (0, import_https10.onCall)({
 // src/functions/nfc.ts
 var import_https11 = require("firebase-functions/v2/https");
 var crypto2 = __toESM(require("crypto"));
+
+// src/utils/googleChatUtils.ts
+var import_params3 = require("firebase-functions/params");
+var TIMEZONE = "America/New_York";
+var COMMAND_CENTER_URL = "https://app.xiri.ai/operations/command-center";
+var googleChatWebhookSecret = (0, import_params3.defineSecret)("GOOGLE_CHAT_WEBHOOK_URL");
+function getWebhookUrl() {
+  return googleChatWebhookSecret.value() || process.env.GOOGLE_CHAT_WEBHOOK_URL || "";
+}
+function makeThreadKey(siteLocationId, date) {
+  const d = date || /* @__PURE__ */ new Date();
+  const dateStr = d.toLocaleDateString("en-CA", { timeZone: TIMEZONE });
+  return `shift_${siteLocationId}_${dateStr}`;
+}
+async function getUserInfo(uid) {
+  if (!uid) return { name: null, googleUserId: null };
+  try {
+    const userDoc = await db.collection("users").doc(uid).get();
+    if (!userDoc.exists) return { name: null, googleUserId: null };
+    const data = userDoc.data();
+    return {
+      name: data.displayName || data.email || null,
+      googleUserId: data.googleUserId || null
+    };
+  } catch {
+    return { name: null, googleUserId: null };
+  }
+}
+function mention(user) {
+  if (user.googleUserId) return `<users/${user.googleUserId}>`;
+  if (user.name) return `*@${user.name}*`;
+  return "";
+}
+function buildMentionText(users) {
+  const lines = [];
+  const nmTag = mention(users.nightManager);
+  const fmTag = mention(users.fm);
+  if (fmTag) lines.push(`FSM: ${fmTag}`);
+  if (nmTag) lines.push(`Night Manager: ${nmTag}`);
+  return lines.join("\n");
+}
+async function resolveTaggedUsers(workOrderId) {
+  const result = {
+    nightManager: { name: null, googleUserId: null },
+    fm: { name: null, googleUserId: null }
+  };
+  if (!workOrderId) return result;
+  try {
+    const woDoc = await db.collection("work_orders").doc(workOrderId).get();
+    if (!woDoc.exists) return result;
+    const wo = woDoc.data();
+    if (wo.assignedNightManagerId) {
+      result.nightManager = await getUserInfo(wo.assignedNightManagerId);
+      if (wo.assignedNightManagerName) result.nightManager.name = wo.assignedNightManagerName;
+    }
+    if (wo.assignedFsmId) {
+      result.fm = await getUserInfo(wo.assignedFsmId);
+    }
+  } catch (err) {
+    console.error("resolveTaggedUsers error:", err);
+  }
+  return result;
+}
+async function sendText(threadKey, text) {
+  const webhookUrl = getWebhookUrl();
+  if (!webhookUrl) {
+    console.log("\u26A0\uFE0F Chat webhook not configured");
+    return;
+  }
+  try {
+    const resp = await fetch(
+      `${webhookUrl}&messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, thread: { threadKey } })
+      }
+    );
+    if (!resp.ok) console.error(`Chat webhook failed (${resp.status}):`, await resp.text());
+  } catch (err) {
+    console.error("Chat webhook error:", err);
+  }
+}
+async function sendCard(threadKey, card, fallbackText) {
+  const webhookUrl = getWebhookUrl();
+  if (!webhookUrl) {
+    console.log("\u26A0\uFE0F Chat webhook not configured");
+    return;
+  }
+  try {
+    const resp = await fetch(
+      `${webhookUrl}&messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: fallbackText || "",
+          cardsV2: [{ cardId: `xiri-${Date.now()}`, card }],
+          thread: { threadKey }
+        })
+      }
+    );
+    if (!resp.ok) console.error(`Chat card failed (${resp.status}):`, await resp.text());
+  } catch (err) {
+    console.error("Chat card error:", err);
+  }
+}
+function fmtTime(date) {
+  return (date || /* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: TIMEZONE
+  });
+}
+function fmtDate(date) {
+  return (date || /* @__PURE__ */ new Date()).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: TIMEZONE
+  });
+}
+async function notifyShiftStarted(params) {
+  const threadKey = makeThreadKey(params.siteLocationId);
+  let nmWidget = null;
+  let users = null;
+  if (params.workOrderId) {
+    users = await resolveTaggedUsers(params.workOrderId);
+    if (users.nightManager.name) {
+      nmWidget = {
+        decoratedText: {
+          topLabel: "NIGHT MANAGER",
+          text: users.nightManager.name,
+          startIcon: { knownIcon: "MEMBERSHIP" }
+        }
+      };
+    }
+  }
+  const crewText = params.crewPhone ? `${params.crewName}  \u2022  ${params.crewPhone}` : params.crewName;
+  const widgets = [
+    {
+      decoratedText: {
+        topLabel: "CREW",
+        text: crewText,
+        startIcon: { knownIcon: "PERSON" }
+      }
+    },
+    {
+      decoratedText: {
+        topLabel: "CLOCKED IN",
+        text: fmtTime(),
+        startIcon: { knownIcon: "CLOCK" }
+      }
+    }
+  ];
+  if (nmWidget) widgets.push(nmWidget);
+  const sections = [{ widgets }];
+  if (params.crewPhone) {
+    sections.push({
+      widgets: [{
+        buttonList: {
+          buttons: [
+            {
+              text: "\u{1F4DE} Call Crew",
+              onClick: { openLink: { url: `tel:${params.crewPhone}` } }
+            },
+            {
+              text: "\u{1F4AC} Text Crew",
+              onClick: { openLink: { url: `sms:${params.crewPhone}` } }
+            }
+          ]
+        }
+      }]
+    });
+  }
+  sections.push({
+    widgets: [{
+      textParagraph: {
+        text: "<i>This thread tracks all compliance alerts for tonight's shift.</i>"
+      }
+    }]
+  });
+  const card = {
+    header: {
+      title: "\u{1F3C1}  Shift Started",
+      subtitle: `${params.locationName}  \u2022  ${fmtDate()}`
+    },
+    sections
+  };
+  sendCard(threadKey, card, users ? buildMentionText(users) : "").catch(console.error);
+}
+async function notifyShiftVerified(params) {
+  const threadKey = makeThreadKey(params.siteLocationId);
+  let users = null;
+  if (params.workOrderId) {
+    users = await resolveTaggedUsers(params.workOrderId);
+  }
+  const scoreStr = params.auditScore ? `Score: ${params.auditScore}/5 \u2B50` : "";
+  const widgets = [
+    {
+      decoratedText: {
+        topLabel: "REVIEWED BY",
+        text: `${params.managerName} (Night Manager)`,
+        startIcon: { knownIcon: "PERSON" }
+      }
+    },
+    {
+      decoratedText: {
+        topLabel: "VERIFIED AT",
+        text: fmtTime(),
+        startIcon: { knownIcon: "CLOCK" }
+      }
+    }
+  ];
+  const card = {
+    header: {
+      title: "\u2705  Shift Verified",
+      subtitle: `${params.locationName}  \u2022  ${fmtDate()}  \u2022  ${scoreStr}`
+    },
+    sections: [
+      { widgets },
+      {
+        widgets: [{
+          buttonList: {
+            buttons: [{
+              text: "View in Command Center",
+              onClick: { openLink: { url: COMMAND_CENTER_URL } }
+            }]
+          }
+        }]
+      }
+    ]
+  };
+  sendCard(threadKey, card, users ? buildMentionText(users) : "").catch(console.error);
+}
+async function notifyLateWarning(params) {
+  const threadKey = makeThreadKey(params.siteLocationId);
+  const users = await resolveTaggedUsers(params.workOrderId);
+  const widgets = [
+    {
+      decoratedText: {
+        topLabel: "EXPECTED BY",
+        text: params.expectedTime,
+        startIcon: { knownIcon: "CLOCK" }
+      }
+    },
+    {
+      decoratedText: {
+        topLabel: "CURRENT TIME",
+        text: fmtTime(),
+        startIcon: { knownIcon: "CLOCK" }
+      }
+    }
+  ];
+  if (params.vendorName) {
+    widgets.push({
+      decoratedText: {
+        topLabel: "VENDOR",
+        text: params.vendorName,
+        startIcon: { knownIcon: "PERSON" }
+      }
+    });
+  }
+  if (users.nightManager.name) {
+    widgets.push({
+      decoratedText: {
+        topLabel: "NIGHT MANAGER",
+        text: users.nightManager.name,
+        startIcon: { knownIcon: "MEMBERSHIP" }
+      }
+    });
+  }
+  const sections = [{ widgets }];
+  if (params.vendorPhone) {
+    sections.push({
+      widgets: [{
+        buttonList: {
+          buttons: [
+            {
+              text: "\u{1F4DE} Call Vendor",
+              onClick: { openLink: { url: `tel:${params.vendorPhone}` } }
+            },
+            {
+              text: "\u{1F4AC} Text Vendor",
+              onClick: { openLink: { url: `sms:${params.vendorPhone}` } }
+            }
+          ]
+        }
+      }]
+    });
+  }
+  const card = {
+    header: {
+      title: "\u26A0\uFE0F  No Check-In Yet",
+      subtitle: `${params.locationName}  \u2022  ${fmtDate()}`
+    },
+    sections
+  };
+  sendCard(threadKey, card, buildMentionText(users)).catch(console.error);
+}
+async function notifyNoShow(params) {
+  const threadKey = makeThreadKey(params.siteLocationId);
+  const users = await resolveTaggedUsers(params.workOrderId);
+  const widgets = [
+    {
+      decoratedText: {
+        topLabel: "VENDOR",
+        text: params.vendorName,
+        startIcon: { knownIcon: "PERSON" }
+      }
+    },
+    {
+      decoratedText: {
+        topLabel: "EXPECTED BY",
+        text: params.expectedTime,
+        startIcon: { knownIcon: "CLOCK" }
+      }
+    },
+    {
+      textParagraph: {
+        text: "<b>Action needed:</b> Contact crew lead or dispatch backup."
+      }
+    }
+  ];
+  const sections = [{ widgets }];
+  const buttons = [];
+  if (params.vendorPhone) {
+    buttons.push(
+      {
+        text: "\u{1F4DE} Call Vendor",
+        onClick: { openLink: { url: `tel:${params.vendorPhone}` } }
+      },
+      {
+        text: "\u{1F4AC} Text Vendor",
+        onClick: { openLink: { url: `sms:${params.vendorPhone}` } }
+      }
+    );
+  }
+  buttons.push({
+    text: "Open Command Center",
+    onClick: { openLink: { url: COMMAND_CENTER_URL } }
+  });
+  sections.push({
+    widgets: [{ buttonList: { buttons } }]
+  });
+  const card = {
+    header: {
+      title: "\u{1F534}  NO-SHOW",
+      subtitle: `${params.locationName}  \u2022  ${fmtDate()}`
+    },
+    sections
+  };
+  sendCard(threadKey, card, buildMentionText(users)).catch(console.error);
+}
+function notifyZoneScanned(params) {
+  const threadKey = makeThreadKey(params.siteLocationId);
+  sendText(threadKey, `\u2705 ${params.zoneName} _(${params.zonesCompleted}/${params.zonesTotal})_`).catch(console.error);
+}
+function notifyAllZonesDone(params) {
+  const threadKey = makeThreadKey(params.siteLocationId);
+  sendText(threadKey, `\u{1F9F9} *All zones complete* \u2014 ${params.locationName}`).catch(console.error);
+}
+function notifyCleanerClockOut(params) {
+  const threadKey = makeThreadKey(params.siteLocationId);
+  sendText(threadKey, `\u{1F550} Crew clocked out \u2014 ${params.crewName} at ${fmtTime()}`).catch(console.error);
+}
+function notifyManagerClockIn(params) {
+  const threadKey = makeThreadKey(params.siteLocationId);
+  sendText(threadKey, `\u{1F50D} Night Manager *${params.managerName}* on-site`).catch(console.error);
+}
+function notifyManagerAuditZone(params) {
+  const threadKey = makeThreadKey(params.siteLocationId);
+  sendText(threadKey, `\u{1F4CB} Audit: *${params.zoneName}* reviewed _(${params.zonesCompleted}/${params.zonesTotal})_`).catch(console.error);
+}
+
+// src/functions/nfc.ts
 function hashSiteKey(plainKey) {
   return crypto2.createHash("sha256").update(plainKey).digest("hex");
 }
@@ -25706,9 +26110,10 @@ function generateSessionToken() {
   return crypto2.randomUUID();
 }
 var validateSiteKey = (0, import_https11.onCall)({
-  cors: DASHBOARD_CORS
+  cors: DASHBOARD_CORS,
+  secrets: [googleChatWebhookSecret]
 }, async (request) => {
-  const { locationId, siteKey, personName } = request.data;
+  const { locationId, siteKey, personName, personPhone } = request.data;
   if (!locationId || typeof locationId !== "string") {
     throw new import_https11.HttpsError("invalid-argument", "locationId is required");
   }
@@ -25742,6 +26147,7 @@ var validateSiteKey = (0, import_https11.onCall)({
     siteLocationId: locationId,
     locationName: siteData.locationName,
     personName: personName.trim(),
+    personPhone: personPhone?.trim() || null,
     personRole,
     clockInAt: /* @__PURE__ */ new Date(),
     clockOutAt: null,
@@ -25752,6 +26158,22 @@ var validateSiteKey = (0, import_https11.onCall)({
     expiresAt,
     createdAt: /* @__PURE__ */ new Date()
   });
+  const workOrderId = siteData.workOrderId || null;
+  if (personRole === "cleaner") {
+    notifyShiftStarted({
+      siteLocationId: locationId,
+      locationName: siteData.locationName,
+      crewName: personName.trim(),
+      crewPhone: personPhone?.trim() || null,
+      workOrderId
+    }).catch(console.error);
+  } else {
+    notifyManagerClockIn({
+      siteLocationId: locationId,
+      locationName: siteData.locationName,
+      managerName: personName.trim()
+    });
+  }
   return {
     sessionId,
     personRole,
@@ -25771,7 +26193,8 @@ var validateSiteKey = (0, import_https11.onCall)({
   };
 });
 var updateZoneScan = (0, import_https11.onCall)({
-  cors: DASHBOARD_CORS
+  cors: DASHBOARD_CORS,
+  secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { sessionId, zoneId, zoneName, tasksCompleted } = request.data;
   if (!sessionId || typeof sessionId !== "string") {
@@ -25833,6 +26256,28 @@ var updateZoneScan = (0, import_https11.onCall)({
   const siteDoc = await db.collection("nfc_sites").doc(sessionData.siteLocationId).get();
   const totalZones = siteDoc.exists ? (siteDoc.data().zones || []).length : 0;
   const scannedZones = existingResults.length;
+  const isManager = sessionData.personRole === "night_manager";
+  if (isManager) {
+    notifyManagerAuditZone({
+      siteLocationId: sessionData.siteLocationId,
+      zoneName: zoneName || zoneId,
+      zonesCompleted: scannedZones,
+      zonesTotal: totalZones
+    });
+  } else {
+    notifyZoneScanned({
+      siteLocationId: sessionData.siteLocationId,
+      zoneName: zoneName || zoneId,
+      zonesCompleted: scannedZones,
+      zonesTotal: totalZones
+    });
+  }
+  if (scannedZones >= totalZones && !isManager) {
+    notifyAllZonesDone({
+      siteLocationId: sessionData.siteLocationId,
+      locationName: sessionData.locationName
+    });
+  }
   return {
     success: true,
     zonesCompleted: scannedZones,
@@ -25841,7 +26286,8 @@ var updateZoneScan = (0, import_https11.onCall)({
   };
 });
 var completeNfcSession = (0, import_https11.onCall)({
-  cors: DASHBOARD_CORS
+  cors: DASHBOARD_CORS,
+  secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { sessionId, auditScore, auditNotes } = request.data;
   if (!sessionId) {
@@ -25856,6 +26302,24 @@ var completeNfcSession = (0, import_https11.onCall)({
     auditScore: auditScore || null,
     auditNotes: auditNotes || null
   });
+  const sessionData = sessionDoc.data();
+  if (sessionData.personRole === "night_manager") {
+    const siteDoc = await db.collection("nfc_sites").doc(sessionData.siteLocationId).get();
+    const workOrderId = siteDoc.exists ? siteDoc.data()?.workOrderId || null : null;
+    notifyShiftVerified({
+      siteLocationId: sessionData.siteLocationId,
+      locationName: sessionData.locationName,
+      managerName: sessionData.personName,
+      auditScore: auditScore || void 0,
+      workOrderId
+    }).catch(console.error);
+  } else {
+    notifyCleanerClockOut({
+      siteLocationId: sessionData.siteLocationId,
+      locationName: sessionData.locationName,
+      crewName: sessionData.personName
+    });
+  }
   return { success: true, message: "Session completed. Thank you!" };
 });
 function getInitials(name) {
@@ -25916,18 +26380,647 @@ var getComplianceLog = (0, import_https11.onCall)({
     }
   };
 });
+
+// src/functions/monitoring.ts
+var import_scheduler7 = require("firebase-functions/v2/scheduler");
+var import_https12 = require("firebase-functions/v2/https");
+init_emailUtils();
+
+// src/utils/morningReportEmail.ts
+function buildSubjectLine(data) {
+  switch (data.tier) {
+    case "green":
+      return `[No Action Needed] ${data.buildingName} \u2014 Cleaned ${data.zonesCompleted}/${data.zonesTotal} Zones`;
+    case "amber":
+      return `[Resolved] ${data.buildingName} \u2014 Issue Handled, All Zones Completed`;
+    case "red":
+      return `[Action Needed] ${data.buildingName} \u2014 Your Input Required`;
+  }
+}
+var COLORS = {
+  green: { bg: "#ecfdf5", border: "#059669", badge: "#059669", badgeText: "#ffffff", text: "#065f46" },
+  amber: { bg: "#fffbeb", border: "#d97706", badge: "#d97706", badgeText: "#ffffff", text: "#92400e" },
+  red: { bg: "#fef2f2", border: "#dc2626", badge: "#dc2626", badgeText: "#ffffff", text: "#991b1b" }
+};
+var TIER_LABELS = {
+  green: "All Good",
+  amber: "Issue Resolved",
+  red: "Action Needed"
+};
+var TIER_ICONS = {
+  green: "&#x2705;",
+  // ✅
+  amber: "&#x26A0;&#xFE0F;",
+  // ⚠️
+  red: "&#x1F534;"
+  // 🔴
+};
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function buildMorningReportHtml(data) {
+  const c = COLORS[data.tier];
+  const completionPct = data.zonesTotal > 0 ? Math.round(data.zonesCompleted / data.zonesTotal * 100) : 0;
+  const zoneRows = data.zones.map((z) => {
+    const complete = z.tasksCompleted >= z.tasksTotal;
+    return `
+        <tr>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">
+                ${complete ? "&#x2705;" : "&#x26A0;&#xFE0F;"} ${escapeHtml(z.zoneName)}
+            </td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; text-align: center;">
+                ${z.tasksCompleted}/${z.tasksTotal}
+            </td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #64748b; font-size: 13px;">
+                ${z.scannedAt}
+            </td>
+        </tr>`;
+  }).join("\n");
+  const issueSection = data.issues.length > 0 ? `
+        <div style="margin-top: 24px; padding: 16px; background: ${c.bg}; border-left: 4px solid ${c.border}; border-radius: 4px;">
+            <p style="margin: 0 0 12px 0; font-weight: 600; color: ${c.text};">
+                ${data.tier === "amber" ? "&#x26A0;&#xFE0F; Issues Resolved By XIRI" : "&#x1F534; Action Required"}
+            </p>
+            ${data.issues.map((issue) => `
+                <div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 14px;">
+                        ${issue.resolved ? "&#x2705;" : "&#x1F534;"} 
+                        <strong>${escapeHtml(issue.summary)}</strong>
+                    </p>
+                    ${issue.actionNeeded ? `
+                        <p style="margin: 8px 0 0 0; font-size: 13px; color: ${COLORS.red.text};">
+                            <strong>We need your help:</strong> ${escapeHtml(issue.actionNeeded)}
+                        </p>
+                    ` : ""}
+                </div>
+            `).join("\n")}
+        </div>
+    ` : "";
+  const redCta = data.tier === "red" ? `
+        <div style="margin-top: 24px; text-align: center;">
+            <a href="mailto:chris@xiri.ai?subject=RE: ${encodeURIComponent(data.buildingName)} Report&body=Regarding the issue reported:" 
+               style="display: inline-block; padding: 12px 32px; background: #dc2626; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;">
+                Respond to XIRI
+            </a>
+            <p style="margin: 8px 0 0 0; font-size: 12px; color: #94a3b8;">Or simply reply to this email</p>
+        </div>
+    ` : "";
+  const complianceLink = data.complianceLogUrl ? `
+        <p style="margin: 16px 0 0 0; text-align: center;">
+            <a href="${data.complianceLogUrl}" style="color: #0284c7; text-decoration: none; font-size: 13px;">
+                View Full Compliance Log &rarr;
+            </a>
+        </p>
+    ` : "";
+  return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${escapeHtml(data.buildingName)} \u2014 Cleaning Report</title>
+</head>
+<body style="margin: 0; padding: 0; background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #0c4a6e, #0369a1); padding: 24px; border-radius: 12px 12px 0 0;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>
+                        <p style="margin: 0; color: white; font-size: 20px; font-weight: 700;">XIRI</p>
+                        <p style="margin: 2px 0 0 0; color: #93c5fd; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Facility Solutions</p>
+                    </td>
+                    <td style="text-align: right;">
+                        <span style="display: inline-block; padding: 4px 12px; background: ${c.badge}; color: ${c.badgeText}; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                            ${TIER_ICONS[data.tier]} ${TIER_LABELS[data.tier]}
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Body -->
+        <div style="background: white; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+            
+            <!-- Building + Date -->
+            <h1 style="margin: 0 0 4px 0; font-size: 22px; color: #0f172a;">
+                ${escapeHtml(data.buildingName)}
+            </h1>
+            <p style="margin: 0 0 20px 0; color: #64748b; font-size: 14px;">
+                Cleaning Report &mdash; ${escapeHtml(data.reportDate)}
+            </p>
+
+            <!-- Summary Stats -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                <tr>
+                    <td style="padding: 12px; background: #f8fafc; border-radius: 8px; text-align: center; width: 33%;">
+                        <p style="margin: 0; font-size: 24px; font-weight: 700; color: ${completionPct === 100 ? "#059669" : "#d97706"};">
+                            ${completionPct}%
+                        </p>
+                        <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b; text-transform: uppercase;">Completion</p>
+                    </td>
+                    <td style="width: 8px;"></td>
+                    <td style="padding: 12px; background: #f8fafc; border-radius: 8px; text-align: center; width: 33%;">
+                        <p style="margin: 0; font-size: 24px; font-weight: 700; color: #0f172a;">
+                            ${data.zonesCompleted}/${data.zonesTotal}
+                        </p>
+                        <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b; text-transform: uppercase;">Zones</p>
+                    </td>
+                    <td style="width: 8px;"></td>
+                    <td style="padding: 12px; background: #f8fafc; border-radius: 8px; text-align: center; width: 33%;">
+                        <p style="margin: 0; font-size: 14px; font-weight: 600; color: #0f172a;">
+                            ${escapeHtml(data.crewName)}
+                        </p>
+                        <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">
+                            ${escapeHtml(data.clockIn)} &ndash; ${escapeHtml(data.clockOut)}
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Zones Table -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                <tr style="background: #f8fafc;">
+                    <th style="padding: 8px 12px; text-align: left; font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Zone</th>
+                    <th style="padding: 8px 12px; text-align: center; font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Tasks</th>
+                    <th style="padding: 8px 12px; text-align: right; font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Time</th>
+                </tr>
+                ${zoneRows}
+            </table>
+
+            ${issueSection}
+            ${redCta}
+            ${complianceLink}
+        </div>
+
+        <!-- Footer -->
+        <div style="padding: 16px 24px; text-align: center; border-radius: 0 0 12px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+                XIRI Facility Solutions &middot; 1225 Franklin Ave, Suite 325 &middot; Garden City, NY 11530
+            </p>
+            <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">
+                This is an automated report. Reply to this email or contact 
+                <a href="mailto:chris@xiri.ai" style="color: #64748b;">chris@xiri.ai</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>`;
+}
+
+// src/functions/monitoring.ts
+var REPORT_FROM = "XIRI Facility Solutions <reports@xiri.ai>";
+var OPS_EMAIL = "chris@xiri.ai";
+var TIMEZONE2 = "America/New_York";
+var FALLBACK_GRACE_MINUTES = 60;
+var FALLBACK_NO_SHOW_MINUTES = 120;
+var FALLBACK_LATE_REMINDER_INTERVAL = 15;
+var FALLBACK_ESCALATION_REMINDER_INTERVAL = 15;
+async function loadMonitoringConfig() {
+  try {
+    const snap = await db.collection("settings").doc("monitoring").get();
+    if (snap.exists) {
+      const data = snap.data();
+      return {
+        graceMinutes: data.graceMinutes ?? FALLBACK_GRACE_MINUTES,
+        noShowMinutes: data.noShowMinutes ?? FALLBACK_NO_SHOW_MINUTES,
+        lateReminderIntervalMinutes: data.lateReminderIntervalMinutes ?? FALLBACK_LATE_REMINDER_INTERVAL,
+        escalationReminderIntervalMinutes: data.escalationReminderIntervalMinutes ?? FALLBACK_ESCALATION_REMINDER_INTERVAL
+      };
+    }
+  } catch (err) {
+    console.error("Failed to load monitoring config, using defaults:", err);
+  }
+  return {
+    graceMinutes: FALLBACK_GRACE_MINUTES,
+    noShowMinutes: FALLBACK_NO_SHOW_MINUTES,
+    lateReminderIntervalMinutes: FALLBACK_LATE_REMINDER_INTERVAL,
+    escalationReminderIntervalMinutes: FALLBACK_ESCALATION_REMINDER_INTERVAL
+  };
+}
+var DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function getTodayIndex() {
+  return (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { timeZone: TIMEZONE2, weekday: "short" }) === "Sun" ? 0 : DAY_NAMES.indexOf(
+    (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { timeZone: TIMEZONE2, weekday: "short" })
+  );
+}
+function isScheduledToday(daysOfWeek) {
+  return daysOfWeek[getTodayIndex()] === true;
+}
+function wasScheduledYesterday(daysOfWeek) {
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1e3);
+  const idx = DAY_NAMES.indexOf(
+    yesterday.toLocaleDateString("en-US", { timeZone: TIMEZONE2, weekday: "short" })
+  );
+  return daysOfWeek[idx] === true;
+}
+function getTimeToday(timeStr) {
+  const [h, m] = timeStr.split(":").map(Number);
+  const now = /* @__PURE__ */ new Date();
+  const etStr = now.toLocaleDateString("en-US", { timeZone: TIMEZONE2 });
+  const etDate = new Date(etStr);
+  etDate.setHours(h, m, 0, 0);
+  return etDate;
+}
+function formatTime(date) {
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: TIMEZONE2
+  });
+}
+function formatDate(date) {
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: TIMEZONE2
+  });
+}
+async function resolveWorkOrder(doc) {
+  const wo = doc.data();
+  if (!wo || wo.status !== "active") return null;
+  let clientEmail = "";
+  let clientName = "";
+  if (wo.leadId) {
+    const leadDoc = await db.collection("leads").doc(wo.leadId).get();
+    if (leadDoc.exists) {
+      const lead = leadDoc.data();
+      clientEmail = lead.email || lead.contactEmail || "";
+      clientName = lead.contactName || lead.businessName || "";
+    }
+  }
+  let vendorPhone = "";
+  const vendorId = wo.assignedVendorId || wo.vendorHistory?.[0]?.vendorId;
+  if (vendorId) {
+    try {
+      const vendorDoc = await db.collection("vendors").doc(vendorId).get();
+      if (vendorDoc.exists) {
+        vendorPhone = vendorDoc.data()?.phone || "";
+      }
+    } catch {
+    }
+  }
+  const buildingId = wo.nfcSiteId || wo.locationId || wo.leadId;
+  return {
+    id: doc.id,
+    leadId: wo.leadId,
+    locationName: wo.locationName || "",
+    buildingId,
+    vendorName: wo.vendorHistory?.[0]?.vendorName || "Unknown Vendor",
+    vendorPhone,
+    startTime: wo.schedule?.startTime || "19:00",
+    daysOfWeek: wo.schedule?.daysOfWeek || [false, true, true, true, true, true, false],
+    graceMinutes: wo.monitoringGraceMinutes || 0,
+    // 0 = use global config
+    noShowMinutes: wo.monitoringNoShowMinutes || 0,
+    // 0 = use global config
+    clientEmail,
+    clientName,
+    opsAlertEmail: OPS_EMAIL,
+    nfcZones: wo.nfcZones || [],
+    status: wo.status
+  };
+}
+var checkNightlyStatus = (0, import_scheduler7.onSchedule)({
+  schedule: "*/15 18-23 * * *",
+  timeZone: TIMEZONE2,
+  region: "us-central1",
+  secrets: [googleChatWebhookSecret]
+}, async () => {
+  const now = /* @__PURE__ */ new Date();
+  console.log(`\u{1F50D} Nightly check @ ${formatTime(now)}`);
+  const config2 = await loadMonitoringConfig();
+  console.log(`\u{1F4CB} Config: grace=${config2.graceMinutes}m, noShow=${config2.noShowMinutes}m, lateReminder=${config2.lateReminderIntervalMinutes}m, escalation=${config2.escalationReminderIntervalMinutes}m`);
+  const woSnap = await db.collection("work_orders").where("status", "==", "active").get();
+  if (woSnap.empty) {
+    console.log("No active work orders.");
+    return;
+  }
+  for (const woDoc of woSnap.docs) {
+    const wo = await resolveWorkOrder(woDoc);
+    if (!wo) continue;
+    if (!isScheduledToday(wo.daysOfWeek)) continue;
+    const graceMin = wo.graceMinutes || config2.graceMinutes;
+    const noShowMin = wo.noShowMinutes || config2.noShowMinutes;
+    const agreedStart = getTimeToday(wo.startTime);
+    const warningTime = new Date(agreedStart.getTime() + graceMin * 60 * 1e3);
+    const noShowTime = new Date(agreedStart.getTime() + noShowMin * 60 * 1e3);
+    const minutesSinceStart = Math.floor((now.getTime() - agreedStart.getTime()) / 6e4);
+    const startOfEvening = new Date(agreedStart);
+    startOfEvening.setHours(startOfEvening.getHours() - 2);
+    const sessionsSnap = await db.collection("nfc_sessions").where("siteLocationId", "==", wo.buildingId).where("createdAt", ">=", startOfEvening).orderBy("createdAt", "desc").limit(1).get();
+    if (!sessionsSnap.empty) continue;
+    if (minutesSinceStart < 0) continue;
+    const threadKey = makeThreadKey(wo.buildingId);
+    if (now >= noShowTime) {
+      console.log(`\u{1F534} NO-SHOW: ${wo.locationName}`);
+      const existing = await db.collection("monitoring_events").where("workOrderId", "==", wo.id).where("type", "==", "no_show").where("detectedAt", ">=", startOfEvening).limit(1).get();
+      if (!existing.empty) continue;
+      await db.collection("monitoring_events").add({
+        workOrderId: wo.id,
+        buildingId: wo.buildingId,
+        type: "no_show",
+        detectedAt: now,
+        message: `No NFC check-in. Expected by ${formatTime(agreedStart)}.`
+      });
+      await sendEmail(
+        wo.opsAlertEmail,
+        `\u{1F534} NO-SHOW: ${wo.locationName}`,
+        `<p><strong>No NFC check-in</strong> at ${wo.locationName}.</p>
+                 <p>Expected: ${formatTime(agreedStart)} | Now: ${formatTime(now)}</p>
+                 <p>Vendor: ${wo.vendorName}</p>
+                 <p><strong>Action:</strong> Contact crew lead or dispatch backup.</p>`,
+        void 0,
+        REPORT_FROM
+      );
+      notifyNoShow({
+        siteLocationId: wo.buildingId,
+        locationName: wo.locationName,
+        vendorName: wo.vendorName,
+        vendorPhone: wo.vendorPhone || void 0,
+        expectedTime: formatTime(agreedStart),
+        workOrderId: wo.id
+      }).catch(console.error);
+    } else if (now >= warningTime) {
+      console.log(`\u26A0\uFE0F WARNING: ${wo.locationName} \u2014 no check-in yet`);
+      const existing = await db.collection("monitoring_events").where("workOrderId", "==", wo.id).where("type", "==", "late_warning").where("detectedAt", ">=", startOfEvening).limit(1).get();
+      if (existing.empty) {
+        await db.collection("monitoring_events").add({
+          workOrderId: wo.id,
+          buildingId: wo.buildingId,
+          type: "late_warning",
+          detectedAt: now,
+          message: `No check-in after ${graceMin}min grace. Expected by ${formatTime(agreedStart)}.`
+        });
+        notifyLateWarning({
+          siteLocationId: wo.buildingId,
+          locationName: wo.locationName,
+          expectedTime: formatTime(agreedStart),
+          workOrderId: wo.id,
+          vendorName: wo.vendorName,
+          vendorPhone: wo.vendorPhone || void 0
+        }).catch(console.error);
+      }
+      if (config2.escalationReminderIntervalMinutes > 0) {
+        const minutesSinceGrace = Math.floor((now.getTime() - warningTime.getTime()) / 6e4);
+        const reminderSlot = Math.floor(minutesSinceGrace / config2.escalationReminderIntervalMinutes);
+        if (reminderSlot > 0) {
+          const reminderKey = `escalation_${reminderSlot}`;
+          const existingReminder = await db.collection("monitoring_events").where("workOrderId", "==", wo.id).where("type", "==", reminderKey).where("detectedAt", ">=", startOfEvening).limit(1).get();
+          if (existingReminder.empty) {
+            await db.collection("monitoring_events").add({
+              workOrderId: wo.id,
+              buildingId: wo.buildingId,
+              type: reminderKey,
+              detectedAt: now,
+              message: `Escalation reminder #${reminderSlot}`
+            });
+            const minutesLate = minutesSinceStart;
+            sendText(threadKey, `\u{1F6A8} *Escalation \u2014 ${wo.locationName}*
+Crew is now *${minutesLate} min late*. Grace period expired. Consider dispatching backup vendor.`).catch(console.error);
+            console.log(`\u{1F6A8} Escalation reminder #${reminderSlot} for ${wo.locationName}`);
+          }
+        }
+      }
+    } else if (now > agreedStart) {
+      if (config2.lateReminderIntervalMinutes > 0 && minutesSinceStart >= config2.lateReminderIntervalMinutes) {
+        const reminderSlot = Math.floor(minutesSinceStart / config2.lateReminderIntervalMinutes);
+        const reminderKey = `late_reminder_${reminderSlot}`;
+        const existingReminder = await db.collection("monitoring_events").where("workOrderId", "==", wo.id).where("type", "==", reminderKey).where("detectedAt", ">=", startOfEvening).limit(1).get();
+        if (existingReminder.empty) {
+          await db.collection("monitoring_events").add({
+            workOrderId: wo.id,
+            buildingId: wo.buildingId,
+            type: reminderKey,
+            detectedAt: now,
+            message: `Late reminder \u2014 ${minutesSinceStart}min since start`
+          });
+          sendText(threadKey, `\u{1F514} *Reminder \u2014 ${wo.locationName}*
+Crew hasn't checked in yet. *${minutesSinceStart} min* since scheduled start (${formatTime(agreedStart)}).`).catch(console.error);
+          console.log(`\u{1F514} Late reminder #${reminderSlot} for ${wo.locationName}`);
+        }
+      }
+    }
+  }
+});
+var generateMorningReports = (0, import_scheduler7.onSchedule)({
+  schedule: "30 5 * * *",
+  timeZone: TIMEZONE2,
+  region: "us-central1"
+}, async () => {
+  console.log("\u{1F4E7} Generating morning reports...");
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1e3);
+  const config2 = await loadMonitoringConfig();
+  const woSnap = await db.collection("work_orders").where("status", "==", "active").get();
+  const pendingReports = [];
+  for (const doc of woSnap.docs) {
+    const wo = await resolveWorkOrder(doc);
+    if (!wo) continue;
+    if (!wasScheduledYesterday(wo.daysOfWeek)) continue;
+    if (!wo.clientEmail) {
+      console.log(`\u23ED\uFE0F ${wo.locationName}: no client email, skipping`);
+      continue;
+    }
+    try {
+      const graceMin = wo.graceMinutes || config2.graceMinutes;
+      const reportData = await buildReportData(wo, yesterday, graceMin);
+      const html = buildMorningReportHtml(reportData);
+      const subject = buildSubjectLine(reportData);
+      pendingReports.push({ wo, reportData, html, subject });
+    } catch (err) {
+      console.error(`\u274C ${wo.locationName}: failed to build report`, err);
+    }
+  }
+  if (pendingReports.length === 0) {
+    console.log("No reports to send.");
+    return;
+  }
+  console.log(`\u{1F4E8} Sending ${pendingReports.length} reports via batch API...`);
+  const batchPayload = pendingReports.map((r) => ({
+    to: r.wo.clientEmail,
+    subject: r.subject,
+    html: r.html,
+    from: REPORT_FROM,
+    replyTo: OPS_EMAIL
+  }));
+  const BATCH_SIZE = 100;
+  for (let i = 0; i < batchPayload.length; i += BATCH_SIZE) {
+    const chunk = batchPayload.slice(i, i + BATCH_SIZE);
+    const result = await sendBatchEmails(chunk);
+    if (!result.success) {
+      console.error(`\u274C Batch ${i / BATCH_SIZE + 1} failed:`, result.error);
+    }
+  }
+  const batch = db.batch();
+  for (const r of pendingReports) {
+    const ref = db.collection("morning_reports").doc();
+    batch.set(ref, {
+      workOrderId: r.wo.id,
+      leadId: r.wo.leadId,
+      buildingId: r.wo.buildingId,
+      locationName: r.wo.locationName,
+      clientEmail: r.wo.clientEmail,
+      tier: r.reportData.tier,
+      subject: r.subject,
+      sentAt: /* @__PURE__ */ new Date(),
+      zonesCompleted: r.reportData.zonesCompleted,
+      zonesTotal: r.reportData.zonesTotal
+    });
+  }
+  await batch.commit();
+  console.log(`\u2705 ${pendingReports.length} morning reports sent and logged.`);
+});
+async function buildReportData(wo, dateRef, graceMin) {
+  const windowStart = new Date(dateRef);
+  windowStart.setHours(16, 0, 0, 0);
+  const windowEnd = new Date(dateRef);
+  windowEnd.setDate(windowEnd.getDate() + 1);
+  windowEnd.setHours(6, 0, 0, 0);
+  const sessionsSnap = await db.collection("nfc_sessions").where("siteLocationId", "==", wo.buildingId).where("createdAt", ">=", windowStart).where("createdAt", "<=", windowEnd).orderBy("createdAt", "desc").limit(10).get();
+  const siteDoc = await db.collection("nfc_sites").doc(wo.buildingId).get();
+  const siteData = siteDoc.exists ? siteDoc.data() : { zones: [] };
+  const totalZones = (siteData.zones || []).length;
+  await db.collection("monitoring_events").where("workOrderId", "==", wo.id).where("detectedAt", ">=", windowStart).where("detectedAt", "<=", windowEnd).get();
+  if (sessionsSnap.empty) {
+    return {
+      tier: "red",
+      buildingName: wo.locationName,
+      reportDate: formatDate(dateRef),
+      crewName: "No crew checked in",
+      clockIn: "\u2014",
+      clockOut: "\u2014",
+      zonesCompleted: 0,
+      zonesTotal: totalZones,
+      zones: [],
+      issues: [{
+        type: "no_show",
+        summary: "No crew checked in last night",
+        resolved: false,
+        actionNeeded: "XIRI Ops has been notified and is arranging coverage."
+      }]
+    };
+  }
+  const cleanerSessions = sessionsSnap.docs.filter((d) => d.data().personRole === "cleaner");
+  const session = cleanerSessions.length > 0 ? cleanerSessions[0].data() : sessionsSnap.docs[0].data();
+  const clockIn = session.clockInAt?.toDate?.() || session.clockInAt;
+  const clockOut = session.clockOutAt?.toDate?.() || session.clockOutAt;
+  const zoneScanResults = session.zoneScanResults || [];
+  const zones = (siteData.zones || []).map((siteZone) => {
+    const scan = zoneScanResults.find((s) => s.zoneId === siteZone.id);
+    return {
+      zoneName: siteZone.name || siteZone.id,
+      tasksCompleted: scan ? scan.tasksCompleted?.length || 0 : 0,
+      tasksTotal: (siteZone.tasks || []).length || 1,
+      scannedAt: scan?.scannedAt ? formatTime(scan.scannedAt?.toDate?.() || new Date(scan.scannedAt)) : "\u2014"
+    };
+  });
+  const zonesCompleted = zoneScanResults.length;
+  const issues = [];
+  const agreedStart = getTimeToday(wo.startTime);
+  agreedStart.setDate(dateRef.getDate());
+  agreedStart.setMonth(dateRef.getMonth());
+  agreedStart.setFullYear(dateRef.getFullYear());
+  if (clockIn && new Date(clockIn) > new Date(agreedStart.getTime() + graceMin * 60 * 1e3)) {
+    const delayMin = Math.round((new Date(clockIn).getTime() - agreedStart.getTime()) / 6e4);
+    issues.push({
+      type: "late_start",
+      summary: `Crew arrived ${delayMin} minutes late (${formatTime(new Date(clockIn))} vs ${formatTime(agreedStart)} agreed)`,
+      resolved: zonesCompleted >= totalZones
+    });
+  }
+  if (zonesCompleted < totalZones && zonesCompleted > 0) {
+    const missed = (siteData.zones || []).filter((z) => !zoneScanResults.some((s) => s.zoneId === z.id)).map((z) => z.name || z.id);
+    issues.push({
+      type: "partial_completion",
+      summary: `${zonesCompleted}/${totalZones} zones completed. Missed: ${missed.join(", ")}`,
+      resolved: false,
+      actionNeeded: "Were these areas locked or inaccessible? Reply to let us know."
+    });
+  }
+  let tier = "green";
+  if (issues.some((i) => !i.resolved)) tier = "red";
+  else if (issues.length > 0) tier = "amber";
+  return {
+    tier,
+    buildingName: wo.locationName,
+    reportDate: formatDate(dateRef),
+    crewName: session.personName || "Unknown",
+    clockIn: clockIn ? formatTime(new Date(clockIn)) : "\u2014",
+    clockOut: clockOut ? formatTime(new Date(clockOut)) : "\u2014",
+    zonesCompleted,
+    zonesTotal: totalZones,
+    zones,
+    issues,
+    complianceLogUrl: `https://xiri.ai/c/${wo.buildingId}`
+  };
+}
+var sendTestMorningReport = (0, import_https12.onCall)({
+  cors: true
+}, async (request) => {
+  const { workOrderId, recipientEmail, scenario } = request.data;
+  if (!workOrderId) {
+    throw new import_https12.HttpsError("invalid-argument", "workOrderId is required");
+  }
+  const woDoc = await db.collection("work_orders").doc(workOrderId).get();
+  if (!woDoc.exists) {
+    throw new import_https12.HttpsError("not-found", "Work order not found");
+  }
+  const wo = await resolveWorkOrder(woDoc);
+  if (!wo) {
+    throw new import_https12.HttpsError("failed-precondition", "Work order is not active");
+  }
+  const config2 = await loadMonitoringConfig();
+  const graceMin = wo.graceMinutes || config2.graceMinutes;
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1e3);
+  const reportData = await buildReportData(wo, yesterday, graceMin);
+  if (scenario === "green") {
+    reportData.tier = "green";
+    reportData.issues = [];
+    reportData.zonesCompleted = reportData.zonesTotal;
+  } else if (scenario === "amber") {
+    reportData.tier = "amber";
+    reportData.issues = [{
+      type: "late_start",
+      summary: "Crew arrived 45 minutes late. All zones completed.",
+      resolved: true
+    }];
+  } else if (scenario === "red") {
+    reportData.tier = "red";
+    reportData.issues = [{
+      type: "partial_completion",
+      summary: "8/10 zones completed. Server room and executive suite were locked.",
+      resolved: false,
+      actionNeeded: "Can you provide key access for the server room and executive suite?"
+    }];
+  }
+  const html = buildMorningReportHtml(reportData);
+  const subject = buildSubjectLine(reportData);
+  const to = recipientEmail || wo.clientEmail || OPS_EMAIL;
+  const result = await sendEmail(to, subject, html, void 0, REPORT_FROM);
+  return {
+    success: result.success,
+    tier: reportData.tier,
+    subject,
+    sentTo: to,
+    resendId: result.resendId
+  };
+});
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   adminCreateUser,
   adminUpdateAuthUser,
   calculateNrr,
   changeMyPassword,
+  checkNightlyStatus,
   clearPipeline,
   completeNfcSession,
   deleteFacebookPost,
   enrichFromWebsite,
   generateLeads,
   generateMonthlyInvoices,
+  generateMorningReports,
   getComplianceLog,
   getFacebookPosts,
   getFacebookReels,
@@ -25969,6 +27062,7 @@ var getComplianceLog = (0, import_https11.onCall)({
   sendBookingConfirmation,
   sendOnboardingInvite,
   sendQuoteEmail,
+  sendTestMorningReport,
   sourceProperties,
   startLeadSequence,
   testSendEmail,

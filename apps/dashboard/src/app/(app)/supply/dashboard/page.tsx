@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { collection, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,12 +11,36 @@ import VendorList from '@/components/VendorList';
 import VendorDetailDrawer from '@/components/vendor/VendorDetailDrawer';
 import { AddContractorDialog } from '@/components/AddContractorDialog';
 import { Vendor } from '@xiri-facility-solutions/shared';
+import CampaignResultsTable, { Campaign, PreviewVendor } from '@/components/supply/CampaignResultsTable';
 import {
     Users, CheckCircle, Mail, Eye, MousePointerClick, ArrowRight,
     Loader2, TrendingUp, AlertTriangle, UserCheck, Clock, XCircle,
     Plus, ShieldCheck, CalendarCheck, Rocket, Star, Pause, Ban, FileSearch,
-    ChevronUp, ChevronDown,
+    ChevronUp, ChevronDown, Search,
 } from 'lucide-react';
+
+/* ───────── Recruitment Campaign Helpers ──────────────────────────────── */
+
+const generateCampaignId = () => `campaign_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+const RECRUIT_STORAGE_KEY = 'xiri_campaigns';
+
+function saveRecruitCampaigns(campaigns: Campaign[], activeCampaignId: string | null) {
+    try { localStorage.setItem(RECRUIT_STORAGE_KEY, JSON.stringify({ campaigns, activeCampaignId })); } catch { }
+}
+
+function loadRecruitCampaigns(): { campaigns: Campaign[]; activeCampaignId: string | null } | null {
+    try {
+        const raw = localStorage.getItem(RECRUIT_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (parsed.campaigns) {
+            parsed.campaigns = parsed.campaigns.map((c: any) => ({
+                ...c, searches: (c.searches || []).map((s: any) => ({ ...s, timestamp: new Date(s.timestamp) })),
+            }));
+        }
+        return parsed;
+    } catch { return null; }
+}
 
 /* ───────── Funnel / Pipeline Helpers ─────────────────────────────────── */
 
@@ -79,6 +103,109 @@ export default function SupplyDashboardPage() {
     const [showAddContractor, setShowAddContractor] = useState(false);
     const [funnelCollapsed, setFunnelCollapsed] = useState(true);
 
+    // ─── Recruitment Campaign State ───
+    const [rCampaigns, setRCampaigns] = useState<Campaign[]>([]);
+    const [rActiveCampaignId, setRActiveCampaignId] = useState<string | null>(null);
+    const [recruitExpanded, setRecruitExpanded] = useState(false);
+    const recruitInit = useRef(false);
+
+    // Load recruitment campaigns
+    useEffect(() => {
+        if (recruitInit.current) return;
+        recruitInit.current = true;
+        const saved = loadRecruitCampaigns();
+        if (saved && saved.campaigns.length > 0) {
+            setRCampaigns(saved.campaigns);
+            setRActiveCampaignId(saved.activeCampaignId);
+        }
+    }, []);
+
+    // Persist recruitment campaigns
+    useEffect(() => {
+        if (!recruitInit.current) return;
+        saveRecruitCampaigns(rCampaigns, rActiveCampaignId);
+    }, [rCampaigns, rActiveCampaignId]);
+
+    // Recruitment handlers
+    const rNewCampaign = useCallback(() => {
+        const c: Campaign = { id: generateCampaignId(), label: 'New Campaign', vendors: [], searches: [] };
+        setRCampaigns(prev => [...prev, c]);
+        setRActiveCampaignId(c.id);
+        setRecruitExpanded(true);
+    }, []);
+
+    const rSearchResults = useCallback((campaignId: string, vendors: PreviewVendor[], meta: { query: string; location: string; sourced: number; qualified: number }) => {
+        setRCampaigns(prev => prev.map(c =>
+            c.id === campaignId ? { ...c, vendors: [...c.vendors, ...vendors], searches: [...c.searches, { ...meta, timestamp: new Date() }] } : c
+        ));
+    }, []);
+
+    const rRenameCampaign = useCallback((campaignId: string, newLabel: string) => {
+        setRCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, label: newLabel } : c));
+    }, []);
+
+    const removeVendorFromCampaign = (campaignId: string, vendorId: string) => {
+        setRCampaigns(prev => prev.map(c =>
+            c.id === campaignId ? { ...c, vendors: c.vendors.filter(v => v.id !== vendorId) } : c
+        ));
+    };
+
+    const rApprove = useCallback(async (campaignId: string, vendorId: string, track: 'STANDARD' | 'FAST_TRACK') => {
+        const campaign = rCampaigns.find(c => c.id === campaignId);
+        const vendor = campaign?.vendors.find(v => v.id === vendorId);
+        if (!vendor) return;
+        try {
+            const { id, isDismissed, ...vendorData } = vendor;
+            await addDoc(collection(db, "vendors"), {
+                ...vendorData, status: 'qualified', onboardingTrack: track,
+                hasActiveContract: track === 'FAST_TRACK',
+                createdAt: serverTimestamp(), updatedAt: serverTimestamp(), source: 'campaign_approved',
+            });
+        } catch (error) { console.error("Error approving vendor:", error); return; }
+        removeVendorFromCampaign(campaignId, vendorId);
+    }, [rCampaigns]);
+
+    const rDismiss = useCallback(async (campaignId: string, vendorId: string) => {
+        removeVendorFromCampaign(campaignId, vendorId);
+    }, [rCampaigns]);
+
+    const rRevive = useCallback(async () => {}, []);
+
+    const rApproveAll = useCallback(async (campaignId: string, track: 'STANDARD' | 'FAST_TRACK') => {
+        const campaign = rCampaigns.find(c => c.id === campaignId);
+        if (!campaign) return;
+        const active = campaign.vendors.filter(v => !v.isDismissed);
+        for (const vendor of active) {
+            try {
+                const { id, isDismissed, ...vendorData } = vendor;
+                await addDoc(collection(db, "vendors"), {
+                    ...vendorData, status: 'qualified', onboardingTrack: track,
+                    hasActiveContract: track === 'FAST_TRACK',
+                    createdAt: serverTimestamp(), updatedAt: serverTimestamp(), source: 'campaign_approved',
+                });
+            } catch (error) { console.error(`Error approving "${vendor.businessName}":`, error); }
+        }
+        setRCampaigns(prev => prev.map(c =>
+            c.id === campaignId ? { ...c, vendors: c.vendors.filter(v => v.isDismissed) } : c
+        ));
+    }, [rCampaigns]);
+
+    const rDismissAll = useCallback(async (campaignId: string) => {
+        setRCampaigns(prev => prev.map(c =>
+            c.id === campaignId ? { ...c, vendors: c.vendors.filter(v => v.isDismissed) } : c
+        ));
+    }, []);
+
+    const rCloseCampaign = useCallback((campaignId: string) => {
+        setRCampaigns(prev => {
+            const updated = prev.filter(c => c.id !== campaignId);
+            if (!updated.find(c => c.id === rActiveCampaignId) && updated.length > 0) {
+                setRActiveCampaignId(updated[updated.length - 1].id);
+            } else if (updated.length === 0) { setRActiveCampaignId(null); }
+            return updated;
+        });
+    }, [rActiveCampaignId]);
+
     // Live Firestore listener
     useEffect(() => {
         const q = query(collection(db, 'vendors'), orderBy('createdAt', 'desc'), limit(500));
@@ -128,6 +255,14 @@ export default function SupplyDashboardPage() {
                             <p className="text-sm text-muted-foreground">{vendors.length} contractors • Outreach funnel + CRM</p>
                         </div>
                         <div className="flex items-center gap-2">
+                            <Button variant={recruitExpanded ? 'default' : 'outline'} size="sm" className="h-8 text-xs gap-1"
+                                onClick={() => setRecruitExpanded(prev => !prev)}>
+                                <Search className="w-3 h-3" />
+                                Recruitment
+                                {rCampaigns.length > 0 && (
+                                    <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 ml-0.5">{rCampaigns.length}</Badge>
+                                )}
+                            </Button>
                             <Button variant="outline" size="sm" className="h-8 text-xs gap-1"
                                 onClick={() => setFunnelCollapsed(prev => !prev)}>
                                 {funnelCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
@@ -139,6 +274,28 @@ export default function SupplyDashboardPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* ─── Collapsible Recruitment Campaigns ─────────────────── */}
+                {recruitExpanded && (
+                    <div className="flex-shrink-0 border-b bg-muted/10 max-h-[45vh] overflow-auto">
+                        <div className="p-3">
+                            <CampaignResultsTable
+                                campaigns={rCampaigns}
+                                activeCampaignId={rActiveCampaignId}
+                                onSetActiveCampaign={setRActiveCampaignId}
+                                onNewCampaign={rNewCampaign}
+                                onCloseCampaign={rCloseCampaign}
+                                onSearchResults={rSearchResults}
+                                onApprove={rApprove}
+                                onDismiss={rDismiss}
+                                onRevive={rRevive}
+                                onApproveAll={rApproveAll}
+                                onDismissAll={rDismissAll}
+                                onRenameCampaign={rRenameCampaign}
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* ─── Collapsible Funnel Stats ──────────────────────────── */}
                 {!funnelCollapsed && (

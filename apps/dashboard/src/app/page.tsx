@@ -13,9 +13,9 @@ export default function HomePage() {
             if (!profile) {
                 router.push('/login');
             } else if (profile.roles.includes('admin')) {
-                router.push('/supply/recruitment'); // Admin default view
+                router.push('/supply/dashboard'); // Admin default view
             } else if (profile.roles.includes('recruiter')) {
-                router.push('/supply/recruitment');
+                router.push('/supply/dashboard');
             } else if (profile.roles.includes('sales')) {
                 router.push('/sales/dashboard');
             }

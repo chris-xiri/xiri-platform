@@ -451,3 +451,13 @@ Maintained by: @architect-cto
 > - Rationale: Created `/solutions/cleaning-verification` as the pillar page for all accountability-related content. This hub links to 3 verification solution pages (NFC Proof of Work, Digital Compliance Logs, Keep Your Cleaner) and 7 accountability blog posts. The hub is the single page that outreach emails, NFC demo tags, and door-knock conversations all point to. It's positioned first on the `/solutions` index page. The hub structure creates a content moat around the term "cleaning verification" — a keyword category XIRI is defining before any competitor targets it. The page includes: problem framing (the accountability gap), how-it-works (4 steps), solution path cards, audience segments, related blog content grid, and dual CTAs.
 > - Status: **Active**
 
+> - Date: 2026-03-13
+> - Decision: **NFC Session Naming Conventions — Consistent Doc IDs & Collection Structure**
+> - Rationale: Both cleaner and night manager sessions live in `nfc_sessions` (same collection, same NFC clock-in/out lifecycle). The `personRole` field (`'cleaner'` | `'night_manager'`) cleanly differentiates. Separate collections would duplicate the schema and require two real-time listeners. Seed data doc IDs follow a consistent prefix pattern:
+>   - Cleaner: `session_cleaner_tonight_{siteId}`
+>   - Night Manager: `session_night_manager_tonight_{siteId}`
+>   - In production, doc IDs are `crypto.randomUUID()` — the prefix pattern is for seeding/debugging only.
+>   - Per-zone audit data (task-level good/acceptable/unacceptable) lives in `nfc_sites/{locationId}/audit_feedback/{zoneId}_night_manager`.
+>   - The `audit_feedback` subcollection persists across sessions so cleaners see manager feedback the next day.
+> - **RULE: Never split cleaner and manager sessions into separate collections. Use `personRole` to filter. Seed doc IDs must use `session_{role}_tonight_{siteId}` format.**
+> - Status: **Active**

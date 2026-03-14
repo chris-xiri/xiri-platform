@@ -67,7 +67,7 @@ export default function RecruitmentDetailPage({ params }: PageProps) {
 
         try {
             await updateDoc(doc(db, 'vendors', vendor.id), updates);
-            router.push('/supply/recruitment');
+            router.push('/supply/dashboard');
         } catch (error) {
             console.error("Error updating vendor:", error);
         }
@@ -91,8 +91,8 @@ export default function RecruitmentDetailPage({ params }: PageProps) {
             <div className="w-[400px] flex-shrink-0 border-r border-border bg-card flex flex-col overflow-y-auto">
                 {/* Header / Back */}
                 <div className="p-4 border-b border-border">
-                    <Link href="/supply/recruitment" className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
-                        <ArrowLeft className="w-4 h-4 mr-1" /> Back to Queue
+                    <Link href="/supply/dashboard" className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
+                        <ArrowLeft className="w-4 h-4 mr-1" /> Back to Pipeline
                     </Link>
                     <h1 className="text-2xl font-bold text-foreground">{vendor.businessName}</h1>
                     <div className="flex items-center gap-2 mt-2">

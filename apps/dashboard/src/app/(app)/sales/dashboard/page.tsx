@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,14 +8,47 @@ import { Button } from '@/components/ui/button';
 import {
     DollarSign, TrendingUp, Users, Target, Clock, CheckCircle,
     Mail, ArrowRight, Plus, XCircle, AlertTriangle,
-    ChevronUp, ChevronDown, Loader2, Eye, MousePointerClick
+    ChevronUp, ChevronDown, Loader2, Eye, MousePointerClick, Search
 } from 'lucide-react';
-import { collection, query, where, getDocs, onSnapshot, orderBy, limit, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, orderBy, limit, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import LeadList from '@/components/LeadList';
 import LeadDetailDrawer from '@/components/lead/LeadDetailDrawer';
 import { AddLeadDialog } from '@/components/AddLeadDialog';
+import LeadSourcingCampaignTable, { type PropertyCampaign, type CampaignPreviewProperty } from '@/components/sales/LeadSourcingCampaignTable';
+
+/* ─── Sourcing Helpers ────────────────────────────────────────────── */
+
+const generateCampaignId = () => `campaign_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+const SOURCING_STORAGE_KEY = 'xiri_property_campaigns';
+
+function saveSourcingCampaigns(campaigns: PropertyCampaign[], activeCampaignId: string | null) {
+    try { localStorage.setItem(SOURCING_STORAGE_KEY, JSON.stringify({ campaigns, activeCampaignId })); } catch { }
+}
+
+function loadSourcingCampaigns(): { campaigns: PropertyCampaign[]; activeCampaignId: string | null } | null {
+    try {
+        const raw = localStorage.getItem(SOURCING_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (parsed.campaigns) {
+            parsed.campaigns = parsed.campaigns.map((c: any) => ({
+                ...c, searches: (c.searches || []).map((s: any) => ({ ...s, timestamp: new Date(s.timestamp) })),
+            }));
+        }
+        return parsed;
+    } catch { return null; }
+}
+
+function mapPropertyType(propertyType?: string): string {
+    if (!propertyType) return 'office_general';
+    const map: Record<string, string> = {
+        'medical_office': 'medical_urgent_care', 'auto_dealership': 'auto_dealer_showroom',
+        'auto_service': 'auto_service_center', 'retail': 'office_general',
+    };
+    return map[propertyType] || 'office_general';
+}
 
 /* ─── Helpers ─────────────────────────────────────────────────────── */
 
@@ -93,6 +126,131 @@ export default function SalesDashboardPage() {
     const [showAddLead, setShowAddLead] = useState(false);
     const [statsCollapsed, setStatsCollapsed] = useState(true);
     const [expandedCommId, setExpandedCommId] = useState<string | null>(null);
+
+    // ─── Sourcing Campaign State ───
+    const [campaigns, setCampaigns] = useState<PropertyCampaign[]>([]);
+    const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
+    const [sourcingExpanded, setSourcingExpanded] = useState(false);
+    const sourcingInit = useRef(false);
+
+    // Load sourcing campaigns from localStorage
+    useEffect(() => {
+        if (sourcingInit.current) return;
+        sourcingInit.current = true;
+        const saved = loadSourcingCampaigns();
+        if (saved && saved.campaigns.length > 0) {
+            setCampaigns(saved.campaigns);
+            setActiveCampaignId(saved.activeCampaignId);
+        }
+    }, []);
+
+    // Persist sourcing campaigns
+    useEffect(() => {
+        if (!sourcingInit.current) return;
+        saveSourcingCampaigns(campaigns, activeCampaignId);
+    }, [campaigns, activeCampaignId]);
+
+    // Sourcing handlers
+    const handleNewCampaign = useCallback(() => {
+        const c: PropertyCampaign = { id: generateCampaignId(), label: 'New Campaign', properties: [], searches: [] };
+        setCampaigns(prev => [...prev, c]);
+        setActiveCampaignId(c.id);
+        setSourcingExpanded(true);
+    }, []);
+
+    const handleSearchResults = useCallback((campaignId: string, properties: CampaignPreviewProperty[], meta: { query: string; location: string; sourced: number }) => {
+        setCampaigns(prev => prev.map(c =>
+            c.id === campaignId ? { ...c, properties: [...c.properties, ...properties], searches: [...c.searches, { ...meta, timestamp: new Date() }] } : c
+        ));
+    }, []);
+
+    const handleRenameCampaign = useCallback((campaignId: string, newLabel: string) => {
+        setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, label: newLabel } : c));
+    }, []);
+
+    const removePropertyFromCampaign = (campaignId: string, propertyId: string) => {
+        setCampaigns(prev => prev.map(c =>
+            c.id === campaignId ? { ...c, properties: c.properties.filter(p => p.id !== propertyId) } : c
+        ));
+    };
+
+    const handleApprove = useCallback(async (campaignId: string, propertyId: string) => {
+        const campaign = campaigns.find(c => c.id === campaignId);
+        const property = campaign?.properties.find(p => p.id === propertyId);
+        if (!property) return;
+        try {
+            await addDoc(collection(db, "leads"), {
+                businessName: property.tenantName || property.name,
+                facilityType: property.facilityType || mapPropertyType(property.propertyType),
+                contactName: property.ownerName || '', contactPhone: property.ownerPhone || '',
+                email: property.ownerEmail || '', zipCode: property.zip || '',
+                address: `${property.address}, ${property.city}, ${property.state} ${property.zip}`,
+                status: 'new',
+                attribution: { source: 'property_sourcing', medium: property.source || 'mock', campaign: campaign?.label || 'sourcing', landingPage: '' },
+                propertySourcing: {
+                    sourceProvider: property.source, sourcePropertyId: property.sourceId,
+                    squareFootage: property.squareFootage, yearBuilt: property.yearBuilt,
+                    ownerName: property.ownerName, tenantName: property.tenantName,
+                    tenantCount: property.tenantCount, lastSalePrice: property.lastSalePrice,
+                    lastSaleDate: property.lastSaleDate, sourcedAt: new Date(),
+                },
+                createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+            });
+        } catch (error) { console.error("Error approving property:", error); return; }
+        removePropertyFromCampaign(campaignId, propertyId);
+    }, [campaigns]);
+
+    const handleDismiss = useCallback(async (campaignId: string, propertyId: string) => {
+        removePropertyFromCampaign(campaignId, propertyId);
+    }, [campaigns]);
+
+    const handleRevive = useCallback(async () => {}, []);
+
+    const handleApproveAll = useCallback(async (campaignId: string) => {
+        const campaign = campaigns.find(c => c.id === campaignId);
+        if (!campaign) return;
+        const active = campaign.properties.filter(p => !p.isDismissed);
+        for (const property of active) {
+            try {
+                await addDoc(collection(db, "leads"), {
+                    businessName: property.tenantName || property.name,
+                    facilityType: property.facilityType || mapPropertyType(property.propertyType),
+                    contactName: property.ownerName || '', contactPhone: property.ownerPhone || '',
+                    email: property.ownerEmail || '', zipCode: property.zip || '',
+                    address: `${property.address}, ${property.city}, ${property.state} ${property.zip}`,
+                    status: 'new',
+                    attribution: { source: 'property_sourcing', medium: property.source || 'mock', campaign: campaign.label || 'sourcing', landingPage: '' },
+                    propertySourcing: {
+                        sourceProvider: property.source, sourcePropertyId: property.sourceId,
+                        squareFootage: property.squareFootage, yearBuilt: property.yearBuilt,
+                        ownerName: property.ownerName, tenantName: property.tenantName,
+                        tenantCount: property.tenantCount, lastSalePrice: property.lastSalePrice,
+                        lastSaleDate: property.lastSaleDate, sourcedAt: new Date(),
+                    },
+                    createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+                });
+            } catch (error) { console.error(`Error approving "${property.name}":`, error); }
+        }
+        setCampaigns(prev => prev.map(c =>
+            c.id === campaignId ? { ...c, properties: c.properties.filter(p => p.isDismissed) } : c
+        ));
+    }, [campaigns]);
+
+    const handleDismissAll = useCallback(async (campaignId: string) => {
+        setCampaigns(prev => prev.map(c =>
+            c.id === campaignId ? { ...c, properties: c.properties.filter(p => p.isDismissed) } : c
+        ));
+    }, []);
+
+    const handleCloseCampaign = useCallback((campaignId: string) => {
+        setCampaigns(prev => {
+            const updated = prev.filter(c => c.id !== campaignId);
+            if (!updated.find(c => c.id === activeCampaignId) && updated.length > 0) {
+                setActiveCampaignId(updated[updated.length - 1].id);
+            } else if (updated.length === 0) { setActiveCampaignId(null); }
+            return updated;
+        });
+    }, [activeCampaignId]);
 
     // Fetch all data
     useEffect(() => {
@@ -230,6 +388,14 @@ export default function SalesDashboardPage() {
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
+                            <Button variant={sourcingExpanded ? 'default' : 'outline'} size="sm" className="h-8 text-xs gap-1"
+                                onClick={() => setSourcingExpanded(prev => !prev)}>
+                                <Search className="w-3 h-3" />
+                                Lead Sourcing
+                                {campaigns.length > 0 && (
+                                    <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 ml-0.5">{campaigns.length}</Badge>
+                                )}
+                            </Button>
                             <Button variant="outline" size="sm" className="h-8 text-xs gap-1"
                                 onClick={() => setStatsCollapsed(prev => !prev)}>
                                 {statsCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
@@ -241,6 +407,28 @@ export default function SalesDashboardPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* ─── Collapsible Lead Sourcing ───────────────────── */}
+                {sourcingExpanded && (
+                    <div className="flex-shrink-0 border-b bg-muted/10 max-h-[45vh] overflow-auto">
+                        <div className="p-3">
+                            <LeadSourcingCampaignTable
+                                campaigns={campaigns}
+                                activeCampaignId={activeCampaignId}
+                                onSetActiveCampaign={setActiveCampaignId}
+                                onNewCampaign={handleNewCampaign}
+                                onCloseCampaign={handleCloseCampaign}
+                                onSearchResults={handleSearchResults}
+                                onApprove={handleApprove}
+                                onDismiss={handleDismiss}
+                                onRevive={handleRevive}
+                                onApproveAll={handleApproveAll}
+                                onDismissAll={handleDismissAll}
+                                onRenameCampaign={handleRenameCampaign}
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* ─── Collapsible Stats ─────────────────────────── */}
                 {!statsCollapsed && (
