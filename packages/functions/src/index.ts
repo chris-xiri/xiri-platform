@@ -10,6 +10,7 @@ export { onVendorApproved, onVendorCreated } from "./triggers/onVendorApproved";
 export { processOutreachQueue } from "./triggers/outreachWorker";
 export { onDocumentUploaded } from "./triggers/onDocumentUploaded";
 export { sendBookingConfirmation } from "./triggers/sendBookingConfirmation";
+export { sendVendorBookingConfirmation } from "./triggers/sendVendorBookingConfirmation";
 export { enrichFromWebsite } from "./triggers/enrichFromWebsite";
 export { onOnboardingComplete } from "./triggers/onOnboardingComplete";
 export { onAwaitingOnboarding, onVendorAdvancedPastOutreach } from "./triggers/dripScheduler";
