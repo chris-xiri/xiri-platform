@@ -20,6 +20,11 @@ export default function Navigation() {
     const [loading, setLoading] = useState(false);
     const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [mobileSection, setMobileSection] = useState<string | null>(null);
+
+    const toggleSection = (section: string) => {
+        setMobileSection(prev => prev === section ? null : section);
+    };
 
     const handleNavClick = (destination: string, label: string) => {
         trackEvent('click_cta', {
@@ -303,81 +308,118 @@ export default function Navigation() {
 
                 {/* Mobile Menu Panel */}
                 {mobileOpen && (
-                    <div className="md:hidden border-t border-gray-100 bg-gray-50 max-h-[75vh] overflow-y-auto">
-                        <div className="p-4 space-y-3">
+                    <div className="md:hidden border-t border-gray-100 bg-white max-h-[80vh] overflow-y-auto">
+                        <div className="divide-y divide-gray-100">
 
-                            {/* Industries Section */}
-                            <div className="bg-white rounded-xl p-4 shadow-sm">
-                                <p className="text-[11px] font-bold text-sky-600 uppercase tracking-widest mb-3">Industries</p>
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {INDUSTRY_PILLARS.map(pillar => (
-                                        <Link
-                                            key={pillar.slug}
-                                            href={`/industries/${pillar.slug}`}
-                                            className="px-3 py-1.5 text-xs font-semibold rounded-full bg-sky-50 text-sky-700 hover:bg-sky-100 active:bg-sky-200 transition-colors"
-                                            onClick={() => setMobileOpen(false)}
-                                        >
-                                            {pillar.name.replace(' Facilities', '').replace(' & ', ' & ')}
-                                        </Link>
-                                    ))}
-                                </div>
-                                <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                                    {FACILITY_TYPES.slice(0, 8).map(f => (
-                                        <Link key={f.slug} href={getFacilityHref(f)} className="text-sm text-gray-600 py-1.5 hover:text-sky-600 active:text-sky-700 transition-colors" onClick={() => setMobileOpen(false)}>
-                                            {f.label}
-                                        </Link>
-                                    ))}
-                                </div>
+                            {/* Industries — Accordion */}
+                            <div>
+                                <button
+                                    onClick={() => toggleSection('industries')}
+                                    className="w-full flex items-center justify-between px-5 py-4 text-left active:bg-gray-50 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-lg">🏢</span>
+                                        <span className="text-[15px] font-semibold text-gray-900">Industries</span>
+                                    </div>
+                                    <svg className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${mobileSection === 'industries' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                {mobileSection === 'industries' && (
+                                    <div className="px-5 pb-4 space-y-3">
+                                        <div className="flex flex-wrap gap-2">
+                                            {INDUSTRY_PILLARS.map(pillar => (
+                                                <Link
+                                                    key={pillar.slug}
+                                                    href={`/industries/${pillar.slug}`}
+                                                    className="px-3 py-1.5 text-xs font-semibold rounded-full bg-sky-50 text-sky-700 active:bg-sky-200 transition-colors"
+                                                    onClick={() => setMobileOpen(false)}
+                                                >
+                                                    {pillar.name.replace(' Facilities', '').replace(' & ', ' & ')}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-x-3">
+                                            {FACILITY_TYPES.slice(0, 8).map(f => (
+                                                <Link key={f.slug} href={getFacilityHref(f)} className="text-sm text-gray-600 py-2 active:text-sky-700 transition-colors" onClick={() => setMobileOpen(false)}>
+                                                    {f.label}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Services Section */}
-                            <div className="bg-white rounded-xl p-4 shadow-sm">
-                                <p className="text-[11px] font-bold text-sky-600 uppercase tracking-widest mb-3">Services</p>
-                                <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                                    {Object.values(SERVICE_GROUPS).flatMap(g => g.services).slice(0, 6).map(s => (
-                                        <Link key={s.slug} href={`/services/${s.slug}`} className="text-sm text-gray-600 py-1.5 hover:text-sky-600 active:text-sky-700 transition-colors" onClick={() => setMobileOpen(false)}>
-                                            {s.label}
-                                        </Link>
-                                    ))}
-                                </div>
-                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                                    <Link href="/services" className="text-xs text-sky-600 font-semibold" onClick={() => setMobileOpen(false)}>
-                                        All Services →
-                                    </Link>
-                                    <Link href="/calculator" className="text-xs text-emerald-600 font-semibold" onClick={() => setMobileOpen(false)}>
-                                        💰 Price Estimate →
-                                    </Link>
-                                </div>
+                            {/* Services — Accordion */}
+                            <div>
+                                <button
+                                    onClick={() => toggleSection('services')}
+                                    className="w-full flex items-center justify-between px-5 py-4 text-left active:bg-gray-50 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-lg">🧹</span>
+                                        <span className="text-[15px] font-semibold text-gray-900">Services</span>
+                                    </div>
+                                    <svg className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${mobileSection === 'services' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                {mobileSection === 'services' && (
+                                    <div className="px-5 pb-4">
+                                        <div className="grid grid-cols-2 gap-x-3">
+                                            {Object.values(SERVICE_GROUPS).flatMap(g => g.services).slice(0, 6).map(s => (
+                                                <Link key={s.slug} href={`/services/${s.slug}`} className="text-sm text-gray-600 py-2 active:text-sky-700 transition-colors" onClick={() => setMobileOpen(false)}>
+                                                    {s.label}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                                            <Link href="/services" className="text-xs text-sky-600 font-semibold" onClick={() => setMobileOpen(false)}>
+                                                All Services →
+                                            </Link>
+                                            <Link href="/calculator" className="text-xs text-emerald-600 font-semibold" onClick={() => setMobileOpen(false)}>
+                                                💰 Price Estimate →
+                                            </Link>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Quick Links */}
-                            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                                <Link href="/solutions" className="flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-gray-700 hover:bg-sky-50 active:bg-sky-100 transition-colors border-b border-gray-50" onClick={() => setMobileOpen(false)}>
-                                    <span className="text-lg">🛡️</span>
-                                    Cleaning Verification Hub
-                                </Link>
-                                <Link href="/solutions/keep-your-cleaner" className="flex items-center gap-3 px-4 py-3.5 text-sm text-gray-600 hover:bg-sky-50 active:bg-sky-100 transition-colors" onClick={() => setMobileOpen(false)}>
-                                    <span className="text-lg">✨</span>
-                                    Keep Your Cleaner
-                                </Link>
-                            </div>
+                            {/* Solutions — Direct link */}
+                            <Link
+                                href="/solutions"
+                                className="flex items-center gap-3 px-5 py-4 active:bg-gray-50 transition-colors"
+                                onClick={() => setMobileOpen(false)}
+                            >
+                                <span className="text-lg">🛡️</span>
+                                <span className="text-[15px] font-semibold text-gray-900">Cleaning Verification</span>
+                            </Link>
 
-                            {/* For Contractors */}
-                            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                                <p className="text-[11px] font-bold text-sky-600 uppercase tracking-widest px-4 pt-4 pb-2">For Contractors</p>
-                                <Link href="/contractors" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-sky-50 active:bg-sky-100 transition-colors border-b border-gray-50" onClick={() => setMobileOpen(false)}>
-                                    <span className="text-lg">🧹</span>
-                                    Join Our Cleaning Network
-                                </Link>
-                                <Link href="/refer" className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 transition-colors" onClick={() => setMobileOpen(false)}>
-                                    <span className="text-lg">💰</span>
-                                    Refer & Earn $500
-                                </Link>
-                            </div>
+                            {/* For Contractors — Direct link */}
+                            <Link
+                                href="/contractors"
+                                className="flex items-center gap-3 px-5 py-4 active:bg-gray-50 transition-colors"
+                                onClick={() => setMobileOpen(false)}
+                            >
+                                <span className="text-lg">🤝</span>
+                                <span className="text-[15px] font-semibold text-gray-900">Join Our Network</span>
+                            </Link>
 
-                            {/* Mobile CTA */}
+                            {/* Refer & Earn — Highlighted */}
+                            <Link
+                                href="/refer"
+                                className="flex items-center gap-3 px-5 py-4 active:bg-emerald-50 transition-colors"
+                                onClick={() => setMobileOpen(false)}
+                            >
+                                <span className="text-lg">💰</span>
+                                <span className="text-[15px] font-bold text-emerald-700">Refer & Earn $500</span>
+                            </Link>
+                        </div>
+
+                        {/* Mobile CTA — Full width at bottom */}
+                        <div className="p-4 border-t border-gray-100 bg-gray-50">
                             <button
-                                className="w-full bg-sky-600 text-white py-3.5 rounded-xl font-semibold text-sm shadow-md shadow-sky-600/20 active:bg-sky-700 transition-colors"
+                                className="w-full bg-sky-600 text-white py-3.5 rounded-xl font-semibold text-[15px] shadow-md shadow-sky-600/20 active:bg-sky-700 transition-colors"
                                 onClick={() => {
                                     setMobileOpen(false);
                                     handleNavClick('modal_open', 'Get Building Scope');
