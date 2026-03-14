@@ -1,6 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -15,14 +14,12 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const db = getFirestore(app);
-const auth = getAuth(app);
 const storage = getStorage(app);
 
 // Connect to emulators only when explicitly enabled
 if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
     console.log('Connecting to Firebase Emulators...');
     connectFirestoreEmulator(db, '127.0.0.1', 8085);
-    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
 }
 
-export { app, db, auth, storage };
+export { app, db, storage };
