@@ -161,25 +161,20 @@ export default function CalculatorPage() {
                 }}
             />
 
-            {/* ═══ HERO ═══ */}
-            <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 text-white py-10 sm:py-20">
-                <div className="max-w-4xl mx-auto px-4 text-center">
-                    <div className="inline-block px-4 py-1.5 rounded-full bg-sky-500/20 text-sky-300 text-sm font-semibold mb-6 border border-sky-500/30">
-                        Free Tool — No Sign-up Required
+            {/* ═══ COMPACT HERO ═══ */}
+            <section className="bg-white border-b border-slate-200 pt-6 pb-4 sm:pt-8 sm:pb-6">
+                <div className="max-w-3xl mx-auto px-4">
+                    <div className="flex items-center gap-3 mb-1 sm:mb-2">
+                        <h1 className="text-2xl sm:text-3xl font-heading font-bold text-slate-900">
+                            Cleaning Cost Calculator
+                        </h1>
+                        <span className="hidden sm:inline-block px-3 py-1 rounded-full bg-sky-50 text-sky-700 text-xs font-semibold border border-sky-200 whitespace-nowrap">
+                            Free Tool
+                        </span>
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-heading font-bold mb-4 leading-tight">
-                        Janitorial Cleaning Cost Calculator
-                    </h1>
-                    <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-                        How much should office cleaning cost? Get instant commercial cleaning rates
-                        for your office, medical facility, or commercial space — updated for 2026.
-                    </p>
-                    <div className="flex items-center justify-center gap-2 mt-5 text-sky-300 text-sm font-medium">
-                        <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" /></svg>
-                        <span>Used by 20+ facilities across New York</span>
-                    </div>
-                    <p className="text-sm text-slate-400 mt-3">
-                        Free tool — no sign-up required. For recurring maintenance cleaning, not one-time or post-construction services.
+                    <p className="text-sm sm:text-base text-slate-500">
+                        How much should office cleaning cost?
+                        <span className="hidden sm:inline"> Instant rates by sqft, facility type, and state — updated for 2026.</span>
                     </p>
                 </div>
             </section>
