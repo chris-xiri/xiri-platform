@@ -39,9 +39,9 @@ export const dailyClarityReport = onSchedule({
     logger.info("📊 Starting daily Clarity report...");
 
     try {
-        // 1. Fetch Clarity metrics (last 3 days)
-        const metrics = await fetchClarityInsights(CLARITY_API_TOKEN.value(), 3);
-        logger.info(`Clarity: ${metrics.totalSessions} sessions, ${metrics.deadClickCount} dead clicks, ${metrics.rageClickCount} rage clicks`);
+        // 1. Fetch Clarity metrics (yesterday)
+        const metrics = await fetchClarityInsights(CLARITY_API_TOKEN.value(), 1);
+        logger.info(`Clarity (yesterday): ${metrics.totalSessions} sessions, ${metrics.deadClickCount} dead clicks, ${metrics.rageClickCount} rage clicks`);
 
         // 2. Post to Google Chat
         await postClarityReportToChat(metrics, CLARITY_CHAT_WEBHOOK.value());

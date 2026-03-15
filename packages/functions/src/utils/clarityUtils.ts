@@ -141,7 +141,7 @@ export function buildClarityChatCard(metrics: ClarityMetrics): any {
     sections.push({
         widgets: [{
             decoratedText: {
-                topLabel: `LAST ${m.daysQueried} DAYS`,
+                topLabel: m.daysQueried === 1 ? "YESTERDAY" : `LAST ${m.daysQueried} DAYS`,
                 text: `<b>${m.totalSessions}</b> sessions  •  <b>${m.distinctUsers}</b> users  •  <b>${m.pagesPerSession.toFixed(1)}</b> pages/session`,
                 startIcon: { knownIcon: "BOOKMARK" },
             },
