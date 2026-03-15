@@ -144,17 +144,9 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
         return calculate(hourlyRate, facilityType, sqft, effectiveFloors, effectiveFixtures, effectiveTrash, daysPerWeek, effectiveShift, effectiveAddOns);
     }, [hourlyRate, facilityType, sqft, effectiveFloors, effectiveFixtures, effectiveTrash, daysPerWeek, effectiveShift, effectiveAddOns]);
 
-    // ─── Show sticky bar when results are below viewport ──────────
+    // ─── Always show sticky bar when estimate exists ──────────────
     useEffect(() => {
-        if (!estimate || sqft <= 0) { setShowStickyBar(false); return; }
-        const el = resultsRef.current;
-        if (!el) { setShowStickyBar(true); return; }
-        const observer = new IntersectionObserver(
-            ([entry]) => setShowStickyBar(!entry.isIntersecting),
-            { threshold: 0.1 }
-        );
-        observer.observe(el);
-        return () => observer.disconnect();
+        setShowStickyBar(!!(estimate && sqft > 0));
     }, [estimate, sqft]);
 
     // ─── GA: track estimate ───────────────────────────────────────────
