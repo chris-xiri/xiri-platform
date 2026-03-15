@@ -9,7 +9,7 @@ import { DLPSidebar } from '@/components/DLPSidebar';
 import { TRADES, getGeoPages, KEYWORD_PAGES, GUIDE_PAGES } from '@/data/dlp-contractors';
 import seoData from '@/data/seo-data.json';
 import { MapPin, ArrowRight, Briefcase, Building2 } from 'lucide-react';
-import { SITE } from '@/lib/constants';
+import { SITE, CTA } from '@/lib/constants';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -102,7 +102,7 @@ export default async function ContractorDLPPage({ params }: Props) {
                         { '@type': 'ListItem', position: 3, name: trade.title, item: `${SITE.url}/contractors/${slug}` },
                     ]
                 }} />
-                <Hero title={trade.h1} subtitle={trade.subtitle} ctaText="Apply Now" />
+                <Hero title={trade.h1} subtitle={trade.subtitle} ctaText={CTA.contractor} />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex flex-col lg:flex-row gap-12">
@@ -131,7 +131,7 @@ export default async function ContractorDLPPage({ params }: Props) {
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-bold mb-4">Ready to Join?</h2>
                         <p className="text-xl text-slate-300 mb-8">Apply to become a vetted XIRI subcontractor. We handle the sales — you handle the work.</p>
-                        <CTAButton href="/contractors#apply-form" text="Apply Now" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                        <CTAButton href="/contractors#apply-form" text={CTA.contractor} className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
                     </div>
                 </section>
             </div>
@@ -145,7 +145,7 @@ export default async function ContractorDLPPage({ params }: Props) {
             <div className="min-h-screen bg-white">
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: geo.title, description: geo.metaDescription, url: `${SITE.url}/contractors/${slug}` }} />
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'LocalBusiness', name: SITE.name, address: { '@type': 'PostalAddress', addressLocality: geo.title.replace('Cleaning Jobs in ', ''), addressRegion: 'NY' }, geo: { '@type': 'GeoCoordinates', latitude: geo.mapCenter.lat, longitude: geo.mapCenter.lng } }} />
-                <Hero title={geo.h1} subtitle={geo.subtitle} ctaText="Apply Now" />
+                <Hero title={geo.h1} subtitle={geo.subtitle} ctaText={CTA.contractor} />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex flex-col lg:flex-row gap-12">
@@ -180,7 +180,7 @@ export default async function ContractorDLPPage({ params }: Props) {
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-bold mb-4">Work Near Home</h2>
                         <p className="text-xl text-slate-300 mb-8">Facilities in your backyard. Jobs that don&apos;t require a commute.</p>
-                        <CTAButton href="/contractors#apply-form" text="Apply Now" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                        <CTAButton href="/contractors#apply-form" text={CTA.contractor} className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
                     </div>
                 </section>
             </div>
@@ -196,7 +196,7 @@ export default async function ContractorDLPPage({ params }: Props) {
             <div className="min-h-screen bg-white">
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebPage', name: page.title, description: page.metaDescription, url: `${SITE.url}/contractors/${slug}` }} />
                 <JsonLd data={{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: page.faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) }} />
-                <Hero title={page.h1} subtitle={page.subtitle} ctaText="Apply Now" />
+                <Hero title={page.h1} subtitle={page.subtitle} ctaText={CTA.contractor} />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex flex-col lg:flex-row gap-12">
@@ -219,7 +219,7 @@ export default async function ContractorDLPPage({ params }: Props) {
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-bold mb-4">Ready to Join the Network?</h2>
                         <p className="text-xl text-slate-300 mb-8">Apply today. We handle the sales — you handle the work.</p>
-                        <CTAButton href="/contractors#apply-form" text="Apply Now" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                        <CTAButton href="/contractors#apply-form" text={CTA.contractor} className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
                     </div>
                 </section>
             </div>
@@ -259,7 +259,7 @@ export default async function ContractorDLPPage({ params }: Props) {
                         { '@type': 'ListItem', position: 4, name: townName, item: `${SITE.url}/contractors/${slug}` },
                     ]
                 }} />
-                <Hero title={`${crossTrade.h1} in ${location.name.split(',')[0]}`} subtitle={crossTrade.subtitle} ctaText="Apply Now" />
+                <Hero title={`${crossTrade.h1} in ${location.name.split(',')[0]}`} subtitle={crossTrade.subtitle} ctaText={CTA.contractor} />
                 <section className="py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex flex-col lg:flex-row gap-12">
@@ -307,7 +307,7 @@ export default async function ContractorDLPPage({ params }: Props) {
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-bold mb-4">{crossTrade.title.replace(' Opportunities', '')} Work in {location.name.split(',')[0]}</h2>
                         <p className="text-xl text-slate-300 mb-8">Apply to become a vetted XIRI subcontractor. Steady medical facility work near home.</p>
-                        <CTAButton href="/contractors#apply-form" text="Apply Now" className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                        <CTAButton href="/contractors#apply-form" text={CTA.contractor} className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
                     </div>
                 </section>
             </div>

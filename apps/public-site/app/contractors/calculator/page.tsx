@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { JsonLd } from '@/components/JsonLd';
 import PublicCalculator from '@/components/PublicCalculator';
-import { SITE } from '@/lib/constants';
+import { SITE, CTA } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Janitorial Bid Calculator (2026) | Free Pricing Tool for Cleaning Companies',
@@ -176,7 +176,7 @@ export default function ContractorCalculatorPage() {
                         href="/contractors"
                         className="inline-block bg-white text-emerald-800 px-8 py-4 rounded-xl font-bold text-lg hover:bg-emerald-50 transition-colors shadow-xl"
                     >
-                        See Available Jobs in Your Area →
+                        {CTA.contractor} →
                     </a>
                     <p className="text-emerald-300/60 text-sm mt-4">
                         Fully insured contractors earn competitive rates with guaranteed pay.

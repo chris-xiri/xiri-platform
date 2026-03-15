@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Hero } from "./Hero";
+import { CTA } from "@/lib/constants";
 import { Loader2, Search, DollarSign } from "lucide-react";
 
 interface ContractorHeroProps {
@@ -72,7 +73,7 @@ export function ContractorHero({
         <Hero
             title={headline ? <span className="text-white" dangerouslySetInnerHTML={{ __html: headline.replace(/\n/g, "<br/>") }} /> : defaultHeadline}
             subtitle={subheadline ? <span className="text-slate-300">{subheadline}</span> : defaultSubheadline}
-            ctaText={loading ? "Loading..." : (ctaText || "See Available Jobs")}
+            ctaText={loading ? "Loading..." : (ctaText || CTA.contractor)}
             onCtaClick={handleStart}
             industryIcon="🛠️"
             industryLabel="Verified Service Partner"

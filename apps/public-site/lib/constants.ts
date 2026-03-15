@@ -27,7 +27,8 @@ export const SERVICE_AREA = {
 } as const;
 
 export const CTA = {
-    primary: 'Get Your Building Scope',
+    primary: 'Scope My Building',
+    contractor: 'Join the Network',
     secondary: 'See If We Cover Your Area',
     audit: 'Get a Free Site Audit',
     href: '/#audit',

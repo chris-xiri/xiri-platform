@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { ArrowRight, X, Loader2 } from 'lucide-react';
 import { isValidZip } from '@/data/validZips';
 import { trackEvent } from '@/lib/tracking';
+import { CTA } from '@/lib/constants';
 
 /**
  * StickyMobileCTA — fixed bottom bar on mobile for key landing pages.
@@ -147,7 +148,7 @@ export function StickyMobileCTA() {
                         onClick={handleContractorClick}
                         className="w-full h-12 bg-white text-emerald-700 font-bold text-sm rounded-lg hover:bg-emerald-50 active:bg-emerald-100 transition-colors flex items-center justify-center gap-2"
                     >
-                        Apply Now — Takes 5 Minutes
+                        {CTA.contractor} — Takes 5 Minutes
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 )}

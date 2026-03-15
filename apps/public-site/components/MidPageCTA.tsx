@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { LeadFormModal } from './LeadFormModal';
 import { trackEvent } from '@/lib/tracking';
+import { CTA } from '@/lib/constants';
 
 interface MidPageCTAProps {
     headline?: string;
@@ -16,7 +17,7 @@ interface MidPageCTAProps {
 export function MidPageCTA({
     headline = 'Ready to simplify your building?',
     subtext = 'Enter your zip code — we\'ll tell you if we cover your area and build a custom scope in 48 hours.',
-    ctaText = 'Get Your Building Scope →',
+    ctaText = `${CTA.primary} →`,
     variant = 'light',
     trackingId,
 }: MidPageCTAProps) {

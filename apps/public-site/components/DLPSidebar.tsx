@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { CTA } from '@/lib/constants';
 
 // ── Relationship Map ──
 // Each category maps to a list of related DLP links.
@@ -144,7 +145,7 @@ export function DLPSidebar({ category, currentSlug }: DLPSidebarProps) {
                     href={category.startsWith('contractor') ? '/contractors#apply-form' : '/#audit'}
                     className="block text-center bg-sky-600 text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-sky-700 transition-colors"
                 >
-                    {category.startsWith('contractor') ? 'Apply Now' : 'Schedule Audit'}
+                    {category.startsWith('contractor') ? CTA.contractor : 'Schedule Audit'}
                 </Link>
             </div>
         </aside>

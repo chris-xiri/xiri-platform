@@ -1,4 +1,5 @@
 import { Hero } from '@/components/Hero';
+import { CTA } from '@/lib/constants';
 import { ValuePropsSection } from '@/components/ValueProps';
 import { CTAButton } from '@/components/CTAButton';
 import { ClientLeadForm } from '@/components/ClientLeadForm';
@@ -32,7 +33,7 @@ export default function Home() {
       <MidPageCTA
         headline="See if we cover your area"
         subtext="Enter your zip code — we'll tell you if we can service your building and build a custom scope in 48 hours."
-        ctaText="Get Your Building Scope"
+        ctaText={CTA.primary}
         variant="gradient"
         trackingId="after_value_props"
       />

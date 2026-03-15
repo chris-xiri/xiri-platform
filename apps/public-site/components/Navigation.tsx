@@ -259,13 +259,13 @@ export default function Navigation() {
 
                         {/* CTA Button + Mobile Hamburger */}
                         <div className="flex items-center gap-4">
-                            {pathname === '/contractors' || pathname?.includes('/partners') ? (
+                            {pathname?.startsWith('/contractors') || pathname?.includes('/partners') ? (
                                 <button
                                     onClick={handleContractorStart}
                                     disabled={loading}
                                     className="bg-sky-600 text-white px-6 py-2.5 rounded-full font-medium shadow-md shadow-sky-600/20 hover:bg-sky-700 hover:shadow-lg hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
-                                    {loading ? 'Loading...' : 'See Available Jobs'}
+                                    {loading ? 'Loading...' : CTA.contractor}
                                 </button>
                             ) : pathname?.startsWith('/refer') ? (
                                 <a
@@ -418,16 +418,28 @@ export default function Navigation() {
 
                         {/* Mobile CTA — Full width at bottom */}
                         <div className="p-4 border-t border-gray-100 bg-gray-50">
-                            <button
-                                className="w-full bg-sky-600 text-white py-3.5 rounded-xl font-semibold text-[15px] shadow-md shadow-sky-600/20 active:bg-sky-700 transition-colors"
-                                onClick={() => {
-                                    setMobileOpen(false);
-                                    handleNavClick('modal_open', 'Get Building Scope');
-                                    setIsAuditModalOpen(true);
-                                }}
-                            >
-                                {CTA.primary}
-                            </button>
+                            {pathname?.startsWith('/contractors') ? (
+                                <button
+                                    className="w-full bg-sky-600 text-white py-3.5 rounded-xl font-semibold text-[15px] shadow-md shadow-sky-600/20 active:bg-sky-700 transition-colors"
+                                    onClick={() => {
+                                        setMobileOpen(false);
+                                        handleContractorStart();
+                                    }}
+                                >
+                                    {loading ? 'Loading...' : CTA.contractor}
+                                </button>
+                            ) : (
+                                <button
+                                    className="w-full bg-sky-600 text-white py-3.5 rounded-xl font-semibold text-[15px] shadow-md shadow-sky-600/20 active:bg-sky-700 transition-colors"
+                                    onClick={() => {
+                                        setMobileOpen(false);
+                                        handleNavClick('modal_open', 'Get Building Scope');
+                                        setIsAuditModalOpen(true);
+                                    }}
+                                >
+                                    {CTA.primary}
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}

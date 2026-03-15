@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { trackEvent } from '@/lib/tracking';
+import { CTA } from '@/lib/constants';
 import { STATE_WAGES, scaleRates, NY_MIN_WAGE } from '@/data/state-wages';
 import {
     type FloorBreakdown,
@@ -20,7 +21,7 @@ import {
     FREQUENCY_MULTIPLIERS,
     DEFAULT_FLOORS,
 } from '@/lib/calculator';
-import { Building, ShowerHead, Clock, Mail, Calculator, CheckCircle } from 'lucide-react';
+import { Building, ShowerHead, Clock, Mail, Calculator, CheckCircle, ChevronUp } from 'lucide-react';
 
 
 // ─── Props ────────────────────────────────────────────────────────────
@@ -58,6 +59,12 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
     // ─── Auto-scroll ref ──────────────────────────────────────────────
     const resultsRef = useRef<HTMLDivElement>(null);
     const didAutoScroll = useRef(false);
+
+    // ─── Sticky estimate bar state ────────────────────────────────────
+    const [stickyExpanded, setStickyExpanded] = useState(false);
+    const [showStickyBar, setShowStickyBar] = useState(false);
+
+
 
     // ─── GA: track page view ──────────────────────────────────────────
     const tracked = useRef(false);
@@ -137,6 +144,19 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
         if (sqft <= 0) return null;
         return calculate(hourlyRate, facilityType, sqft, effectiveFloors, effectiveFixtures, effectiveTrash, daysPerWeek, effectiveShift, effectiveAddOns);
     }, [hourlyRate, facilityType, sqft, effectiveFloors, effectiveFixtures, effectiveTrash, daysPerWeek, effectiveShift, effectiveAddOns]);
+
+    // ─── Show sticky bar when results are below viewport ──────────
+    useEffect(() => {
+        if (!estimate || sqft <= 0) { setShowStickyBar(false); return; }
+        const el = resultsRef.current;
+        if (!el) { setShowStickyBar(true); return; }
+        const observer = new IntersectionObserver(
+            ([entry]) => setShowStickyBar(!entry.isIntersecting),
+            { threshold: 0.1 }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [estimate, sqft]);
 
     // ─── GA: track estimate ───────────────────────────────────────────
     const lastTrackedEstimate = useRef<string>('');
@@ -297,123 +317,63 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                     </div>
                 </div>
 
-                {/* Frequency */}
+                {/* Frequency — Compact pill selector */}
                 <div>
-                    <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-3">Cleaning Frequency</label>
-                    <div className="grid grid-cols-2 gap-3">
-                        {/* Nightly */}
-                        <button
-                            onClick={() => setDaysPerWeek(7)}
-                            className={`text-left p-3 rounded-xl border-2 transition-all select-none active:scale-[0.98] ${daysPerWeek === 7
-                                ? `${isContractor ? 'border-emerald-500 bg-emerald-50' : 'border-sky-500 bg-sky-50'} shadow-md`
-                                : 'border-slate-200 bg-white hover:border-slate-300'
-                                }`}
-                        >
-                            <div className="flex items-center justify-between mb-1">
-                                <span className={`text-sm font-bold ${daysPerWeek === 7 ? (isContractor ? 'text-emerald-700' : 'text-sky-700') : 'text-slate-800'}`}>Nightly</span>
-                                <span className={`text-xs font-semibold px-3 py-1 rounded-full ${daysPerWeek === 7 ? (isContractor ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700') : 'bg-slate-100 text-slate-500'}`}>7x/wk</span>
-                            </div>
-                            <p className="text-[11px] text-slate-500 leading-snug">Medical, food service, high-traffic lobbies</p>
-                        </button>
-
-                        {/* Standard */}
-                        <button
-                            type="button"
-                            onClick={() => { if (![5, 6].includes(daysPerWeek)) setDaysPerWeek(5); }}
-                            className={`text-left p-3 rounded-xl border-2 transition-all select-none active:scale-[0.98] ${[5, 6].includes(daysPerWeek)
-                            ? `${isContractor ? 'border-emerald-500 bg-emerald-50' : 'border-sky-500 bg-sky-50'} shadow-md`
-                            : 'border-slate-200 bg-white hover:border-slate-300'
-                            }`}
-                        >
-                            <div className="flex items-center justify-between mb-1">
-                                <span className={`text-sm font-bold ${[5, 6].includes(daysPerWeek) ? (isContractor ? 'text-emerald-700' : 'text-sky-700') : 'text-slate-800'}`}>Standard</span>
-                                <div className="flex gap-1.5">
-                                    {[6, 5].map(d => (
-                                        <span
-                                            key={d}
-                                            role="button"
-                                            tabIndex={0}
-                                            onClick={(e) => { e.stopPropagation(); setDaysPerWeek(d); }}
-                                            className={`text-xs font-semibold px-3 py-1 rounded-full transition-all min-w-[36px] text-center ${daysPerWeek === d
-                                                ? (isContractor ? 'bg-emerald-600 text-white' : 'bg-sky-600 text-white')
-                                                : [5, 6].includes(daysPerWeek)
-                                                    ? (isContractor ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200' : 'bg-sky-100 text-sky-600 hover:bg-sky-200')
-                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                                                }`}
-                                        >
-                                            {d}x
+                    <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-2">Cleaning Frequency</label>
+                    <div className="flex flex-wrap gap-2">
+                        {[
+                            { label: 'Nightly', days: [7], desc: 'Medical, food service' },
+                            { label: 'Standard', days: [6, 5], desc: 'Offices, retail' },
+                            { label: 'Low Traffic', days: [4, 3], desc: 'Small offices' },
+                            { label: 'Weekly', days: [2, 1], desc: 'Storage, seasonal' },
+                        ].map(freq => {
+                            const isActive = freq.days.includes(daysPerWeek);
+                            return (
+                                <button
+                                    key={freq.label}
+                                    type="button"
+                                    onClick={() => { if (!isActive) setDaysPerWeek(freq.days[freq.days.length - 1]); }}
+                                    className={`relative group flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none active:scale-[0.97] ${
+                                        isActive
+                                            ? (isContractor
+                                                ? 'bg-emerald-50 border-2 border-emerald-500 text-emerald-700 shadow-sm'
+                                                : 'bg-sky-50 border-2 border-sky-500 text-sky-700 shadow-sm')
+                                            : 'bg-slate-50 border-2 border-slate-200 text-slate-600 hover:border-slate-300'
+                                    }`}
+                                >
+                                    <span>{freq.label}</span>
+                                    {freq.days.length > 1 && isActive ? (
+                                        <span className="flex gap-1 ml-1">
+                                            {freq.days.map(d => (
+                                                <span
+                                                    key={d}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={(e) => { e.stopPropagation(); setDaysPerWeek(d); }}
+                                                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full transition-all ${
+                                                        daysPerWeek === d
+                                                            ? (isContractor ? 'bg-emerald-600 text-white' : 'bg-sky-600 text-white')
+                                                            : (isContractor ? 'bg-emerald-100 text-emerald-600' : 'bg-sky-100 text-sky-600')
+                                                    }`}
+                                                >
+                                                    {d}x
+                                                </span>
+                                            ))}
                                         </span>
-                                    ))}
-                                </div>
-                            </div>
-                            <p className="text-[11px] text-slate-500 leading-snug">Most offices, retail, commercial spaces</p>
-                        </button>
-
-                        {/* Low Traffic */}
-                        <button
-                            type="button"
-                            onClick={() => { if (![3, 4].includes(daysPerWeek)) setDaysPerWeek(3); }}
-                            className={`text-left p-3 rounded-xl border-2 transition-all select-none active:scale-[0.98] ${[3, 4].includes(daysPerWeek)
-                            ? `${isContractor ? 'border-emerald-500 bg-emerald-50' : 'border-sky-500 bg-sky-50'} shadow-md`
-                            : 'border-slate-200 bg-white hover:border-slate-300'
-                            }`}
-                        >
-                            <div className="flex items-center justify-between mb-1">
-                                <span className={`text-sm font-bold ${[3, 4].includes(daysPerWeek) ? (isContractor ? 'text-emerald-700' : 'text-sky-700') : 'text-slate-800'}`}>Low Traffic</span>
-                                <div className="flex gap-1.5">
-                                    {[4, 3].map(d => (
-                                        <span
-                                            key={d}
-                                            role="button"
-                                            tabIndex={0}
-                                            onClick={(e) => { e.stopPropagation(); setDaysPerWeek(d); }}
-                                            className={`text-xs font-semibold px-3 py-1 rounded-full transition-all min-w-[36px] text-center ${daysPerWeek === d
-                                                ? (isContractor ? 'bg-emerald-600 text-white' : 'bg-sky-600 text-white')
-                                                : [3, 4].includes(daysPerWeek)
-                                                    ? (isContractor ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200' : 'bg-sky-100 text-sky-600 hover:bg-sky-200')
-                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                                                }`}
-                                        >
-                                            {d}x
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                            <p className="text-[11px] text-slate-500 leading-snug">Small offices, low-foot-traffic areas</p>
-                        </button>
-
-                        {/* Weekly */}
-                        <button
-                            type="button"
-                            onClick={() => { if (![1, 2].includes(daysPerWeek)) setDaysPerWeek(1); }}
-                            className={`text-left p-3 rounded-xl border-2 transition-all select-none active:scale-[0.98] ${[1, 2].includes(daysPerWeek)
-                            ? `${isContractor ? 'border-emerald-500 bg-emerald-50' : 'border-sky-500 bg-sky-50'} shadow-md`
-                            : 'border-slate-200 bg-white hover:border-slate-300'
-                            }`}
-                        >
-                            <div className="flex items-center justify-between mb-1">
-                                <span className={`text-sm font-bold ${[1, 2].includes(daysPerWeek) ? (isContractor ? 'text-emerald-700' : 'text-sky-700') : 'text-slate-800'}`}>Weekly</span>
-                                <div className="flex gap-1.5">
-                                    {[2, 1].map(d => (
-                                        <span
-                                            key={d}
-                                            role="button"
-                                            tabIndex={0}
-                                            onClick={(e) => { e.stopPropagation(); setDaysPerWeek(d); }}
-                                            className={`text-xs font-semibold px-3 py-1 rounded-full transition-all min-w-[36px] text-center ${daysPerWeek === d
-                                                ? (isContractor ? 'bg-emerald-600 text-white' : 'bg-sky-600 text-white')
-                                                : [1, 2].includes(daysPerWeek)
-                                                    ? (isContractor ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200' : 'bg-sky-100 text-sky-600 hover:bg-sky-200')
-                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                                                }`}
-                                        >
-                                            {d}x
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                            <p className="text-[11px] text-slate-500 leading-snug">Warehouses, storage, seasonal spaces</p>
-                        </button>
+                                    ) : (
+                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                            isActive
+                                                ? (isContractor ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700')
+                                                : 'bg-slate-100 text-slate-500'
+                                        }`}>{freq.days[0]}x</span>
+                                    )}
+                                    {/* Tooltip on hover (desktop) */}
+                                    <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 hidden group-hover:block text-[10px] text-slate-500 whitespace-nowrap bg-white border border-slate-200 rounded px-2 py-0.5 shadow-sm z-10">
+                                        {freq.desc}
+                                    </span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -671,7 +631,7 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                                 onClick={() => trackEvent('calculator_cta_click', { cta: isContractor ? 'join_network' : 'get_quote', calculator_type: mode })}
                                 className="text-sm font-semibold underline underline-offset-4 text-white/80 hover:text-white transition-colors"
                             >
-                                {isContractor ? 'See Available Jobs in Your Area →' : 'Or get a custom quote with a free site walkthrough →'}
+                                {isContractor ? `${CTA.contractor} →` : 'Or get a custom quote with a free site walkthrough →'}
                             </a>
                         </div>
                     </div>
@@ -743,6 +703,67 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                                     No spam. Just your estimate breakdown.
                                 </p>
                             </>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ═══ STICKY MOBILE ESTIMATE BAR ═══ */}
+            {showStickyBar && estimate && sqft > 0 && (
+                <div className="fixed bottom-16 sm:bottom-0 left-0 right-0 z-40 animate-in slide-in-from-bottom duration-300">
+                    <div className={`mx-2 sm:mx-4 mb-2 rounded-2xl shadow-2xl border backdrop-blur-md ${
+                        isContractor
+                            ? 'bg-emerald-900/95 border-emerald-700/50'
+                            : 'bg-sky-900/95 border-sky-700/50'
+                    }`}>
+                        {/* Collapsed bar */}
+                        <button
+                            onClick={() => setStickyExpanded(!stickyExpanded)}
+                            className="w-full flex items-center justify-between px-4 py-3 text-white"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className={`w-2 h-2 rounded-full animate-pulse ${isContractor ? 'bg-emerald-400' : 'bg-sky-400'}`} />
+                                <span className="text-sm font-medium opacity-80">
+                                    {isContractor ? 'Est. Earnings' : 'Est. Cost'}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-lg font-bold">
+                                    {fmt(estimate.monthly.low)} – {fmt(estimate.monthly.high)}
+                                    <span className="text-xs font-normal opacity-70">/mo</span>
+                                </span>
+                                <ChevronUp className={`w-4 h-4 opacity-60 transition-transform ${stickyExpanded ? 'rotate-180' : ''}`} />
+                            </div>
+                        </button>
+
+                        {/* Expanded details */}
+                        {stickyExpanded && (
+                            <div className="px-4 pb-3 border-t border-white/10">
+                                <div className="grid grid-cols-3 gap-2 pt-3">
+                                    <div className="text-center">
+                                        <p className="text-[10px] text-white/60 uppercase">Per Visit</p>
+                                        <p className="text-sm font-bold text-white">{fmt(estimate.perVisit)}</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-[10px] text-white/60 uppercase">Visits/Mo</p>
+                                        <p className="text-sm font-bold text-white">{estimate.daysPerMonth}</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-[10px] text-white/60 uppercase">Annual</p>
+                                        <p className="text-sm font-bold text-white">{fmt(estimate.monthly.mid * 12)}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                                    className={`w-full mt-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                                        isContractor
+                                            ? 'bg-emerald-500 hover:bg-emerald-400 text-white'
+                                            : 'bg-sky-500 hover:bg-sky-400 text-white'
+                                    }`}
+                                >
+                                    View Full Breakdown ↓
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
