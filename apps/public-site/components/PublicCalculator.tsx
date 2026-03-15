@@ -58,7 +58,6 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
 
     // ─── Auto-scroll ref ──────────────────────────────────────────────
     const resultsRef = useRef<HTMLDivElement>(null);
-    const didAutoScroll = useRef(false);
 
     // ─── Sticky estimate bar state ────────────────────────────────────
     const [stickyExpanded, setStickyExpanded] = useState(false);
@@ -176,29 +175,8 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
         });
     }, [estimate, stateCode, facilityType, sqft, daysPerWeek, mode, showAdvanced]);
 
-    // ─── Auto-scroll to results when estimate first appears ───────────
-    useEffect(() => {
-        if (estimate && sqft > 0 && !didAutoScroll.current) {
-            didAutoScroll.current = true;
-            // Small delay to let DOM render the results
-            setTimeout(() => {
-                resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 150);
-        }
-        if (!estimate || sqft <= 0) {
-            didAutoScroll.current = false;
-        }
-    }, [estimate, sqft]);
-
-    // ─── Scroll after mobile keyboard dismisses ───────────────────────
-    const handleSqftBlur = useCallback(() => {
-        if (sqft > 0) {
-            // Wait for keyboard to animate away
-            setTimeout(() => {
-                resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 350);
-        }
-    }, [sqft]);
+    // No auto-scroll needed — sticky bar shows estimate in real-time
+    const handleSqftBlur = useCallback(() => {}, []);
 
     // ─── Email submission ─────────────────────────────────────────────
     const handleEmailSubmit = async () => {
