@@ -86,21 +86,20 @@ export default function ContractorCalculatorPage() {
                 }}
             />
 
-            {/* ═══ HERO ═══ */}
-            <section className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-slate-900 text-white py-10 sm:py-20">
-                <div className="max-w-4xl mx-auto px-4 text-center">
-                    <div className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-sm font-semibold mb-6 border border-emerald-500/30">
-                        Free Tool for Cleaning Companies
+            {/* ═══ COMPACT HERO ═══ */}
+            <section className="bg-white border-b border-slate-200 pt-6 pb-4 sm:pt-8 sm:pb-6">
+                <div className="max-w-3xl mx-auto px-4">
+                    <div className="flex items-center gap-3 mb-1 sm:mb-2">
+                        <h1 className="text-2xl sm:text-3xl font-heading font-bold text-slate-900">
+                            Janitorial Bid Calculator
+                        </h1>
+                        <span className="hidden sm:inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200 whitespace-nowrap">
+                            Free Tool
+                        </span>
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-heading font-bold mb-4 leading-tight">
-                        Janitorial Bid Calculator
-                    </h1>
-                    <p className="text-xl text-emerald-200 max-w-2xl mx-auto">
-                        See what recurring janitorial contracts are worth in your area.
-                        Price your bids accurately with real market data.
-                    </p>
-                    <p className="text-sm text-emerald-300/60 mt-3">
-                        For nightly/weekly maintenance contracts. Not for post-construction or one-time deep cleans.
+                    <p className="text-sm sm:text-base text-slate-500">
+                        See what contracts are worth in your area.
+                        <span className="hidden sm:inline"> Price bids accurately with real market data.</span>
                     </p>
                 </div>
             </section>

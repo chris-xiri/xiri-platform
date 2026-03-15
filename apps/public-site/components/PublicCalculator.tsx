@@ -546,94 +546,39 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                 </div>
             )}
 
-            {/* ═══ ESTIMATE RESULT ═══ */}
+            {/* ═══ ESTIMATE CTA (no big card — sticky bar handles the numbers) ═══ */}
             <div ref={resultsRef} />
             {estimate && sqft > 0 ? (
-                <div className={`rounded-2xl p-5 sm:p-8 text-white shadow-xl ${isContractor
-                    ? 'bg-gradient-to-br from-emerald-600 to-emerald-800'
-                    : 'bg-gradient-to-br from-sky-600 to-sky-800'
-                    }`}>
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-bold">
-                            {isContractor ? 'Estimated Earnings' : 'Your Estimate'}
-                        </h3>
-                        <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold">±20% accuracy</span>
-                    </div>
+                <div className="mt-6 text-center space-y-4">
+                    {/* Email gate */}
+                    <button
+                        onClick={() => {
+                            setShowEmailModal(true);
+                            trackEvent('calculator_cta_click', { cta: 'email_breakdown', calculator_type: mode });
+                        }}
+                        className={`inline-flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg ${
+                            isContractor
+                                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                : 'bg-sky-600 text-white hover:bg-sky-700'
+                        }`}
+                    >
+                        <Mail className="w-5 h-5" /> Get My Free Cost Report
+                    </button>
+                    <p className="text-xs text-slate-500">
+                        Includes per-sqft costs, frequency comparison, and {isContractor ? 'bidding tips' : 'industry benchmarks'}.
+                    </p>
 
-                    <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
-                        <div className="bg-white/10 rounded-xl p-3 sm:p-4 text-center backdrop-blur-sm">
-                            <p className={`text-[10px] sm:text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
-                                {isContractor ? 'Per Visit' : 'Per Visit'}
-                            </p>
-                            <p className="text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1">{fmt(estimate.perVisit)}</p>
-                        </div>
-                        <div className="bg-white/10 rounded-xl p-3 sm:p-4 text-center backdrop-blur-sm">
-                            <p className={`text-[10px] sm:text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>Visits / Mo</p>
-                            <p className="text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1">{estimate.daysPerMonth}</p>
-                            <p className={`text-[9px] sm:text-[10px] ${isContractor ? 'text-emerald-300' : 'text-sky-300'}`}>{daysPerWeek}x/wk × 4.33</p>
-                        </div>
-                        <div className="bg-white/10 rounded-xl p-3 sm:p-4 text-center backdrop-blur-sm">
-                            <p className={`text-[10px] sm:text-xs font-medium ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
-                                {isContractor ? 'Annual' : 'Annual'}
-                            </p>
-                            <p className="text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1">{fmt(estimate.monthly.mid * 12)}</p>
-                        </div>
-                    </div>
-
-                    {/* Monthly total */}
-                    <div className="bg-white rounded-2xl p-4 sm:p-6 text-center text-slate-900">
-                        <p className="text-xs sm:text-sm text-slate-500 mb-0.5 sm:mb-1">
-                            {isContractor ? 'Estimated Monthly Earnings' : 'Estimated Monthly Cost'}
-                        </p>
-                        <p className="text-3xl sm:text-4xl font-bold">
-                            {fmt(estimate.monthly.low)} – {fmt(estimate.monthly.high)}
-                        </p>
-                        <p className="text-sm text-slate-500 mt-2">
-                            Mid-point: <span className="font-bold text-slate-900">{fmt(estimate.monthly.mid)}/mo</span>
-                        </p>
-                        {stateCode !== 'NY' && (
-                            <p className="text-xs text-slate-400 mt-2">
-                                Adjusted for {STATE_WAGES.find(s => s.code === stateCode)?.name} ({costTier.toLowerCase()})
-                            </p>
-                        )}
-                        {!showAdvanced && (
-                            <p className="text-xs text-slate-400 mt-2">
-                                <button onClick={() => setShowAdvanced(true)} className="text-sky-600 hover:underline font-medium">
-                                    Refine this estimate →
-                                </button>{' '}
-                                Add floor types, fixtures, and shift details.
-                            </p>
-                        )}
-                    </div>
-
-                    {/* ─── Soft Gate: Email CTA ─── */}
-                    <div className="mt-6 text-center space-y-3">
-                        <button
-                            onClick={() => {
-                                setShowEmailModal(true);
-                                trackEvent('calculator_cta_click', { cta: 'email_breakdown', calculator_type: mode });
-                            }}
-                            className={`inline-block px-8 py-3.5 rounded-xl font-bold text-sm transition-colors shadow-lg ${isContractor
-                                ? 'bg-white text-emerald-700 hover:bg-emerald-50'
-                                : 'bg-white text-sky-700 hover:bg-sky-50'
-                                }`}
+                    {/* Secondary CTA */}
+                    <div className="pt-1">
+                        <a
+                            href={isContractor ? '/contractors' : '/#audit'}
+                            onClick={() => trackEvent('calculator_cta_click', { cta: isContractor ? 'join_network' : 'get_quote', calculator_type: mode })}
+                            className={`text-sm font-semibold underline underline-offset-4 transition-colors ${
+                                isContractor ? 'text-emerald-600 hover:text-emerald-800' : 'text-sky-600 hover:text-sky-800'
+                            }`}
                         >
-                            <Mail className="w-5 h-5 inline mr-1" /> Get My Free Cost Report
-                        </button>
-                        <p className={`text-xs ${isContractor ? 'text-emerald-200' : 'text-sky-200'}`}>
-                            Includes per-sqft costs, frequency comparison, and {isContractor ? 'bidding tips' : 'industry benchmarks'}.
-                        </p>
-
-                        {/* Secondary CTA */}
-                        <div className="pt-2">
-                            <a
-                                href={isContractor ? '/contractors' : '/#audit'}
-                                onClick={() => trackEvent('calculator_cta_click', { cta: isContractor ? 'join_network' : 'get_quote', calculator_type: mode })}
-                                className="text-sm font-semibold underline underline-offset-4 text-white/80 hover:text-white transition-colors"
-                            >
-                                {isContractor ? `${CTA.contractor} →` : 'Or get a custom quote with a free site walkthrough →'}
-                            </a>
-                        </div>
+                            {isContractor ? `${CTA.contractor} →` : 'Or get a custom quote with a free site walkthrough →'}
+                        </a>
                     </div>
                 </div>
             ) : (
@@ -753,16 +698,17 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                                         <p className="text-sm font-bold text-white">{fmt(estimate.monthly.mid * 12)}</p>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                                    className={`w-full mt-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                                <a
+                                    href={isContractor ? '/contractors' : '/#audit'}
+                                    onClick={() => trackEvent('calculator_cta_click', { cta: isContractor ? 'sticky_cta' : 'sticky_quote', calculator_type: mode })}
+                                    className={`w-full mt-3 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-1 ${
                                         isContractor
                                             ? 'bg-emerald-500 hover:bg-emerald-400 text-white'
                                             : 'bg-sky-500 hover:bg-sky-400 text-white'
                                     }`}
                                 >
-                                    View Full Breakdown ↓
-                                </button>
+                                    {isContractor ? `${CTA.contractor} →` : 'Get My Free Cost Report →'}
+                                </a>
                             </div>
                         )}
                     </div>
