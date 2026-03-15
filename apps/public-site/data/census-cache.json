@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T21:36:12.134Z",
+  "generatedAt": "2026-03-14T21:00:00.000Z",
   "censusYear": 2022,
   "source": "U.S. Census Bureau, County Business Patterns",
   "entries": {
@@ -13,6 +13,14 @@
         "nassau": {
           "establishments": 1629,
           "areaLabel": "Nassau County"
+        },
+        "queens": {
+          "establishments": 1410,
+          "areaLabel": "Queens County"
+        },
+        "kings": {
+          "establishments": 1463,
+          "areaLabel": "Kings County (Brooklyn)"
         }
       }
     },
@@ -26,6 +34,14 @@
         "nassau": {
           "establishments": 969,
           "areaLabel": "Nassau County"
+        },
+        "queens": {
+          "establishments": 969,
+          "areaLabel": "Queens County"
+        },
+        "kings": {
+          "establishments": 810,
+          "areaLabel": "Kings County (Brooklyn)"
         }
       }
     },
@@ -39,6 +55,14 @@
         "nassau": {
           "establishments": 66,
           "areaLabel": "Nassau County"
+        },
+        "queens": {
+          "establishments": 56,
+          "areaLabel": "Queens County"
+        },
+        "kings": {
+          "establishments": 53,
+          "areaLabel": "Kings County (Brooklyn)"
         }
       }
     },
@@ -52,6 +76,14 @@
         "nassau": {
           "establishments": 66,
           "areaLabel": "Nassau County"
+        },
+        "queens": {
+          "establishments": 56,
+          "areaLabel": "Queens County"
+        },
+        "kings": {
+          "establishments": 53,
+          "areaLabel": "Kings County (Brooklyn)"
         }
       }
     },
@@ -65,6 +97,14 @@
         "nassau": {
           "establishments": 20,
           "areaLabel": "Nassau County"
+        },
+        "queens": {
+          "establishments": 37,
+          "areaLabel": "Queens County"
+        },
+        "kings": {
+          "establishments": 51,
+          "areaLabel": "Kings County (Brooklyn)"
         }
       }
     },
@@ -78,6 +118,14 @@
         "nassau": {
           "establishments": 113,
           "areaLabel": "Nassau County"
+        },
+        "queens": {
+          "establishments": 65,
+          "areaLabel": "Queens County"
+        },
+        "kings": {
+          "establishments": 84,
+          "areaLabel": "Kings County (Brooklyn)"
         }
       }
     },
@@ -91,6 +139,14 @@
         "nassau": {
           "establishments": 190,
           "areaLabel": "Nassau County"
+        },
+        "queens": {
+          "establishments": 115,
+          "areaLabel": "Queens County"
+        },
+        "kings": {
+          "establishments": 92,
+          "areaLabel": "Kings County (Brooklyn)"
         }
       }
     },
@@ -104,6 +160,14 @@
         "nassau": {
           "establishments": 592,
           "areaLabel": "Nassau County"
+        },
+        "queens": {
+          "establishments": 668,
+          "areaLabel": "Queens County"
+        },
+        "kings": {
+          "establishments": 1023,
+          "areaLabel": "Kings County (Brooklyn)"
         }
       }
     },
@@ -117,6 +181,14 @@
         "nassau": {
           "establishments": 102,
           "areaLabel": "Nassau County"
+        },
+        "queens": {
+          "establishments": 167,
+          "areaLabel": "Queens County"
+        },
+        "kings": {
+          "establishments": 337,
+          "areaLabel": "Kings County (Brooklyn)"
         }
       }
     },
@@ -130,6 +202,14 @@
         "nassau": {
           "establishments": 1677,
           "areaLabel": "Nassau County"
+        },
+        "queens": {
+          "establishments": 744,
+          "areaLabel": "Queens County"
+        },
+        "kings": {
+          "establishments": 703,
+          "areaLabel": "Kings County (Brooklyn)"
         }
       }
     },
@@ -143,6 +223,14 @@
         "nassau": {
           "establishments": 270,
           "areaLabel": "Nassau County"
+        },
+        "queens": {
+          "establishments": 145,
+          "areaLabel": "Queens County"
+        },
+        "kings": {
+          "establishments": 213,
+          "areaLabel": "Kings County (Brooklyn)"
         }
       }
     },
@@ -156,6 +244,14 @@
         "nassau": {
           "establishments": 5602,
           "areaLabel": "Nassau County"
+        },
+        "queens": {
+          "establishments": 7392,
+          "areaLabel": "Queens County"
+        },
+        "kings": {
+          "establishments": 10184,
+          "areaLabel": "Kings County (Brooklyn)"
         }
       }
     }

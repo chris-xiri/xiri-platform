@@ -278,11 +278,20 @@ function GuideHubView({ guide, slug }: { guide: GuideData; slug: string }) {
             {/* ═══ GUIDE CONTENT ═══ */}
             <article className="py-16 bg-white">
                 <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {guide.dateModified && (
-                        <p className="text-sm text-slate-400 mb-4">
-                            Last updated: {new Date(guide.dateModified + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
-                    )}
+                    {/* Author byline + last updated — E-E-A-T signals */}
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 mb-6">
+                        <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold text-xs">CL</div>
+                            <span className="font-medium text-slate-700">Chris Leung</span>
+                            <span className="text-slate-400">· Founder & CEO</span>
+                        </div>
+                        {guide.dateModified && (
+                            <>
+                                <span className="text-slate-300">|</span>
+                                <span className="text-green-600 font-medium">✓ Updated {new Date(guide.dateModified + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</span>
+                            </>
+                        )}
+                    </div>
                     {/* Authority Funnel: Hub link within first 200 words */}
                     <p className="text-sm text-slate-600 mb-8 bg-sky-50 border border-sky-200 rounded-lg px-4 py-3">
                         This guide is part of our <Link href={PILLAR_HREF} className="text-sky-700 font-semibold hover:underline">{PILLAR_ANCHOR_TEXT}</Link> resource library — helping facility managers stay compliant across OSHA, HIPAA, CMS, and state regulations.
@@ -435,9 +444,8 @@ function RegulationLocationView({
                             ...(guide.datePublished && { datePublished: guide.datePublished }),
                             ...(guide.dateModified && { dateModified: guide.dateModified }),
                             author: {
-                                '@type': 'Organization',
-                                name: SITE.name,
-                                url: SITE.url,
+                                '@type': 'Person',
+                                name: 'Chris Leung',
                             },
                             publisher: {
                                 '@type': 'Organization',
@@ -551,11 +559,20 @@ function RegulationLocationView({
             {/* ═══ GUIDE CONTENT (inherited from parent regulation guide) ═══ */}
             <article className="py-16 bg-white">
                 <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {guide.dateModified && (
-                        <p className="text-sm text-slate-400 mb-8">
-                            Last updated: {new Date(guide.dateModified + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
-                    )}
+                    {/* Author byline + last updated — E-E-A-T signals */}
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 mb-8">
+                        <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold text-xs">CL</div>
+                            <span className="font-medium text-slate-700">Chris Leung</span>
+                            <span className="text-slate-400">· Founder & CEO</span>
+                        </div>
+                        {guide.dateModified && (
+                            <>
+                                <span className="text-slate-300">|</span>
+                                <span className="text-green-600 font-medium">✓ Updated {new Date(guide.dateModified + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</span>
+                            </>
+                        )}
+                    </div>
                     {/* Authority Funnel: Hub link within first 200 words (Spoke → Hub → Pillar) */}
                     <p className="text-sm text-slate-600 mb-8 bg-sky-50 border border-sky-200 rounded-lg px-4 py-3">
                         This {location.city} guide is part of our <Link href={PILLAR_HREF} className="text-sky-700 font-semibold hover:underline">{PILLAR_ANCHOR_TEXT}</Link> resource library.

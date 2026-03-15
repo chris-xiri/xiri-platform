@@ -34,6 +34,22 @@ export const SERVICE_AREAS: ServiceArea[] = [
         censusFips: '059',
         stateFips: '36',
     },
+    {
+        id: 'queens',
+        label: 'Queens County',
+        display: 'Queens',
+        censusLevel: 'county',
+        censusFips: '081',
+        stateFips: '36',
+    },
+    {
+        id: 'kings',
+        label: 'Kings County (Brooklyn)',
+        display: 'Brooklyn',
+        censusLevel: 'county',
+        censusFips: '047',
+        stateFips: '36',
+    },
 ];
 
 export const DEFAULT_METRO_AREA = SERVICE_AREAS.find(a => a.id === 'nyc-metro')!;

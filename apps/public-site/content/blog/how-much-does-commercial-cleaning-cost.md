@@ -1,5 +1,5 @@
 ---
-title: "How Much Does Commercial Cleaning Cost in 2025?"
+title: "How Much Does Commercial Cleaning Cost in 2026?"
 description: "A transparent breakdown of commercial cleaning costs per square foot, by facility type, and how to compare quotes."
 publishDate: "2025-09-01"
 readTime: "8 min"

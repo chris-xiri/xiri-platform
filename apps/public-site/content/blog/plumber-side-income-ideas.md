@@ -1,5 +1,5 @@
 ---
-title: "5 Ways Plumbers Can Earn Extra Income in 2025 (Without More Plumbing)"
+title: "5 Ways Plumbers Can Earn Extra Income in 2026 (Without More Plumbing)"
 description: "Plumbers earn a median of $62,970/year. Here are 5 proven ways to add $5,000-$10,000+ in side income using the relationships you already have."
 publishDate: "2025-10-29"
 readTime: "7 min"

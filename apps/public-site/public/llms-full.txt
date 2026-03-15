@@ -1,0 +1,179 @@
+# XIRI Facility Solutions — Complete Reference
+
+> XIRI provides managed facility maintenance for single-tenant NNN buildings — medical offices, labs, auto dealerships, and commercial facilities in Nassau County, Long Island, NY. One partner. One invoice. Nightly verified.
+
+Founded by Chris Leung in Long Island, NY. XIRI manages the full facility maintenance lifecycle: vendor vetting, scheduling, quality verification (via NFC tap-to-verify), invoicing, and compliance documentation.
+
+Website: https://xiri.ai
+Contact: chris@xiri.ai
+Service Area: Nassau County, Long Island, New York
+
+---
+
+## How XIRI Works
+
+1. **Site Audit** — We walk your facility, document every surface, fixture, and compliance requirement
+2. **Custom Scope** — Build a cleaning specification tailored to your facility type and regulations
+3. **Contractor Match** — Assign vetted, insured contractors from our network
+4. **NFC Verification** — Cleaners tap NFC tags at each zone to prove work was completed
+5. **Single Invoice** — One monthly invoice covers all services, all vendors, all locations
+
+---
+
+## Janitorial Cleaning Cost Data (2026)
+
+### Cost Per Square Foot by Facility Type
+
+| Facility Type | $/sqft/visit | Monthly (10,000 sqft, 5x/week) | Notes |
+|--------------|:------------:|:------------------------------:|-------|
+| General Office | $0.08–$0.18 | $2,000–$3,600 | Most common |
+| Medical Office | $0.15–$0.25 | $3,200–$5,700 | OSHA disinfection required |
+| Dental Office | $0.14–$0.22 | $2,800–$5,000 | CDC surface protocols |
+| Auto Dealership | $0.10–$0.20 | $2,400–$4,800 | Showroom + service bay |
+| Daycare | $0.12–$0.20 | $2,400–$4,500 | Green Seal products required |
+| Surgery Center | $0.18–$0.30 | $3,600–$6,500 | Terminal cleaning nightly |
+| Retail Store | $0.06–$0.12 | $1,200–$2,400 | High foot traffic |
+| Fitness/Gym | $0.10–$0.18 | $2,000–$3,600 | Locker room focus |
+
+### Average Monthly Costs by Building Size
+
+| Building Size | Monthly Cost Range | Assumption |
+|:------------:|:-----------------:|:----------:|
+| 2,000–5,000 sqft | $600–$1,500/mo | 5x/week, general office |
+| 5,000–15,000 sqft | $1,500–$4,000/mo | 5x/week, mid-cost state |
+| 15,000–50,000+ sqft | $3,500–$10,000+/mo | 5x/week, scope-dependent |
+
+### Factors That Affect Cleaning Cost
+
+1. **Facility type** — Medical offices take ~2x longer per sqft than general offices due to OSHA disinfection
+2. **Floor surfaces** — Carpet is fastest; tile/stone with grout lines is slowest. A 100% carpet facility costs 15–25% less than hard floors
+3. **Fixture count** — Each restroom fixture adds ~3 minutes; each trash can adds ~1 minute
+4. **Cleaning frequency** — 3x/week saves 30–40% vs 5x/week, but each visit costs more
+5. **State labor rates** — NY ($20/hr min wage) costs ~60% more than federal minimum ($7.25/hr) states
+6. **Add-on services** — Window cleaning, floor stripping, pressure washing quoted separately
+
+### Pricing Methodology
+
+XIRI uses production-rate-based pricing — the same method professional cleaning companies use to build bids. We calculate:
+- **Base hours** = Square footage ÷ Production rate (sqft/hour for your facility type)
+- **Fixture hours** = (Restroom fixtures × 3 min + Trash bins × 1 min) ÷ 60
+- **Floor adjustment** = Weighted multiplier based on your carpet/resilient/tile mix
+- **Total cost** = (Base hours + Fixture hours) × Floor adjustment × State hourly rate
+
+Free calculator: https://xiri.ai/calculator
+
+---
+
+## Core Services
+
+- **Janitorial Services** — Recurring nightly/weekly cleaning for commercial facilities
+- **Medical Office Cleaning** — JCAHO-compliant with terminal disinfection and documentation
+- **Commercial Cleaning** — Full-service for offices, retail, and professional suites
+- **Floor Care** — Strip, seal, and maintain VCT, LVT, epoxy, and concrete flooring
+- **Disinfecting Services** — EPA-registered disinfection for healthcare environments
+- **HVAC Maintenance** — Preventive service for single-tenant commercial buildings
+- **Window Cleaning** — Interior and exterior for commercial facilities
+- **Pressure Washing** — Parking lots, sidewalks, building facades
+- **Pest Control** — Licensed management for medical, food service, and commercial
+- **Waste Management** — Regulated and general waste including red-bag medical waste
+- **Snow & Ice Removal** — Winter weather response for lots, walkways, entrances
+- **Handyman Services** — General maintenance and repair
+- **Parking Lot Maintenance** — Sweeping, striping, surface repair
+- **Post-Construction Cleanup** — Final clean and punch-list support
+
+---
+
+## Industries Served
+
+- **Medical Offices** — JCAHO-compliant, OSHA bloodborne pathogen standards
+- **Surgery Centers** — Terminal cleaning, sterile environment maintenance
+- **Dental Offices** — CDC-aligned sanitization protocols
+- **Urgent Care Centers** — High-traffic clinical cleaning
+- **Dialysis Centers** — Infection control protocols
+- **Veterinary Clinics** — Biohazard handling
+- **Auto Dealerships** — Showroom, service bay, lot maintenance
+- **Daycares & Preschools** — Child-safe, non-toxic products (Green Seal certified)
+- **Labs & Cleanrooms** — ISO 14644-1 compliant maintenance
+- **Light Manufacturing** — FOD prevention, ESD-safe cleaning
+- **Professional Offices** — General office cleaning
+- **Fitness Centers** — Gym and locker room sanitation
+
+---
+
+## Specialized Solutions
+
+- **JCAHO Survey-Ready Disinfection** — Audit-ready protocols for medical facilities
+- **Terminal Cleaning for Surgery Centers** — End-of-day sterile field cleaning
+- **Dental Suite Sanitization** — CDC-aligned sterilization support
+- **ISO 7/8 Cleanroom Protocol** — Particle control and gowning protocols
+- **cGMP Lab Decontamination** — FDA-grade decontamination
+- **BSL-2 Lab Waste Management** — Biosafety-compliant waste handling
+- **ESD-Safe Floor Care** — Electrostatic discharge prevention for electronics manufacturing
+- **Auto Shop Slip-Coefficient Logging** — NYS Part 226 compliant floor safety documentation
+- **Data Center Zinc-Whisker Remediation** — Sub-floor contamination removal
+
+---
+
+## Compliance & Regulatory Expertise
+
+XIRI maintains compliance documentation for:
+- **OSHA** — Bloodborne pathogen standards (29 CFR 1910.1030)
+- **JCAHO** — Joint Commission environmental cleaning standards
+- **HIPAA** — Protected health information in cleaning waste
+- **CMS** — Centers for Medicare & Medicaid Services facility requirements
+- **CDC** — Surface disinfection guidelines for healthcare
+- **EPA** — Registered disinfectant usage and documentation
+- **ISO 14644-1** — Cleanroom classification and maintenance
+- **FDA cGMP** — Current Good Manufacturing Practice for labs
+- **NYS Part 226** — Slip-coefficient floor safety standards
+
+---
+
+## Frequently Asked Questions
+
+### How much does janitorial cleaning cost?
+Janitorial cleaning costs typically range from $0.05 to $0.25 per square foot per visit, or $1,200 to $4,500 per month for a 10,000 sqft facility cleaned 5x/week. The exact cost depends on facility type, location, cleaning frequency, floor surfaces, and number of restrooms.
+
+### How much do janitorial services cost per month?
+A small office (2,000–5,000 sqft) typically costs $600–$1,500/month. A mid-size facility (5,000–15,000 sqft) runs $1,500–$4,000/month. Large facilities (15,000–50,000+ sqft) range from $3,500–$10,000+/month. These assume 5x/week cleaning in a mid-cost state.
+
+### Is it cheaper to hire a cleaner or a janitorial service?
+A janitorial service is typically more cost-effective for facilities under 50,000 sqft. An in-house cleaner costs $35,000–$50,000/year plus benefits, workers comp, and equipment — roughly $4,000–$6,000/month all-in. A professional service for 10,000 sqft runs $2,000–$4,000/month and includes trained staff, supplies, insurance, and backup coverage.
+
+### What's the difference between janitorial and commercial cleaning?
+Janitorial cleaning is recurring routine maintenance — daily trash, vacuuming, restroom cleaning, surface wiping. Commercial cleaning is broader, including periodic services like carpet extraction, floor stripping/waxing, window washing, and pressure washing.
+
+### How is janitorial cleaning priced?
+Professional services are priced by estimated hours per visit, calculated from square footage, production rate for facility type, fixture counts, floor types, and add-on services. The hourly rate varies by state based on local labor costs.
+
+### Why does facility type affect cleaning cost?
+Medical offices need OSHA-compliant disinfection and take nearly twice as long per sqft as general offices. Auto showrooms require high-gloss floor care. Daycares need child-safe, Green Seal certified products. Each facility type has different production rates reflecting real-world cleaning requirements.
+
+---
+
+## For Contractors
+
+XIRI operates a vetted contractor network. Contractors receive:
+- Steady, recurring facility assignments
+- XIRI handles client billing — contractors get paid on schedule
+- NFC-based work verification (no manual reporting)
+- Insurance and compliance documentation support
+
+Apply: https://xiri.ai/contractors
+
+---
+
+## Service Area
+
+Primary service area: Nassau County, Long Island, New York
+Key corridors: Great Neck Medical Mile (Northern Blvd), New Hyde Park / LIJ Medical Center, Mineola, Garden City, Freeport, Hempstead
+
+---
+
+## Key Differentiators
+
+1. **NFC Tap-to-Verify** — Every cleaning zone has an NFC tag. Cleaners must physically tap each zone to confirm work completion. This provides real-time proof of service.
+2. **Single Invoice** — Facilities get one monthly invoice covering all services (janitorial, HVAC, pest control, snow removal, etc.) regardless of how many contractors are involved.
+3. **Production-Rate Pricing** — Transparent, data-driven pricing based on industry-standard production rates — not guesswork.
+4. **Compliance-First** — Every contractor is vetted for insurance, training certifications, and regulatory knowledge specific to your facility type.
+5. **Nightly Verified** — Digital cleaning verification reports available to facility managers every morning.

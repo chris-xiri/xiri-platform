@@ -144,11 +144,13 @@ export default function CalculatorPage() {
                     headline: 'How Much Should Office Cleaning Cost in 2026?',
                     description: 'Complete guide to office cleaning costs, janitorial services pricing, and commercial cleaning rates. Find out what a fair price should be with our free interactive calculator.',
                     datePublished: '2025-03-01',
-                    dateModified: '2026-03-05',
+                    dateModified: '2026-03-14',
                     author: {
-                        '@type': 'Organization',
-                        name: SITE.name,
-                        url: SITE.url,
+                        '@type': 'Person',
+                        name: 'Chris Leung',
+                        jobTitle: 'Founder & CEO',
+                        worksFor: { '@type': 'Organization', '@id': `${SITE.url}/#organization` },
+                        url: `${SITE.url}/about`,
                     },
                     publisher: {
                         '@type': 'Organization',

@@ -63,5 +63,8 @@ export { validateSiteKey, updateZoneScan, completeNfcSession, getComplianceLog }
 // ── NFC Monitoring & Morning Reports (scheduled + onCall) ──
 export { checkNightlyStatus, generateMorningReports, sendTestMorningReport } from "./functions/monitoring";
 
+// ── AI SEO Monitoring (weekly bot digest → Google Chat) ──
+export { weeklyAIBotDigest } from "./functions/aiSeoMonitoring";
+
 // ── Clarity UX Analysis (scheduled + onCall) ──
 export { dailyClarityReport, triggerClarityReport } from "./triggers/clarityAnalysis";

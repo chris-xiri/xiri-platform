@@ -57,6 +57,22 @@ const SERVICE_AREAS: ServiceArea[] = [
         censusFips: '059',
         stateFips: '36',
     },
+    {
+        id: 'queens',
+        label: 'Queens County',
+        display: 'Queens',
+        censusLevel: 'county',
+        censusFips: '081',
+        stateFips: '36',
+    },
+    {
+        id: 'kings',
+        label: 'Kings County (Brooklyn)',
+        display: 'Brooklyn',
+        censusLevel: 'county',
+        censusFips: '047',
+        stateFips: '36',
+    },
     // ──────────────────────────────────────────────────────────────
     // To expand: copy an entry above and update with the new area.
     // Example:
