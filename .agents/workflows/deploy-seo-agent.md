@@ -32,7 +32,7 @@ gcloud run deploy xiri-seo-agent \
   --allow-unauthenticated=false \
   --memory 2Gi \
   --timeout 900 \
-  --set-env-vars "TARGET_URL=https://xiri.ai,RESEND_API_KEY=$RESEND_API_KEY,EMAIL_TO=chris@xiri.ai,LLM_PROVIDER=ollama,FIREBASE_PROJECT_ID=xiri-facility-solutions"
+  --set-env-vars "TARGET_URL=https://xiri.ai,GOOGLE_CHAT_WEBHOOK_URL=$GOOGLE_CHAT_WEBHOOK_URL,LLM_PROVIDER=ollama,FIREBASE_PROJECT_ID=xiri-facility-solutions"
 ```
 
 4. Get the Cloud Run service URL:

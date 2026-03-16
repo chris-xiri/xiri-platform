@@ -18817,6 +18817,7 @@ __export(index_exports, {
   updateSocialConfig: () => updateSocialConfig,
   updateZoneScan: () => updateZoneScan,
   validateSiteKey: () => validateSiteKey,
+  weeklyAIBotDigest: () => weeklyAIBotDigest,
   weeklyTemplateOptimizer: () => weeklyTemplateOptimizer
 });
 module.exports = __toCommonJS(index_exports);
@@ -27230,10 +27231,126 @@ var sendTestMorningReport = (0, import_https12.onCall)({
   };
 });
 
-// src/triggers/clarityAnalysis.ts
+// src/functions/aiSeoMonitoring.ts
 var import_scheduler8 = require("firebase-functions/v2/scheduler");
-var import_https13 = require("firebase-functions/v2/https");
 var import_params4 = require("firebase-functions/params");
+var TIMEZONE3 = "America/New_York";
+var AI_SEO_CHAT_WEBHOOK = (0, import_params4.defineSecret)("AI_SEO_CHAT_WEBHOOK_URL");
+async function sendAISeoCard(card, fallbackText) {
+  const webhookUrl = AI_SEO_CHAT_WEBHOOK.value();
+  if (!webhookUrl) {
+    console.log("\u26A0\uFE0F AI SEO Chat webhook not configured");
+    return;
+  }
+  try {
+    const resp = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: fallbackText,
+        cardsV2: [{ cardId: `ai-seo-${Date.now()}`, card }]
+      })
+    });
+    if (!resp.ok) console.error(`AI SEO Chat webhook failed (${resp.status}):`, await resp.text());
+  } catch (err) {
+    console.error("AI SEO Chat webhook error:", err);
+  }
+}
+async function sendAISeoText(text) {
+  const webhookUrl = AI_SEO_CHAT_WEBHOOK.value();
+  if (!webhookUrl) {
+    console.log("\u26A0\uFE0F AI SEO Chat webhook not configured");
+    return;
+  }
+  try {
+    const resp = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
+    if (!resp.ok) console.error(`AI SEO Chat text failed (${resp.status}):`, await resp.text());
+  } catch (err) {
+    console.error("AI SEO Chat text error:", err);
+  }
+}
+var weeklyAIBotDigest = (0, import_scheduler8.onSchedule)({
+  schedule: "0 9 * * 1",
+  // Every Monday at 9 AM
+  timeZone: TIMEZONE3,
+  region: "us-central1",
+  secrets: [AI_SEO_CHAT_WEBHOOK]
+}, async () => {
+  console.log("\u{1F4CA} Generating weekly AI bot activity digest...");
+  const sevenDaysAgo = /* @__PURE__ */ new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const cutoff = sevenDaysAgo.toISOString();
+  const visitsSnap = await db.collection("aiBotVisits").where("timestamp", ">=", cutoff).orderBy("timestamp", "desc").get();
+  if (visitsSnap.empty) {
+    await sendAISeoText("\u{1F4CA} *Weekly AI Bot Report*\nNo AI bot activity detected in the past 7 days. Bots may not yet be crawling, or the middleware isn't deployed.");
+    return;
+  }
+  const visits = visitsSnap.docs.map((d) => d.data());
+  const byOrg = {};
+  const byPage = {};
+  for (const v of visits) {
+    const key = v.org || v.bot;
+    if (!byOrg[key]) {
+      byOrg[key] = { bot: v.bot, org: v.org, count: 0, pages: /* @__PURE__ */ new Set() };
+    }
+    byOrg[key].count++;
+    byOrg[key].pages.add(v.path);
+    byPage[v.path] = (byPage[v.path] || 0) + 1;
+  }
+  const topBots = Object.values(byOrg).sort((a, b) => b.count - a.count);
+  const topPages = Object.entries(byPage).sort(([, a], [, b]) => b - a).slice(0, 10);
+  const botLines = topBots.map((b) => `<b>${b.bot}</b> (${b.org}): ${b.count.toLocaleString()} visits, ${b.pages.size} pages`).join("<br>");
+  const pageLines = topPages.map(([path2, count]) => `\u2022 <b>${path2}</b> \u2014 ${count}`).join("<br>");
+  const weekStart = sevenDaysAgo.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: TIMEZONE3
+  });
+  const weekEnd = (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: TIMEZONE3
+  });
+  const card = {
+    header: {
+      title: "\u{1F4CA} Weekly AI Bot Report",
+      subtitle: `${weekStart} \u2013 ${weekEnd}  \u2022  ${visits.length.toLocaleString()} total visits`
+    },
+    sections: [
+      {
+        header: "Bot Activity by Organization",
+        widgets: [{
+          textParagraph: { text: botLines }
+        }]
+      },
+      {
+        header: "Most Crawled Pages",
+        widgets: [{
+          textParagraph: { text: pageLines }
+        }]
+      },
+      {
+        widgets: [{
+          textParagraph: {
+            text: `<i>Data from ${visits.length} bot visits recorded in Firestore.</i>`
+          }
+        }]
+      }
+    ]
+  };
+  const fallback = `\u{1F4CA} Weekly AI Bot Report (${weekStart}\u2013${weekEnd}): ${visits.length} visits from ${topBots.length} bots`;
+  await sendAISeoCard(card, fallback);
+  console.log(`\u2705 Weekly AI bot digest sent. ${visits.length} visits, ${topBots.length} bots.`);
+});
+
+// src/triggers/clarityAnalysis.ts
+var import_scheduler9 = require("firebase-functions/v2/scheduler");
+var import_https13 = require("firebase-functions/v2/https");
+var import_params5 = require("firebase-functions/params");
 var import_v24 = require("firebase-functions/v2");
 
 // src/utils/clarityUtils.ts
@@ -27312,7 +27429,7 @@ function buildClarityChatCard(metrics) {
   sections.push({
     widgets: [{
       decoratedText: {
-        topLabel: `LAST ${m.daysQueried} DAYS`,
+        topLabel: m.daysQueried === 1 ? "YESTERDAY" : `LAST ${m.daysQueried} DAYS`,
         text: `<b>${m.totalSessions}</b> sessions  \u2022  <b>${m.distinctUsers}</b> users  \u2022  <b>${m.pagesPerSession.toFixed(1)}</b> pages/session`,
         startIcon: { knownIcon: "BOOKMARK" }
       }
@@ -27447,21 +27564,21 @@ async function postClarityReportToChat(metrics, webhookUrl) {
 }
 
 // src/triggers/clarityAnalysis.ts
-var CLARITY_API_TOKEN = (0, import_params4.defineSecret)("CLARITY_API_TOKEN");
-var CLARITY_CHAT_WEBHOOK = (0, import_params4.defineSecret)("CLARITY_CHAT_WEBHOOK_URL");
-var TIMEZONE3 = "America/New_York";
-var dailyClarityReport = (0, import_scheduler8.onSchedule)({
+var CLARITY_API_TOKEN = (0, import_params5.defineSecret)("CLARITY_API_TOKEN");
+var CLARITY_CHAT_WEBHOOK = (0, import_params5.defineSecret)("CLARITY_CHAT_WEBHOOK_URL");
+var TIMEZONE4 = "America/New_York";
+var dailyClarityReport = (0, import_scheduler9.onSchedule)({
   schedule: "0 9 * * *",
   // 9:00 AM ET every day
-  timeZone: TIMEZONE3,
+  timeZone: TIMEZONE4,
   region: "us-central1",
   secrets: [CLARITY_API_TOKEN, CLARITY_CHAT_WEBHOOK],
   timeoutSeconds: 60
 }, async () => {
   import_v24.logger.info("\u{1F4CA} Starting daily Clarity report...");
   try {
-    const metrics = await fetchClarityInsights(CLARITY_API_TOKEN.value(), 3);
-    import_v24.logger.info(`Clarity: ${metrics.totalSessions} sessions, ${metrics.deadClickCount} dead clicks, ${metrics.rageClickCount} rage clicks`);
+    const metrics = await fetchClarityInsights(CLARITY_API_TOKEN.value(), 1);
+    import_v24.logger.info(`Clarity (yesterday): ${metrics.totalSessions} sessions, ${metrics.deadClickCount} dead clicks, ${metrics.rageClickCount} rage clicks`);
     await postClarityReportToChat(metrics, CLARITY_CHAT_WEBHOOK.value());
     import_v24.logger.info("\u2705 Posted to Google Chat");
     await db.collection("clarity_reports").add({
@@ -27576,6 +27693,7 @@ var triggerClarityReport = (0, import_https13.onCall)({
   updateSocialConfig,
   updateZoneScan,
   validateSiteKey,
+  weeklyAIBotDigest,
   weeklyTemplateOptimizer
 });
 /*! Bundled license information:
