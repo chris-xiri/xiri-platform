@@ -278,8 +278,10 @@ export default function PublicCalculator({ mode = 'client' }: PublicCalculatorPr
                             id="calc-sqft"
                             type="text"
                             inputMode="numeric"
+                            enterKeyHint="done"
                             value={sqft ? sqft.toLocaleString('en-US') : ''}
                             onChange={(e) => setSqft(parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                             onBlur={handleSqftBlur}
                             placeholder="e.g. 10,000"
                             className="w-full h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm focus:ring-2 focus:ring-sky-500 transition-shadow"
