@@ -142,7 +142,7 @@ export function DLPSidebar({ category, currentSlug }: DLPSidebarProps) {
                         : 'See how we can protect your facility.'}
                 </p>
                 <Link
-                    href={category.startsWith('contractor') ? '/contractors#apply-form' : '/#audit'}
+                    href={category.startsWith('contractor') ? '/onboarding/start' : '/#audit'}
                     className="block text-center bg-sky-600 text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-sky-700 transition-colors"
                 >
                     {category.startsWith('contractor') ? CTA.contractor : 'Schedule Audit'}

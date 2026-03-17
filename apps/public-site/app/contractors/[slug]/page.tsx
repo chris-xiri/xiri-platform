@@ -131,7 +131,7 @@ export default async function ContractorDLPPage({ params }: Props) {
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-bold mb-4">Ready to Join?</h2>
                         <p className="text-xl text-slate-300 mb-8">Apply to become a vetted XIRI subcontractor. We handle the sales — you handle the work.</p>
-                        <CTAButton href="/contractors#apply-form" text={CTA.contractor} className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                        <CTAButton href="/onboarding/start" text={CTA.contractor} className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
                     </div>
                 </section>
             </div>
@@ -180,7 +180,7 @@ export default async function ContractorDLPPage({ params }: Props) {
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-bold mb-4">Work Near Home</h2>
                         <p className="text-xl text-slate-300 mb-8">Facilities in your backyard. Jobs that don&apos;t require a commute.</p>
-                        <CTAButton href="/contractors#apply-form" text={CTA.contractor} className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                        <CTAButton href="/onboarding/start" text={CTA.contractor} className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
                     </div>
                 </section>
             </div>
@@ -219,7 +219,7 @@ export default async function ContractorDLPPage({ params }: Props) {
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-bold mb-4">Ready to Join the Network?</h2>
                         <p className="text-xl text-slate-300 mb-8">Apply today. We handle the sales — you handle the work.</p>
-                        <CTAButton href="/contractors#apply-form" text={CTA.contractor} className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                        <CTAButton href="/onboarding/start" text={CTA.contractor} className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
                     </div>
                 </section>
             </div>
@@ -307,7 +307,7 @@ export default async function ContractorDLPPage({ params }: Props) {
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <h2 className="text-3xl font-bold mb-4">{crossTrade.title.replace(' Opportunities', '')} Work in {location.name.split(',')[0]}</h2>
                         <p className="text-xl text-slate-300 mb-8">Apply to become a vetted XIRI subcontractor. Steady medical facility work near home.</p>
-                        <CTAButton href="/contractors#apply-form" text={CTA.contractor} className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
+                        <CTAButton href="/onboarding/start" text={CTA.contractor} className="inline-block bg-sky-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-400 transition-colors" />
                     </div>
                 </section>
             </div>
