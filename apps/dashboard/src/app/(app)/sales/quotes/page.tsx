@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -13,6 +13,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Plus, FileText, DollarSign, Calendar, Building2, ChevronRight, ChevronDown, Search } from 'lucide-react';
 import QuoteBuilder from '@/components/QuoteBuilder';
+
+const ContractsPage = lazy(() => import('@/app/(app)/operations/contracts/page'));
 
 const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
     draft: { variant: 'secondary', label: 'Draft' },
@@ -32,6 +34,8 @@ interface QuoteGroup {
     older: (Quote & { id: string })[];
 }
 
+type ActiveTab = 'quotes' | 'contracts';
+
 export default function QuotesPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -41,6 +45,9 @@ export default function QuotesPage() {
     const [showBuilder, setShowBuilder] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedLeads, setExpandedLeads] = useState<Record<string, boolean>>({});
+    const [activeTab, setActiveTab] = useState<ActiveTab>(
+        searchParams.get('tab') === 'contracts' ? 'contracts' : 'quotes'
+    );
 
     // Pre-fill data from URL params (Calculator / Lead Drawer / Audit flows)
     const initialData = (() => {
@@ -114,31 +121,65 @@ export default function QuotesPage() {
         setExpandedLeads(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
-    if (loading) return <div className="p-8 flex justify-center">Loading quotes...</div>;
+    if (loading && activeTab === 'quotes') return <div className="p-8 flex justify-center">Loading quotes...</div>;
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">Quotes</h1>
-                    <p className="text-sm text-muted-foreground">Create and manage client proposals</p>
+            {/* Tab Bar + Header */}
+            <div>
+                <div className="flex items-center justify-between mb-1">
+                    <h1 className="text-2xl font-bold">Quotes & Contracts</h1>
+                    {activeTab === 'quotes' && (
+                        <div className="flex items-center gap-3">
+                            <div className="relative hidden sm:block">
+                                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search client..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-9 w-[200px]"
+                                />
+                            </div>
+                            <Button onClick={() => setShowBuilder(true)} className="gap-2">
+                                <Plus className="w-4 h-4" />
+                                <span className="hidden sm:inline">New Quote</span>
+                            </Button>
+                        </div>
+                    )}
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            placeholder="Search client..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 w-[200px]"
-                        />
-                    </div>
-                    <Button onClick={() => setShowBuilder(true)} className="gap-2">
-                        <Plus className="w-4 h-4" />
-                        New Quote
-                    </Button>
+                <div className="flex gap-6 border-b">
+                    <button
+                        onClick={() => setActiveTab('quotes')}
+                        className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
+                            activeTab === 'quotes'
+                                ? 'border-sky-600 text-sky-600 dark:border-sky-400 dark:text-sky-400'
+                                : 'border-transparent text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        Quotes
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('contracts')}
+                        className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
+                            activeTab === 'contracts'
+                                ? 'border-sky-600 text-sky-600 dark:border-sky-400 dark:text-sky-400'
+                                : 'border-transparent text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        Contracts
+                    </button>
                 </div>
             </div>
+
+            {/* Contracts Tab */}
+            {activeTab === 'contracts' && (
+                <Suspense fallback={<div className="p-8 flex justify-center">Loading contracts...</div>}>
+                    <ContractsPage />
+                </Suspense>
+            )}
+
+            {/* Quotes Tab */}
+            {activeTab === 'quotes' && (<>
 
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -324,6 +365,7 @@ export default function QuotesPage() {
                     initialData={initialData}
                 />
             )}
+            </>)}
         </div>
     );
 }

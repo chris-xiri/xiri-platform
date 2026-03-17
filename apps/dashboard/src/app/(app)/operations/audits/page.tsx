@@ -1,3 +1,4 @@
+// TODO: CANDIDATE FOR DELETION — Audits removed from sidebar nav. Night manager audits via NFC on public site.
 'use client';
 
 import { useEffect, useState } from 'react';

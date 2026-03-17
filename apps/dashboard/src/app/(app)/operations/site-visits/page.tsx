@@ -1,3 +1,4 @@
+// TODO: CANDIDATE FOR DELETION — Site Visits removed from sidebar nav. Functionality may be covered by NFC audit flow.
 'use client';
 
 import { useEffect, useState } from 'react';

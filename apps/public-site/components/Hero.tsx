@@ -142,7 +142,7 @@ export function Hero({
                                 <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform duration-500">
                                     {currentLogo.icon}
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">{currentLogo.name}</h3>
+                                <p className="text-xl font-bold text-gray-900 mb-2">{currentLogo.name}</p>
                                 <p className="text-gray-500">{currentLogo.type} Facility</p>
                             </div>
 

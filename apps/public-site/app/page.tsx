@@ -74,7 +74,7 @@ export default function Home() {
                     🛡️
                   </div>
                   <div>
-                    <h4 className="font-bold text-lg">100% Insured &amp; Vetted</h4>
+                    <h3 className="font-bold text-lg">100% Insured &amp; Vetted</h3>
                     <p className="text-sky-200/80">$1M Liability Policy for every single contractor.</p>
                   </div>
                 </div>
@@ -83,7 +83,7 @@ export default function Home() {
                     🌙
                   </div>
                   <div>
-                    <h4 className="font-bold text-lg">Nightly Verified. Protocol-Driven.</h4>
+                    <h3 className="font-bold text-lg">Nightly Verified. Protocol-Driven.</h3>
                     <p className="text-sky-200/80">We verify your vendor followed CDC Guidelines for Healthcare Facilities and OSHA&apos;s Bloodborne Pathogen Standard (29 CFR 1910.1030) — every night.</p>
                   </div>
                 </div>
@@ -92,7 +92,7 @@ export default function Home() {
                     💰
                   </div>
                   <div>
-                    <h4 className="font-bold text-lg">Consolidated Billing</h4>
+                    <h3 className="font-bold text-lg">Consolidated Billing</h3>
                     <p className="text-sky-200/80">One invoice for janitorial, supplies, and maintenance.</p>
                   </div>
                 </div>

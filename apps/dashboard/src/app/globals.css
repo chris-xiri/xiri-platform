@@ -177,3 +177,8 @@
   animation: progress-indeterminate 1.5s infinite linear;
   position: relative;
 }
+
+/* Safe area for notched phones (bottom nav) */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

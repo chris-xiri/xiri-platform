@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useTheme } from "next-themes";
 import {
     DropdownMenu,
@@ -177,7 +178,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     const showClientsNav = canAccess('sales/dashboard', profile.roles) || canAccess('operations/contracts', profile.roles);
     const showContractorsNav = canAccess('supply/recruitment', profile.roles);
-    const showFieldOpsNav = canAccess('operations/audits', profile.roles) || canAccess('operations/site-visits', profile.roles);
+    const showOpsNav = canAccess('operations/work-orders', profile.roles) || canAccess('operations/nfc-zones', profile.roles);
     const showFinanceNav = canAccess('accounting/invoices', profile.roles);
     const showAdminNav = canAccess('admin/settings', profile.roles);
 
@@ -189,10 +190,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             items: [
                 ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Pipeline', href: '/sales/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Referral Partners', href: '/sales/referrals', icon: <Share2 className="w-4 h-4" /> }] : []),
-                ...(canAccess('sales/quotes', profile.roles) ? [{ label: 'Quotes', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> }] : []),
-
-                ...(canAccess('operations/contracts', profile.roles) ? [{ label: 'Contracts', href: '/operations/contracts', icon: <FileText className="w-4 h-4" /> }] : []),
-                ...(canAccess('operations/work-orders', profile.roles) ? [{ label: 'Work Orders', href: '/operations/work-orders', icon: <ClipboardList className="w-4 h-4" /> }] : []),
+                ...(canAccess('sales/quotes', profile.roles) ? [{ label: 'Quotes & Contracts', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> }] : []),
             ],
         },
         {
@@ -201,27 +199,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             show: showContractorsNav,
             items: [
                 { label: 'Pipeline', href: '/supply/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-                ...(canAccess('accounting/vendor-remittances', profile.roles) ? [{ label: 'Remittances', href: '/accounting/vendor-remittances', icon: <DollarSign className="w-4 h-4" /> }] : []),
+                ...(canAccess('accounting/vendor-remittances', profile.roles) ? [{ label: 'Payments', href: '/accounting/vendor-remittances', icon: <DollarSign className="w-4 h-4" /> }] : []),
             ],
         },
         {
-            label: 'Field Ops',
-            icon: <Shield className="w-3.5 h-3.5" />,
-            show: showFieldOpsNav,
+            label: 'Operations',
+            icon: <ClipboardList className="w-3.5 h-3.5" />,
+            show: showOpsNav,
             dividerAbove: true,
             items: [
-                ...(canAccess('operations/audits', profile.roles) ? [{ label: 'Audits', href: '/operations/audits', icon: <Shield className="w-4 h-4" /> }] : []),
+                ...(canAccess('operations/work-orders', profile.roles) ? [{ label: 'Work Orders', href: '/operations/work-orders', icon: <ClipboardList className="w-4 h-4" /> }] : []),
                 ...(canAccess('operations/nfc-zones', profile.roles) ? [{ label: 'NFC Zones', href: '/operations/nfc-zones', icon: <Package className="w-4 h-4" /> }] : []),
-                ...(canAccess('operations/site-visits', profile.roles) ? [{ label: 'Site Visits', href: '/operations/site-visits', icon: <MapPin className="w-4 h-4" /> }] : []),
-            ],
-        },
-        {
-            label: 'Command Center',
-            icon: <Monitor className="w-3.5 h-3.5" />,
-            show: showFieldOpsNav,
-            dividerAbove: true,
-            items: [
-                { label: 'Live Status', href: '/operations/command-center', icon: <LayoutDashboard className="w-4 h-4" /> },
+                { label: 'Live Status', href: '/operations/command-center', icon: <Monitor className="w-4 h-4" /> },
             ],
         },
         {
@@ -376,13 +365,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Mobile Top Bar */}
-                <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b">
-                    <div className="flex items-center gap-3">
-                        <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)}>
-                            <Menu className="w-5 h-5" />
-                        </Button>
-                        <span className="text-xl font-bold text-sky-700">XIRI</span>
-                    </div>
+                <div className="lg:hidden flex items-center justify-between px-4 py-2.5 border-b">
+                    <span className="text-xl font-bold text-sky-700 dark:text-sky-400">XIRI</span>
                     <NotificationBell />
                 </div>
 
@@ -391,12 +375,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <NotificationBell />
                 </div>
 
-                <main className="flex-1 overflow-y-auto px-6 py-6">
+                <main className="flex-1 overflow-y-auto px-4 py-4 lg:px-6 lg:py-6 pb-20 lg:pb-6">
                     <QueryProvider>
                         {children}
                     </QueryProvider>
                 </main>
             </div>
+
+            {/* Mobile Bottom Nav */}
+            <MobileBottomNav onMorePress={() => setMobileOpen(true)} />
         </div>
     );
 }

@@ -74,8 +74,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        {/* Organization Structured Data */}
+      <BodyClassProvider className={`${inter.variable} ${outfit.variable} font-sans antialiased text-gray-900 bg-white pt-[112px]`}>
+        <TrackingProvider>
+          <MarketingShell>
+            <Navigation />
+          </MarketingShell>
+          {children}
+          <MarketingShell>
+            <ConditionalFooter>
+              <Footer />
+            </ConditionalFooter>
+
+            <StickyMobileCTA />
+          </MarketingShell>
+        </TrackingProvider>
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+        )}
+        <ClarityProvider />
+        {/* Organization Structured Data — placed in body to avoid render-blocking */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -120,25 +137,6 @@ export default function RootLayout({
             })
           }}
         />
-      </head>
-      <BodyClassProvider className={`${inter.variable} ${outfit.variable} font-sans antialiased text-gray-900 bg-white pt-[112px]`}>
-        <TrackingProvider>
-          <MarketingShell>
-            <Navigation />
-          </MarketingShell>
-          {children}
-          <MarketingShell>
-            <ConditionalFooter>
-              <Footer />
-            </ConditionalFooter>
-
-            <StickyMobileCTA />
-          </MarketingShell>
-        </TrackingProvider>
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
-        )}
-        <ClarityProvider />
       </BodyClassProvider>
     </html>
   );
