@@ -10,6 +10,7 @@
         "sourceMap": true,
         "strict": true,
         "target": "es2018",
+        "resolveJsonModule": true,
         "esModuleInterop": true // Ensure this is true for commonjs
     },
     "compileOnSave": true,
