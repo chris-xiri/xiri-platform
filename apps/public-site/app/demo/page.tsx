@@ -12,50 +12,6 @@ const DEMO_FACILITY = {
     estimatedCleanMin: 150,
 };
 
-interface DemoTask { name: string; completed: boolean; hasPhoto: boolean; auditStatus?: 'good' | 'acceptable' | 'unacceptable' | null; auditNote?: string | null }
-interface DemoZone { zoneName: string; scannedAt: string | null; tasks: DemoTask[] }
-interface DemoSession {
-    id: string;
-    personName: string;
-    personPhone: string;
-    initials: string;
-    role: 'cleaner';
-    clockInAt: string;
-    clockOutAt: string | null;
-    zonesCompleted: number;
-    zonesTotal: number;
-    zones: DemoZone[];
-    status: 'verified' | 'flagged' | 'incomplete' | 'in_progress';
-    mgrName?: string;
-    mgrClockOut?: string;
-    auditScore?: number;
-}
-
-const DEMO_ZONES: DemoZone[] = [
-    { zoneName: 'Main Lobby', scannedAt: '2026-03-16T21:14:00', tasks: [{ name: 'Vacuum carpet', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Wipe reception desk', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Empty trash', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Clean glass doors', completed: true, hasPhoto: true, auditStatus: 'good' }] },
-    { zoneName: 'Restroom A', scannedAt: '2026-03-16T21:32:00', tasks: [{ name: 'Sanitize fixtures', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Mop floors', completed: true, hasPhoto: true, auditStatus: 'acceptable', auditNote: 'Slight residue near drain' }, { name: 'Restock supplies', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Empty trash', completed: true, hasPhoto: false, auditStatus: 'good' }] },
-    { zoneName: 'Exam Room 1', scannedAt: '2026-03-16T21:51:00', tasks: [{ name: 'Disinfect surfaces', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Sanitize exam table', completed: true, hasPhoto: true, auditStatus: 'good' }, { name: 'Mop floor', completed: true, hasPhoto: false, auditStatus: 'good' }] },
-    { zoneName: 'Exam Room 2', scannedAt: '2026-03-16T22:12:00', tasks: [{ name: 'Disinfect surfaces', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Sanitize exam table', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Mop floor', completed: true, hasPhoto: false, auditStatus: 'good' }] },
-    { zoneName: 'Break Room', scannedAt: '2026-03-16T22:34:00', tasks: [{ name: 'Wipe counters', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Clean microwave', completed: true, hasPhoto: false, auditStatus: 'acceptable', auditNote: 'Inside needs second wipe' }, { name: 'Empty trash', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Mop floor', completed: true, hasPhoto: false, auditStatus: 'good' }] },
-    { zoneName: 'Hallway & Offices', scannedAt: '2026-03-16T23:01:00', tasks: [{ name: 'Vacuum carpet', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Dust surfaces', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Empty trash', completed: true, hasPhoto: false, auditStatus: 'good' }] },
-];
-
-/* Only manager-reviewed sessions (consolidated to one table) */
-const DEMO_SESSIONS: DemoSession[] = [
-    {
-        id: 'session-1', personName: 'Miguel R.', personPhone: '(516) 555-0142', initials: 'MR', role: 'cleaner',
-        clockInAt: '2026-03-16T21:14:00', clockOutAt: '2026-03-16T23:42:00',
-        zonesCompleted: 6, zonesTotal: 6, zones: DEMO_ZONES, status: 'verified',
-        mgrName: 'David K.', mgrClockOut: '2026-03-17T00:15:00', auditScore: 4.7,
-    },
-    {
-        id: 'session-2', personName: 'Miguel R.', personPhone: '(516) 555-0142', initials: 'MR', role: 'cleaner',
-        clockInAt: '2026-03-13T21:08:00', clockOutAt: '2026-03-13T23:21:00',
-        zonesCompleted: 6, zonesTotal: 6,
-        zones: DEMO_ZONES.map(z => ({ ...z, scannedAt: z.scannedAt?.replace('16', '13') || null })),
-        status: 'flagged', mgrName: 'David K.', mgrClockOut: '2026-03-13T23:58:00', auditScore: 3.8,
-    },
-];
 
 const SERVICES = [
     { icon: '🧹', name: 'Nightly Janitorial', desc: 'Verified every shift' },
@@ -76,50 +32,10 @@ const LIVE_ZONES = [
     { name: 'Hallway & Offices', tasks: 3 },
 ];
 
-/* ─── Status Config ────────────────────────────────────────────── */
-const STATUS_CONFIG = {
-    verified:    { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', label: 'Verified', icon: '✓' },
-    flagged:     { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', label: 'Flagged', icon: '⚠' },
-    incomplete:  { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', label: 'Incomplete', icon: '!' },
-    in_progress: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', label: 'In Progress', icon: '●' },
-} as const;
+
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
-const fmtDate = (iso: string | null) => {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-};
 
-const fmtTime = (iso: string | null) => {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
-
-const getDuration = (start: string | null, end: string | null) => {
-    if (!start || !end) return '—';
-    const mins = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000);
-    if (mins < 1) return '< 1m';
-    if (mins < 60) return `${mins}m`;
-    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
-};
-
-/* ─── ZoneProgress ─────────────────────────────────────────────── */
-function ZoneProgress({ completed, total }: { completed: number; total: number }) {
-    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-    return (
-        <div className="flex items-center gap-2">
-            <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden min-w-[60px]">
-                <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                        pct === 100 ? 'bg-green-500' : pct > 0 ? 'bg-blue-500' : 'bg-gray-300'
-                    }`}
-                    style={{ width: `${pct}%` }}
-                />
-            </div>
-            <span className="text-xs font-mono text-gray-400 shrink-0">{completed}/{total}</span>
-        </div>
-    );
-}
 
 /* ─── Intersection Observer Hook ──────────────────────────────── */
 function useInView(options?: IntersectionObserverInit) {
@@ -140,35 +56,30 @@ function useInView(options?: IntersectionObserverInit) {
 
 /* ─── Main Page Component ─────────────────────────────────────── */
 export default function DemoPage() {
-    // First row auto-expanded
-    const [expandedRow, setExpandedRow] = useState<string | null>('session-1');
-    const [expandedAuditZones, setExpandedAuditZones] = useState<Set<string>>(new Set());
-
     // Live NFC simulation
     const [liveZoneIdx, setLiveZoneIdx] = useState(-1);
-    const [liveStarted, setLiveStarted] = useState(false);
+    const liveStartedRef = useRef(false);
 
     // Section visibility
     const heroSection = useInView();
     const liveSection = useInView();
-    const historySection = useInView();
     const servicesSection = useInView();
     const ctaSection = useInView();
 
     useEffect(() => {
-        if (liveSection.inView && !liveStarted) startLiveSimulation();
+        if (liveSection.inView) startLiveSimulation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [liveSection.inView, liveStarted]);
+    }, [liveSection.inView]);
 
     useEffect(() => {
-        const fallback = setTimeout(() => { if (!liveStarted) startLiveSimulation(); }, 3000);
+        const fallback = setTimeout(() => startLiveSimulation(), 3000);
         return () => clearTimeout(fallback);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     function startLiveSimulation() {
-        if (liveStarted) return;
-        setLiveStarted(true);
+        if (liveStartedRef.current) return;
+        liveStartedRef.current = true;
         let idx = 0;
         const interval = setInterval(() => {
             setLiveZoneIdx(idx);
@@ -350,177 +261,7 @@ export default function DemoPage() {
                     </p>
                 </div>
 
-                {/* ── Section 2: Recent Shifts (consolidated single table) ── */}
-                <div
-                    ref={historySection.ref}
-                    className={`transition-all duration-700 delay-100 ${historySection.inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                >
-                    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-                        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60">
-                            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                                📋 Recent Shifts
-                                <span className="text-xs font-normal text-gray-400">({DEMO_SESSIONS.length} shifts)</span>
-                            </h3>
-                        </div>
 
-                        <div className="divide-y divide-gray-100">
-                            {DEMO_SESSIONS.map((session) => {
-                                const style = STATUS_CONFIG[session.status];
-                                const isExpanded = expandedRow === session.id;
-
-                                return (
-                                    <div key={session.id}>
-                                        <button
-                                            onClick={() => setExpandedRow(isExpanded ? null : session.id)}
-                                            className={`w-full text-left px-4 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer ${isExpanded ? 'bg-gray-50/50' : ''}`}
-                                        >
-                                            {/* Row 1: Status + Building + Score */}
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}>
-                                                        <span className="text-[10px]">{style.icon}</span> {style.label}
-                                                    </span>
-                                                    <span className="text-sm font-medium text-gray-900">{DEMO_FACILITY.name}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    {session.auditScore != null && (
-                                                        <span className={`text-sm font-semibold ${session.auditScore >= 4 ? 'text-green-600' : session.auditScore >= 3 ? 'text-amber-600' : 'text-red-600'}`}>
-                                                            {session.auditScore.toFixed(1)}
-                                                        </span>
-                                                    )}
-                                                    <svg className={`w-4 h-4 text-gray-300 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                    </svg>
-                                                </div>
-                                            </div>
-
-                                            {/* Row 2: Details */}
-                                            <div className="flex items-center gap-4 text-xs text-gray-400">
-                                                <span>{fmtDate(session.clockInAt)}</span>
-                                                <span className="font-mono">{fmtTime(session.clockInAt)} → {fmtTime(session.clockOutAt)}</span>
-                                                <span>{getDuration(session.clockInAt, session.clockOutAt)}</span>
-                                            </div>
-
-                                            {/* Row 3: Zone progress */}
-                                            <div className="mt-2">
-                                                <ZoneProgress completed={session.zonesCompleted} total={session.zonesTotal} />
-                                            </div>
-                                        </button>
-
-                                        {/* Expanded detail */}
-                                        {isExpanded && (
-                                            <div className="bg-gray-50/50 border-t border-gray-100 px-4 py-4">
-                                                {/* Crew info */}
-                                                <div className="flex items-center gap-3 mb-3 text-xs">
-                                                    <span className="flex items-center gap-1 text-gray-900 font-medium">
-                                                        <span className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-[10px] font-bold">{session.initials}</span>
-                                                        {session.personName}
-                                                    </span>
-                                                    <span className="text-gray-400">{session.personPhone}</span>
-                                                </div>
-
-                                                {/* Night Manager bar */}
-                                                {session.mgrName && (
-                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 rounded-lg border border-gray-200 bg-white px-3 py-2 mb-4">
-                                                        <span className="flex items-center gap-1 text-gray-900 font-medium">👤 {session.mgrName}</span>
-                                                        <span>Inspected {fmtTime(session.clockOutAt)} → {fmtTime(session.mgrClockOut || null)}</span>
-                                                        <span className={`font-semibold ${session.auditScore && session.auditScore >= 4 ? 'text-green-600' : session.auditScore && session.auditScore >= 3 ? 'text-amber-600' : 'text-red-600'}`}>
-                                                            Score {session.auditScore?.toFixed(1)}/5
-                                                        </span>
-                                                    </div>
-                                                )}
-
-                                                {/* Zone breakdown */}
-                                                <h4 className="text-[10px] font-semibold uppercase text-gray-400 tracking-wider mb-2">Zone Progress</h4>
-                                                {session.mgrName && (
-                                                    <div className="grid gap-1 mb-1 text-[10px] text-gray-400" style={{ gridTemplateColumns: 'minmax(100px, 1.2fr) 70px 1fr' }}>
-                                                        <span>Zone</span>
-                                                        <span className="text-right">🧹 Cleaned</span>
-                                                        <span className="text-right">👤 Manager Audit</span>
-                                                    </div>
-                                                )}
-                                                <div className="space-y-1">
-                                                    {session.zones.map((zone, zi) => {
-                                                        const zoneKey = `${session.id}-${zi}`;
-                                                        const isAuditExpanded = expandedAuditZones.has(zoneKey);
-                                                        const worstStatus = zone.tasks.reduce((worst, t) => {
-                                                            if (t.auditStatus === 'unacceptable') return 'unacceptable';
-                                                            if (t.auditStatus === 'acceptable' && worst !== 'unacceptable') return 'acceptable';
-                                                            return worst;
-                                                        }, 'good' as string);
-                                                        const hasIssues = worstStatus === 'acceptable' || worstStatus === 'unacceptable';
-
-                                                        return (
-                                                            <div key={zi} className="grid items-start text-sm py-1.5 px-2 rounded hover:bg-gray-100/50"
-                                                                style={{ gridTemplateColumns: session.mgrName ? 'minmax(100px, 1.2fr) 70px 1fr' : 'minmax(100px, 1fr) 70px' }}>
-                                                                {/* Zone name */}
-                                                                <div className="flex items-center gap-2">
-                                                                    {zone.scannedAt ? (
-                                                                        <svg className="w-3.5 h-3.5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                                                        </svg>
-                                                                    ) : (
-                                                                        <svg className="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                        </svg>
-                                                                    )}
-                                                                    <span className={zone.scannedAt ? 'font-medium text-gray-900' : 'text-gray-400'}>{zone.zoneName}</span>
-                                                                </div>
-                                                                {/* Cleaned timestamp */}
-                                                                <span className="text-xs font-mono text-gray-400 text-right">{fmtTime(zone.scannedAt)}</span>
-                                                                {/* Manager audit */}
-                                                                {session.mgrName && (
-                                                                    <div>
-                                                                        <div className="flex items-center justify-end gap-1.5">
-                                                                            {hasIssues ? (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    className="flex items-center gap-1 hover:opacity-80 transition-opacity"
-                                                                                    onClick={(e) => { e.stopPropagation(); setExpandedAuditZones(prev => { const next = new Set(prev); next.has(zoneKey) ? next.delete(zoneKey) : next.add(zoneKey); return next; }); }}
-                                                                                >
-                                                                                    <svg className={`w-3 h-3 text-gray-300 transition-transform ${isAuditExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                                                    </svg>
-                                                                                    {worstStatus === 'acceptable' && <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-medium">🟡 OK</span>}
-                                                                                    {worstStatus === 'unacceptable' && <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-medium">🔴 Bad</span>}
-                                                                                </button>
-                                                                            ) : (
-                                                                                <>
-                                                                                    {zone.scannedAt && <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 font-medium">🟢 Good</span>}
-                                                                                    {!zone.scannedAt && <span className="text-xs text-gray-300">pending</span>}
-                                                                                </>
-                                                                            )}
-                                                                        </div>
-                                                                        {/* Per-task breakdown */}
-                                                                        {isAuditExpanded && hasIssues && (
-                                                                            <div className="mt-1.5 space-y-0.5 pl-1 border-l-2 border-amber-300 ml-1">
-                                                                                {zone.tasks.map((task, ti) => (
-                                                                                    <div key={ti} className="flex items-start gap-1.5 text-[11px]">
-                                                                                        <span>{task.auditStatus === 'good' ? '🟢' : task.auditStatus === 'acceptable' ? '🟡' : task.auditStatus === 'unacceptable' ? '🔴' : '⚪'}</span>
-                                                                                        <span className="text-gray-500">{task.name}</span>
-                                                                                        {task.auditNote && <span className="text-gray-700 italic">— {task.auditNote}</span>}
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <p className="text-[11px] text-gray-400 text-center mt-3">
-                        All times automatically recorded via NFC check-in
-                    </p>
-                </div>
 
                 {/* ── Section 3: Services ── */}
                 <div
