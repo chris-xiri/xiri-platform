@@ -40,10 +40,7 @@ const DEMO_ZONES: DemoZone[] = [
     { zoneName: 'Hallway & Offices', scannedAt: '2026-03-16T23:01:00', tasks: [{ name: 'Vacuum carpet', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Dust surfaces', completed: true, hasPhoto: false, auditStatus: 'good' }, { name: 'Empty trash', completed: true, hasPhoto: false, auditStatus: 'good' }] },
 ];
 
-const DEMO_ZONES_INCOMPLETE = DEMO_ZONES.map((z, i) =>
-    i === 5 ? { ...z, scannedAt: null, tasks: z.tasks.map((t, ti) => ti < 2 ? { ...t, completed: false, auditStatus: null as 'good' | 'acceptable' | 'unacceptable' | null } : t) } : { ...z, scannedAt: z.scannedAt?.replace('16', '12') || null }
-);
-
+/* Only manager-reviewed sessions (consolidated to one table) */
 const DEMO_SESSIONS: DemoSession[] = [
     {
         id: 'session-1', personName: 'Miguel R.', personPhone: '(516) 555-0142', initials: 'MR', role: 'cleaner',
@@ -57,11 +54,6 @@ const DEMO_SESSIONS: DemoSession[] = [
         zonesCompleted: 6, zonesTotal: 6,
         zones: DEMO_ZONES.map(z => ({ ...z, scannedAt: z.scannedAt?.replace('16', '13') || null })),
         status: 'flagged', mgrName: 'David K.', mgrClockOut: '2026-03-13T23:58:00', auditScore: 3.8,
-    },
-    {
-        id: 'session-3', personName: 'Jose T.', personPhone: '(516) 555-0198', initials: 'JT', role: 'cleaner',
-        clockInAt: '2026-03-12T21:22:00', clockOutAt: '2026-03-12T23:35:00',
-        zonesCompleted: 5, zonesTotal: 6, zones: DEMO_ZONES_INCOMPLETE, status: 'incomplete',
     },
 ];
 
@@ -84,16 +76,15 @@ const LIVE_ZONES = [
     { name: 'Hallway & Offices', tasks: 3 },
 ];
 
-/* ─── Status Config (light theme) ────────────────────────────── */
+/* ─── Status Config ────────────────────────────────────────────── */
 const STATUS_CONFIG = {
     verified:    { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', label: 'Verified', icon: '✓' },
     flagged:     { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', label: 'Flagged', icon: '⚠' },
     incomplete:  { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', label: 'Incomplete', icon: '!' },
     in_progress: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', label: 'In Progress', icon: '●' },
-    waiting:     { bg: 'bg-gray-50', text: 'text-gray-500', border: 'border-gray-200', label: 'Waiting', icon: '◷' },
 } as const;
 
-/* ─── Helpers ──────────────────────────────────────────────── */
+/* ─── Helpers ──────────────────────────────────────────────────── */
 const fmtDate = (iso: string | null) => {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -112,7 +103,7 @@ const getDuration = (start: string | null, end: string | null) => {
     return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 };
 
-/* ─── ZoneProgress (light theme) ─────────────────────────────── */
+/* ─── ZoneProgress ─────────────────────────────────────────────── */
 function ZoneProgress({ completed, total }: { completed: number; total: number }) {
     const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
     return (
@@ -149,18 +140,18 @@ function useInView(options?: IntersectionObserverInit) {
 
 /* ─── Main Page Component ─────────────────────────────────────── */
 export default function DemoPage() {
-    const [expandedRow, setExpandedRow] = useState<string | null>(null);
+    // First row auto-expanded
+    const [expandedRow, setExpandedRow] = useState<string | null>('session-1');
     const [expandedAuditZones, setExpandedAuditZones] = useState<Set<string>>(new Set());
 
     // Live NFC simulation
-    const [liveActive, setLiveActive] = useState(false);
     const [liveZoneIdx, setLiveZoneIdx] = useState(-1);
     const [liveStarted, setLiveStarted] = useState(false);
 
     // Section visibility
     const heroSection = useInView();
-    const tonightSection = useInView();
     const liveSection = useInView();
+    const historySection = useInView();
     const servicesSection = useInView();
     const ctaSection = useInView();
 
@@ -178,7 +169,6 @@ export default function DemoPage() {
     function startLiveSimulation() {
         if (liveStarted) return;
         setLiveStarted(true);
-        setLiveActive(true);
         let idx = 0;
         const interval = setInterval(() => {
             setLiveZoneIdx(idx);
@@ -198,12 +188,8 @@ export default function DemoPage() {
         }
     };
 
-    // Split sessions into manager-reviewed and cleaning
-    const managerReviewed = DEMO_SESSIONS.filter(s => s.mgrName);
-    const cleaningOnly = DEMO_SESSIONS.filter(s => !s.mgrName);
-
     return (
-        <div className="min-h-screen bg-white text-gray-900">
+        <div className="min-h-screen bg-white text-gray-900 pb-16">
             {/* ── Header ── */}
             <div
                 ref={heroSection.ref}
@@ -228,275 +214,29 @@ export default function DemoPage() {
                     </div>
                 </div>
 
-                {/* Hook text */}
+                {/* Hook — warm traffic copy */}
                 <div className="bg-gray-50/80 border-b border-gray-100">
                     <div className="max-w-3xl mx-auto px-4 py-4">
                         <h2 className="text-base font-semibold text-gray-900">
-                            Was your building <em className="not-italic text-indigo-600">actually</em> cleaned last night?
+                            Here&apos;s what your dashboard looks like — <em className="not-italic text-indigo-600">tonight</em>.
                         </h2>
                         <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-                            Most building owners have no idea. Below is what verified facility management looks like.
+                            Every zone scanned. Every task verified. You see it all on your phone.
                         </p>
+                        {/* Mini CTA right after hook */}
+                        <a
+                            href="sms:+15165269585?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20demo.%20I%27m%20interested%20in%20learning%20more."
+                            className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+                        >
+                            💬 Ready to talk? Text Chris →
+                        </a>
                     </div>
                 </div>
             </div>
 
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
-                {/* ── Table 1: Manager Reviewed ── */}
-                <div
-                    ref={tonightSection.ref}
-                    className={`transition-all duration-700 delay-100 ${tonightSection.inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                >
-                    {managerReviewed.length > 0 && (
-                        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm mb-6">
-                            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60">
-                                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                                    👤 Manager Reviewed
-                                    <span className="text-xs font-normal text-gray-400">({managerReviewed.length} shifts)</span>
-                                </h3>
-                            </div>
-
-                            <div className="divide-y divide-gray-100">
-                                {managerReviewed.map((session) => {
-                                    const style = STATUS_CONFIG[session.status];
-                                    const isExpanded = expandedRow === session.id;
-
-                                    return (
-                                        <div key={session.id}>
-                                            <button
-                                                onClick={() => setExpandedRow(isExpanded ? null : session.id)}
-                                                className={`w-full text-left px-4 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer ${isExpanded ? 'bg-gray-50/50' : ''}`}
-                                            >
-                                                {/* Row 1: Status + Building + Score */}
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}>
-                                                            <span className="text-[10px]">{style.icon}</span> {style.label}
-                                                        </span>
-                                                        <span className="text-sm font-medium text-gray-900">{DEMO_FACILITY.name}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        {session.auditScore != null && (
-                                                            <span className={`text-sm font-semibold ${session.auditScore >= 4 ? 'text-green-600' : session.auditScore >= 3 ? 'text-amber-600' : 'text-red-600'}`}>
-                                                                {session.auditScore.toFixed(1)}
-                                                            </span>
-                                                        )}
-                                                        <svg className={`w-4 h-4 text-gray-300 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                        </svg>
-                                                    </div>
-                                                </div>
-
-                                                {/* Row 2: Details */}
-                                                <div className="flex items-center gap-4 text-xs text-gray-400">
-                                                    <span>{fmtDate(session.clockInAt)}</span>
-                                                    <span className="font-mono">{fmtTime(session.clockInAt)} → {fmtTime(session.clockOutAt)}</span>
-                                                    <span>{getDuration(session.clockInAt, session.clockOutAt)}</span>
-                                                </div>
-
-                                                {/* Row 3: Zone progress */}
-                                                <div className="mt-2">
-                                                    <ZoneProgress completed={session.zonesCompleted} total={session.zonesTotal} />
-                                                </div>
-                                            </button>
-
-                                            {/* Expanded detail */}
-                                            {isExpanded && (
-                                                <div className="bg-gray-50/50 border-t border-gray-100 px-4 py-4">
-                                                    {/* Crew info */}
-                                                    <div className="flex items-center gap-3 mb-3 text-xs">
-                                                        <span className="flex items-center gap-1 text-gray-900 font-medium">
-                                                            <span className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-[10px] font-bold">{session.initials}</span>
-                                                            {session.personName}
-                                                        </span>
-                                                        <span className="text-gray-400">{session.personPhone}</span>
-                                                    </div>
-
-                                                    {/* Night Manager bar */}
-                                                    {session.mgrName && (
-                                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 rounded-lg border border-gray-200 bg-white px-3 py-2 mb-4">
-                                                            <span className="flex items-center gap-1 text-gray-900 font-medium">👤 {session.mgrName}</span>
-                                                            <span>Inspected {fmtTime(session.clockOutAt)} → {fmtTime(session.mgrClockOut || null)}</span>
-                                                            <span className={`font-semibold ${session.auditScore && session.auditScore >= 4 ? 'text-green-600' : session.auditScore && session.auditScore >= 3 ? 'text-amber-600' : 'text-red-600'}`}>
-                                                                Score {session.auditScore?.toFixed(1)}/5
-                                                            </span>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Zone breakdown */}
-                                                    <h4 className="text-[10px] font-semibold uppercase text-gray-400 tracking-wider mb-2">Zone Progress</h4>
-                                                    {session.mgrName && (
-                                                        <div className="grid gap-1 mb-1 text-[10px] text-gray-400" style={{ gridTemplateColumns: 'minmax(100px, 1.2fr) 70px 1fr' }}>
-                                                            <span>Zone</span>
-                                                            <span className="text-right">🧹 Cleaned</span>
-                                                            <span className="text-right">👤 Manager Audit</span>
-                                                        </div>
-                                                    )}
-                                                    <div className="space-y-1">
-                                                        {session.zones.map((zone, zi) => {
-                                                            const zoneKey = `${session.id}-${zi}`;
-                                                            const isAuditExpanded = expandedAuditZones.has(zoneKey);
-                                                            const worstStatus = zone.tasks.reduce((worst, t) => {
-                                                                if (t.auditStatus === 'unacceptable') return 'unacceptable';
-                                                                if (t.auditStatus === 'acceptable' && worst !== 'unacceptable') return 'acceptable';
-                                                                return worst;
-                                                            }, 'good' as string);
-                                                            const hasIssues = worstStatus === 'acceptable' || worstStatus === 'unacceptable';
-
-                                                            return (
-                                                                <div key={zi} className="grid items-start text-sm py-1.5 px-2 rounded hover:bg-gray-100/50"
-                                                                    style={{ gridTemplateColumns: session.mgrName ? 'minmax(100px, 1.2fr) 70px 1fr' : 'minmax(100px, 1fr) 70px' }}>
-                                                                    {/* Zone name */}
-                                                                    <div className="flex items-center gap-2">
-                                                                        {zone.scannedAt ? (
-                                                                            <svg className="w-3.5 h-3.5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                                                            </svg>
-                                                                        ) : (
-                                                                            <svg className="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                            </svg>
-                                                                        )}
-                                                                        <span className={zone.scannedAt ? 'font-medium text-gray-900' : 'text-gray-400'}>{zone.zoneName}</span>
-                                                                    </div>
-                                                                    {/* Cleaned timestamp */}
-                                                                    <span className="text-xs font-mono text-gray-400 text-right">{fmtTime(zone.scannedAt)}</span>
-                                                                    {/* Manager audit */}
-                                                                    {session.mgrName && (
-                                                                        <div>
-                                                                            <div className="flex items-center justify-end gap-1.5">
-                                                                                {hasIssues ? (
-                                                                                    <button
-                                                                                        type="button"
-                                                                                        className="flex items-center gap-1 hover:opacity-80 transition-opacity"
-                                                                                        onClick={(e) => { e.stopPropagation(); setExpandedAuditZones(prev => { const next = new Set(prev); next.has(zoneKey) ? next.delete(zoneKey) : next.add(zoneKey); return next; }); }}
-                                                                                    >
-                                                                                        <svg className={`w-3 h-3 text-gray-300 transition-transform ${isAuditExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                                                        </svg>
-                                                                                        {worstStatus === 'acceptable' && <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-medium">🟡 OK</span>}
-                                                                                        {worstStatus === 'unacceptable' && <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-medium">🔴 Bad</span>}
-                                                                                    </button>
-                                                                                ) : (
-                                                                                    <>
-                                                                                        {zone.scannedAt && <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 font-medium">🟢 Good</span>}
-                                                                                        {!zone.scannedAt && <span className="text-xs text-gray-300">pending</span>}
-                                                                                    </>
-                                                                                )}
-                                                                            </div>
-                                                                            {/* Per-task breakdown */}
-                                                                            {isAuditExpanded && hasIssues && (
-                                                                                <div className="mt-1.5 space-y-0.5 pl-1 border-l-2 border-amber-300 ml-1">
-                                                                                    {zone.tasks.map((task, ti) => (
-                                                                                        <div key={ti} className="flex items-start gap-1.5 text-[11px]">
-                                                                                            <span>{task.auditStatus === 'good' ? '🟢' : task.auditStatus === 'acceptable' ? '🟡' : task.auditStatus === 'unacceptable' ? '🔴' : '⚪'}</span>
-                                                                                            <span className="text-gray-500">{task.name}</span>
-                                                                                            {task.auditNote && <span className="text-gray-700 italic">— {task.auditNote}</span>}
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ──── Table 2: Cleaning Progress ──── */}
-                    {cleaningOnly.length > 0 && (
-                        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-                            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60">
-                                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                                    🧹 Cleaning Progress
-                                    <span className="text-xs font-normal text-gray-400">({cleaningOnly.length} shifts)</span>
-                                </h3>
-                            </div>
-                            <div className="divide-y divide-gray-100">
-                                {cleaningOnly.map((session) => {
-                                    const style = STATUS_CONFIG[session.status];
-                                    const isExpanded = expandedRow === session.id;
-
-                                    return (
-                                        <div key={session.id}>
-                                            <button
-                                                onClick={() => setExpandedRow(isExpanded ? null : session.id)}
-                                                className={`w-full text-left px-4 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer ${isExpanded ? 'bg-gray-50/50' : ''}`}
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}>
-                                                            <span className="text-[10px]">{style.icon}</span> {style.label}
-                                                        </span>
-                                                        <span className="text-sm font-medium text-gray-900">{DEMO_FACILITY.name}</span>
-                                                    </div>
-                                                    <svg className={`w-4 h-4 text-gray-300 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                    </svg>
-                                                </div>
-                                                <div className="flex items-center gap-4 text-xs text-gray-400">
-                                                    <span>{fmtDate(session.clockInAt)}</span>
-                                                    <span className="font-mono">{fmtTime(session.clockInAt)} → {fmtTime(session.clockOutAt)}</span>
-                                                    <span>{getDuration(session.clockInAt, session.clockOutAt)}</span>
-                                                </div>
-                                                <div className="mt-2">
-                                                    <ZoneProgress completed={session.zonesCompleted} total={session.zonesTotal} />
-                                                </div>
-                                            </button>
-
-                                            {isExpanded && (
-                                                <div className="bg-gray-50/50 border-t border-gray-100 px-4 py-4">
-                                                    <div className="flex items-center gap-3 mb-3 text-xs">
-                                                        <span className="flex items-center gap-1 text-gray-900 font-medium">
-                                                            <span className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-[10px] font-bold">{session.initials}</span>
-                                                            {session.personName}
-                                                        </span>
-                                                        <span className="text-gray-400">{session.personPhone}</span>
-                                                    </div>
-                                                    <h4 className="text-[10px] font-semibold uppercase text-gray-400 tracking-wider mb-2">Zone Progress</h4>
-                                                    <div className="space-y-1">
-                                                        {session.zones.map((zone, zi) => (
-                                                            <div key={zi} className="flex items-center justify-between text-sm py-1.5 px-2 rounded hover:bg-gray-100/50">
-                                                                <div className="flex items-center gap-2">
-                                                                    {zone.scannedAt ? (
-                                                                        <svg className="w-3.5 h-3.5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                                                        </svg>
-                                                                    ) : (
-                                                                        <svg className="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                        </svg>
-                                                                    )}
-                                                                    <span className={zone.scannedAt ? 'font-medium text-gray-900' : 'text-gray-400'}>{zone.zoneName}</span>
-                                                                </div>
-                                                                <span className="text-xs font-mono text-gray-400">{fmtTime(zone.scannedAt)}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    <p className="text-[11px] text-gray-400 text-center mt-3">
-                        All times automatically recorded via NFC check-in
-                    </p>
-                </div>
-
-                {/* ── Live NFC Simulation ── */}
+                {/* ── Section 1: Live NFC Simulation (MOVED UP) ── */}
                 <div
                     ref={liveSection.ref}
                     className={`transition-all duration-700 delay-100 ${liveSection.inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
@@ -505,9 +245,9 @@ export default function DemoPage() {
                         <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60 flex items-center justify-between">
                             <h3 className="text-sm font-semibold text-gray-900">Live View — Shift in Progress</h3>
                             <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${liveActive && liveZoneIdx < LIVE_ZONES.length ? 'bg-blue-500 animate-pulse' : liveZoneIdx >= LIVE_ZONES.length - 1 ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                <div className={`w-2 h-2 rounded-full ${liveZoneIdx >= 0 && liveZoneIdx < LIVE_ZONES.length ? 'bg-blue-500 animate-pulse' : liveZoneIdx >= LIVE_ZONES.length - 1 ? 'bg-green-500' : 'bg-gray-300'}`} />
                                 <span className="text-xs text-gray-400">
-                                    {liveZoneIdx >= LIVE_ZONES.length - 1 ? 'Verified' : liveActive ? 'In Progress' : 'Waiting'}
+                                    {liveZoneIdx >= LIVE_ZONES.length - 1 ? 'Verified' : liveZoneIdx >= 0 ? 'In Progress' : 'Waiting'}
                                 </span>
                             </div>
                         </div>
@@ -524,7 +264,7 @@ export default function DemoPage() {
                             <div className="text-right">
                                 <p className="text-[10px] text-gray-400 uppercase tracking-wider">Zones</p>
                                 <p className="text-sm font-bold text-gray-900 font-mono">
-                                    {Math.min(liveZoneIdx + 1, LIVE_ZONES.length)}/{LIVE_ZONES.length}
+                                    {Math.max(Math.min(liveZoneIdx + 1, LIVE_ZONES.length), 0)}/{LIVE_ZONES.length}
                                 </p>
                             </div>
                         </div>
@@ -534,7 +274,7 @@ export default function DemoPage() {
                             <div className="h-2 rounded-full bg-gray-100 overflow-hidden mb-4">
                                 <div
                                     className={`h-full rounded-full transition-all duration-700 ease-out ${liveZoneIdx >= LIVE_ZONES.length - 1 ? 'bg-green-500' : 'bg-blue-500'}`}
-                                    style={{ width: `${Math.min(((liveZoneIdx + 1) / LIVE_ZONES.length) * 100, 100)}%` }}
+                                    style={{ width: `${Math.max(Math.min(((liveZoneIdx + 1) / LIVE_ZONES.length) * 100, 100), 0)}%` }}
                                 />
                             </div>
 
@@ -542,8 +282,8 @@ export default function DemoPage() {
                             <div className="space-y-1.5">
                                 {LIVE_ZONES.map((zone, i) => {
                                     const isActive = i === liveZoneIdx && liveZoneIdx < LIVE_ZONES.length;
-                                    const isDone = i < liveZoneIdx || liveZoneIdx >= LIVE_ZONES.length - 1;
-                                    const isPending = i > liveZoneIdx;
+                                    const isDone = i < liveZoneIdx || (liveZoneIdx >= LIVE_ZONES.length - 1 && i <= liveZoneIdx);
+                                    const isPending = !isActive && !isDone;
 
                                     return (
                                         <div
@@ -610,7 +350,179 @@ export default function DemoPage() {
                     </p>
                 </div>
 
-                {/* ── Services ── */}
+                {/* ── Section 2: Recent Shifts (consolidated single table) ── */}
+                <div
+                    ref={historySection.ref}
+                    className={`transition-all duration-700 delay-100 ${historySection.inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                >
+                    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+                        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60">
+                            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                📋 Recent Shifts
+                                <span className="text-xs font-normal text-gray-400">({DEMO_SESSIONS.length} shifts)</span>
+                            </h3>
+                        </div>
+
+                        <div className="divide-y divide-gray-100">
+                            {DEMO_SESSIONS.map((session) => {
+                                const style = STATUS_CONFIG[session.status];
+                                const isExpanded = expandedRow === session.id;
+
+                                return (
+                                    <div key={session.id}>
+                                        <button
+                                            onClick={() => setExpandedRow(isExpanded ? null : session.id)}
+                                            className={`w-full text-left px-4 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer ${isExpanded ? 'bg-gray-50/50' : ''}`}
+                                        >
+                                            {/* Row 1: Status + Building + Score */}
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}>
+                                                        <span className="text-[10px]">{style.icon}</span> {style.label}
+                                                    </span>
+                                                    <span className="text-sm font-medium text-gray-900">{DEMO_FACILITY.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {session.auditScore != null && (
+                                                        <span className={`text-sm font-semibold ${session.auditScore >= 4 ? 'text-green-600' : session.auditScore >= 3 ? 'text-amber-600' : 'text-red-600'}`}>
+                                                            {session.auditScore.toFixed(1)}
+                                                        </span>
+                                                    )}
+                                                    <svg className={`w-4 h-4 text-gray-300 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+
+                                            {/* Row 2: Details */}
+                                            <div className="flex items-center gap-4 text-xs text-gray-400">
+                                                <span>{fmtDate(session.clockInAt)}</span>
+                                                <span className="font-mono">{fmtTime(session.clockInAt)} → {fmtTime(session.clockOutAt)}</span>
+                                                <span>{getDuration(session.clockInAt, session.clockOutAt)}</span>
+                                            </div>
+
+                                            {/* Row 3: Zone progress */}
+                                            <div className="mt-2">
+                                                <ZoneProgress completed={session.zonesCompleted} total={session.zonesTotal} />
+                                            </div>
+                                        </button>
+
+                                        {/* Expanded detail */}
+                                        {isExpanded && (
+                                            <div className="bg-gray-50/50 border-t border-gray-100 px-4 py-4">
+                                                {/* Crew info */}
+                                                <div className="flex items-center gap-3 mb-3 text-xs">
+                                                    <span className="flex items-center gap-1 text-gray-900 font-medium">
+                                                        <span className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-[10px] font-bold">{session.initials}</span>
+                                                        {session.personName}
+                                                    </span>
+                                                    <span className="text-gray-400">{session.personPhone}</span>
+                                                </div>
+
+                                                {/* Night Manager bar */}
+                                                {session.mgrName && (
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 rounded-lg border border-gray-200 bg-white px-3 py-2 mb-4">
+                                                        <span className="flex items-center gap-1 text-gray-900 font-medium">👤 {session.mgrName}</span>
+                                                        <span>Inspected {fmtTime(session.clockOutAt)} → {fmtTime(session.mgrClockOut || null)}</span>
+                                                        <span className={`font-semibold ${session.auditScore && session.auditScore >= 4 ? 'text-green-600' : session.auditScore && session.auditScore >= 3 ? 'text-amber-600' : 'text-red-600'}`}>
+                                                            Score {session.auditScore?.toFixed(1)}/5
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {/* Zone breakdown */}
+                                                <h4 className="text-[10px] font-semibold uppercase text-gray-400 tracking-wider mb-2">Zone Progress</h4>
+                                                {session.mgrName && (
+                                                    <div className="grid gap-1 mb-1 text-[10px] text-gray-400" style={{ gridTemplateColumns: 'minmax(100px, 1.2fr) 70px 1fr' }}>
+                                                        <span>Zone</span>
+                                                        <span className="text-right">🧹 Cleaned</span>
+                                                        <span className="text-right">👤 Manager Audit</span>
+                                                    </div>
+                                                )}
+                                                <div className="space-y-1">
+                                                    {session.zones.map((zone, zi) => {
+                                                        const zoneKey = `${session.id}-${zi}`;
+                                                        const isAuditExpanded = expandedAuditZones.has(zoneKey);
+                                                        const worstStatus = zone.tasks.reduce((worst, t) => {
+                                                            if (t.auditStatus === 'unacceptable') return 'unacceptable';
+                                                            if (t.auditStatus === 'acceptable' && worst !== 'unacceptable') return 'acceptable';
+                                                            return worst;
+                                                        }, 'good' as string);
+                                                        const hasIssues = worstStatus === 'acceptable' || worstStatus === 'unacceptable';
+
+                                                        return (
+                                                            <div key={zi} className="grid items-start text-sm py-1.5 px-2 rounded hover:bg-gray-100/50"
+                                                                style={{ gridTemplateColumns: session.mgrName ? 'minmax(100px, 1.2fr) 70px 1fr' : 'minmax(100px, 1fr) 70px' }}>
+                                                                {/* Zone name */}
+                                                                <div className="flex items-center gap-2">
+                                                                    {zone.scannedAt ? (
+                                                                        <svg className="w-3.5 h-3.5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                                        </svg>
+                                                                    ) : (
+                                                                        <svg className="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                        </svg>
+                                                                    )}
+                                                                    <span className={zone.scannedAt ? 'font-medium text-gray-900' : 'text-gray-400'}>{zone.zoneName}</span>
+                                                                </div>
+                                                                {/* Cleaned timestamp */}
+                                                                <span className="text-xs font-mono text-gray-400 text-right">{fmtTime(zone.scannedAt)}</span>
+                                                                {/* Manager audit */}
+                                                                {session.mgrName && (
+                                                                    <div>
+                                                                        <div className="flex items-center justify-end gap-1.5">
+                                                                            {hasIssues ? (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="flex items-center gap-1 hover:opacity-80 transition-opacity"
+                                                                                    onClick={(e) => { e.stopPropagation(); setExpandedAuditZones(prev => { const next = new Set(prev); next.has(zoneKey) ? next.delete(zoneKey) : next.add(zoneKey); return next; }); }}
+                                                                                >
+                                                                                    <svg className={`w-3 h-3 text-gray-300 transition-transform ${isAuditExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                                                    </svg>
+                                                                                    {worstStatus === 'acceptable' && <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-medium">🟡 OK</span>}
+                                                                                    {worstStatus === 'unacceptable' && <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-medium">🔴 Bad</span>}
+                                                                                </button>
+                                                                            ) : (
+                                                                                <>
+                                                                                    {zone.scannedAt && <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 font-medium">🟢 Good</span>}
+                                                                                    {!zone.scannedAt && <span className="text-xs text-gray-300">pending</span>}
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                        {/* Per-task breakdown */}
+                                                                        {isAuditExpanded && hasIssues && (
+                                                                            <div className="mt-1.5 space-y-0.5 pl-1 border-l-2 border-amber-300 ml-1">
+                                                                                {zone.tasks.map((task, ti) => (
+                                                                                    <div key={ti} className="flex items-start gap-1.5 text-[11px]">
+                                                                                        <span>{task.auditStatus === 'good' ? '🟢' : task.auditStatus === 'acceptable' ? '🟡' : task.auditStatus === 'unacceptable' ? '🔴' : '⚪'}</span>
+                                                                                        <span className="text-gray-500">{task.name}</span>
+                                                                                        {task.auditNote && <span className="text-gray-700 italic">— {task.auditNote}</span>}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <p className="text-[11px] text-gray-400 text-center mt-3">
+                        All times automatically recorded via NFC check-in
+                    </p>
+                </div>
+
+                {/* ── Section 3: Services ── */}
                 <div
                     ref={servicesSection.ref}
                     className={`transition-all duration-700 delay-100 ${servicesSection.inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
@@ -637,7 +549,7 @@ export default function DemoPage() {
                     </div>
                 </div>
 
-                {/* ── CTA Section ── */}
+                {/* ── Section 4: CTA ── */}
                 <div
                     ref={ctaSection.ref}
                     className={`transition-all duration-700 delay-100 ${ctaSection.inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
@@ -659,7 +571,7 @@ export default function DemoPage() {
                             </p>
 
                             <a
-                                href="sms:+15165269585?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20card.%20I%27m%20interested%20in%20learning%20more%20about%20verified%20cleaning%20for%20my%20building."
+                                href="sms:+15165269585?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20demo.%20I%27m%20interested%20in%20learning%20more%20about%20verified%20cleaning%20for%20my%20building."
                                 className="block w-full py-4 rounded-lg bg-white text-indigo-900 font-bold text-base shadow-lg hover:bg-indigo-50 transition-all mb-2.5"
                             >
                                 💬 Text Chris
@@ -673,7 +585,7 @@ export default function DemoPage() {
                             </a>
 
                             <a
-                                href="mailto:chris@xiri.ai?subject=Interested%20in%20XIRI%20Facility%20Management&body=Hi%20Chris%2C%0A%0AI%20tapped%20your%20NFC%20card%20and%20I%27m%20interested%20in%20learning%20more%20about%20verified%20cleaning%20for%20my%20building.%0A%0ABuilding%20name%3A%20%0AAddress%3A%20%0A%0AThanks!"
+                                href="mailto:chris@xiri.ai?subject=Interested%20in%20XIRI%20Facility%20Management&body=Hi%20Chris%2C%0A%0AI%20saw%20the%20XIRI%20demo%20and%20I%27m%20interested%20in%20learning%20more%20about%20verified%20cleaning%20for%20my%20building.%0A%0ABuilding%20name%3A%20%0AAddress%3A%20%0A%0AThanks!"
                                 className="block w-full py-3.5 rounded-lg border border-indigo-300/40 text-indigo-100 font-medium text-sm hover:bg-indigo-800/30 transition-all mb-3"
                             >
                                 ✉️ Email Chris
@@ -687,6 +599,24 @@ export default function DemoPage() {
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* ── Sticky Bottom CTA Bar ── */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-gray-200 px-4 py-2.5 safe-area-inset-bottom">
+                <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+                    <a
+                        href="sms:+15165269585?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20demo.%20I%27m%20interested%20in%20learning%20more."
+                        className="flex-1 py-2.5 rounded-lg bg-indigo-600 text-white font-semibold text-sm text-center shadow-sm hover:bg-indigo-700 transition-all"
+                    >
+                        💬 Text Chris
+                    </a>
+                    <a
+                        href="tel:+15165269585"
+                        className="py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-all"
+                    >
+                        📞 Call
+                    </a>
                 </div>
             </div>
         </div>
