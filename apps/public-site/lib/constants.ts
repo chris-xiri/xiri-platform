@@ -4,6 +4,7 @@
 
 export const SITE = {
     name: 'XIRI Facility Solutions',
+    legalName: 'Xiri Group LLC',
     shortName: 'XIRI',
     url: 'https://xiri.ai',
     phone: '+1-516-526-9585',
@@ -12,6 +13,14 @@ export const SITE = {
     tagline: 'One Partner. One Invoice. Done.',
     description: 'The facility management standard for single-tenant buildings. One partner. Zero headaches. Nightly verified.',
     insurance: '$1M Liability Policy',
+    address: {
+        street: '418 Broadway, Ste N',
+        city: 'Albany',
+        state: 'NY',
+        zip: '12207',
+        country: 'USA',
+        full: '418 Broadway, Ste N, Albany, NY 12207',
+    },
     social: {
         facebook: 'https://www.facebook.com/xirifacilitysolutions/',
         linkedin: 'https://www.linkedin.com/company/xiri-facility-solutions',

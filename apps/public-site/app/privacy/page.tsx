@@ -3,7 +3,7 @@ import { SITE } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Privacy Policy',
-    description: 'XIRI Facility Solutions privacy policy — how we collect, use, and protect your information.',
+    description: 'Xiri Group LLC d/b/a XIRI Facility Solutions privacy policy — how we collect, use, and protect your information.',
     alternates: {
         canonical: 'https://xiri.ai/privacy',
     },
@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
                     <section>
                         <h2 className="text-xl font-bold text-gray-900 mt-0">1. Introduction</h2>
                         <p>
-                            XIRI Facility Solutions (&quot;XIRI,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) respects your privacy and is committed to
+                            Xiri Group LLC, d/b/a XIRI Facility Solutions (&quot;XIRI,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) respects your privacy and is committed to
                             protecting the personal information you share with us. This Privacy Policy explains how we
                             collect, use, disclose, and safeguard your information when you visit our website at{' '}
                             <a href={SITE.url} className="text-sky-600 hover:underline">xiri.ai</a> or use our services.
@@ -142,7 +142,10 @@ export default function PrivacyPolicyPage() {
                             If you have questions about this Privacy Policy or our data practices, contact us at:
                         </p>
                         <p className="font-medium">
-                            XIRI Facility Solutions<br />
+                            Xiri Group LLC<br />
+                            d/b/a XIRI Facility Solutions<br />
+                            418 Broadway, Ste N<br />
+                            Albany, NY 12207<br />
                             Email: <a href="mailto:chris@xiri.ai" className="text-sky-600 hover:underline">chris@xiri.ai</a>
                         </p>
                     </section>

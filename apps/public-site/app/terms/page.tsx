@@ -3,7 +3,7 @@ import { SITE } from '@/lib/constants';
 
 export const metadata: Metadata = {
     title: 'Terms of Service',
-    description: 'XIRI Facility Solutions terms of service — rules governing use of our website and platform.',
+    description: 'Xiri Group LLC d/b/a XIRI Facility Solutions terms of service — rules governing use of our website and platform.',
     alternates: {
         canonical: 'https://xiri.ai/terms',
     },
@@ -30,7 +30,7 @@ export default function TermsOfServicePage() {
                     <section>
                         <h2 className="text-xl font-bold text-gray-900">2. Description of Services</h2>
                         <p>
-                            XIRI Facility Solutions provides facility management services for single-tenant commercial
+                            Xiri Group LLC, d/b/a XIRI Facility Solutions, provides facility management services for single-tenant commercial
                             buildings, including but not limited to janitorial services, floor care, consumable
                             procurement, and maintenance coordination. We connect facility owners with vetted,
                             insured independent contractors and oversee service quality through nightly audits and
@@ -96,7 +96,7 @@ export default function TermsOfServicePage() {
                         <h2 className="text-xl font-bold text-gray-900">7. Intellectual Property</h2>
                         <p>
                             All content on the Site — including text, graphics, logos, images, and software — is the
-                            property of XIRI Facility Solutions or its licensors and is protected by applicable
+                            property of Xiri Group LLC or its licensors and is protected by applicable
                             intellectual property laws. You may not reproduce, distribute, modify, or create
                             derivative works from any Site content without our prior written consent.
                         </p>
@@ -105,7 +105,7 @@ export default function TermsOfServicePage() {
                     <section>
                         <h2 className="text-xl font-bold text-gray-900">8. Limitation of Liability</h2>
                         <p>
-                            To the maximum extent permitted by law, XIRI Facility Solutions shall not be liable for
+                            To the maximum extent permitted by law, Xiri Group LLC d/b/a XIRI Facility Solutions shall not be liable for
                             any indirect, incidental, special, consequential, or punitive damages arising out of or
                             related to your use of the Site or our services. Our total liability for any claim
                             related to the Site shall not exceed the fees paid by you to XIRI in the twelve (12)
@@ -140,7 +140,7 @@ export default function TermsOfServicePage() {
                     <section>
                         <h2 className="text-xl font-bold text-gray-900">11. Indemnification</h2>
                         <p>
-                            You agree to indemnify, defend, and hold harmless XIRI Facility Solutions and its
+                            You agree to indemnify, defend, and hold harmless Xiri Group LLC d/b/a XIRI Facility Solutions and its
                             officers, directors, employees, and agents from any claims, losses, damages, liabilities,
                             costs, or expenses (including reasonable attorneys&apos; fees) arising out of your use of the
                             Site, your violation of these Terms, or your violation of any rights of a third party.
@@ -172,7 +172,10 @@ export default function TermsOfServicePage() {
                             Questions about these Terms? Contact us at:
                         </p>
                         <p className="font-medium">
-                            XIRI Facility Solutions<br />
+                            Xiri Group LLC<br />
+                            d/b/a XIRI Facility Solutions<br />
+                            418 Broadway, Ste N<br />
+                            Albany, NY 12207<br />
                             Email: <a href="mailto:chris@xiri.ai" className="text-sky-600 hover:underline">chris@xiri.ai</a>
                         </p>
                     </section>
