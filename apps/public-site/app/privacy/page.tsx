@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
                     <section>
                         <h2 className="text-xl font-bold text-gray-900 mt-0">1. Introduction</h2>
                         <p>
-                            Xiri Group LLC, d/b/a XIRI Facility Solutions (&quot;XIRI,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) respects your privacy and is committed to
+                            {SITE.legalName}, d/b/a {SITE.name} (&quot;XIRI,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) respects your privacy and is committed to
                             protecting the personal information you share with us. This Privacy Policy explains how we
                             collect, use, disclose, and safeguard your information when you visit our website at{' '}
                             <a href={SITE.url} className="text-sky-600 hover:underline">xiri.ai</a> or use our services.
@@ -142,11 +142,11 @@ export default function PrivacyPolicyPage() {
                             If you have questions about this Privacy Policy or our data practices, contact us at:
                         </p>
                         <p className="font-medium">
-                            Xiri Group LLC<br />
-                            d/b/a XIRI Facility Solutions<br />
-                            418 Broadway, Ste N<br />
-                            Albany, NY 12207<br />
-                            Email: <a href="mailto:chris@xiri.ai" className="text-sky-600 hover:underline">chris@xiri.ai</a>
+                            {SITE.legalName}<br />
+                            d/b/a {SITE.name}<br />
+                            {SITE.address.street}<br />
+                            {SITE.address.city}, {SITE.address.state} {SITE.address.zip}<br />
+                            Email: <a href={`mailto:${SITE.email}`} className="text-sky-600 hover:underline">{SITE.email}</a>
                         </p>
                     </section>
                 </div>
