@@ -9,6 +9,9 @@ export const PILLAR_CLEANING_TEXT = 'Commercial Cleaning Services';
 export const PILLAR_FACILITY_HREF = '/services/facility-management';
 export const PILLAR_FACILITY_TEXT = 'Facility and Building Management Services';
 
+export const PILLAR_PM_HREF = '/services/preventive-maintenance';
+export const PILLAR_PM_TEXT = 'Preventive Maintenance Programs';
+
 // Legacy aliases (guides, blog, tools, solutions all link to cleaning pillar)
 export const PILLAR_HREF = PILLAR_CLEANING_HREF;
 export const PILLAR_ANCHOR_TEXT = PILLAR_CLEANING_TEXT;
@@ -24,8 +27,17 @@ const FACILITY_MGMT_SLUGS = new Set([
     'snow-ice-removal',
 ]);
 
+// Services that belong under the Preventive Maintenance pillar
+const PREVENTIVE_MAINT_SLUGS = new Set([
+    'preventive-maintenance',
+    'consumable-procurement',
+]);
+
 /** Returns the correct pillar for a given service slug */
 export function getPillarForService(slug: string): { href: string; text: string } {
+    if (PREVENTIVE_MAINT_SLUGS.has(slug)) {
+        return { href: PILLAR_PM_HREF, text: PILLAR_PM_TEXT };
+    }
     if (FACILITY_MGMT_SLUGS.has(slug)) {
         return { href: PILLAR_FACILITY_HREF, text: PILLAR_FACILITY_TEXT };
     }

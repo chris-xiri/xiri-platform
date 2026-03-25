@@ -83,6 +83,16 @@ export const SERVICE_GROUPS: Record<string, { label: string; href: string; servi
             { label: 'Handyman Services', slug: 'handyman-services' },
         ],
     },
+    'Preventive Maintenance': {
+        label: 'Preventive Maintenance',
+        href: '/services/preventive-maintenance',
+        services: [
+            { label: 'HVAC Maintenance', slug: 'hvac-maintenance' },
+            { label: 'Pest Control', slug: 'pest-control' },
+            { label: 'Handyman Services', slug: 'handyman-services' },
+            { label: 'Waste Management', slug: 'waste-management' },
+        ],
+    },
 };
 
 /** Flat array of all service slugs */

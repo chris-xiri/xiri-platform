@@ -14,7 +14,7 @@ export function BodyClassProvider({
     className: string;
 }) {
     const pathname = usePathname();
-    const isNfcPage = pathname.startsWith('/s/') || pathname.startsWith('/z/') || pathname.startsWith('/c/') || pathname.startsWith('/onboarding/');
+    const isNfcPage = pathname.startsWith('/s/') || pathname.startsWith('/z/') || pathname.startsWith('/c/') || pathname.startsWith('/onboarding/') || pathname.startsWith('/demo');
     const isContractorPage = pathname.startsWith('/contractors');
     const isCalculatorPage = pathname.startsWith('/calculator');
 

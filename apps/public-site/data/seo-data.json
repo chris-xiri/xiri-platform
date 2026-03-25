@@ -1774,6 +1774,67 @@
         }
       ],
       "heroTitle": "Post-Construction Cleanup Services"
+    },
+    {
+      "slug": "preventive-maintenance",
+      "targetFacilityType": "other",
+      "name": "Preventive Maintenance Programs",
+      "shortDescription": "Scheduled maintenance programs that coordinate cleaning, pest control, HVAC, handyman, and supply management — all verified, all under one invoice.",
+      "longDescription": "Most building managers are stuck in reactive mode — something breaks, they call someone, they pay emergency rates. A preventive maintenance program flips the script. We schedule every service your building needs, coordinate every vendor, verify every task, and document everything for compliance. The result: fewer emergencies, lower costs, and one partner handling it all. For every dollar spent on preventive maintenance, you save $4–5 in avoided emergency repairs.",
+      "valueProps": [
+        {
+          "icon": "🛡️",
+          "title": "Prevent, Don't React",
+          "description": "Scheduled maintenance."
+        }
+      ],
+      "benefits": [
+        "Reduced Emergency Costs",
+        "Single Vendor Coordination",
+        "Documented Compliance",
+        "Scheduled Inspections"
+      ],
+      "features": [
+        {
+          "title": "Scheduled Vendor Coordination",
+          "description": "We manage every vendor your building needs — cleaning crews, pest techs, HVAC contractors, handymen — on a set schedule so nothing falls through the cracks.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Verified Service Delivery",
+          "description": "Every task is verified when it happens. Zone-by-zone documentation, shift logs, and manager audits ensure the work was done right — not just billed for.",
+          "icon": "shield"
+        },
+        {
+          "title": "Compliance-Ready Documentation",
+          "description": "Digital records of every service, every inspection, and every treatment — ready for JCAHO, DOH, OSHA, or your property manager. No scrambling before an audit.",
+          "icon": "shield"
+        },
+        {
+          "title": "Consolidated Billing",
+          "description": "One invoice for cleaning, pest control, HVAC maintenance, handyman repairs, and supply management. Budget predictably instead of reacting to surprise invoices.",
+          "icon": "sparkles"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "What does a preventive maintenance program include?",
+          "answer": "A typical program includes nightly cleaning with verification, monthly pest inspections, quarterly HVAC filter changes and tune-ups, on-demand handyman services, and supply management. We customize the scope based on your building type and needs."
+        },
+        {
+          "question": "How much can I save with preventive maintenance?",
+          "answer": "Buildings with PM programs typically see 15–25% lower operating costs. Emergency repairs cost 3–5× more than scheduled maintenance, so catching problems early saves significantly. Most clients break even within the first quarter."
+        },
+        {
+          "question": "Do I have to use XIRI for all services?",
+          "answer": "No. We can work alongside your existing vendors or manage everything. Many clients start with cleaning and add pest control, HVAC, and handyman services over time as they see the value of having a single point of coordination."
+        },
+        {
+          "question": "How do you verify that the work was actually done?",
+          "answer": "Every service is tracked through our verification system. Cleaning crews check in zone-by-zone, pest techs document each station, and our Night Manager physically audits the work. You see everything on your dashboard in real time."
+        }
+      ],
+      "heroTitle": "Preventive Maintenance Programs for Commercial Buildings"
     }
   ],
   "locations": [

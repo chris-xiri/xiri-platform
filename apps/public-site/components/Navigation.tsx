@@ -163,9 +163,9 @@ export default function Navigation() {
                                     </svg>
                                 </button>
 
-                                <div className={`absolute top-full -left-4 pt-4 w-[480px] transition-all duration-200 origin-top-left ${servicesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
+                                <div className={`absolute top-full -left-4 pt-4 w-[680px] transition-all duration-200 origin-top-left ${servicesOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
                                     <div className="bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden ring-1 ring-black/5">
-                                        <div className="p-2 grid grid-cols-2 gap-1">
+                                        <div className="p-2 grid grid-cols-3 gap-1">
                                             {Object.entries(SERVICE_GROUPS).map(([group, groupData]) => (
                                                 <div key={group} className="pb-2">
                                                     <Link

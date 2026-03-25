@@ -11540,12 +11540,12 @@ var require_logging_utils = __commonJS({
             this.setFilters();
             this.filtersSet = true;
           }
-          let logger24 = this.cached.get(namespace);
-          if (!logger24) {
-            logger24 = this.makeLogger(namespace);
-            this.cached.set(namespace, logger24);
+          let logger25 = this.cached.get(namespace);
+          if (!logger25) {
+            logger25 = this.makeLogger(namespace);
+            this.cached.set(namespace, logger25);
           }
-          logger24(fields, ...args);
+          logger25(fields, ...args);
         } catch (e) {
           console.error(e);
         }
@@ -11682,7 +11682,7 @@ var require_logging_utils = __commonJS({
       } else if (cachedBackend === void 0) {
         cachedBackend = getNodeBackend();
       }
-      const logger24 = (() => {
+      const logger25 = (() => {
         let previousBackend = void 0;
         const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
           if (previousBackend !== cachedBackend) {
@@ -11697,8 +11697,8 @@ var require_logging_utils = __commonJS({
         });
         return newLogger;
       })();
-      loggerCache.set(namespace, logger24);
-      return logger24.func;
+      loggerCache.set(namespace, logger25);
+      return logger25.func;
     }
   }
 });
@@ -11762,14 +11762,14 @@ var require_src4 = __commonJS({
     var gaxios_1 = require_src2();
     var jsonBigint = require_json_bigint();
     var gcp_residency_1 = require_gcp_residency();
-    var logger24 = require_src3();
+    var logger25 = require_src3();
     exports2.BASE_PATH = "/computeMetadata/v1";
     exports2.HOST_ADDRESS = "http://169.254.169.254";
     exports2.SECONDARY_HOST_ADDRESS = "http://metadata.google.internal.";
     exports2.HEADER_NAME = "Metadata-Flavor";
     exports2.HEADER_VALUE = "Google";
     exports2.HEADERS = Object.freeze({ [exports2.HEADER_NAME]: exports2.HEADER_VALUE });
-    var log = logger24.log("gcp metadata");
+    var log = logger25.log("gcp metadata");
     exports2.METADATA_SERVER_DETECTION = Object.freeze({
       "assume-present": "don't try to ping the metadata server, but assume it's present",
       none: "don't try to ping the metadata server, but don't try to use it either",
@@ -25893,9 +25893,9 @@ var regeneratePostCaption = (0, import_https10.onCall)({
   const post = postDoc.data();
   const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
   console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
-  const { GoogleGenerativeAI: GoogleGenerativeAI6 } = await import("@google/generative-ai");
+  const { GoogleGenerativeAI: GoogleGenerativeAI7 } = await import("@google/generative-ai");
   const API_KEY3 = process.env.GEMINI_API_KEY || "";
-  const genAI4 = new GoogleGenerativeAI6(API_KEY3);
+  const genAI4 = new GoogleGenerativeAI7(API_KEY3);
   const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
   const FALLBACK = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for {{audience}}:
 
@@ -27351,7 +27351,7 @@ var weeklyAIBotDigest = (0, import_scheduler8.onSchedule)({
 var import_scheduler9 = require("firebase-functions/v2/scheduler");
 var import_https13 = require("firebase-functions/v2/https");
 var import_params5 = require("firebase-functions/params");
-var import_v24 = require("firebase-functions/v2");
+var import_v25 = require("firebase-functions/v2");
 
 // src/utils/clarityUtils.ts
 var CLARITY_API_BASE = "https://www.clarity.ms/export-data/api/v1";
@@ -27547,67 +27547,361 @@ function buildClarityChatCard(metrics) {
     sections
   };
 }
-async function postClarityReportToChat(metrics, webhookUrl) {
-  const card = buildClarityChatCard(metrics);
-  const links = getClarityLinks(metrics.daysQueried);
-  const resp = await fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      text: `\u{1F4CA} Daily UX: ${metrics.totalSessions} sessions, ${metrics.deadClickCount} dead clicks, ${metrics.rageClickCount} rage clicks \u2014 ${links.dashboard}`,
-      cardsV2: [{ cardId: `clarity-${Date.now()}`, card }]
-    })
-  });
-  if (!resp.ok) {
-    console.error(`Chat webhook failed (${resp.status}):`, await resp.text());
+
+// src/utils/clarityAIAgent.ts
+var import_generative_ai6 = require("@google/generative-ai");
+var import_v24 = require("firebase-functions/v2");
+
+// src/data/page-component-map.json
+var page_component_map_default = {
+  "/": ["app/(marketing)/page.tsx", "components/Hero.tsx", "components/Navigation.tsx", "components/StickyMobileCTA.tsx"],
+  "/about": ["app/about/page.tsx"],
+  "/contractors": ["app/contractors/page.tsx", "components/StickyMobileCTA.tsx"],
+  "/contractors/*": ["app/contractors/[slug]/page.tsx", "components/DLPSidebar.tsx"],
+  "/industries/*": ["app/industries/[slug]/page.tsx"],
+  "/services/*": ["app/services/[slug]/page.tsx"],
+  "/solutions/*": ["app/solutions/[slug]/page.tsx"],
+  "/audit/start": ["app/audit/start/page.tsx"],
+  "/audit/*": ["app/audit/[leadId]/page.tsx"],
+  "/onboarding/start": ["app/onboarding/start/page.tsx"],
+  "/onboarding/*": ["app/onboarding/[vendorId]/page.tsx"],
+  "/calculator/*": ["app/calculator/[slug]/page.tsx", "components/PublicCalculator.tsx"],
+  "/tools/*": ["app/tools/[slug]/page.tsx"],
+  "/quote/*": ["app/quote/[quoteId]/page.tsx"],
+  "/invoice/*": ["app/invoice/[invoiceId]/page.tsx"],
+  "/blog": ["app/blog/page.tsx"],
+  "/blog/*": ["app/blog/[slug]/page.tsx"],
+  "/guides/*": ["app/guides/[...slug]/page.tsx"],
+  "/compare/*": ["app/compare/[slug]/page.tsx"],
+  "/directory/*": ["app/directory/[type]/page.tsx"],
+  "/refer/*": ["app/refer/[slug]/page.tsx"],
+  "/waitlist": ["app/waitlist/page.tsx"]
+};
+
+// src/utils/clarityAIAgent.ts
+function getComponentsForPage(pageUrl) {
+  let path2 = pageUrl.replace(/^https?:\/\/[^/]+/, "").replace(/\/$/, "") || "/";
+  const map = page_component_map_default;
+  if (map[path2]) return map[path2];
+  const segments = path2.split("/").filter(Boolean);
+  for (let i = segments.length; i > 0; i--) {
+    const pattern = "/" + segments.slice(0, i).join("/") + "/*";
+    if (map[pattern]) return map[pattern];
   }
+  return [];
+}
+var DEFAULT_THRESHOLDS = {
+  deadClicks: 50,
+  // 50% increase
+  rageClicks: 30,
+  // 30% increase
+  quickbacks: 100,
+  // 2x increase
+  excessiveScroll: 50,
+  minSessions: 10
+};
+function detectFrictionSpikes(current, baseline, thresholds = DEFAULT_THRESHOLDS) {
+  const spikes = [];
+  if (current.totalSessions < thresholds.minSessions) {
+    import_v24.logger.info(`Skipping spike detection: only ${current.totalSessions} sessions (min: ${thresholds.minSessions})`);
+    return spikes;
+  }
+  const checks = [
+    { signal: "dead_clicks", current: current.deadClickCount, baseline: baseline.deadClickCount, threshold: thresholds.deadClicks },
+    { signal: "rage_clicks", current: current.rageClickCount, baseline: baseline.rageClickCount, threshold: thresholds.rageClicks },
+    { signal: "quickbacks", current: current.quickbackCount, baseline: baseline.quickbackCount, threshold: thresholds.quickbacks },
+    { signal: "excessive_scroll", current: current.excessiveScrollCount, baseline: baseline.excessiveScrollCount, threshold: thresholds.excessiveScroll }
+  ];
+  for (const check of checks) {
+    if (check.baseline === 0 && check.current > 0) {
+      spikes.push({
+        signal: check.signal,
+        current: check.current,
+        baseline: 0,
+        changePercent: 100
+      });
+    } else if (check.baseline > 0) {
+      const changePct = (check.current - check.baseline) / check.baseline * 100;
+      if (changePct >= check.threshold) {
+        spikes.push({
+          signal: check.signal,
+          current: check.current,
+          baseline: check.baseline,
+          changePercent: Math.round(changePct)
+        });
+      }
+    }
+  }
+  if (baseline.scrollDepth > 0 && current.scrollDepth > 0) {
+    const scrollDrop = (baseline.scrollDepth - current.scrollDepth) / baseline.scrollDepth * 100;
+    if (scrollDrop >= 20) {
+      spikes.push({
+        signal: "scroll_depth_drop",
+        current: Math.round(current.scrollDepth),
+        baseline: Math.round(baseline.scrollDepth),
+        changePercent: -Math.round(scrollDrop)
+      });
+    }
+  }
+  return spikes;
+}
+var ANALYSIS_PROMPT = `You are a UX analyst for xiri.ai, a B2B commercial cleaning platform.
+
+Your job is to analyze user behavior signals from Microsoft Clarity and classify each friction point.
+
+TARGET USER: Facility managers looking for commercial cleaning services (NOT contractors, NOT bots).
+
+CLASSIFY each issue as one of:
+- "code_fix" \u2014 A UI/UX issue in our code that we can fix (e.g., dead click on non-interactive element, confusing layout, buried CTA)
+- "behavioral" \u2014 Normal user behavior we cannot control (e.g., hesitation, comparison shopping, reading carefully)
+- "edge_case" \u2014 Rare scenario not worth fixing (e.g., unusual browser, bot traffic, tiny segment)
+- "insufficient_data" \u2014 Not enough info to determine the cause
+
+For "code_fix" issues, provide:
+1. A clear description of what's wrong
+2. A specific suggested fix
+3. Which files are likely affected (use the component list provided)
+4. Confidence level (high/medium/low)
+
+For non-code issues, explain WHY it's not code-fixable so we can skip it confidently.
+
+IMPORTANT: Be conservative. Only classify as "code_fix" if you're reasonably sure code can help.
+Most friction signals have innocent explanations. Default to "behavioral" when unsure.
+
+Respond in JSON format:
+{
+    "summary": "One-line overall assessment",
+    "issues": [
+        {
+            "classification": "code_fix" | "behavioral" | "edge_case" | "insufficient_data",
+            "signal": "dead_clicks" | "rage_clicks" | "quickbacks" | "excessive_scroll" | "scroll_depth_drop",
+            "page": "/path or 'site-wide'",
+            "description": "What's happening and why",
+            "suggestedFix": "Specific code change (only for code_fix)",
+            "affectedFiles": ["file.tsx"] ,
+            "confidence": "high" | "medium" | "low"
+        }
+    ]
+}`;
+async function analyzeWithAI(spikes, currentMetrics, geminiApiKey) {
+  const genAI4 = new import_generative_ai6.GoogleGenerativeAI(geminiApiKey);
+  const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const pageContext = currentMetrics.topPages.slice(0, 8).map((p) => {
+    const components = getComponentsForPage(p.url);
+    return `  - ${p.url} (${p.sessions} sessions) \u2192 Components: [${components.join(", ") || "unknown"}]`;
+  }).join("\n");
+  const spikeDetails = spikes.map((s) => `  - ${s.signal}: ${s.current} (was ${s.baseline}, ${s.changePercent > 0 ? "+" : ""}${s.changePercent}%)${s.page ? ` on ${s.page}` : " (site-wide)"}`).join("\n");
+  const userPrompt = `Analyze these UX friction spikes from yesterday on xiri.ai:
+
+SPIKES DETECTED:
+${spikeDetails}
+
+OVERALL METRICS:
+- Sessions: ${currentMetrics.totalSessions}
+- Dead clicks: ${currentMetrics.deadClickCount} (${currentMetrics.deadClickSessionPct.toFixed(1)}% of sessions)
+- Rage clicks: ${currentMetrics.rageClickCount} (${currentMetrics.rageClickSessionPct.toFixed(1)}% of sessions)
+- Quick-backs: ${currentMetrics.quickbackCount}
+- Excessive scrolls: ${currentMetrics.excessiveScrollCount}
+- Scroll depth: ${Math.round(currentMetrics.scrollDepth)}%
+- Error clicks: ${currentMetrics.errorClickCount}
+
+TOP PAGES (with their source components):
+${pageContext}
+
+Classify each spike and provide actionable recommendations.`;
+  try {
+    const result = await model2.generateContent([
+      { text: ANALYSIS_PROMPT },
+      { text: userPrompt }
+    ]);
+    const responseText = result.response.text();
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/) || responseText.match(/(\{[\s\S]*\})/);
+    if (!jsonMatch?.[1]) {
+      import_v24.logger.warn("Gemini returned non-JSON response:", responseText.slice(0, 200));
+      return {
+        summary: "AI analysis returned unstructured response \u2014 manual review needed.",
+        issues: [],
+        analyzedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+    }
+    const parsed = JSON.parse(jsonMatch[1]);
+    return {
+      summary: parsed.summary || "Analysis complete.",
+      issues: (parsed.issues || []).map((issue) => ({
+        classification: issue.classification || "insufficient_data",
+        signal: issue.signal || "unknown",
+        page: issue.page || "site-wide",
+        description: issue.description || "",
+        suggestedFix: issue.suggestedFix,
+        affectedFiles: issue.affectedFiles,
+        confidence: issue.confidence || "low"
+      })),
+      analyzedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  } catch (err) {
+    import_v24.logger.error("Gemini analysis failed:", err);
+    return {
+      summary: `AI analysis error: ${err.message}`,
+      issues: [],
+      analyzedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  }
+}
+var CLASSIFICATION_EMOJI = {
+  code_fix: "\u{1F527}",
+  behavioral: "\u{1F464}",
+  edge_case: "\u{1F50D}",
+  insufficient_data: "\u2753"
+};
+var CONFIDENCE_EMOJI = {
+  high: "\u{1F7E2}",
+  medium: "\u{1F7E1}",
+  low: "\u{1F534}"
+};
+function buildAIAnalysisChatSection(analysis) {
+  const sections = [];
+  sections.push({
+    header: "\u{1F916} AI UX Analysis",
+    widgets: [{
+      decoratedText: {
+        text: `<b>${analysis.summary}</b>`,
+        startIcon: { knownIcon: "STAR" }
+      }
+    }]
+  });
+  const codeFixIssues = analysis.issues.filter((i) => i.classification === "code_fix");
+  const otherIssues = analysis.issues.filter((i) => i.classification !== "code_fix");
+  if (codeFixIssues.length > 0) {
+    const fixWidgets = codeFixIssues.map((issue) => ({
+      decoratedText: {
+        topLabel: `${CONFIDENCE_EMOJI[issue.confidence]} ${issue.signal.toUpperCase()} \u2014 ${issue.page}`,
+        text: `<b>\u{1F527} FIX:</b> ${issue.description}`,
+        bottomLabel: issue.suggestedFix ? `\u{1F4A1} ${issue.suggestedFix.slice(0, 120)}` : void 0,
+        wrapText: true
+      }
+    }));
+    sections.push({
+      header: `\u{1F527} Code-Fixable Issues (${codeFixIssues.length})`,
+      widgets: fixWidgets
+    });
+  }
+  if (otherIssues.length > 0) {
+    const skipLines = otherIssues.map((i) => `${CLASSIFICATION_EMOJI[i.classification]} <b>${i.signal}</b> (${i.page}): ${i.description.slice(0, 80)}`).join("\n");
+    sections.push({
+      header: `\u{1F4CB} Skipped \u2014 Not Code-Fixable (${otherIssues.length})`,
+      collapsible: true,
+      widgets: [{
+        textParagraph: { text: skipLines }
+      }]
+    });
+  }
+  if (analysis.issues.length === 0) {
+    sections.push({
+      widgets: [{
+        decoratedText: {
+          text: "No spikes detected \u2014 all metrics within normal range \u2705",
+          startIcon: { knownIcon: "INVITE" }
+        }
+      }]
+    });
+  }
+  return sections;
 }
 
 // src/triggers/clarityAnalysis.ts
 var CLARITY_API_TOKEN = (0, import_params5.defineSecret)("CLARITY_API_TOKEN");
 var CLARITY_CHAT_WEBHOOK = (0, import_params5.defineSecret)("CLARITY_CHAT_WEBHOOK_URL");
+var GEMINI_API_KEY3 = (0, import_params5.defineSecret)("GEMINI_API_KEY");
 var TIMEZONE4 = "America/New_York";
 var dailyClarityReport = (0, import_scheduler9.onSchedule)({
-  schedule: "0 9 * * *",
-  // 9:00 AM ET every day
+  schedule: "30 7 * * *",
+  // 7:30 AM ET every day
   timeZone: TIMEZONE4,
   region: "us-central1",
-  secrets: [CLARITY_API_TOKEN, CLARITY_CHAT_WEBHOOK],
-  timeoutSeconds: 60
+  secrets: [CLARITY_API_TOKEN, CLARITY_CHAT_WEBHOOK, GEMINI_API_KEY3],
+  timeoutSeconds: 120,
+  // Allow time for Gemini call
+  memory: "512MiB"
 }, async () => {
-  import_v24.logger.info("\u{1F4CA} Starting daily Clarity report...");
+  import_v25.logger.info("\u{1F4CA} Starting daily Clarity report + AI analysis...");
   try {
-    const metrics = await fetchClarityInsights(CLARITY_API_TOKEN.value(), 1);
-    import_v24.logger.info(`Clarity (yesterday): ${metrics.totalSessions} sessions, ${metrics.deadClickCount} dead clicks, ${metrics.rageClickCount} rage clicks`);
-    await postClarityReportToChat(metrics, CLARITY_CHAT_WEBHOOK.value());
-    import_v24.logger.info("\u2705 Posted to Google Chat");
+    const yesterday = await fetchClarityInsights(CLARITY_API_TOKEN.value(), 1);
+    import_v25.logger.info(`Clarity (yesterday): ${yesterday.totalSessions} sessions, ${yesterday.deadClickCount} dead clicks, ${yesterday.rageClickCount} rage clicks`);
+    const baseline = await fetchClarityInsights(CLARITY_API_TOKEN.value(), 3);
+    const baselineDaily = {
+      ...baseline,
+      totalSessions: Math.round(baseline.totalSessions / 3),
+      deadClickCount: Math.round(baseline.deadClickCount / 3),
+      rageClickCount: Math.round(baseline.rageClickCount / 3),
+      quickbackCount: Math.round(baseline.quickbackCount / 3),
+      excessiveScrollCount: Math.round(baseline.excessiveScrollCount / 3),
+      errorClickCount: Math.round(baseline.errorClickCount / 3)
+    };
+    const spikes = detectFrictionSpikes(yesterday, baselineDaily);
+    import_v25.logger.info(`Detected ${spikes.length} friction spike(s)`);
+    let aiAnalysis = null;
+    if (spikes.length > 0) {
+      import_v25.logger.info("\u{1F916} Running Gemini AI analysis on spikes...");
+      aiAnalysis = await analyzeWithAI(spikes, yesterday, GEMINI_API_KEY3.value());
+      import_v25.logger.info(`AI classified ${aiAnalysis.issues.length} issues: ${aiAnalysis.summary}`);
+    }
+    await postEnhancedReport(yesterday, aiAnalysis, CLARITY_CHAT_WEBHOOK.value());
+    import_v25.logger.info("\u2705 Posted to Google Chat");
     await db.collection("clarity_reports").add({
       createdAt: /* @__PURE__ */ new Date(),
-      ...metrics
+      ...yesterday,
+      spikes: spikes.length > 0 ? spikes : null,
+      aiAnalysis: aiAnalysis ? {
+        summary: aiAnalysis.summary,
+        issueCount: aiAnalysis.issues.length,
+        codeFixCount: aiAnalysis.issues.filter((i) => i.classification === "code_fix").length,
+        issues: aiAnalysis.issues,
+        analyzedAt: aiAnalysis.analyzedAt
+      } : null
     });
-    import_v24.logger.info("\u2705 Logged to Firestore");
+    import_v25.logger.info("\u2705 Logged to Firestore");
   } catch (err) {
-    import_v24.logger.error("\u274C Clarity report failed:", err);
+    import_v25.logger.error("\u274C Clarity report failed:", err);
     throw err;
   }
 });
 var triggerClarityReport = (0, import_https13.onCall)({
   cors: true,
-  secrets: [CLARITY_API_TOKEN, CLARITY_CHAT_WEBHOOK],
-  timeoutSeconds: 60
+  secrets: [CLARITY_API_TOKEN, CLARITY_CHAT_WEBHOOK, GEMINI_API_KEY3],
+  timeoutSeconds: 120,
+  memory: "512MiB"
 }, async (request) => {
   const days = request.data?.days || 3;
   const postToChat = request.data?.postToChat !== false;
-  import_v24.logger.info(`\u{1F9EA} Manual Clarity report (${days} days, chat=${postToChat})`);
+  const runAI = request.data?.aiAnalysis !== false;
+  import_v25.logger.info(`\u{1F9EA} Manual Clarity report (${days} days, chat=${postToChat}, ai=${runAI})`);
   try {
     const metrics = await fetchClarityInsights(CLARITY_API_TOKEN.value(), days);
+    let aiAnalysis = null;
+    if (runAI) {
+      const syntheticSpikes = [
+        { signal: "dead_clicks", current: metrics.deadClickCount, baseline: 0, changePercent: 100 },
+        { signal: "rage_clicks", current: metrics.rageClickCount, baseline: 0, changePercent: 100 },
+        { signal: "quickbacks", current: metrics.quickbackCount, baseline: 0, changePercent: 100 }
+      ].filter((s) => s.current > 0);
+      if (syntheticSpikes.length > 0) {
+        import_v25.logger.info("\u{1F916} Running AI analysis...");
+        aiAnalysis = await analyzeWithAI(syntheticSpikes, metrics, GEMINI_API_KEY3.value());
+      }
+    }
     if (postToChat) {
-      await postClarityReportToChat(metrics, CLARITY_CHAT_WEBHOOK.value());
+      await postEnhancedReport(metrics, aiAnalysis, CLARITY_CHAT_WEBHOOK.value());
     }
     await db.collection("clarity_reports").add({
       createdAt: /* @__PURE__ */ new Date(),
       manual: true,
-      ...metrics
+      ...metrics,
+      aiAnalysis: aiAnalysis ? {
+        summary: aiAnalysis.summary,
+        issueCount: aiAnalysis.issues.length,
+        codeFixCount: aiAnalysis.issues.filter((i) => i.classification === "code_fix").length,
+        issues: aiAnalysis.issues
+      } : null
     });
     const links = getClarityLinks(days);
     return {
@@ -27620,13 +27914,48 @@ var triggerClarityReport = (0, import_https13.onCall)({
         scrollDepth: Math.round(metrics.scrollDepth),
         quickbacks: metrics.quickbackCount
       },
+      aiAnalysis: aiAnalysis ? {
+        summary: aiAnalysis.summary,
+        issueCount: aiAnalysis.issues.length,
+        codeFixIssues: aiAnalysis.issues.filter((i) => i.classification === "code_fix"),
+        skippedIssues: aiAnalysis.issues.filter((i) => i.classification !== "code_fix")
+      } : null,
       links
     };
   } catch (err) {
-    import_v24.logger.error("\u274C Manual Clarity report failed:", err);
+    import_v25.logger.error("\u274C Manual Clarity report failed:", err);
     throw new import_https13.HttpsError("internal", err.message || "Clarity report failed");
   }
 });
+async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
+  const card = buildClarityChatCard(metrics);
+  const links = getClarityLinks(metrics.daysQueried);
+  if (aiAnalysis && aiAnalysis.issues.length > 0) {
+    const aiSections = buildAIAnalysisChatSection(aiAnalysis);
+    card.sections.push(...aiSections);
+  } else {
+    card.sections.push({
+      header: "\u{1F916} AI Analysis",
+      widgets: [{
+        decoratedText: {
+          text: "No significant friction spikes detected \u2014 metrics within normal range \u2705",
+          startIcon: { knownIcon: "INVITE" }
+        }
+      }]
+    });
+  }
+  const resp = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: `\u{1F4CA} Daily UX: ${metrics.totalSessions} sessions, ${metrics.deadClickCount} dead clicks, ${metrics.rageClickCount} rage clicks \u2014 ${links.dashboard}`,
+      cardsV2: [{ cardId: `clarity-${Date.now()}`, card }]
+    })
+  });
+  if (!resp.ok) {
+    console.error(`Chat webhook failed (${resp.status}):`, await resp.text());
+  }
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   adminCreateUser,

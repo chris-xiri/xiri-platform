@@ -111,6 +111,7 @@ const MEDICAL_LOGIC: Record<string, { titlePrefix: string; compliance: string; p
     'waste-management': { titlePrefix: 'Fully Compliant', compliance: 'OSHA + EPA', pitch: 'documented chain-of-custody waste handling with EPA compliance' },
     'parking-lot-maintenance': { titlePrefix: 'ADA-Compliant', compliance: 'ADA + OSHA', pitch: 'ADA accessibility maintenance + slip/fall prevention' },
     'handyman-services': { titlePrefix: 'Fully Insured', compliance: 'OSHA', pitch: '$1M-insured, background-checked maintenance crews' },
+    'preventive-maintenance': { titlePrefix: 'Cost-Saving', compliance: 'OSHA + EPA', pitch: 'scheduled vendor coordination, verified service delivery, and compliance documentation — all under one invoice' },
 };
 
 // Fallback for any service not in the map
@@ -137,6 +138,7 @@ const META_DESCRIPTIONS: Record<string, string> = {
     'parking-lot-maintenance': 'ADA-compliant parking lot maintenance. Sweeping, striping, slip/fall prevention. $1M insured, documented. Free walkthrough.',
     'handyman-services': 'Fully insured, background-checked maintenance crews. $1M liability, documented work orders. One partner for all facility repairs.',
     'post-construction-cleanup': 'Professional post-construction cleanup for commercial spaces. Dust removal, floor finishing, final inspection. $1M insured.',
+    'preventive-maintenance': 'Preventive maintenance programs for commercial buildings. Scheduled cleaning, pest control, HVAC, handyman — all coordinated under one invoice.',
 };
 
 // Generate dynamic metadata for SEO
