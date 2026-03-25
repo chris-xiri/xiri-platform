@@ -1,6 +1,7 @@
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { sendEmail } from "../utils/emailUtils";
-import { addMinutes, format } from "date-fns";
+import { addMinutes } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import * as logger from "firebase-functions/logger";
 
 /**
@@ -27,6 +28,7 @@ export const sendVendorBookingConfirmation = onDocumentUpdated({
     const phone = after.phone || "N/A";
     const callTimeStr = after.onboardingCallTime; // ISO string
 
+    const EASTERN_TZ = "America/New_York";
     logger.info(`Vendor ${vendorId} (${businessName}) booked onboarding call at ${callTimeStr}`);
 
     const startTime = new Date(callTimeStr);
@@ -55,10 +57,10 @@ export const sendVendorBookingConfirmation = onDocumentUpdated({
                 <p>Your onboarding call has been confirmed:</p>
                 <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center;">
                     <p style="margin: 0; font-size: 20px; font-weight: bold; color: #0c4a6e;">
-                        ${format(startTime, "EEEE, MMMM do")}
+                        ${formatInTimeZone(startTime, EASTERN_TZ, "EEEE, MMMM do")}
                     </p>
                     <p style="margin: 8px 0 0; font-size: 16px; color: #334155;">
-                        ${format(startTime, "h:mm a")} • ${duration} minutes
+                        ${formatInTimeZone(startTime, EASTERN_TZ, "h:mm a zzz")} • ${duration} minutes
                     </p>
                 </div>
                 <p style="font-size: 14px; color: #64748b;">A calendar invitation is attached to this email. We look forward to speaking with you!</p>
@@ -66,7 +68,7 @@ export const sendVendorBookingConfirmation = onDocumentUpdated({
             </div>
         </div>`;
 
-        const vendorSent = await sendEmail(email, `📅 Onboarding Call Confirmed — ${format(startTime, "EEEE, MMMM do 'at' h:mm a")}`, vendorHtml, [
+        const vendorSent = await sendEmail(email, `📅 Onboarding Call Confirmed — ${formatInTimeZone(startTime, EASTERN_TZ, "EEEE, MMMM do 'at' h:mm a zzz")}`, vendorHtml, [
             { filename: "xiri-onboarding-call.ics", content: icsContent },
         ]);
 
@@ -83,14 +85,14 @@ export const sendVendorBookingConfirmation = onDocumentUpdated({
         <h2 style="color: #0c4a6e;">📅 Onboarding Call Booked</h2>
         <p><strong>${businessName}</strong> has booked an onboarding call.</p>
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
-            <p style="margin: 4px 0;"><strong>When:</strong> ${format(startTime, "EEEE, MMMM do 'at' h:mm a")}</p>
+            <p style="margin: 4px 0;"><strong>When:</strong> ${formatInTimeZone(startTime, EASTERN_TZ, "EEEE, MMMM do 'at' h:mm a zzz")}</p>
             <p style="margin: 4px 0;"><strong>Email:</strong> ${email || "N/A"}</p>
             <p style="margin: 4px 0;"><strong>Phone:</strong> ${phone}</p>
         </div>
         <p style="font-size: 12px; color: #94a3b8;">Vendor ID: ${vendorId}</p>
     </div>`;
 
-    const adminSent = await sendEmail("chris@xiri.ai", `📅 Onboarding Call: ${businessName} — ${format(startTime, "MMM do 'at' h:mm a")}`, adminHtml, [
+    const adminSent = await sendEmail("chris@xiri.ai", `📅 Onboarding Call: ${businessName} — ${formatInTimeZone(startTime, EASTERN_TZ, "MMM do 'at' h:mm a zzz")}`, adminHtml, [
         { filename: "xiri-onboarding-call.ics", content: icsContent },
     ]);
 
