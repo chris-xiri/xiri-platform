@@ -26,11 +26,7 @@ export default function OnboardingPage() {
     const [selectedCallSlot, setSelectedCallSlot] = useState<string | null>(null);
     const [bookingCall, setBookingCall] = useState(false);
     const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
-    const [rescheduleUrl, setRescheduleUrl] = useState<string | null>(null);
-    // TidyCal timeslots state
-    const [timeslots, setTimeslots] = useState<{ starts_at: string; is_available: boolean }[]>([]);
-    const [loadingSlots, setLoadingSlots] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
 
     // Timezone
     const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
