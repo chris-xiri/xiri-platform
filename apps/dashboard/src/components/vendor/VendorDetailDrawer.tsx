@@ -11,10 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
-    LayoutDashboard, Users, Briefcase, DollarSign,
+    LayoutDashboard, Briefcase,
     ShieldCheck, Activity, Phone, Mail, MapPin, Globe,
-    Copy, Check, Rocket, AlertTriangle, Pencil, X, Plus, MoreHorizontal, Save, Loader2
+    Copy, Check, Rocket, AlertTriangle, Pencil, X, Plus, MoreHorizontal, Save, Loader2,
+    StickyNote, ClipboardList, Users as UsersIcon, Clock, DollarSign as DollarIcon, MapPinned, Award
 } from 'lucide-react';
 
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
@@ -99,6 +101,59 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
     const [startingSequence, setStartingSequence] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
     const ONBOARDING_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://xiri.ai';
+
+    // Notes editing state
+    const [notesEditing, setNotesEditing] = useState(false);
+    const [notesDraft, setNotesDraft] = useState('');
+    const [notesSaving, setNotesSaving] = useState(false);
+
+    // Onboarding data editing state
+    const [onboardingEditing, setOnboardingEditing] = useState(false);
+    const [onboardingDraft, setOnboardingDraft] = useState<Record<string, string>>({});
+    const [onboardingSaving, setOnboardingSaving] = useState(false);
+
+    const handleNotesSave = async () => {
+        if (!vendor?.id) return;
+        setNotesSaving(true);
+        try {
+            await updateDoc(doc(db, 'vendors', vendor.id), { notes: notesDraft, updatedAt: new Date() });
+            setNotesEditing(false);
+        } catch (e) { console.error('Notes save failed:', e); }
+        setNotesSaving(false);
+    };
+
+    const startOnboardingEdit = () => {
+        const ob = (vendor as any)?.onboarding || {};
+        setOnboardingDraft({
+            teamSize: ob.teamSize || '',
+            serviceArea: ob.serviceArea || '',
+            hourlyRate: ob.hourlyRate || '',
+            backflowRate: ob.backflowRate || '',
+            responseTime: ob.responseTime || '',
+            certifications: ob.certifications || '',
+            availability: ob.availability || '',
+            notes: ob.notes || '',
+        });
+        setOnboardingEditing(true);
+    };
+
+    const handleOnboardingSave = async () => {
+        if (!vendor?.id) return;
+        setOnboardingSaving(true);
+        try {
+            // Filter out empty fields
+            const cleaned: Record<string, string> = {};
+            Object.entries(onboardingDraft).forEach(([k, v]) => {
+                if (v.trim()) cleaned[k] = v.trim();
+            });
+            await updateDoc(doc(db, 'vendors', vendor.id), {
+                onboarding: cleaned,
+                updatedAt: new Date(),
+            });
+            setOnboardingEditing(false);
+        } catch (e) { console.error('Onboarding save failed:', e); }
+        setOnboardingSaving(false);
+    };
 
     // Address editing state
     const [editingAddress, setEditingAddress] = useState(false);
@@ -297,9 +352,9 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
                                 <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
                                     <TabsTrigger value="overview" className="gap-1 text-xs"><LayoutDashboard className="w-3.5 h-3.5" /> Overview</TabsTrigger>
-                                    <TabsTrigger value="contacts" className="gap-1 text-xs"><Users className="w-3.5 h-3.5" /> Contacts</TabsTrigger>
+                                    <TabsTrigger value="contacts" className="gap-1 text-xs"><UsersIcon className="w-3.5 h-3.5" /> Contacts</TabsTrigger>
                                     <TabsTrigger value="assignments" className="gap-1 text-xs"><Briefcase className="w-3.5 h-3.5" /> Jobs</TabsTrigger>
-                                    <TabsTrigger value="financials" className="gap-1 text-xs"><DollarSign className="w-3.5 h-3.5" /> Financial</TabsTrigger>
+                                    <TabsTrigger value="financials" className="gap-1 text-xs"><DollarIcon className="w-3.5 h-3.5" /> Financial</TabsTrigger>
                                     <TabsTrigger value="compliance" className="gap-1 text-xs"><ShieldCheck className="w-3.5 h-3.5" /> Compliance</TabsTrigger>
                                     <TabsTrigger value="activity" className="gap-1 text-xs"><Activity className="w-3.5 h-3.5" /> Activity</TabsTrigger>
                                 </TabsList>
@@ -427,6 +482,138 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                     <span className="text-xs text-muted-foreground italic">No capabilities — click Edit</span>
                                                 )}
                                             </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Notes — Inline Editable */}
+                                    <Card>
+                                        <CardHeader className="py-3 flex flex-row items-center justify-between">
+                                            <CardTitle className="text-sm flex items-center gap-2">
+                                                <StickyNote className="w-4 h-4" /> Notes
+                                            </CardTitle>
+                                            {!notesEditing && (
+                                                <Button variant="ghost" size="sm" className="h-6 text-xs gap-1"
+                                                    onClick={() => { setNotesDraft((vendor as any).notes || ''); setNotesEditing(true); }}>
+                                                    <Pencil className="w-3 h-3" /> Edit
+                                                </Button>
+                                            )}
+                                        </CardHeader>
+                                        <CardContent>
+                                            {notesEditing ? (
+                                                <div className="space-y-2">
+                                                    <Textarea
+                                                        className="min-h-[80px] text-sm resize-y"
+                                                        value={notesDraft}
+                                                        onChange={(e) => setNotesDraft(e.target.value)}
+                                                        placeholder="Add notes about this vendor..."
+                                                        autoFocus
+                                                    />
+                                                    <div className="flex gap-2 justify-end">
+                                                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setNotesEditing(false)}>
+                                                            Cancel
+                                                        </Button>
+                                                        <Button size="sm" className="h-7 text-xs gap-1" onClick={handleNotesSave} disabled={notesSaving}>
+                                                            {notesSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                                            Save
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className={`text-sm whitespace-pre-wrap ${(vendor as any).notes ? '' : 'text-muted-foreground italic'}`}>
+                                                    {(vendor as any).notes || 'No notes yet — click Edit to add'}
+                                                </p>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Onboarding Data — Structured */}
+                                    <Card>
+                                        <CardHeader className="py-3 flex flex-row items-center justify-between">
+                                            <CardTitle className="text-sm flex items-center gap-2">
+                                                <ClipboardList className="w-4 h-4" /> Onboarding
+                                            </CardTitle>
+                                            {!onboardingEditing && (
+                                                <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={startOnboardingEdit}>
+                                                    <Pencil className="w-3 h-3" /> Edit
+                                                </Button>
+                                            )}
+                                        </CardHeader>
+                                        <CardContent>
+                                            {onboardingEditing ? (
+                                                <div className="space-y-3">
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><UsersIcon className="w-3 h-3" /> Team Size</label>
+                                                            <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.teamSize} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, teamSize: e.target.value })} placeholder="e.g. 3 techs" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><Clock className="w-3 h-3" /> Response Time</label>
+                                                            <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.responseTime} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, responseTime: e.target.value })} placeholder="e.g. Same day" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><DollarIcon className="w-3 h-3" /> Hourly Rate</label>
+                                                            <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.hourlyRate} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, hourlyRate: e.target.value })} placeholder="e.g. $85/hr" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><DollarIcon className="w-3 h-3" /> Backflow Rate</label>
+                                                            <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.backflowRate} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, backflowRate: e.target.value })} placeholder="e.g. $125/device" />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><MapPinned className="w-3 h-3" /> Service Area</label>
+                                                        <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.serviceArea} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, serviceArea: e.target.value })} placeholder="e.g. Nassau, Suffolk, Queens" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><Award className="w-3 h-3" /> Certifications</label>
+                                                        <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.certifications} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, certifications: e.target.value })} placeholder="e.g. NYS Backflow Cert, LMP" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><Clock className="w-3 h-3" /> Availability</label>
+                                                        <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.availability} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, availability: e.target.value })} placeholder="e.g. Mon-Fri 7am-5pm, can do weekends" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] uppercase text-muted-foreground font-medium">Onboarding Notes</label>
+                                                        <Textarea
+                                                            className="min-h-[60px] text-sm resize-y mt-0.5"
+                                                            value={onboardingDraft.notes}
+                                                            onChange={(e) => setOnboardingDraft({ ...onboardingDraft, notes: e.target.value })}
+                                                            placeholder="Additional notes from onboarding call..."
+                                                        />
+                                                    </div>
+                                                    <div className="flex gap-2 justify-end">
+                                                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setOnboardingEditing(false)}>Cancel</Button>
+                                                        <Button size="sm" className="h-7 text-xs gap-1" onClick={handleOnboardingSave} disabled={onboardingSaving}>
+                                                            {onboardingSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                                            Save
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : (() => {
+                                                const ob = (vendor as any)?.onboarding || {};
+                                                const hasData = Object.values(ob).some((v: any) => v && String(v).trim());
+                                                if (!hasData) {
+                                                    return (
+                                                        <div className="text-center py-3">
+                                                            <p className="text-xs text-muted-foreground italic">No onboarding data yet</p>
+                                                            <Button variant="outline" size="sm" className="h-7 text-xs gap-1 mt-2" onClick={startOnboardingEdit}>
+                                                                <Plus className="w-3 h-3" /> Add Onboarding Data
+                                                            </Button>
+                                                        </div>
+                                                    );
+                                                }
+                                                return (
+                                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                                        {ob.teamSize && <div><p className="text-[10px] uppercase text-muted-foreground">Team Size</p><p className="font-medium">{ob.teamSize}</p></div>}
+                                                        {ob.responseTime && <div><p className="text-[10px] uppercase text-muted-foreground">Response Time</p><p className="font-medium">{ob.responseTime}</p></div>}
+                                                        {ob.hourlyRate && <div><p className="text-[10px] uppercase text-muted-foreground">Hourly Rate</p><p className="font-medium">{ob.hourlyRate}</p></div>}
+                                                        {ob.backflowRate && <div><p className="text-[10px] uppercase text-muted-foreground">Backflow Rate</p><p className="font-medium">{ob.backflowRate}</p></div>}
+                                                        {ob.serviceArea && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Service Area</p><p className="font-medium">{ob.serviceArea}</p></div>}
+                                                        {ob.certifications && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Certifications</p><p className="font-medium">{ob.certifications}</p></div>}
+                                                        {ob.availability && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Availability</p><p className="font-medium">{ob.availability}</p></div>}
+                                                        {ob.notes && <div className="col-span-2 border-t pt-2 mt-1"><p className="text-[10px] uppercase text-muted-foreground">Onboarding Notes</p><p className="whitespace-pre-wrap">{ob.notes}</p></div>}
+                                                    </div>
+                                                );
+                                            })()}
                                         </CardContent>
                                     </Card>
                                 </TabsContent>
