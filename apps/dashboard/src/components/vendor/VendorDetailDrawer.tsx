@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
     LayoutDashboard, Briefcase,
     ShieldCheck, Activity, Phone, Mail, MapPin, Globe,
@@ -30,7 +31,12 @@ import VendorStatusTimeline from '@/components/vendor/VendorStatusTimeline';
 import VendorActivityFeed from '@/components/vendor/VendorActivityFeed';
 import ScheduleFollowUpDialog from '@/components/vendor/ScheduleFollowUpDialog';
 import CapabilityPicker from '@/components/vendor/CapabilityPicker';
-import { getCapabilityLabel } from '@/lib/vendor-capabilities';
+import {
+    getCapabilityLabel,
+    SERVICE_COUNTIES, COUNTY_REGION_LABELS,
+    getCertificationsForCapabilities,
+    type ServiceCounty, type CertificationOption,
+} from '@/lib/vendor-capabilities';
 
 const LanguageBadge = ({ lang }: { lang?: 'en' | 'es' }) => {
     if (lang === 'es') return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">🇪🇸 ES</Badge>;
@@ -109,7 +115,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
 
     // Onboarding data editing state
     const [onboardingEditing, setOnboardingEditing] = useState(false);
-    const [onboardingDraft, setOnboardingDraft] = useState<Record<string, string>>({});
+    const [onboardingDraft, setOnboardingDraft] = useState<Record<string, any>>({});
     const [onboardingSaving, setOnboardingSaving] = useState(false);
 
     const handleNotesSave = async () => {
@@ -126,10 +132,10 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
         const ob = (vendor as any)?.onboarding || {};
         setOnboardingDraft({
             teamSize: ob.teamSize || '',
-            serviceArea: ob.serviceArea || '',
+            serviceCounties: ob.serviceCounties || [],
             hourlyRate: ob.hourlyRate || '',
             responseTime: ob.responseTime || '',
-            certifications: ob.certifications || '',
+            certifications: ob.certifications || [],
             availability: ob.availability || '',
             notes: ob.notes || '',
         });
@@ -140,10 +146,13 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
         if (!vendor?.id) return;
         setOnboardingSaving(true);
         try {
-            // Filter out empty fields
-            const cleaned: Record<string, string> = {};
+            const cleaned: Record<string, any> = {};
             Object.entries(onboardingDraft).forEach(([k, v]) => {
-                if (v.trim()) cleaned[k] = v.trim();
+                if (Array.isArray(v)) {
+                    if (v.length > 0) cleaned[k] = v;
+                } else if (typeof v === 'string' && v.trim()) {
+                    cleaned[k] = v.trim();
+                }
             });
             await updateDoc(doc(db, 'vendors', vendor.id), {
                 onboarding: cleaned,
@@ -557,11 +566,97 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                     </div>
                                                     <div>
                                                         <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><MapPinned className="w-3 h-3" /> Service Area</label>
-                                                        <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.serviceArea} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, serviceArea: e.target.value })} placeholder="e.g. Nassau, Suffolk, Queens" />
+                                                        <div className="mt-1 space-y-1">
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {(onboardingDraft.serviceCounties || []).map((c: string) => {
+                                                                    const county = SERVICE_COUNTIES.find(sc => sc.value === c);
+                                                                    return (
+                                                                        <span key={c} className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
+                                                                            {county?.label || c}
+                                                                            <button type="button" className="hover:text-destructive" onClick={() => setOnboardingDraft({ ...onboardingDraft, serviceCounties: onboardingDraft.serviceCounties.filter((v: string) => v !== c) })}><X className="w-3 h-3" /></button>
+                                                                        </span>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                            <Popover>
+                                                                <PopoverTrigger asChild>
+                                                                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1 w-full"><Plus className="w-3 h-3" /> Add Counties</Button>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-[280px] p-0" align="start">
+                                                                    <div className="max-h-[280px] overflow-y-auto p-2 space-y-3">
+                                                                        {(['nyc', 'long_island', 'hudson_valley', 'nj'] as const).map(region => {
+                                                                            const counties = SERVICE_COUNTIES.filter(c => c.region === region);
+                                                                            return (
+                                                                                <div key={region}>
+                                                                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-1">{COUNTY_REGION_LABELS[region]}</p>
+                                                                                    <div className="space-y-0.5">
+                                                                                        {counties.map(c => {
+                                                                                            const sel = (onboardingDraft.serviceCounties || []).includes(c.value);
+                                                                                            return (
+                                                                                                <button key={c.value} type="button" onClick={() => {
+                                                                                                    const cur = onboardingDraft.serviceCounties || [];
+                                                                                                    setOnboardingDraft({ ...onboardingDraft, serviceCounties: sel ? cur.filter((v: string) => v !== c.value) : [...cur, c.value] });
+                                                                                                }} className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-left transition-colors ${sel ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted'}`}>
+                                                                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${sel ? 'bg-primary border-primary' : 'border-input'}`}>
+                                                                                                        {sel && <Check className="w-3 h-3 text-primary-foreground" />}
+                                                                                                    </div>
+                                                                                                    {c.label}
+                                                                                                </button>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                        </div>
                                                     </div>
                                                     <div>
                                                         <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><Award className="w-3 h-3" /> Certifications</label>
-                                                        <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.certifications} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, certifications: e.target.value })} placeholder="e.g. NYS Backflow Cert, LMP" />
+                                                        {(() => {
+                                                            const relevantCerts = getCertificationsForCapabilities(vendor.capabilities || []);
+                                                            if (relevantCerts.length === 0) return <p className="text-xs text-muted-foreground italic mt-1">Add capabilities first to see relevant certifications</p>;
+                                                            return (
+                                                                <div className="mt-1 space-y-1">
+                                                                    <div className="flex flex-wrap gap-1">
+                                                                        {(onboardingDraft.certifications || []).map((c: string) => {
+                                                                            const cert = relevantCerts.find(rc => rc.value === c) || { label: c };
+                                                                            return (
+                                                                                <span key={c} className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                                                                                    {cert.label}
+                                                                                    <button type="button" className="hover:text-destructive" onClick={() => setOnboardingDraft({ ...onboardingDraft, certifications: onboardingDraft.certifications.filter((v: string) => v !== c) })}><X className="w-3 h-3" /></button>
+                                                                                </span>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                    <Popover>
+                                                                        <PopoverTrigger asChild>
+                                                                            <Button variant="outline" size="sm" className="h-7 text-xs gap-1 w-full"><Plus className="w-3 h-3" /> Add Certifications</Button>
+                                                                        </PopoverTrigger>
+                                                                        <PopoverContent className="w-[320px] p-0" align="start">
+                                                                            <div className="max-h-[280px] overflow-y-auto p-2 space-y-0.5">
+                                                                                {relevantCerts.map(cert => {
+                                                                                    const sel = (onboardingDraft.certifications || []).includes(cert.value);
+                                                                                    return (
+                                                                                        <button key={cert.value} type="button" onClick={() => {
+                                                                                            const cur = onboardingDraft.certifications || [];
+                                                                                            setOnboardingDraft({ ...onboardingDraft, certifications: sel ? cur.filter((v: string) => v !== cert.value) : [...cur, cert.value] });
+                                                                                        }} className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-left transition-colors ${sel ? 'bg-green-50 text-green-700 font-medium' : 'hover:bg-muted'}`}>
+                                                                                            <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${sel ? 'bg-green-600 border-green-600' : 'border-input'}`}>
+                                                                                                {sel && <Check className="w-3 h-3 text-white" />}
+                                                                                            </div>
+                                                                                            {cert.label}
+                                                                                        </button>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        </PopoverContent>
+                                                                    </Popover>
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
                                                     <div>
                                                         <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><Clock className="w-3 h-3" /> Availability</label>
@@ -603,8 +698,8 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                         {ob.responseTime && <div><p className="text-[10px] uppercase text-muted-foreground">Response Time</p><p className="font-medium">{ob.responseTime}</p></div>}
                                                         {ob.hourlyRate && <div><p className="text-[10px] uppercase text-muted-foreground">Hourly Rate</p><p className="font-medium">{ob.hourlyRate}</p></div>}
 
-                                                        {ob.serviceArea && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Service Area</p><p className="font-medium">{ob.serviceArea}</p></div>}
-                                                        {ob.certifications && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Certifications</p><p className="font-medium">{ob.certifications}</p></div>}
+                                                        {ob.serviceCounties?.length > 0 && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Service Area</p><div className="flex flex-wrap gap-1 mt-0.5">{ob.serviceCounties.map((c: string) => { const county = SERVICE_COUNTIES.find(sc => sc.value === c); return <span key={c} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">{county?.label || c}</span>; })}</div></div>}
+                                                        {ob.certifications?.length > 0 && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Certifications</p><div className="flex flex-wrap gap-1 mt-0.5">{ob.certifications.map((c: string) => { const cert = getCertificationsForCapabilities(vendor.capabilities || []).find(rc => rc.value === c); return <span key={c} className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">{cert?.label || c}</span>; })}</div></div>}
                                                         {ob.availability && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Availability</p><p className="font-medium">{ob.availability}</p></div>}
                                                         {ob.notes && <div className="col-span-2 border-t pt-2 mt-1"><p className="text-[10px] uppercase text-muted-foreground">Onboarding Notes</p><p className="whitespace-pre-wrap">{ob.notes}</p></div>}
                                                     </div>
