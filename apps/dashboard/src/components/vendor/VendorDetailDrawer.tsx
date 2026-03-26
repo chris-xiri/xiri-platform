@@ -128,7 +128,6 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
             teamSize: ob.teamSize || '',
             serviceArea: ob.serviceArea || '',
             hourlyRate: ob.hourlyRate || '',
-            backflowRate: ob.backflowRate || '',
             responseTime: ob.responseTime || '',
             certifications: ob.certifications || '',
             availability: ob.availability || '',
@@ -554,10 +553,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                             <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><DollarIcon className="w-3 h-3" /> Hourly Rate</label>
                                                             <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.hourlyRate} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, hourlyRate: e.target.value })} placeholder="e.g. $85/hr" />
                                                         </div>
-                                                        <div>
-                                                            <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><DollarIcon className="w-3 h-3" /> Backflow Rate</label>
-                                                            <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.backflowRate} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, backflowRate: e.target.value })} placeholder="e.g. $125/device" />
-                                                        </div>
+
                                                     </div>
                                                     <div>
                                                         <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><MapPinned className="w-3 h-3" /> Service Area</label>
@@ -606,7 +602,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                         {ob.teamSize && <div><p className="text-[10px] uppercase text-muted-foreground">Team Size</p><p className="font-medium">{ob.teamSize}</p></div>}
                                                         {ob.responseTime && <div><p className="text-[10px] uppercase text-muted-foreground">Response Time</p><p className="font-medium">{ob.responseTime}</p></div>}
                                                         {ob.hourlyRate && <div><p className="text-[10px] uppercase text-muted-foreground">Hourly Rate</p><p className="font-medium">{ob.hourlyRate}</p></div>}
-                                                        {ob.backflowRate && <div><p className="text-[10px] uppercase text-muted-foreground">Backflow Rate</p><p className="font-medium">{ob.backflowRate}</p></div>}
+
                                                         {ob.serviceArea && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Service Area</p><p className="font-medium">{ob.serviceArea}</p></div>}
                                                         {ob.certifications && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Certifications</p><p className="font-medium">{ob.certifications}</p></div>}
                                                         {ob.availability && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Availability</p><p className="font-medium">{ob.availability}</p></div>}
