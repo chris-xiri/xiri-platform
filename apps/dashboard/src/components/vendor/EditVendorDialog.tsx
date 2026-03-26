@@ -24,7 +24,13 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import ReactGoogleAutocomplete from 'react-google-autocomplete';
-import { X, Plus, Loader2 } from 'lucide-react';
+import { X, Plus, Loader2, Check } from 'lucide-react';
+import {
+    VENDOR_CAPABILITIES,
+    CAPABILITY_GROUP_LABELS,
+    normalizeCapabilities,
+    type CapabilityOption,
+} from '@/lib/vendor-capabilities';
 
 const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
@@ -38,7 +44,6 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [zipLoading, setZipLoading] = useState(false);
-    const [capabilityInput, setCapabilityInput] = useState('');
     const zipLookupTimer = useRef<NodeJS.Timeout | null>(null);
     const [formData, setFormData] = useState({
         businessName: vendor.businessName || '',
@@ -144,21 +149,12 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
         }));
     };
 
-    const addCapability = () => {
-        const cap = capabilityInput.trim();
-        if (cap && !formData.capabilities.includes(cap)) {
-            setFormData(prev => ({
-                ...prev,
-                capabilities: [...prev.capabilities, cap]
-            }));
-            setCapabilityInput('');
-        }
-    };
-
-    const removeCapability = (index: number) => {
+    const toggleCapability = (value: string) => {
         setFormData(prev => ({
             ...prev,
-            capabilities: prev.capabilities.filter((_, i) => i !== index)
+            capabilities: prev.capabilities.includes(value)
+                ? prev.capabilities.filter(c => c !== value)
+                : [...prev.capabilities, value],
         }));
     };
 
@@ -167,6 +163,7 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
         try {
             const fullAddress = [formData.streetAddress, formData.city, formData.state, formData.zip]
                 .filter(Boolean).join(', ');
+            const normalizedCaps = normalizeCapabilities(formData.capabilities);
 
             await updateDoc(doc(db, 'vendors', vendor.id!), {
                 businessName: formData.businessName,
@@ -182,7 +179,7 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
                 status: formData.status,
                 onboardingTrack: formData.onboardingTrack,
                 preferredLanguage: formData.preferredLanguage,
-                capabilities: formData.capabilities,
+                capabilities: normalizedCaps,
                 notes: formData.notes || null,
                 updatedAt: new Date()
             });
@@ -349,45 +346,38 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
 
                     <div className="grid grid-cols-4 items-start gap-4">
                         <Label className="text-right text-xs mt-2">Services</Label>
-                        <div className="col-span-3 space-y-2">
-                            <div className="flex flex-wrap gap-1.5">
-                                {formData.capabilities.map((cap, i) => (
-                                    <Badge key={i} variant="secondary" className="pr-1 gap-1">
-                                        {cap}
-                                        <button
-                                            type="button"
-                                            onClick={() => removeCapability(i)}
-                                            className="ml-0.5 rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive transition-colors"
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                    </Badge>
-                                ))}
-                            </div>
-                            <div className="flex gap-1.5">
-                                <Input
-                                    value={capabilityInput}
-                                    onChange={(e) => setCapabilityInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            addCapability();
-                                        }
-                                    }}
-                                    placeholder="Add capability (e.g. Janitorial)"
-                                    className="flex-1"
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={addCapability}
-                                    disabled={!capabilityInput.trim()}
-                                    className="h-9"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                </Button>
-                            </div>
+                        <div className="col-span-3 space-y-3">
+                            {(['cleaning', 'facility', 'specialty'] as const).map((group) => (
+                                <div key={group}>
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                                        {CAPABILITY_GROUP_LABELS[group]}
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-1">
+                                        {VENDOR_CAPABILITIES.filter(c => c.group === group).map((cap) => {
+                                            const isChecked = formData.capabilities.includes(cap.value);
+                                            return (
+                                                <button
+                                                    key={cap.value}
+                                                    type="button"
+                                                    onClick={() => toggleCapability(cap.value)}
+                                                    className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs text-left transition-colors ${
+                                                        isChecked
+                                                            ? 'bg-primary/10 text-primary font-medium'
+                                                            : 'hover:bg-muted text-foreground'
+                                                    }`}
+                                                >
+                                                    <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                                        isChecked ? 'bg-primary border-primary' : 'border-input'
+                                                    }`}>
+                                                        {isChecked && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                                                    </div>
+                                                    {cap.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 

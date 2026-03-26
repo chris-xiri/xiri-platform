@@ -27,6 +27,8 @@ import EditVendorDialog from '@/components/vendor/EditVendorDialog';
 import VendorStatusTimeline from '@/components/vendor/VendorStatusTimeline';
 import VendorActivityFeed from '@/components/vendor/VendorActivityFeed';
 import ScheduleFollowUpDialog from '@/components/vendor/ScheduleFollowUpDialog';
+import CapabilityPicker from '@/components/vendor/CapabilityPicker';
+import { getCapabilityLabel } from '@/lib/vendor-capabilities';
 
 const LanguageBadge = ({ lang }: { lang?: 'en' | 'es' }) => {
     if (lang === 'es') {
@@ -455,33 +457,27 @@ export default function CRMDetailPage(props: PageProps) {
                                     <CardHeader>
                                         <CardTitle className="flex items-center justify-between">
                                             Capabilities
-                                            <Button size="sm" variant="ghost" className="h-6 text-xs gap-1"
-                                                onClick={() => {
-                                                    const cap = prompt('Add capability:');
-                                                    if (cap?.trim()) {
-                                                        const updated = [...(vendor.capabilities || []), cap.trim()];
-                                                        updateDoc(doc(db, 'vendors', vendor.id!), { capabilities: updated, updatedAt: new Date() });
-                                                    }
-                                                }}>
-                                                <Plus className="w-3 h-3" /> Add
-                                            </Button>
+                                            <CapabilityPicker
+                                                selected={vendor.capabilities || []}
+                                                onChange={(caps) => {
+                                                    updateDoc(doc(db, 'vendors', vendor.id!), { capabilities: caps, updatedAt: new Date() });
+                                                }}
+                                            />
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="flex flex-wrap gap-2">
                                             {vendor.capabilities?.map((cap, i) => (
                                                 <Badge key={i} variant="secondary" className="group cursor-pointer" onClick={() => {
-                                                    if (confirm(`Remove "${cap}"?`)) {
-                                                        const updated = vendor.capabilities!.filter((_, idx) => idx !== i);
-                                                        updateDoc(doc(db, 'vendors', vendor.id!), { capabilities: updated, updatedAt: new Date() });
-                                                    }
+                                                    const updated = vendor.capabilities!.filter((_, idx) => idx !== i);
+                                                    updateDoc(doc(db, 'vendors', vendor.id!), { capabilities: updated, updatedAt: new Date() });
                                                 }}>
-                                                    {cap}
+                                                    {getCapabilityLabel(cap)}
                                                     <X className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
                                                 </Badge>
                                             ))}
                                             {(!vendor.capabilities || vendor.capabilities.length === 0) && (
-                                                <span className="text-sm text-muted-foreground italic">No capabilities — click Add to start</span>
+                                                <span className="text-sm text-muted-foreground italic">No capabilities — click Edit to start</span>
                                             )}
                                         </div>
                                     </CardContent>

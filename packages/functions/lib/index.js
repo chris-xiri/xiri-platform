@@ -8021,12 +8021,12 @@ var require_common2 = __commonJS({
             args.unshift("%O");
           }
           let index = 0;
-          args[0] = args[0].replace(/%([a-zA-Z%])/g, (match, format3) => {
+          args[0] = args[0].replace(/%([a-zA-Z%])/g, (match, format2) => {
             if (match === "%%") {
               return "%";
             }
             index++;
-            const formatter = createDebug.formatters[format3];
+            const formatter = createDebug.formatters[format2];
             if (typeof formatter === "function") {
               const val = args[index];
               match = formatter.call(self2, val);
@@ -10123,7 +10123,7 @@ var require_bignumber = __commonJS({
             return q;
           };
         })();
-        function format3(n, i, rm, id) {
+        function format2(n, i, rm, id) {
           var c0, e, ne, len, str;
           if (rm == null) rm = ROUNDING_MODE;
           else intCheck(rm, 0, 8);
@@ -10709,33 +10709,33 @@ var require_bignumber = __commonJS({
             intCheck(dp, 0, MAX);
             dp++;
           }
-          return format3(this, dp, rm, 1);
+          return format2(this, dp, rm, 1);
         };
         P.toFixed = function(dp, rm) {
           if (dp != null) {
             intCheck(dp, 0, MAX);
             dp = dp + this.e + 1;
           }
-          return format3(this, dp, rm);
+          return format2(this, dp, rm);
         };
-        P.toFormat = function(dp, rm, format4) {
+        P.toFormat = function(dp, rm, format3) {
           var str, x = this;
-          if (format4 == null) {
+          if (format3 == null) {
             if (dp != null && rm && typeof rm == "object") {
-              format4 = rm;
+              format3 = rm;
               rm = null;
             } else if (dp && typeof dp == "object") {
-              format4 = dp;
+              format3 = dp;
               dp = rm = null;
             } else {
-              format4 = FORMAT;
+              format3 = FORMAT;
             }
-          } else if (typeof format4 != "object") {
-            throw Error(bignumberError + "Argument not an object: " + format4);
+          } else if (typeof format3 != "object") {
+            throw Error(bignumberError + "Argument not an object: " + format3);
           }
           str = x.toFixed(dp, rm);
           if (x.c) {
-            var i, arr = str.split("."), g1 = +format4.groupSize, g2 = +format4.secondaryGroupSize, groupSeparator = format4.groupSeparator || "", intPart = arr[0], fractionPart = arr[1], isNeg = x.s < 0, intDigits = isNeg ? intPart.slice(1) : intPart, len = intDigits.length;
+            var i, arr = str.split("."), g1 = +format3.groupSize, g2 = +format3.secondaryGroupSize, groupSeparator = format3.groupSeparator || "", intPart = arr[0], fractionPart = arr[1], isNeg = x.s < 0, intDigits = isNeg ? intPart.slice(1) : intPart, len = intDigits.length;
             if (g2) {
               i = g1;
               g1 = g2;
@@ -10749,12 +10749,12 @@ var require_bignumber = __commonJS({
               if (g2 > 0) intPart += groupSeparator + intDigits.slice(i);
               if (isNeg) intPart = "-" + intPart;
             }
-            str = fractionPart ? intPart + (format4.decimalSeparator || "") + ((g2 = +format4.fractionGroupSize) ? fractionPart.replace(
+            str = fractionPart ? intPart + (format3.decimalSeparator || "") + ((g2 = +format3.fractionGroupSize) ? fractionPart.replace(
               new RegExp("\\d{" + g2 + "}\\B", "g"),
-              "$&" + (format4.fractionGroupSeparator || "")
+              "$&" + (format3.fractionGroupSeparator || "")
             ) : fractionPart) : intPart;
           }
-          return (format4.prefix || "") + str + (format4.suffix || "");
+          return (format3.prefix || "") + str + (format3.suffix || "");
         };
         P.toFraction = function(md) {
           var d, d0, d1, d2, e, exp, n, n0, n1, q, r, s, x = this, xc = x.c;
@@ -10803,7 +10803,7 @@ var require_bignumber = __commonJS({
         };
         P.toPrecision = function(sd, rm) {
           if (sd != null) intCheck(sd, 1, MAX);
-          return format3(this, sd, rm, 2);
+          return format2(this, sd, rm, 2);
         };
         P.toString = function(b) {
           var str, n = this, s = n.s, e = n.e;
@@ -13363,13 +13363,13 @@ var require_oauth2client = __commonJS({
       }
       async getFederatedSignonCertsAsync() {
         const nowTime = (/* @__PURE__ */ new Date()).getTime();
-        const format3 = (0, crypto_1.hasBrowserCrypto)() ? CertificateFormat.JWK : CertificateFormat.PEM;
-        if (this.certificateExpiry && nowTime < this.certificateExpiry.getTime() && this.certificateCacheFormat === format3) {
-          return { certs: this.certificateCache, format: format3 };
+        const format2 = (0, crypto_1.hasBrowserCrypto)() ? CertificateFormat.JWK : CertificateFormat.PEM;
+        if (this.certificateExpiry && nowTime < this.certificateExpiry.getTime() && this.certificateCacheFormat === format2) {
+          return { certs: this.certificateCache, format: format2 };
         }
         let res;
         let url;
-        switch (format3) {
+        switch (format2) {
           case CertificateFormat.PEM:
             url = this.endpoints.oauth2FederatedSignonPemCertsUrl.toString();
             break;
@@ -13377,7 +13377,7 @@ var require_oauth2client = __commonJS({
             url = this.endpoints.oauth2FederatedSignonJwkCertsUrl.toString();
             break;
           default:
-            throw new Error(`Unsupported certificate format ${format3}`);
+            throw new Error(`Unsupported certificate format ${format2}`);
         }
         try {
           res = await this.transporter.request({
@@ -13400,7 +13400,7 @@ var require_oauth2client = __commonJS({
           }
         }
         let certificates = {};
-        switch (format3) {
+        switch (format2) {
           case CertificateFormat.PEM:
             certificates = res.data;
             break;
@@ -13410,13 +13410,13 @@ var require_oauth2client = __commonJS({
             }
             break;
           default:
-            throw new Error(`Unsupported certificate format ${format3}`);
+            throw new Error(`Unsupported certificate format ${format2}`);
         }
         const now = /* @__PURE__ */ new Date();
         this.certificateExpiry = cacheAge === -1 ? null : new Date(now.getTime() + cacheAge);
         this.certificateCache = certificates;
-        this.certificateCacheFormat = format3;
-        return { certs: certificates, format: format3, res };
+        this.certificateCacheFormat = format2;
+        return { certs: certificates, format: format2, res };
       }
       getIapPublicKeys(callback) {
         if (callback) {
@@ -20566,6 +20566,7 @@ END:VCALENDAR`;
 var import_firestore5 = require("firebase-functions/v2/firestore");
 init_emailUtils();
 var import_date_fns2 = require("date-fns");
+var import_date_fns_tz = require("date-fns-tz");
 var logger6 = __toESM(require("firebase-functions/logger"));
 var sendVendorBookingConfirmation = (0, import_firestore5.onDocumentUpdated)({
   document: "vendors/{vendorId}",
@@ -20582,6 +20583,7 @@ var sendVendorBookingConfirmation = (0, import_firestore5.onDocumentUpdated)({
   const email = after.email;
   const phone = after.phone || "N/A";
   const callTimeStr = after.onboardingCallTime;
+  const EASTERN_TZ2 = "America/New_York";
   logger6.info(`Vendor ${vendorId} (${businessName}) booked onboarding call at ${callTimeStr}`);
   const startTime = new Date(callTimeStr);
   const duration = 30;
@@ -20610,17 +20612,17 @@ Power to the Facilities!`,
                 <p>Your onboarding call has been confirmed:</p>
                 <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center;">
                     <p style="margin: 0; font-size: 20px; font-weight: bold; color: #0c4a6e;">
-                        ${(0, import_date_fns2.format)(startTime, "EEEE, MMMM do")}
+                        ${(0, import_date_fns_tz.formatInTimeZone)(startTime, EASTERN_TZ2, "EEEE, MMMM do")}
                     </p>
                     <p style="margin: 8px 0 0; font-size: 16px; color: #334155;">
-                        ${(0, import_date_fns2.format)(startTime, "h:mm a")} \u2022 ${duration} minutes
+                        ${(0, import_date_fns_tz.formatInTimeZone)(startTime, EASTERN_TZ2, "h:mm a zzz")} \u2022 ${duration} minutes
                     </p>
                 </div>
                 <p style="font-size: 14px; color: #64748b;">A calendar invitation is attached to this email. We look forward to speaking with you!</p>
                 <p style="margin-top: 24px;">Best regards,<br/><strong>XIRI Facility Solutions Team</strong></p>
             </div>
         </div>`;
-    const vendorSent = await sendEmail(email, `\u{1F4C5} Onboarding Call Confirmed \u2014 ${(0, import_date_fns2.format)(startTime, "EEEE, MMMM do 'at' h:mm a")}`, vendorHtml, [
+    const vendorSent = await sendEmail(email, `\u{1F4C5} Onboarding Call Confirmed \u2014 ${(0, import_date_fns_tz.formatInTimeZone)(startTime, EASTERN_TZ2, "EEEE, MMMM do 'at' h:mm a zzz")}`, vendorHtml, [
       { filename: "xiri-onboarding-call.ics", content: icsContent }
     ]);
     if (vendorSent) {
@@ -20634,13 +20636,13 @@ Power to the Facilities!`,
         <h2 style="color: #0c4a6e;">\u{1F4C5} Onboarding Call Booked</h2>
         <p><strong>${businessName}</strong> has booked an onboarding call.</p>
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
-            <p style="margin: 4px 0;"><strong>When:</strong> ${(0, import_date_fns2.format)(startTime, "EEEE, MMMM do 'at' h:mm a")}</p>
+            <p style="margin: 4px 0;"><strong>When:</strong> ${(0, import_date_fns_tz.formatInTimeZone)(startTime, EASTERN_TZ2, "EEEE, MMMM do 'at' h:mm a zzz")}</p>
             <p style="margin: 4px 0;"><strong>Email:</strong> ${email || "N/A"}</p>
             <p style="margin: 4px 0;"><strong>Phone:</strong> ${phone}</p>
         </div>
         <p style="font-size: 12px; color: #94a3b8;">Vendor ID: ${vendorId}</p>
     </div>`;
-  const adminSent = await sendEmail("chris@xiri.ai", `\u{1F4C5} Onboarding Call: ${businessName} \u2014 ${(0, import_date_fns2.format)(startTime, "MMM do 'at' h:mm a")}`, adminHtml, [
+  const adminSent = await sendEmail("chris@xiri.ai", `\u{1F4C5} Onboarding Call: ${businessName} \u2014 ${(0, import_date_fns_tz.formatInTimeZone)(startTime, EASTERN_TZ2, "MMM do 'at' h:mm a zzz")}`, adminHtml, [
     { filename: "xiri-onboarding-call.ics", content: icsContent }
   ]);
   if (adminSent) {
@@ -21390,7 +21392,7 @@ var admin12 = __toESM(require("firebase-admin"));
 var logger10 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
 var import_date_fns3 = require("date-fns");
-var import_date_fns_tz = require("date-fns-tz");
+var import_date_fns_tz2 = require("date-fns-tz");
 if (!admin12.apps.length) {
   admin12.initializeApp();
 }
@@ -21442,7 +21444,7 @@ Power to the Facilities!`,
       { name: "XIRI Team", email: ADMIN_EMAIL }
     ]
   });
-  const formattedTime = (0, import_date_fns_tz.formatInTimeZone)(startTime, EASTERN_TZ, "EEEE, MMMM do 'at' h:mm a zzz");
+  const formattedTime = (0, import_date_fns_tz2.formatInTimeZone)(startTime, EASTERN_TZ, "EEEE, MMMM do 'at' h:mm a zzz");
   const htmlBody = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #0ea5e9;">Onboarding Call Confirmed!</h1>
