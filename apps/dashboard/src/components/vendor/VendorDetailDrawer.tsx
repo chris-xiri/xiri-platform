@@ -392,32 +392,28 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                     {editingAddress ? (
                                                         <div className="space-y-2 pl-1">
                                                             <div>
-                                                                <label className="text-[10px] uppercase text-muted-foreground font-medium">Search Address</label>
+                                                                <label className="text-[10px] uppercase text-muted-foreground font-medium">Street Address</label>
                                                                 <GooglePlacesAutocomplete
                                                                     apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
                                                                     autocompletionRequest={{ componentRestrictions: { country: ['us'] } }}
                                                                     selectProps={{
                                                                         value: autocompleteValue,
                                                                         onChange: handlePlaceSelect,
-                                                                        placeholder: 'Start typing address...',
+                                                                        placeholder: addressDraft.address || '123 Main St',
+                                                                        isClearable: true,
                                                                         styles: {
-                                                                            control: (base: any) => ({ ...base, minHeight: '32px', fontSize: '14px', backgroundColor: 'hsl(var(--input))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', '&:hover': { borderColor: 'hsl(var(--ring))' } }),
+                                                                            control: (base: any) => ({ ...base, minHeight: '28px', fontSize: '14px', backgroundColor: 'white', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', '&:hover': { borderColor: 'hsl(var(--ring))' } }),
                                                                             input: (base: any) => ({ ...base, margin: 0, padding: 0, color: 'hsl(var(--foreground))' }),
                                                                             singleValue: (base: any) => ({ ...base, color: 'hsl(var(--foreground))' }),
-                                                                            placeholder: (base: any) => ({ ...base, color: 'hsl(var(--muted-foreground))' }),
-                                                                            menu: (base: any) => ({ ...base, backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', opacity: 1 }),
-                                                                            menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
-                                                                            menuList: (base: any) => ({ ...base, padding: '4px' }),
-                                                                            option: (base: any, state: any) => ({ ...base, backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'hsl(var(--popover))', color: 'hsl(var(--foreground))', cursor: 'pointer', fontSize: '13px', padding: '8px 12px', borderRadius: '4px', '&:active': { backgroundColor: 'hsl(var(--accent))' } }),
-                                                                            noOptionsMessage: (base: any) => ({ ...base, color: 'hsl(var(--muted-foreground))' }),
-                                                                            loadingMessage: (base: any) => ({ ...base, color: 'hsl(var(--muted-foreground))' }),
+                                                                            placeholder: (base: any) => ({ ...base, color: addressDraft.address ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))' }),
+                                                                            menu: (base: any) => ({ ...base, backgroundColor: 'white', border: '1px solid hsl(var(--border))', zIndex: 9999, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }),
+                                                                            menuList: (base: any) => ({ ...base, padding: '4px', backgroundColor: 'white' }),
+                                                                            option: (base: any, state: any) => ({ ...base, backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'white', color: 'hsl(var(--foreground))', cursor: 'pointer', fontSize: '13px', padding: '8px 12px', borderRadius: '4px', '&:active': { backgroundColor: 'hsl(var(--accent))' } }),
+                                                                            noOptionsMessage: (base: any) => ({ ...base, color: 'hsl(var(--muted-foreground))', backgroundColor: 'white' }),
+                                                                            loadingMessage: (base: any) => ({ ...base, color: 'hsl(var(--muted-foreground))', backgroundColor: 'white' }),
                                                                         },
                                                                     }}
                                                                 />
-                                                            </div>
-                                                            <div>
-                                                                <label className="text-[10px] uppercase text-muted-foreground font-medium">Street Address</label>
-                                                                <Input className="h-7 text-sm" value={addressDraft.address} onChange={e => setAddressDraft({ ...addressDraft, address: e.target.value })} placeholder="123 Main St" />
                                                             </div>
                                                             <div className="grid grid-cols-3 gap-2">
                                                                 <div>
