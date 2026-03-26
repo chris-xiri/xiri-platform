@@ -402,8 +402,49 @@ async function handleFollowUp(task: QueueItem) {
         templateDoc = await db.collection("templates").doc(templateId).get();
     }
     if (!templateDoc.exists) {
-        // No more templates in the sequence — we're done
-        logger.info(`No template ${templateId} found. Follow-up sequence complete for vendor ${task.vendorId}.`);
+        // No more templates in the sequence — sequence is complete.
+        // Auto-dismiss if vendor never engaged; flag for manual if they opened but didn't onboard.
+        const lastEngagement = vendor.emailEngagement?.lastEvent;
+        const hasEngaged = lastEngagement === 'opened' || lastEngagement === 'clicked';
+
+        if (hasEngaged) {
+            // They showed interest but didn't complete onboarding — flag for manual follow-up
+            logger.info(`Vendor ${task.vendorId} engaged (${lastEngagement}) but didn't onboard. Flagging for manual outreach.`);
+            await db.collection("vendors").doc(task.vendorId!).update({
+                outreachStatus: 'NEEDS_MANUAL',
+                statusUpdatedAt: new Date(),
+            });
+            await db.collection("vendor_activities").add({
+                vendorId: task.vendorId,
+                type: "NEEDS_MANUAL_OUTREACH",
+                description: `Drip sequence complete (${sequence} emails). Vendor opened/clicked but didn't onboard — needs personal follow-up.`,
+                createdAt: new Date(),
+                metadata: { sequence, lastEngagement, reason: 'sequence_complete_engaged' },
+            });
+        } else {
+            // No engagement at all — auto-dismiss
+            logger.info(`Vendor ${task.vendorId} completed full sequence with no engagement. Auto-dismissing.`);
+            await db.collection("vendors").doc(task.vendorId!).update({
+                status: 'dismissed',
+                dismissReason: 'sequence_exhausted',
+                statusUpdatedAt: new Date(),
+                outreachStatus: 'EXHAUSTED',
+            });
+            await db.collection("vendor_activities").add({
+                vendorId: task.vendorId,
+                type: "STATUS_CHANGE",
+                description: `Auto-dismissed: full drip sequence (${sequence} emails) completed with no engagement.`,
+                createdAt: new Date(),
+                metadata: {
+                    from: 'awaiting_onboarding',
+                    to: 'dismissed',
+                    trigger: 'auto_dismiss_no_engagement',
+                    sequence,
+                    lastEngagement: lastEngagement || 'none',
+                },
+            });
+        }
+
         await updateTaskStatus(db, task.id!, 'COMPLETED');
         return;
     }
