@@ -16,8 +16,18 @@ import {
     Users, CheckCircle, Mail, Eye, MousePointerClick, ArrowRight,
     Loader2, TrendingUp, AlertTriangle, UserCheck, Clock, XCircle,
     Plus, ShieldCheck, CalendarCheck, Rocket, Star, Pause, Ban, FileSearch,
-    ChevronUp, ChevronDown, Search,
+    ChevronUp, ChevronDown, Search, Ghost,
 } from 'lucide-react';
+
+/* ───────── Abandoned Vendor Detection ───────────────────────────────── */
+
+/** A vendor is "abandoned" if it was created by the onboarding CTA but never completed the form */
+function isAbandonedVendor(v: Vendor): boolean {
+    const hasNoName = !v.businessName || v.businessName === 'Unknown';
+    const hasNoContact = !v.email && !v.phone;
+    const isNewStatus = !v.status || (v.status as string) === 'new';
+    return hasNoName && hasNoContact && isNewStatus;
+}
 
 /* ───────── Recruitment Campaign Helpers ──────────────────────────────── */
 
@@ -91,6 +101,7 @@ const STATUS_TABS = [
     { key: 'active', label: 'Active', icon: Star, color: 'text-emerald-600' },
     { key: 'suspended', label: 'Suspended', icon: Pause, color: 'text-orange-600' },
     { key: 'dismissed', label: 'Dismissed', icon: Ban, color: 'text-red-600' },
+    { key: 'abandoned', label: 'Abandoned', icon: Ghost, color: 'text-slate-400' },
 ] as const;
 
 /* ───────── Component ─────────────────────────────────────────────────── */
@@ -216,23 +227,41 @@ export default function SupplyDashboardPage() {
         return () => unsub();
     }, []);
 
-    // Counts per status
-    const counts = useMemo(() => {
-        const map: Record<string, number> = { all: vendors.length };
+    // Split vendors into real pipeline vs abandoned
+    const { pipelineVendors, abandonedVendors } = useMemo(() => {
+        const pipeline: Vendor[] = [];
+        const abandoned: Vendor[] = [];
         for (const v of vendors) {
+            if (isAbandonedVendor(v)) {
+                abandoned.push(v);
+            } else {
+                pipeline.push(v);
+            }
+        }
+        return { pipelineVendors: pipeline, abandonedVendors: abandoned };
+    }, [vendors]);
+
+    // Counts per status (based on pipeline vendors only, plus abandoned count)
+    const counts = useMemo(() => {
+        const map: Record<string, number> = { all: pipelineVendors.length, abandoned: abandonedVendors.length };
+        for (const v of pipelineVendors) {
             const s = (v.status || 'pending_review').toLowerCase();
             map[s] = (map[s] || 0) + 1;
         }
         return map;
-    }, [vendors]);
+    }, [pipelineVendors, abandonedVendors]);
 
     // Status filter for VendorList
     const statusFilters = useMemo(() => {
         if (activeTab === 'all') return undefined;
+        if (activeTab === 'abandoned') return ['__abandoned__']; // special sentinel
         return [activeTab, activeTab.toUpperCase()];
     }, [activeTab]);
 
-    const funnel = useMemo(() => computeFunnel(vendors), [vendors]);
+    // Determine which vendors to pass contextually
+    const activeVendorSet = activeTab === 'abandoned' ? abandonedVendors : pipelineVendors;
+
+    const funnel = useMemo(() => computeFunnel(pipelineVendors), [pipelineVendors]);
 
     if (loading) {
         return (
@@ -252,7 +281,7 @@ export default function SupplyDashboardPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-2xl font-bold">Supply Pipeline</h1>
-                            <p className="text-sm text-muted-foreground">{vendors.length} contractors • Outreach funnel + CRM</p>
+                            <p className="text-sm text-muted-foreground">{pipelineVendors.length} contractors • Outreach funnel + CRM</p>
                         </div>
                         <div className="flex items-center gap-2">
                             <Button variant={recruitExpanded ? 'default' : 'outline'} size="sm" className="h-8 text-xs gap-1"
@@ -410,10 +439,12 @@ export default function SupplyDashboardPage() {
                 {/* ─── CRM Table ──────────────────────────────────────────── */}
                 <div className="flex-1 overflow-hidden px-4 sm:px-6 py-2">
                     <VendorList
-                        title="Vendor Pipeline"
+                        title={activeTab === 'abandoned' ? 'Abandoned Sessions' : 'Vendor Pipeline'}
                         statusFilters={statusFilters}
                         onSelectVendor={(id) => setSelectedVendorId(id)}
                         selectedVendorId={selectedVendorId}
+                        excludeAbandoned={activeTab !== 'abandoned'}
+                        showOnlyAbandoned={activeTab === 'abandoned'}
                     />
                 </div>
 

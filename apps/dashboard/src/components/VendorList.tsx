@@ -50,6 +50,18 @@ interface VendorListProps {
     isRecruitmentMode?: boolean;
     onSelectVendor?: (id: string) => void;
     selectedVendorId?: string | null;
+    /** Hide abandoned vendors (no name/contact, status='new') from the list */
+    excludeAbandoned?: boolean;
+    /** Show ONLY abandoned vendors */
+    showOnlyAbandoned?: boolean;
+}
+
+/** Detect abandoned vendor: created by onboarding CTA but never completed */
+function isAbandonedVendor(v: Vendor): boolean {
+    const hasNoName = !v.businessName || v.businessName === 'Unknown';
+    const hasNoContact = !v.email && !v.phone;
+    const isNewStatus = !v.status || (v.status as string) === 'new';
+    return hasNoName && hasNoContact && isNewStatus;
 }
 
 export default function VendorList({
@@ -58,7 +70,9 @@ export default function VendorList({
     showActions = true,
     isRecruitmentMode = false,
     onSelectVendor,
-    selectedVendorId
+    selectedVendorId,
+    excludeAbandoned = false,
+    showOnlyAbandoned = false,
 }: VendorListProps) {
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [loading, setLoading] = useState(true);
@@ -88,16 +102,23 @@ export default function VendorList({
         hasActiveFilters
     } = useVendorFilter(vendors, statusFilters);
 
+    // Apply abandoned filtering
+    const visibleVendors = (() => {
+        if (showOnlyAbandoned) return filteredVendors.filter(isAbandonedVendor);
+        if (excludeAbandoned) return filteredVendors.filter(v => !isAbandonedVendor(v));
+        return filteredVendors;
+    })();
+
     const pendingVendors = isRecruitmentMode
-        ? filteredVendors.filter(v => (v.status || 'pending_review').toLowerCase() === 'pending_review')
-        : filteredVendors;
+        ? visibleVendors.filter(v => (v.status || 'pending_review').toLowerCase() === 'pending_review')
+        : visibleVendors;
 
     const processedVendors = isRecruitmentMode
-        ? filteredVendors.filter(v => (v.status || 'pending_review').toLowerCase() !== 'pending_review')
+        ? visibleVendors.filter(v => (v.status || 'pending_review').toLowerCase() !== 'pending_review')
         : [];
 
     // Use pendingVendors as the primary display list in recruitment mode
-    const displayVendors = isRecruitmentMode ? pendingVendors : filteredVendors;
+    const displayVendors = isRecruitmentMode ? pendingVendors : visibleVendors;
 
     // Sort logic
     const handleSort = (field: 'name' | 'location' | 'score' | 'status') => {
@@ -333,7 +354,7 @@ export default function VendorList({
                         <Users className="w-4 h-4 text-primary" />
                         {title}
                         <Badge variant="secondary" className="bg-secondary text-secondary-foreground ml-2 text-xs px-1.5 py-0">
-                            {isRecruitmentMode ? pendingVendors.length : filteredVendors.length}
+                            {isRecruitmentMode ? pendingVendors.length : visibleVendors.length}
                         </Badge>
                     </CardTitle>
                 </div>
