@@ -1,0 +1,152 @@
+/* ═══════════════════════════════════════════════════════════════
+   Partners Directory — Shared Styles
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Layout */
+.container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+.profileContainer { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+/* ── Directory Home ── */
+.hero { text-align: center; margin-bottom: 3rem; }
+.heroTitle { font-size: 2.25rem; font-weight: 800; color: #111827; margin: 0 0 1rem; line-height: 1.2; }
+.heroDef { font-size: 1.05rem; color: #4b5563; max-width: 720px; margin: 0 auto; line-height: 1.6; }
+.heroUpdated { font-size: 0.8rem; color: #9ca3af; margin-top: 0.75rem; }
+
+/* Trust Bar */
+.trust { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 3rem; padding: 1.5rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; }
+.trustItem { display: flex; align-items: center; gap: 0.75rem; }
+.trustItem svg { color: #059669; flex-shrink: 0; }
+.trustItemStrong { display: block; font-size: 0.85rem; color: #111827; font-weight: 600; }
+.trustItemSpan { display: block; font-size: 0.75rem; color: #6b7280; }
+
+/* Capability Groups */
+.group { margin-bottom: 2.5rem; }
+.groupTitle { font-size: 1.35rem; font-weight: 700; color: #111827; margin: 0 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e5e7eb; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+
+/* Category Cards */
+.catCard { display: flex; flex-direction: column; padding: 1.25rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; text-decoration: none; color: inherit; transition: all 0.2s ease; }
+.catCard:hover { border-color: #3b82f6; box-shadow: 0 2px 12px rgba(59, 130, 246, 0.1); transform: translateY(-1px); }
+.catCardLabel { font-size: 1rem; font-weight: 600; color: #111827; margin-bottom: 0.5rem; }
+.catCardDesc { font-size: 0.82rem; color: #6b7280; line-height: 1.5; margin: 0 0 0.75rem; flex: 1; }
+.catCardLink { font-size: 0.82rem; font-weight: 600; color: #3b82f6; }
+.catCard:hover .catCardLink { color: #1d4ed8; }
+
+/* CTA Section */
+.ctaSection { text-align: center; padding: 3rem 2rem; background: linear-gradient(135deg, #eff6ff, #dbeafe); border-radius: 16px; margin-bottom: 3rem; }
+.ctaTitle { font-size: 1.5rem; font-weight: 700; color: #111827; margin: 0 0 0.75rem; }
+.ctaText { font-size: 0.95rem; color: #4b5563; max-width: 540px; margin: 0 auto 1.25rem; line-height: 1.5; }
+.ctaBtn { display: inline-block; padding: 0.75rem 2rem; background: #3b82f6; color: white; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: background 0.15s ease; }
+.ctaBtn:hover { background: #1d4ed8; }
+
+/* FAQ */
+.faq { max-width: 720px; margin: 0 auto 3rem; padding-top: 2rem; border-top: 1px solid #e5e7eb; }
+.faqTitle { font-size: 1.35rem; font-weight: 700; color: #111827; margin: 0 0 1.25rem; }
+.faqList { display: flex; flex-direction: column; gap: 0.5rem; }
+.faqItem { padding: 1rem 1.25rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; }
+.faqItem summary { font-weight: 600; color: #111827; cursor: pointer; font-size: 0.92rem; }
+.faqItem p { font-size: 0.88rem; color: #4b5563; line-height: 1.6; margin: 0.75rem 0 0; }
+
+/* ── Capability Index ── */
+.capHero { margin-bottom: 2.5rem; }
+.capBadge { display: inline-block; padding: 0.25rem 0.75rem; background: #eff6ff; color: #1d4ed8; font-size: 0.78rem; font-weight: 600; border-radius: 6px; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.capTitle { font-size: 2rem; font-weight: 800; color: #111827; margin: 0 0 1rem; line-height: 1.2; }
+.capDef { font-size: 1rem; color: #4b5563; max-width: 720px; line-height: 1.6; margin: 0; }
+
+.vendorsSection { margin-bottom: 3rem; }
+.vendorsSectionTitle { font-size: 1.15rem; font-weight: 600; color: #111827; margin: 0 0 1rem; }
+.vendorsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+
+.emptyState { text-align: center; padding: 3rem 2rem; background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 12px; }
+.emptyTitle { font-size: 1.25rem; color: #374151; font-weight: 600; margin: 0 0 0.5rem; }
+.emptyText { font-size: 0.9rem; color: #6b7280; margin: 0 0 1rem; }
+.emptyBtn { display: inline-block; padding: 0.6rem 1.5rem; background: #3b82f6; color: white; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+
+.relatedSection { margin-bottom: 3rem; padding-top: 2rem; border-top: 1px solid #e5e7eb; }
+.relatedTitle { font-size: 1.1rem; font-weight: 600; color: #111827; margin: 0 0 1rem; }
+.relatedGrid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.relatedLink { display: inline-block; padding: 0.45rem 0.95rem; background: #f3f4f6; color: #374151; border-radius: 8px; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all 0.15s ease; border: 1px solid #e5e7eb; }
+.relatedLink:hover { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+
+/* ── Vendor Profile ── */
+.profileHeader { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.5rem; }
+.profileAvatar { width: 72px; height: 72px; border-radius: 14px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; flex-shrink: 0; }
+.profileName { font-size: 1.75rem; font-weight: 800; color: #111827; margin: 0 0 0.25rem; line-height: 1.2; }
+.profileLocation { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; color: #6b7280; margin: 0 0 0.35rem; }
+.profileRating { display: flex; align-items: center; gap: 0.15rem; }
+.profileRatingText { margin-left: 0.5rem; font-size: 0.88rem; color: #374151; font-weight: 500; }
+.profileWebsite { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; font-size: 0.85rem; font-weight: 500; color: #3b82f6; text-decoration: none; transition: color 0.15s ease; }
+.profileWebsite:hover { color: #1d4ed8; text-decoration: underline; }
+/* Photos */
+.photos { margin-bottom: 2rem; }
+.photosGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem; border-radius: 12px; overflow: hidden; }
+.photosImg { width: 100%; height: 160px; object-fit: cover; }
+
+/* Website Preview */
+.websiteSection { margin-bottom: 2rem; }
+.websiteTitle { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0 0 0.75rem; }
+.websiteCard { border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #f9fafb; }
+.websiteImg { width: 100%; max-height: 320px; object-fit: cover; object-position: top; display: block; }
+.websiteLink { display: flex; align-items: center; gap: 0.4rem; padding: 0.75rem 1rem; font-size: 0.85rem; font-weight: 500; color: #3b82f6; text-decoration: none; border-top: 1px solid #e5e7eb; }
+.websiteLink:hover { color: #1d4ed8; background: #eff6ff; }
+
+/* Body Layout */
+.profileBody { display: grid; grid-template-columns: 1fr 320px; gap: 2rem; align-items: start; }
+.profileMain { min-width: 0; }
+.profileSection { margin-bottom: 2rem; }
+.profileSectionTitle { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e5e7eb; }
+.profileSectionText { font-size: 0.9rem; color: #4b5563; line-height: 1.6; margin: 0; }
+
+/* Capabilities */
+.caps { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.capLink { display: inline-block; padding: 0.4rem 0.85rem; background: #eff6ff; color: #1d4ed8; border-radius: 8px; font-size: 0.82rem; font-weight: 500; text-decoration: none; transition: all 0.15s ease; }
+.capLink:hover { background: #dbeafe; }
+
+/* Certifications */
+.certsList { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.certItem { display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; color: #374151; }
+.certItem svg { color: #059669; flex-shrink: 0; }
+
+/* Sidebar */
+.sidebar { display: flex; flex-direction: column; gap: 1rem; position: sticky; top: 2rem; }
+
+/* CTA Card */
+.sidebarCta { padding: 1.5rem; background: linear-gradient(135deg, #eff6ff, #dbeafe); border-radius: 12px; }
+.sidebarCtaTitle { font-size: 1.05rem; font-weight: 700; color: #111827; margin: 0 0 0.5rem; }
+.sidebarCtaText { font-size: 0.82rem; color: #4b5563; margin: 0 0 1rem; line-height: 1.5; }
+.sidebarCtaBtn { display: block; text-align: center; padding: 0.7rem 1.5rem; background: #3b82f6; color: white; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: background 0.15s ease; }
+.sidebarCtaBtn:hover { background: #1d4ed8; }
+.sidebarCtaSecondary { display: block; text-align: center; padding: 0.5rem 1rem; margin-top: 0.5rem; color: #3b82f6; font-size: 0.82rem; font-weight: 500; text-decoration: none; border-radius: 8px; transition: background 0.15s ease; }
+.sidebarCtaSecondary:hover { background: rgba(59,130,246,0.08); text-decoration: underline; }
+
+/* Compliance */
+.compliance { padding: 1.25rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; }
+.complianceTitle { font-size: 0.9rem; font-weight: 700; color: #111827; margin: 0 0 0.75rem; }
+.complianceItem { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: #059669; font-weight: 500; margin-bottom: 0.4rem; }
+.complianceNote { font-size: 0.72rem; color: #9ca3af; margin: 0.75rem 0 0; font-style: italic; }
+
+/* Network Info */
+.networkInfo { padding: 1.25rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; }
+.networkInfoTitle { font-size: 0.9rem; font-weight: 700; color: #111827; margin: 0 0 0.75rem; }
+.networkInfoItem { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 0.4rem 0; border-bottom: 1px solid #f3f4f6; align-items: flex-start; }
+.networkInfoItem:last-child { border-bottom: none; }
+.networkInfoLabel { color: #6b7280; font-weight: 500; white-space: nowrap; margin-right: 0.75rem; padding-top: 0.15rem; }
+.networkInfoValue { color: #111827; font-weight: 600; text-align: right; }
+.serviceAreaTags { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-end; }
+.serviceAreaTag { display: inline-block; padding: 0.2rem 0.5rem; background: #f3f4f6; border-radius: 4px; font-size: 0.75rem; color: #374151; font-weight: 500; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .profileAvatar { width: 56px; height: 56px; font-size: 1.5rem; }
+  .profileName { font-size: 1.35rem; }
+  .profileBody { grid-template-columns: 1fr; }
+  .sidebar { position: static; }
+  .photosGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .heroTitle { font-size: 1.65rem; }
+  .grid, .vendorsGrid { grid-template-columns: 1fr; }
+  .trust { grid-template-columns: 1fr 1fr; }
+  .capTitle { font-size: 1.55rem; }
+}

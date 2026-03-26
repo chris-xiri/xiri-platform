@@ -12,6 +12,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { EnrichButton } from "@/components/EnrichButton";
+import { FACILITY_TYPE_OPTIONS } from '@xiri-facility-solutions/shared';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 
 interface AddLeadDialogProps {
@@ -19,25 +20,6 @@ interface AddLeadDialogProps {
     onOpenChange: (open: boolean) => void;
 }
 
-const DEFAULT_FACILITY_TYPES = [
-    { value: "medical_urgent_care", label: "Medical - Urgent Care" },
-    { value: "medical_private", label: "Medical - Private Practice" },
-    { value: "medical_surgery", label: "Medical - Surgery Center" },
-    { value: "medical_dialysis", label: "Medical - Dialysis Center" },
-    { value: "medical_dental", label: "Medical - Dental" },
-    { value: "medical_veterinary", label: "Medical - Veterinary" },
-    { value: "auto_dealer_showroom", label: "Auto - Dealership Showroom" },
-    { value: "auto_service_center", label: "Auto - Service Center" },
-    { value: "edu_daycare", label: "Education - Daycare" },
-    { value: "edu_private_school", label: "Education - Private School" },
-    { value: "lab_cleanroom", label: "Lab - Cleanroom (ISO)" },
-    { value: "lab_bsl", label: "Lab - BSL-1/BSL-2" },
-    { value: "manufacturing_light", label: "Manufacturing - Light" },
-    { value: "office_general", label: "Office - General" },
-    { value: "fitness_gym", label: "Fitness - Gym" },
-    { value: "retail_storefront", label: "Retail - Storefront" },
-    { value: "other", label: "Other" },
-];
 
 function loadCustomFacilityTypes(): { value: string; label: string }[] {
     if (typeof window === 'undefined') return [];
@@ -66,7 +48,7 @@ function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v
     const [customTypes, setCustomTypes] = useState<{ value: string; label: string }[]>(loadCustomFacilityTypes());
     const wrapperRef = useRef<HTMLDivElement>(null);
 
-    const allTypes = [...DEFAULT_FACILITY_TYPES, ...customTypes];
+    const allTypes = [...FACILITY_TYPE_OPTIONS, ...customTypes];
     const selectedLabel = allTypes.find(t => t.value === value)?.label || value || "";
 
     const filtered = search

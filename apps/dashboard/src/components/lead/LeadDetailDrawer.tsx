@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Lead, LeadType } from '@xiri-facility-solutions/shared';
+import { Lead, LeadType, FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,25 +50,7 @@ const LEAD_TYPE_LABELS: Record<string, string> = {
     'enterprise': 'Enterprise',
 };
 
-const FACILITY_TYPE_LABELS: Record<string, string> = {
-    'medical_urgent_care': 'Urgent Care',
-    'medical_private': 'Private Practice',
-    'medical_surgery': 'Surgery Center',
-    'medical_dialysis': 'Dialysis Center',
-    'medical_dental': 'Dental',
-    'medical_veterinary': 'Veterinary',
-    'auto_dealer_showroom': 'Auto Dealership',
-    'auto_service_center': 'Auto Service Center',
-    'edu_daycare': 'Daycare',
-    'edu_private_school': 'Private School',
-    'lab_cleanroom': 'Cleanroom (ISO)',
-    'lab_bsl': 'BSL-1/BSL-2 Lab',
-    'manufacturing_light': 'Manufacturing (Light)',
-    'office_general': 'General Office',
-    'fitness_gym': 'Fitness Gym',
-    'retail_storefront': 'Retail Storefront',
-    'other': 'Other'
-};
+
 
 interface LeadDetailDrawerProps {
     leadId: string | null;
@@ -397,7 +379,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
     const [bookCallOpen, setBookCallOpen] = useState(false);
 
     useEffect(() => {
-        if (!leadId || !open) { setLead(null); setLoading(true); setActiveTab('overview'); return; }
+        if (!leadId || !open) { setLead(null); setLoading(true); setActiveTab('overview'); setBookCallOpen(false); return; }
         setLoading(true);
         const unsub = onSnapshot(doc(db, 'leads', leadId), (snap) => {
             if (snap.exists()) {

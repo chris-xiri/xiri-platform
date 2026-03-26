@@ -40,8 +40,14 @@ export function useVendorFilter(vendors: Vendor[], statusFilters?: string[]) {
                 vendor.outreachStatus === outreachFilter;
 
             // Prop Filters (from Recruitment page)
-            const matchesPropFilters = !statusFilters || statusFilters.length === 0 ||
-                statusFilters.map(s => s.toLowerCase()).includes((vendor.status || "").toLowerCase());
+            const matchesPropFilters = (() => {
+                if (!statusFilters || statusFilters.length === 0) return true;
+                // Exclude-dismissed sentinel: show everything EXCEPT dismissed
+                if (statusFilters.includes('__exclude_dismissed__')) {
+                    return (vendor.status || '').toLowerCase() !== 'dismissed';
+                }
+                return statusFilters.map(s => s.toLowerCase()).includes((vendor.status || "").toLowerCase());
+            })();
 
             return matchesSearch && matchesStatus && matchesOutreach && matchesPropFilters;
         });

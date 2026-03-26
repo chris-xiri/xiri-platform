@@ -6,6 +6,7 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Loader2, ArrowRight, MapPin } from "lucide-react";
 import { trackEvent } from "@/lib/tracking";
+import { FACILITY_TYPE_OPTIONS } from '@xiri-facility-solutions/shared';
 
 function WaitlistContent() {
     const searchParams = useSearchParams();
@@ -107,12 +108,9 @@ function WaitlistContent() {
                                     className={`${inputStyles} text-gray-700 bg-white`}
                                 >
                                     <option value="">Select...</option>
-                                    <option value="medical">Medical Office</option>
-                                    <option value="urgent_care">Urgent Care</option>
-                                    <option value="surgery_center">Surgery Center</option>
-                                    <option value="auto_dealership">Auto Dealership</option>
-                                    <option value="daycare">Daycare / Preschool</option>
-                                    <option value="other">Other</option>
+                                    {FACILITY_TYPE_OPTIONS.map(ft => (
+                                        <option key={ft.value} value={ft.value}>{ft.label}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>

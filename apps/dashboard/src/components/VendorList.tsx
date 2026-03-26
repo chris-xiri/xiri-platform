@@ -8,6 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -25,10 +32,10 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Users, Loader2, X, Search, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Settings2 } from "lucide-react";
+import { Users, Loader2, X, Search, Trash2, Edit, ArrowUpDown, ArrowUp, ArrowDown, Settings2 } from "lucide-react";
 import { collection, onSnapshot, query, orderBy, limit, doc, updateDoc, serverTimestamp, writeBatch, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Vendor } from "@xiri-facility-solutions/shared";
+import { Vendor, VendorStatus } from "@xiri-facility-solutions/shared";
 import { useVendorFilter } from "@/hooks/useVendorFilter";
 import { VendorRow, VendorColumnKey } from "./VendorList/VendorRow";
 import { VendorCard } from "./VendorList/VendorCard";
@@ -77,6 +84,8 @@ export default function VendorList({
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
+    const [bulkStatus, setBulkStatus] = useState<VendorStatus | "">("");
+    const [updatingStatus, setUpdatingStatus] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [sortField, setSortField] = useState<'name' | 'location' | 'score' | 'status' | null>('score');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -304,6 +313,34 @@ export default function VendorList({
         setSelectedVendors(newSelected);
     };
 
+    const handleBulkStatusUpdate = async () => {
+        if (!bulkStatus || selectedVendors.size === 0) return;
+        setUpdatingStatus(true);
+        const ids = Array.from(selectedVendors);
+        const BATCH_LIMIT = 499;
+        try {
+            for (let i = 0; i < ids.length; i += BATCH_LIMIT) {
+                const chunk = ids.slice(i, i + BATCH_LIMIT);
+                const batch = writeBatch(db);
+                chunk.forEach(vendorId => {
+                    batch.update(doc(db, "vendors", vendorId), {
+                        status: bulkStatus,
+                        statusUpdatedAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                });
+                await batch.commit();
+            }
+            setSelectedVendors(new Set());
+            setBulkStatus("");
+        } catch (error) {
+            console.error("Error updating vendor statuses:", error);
+            window.alert(`Failed to update status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setUpdatingStatus(false);
+        }
+    };
+
     const handleBulkDelete = async () => {
         try {
             const batch = writeBatch(db);
@@ -420,29 +457,60 @@ export default function VendorList({
 
             {/* Bulk Actions Bar */}
             {selectedVendors.size > 0 && (
-                <div className="px-3 py-2 bg-blue-50 border-b border-blue-200 flex items-center justify-between">
-                    <span className="text-sm font-medium text-blue-900">
+                <div className="px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg mb-2 flex items-center gap-3">
+                    <span className="text-sm font-medium text-primary tabular-nums">
                         {selectedVendors.size} selected
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-1">
+                        <Select value={bulkStatus} onValueChange={(value: string) => setBulkStatus(value as VendorStatus)}>
+                            <SelectTrigger className="w-[200px] h-8 text-sm">
+                                <SelectValue placeholder="Update status..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="pending_review">Pending Review</SelectItem>
+                                <SelectItem value="qualified">Qualified</SelectItem>
+                                <SelectItem value="outreach_sent">Outreach Sent</SelectItem>
+                                <SelectItem value="awaiting_onboarding">Awaiting Onboarding</SelectItem>
+                                <SelectItem value="compliance_review">Compliance Review</SelectItem>
+                                <SelectItem value="pending_verification">Pending Verification</SelectItem>
+                                <SelectItem value="onboarding_scheduled">Onboarding Scheduled</SelectItem>
+                                <SelectItem value="ready_for_assignment">Ready</SelectItem>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="suspended">Suspended</SelectItem>
+                                <SelectItem value="dismissed">Dismissed</SelectItem>
+                            </SelectContent>
+                        </Select>
                         <Button
-                            variant="destructive"
                             size="sm"
-                            onClick={() => setShowDeleteDialog(true)}
-                            className="h-8 text-sm"
+                            onClick={handleBulkStatusUpdate}
+                            disabled={!bulkStatus || updatingStatus}
+                            className="h-8"
                         >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Delete
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedVendors(new Set())}
-                            className="h-8 text-sm"
-                        >
-                            Clear
+                            {updatingStatus ? (
+                                <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Updating…</>
+                            ) : (
+                                <><Edit className="w-3 h-3 mr-1" /> Update Status</>
+                            )}
                         </Button>
                     </div>
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setShowDeleteDialog(true)}
+                        className="h-8"
+                    >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Delete
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setSelectedVendors(new Set())}
+                        className="h-8"
+                    >
+                        <X className="w-3 h-3 mr-1" />
+                        Clear
+                    </Button>
                 </div>
             )}
 

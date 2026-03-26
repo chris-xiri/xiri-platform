@@ -5,6 +5,7 @@ export * from "./calculator";
 export * from "./metro-wages";
 export * from "./generateProposal";
 export * from "./proposalDefaults";
+export * from "./taxRates";
 
 // --- SHARED DOMAIN TYPES ---
 
@@ -29,6 +30,33 @@ export type FacilityType =
     | 'fitness_gym'
     | 'retail_storefront'
     | 'other';
+
+/** Canonical display labels for every FacilityType — single source of truth. */
+export const FACILITY_TYPE_LABELS: Record<FacilityType, string> = {
+    medical_urgent_care: 'Urgent Care',
+    medical_private: 'Medical Office',
+    medical_surgery: 'Surgery Center',
+    medical_dialysis: 'Dialysis Center',
+    medical_dental: 'Dental Office',
+    medical_veterinary: 'Veterinary',
+    auto_dealer_showroom: 'Auto Dealership',
+    auto_service_center: 'Auto Service Center',
+    edu_daycare: 'Daycare / Preschool',
+    edu_private_school: 'Private School',
+    lab_cleanroom: 'Lab / Cleanroom',
+    lab_bsl: 'Lab (BSL)',
+    manufacturing_light: 'Light Manufacturing',
+    office_general: 'Office (General)',
+    fitness_gym: 'Fitness / Gym',
+    retail_storefront: 'Retail Storefront',
+    other: 'Other',
+};
+
+/** Ready-made array for <select> / dropdown components. */
+export const FACILITY_TYPE_OPTIONS: { value: FacilityType; label: string }[] =
+    (Object.entries(FACILITY_TYPE_LABELS) as [FacilityType, string][]).map(
+        ([value, label]) => ({ value, label })
+    );
 
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'walkthrough' | 'proposal' | 'quoted' | 'won' | 'lost' | 'churned';
 

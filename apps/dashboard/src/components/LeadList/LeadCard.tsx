@@ -1,6 +1,6 @@
 "use client";
 
-import { Lead, LeadStatus } from '@xiri-facility-solutions/shared';
+import { Lead, LeadStatus, FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -34,19 +34,7 @@ const STATUS_COLORS: Record<LeadStatus, string> = {
     'churned': 'bg-red-100 text-red-800 border-red-200',
 };
 
-const FACILITY_TYPE_LABELS: Record<string, string> = {
-    'medical_urgent_care': 'Urgent Care',
-    'medical_private': 'Private Practice',
-    'medical_surgery': 'Surgery Center',
-    'medical_dialysis': 'Dialysis',
-    'auto_dealer_showroom': 'Auto Dealership',
-    'auto_service_center': 'Auto Service',
-    'edu_daycare': 'Daycare',
-    'edu_private_school': 'Private School',
-    'office_general': 'Office',
-    'fitness_gym': 'Gym',
-    'other': 'Other'
-};
+
 
 // Helper to safely convert Firestore Timestamp to Date
 function toDate(value: any): Date | null {

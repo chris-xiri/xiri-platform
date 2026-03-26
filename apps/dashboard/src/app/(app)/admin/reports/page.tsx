@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
 import { MapPin, Users, ArrowUpRight, TrendingUp, Loader2, RefreshCw, Clock, Mail, Building2 } from 'lucide-react';
 
 interface WaitlistVisit {
@@ -30,14 +31,7 @@ interface ZipCodeAgg {
     businessNames: string[];
 }
 
-const FACILITY_TYPE_LABELS: Record<string, string> = {
-    medical: 'Medical Office',
-    urgent_care: 'Urgent Care',
-    surgery_center: 'Surgery Center',
-    auto_dealership: 'Auto Dealership',
-    daycare: 'Daycare / Preschool',
-    other: 'Other',
-};
+
 
 export default function ReportsPage() {
     const [loading, setLoading] = useState(true);
@@ -240,7 +234,7 @@ export default function ReportsPage() {
                                                         <div className="flex flex-wrap gap-1">
                                                             {agg.facilityTypes.map(ft => (
                                                                 <span key={ft} className="text-xs bg-muted px-2 py-0.5 rounded-full">
-                                                                    {FACILITY_TYPE_LABELS[ft] || ft}
+                                                                    {(FACILITY_TYPE_LABELS as Record<string, string>)[ft] || ft}
                                                                 </span>
                                                             ))}
                                                         </div>
@@ -306,7 +300,7 @@ export default function ReportsPage() {
                                                 <td className="px-4 py-3">
                                                     {s.facilityType ? (
                                                         <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
-                                                            {FACILITY_TYPE_LABELS[s.facilityType] || s.facilityType}
+                                                            {(FACILITY_TYPE_LABELS as Record<string, string>)[s.facilityType] || s.facilityType}
                                                         </span>
                                                     ) : '—'}
                                                 </td>

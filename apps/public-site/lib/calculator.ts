@@ -2,6 +2,8 @@
 // Pure calculation logic extracted from PublicCalculator.tsx
 // Zero dependencies — can be used in tests, API routes, or other components.
 
+import { FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
+
 // ─── Types ────────────────────────────────────────────────────────────
 export interface FloorBreakdown { type: string; percent: number; }
 export interface EstimateResult {
@@ -10,26 +12,8 @@ export interface EstimateResult {
     monthly: { low: number; mid: number; high: number };
 }
 
-// ─── Constants ────────────────────────────────────────────────────────
-export const FACILITY_LABELS: Record<string, string> = {
-    office_general: 'Office (General)',
-    medical_private: 'Medical (Private Practice)',
-    medical_dental: 'Medical (Dental)',
-    medical_veterinary: 'Medical (Veterinary)',
-    medical_urgent_care: 'Medical (Urgent Care)',
-    medical_surgery: 'Medical (Surgery Center)',
-    medical_dialysis: 'Medical (Dialysis)',
-    auto_dealer_showroom: 'Auto Dealership (Showroom)',
-    auto_service_center: 'Auto (Service Center)',
-    edu_daycare: 'Daycare / Preschool',
-    edu_private_school: 'Private School',
-    fitness_gym: 'Fitness / Gym',
-    retail_storefront: 'Retail Storefront',
-    lab_cleanroom: 'Lab / Cleanroom',
-    lab_bsl: 'Lab (BSL)',
-    manufacturing_light: 'Light Manufacturing',
-    other: 'Other',
-};
+// Re-export for backwards compatibility
+export const FACILITY_LABELS: Record<string, string> = FACILITY_TYPE_LABELS as Record<string, string>;
 
 export const PRODUCTION_RATES: Record<string, number> = {
     office_general: 4250, medical_private: 2500, medical_dental: 2500,

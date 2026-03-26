@@ -89,7 +89,7 @@ function pct(n: number, d: number): string { return d === 0 ? '—' : `${Math.ro
 /* ───────── Status Tabs ───────────────────────────────────────────────── */
 
 const STATUS_TABS = [
-    { key: 'all', label: 'All', icon: Users, color: '' },
+    { key: 'all', label: 'Pipeline', icon: Users, color: '', tooltip: 'Excludes Dismissed & Abandoned' },
     { key: 'new_lead', label: 'New', icon: Star, color: 'text-emerald-600' },
     { key: 'pending_review', label: 'Sourced', icon: Users, color: 'text-sky-600' },
     { key: 'qualified', label: 'Qualified', icon: CheckCircle, color: 'text-blue-600' },
@@ -243,17 +243,20 @@ export default function SupplyDashboardPage() {
 
     // Counts per status (based on pipeline vendors only, plus abandoned count)
     const counts = useMemo(() => {
-        const map: Record<string, number> = { all: pipelineVendors.length, abandoned: abandonedVendors.length };
+        const map: Record<string, number> = { abandoned: abandonedVendors.length };
         for (const v of pipelineVendors) {
             const s = (v.status || 'pending_review').toLowerCase();
             map[s] = (map[s] || 0) + 1;
         }
+        // "Pipeline" count = everything except dismissed
+        map['all'] = pipelineVendors.filter(v => (v.status || '').toLowerCase() !== 'dismissed').length;
         return map;
     }, [pipelineVendors, abandonedVendors]);
 
     // Status filter for VendorList
+    // "Pipeline" (all) shows everything except dismissed
     const statusFilters = useMemo(() => {
-        if (activeTab === 'all') return undefined;
+        if (activeTab === 'all') return ['__exclude_dismissed__']; // special: exclude dismissed
         if (activeTab === 'abandoned') return ['__abandoned__']; // special sentinel
         return [activeTab, activeTab.toUpperCase()];
     }, [activeTab]);
@@ -418,6 +421,7 @@ export default function SupplyDashboardPage() {
                             <button
                                 key={tab.key}
                                 onClick={() => setActiveTab(tab.key)}
+                                title={'tooltip' in tab ? (tab as any).tooltip : undefined}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap
                                     ${isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
                             >

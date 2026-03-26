@@ -1,0 +1,345 @@
+/* ═══════════════════════════════════════════════════════════════
+   Vendor Directory — Search, Zip, & County Filter
+   ═══════════════════════════════════════════════════════════════ */
+
+.vdi {
+  margin-bottom: 2rem;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Shared input styles */
+.searchWrap,
+.locationWrap {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+}
+.locationWrap {
+  flex: 0 0 200px;
+}
+.searchIcon {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+.search {
+  width: 100%;
+  padding: 0.55rem 2rem 0.55rem 2.2rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+}
+.search::placeholder { color: #9ca3af; }
+.searchClear {
+  position: absolute;
+  right: 0.45rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+.searchClear:hover { color: #374151; background: #f3f4f6; }
+
+/* ── County Filter Chips ── */
+.countyFilter {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+.countyFilterLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+  padding-top: 0.3rem;
+  white-space: nowrap;
+}
+.countyChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.countyChip {
+  padding: 0.25rem 0.65rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.countyChip:hover {
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+.countyChipActive {
+  border-color: #3b82f6;
+  color: #fff;
+  background: #3b82f6;
+}
+.countyChipActive:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+.countyChipClear {
+  padding: 0.25rem 0.55rem;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #ef4444;
+  background: #fef2f2;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.countyChipClear:hover {
+  background: #fee2e2;
+}
+
+/* ── List ── */
+.list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+.noResults {
+  text-align: center;
+  padding: 2.5rem 2rem;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+}
+.noResults p {
+  font-size: 0.92rem;
+  color: #6b7280;
+  margin: 0 0 0.75rem;
+}
+.clearBtn {
+  padding: 0.4rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.clearBtn:hover { background: #1d4ed8; }
+
+/* ── Vendor Card (list row) ── */
+.card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+  border-bottom: 1px solid #f3f4f6;
+}
+.card:last-child { border-bottom: none; }
+.card:hover { background: #f8fafc; }
+
+.cardLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  min-width: 0;
+  flex: 1;
+}
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+.details { min-width: 0; }
+.name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.15rem;
+  line-height: 1.3;
+}
+.location {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin: 0 0 0.3rem;
+}
+.zip {
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+.stars { display: flex; gap: 0.08rem; }
+.ratingText {
+  font-size: 0.78rem;
+  color: #374151;
+  font-weight: 500;
+}
+.caps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.3rem;
+}
+.capBadge {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 500;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.capBadgeMuted {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Service Area Tags */
+.serviceArea {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+.serviceAreaLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #9ca3af;
+}
+.countyTag {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 0.68rem;
+  font-weight: 500;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.countyTagMuted {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.cardRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.compliance {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  background: #f0fdf4;
+  color: #059669;
+  font-size: 0.7rem;
+  font-weight: 500;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #3b82f6;
+  white-space: nowrap;
+}
+.card:hover .cta { color: #1d4ed8; }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .searchWrap,
+  .locationWrap {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .cardRight {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
