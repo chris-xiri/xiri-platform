@@ -75,7 +75,7 @@ export default function CapabilityPicker({ selected, onChange }: CapabilityPicke
                         />
                     </div>
                 </div>
-                <div className="max-h-[320px] overflow-y-auto p-2 space-y-3">
+                <div className="max-h-[320px] overflow-y-auto p-2 space-y-3" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
                     {groups.length === 0 && (
                         <p className="text-xs text-muted-foreground text-center py-4">No capabilities match &ldquo;{search}&rdquo;</p>
                     )}

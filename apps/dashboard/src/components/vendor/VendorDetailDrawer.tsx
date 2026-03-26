@@ -583,7 +583,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                                     <Button variant="outline" size="sm" className="h-7 text-xs gap-1 w-full"><Plus className="w-3 h-3" /> Add Counties</Button>
                                                                 </PopoverTrigger>
                                                                 <PopoverContent className="w-[280px] p-0" align="start">
-                                                                    <div className="max-h-[280px] overflow-y-auto p-2 space-y-3">
+                                                                    <div className="max-h-[280px] overflow-y-auto p-2 space-y-3" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
                                                                         {(['nyc', 'long_island', 'hudson_valley', 'nj'] as const).map(region => {
                                                                             const counties = SERVICE_COUNTIES.filter(c => c.region === region);
                                                                             return (
@@ -636,7 +636,7 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                                             <Button variant="outline" size="sm" className="h-7 text-xs gap-1 w-full"><Plus className="w-3 h-3" /> Add Certifications</Button>
                                                                         </PopoverTrigger>
                                                                         <PopoverContent className="w-[320px] p-0" align="start">
-                                                                            <div className="max-h-[280px] overflow-y-auto p-2 space-y-0.5">
+                                                                            <div className="max-h-[280px] overflow-y-auto p-2 space-y-0.5" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
                                                                                 {relevantCerts.map(cert => {
                                                                                     const sel = (onboardingDraft.certifications || []).includes(cert.value);
                                                                                     return (

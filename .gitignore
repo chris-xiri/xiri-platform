@@ -34,3 +34,7 @@ firestore-debug.log
 scripts/serviceAccountKey.json
 .vercel
 .env*.local
+
+# Firebase secrets for emulator
+.secret.local
+packages/functions/.secret.local

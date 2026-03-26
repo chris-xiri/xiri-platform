@@ -68,3 +68,12 @@ export { weeklyAIBotDigest } from "./functions/aiSeoMonitoring";
 
 // ── Clarity UX Analysis (scheduled + onCall) ──
 export { dailyClarityReport, triggerClarityReport } from "./triggers/clarityAnalysis";
+
+// ── TidyCal Scheduling Integration (onRequest + onCall) ──
+export {
+    getOnboardingTimeslots,
+    bookOnboardingCall,
+    getDashboardTimeslots,
+    bookDiscoveryCall,
+    getTidyCalBookings,
+} from "./functions/tidycal-api";

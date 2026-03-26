@@ -326,11 +326,11 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
       tags.push({ name: tagName, value: vendorId });
     }
     if (templateId) tags.push({ name: "templateId", value: templateId });
-    const headers = {};
+    const headers2 = {};
     if (entityId && entityType) {
       const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${entityId}&type=${entityType}`;
-      headers["List-Unsubscribe"] = `<${unsubscribeUrl}>`;
-      headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+      headers2["List-Unsubscribe"] = `<${unsubscribeUrl}>`;
+      headers2["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
     }
     const { data, error: error12 } = await resend.emails.send({
       from: from || "XIRI Facility Solutions <onboarding@xiri.ai>",
@@ -339,7 +339,7 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
       subject,
       html: htmlWithFooter,
       attachments,
-      headers,
+      headers: headers2,
       ...tags.length > 0 ? { tags } : {}
     });
     if (error12) {
@@ -6354,11 +6354,11 @@ function consumeBody() {
     });
   });
 }
-function convertBody(buffer, headers) {
+function convertBody(buffer, headers2) {
   if (typeof convert !== "function") {
     throw new Error("The package `encoding` must be installed to use the textConverted() function");
   }
-  const ct = headers.get("content-type");
+  const ct = headers2.get("content-type");
   let charset = "utf-8";
   let res, str;
   if (ct) {
@@ -6491,15 +6491,15 @@ function find(map, name) {
   }
   return void 0;
 }
-function getHeaders(headers) {
+function getHeaders(headers2) {
   let kind = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "key+value";
-  const keys = Object.keys(headers[MAP]).sort();
+  const keys = Object.keys(headers2[MAP]).sort();
   return keys.map(kind === "key" ? function(k) {
     return k.toLowerCase();
   } : kind === "value" ? function(k) {
-    return headers[MAP][k].join(", ");
+    return headers2[MAP][k].join(", ");
   } : function(k) {
-    return [k.toLowerCase(), headers[MAP][k].join(", ")];
+    return [k.toLowerCase(), headers2[MAP][k].join(", ")];
   });
 }
 function createHeadersIterator(target, kind) {
@@ -6511,16 +6511,16 @@ function createHeadersIterator(target, kind) {
   };
   return iterator;
 }
-function exportNodeCompatibleHeaders(headers) {
-  const obj = Object.assign({ __proto__: null }, headers[MAP]);
-  const hostHeaderKey = find(headers[MAP], "Host");
+function exportNodeCompatibleHeaders(headers2) {
+  const obj = Object.assign({ __proto__: null }, headers2[MAP]);
+  const hostHeaderKey = find(headers2[MAP], "Host");
   if (hostHeaderKey !== void 0) {
     obj[hostHeaderKey] = obj[hostHeaderKey][0];
   }
   return obj;
 }
 function createHeadersLenient(obj) {
-  const headers = new Headers();
+  const headers2 = new Headers();
   for (const name of Object.keys(obj)) {
     if (invalidTokenRegex.test(name)) {
       continue;
@@ -6530,17 +6530,17 @@ function createHeadersLenient(obj) {
         if (invalidHeaderCharRegex.test(val)) {
           continue;
         }
-        if (headers[MAP][name] === void 0) {
-          headers[MAP][name] = [val];
+        if (headers2[MAP][name] === void 0) {
+          headers2[MAP][name] = [val];
         } else {
-          headers[MAP][name].push(val);
+          headers2[MAP][name].push(val);
         }
       }
     } else if (!invalidHeaderCharRegex.test(obj[name])) {
-      headers[MAP][name] = [obj[name]];
+      headers2[MAP][name] = [obj[name]];
     }
   }
-  return headers;
+  return headers2;
 }
 function parseURL(urlStr) {
   if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.exec(urlStr)) {
@@ -6557,9 +6557,9 @@ function isAbortSignal(signal) {
 }
 function getNodeRequestOptions(request) {
   const parsedURL = request[INTERNALS$2].parsedURL;
-  const headers = new Headers(request[INTERNALS$2].headers);
-  if (!headers.has("Accept")) {
-    headers.set("Accept", "*/*");
+  const headers2 = new Headers(request[INTERNALS$2].headers);
+  if (!headers2.has("Accept")) {
+    headers2.set("Accept", "*/*");
   }
   if (!parsedURL.protocol || !parsedURL.hostname) {
     throw new TypeError("Only absolute URLs are supported");
@@ -6581,13 +6581,13 @@ function getNodeRequestOptions(request) {
     }
   }
   if (contentLengthValue) {
-    headers.set("Content-Length", contentLengthValue);
+    headers2.set("Content-Length", contentLengthValue);
   }
-  if (!headers.has("User-Agent")) {
-    headers.set("User-Agent", "node-fetch/1.0 (+https://github.com/bitinn/node-fetch)");
+  if (!headers2.has("User-Agent")) {
+    headers2.set("User-Agent", "node-fetch/1.0 (+https://github.com/bitinn/node-fetch)");
   }
-  if (request.compress && !headers.has("Accept-Encoding")) {
-    headers.set("Accept-Encoding", "gzip,deflate");
+  if (request.compress && !headers2.has("Accept-Encoding")) {
+    headers2.set("Accept-Encoding", "gzip,deflate");
   }
   let agent = request.agent;
   if (typeof agent === "function") {
@@ -6595,7 +6595,7 @@ function getNodeRequestOptions(request) {
   }
   return Object.assign({}, parsedURL, {
     method: request.method,
-    headers: exportNodeCompatibleHeaders(headers),
+    headers: exportNodeCompatibleHeaders(headers2),
     agent
   });
 }
@@ -6680,9 +6680,9 @@ function fetch2(url, opts) {
     }
     req.on("response", function(res) {
       clearTimeout(reqTimeout);
-      const headers = createHeadersLenient(res.headers);
+      const headers2 = createHeadersLenient(res.headers);
       if (fetch2.isRedirect(res.statusCode)) {
-        const location = headers.get("Location");
+        const location = headers2.get("Location");
         let locationURL = null;
         try {
           locationURL = location === null ? null : new URL$1(location, request.url).toString();
@@ -6701,7 +6701,7 @@ function fetch2(url, opts) {
           case "manual":
             if (locationURL !== null) {
               try {
-                headers.set("Location", locationURL);
+                headers2.set("Location", locationURL);
               } catch (err) {
                 reject(err);
               }
@@ -6756,12 +6756,12 @@ function fetch2(url, opts) {
         url: request.url,
         status: res.statusCode,
         statusText: res.statusMessage,
-        headers,
+        headers: headers2,
         size: request.size,
         timeout: request.timeout,
         counter: request.counter
       };
-      const codings = headers.get("Content-Encoding");
+      const codings = headers2.get("Content-Encoding");
       if (!request.compress || request.method === "HEAD" || codings === null || res.statusCode === 204 || res.statusCode === 304) {
         response = new Response(body, response_options);
         resolve2(response);
@@ -6814,8 +6814,8 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
     socket = s;
   });
   request.on("response", function(response) {
-    const headers = response.headers;
-    if (headers["transfer-encoding"] === "chunked" && !headers["content-length"]) {
+    const headers2 = response.headers;
+    if (headers2["transfer-encoding"] === "chunked" && !headers2["content-length"]) {
       response.once("close", function(hadError) {
         const hasDataListener = socket && socket.listenerCount("data") > 0;
         if (hasDataListener && !hadError) {
@@ -7289,18 +7289,18 @@ var init_lib = __esm({
         let opts = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
         Body.call(this, body, opts);
         const status = opts.status || 200;
-        const headers = new Headers(opts.headers);
-        if (body != null && !headers.has("Content-Type")) {
+        const headers2 = new Headers(opts.headers);
+        if (body != null && !headers2.has("Content-Type")) {
           const contentType = extractContentType(body);
           if (contentType) {
-            headers.append("Content-Type", contentType);
+            headers2.append("Content-Type", contentType);
           }
         }
         this[INTERNALS$1] = {
           url: opts.url,
           status,
           statusText: opts.statusText || STATUS_CODES[status],
-          headers,
+          headers: headers2,
           counter: opts.counter
         };
       }
@@ -7386,11 +7386,11 @@ var init_lib = __esm({
           timeout: init.timeout || input.timeout || 0,
           size: init.size || input.size || 0
         });
-        const headers = new Headers(init.headers || input.headers || {});
-        if (inputBody != null && !headers.has("Content-Type")) {
+        const headers2 = new Headers(init.headers || input.headers || {});
+        if (inputBody != null && !headers2.has("Content-Type")) {
           const contentType = extractContentType(inputBody);
           if (contentType) {
-            headers.append("Content-Type", contentType);
+            headers2.append("Content-Type", contentType);
           }
         }
         let signal = isRequest(input) ? input.signal : null;
@@ -7401,7 +7401,7 @@ var init_lib = __esm({
         this[INTERNALS$2] = {
           method,
           redirect: init.redirect || input.redirect || "follow",
-          headers,
+          headers: headers2,
           parsedURL,
           signal
         };
@@ -7671,18 +7671,18 @@ var require_common = __commonJS({
     }
     function defaultErrorRedactor(data) {
       const REDACT = "<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.";
-      function redactHeaders(headers) {
-        if (!headers)
+      function redactHeaders(headers2) {
+        if (!headers2)
           return;
-        for (const key of Object.keys(headers)) {
+        for (const key of Object.keys(headers2)) {
           if (/^authentication$/i.test(key)) {
-            headers[key] = REDACT;
+            headers2[key] = REDACT;
           }
           if (/^authorization$/i.test(key)) {
-            headers[key] = REDACT;
+            headers2[key] = REDACT;
           }
           if (/secret/i.test(key)) {
-            headers[key] = REDACT;
+            headers2[key] = REDACT;
           }
         }
       }
@@ -8905,7 +8905,7 @@ var require_parse_proxy_response = __commonJS({
           const firstLineParts = firstLine.split(" ");
           const statusCode = +firstLineParts[1];
           const statusText = firstLineParts.slice(2).join(" ");
-          const headers = {};
+          const headers2 = {};
           for (const header of headerParts) {
             if (!header)
               continue;
@@ -8916,22 +8916,22 @@ var require_parse_proxy_response = __commonJS({
             }
             const key = header.slice(0, firstColon).toLowerCase();
             const value = header.slice(firstColon + 1).trimStart();
-            const current = headers[key];
+            const current = headers2[key];
             if (typeof current === "string") {
-              headers[key] = [current, value];
+              headers2[key] = [current, value];
             } else if (Array.isArray(current)) {
               current.push(value);
             } else {
-              headers[key] = value;
+              headers2[key] = value;
             }
           }
-          debug("got proxy server response: %o %o", firstLine, headers);
+          debug("got proxy server response: %o %o", firstLine, headers2);
           cleanup();
           resolve2({
             connect: {
               statusCode,
               statusText,
-              headers
+              headers: headers2
             },
             buffered
           });
@@ -9032,20 +9032,20 @@ var require_dist2 = __commonJS({
           debug("Creating `net.Socket`: %o", this.connectOpts);
           socket = net.connect(this.connectOpts);
         }
-        const headers = typeof this.proxyHeaders === "function" ? this.proxyHeaders() : { ...this.proxyHeaders };
+        const headers2 = typeof this.proxyHeaders === "function" ? this.proxyHeaders() : { ...this.proxyHeaders };
         const host = net.isIPv6(opts.host) ? `[${opts.host}]` : opts.host;
         let payload = `CONNECT ${host}:${opts.port} HTTP/1.1\r
 `;
         if (proxy.username || proxy.password) {
           const auth = `${decodeURIComponent(proxy.username)}:${decodeURIComponent(proxy.password)}`;
-          headers["Proxy-Authorization"] = `Basic ${Buffer.from(auth).toString("base64")}`;
+          headers2["Proxy-Authorization"] = `Basic ${Buffer.from(auth).toString("base64")}`;
         }
-        headers.Host = `${host}:${opts.port}`;
-        if (!headers["Proxy-Connection"]) {
-          headers["Proxy-Connection"] = this.keepAlive ? "Keep-Alive" : "close";
+        headers2.Host = `${host}:${opts.port}`;
+        if (!headers2["Proxy-Connection"]) {
+          headers2["Proxy-Connection"] = this.keepAlive ? "Keep-Alive" : "close";
         }
-        for (const name of Object.keys(headers)) {
-          payload += `${name}: ${headers[name]}\r
+        for (const name of Object.keys(headers2)) {
+          payload += `${name}: ${headers2[name]}\r
 `;
         }
         const proxyResponsePromise = (0, parse_proxy_response_1.parseProxyResponse)(socket);
@@ -9287,14 +9287,14 @@ var require_gaxios = __commonJS({
         return querystring_1.default.stringify(params);
       }
       translateResponse(opts, res, data) {
-        const headers = {};
+        const headers2 = {};
         res.headers.forEach((value, key) => {
-          headers[key] = value;
+          headers2[key] = value;
         });
         return {
           config: opts,
           data,
-          headers,
+          headers: headers2,
           status: res.status,
           statusText: res.statusText,
           // XMLHttpRequestLike
@@ -11802,12 +11802,12 @@ var require_src4 = __commonJS({
     async function metadataAccessor(type, options = {}, noResponseRetries = 3, fastFail = false) {
       let metadataKey = "";
       let params = {};
-      let headers = {};
+      let headers2 = {};
       if (typeof type === "object") {
         const metadataAccessor2 = type;
         metadataKey = metadataAccessor2.metadataKey;
         params = metadataAccessor2.params || params;
-        headers = metadataAccessor2.headers || headers;
+        headers2 = metadataAccessor2.headers || headers2;
         noResponseRetries = metadataAccessor2.noResponseRetries || noResponseRetries;
         fastFail = metadataAccessor2.fastFail || fastFail;
       } else {
@@ -11820,13 +11820,13 @@ var require_src4 = __commonJS({
         if (options.property) {
           metadataKey += `/${options.property}`;
         }
-        headers = options.headers || headers;
+        headers2 = options.headers || headers2;
         params = options.params || params;
       }
       const requestMethod = fastFail ? fastFailMetadataRequest : gaxios_1.request;
       const req = {
         url: `${getBaseUrl()}/${metadataKey}`,
-        headers: { ...exports2.HEADERS, ...headers },
+        headers: { ...exports2.HEADERS, ...headers2 },
         retryConfig: { noResponseRetries },
         params,
         responseType: "text",
@@ -12842,12 +12842,12 @@ var require_authclient = __commonJS({
        *
        * @param headers object to append additional headers to.
        */
-      addSharedMetadataHeaders(headers) {
-        if (!headers["x-goog-user-project"] && // don't override a value the user sets.
+      addSharedMetadataHeaders(headers2) {
+        if (!headers2["x-goog-user-project"] && // don't override a value the user sets.
         this.quotaProjectId) {
-          headers["x-goog-user-project"] = this.quotaProjectId;
+          headers2["x-goog-user-project"] = this.quotaProjectId;
         }
-        return headers;
+        return headers2;
       }
       /**
        * Retry config for Auth-related requests.
@@ -13025,7 +13025,7 @@ var require_oauth2client = __commonJS({
       }
       async getTokenAsync(options) {
         const url = this.endpoints.oauth2TokenUrl.toString();
-        const headers = {
+        const headers2 = {
           "Content-Type": "application/x-www-form-urlencoded"
         };
         const values = {
@@ -13037,7 +13037,7 @@ var require_oauth2client = __commonJS({
         };
         if (this.clientAuthentication === ClientAuthentication.ClientSecretBasic) {
           const basic = Buffer.from(`${this._clientId}:${this._clientSecret}`);
-          headers["Authorization"] = `Basic ${basic.toString("base64")}`;
+          headers2["Authorization"] = `Basic ${basic.toString("base64")}`;
         }
         if (this.clientAuthentication === ClientAuthentication.ClientSecretPost) {
           values.client_secret = this._clientSecret;
@@ -13047,7 +13047,7 @@ var require_oauth2client = __commonJS({
           method: "POST",
           url,
           data: querystring.stringify(values),
-          headers
+          headers: headers2
         });
         const tokens = res.data;
         if (res.data && res.data.expires_in) {
@@ -13168,8 +13168,8 @@ var require_oauth2client = __commonJS({
        * @param url The optional url being authorized
        */
       async getRequestHeaders(url) {
-        const headers = (await this.getRequestMetadataAsync(url)).headers;
-        return headers;
+        const headers2 = (await this.getRequestMetadataAsync(url)).headers;
+        return headers2;
       }
       async getRequestMetadataAsync(url) {
         const thisCreds = this.credentials;
@@ -13178,19 +13178,19 @@ var require_oauth2client = __commonJS({
         }
         if (thisCreds.access_token && !this.isTokenExpiring()) {
           thisCreds.token_type = thisCreds.token_type || "Bearer";
-          const headers2 = {
+          const headers3 = {
             Authorization: thisCreds.token_type + " " + thisCreds.access_token
           };
-          return { headers: this.addSharedMetadataHeaders(headers2) };
+          return { headers: this.addSharedMetadataHeaders(headers3) };
         }
         if (this.refreshHandler) {
           const refreshedAccessToken = await this.processAndValidateRefreshHandler();
           if (refreshedAccessToken === null || refreshedAccessToken === void 0 ? void 0 : refreshedAccessToken.access_token) {
             this.setCredentials(refreshedAccessToken);
-            const headers2 = {
+            const headers3 = {
               Authorization: "Bearer " + this.credentials.access_token
             };
-            return { headers: this.addSharedMetadataHeaders(headers2) };
+            return { headers: this.addSharedMetadataHeaders(headers3) };
           }
         }
         if (this.apiKey) {
@@ -13212,10 +13212,10 @@ var require_oauth2client = __commonJS({
         credentials.token_type = credentials.token_type || "Bearer";
         tokens.refresh_token = credentials.refresh_token;
         this.credentials = tokens;
-        const headers = {
+        const headers2 = {
           Authorization: credentials.token_type + " " + tokens.access_token
         };
-        return { headers: this.addSharedMetadataHeaders(headers), res: r.res };
+        return { headers: this.addSharedMetadataHeaders(headers2), res: r.res };
       }
       /**
        * Generates an URL to revoke the given token.
@@ -13690,10 +13690,10 @@ var require_idtokenclient = __commonJS({
             expiry_date: this.getIdTokenExpiryDate(idToken)
           };
         }
-        const headers = {
+        const headers2 = {
           Authorization: "Bearer " + this.credentials.id_token
         };
-        return { headers };
+        return { headers: headers2 };
       }
       getIdTokenExpiryDate(idToken) {
         const payloadB64 = idToken.split(".")[1];
@@ -14691,12 +14691,12 @@ var require_jwtaccess = __commonJS({
         const header = this.keyId ? { ...DEFAULT_HEADER, kid: this.keyId } : DEFAULT_HEADER;
         const payload = Object.assign(defaultClaims, additionalClaims);
         const signedJWT = jws.sign({ header, payload, secret: this.key });
-        const headers = { Authorization: `Bearer ${signedJWT}` };
+        const headers2 = { Authorization: `Bearer ${signedJWT}` };
         this.cache.set(key, {
           expiration: exp * 1e3,
-          headers
+          headers: headers2
         });
-        return headers;
+        return headers2;
       }
       /**
        * Returns an expiration time for the JWT token.
@@ -14819,7 +14819,7 @@ var require_jwtclient = __commonJS({
               scopes = this.defaultScopes;
             }
             const useScopes = this.useJWTAccessWithScope || this.universeDomain !== authclient_1.DEFAULT_UNIVERSE;
-            const headers = await this.access.getRequestHeaders(
+            const headers2 = await this.access.getRequestHeaders(
               url !== null && url !== void 0 ? url : void 0,
               this.additionalClaims,
               // Scopes take precedent over audience for signing,
@@ -14827,7 +14827,7 @@ var require_jwtclient = __commonJS({
               // if we are in a non-default universe
               useScopes ? scopes : void 0
             );
-            return { headers: this.addSharedMetadataHeaders(headers) };
+            return { headers: this.addSharedMetadataHeaders(headers2) };
           }
         } else if (this.hasAnyScopes() || this.apiKey) {
           return super.getRequestMetadataAsync(url);
@@ -15364,10 +15364,10 @@ var require_oauth2common = __commonJS({
           const method = (opts.method || "GET").toUpperCase();
           if (METHODS_SUPPORTING_REQUEST_BODY.indexOf(method) !== -1) {
             let contentType;
-            const headers = opts.headers || {};
-            for (const key in headers) {
-              if (key.toLowerCase() === "content-type" && headers[key]) {
-                contentType = headers[key].toLowerCase();
+            const headers2 = opts.headers || {};
+            for (const key in headers2) {
+              if (key.toLowerCase() === "content-type" && headers2[key]) {
+                contentType = headers2[key].toLowerCase();
                 break;
               }
             }
@@ -15500,15 +15500,15 @@ var require_stscredentials = __commonJS({
             delete values[key];
           }
         });
-        const headers = {
+        const headers2 = {
           "Content-Type": "application/x-www-form-urlencoded"
         };
-        Object.assign(headers, additionalHeaders || {});
+        Object.assign(headers2, additionalHeaders || {});
         const opts = {
           ..._StsCredentials.RETRY_CONFIG,
           url: this.tokenExchangeEndpoint.toString(),
           method: "POST",
-          headers,
+          headers: headers2,
           data: querystring.stringify(values),
           responseType: "json"
         };
@@ -15681,10 +15681,10 @@ var require_baseexternalclient = __commonJS({
        */
       async getRequestHeaders() {
         const accessTokenResponse = await this.getAccessToken();
-        const headers = {
+        const headers2 = {
           Authorization: `Bearer ${accessTokenResponse.token}`
         };
-        return this.addSharedMetadataHeaders(headers);
+        return this.addSharedMetadataHeaders(headers2);
       }
       request(opts, callback) {
         if (callback) {
@@ -15715,10 +15715,10 @@ var require_baseexternalclient = __commonJS({
         if (this.projectId) {
           return this.projectId;
         } else if (projectNumber) {
-          const headers = await this.getRequestHeaders();
+          const headers2 = await this.getRequestHeaders();
           const response = await this.transporter.request({
             ..._BaseExternalAccountClient.RETRY_CONFIG,
-            headers,
+            headers: headers2,
             url: `${this.cloudResourceManagerURL.toString()}${projectNumber}`,
             responseType: "json"
           });
@@ -16072,7 +16072,7 @@ var require_identitypoolclient = __commonJS({
           }
           const file = credentialSourceOpts.get("file");
           const url = credentialSourceOpts.get("url");
-          const headers = credentialSourceOpts.get("headers");
+          const headers2 = credentialSourceOpts.get("headers");
           if (file && url) {
             throw new Error('No valid Identity Pool "credential_source" provided, must be either file or url.');
           } else if (file && !url) {
@@ -16088,7 +16088,7 @@ var require_identitypoolclient = __commonJS({
               url,
               formatType,
               subjectTokenFieldName: formatSubjectTokenFieldName,
-              headers,
+              headers: headers2,
               additionalGaxiosOptions: _IdentityPoolClient.RETRY_CONFIG
             });
           } else {
@@ -16164,7 +16164,7 @@ var require_awsrequestsigner = __commonJS({
           requestPayload,
           additionalAmzHeaders
         });
-        const headers = Object.assign(
+        const headers2 = Object.assign(
           // Add x-amz-date if available.
           headerMap.amzDate ? { "x-amz-date": headerMap.amzDate } : {},
           {
@@ -16174,14 +16174,14 @@ var require_awsrequestsigner = __commonJS({
           additionalAmzHeaders || {}
         );
         if (awsSecurityCredentials.token) {
-          Object.assign(headers, {
+          Object.assign(headers2, {
             "x-amz-security-token": awsSecurityCredentials.token
           });
         }
         const awsSignedReq = {
           url,
           method,
-          headers
+          headers: headers2
         };
         if (typeof requestPayload !== "undefined") {
           awsSignedReq.body = requestPayload;
@@ -16363,7 +16363,7 @@ var require_defaultawssecuritycredentialssupplier = __commonJS({
      * @return A promise that resolves with the assigned role to the current
      *   AWS VM. This is needed for calling the security-credentials endpoint.
      */
-    async function _DefaultAwsSecurityCredentialsSupplier_getAwsRoleName2(headers, transporter) {
+    async function _DefaultAwsSecurityCredentialsSupplier_getAwsRoleName2(headers2, transporter) {
       if (!this.securityCredentialsUrl) {
         throw new Error('Unable to determine AWS role name due to missing "options.credential_source.url"');
       }
@@ -16372,7 +16372,7 @@ var require_defaultawssecuritycredentialssupplier = __commonJS({
         url: this.securityCredentialsUrl,
         method: "GET",
         responseType: "text",
-        headers
+        headers: headers2
       };
       const response = await transporter.request(opts);
       return response.data;
@@ -16385,12 +16385,12 @@ var require_defaultawssecuritycredentialssupplier = __commonJS({
      * @return A promise that resolves with the temporary AWS credentials
      *   needed for creating the GetCallerIdentity signed request.
      */
-    async function _DefaultAwsSecurityCredentialsSupplier_retrieveAwsSecurityCredentials2(roleName, headers, transporter) {
+    async function _DefaultAwsSecurityCredentialsSupplier_retrieveAwsSecurityCredentials2(roleName, headers2, transporter) {
       const response = await transporter.request({
         ...this.additionalGaxiosOptions,
         url: `${this.securityCredentialsUrl}/${roleName}`,
         responseType: "json",
-        headers
+        headers: headers2
       });
       return response.data;
     }, _DefaultAwsSecurityCredentialsSupplier_regionFromEnv_get = function _DefaultAwsSecurityCredentialsSupplier_regionFromEnv_get2() {
@@ -16959,7 +16959,7 @@ var require_externalAccountAuthorizedUserClient = __commonJS({
           grant_type: "refresh_token",
           refresh_token: refreshToken
         });
-        const headers = {
+        const headers2 = {
           "Content-Type": "application/x-www-form-urlencoded",
           ...additionalHeaders
         };
@@ -16967,7 +16967,7 @@ var require_externalAccountAuthorizedUserClient = __commonJS({
           ..._ExternalAccountAuthorizedUserHandler.RETRY_CONFIG,
           url: this.url,
           method: "POST",
-          headers,
+          headers: headers2,
           data: values.toString(),
           responseType: "json"
         };
@@ -17034,10 +17034,10 @@ var require_externalAccountAuthorizedUserClient = __commonJS({
       }
       async getRequestHeaders() {
         const accessTokenResponse = await this.getAccessToken();
-        const headers = {
+        const headers2 = {
           Authorization: `Bearer ${accessTokenResponse.token}`
         };
-        return this.addSharedMetadataHeaders(headers);
+        return this.addSharedMetadataHeaders(headers2);
       }
       request(opts, callback) {
         if (callback) {
@@ -17743,8 +17743,8 @@ var require_googleauth = __commonJS({
         opts = opts || {};
         const url = opts.url || opts.uri;
         const client = await this.getClient();
-        const headers = await client.getRequestHeaders(url);
-        opts.headers = Object.assign(opts.headers || {}, headers);
+        const headers2 = await client.getRequestHeaders(url);
+        opts.headers = Object.assign(opts.headers || {}, headers2);
         return opts;
       }
       /**
@@ -17957,10 +17957,10 @@ var require_downscopedclient = __commonJS({
        */
       async getRequestHeaders() {
         const accessTokenResponse = await this.getAccessToken();
-        const headers = {
+        const headers2 = {
           Authorization: `Bearer ${accessTokenResponse.token}`
         };
-        return this.addSharedMetadataHeaders(headers);
+        return this.addSharedMetadataHeaders(headers2);
       }
       request(opts, callback) {
         if (callback) {
@@ -18755,6 +18755,8 @@ var index_exports = {};
 __export(index_exports, {
   adminCreateUser: () => adminCreateUser,
   adminUpdateAuthUser: () => adminUpdateAuthUser,
+  bookDiscoveryCall: () => bookDiscoveryCall,
+  bookOnboardingCall: () => bookOnboardingCall,
   calculateNrr: () => calculateNrr,
   changeMyPassword: () => changeMyPassword,
   checkNightlyStatus: () => checkNightlyStatus,
@@ -18767,9 +18769,12 @@ __export(index_exports, {
   generateMonthlyInvoices: () => generateMonthlyInvoices,
   generateMorningReports: () => generateMorningReports,
   getComplianceLog: () => getComplianceLog,
+  getDashboardTimeslots: () => getDashboardTimeslots,
   getFacebookPosts: () => getFacebookPosts,
   getFacebookReels: () => getFacebookReels,
+  getOnboardingTimeslots: () => getOnboardingTimeslots,
   getOutroPreview: () => getOutroPreview,
+  getTidyCalBookings: () => getTidyCalBookings,
   handleUnsubscribe: () => handleUnsubscribe,
   onAuditFailed: () => onAuditFailed,
   onAuditSubmitted: () => onAuditSubmitted,
@@ -19983,7 +19988,43 @@ async function handleFollowUp(task) {
     templateDoc = await db4.collection("templates").doc(templateId).get();
   }
   if (!templateDoc.exists) {
-    logger3.info(`No template ${templateId} found. Follow-up sequence complete for vendor ${task.vendorId}.`);
+    const lastEngagement = vendor.emailEngagement?.lastEvent;
+    const hasEngaged = lastEngagement === "opened" || lastEngagement === "clicked";
+    if (hasEngaged) {
+      logger3.info(`Vendor ${task.vendorId} engaged (${lastEngagement}) but didn't onboard. Flagging for manual outreach.`);
+      await db4.collection("vendors").doc(task.vendorId).update({
+        outreachStatus: "NEEDS_MANUAL",
+        statusUpdatedAt: /* @__PURE__ */ new Date()
+      });
+      await db4.collection("vendor_activities").add({
+        vendorId: task.vendorId,
+        type: "NEEDS_MANUAL_OUTREACH",
+        description: `Drip sequence complete (${sequence} emails). Vendor opened/clicked but didn't onboard \u2014 needs personal follow-up.`,
+        createdAt: /* @__PURE__ */ new Date(),
+        metadata: { sequence, lastEngagement, reason: "sequence_complete_engaged" }
+      });
+    } else {
+      logger3.info(`Vendor ${task.vendorId} completed full sequence with no engagement. Auto-dismissing.`);
+      await db4.collection("vendors").doc(task.vendorId).update({
+        status: "dismissed",
+        dismissReason: "sequence_exhausted",
+        statusUpdatedAt: /* @__PURE__ */ new Date(),
+        outreachStatus: "EXHAUSTED"
+      });
+      await db4.collection("vendor_activities").add({
+        vendorId: task.vendorId,
+        type: "STATUS_CHANGE",
+        description: `Auto-dismissed: full drip sequence (${sequence} emails) completed with no engagement.`,
+        createdAt: /* @__PURE__ */ new Date(),
+        metadata: {
+          from: "awaiting_onboarding",
+          to: "dismissed",
+          trigger: "auto_dismiss_no_engagement",
+          sequence,
+          lastEngagement: lastEngagement || "none"
+        }
+      });
+    }
     await updateTaskStatus(db4, task.id, "COMPLETED");
     return;
   }
@@ -27958,10 +27999,271 @@ async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
     console.error(`Chat webhook failed (${resp.status}):`, await resp.text());
   }
 }
+
+// src/functions/tidycal-api.ts
+var import_https14 = require("firebase-functions/v2/https");
+var import_params6 = require("firebase-functions/params");
+var import_firestore18 = require("firebase-admin/firestore");
+
+// src/utils/tidycal.ts
+var TIDYCAL_BASE = "https://tidycal.com/api";
+var TIDYCAL_BOOKING_TYPES = {
+  /** Vendor onboarding — 30 min "XIRI Facility Solutions | Contractor Onboarding Call" */
+  CONTRACTOR_ONBOARDING: 439911,
+  /** Lead pre-site discovery — 30 min "XIRI Facility Solutions | Pre-Site Visit Discovery Call" */
+  DISCOVERY_CALL: 1829202,
+  /** General catch-all — 30 min "XIRI Facility Solutions | 30-Minute Meeting" */
+  GENERAL_MEETING: 1829203
+};
+function headers() {
+  const apiKey = process.env.TIDYCAL_API_KEY;
+  if (!apiKey) throw new Error("TIDYCAL_API_KEY not set in environment");
+  return {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+    Accept: "application/json"
+  };
+}
+async function getTimeslots(bookingTypeId, startDate, endDate, timezone = "America/New_York") {
+  const startsAt = startDate.includes("T") ? startDate : `${startDate}T00:00:00Z`;
+  const endsAt = endDate.includes("T") ? endDate : `${endDate}T23:59:59Z`;
+  const params = new URLSearchParams({
+    starts_at: startsAt,
+    ends_at: endsAt,
+    timezone
+  });
+  const url = `${TIDYCAL_BASE}/booking-types/${bookingTypeId}/timeslots?${params}`;
+  const resp = await fetch(url, { method: "GET", headers: headers() });
+  if (!resp.ok) {
+    const body = await resp.text();
+    console.error(`TidyCal getTimeslots error ${resp.status}:`, body);
+    throw new Error(`TidyCal API error: ${resp.status}`);
+  }
+  const data = await resp.json();
+  return data.data || data;
+}
+async function createBooking(bookingTypeId, payload) {
+  const url = `${TIDYCAL_BASE}/booking-types/${bookingTypeId}/bookings`;
+  const body = {
+    name: payload.name,
+    email: payload.email,
+    starts_at: payload.starts_at,
+    timezone: payload.timezone
+  };
+  if (payload.questions) {
+    body.questions = payload.questions;
+  }
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(body)
+  });
+  if (!resp.ok) {
+    const errorBody = await resp.text();
+    console.error(`TidyCal createBooking error ${resp.status}:`, errorBody);
+    throw new Error(`TidyCal booking failed: ${resp.status} \u2014 ${errorBody}`);
+  }
+  const data = await resp.json();
+  return data.data || data;
+}
+async function listBookings(options) {
+  const params = new URLSearchParams();
+  if (options?.bookingTypeId) params.set("booking_type_id", String(options.bookingTypeId));
+  if (options?.page) params.set("page", String(options.page));
+  if (options?.cancelled !== void 0) params.set("cancelled", options.cancelled ? "1" : "0");
+  const url = `${TIDYCAL_BASE}/bookings?${params}`;
+  const resp = await fetch(url, { method: "GET", headers: headers() });
+  if (!resp.ok) {
+    const body = await resp.text();
+    console.error(`TidyCal listBookings error ${resp.status}:`, body);
+    throw new Error(`TidyCal API error: ${resp.status}`);
+  }
+  const data = await resp.json();
+  return {
+    bookings: data.data || [],
+    total: data.total || 0
+  };
+}
+
+// src/functions/tidycal-api.ts
+var TIDYCAL_API_KEY = (0, import_params6.defineSecret)("TIDYCAL_API_KEY");
+var getOnboardingTimeslots = (0, import_https14.onRequest)({
+  cors: DASHBOARD_CORS,
+  secrets: [TIDYCAL_API_KEY]
+}, async (req, res) => {
+  try {
+    const { startDate, endDate, timezone, bookingTypeId } = req.query;
+    if (!startDate || !endDate) {
+      res.status(400).json({ error: "startDate and endDate are required (YYYY-MM-DD)" });
+      return;
+    }
+    const typeId = bookingTypeId ? parseInt(bookingTypeId, 10) : TIDYCAL_BOOKING_TYPES.CONTRACTOR_ONBOARDING;
+    const slots = await getTimeslots(
+      typeId,
+      startDate,
+      endDate,
+      timezone || "America/New_York"
+    );
+    res.json({ slots });
+  } catch (error12) {
+    console.error("getOnboardingTimeslots error:", error12);
+    res.status(500).json({ error: error12.message || "Failed to fetch timeslots" });
+  }
+});
+var bookOnboardingCall = (0, import_https14.onRequest)({
+  cors: DASHBOARD_CORS,
+  secrets: [TIDYCAL_API_KEY]
+}, async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+  try {
+    const { vendorId, name, email, starts_at, timezone } = req.body;
+    if (!vendorId || !name || !email || !starts_at) {
+      res.status(400).json({ error: "vendorId, name, email, starts_at are required" });
+      return;
+    }
+    const vendorRef = db.collection("vendors").doc(vendorId);
+    const vendorDoc = await vendorRef.get();
+    if (!vendorDoc.exists) {
+      res.status(404).json({ error: "Vendor not found" });
+      return;
+    }
+    const booking = await createBooking(
+      TIDYCAL_BOOKING_TYPES.CONTRACTOR_ONBOARDING,
+      {
+        name,
+        email,
+        starts_at,
+        timezone: timezone || "America/New_York",
+        questions: { vendor_id: vendorId }
+      }
+    );
+    await vendorRef.update({
+      status: "onboarding_scheduled",
+      onboardingCallTime: starts_at,
+      tidycalBookingId: booking.id,
+      tidycalMeetingUrl: booking.meeting_url || null,
+      tidycalRescheduleUrl: booking.reschedule_url || null,
+      updatedAt: import_firestore18.FieldValue.serverTimestamp()
+    });
+    await db.collection("vendor_activities").add({
+      vendorId,
+      type: "ONBOARDING_CALL_BOOKED",
+      description: `Onboarding call booked for ${new Date(starts_at).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}`,
+      createdAt: import_firestore18.FieldValue.serverTimestamp(),
+      metadata: {
+        tidycalBookingId: booking.id,
+        starts_at,
+        meetingUrl: booking.meeting_url
+      }
+    });
+    console.log(`\u2705 Onboarding call booked for vendor ${vendorId} \u2014 TidyCal ID ${booking.id}`);
+    res.json({
+      success: true,
+      booking: {
+        id: booking.id,
+        starts_at: booking.starts_at,
+        ends_at: booking.ends_at,
+        meeting_url: booking.meeting_url,
+        reschedule_url: booking.reschedule_url
+      }
+    });
+  } catch (error12) {
+    console.error("bookOnboardingCall error:", error12);
+    res.status(500).json({ error: error12.message || "Failed to book call" });
+  }
+});
+var getDashboardTimeslots = (0, import_https14.onCall)({
+  cors: DASHBOARD_CORS,
+  secrets: [TIDYCAL_API_KEY]
+}, async (request) => {
+  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  const { startDate, endDate, timezone, bookingTypeId } = request.data;
+  if (!startDate || !endDate) {
+    throw new import_https14.HttpsError("invalid-argument", "startDate and endDate are required");
+  }
+  const typeId = bookingTypeId || TIDYCAL_BOOKING_TYPES.DISCOVERY_CALL;
+  const slots = await getTimeslots(
+    typeId,
+    startDate,
+    endDate,
+    timezone || "America/New_York"
+  );
+  return { slots };
+});
+var bookDiscoveryCall = (0, import_https14.onCall)({
+  cors: DASHBOARD_CORS,
+  secrets: [TIDYCAL_API_KEY]
+}, async (request) => {
+  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  const { leadId, name, email, starts_at, timezone, bookingTypeId } = request.data;
+  if (!leadId || !name || !email || !starts_at) {
+    throw new import_https14.HttpsError("invalid-argument", "leadId, name, email, starts_at are required");
+  }
+  const leadRef = db.collection("leads").doc(leadId);
+  const leadDoc = await leadRef.get();
+  if (!leadDoc.exists) {
+    throw new import_https14.HttpsError("not-found", "Lead not found");
+  }
+  const typeId = bookingTypeId || TIDYCAL_BOOKING_TYPES.DISCOVERY_CALL;
+  const booking = await createBooking(typeId, {
+    name,
+    email,
+    starts_at,
+    timezone: timezone || "America/New_York",
+    questions: { lead_id: leadId }
+  });
+  await leadRef.update({
+    discoveryCallTime: starts_at,
+    tidycalBookingId: booking.id,
+    tidycalMeetingUrl: booking.meeting_url || null,
+    tidycalRescheduleUrl: booking.reschedule_url || null,
+    updatedAt: import_firestore18.FieldValue.serverTimestamp()
+  });
+  await db.collection("lead_activities").add({
+    leadId,
+    type: "DISCOVERY_CALL_BOOKED",
+    description: `Discovery call booked for ${new Date(starts_at).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}`,
+    createdAt: import_firestore18.FieldValue.serverTimestamp(),
+    createdBy: request.auth.uid,
+    metadata: {
+      tidycalBookingId: booking.id,
+      starts_at,
+      meetingUrl: booking.meeting_url
+    }
+  });
+  console.log(`\u2705 Discovery call booked for lead ${leadId} \u2014 TidyCal ID ${booking.id}`);
+  return {
+    success: true,
+    booking: {
+      id: booking.id,
+      starts_at: booking.starts_at,
+      ends_at: booking.ends_at,
+      meeting_url: booking.meeting_url,
+      reschedule_url: booking.reschedule_url
+    }
+  };
+});
+var getTidyCalBookings = (0, import_https14.onCall)({
+  cors: DASHBOARD_CORS,
+  secrets: [TIDYCAL_API_KEY]
+}, async (request) => {
+  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  const { bookingTypeId, page } = request.data || {};
+  const result = await listBookings({
+    bookingTypeId,
+    page: page || 1
+  });
+  return result;
+});
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   adminCreateUser,
   adminUpdateAuthUser,
+  bookDiscoveryCall,
+  bookOnboardingCall,
   calculateNrr,
   changeMyPassword,
   checkNightlyStatus,
@@ -27974,9 +28276,12 @@ async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
   generateMonthlyInvoices,
   generateMorningReports,
   getComplianceLog,
+  getDashboardTimeslots,
   getFacebookPosts,
   getFacebookReels,
+  getOnboardingTimeslots,
   getOutroPreview,
+  getTidyCalBookings,
   handleUnsubscribe,
   onAuditFailed,
   onAuditSubmitted,

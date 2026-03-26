@@ -20,6 +20,7 @@ import {
 import { format } from 'date-fns';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import LeadActivityFeed from './LeadActivityFeed';
+import BookCallDialog from './BookCallDialog';
 
 function toDate(value: any): Date | null {
     if (!value) return null;
@@ -393,6 +394,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
     const [quotes, setQuotes] = useState<any[]>([]);
     const [quotesLoading, setQuotesLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
+    const [bookCallOpen, setBookCallOpen] = useState(false);
 
     useEffect(() => {
         if (!leadId || !open) { setLead(null); setLoading(true); setActiveTab('overview'); return; }
@@ -460,6 +462,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
     const createdDate = lead ? toDate(lead.createdAt) : null;
 
     return (
+        <>
         <Sheet open={open} onOpenChange={(o: boolean) => { if (!o) onClose(); }}>
             <SheetContent className="w-full sm:max-w-[680px] overflow-y-auto p-0" side="right">
                 {loading ? (
@@ -811,6 +814,20 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                             )}
                                         </CardContent>
                                     </Card>
+
+                                    {/* Book Discovery Call via TidyCal */}
+                                    <Card>
+                                        <CardContent className="py-4">
+                                            <Button
+                                                onClick={() => setBookCallOpen(true)}
+                                                className="w-full gap-2"
+                                                variant="outline"
+                                            >
+                                                <Calendar className="w-4 h-4" />
+                                                Book Discovery Call
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
                                 </TabsContent>
 
                                 <TabsContent value="attribution" className="space-y-4">
@@ -868,5 +885,20 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                 )}
             </SheetContent>
         </Sheet>
+
+            {lead && (
+                <BookCallDialog
+                    open={bookCallOpen}
+                    onClose={() => setBookCallOpen(false)}
+                    entityId={lead.id!}
+                    entityName={(lead as any).companyName || lead.contactName || 'Lead'}
+                    entityEmail={lead.email || ''}
+                    entityType="lead"
+                    onBooked={(booking) => {
+                        console.log('Discovery call booked:', booking);
+                    }}
+                />
+            )}
+        </>
     );
 }

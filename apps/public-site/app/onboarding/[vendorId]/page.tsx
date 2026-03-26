@@ -2,14 +2,17 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc, arrayUnion } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../../../lib/firebase";
 import { Vendor } from "@xiri-facility-solutions/shared";
-import { Loader2, CheckCircle, Upload, ChevronRight, ChevronLeft, Globe, Calendar, Clock, Phone } from "lucide-react";
+import { Loader2, CheckCircle, Upload, ChevronRight, ChevronLeft, Globe, Calendar, Clock, Phone, Video } from "lucide-react";
 import { translations, t, type Language } from "./translations";
-import { addDays, addHours, addMinutes, startOfDay, format } from "date-fns";
+import { addDays, format } from "date-fns";
 import { trackEvent } from "@/lib/tracking";
+
+// Cloud Functions base URL
+const CF_BASE = process.env.NEXT_PUBLIC_CF_BASE || "https://us-central1-xiri-facility-solutions.cloudfunctions.net";
 
 export default function OnboardingPage() {
     const params = useParams();
@@ -22,6 +25,12 @@ export default function OnboardingPage() {
     const [callBooked, setCallBooked] = useState(false);
     const [selectedCallSlot, setSelectedCallSlot] = useState<string | null>(null);
     const [bookingCall, setBookingCall] = useState(false);
+    const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
+    const [rescheduleUrl, setRescheduleUrl] = useState<string | null>(null);
+    // TidyCal timeslots state
+    const [timeslots, setTimeslots] = useState<{ starts_at: string; is_available: boolean }[]>([]);
+    const [loadingSlots, setLoadingSlots] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
     // Timezone
     const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -57,6 +66,8 @@ export default function OnboardingPage() {
     const [hasPollutionLiability, setHasPollutionLiability] = useState<boolean | null>(null);
 
     // Form State - Step 3: Contact Info
+    const [contactName, setContactName] = useState('');
+    const [contactRole, setContactRole] = useState<'Owner' | 'Dispatch' | 'Billing' | 'Sales' | 'Other'>('Owner');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
 
@@ -129,7 +140,7 @@ export default function OnboardingPage() {
         return true;
     };
     const isStep3Valid = () => {
-        if (!email.trim() || !phone.trim()) return false;
+        if (!contactName.trim() || !email.trim() || !phone.trim()) return false;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) return false;
         const phoneDigits = phone.replace(/\D/g, '');
@@ -226,10 +237,28 @@ export default function OnboardingPage() {
                 }];
             }
 
+            // Split contact name into first/last for CRM contact
+            const nameParts = contactName.trim().split(/\s+/);
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            // Create primary contact entry for CRM
+            const primaryContact = {
+                id: crypto.randomUUID(),
+                firstName,
+                lastName,
+                role: contactRole,
+                phone,
+                email,
+                isPrimary: true,
+            };
+
             await updateDoc(doc(db, "vendors", vendor.id!), {
                 businessName: businessName || vendor.businessName,
+                contactName,
                 email,
                 phone,
+                contacts: arrayUnion(primaryContact),
                 status: 'compliance_review',
                 onboardingTrack: currentTrack,
                 preferredLanguage: language, // Save 'en' or 'es'
@@ -266,54 +295,12 @@ export default function OnboardingPage() {
     // Check if vendor qualifies for onboarding call (GL + LLC + WC)
     const qualifiesForCall = hasGeneralLiability && hasBusinessEntity && hasWorkersComp;
 
-    const handleBookCall = async () => {
-        if (!vendor || !selectedCallSlot) return;
-        setBookingCall(true);
-        try {
-            await updateDoc(doc(db, "vendors", vendor.id!), {
-                onboardingCallTime: selectedCallSlot,
-                status: 'onboarding_scheduled',
-                updatedAt: serverTimestamp()
-            });
-            setCallBooked(true);
-        } catch (error) {
-            console.error("Error booking call:", error);
-        } finally {
-            setBookingCall(false);
-        }
-    };
-
     if (completed) {
-        // ─── Call Booked Confirmation ───
-        if (callBooked && selectedCallSlot) {
-            return (
-                <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
-                    <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center space-y-4">
-                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                            <Calendar className="w-8 h-8 text-green-600" />
-                        </div>
-                        <h2 className="text-2xl font-bold text-slate-900">You&apos;re Booked!</h2>
-                        <div className="bg-slate-50 rounded-lg p-4">
-                            <p className="text-lg font-semibold text-slate-900">
-                                {format(new Date(selectedCallSlot), "EEEE, MMMM do")}
-                            </p>
-                            <p className="text-slate-600">
-                                {format(new Date(selectedCallSlot), "h:mm a")} • 30 minutes
-                            </p>
-                        </div>
-                        <p className="text-slate-600 text-sm">
-                            A calendar invite has been sent to your email. We look forward to speaking with you!
-                        </p>
-                    </div>
-                </div>
-            );
-        }
-
-        // ─── Scheduling UI (if qualified) ───
-        if (qualifiesForCall && !callBooked) {
+        // ─── Scheduling UI via TidyCal Embed (if qualified) ───
+        if (qualifiesForCall) {
             return (
                 <div className="min-h-screen bg-slate-50 p-4">
-                    <div className="max-w-2xl mx-auto">
+                    <div className="w-full max-w-5xl mx-auto">
                         {/* Success Banner */}
                         <div className="bg-white p-6 rounded-xl shadow-lg mb-6 text-center">
                             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -323,166 +310,15 @@ export default function OnboardingPage() {
                             <p className="text-slate-600 mt-1">You qualify for an onboarding call. Book a time below.</p>
                         </div>
 
-                        {/* Scheduling Card */}
-                        <div className="bg-white p-6 rounded-xl shadow-lg">
-                            <div className="mb-6">
-                                <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                                    <Phone className="w-5 h-5 text-sky-600" />
-                                    Schedule Your Onboarding Call
-                                </h3>
-                                <p className="text-slate-600 mt-1">30-minute call to review your account and next steps</p>
-
-                                {/* Timezone Selector */}
-                                <div className="relative mt-3">
-                                    <button
-                                        onClick={() => setShowTzDropdown(!showTzDropdown)}
-                                        className="inline-flex items-center gap-1.5 text-sm text-sky-600 hover:text-sky-700 transition-colors"
-                                    >
-                                        <Globe className="w-3.5 h-3.5" />
-                                        {tzLabel}
-                                        <ChevronLeft className="w-3 h-3 -rotate-90" />
-                                    </button>
-                                    {showTzDropdown && (
-                                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[220px]">
-                                            {commonTimezones.map(tz => (
-                                                <button
-                                                    key={tz.value}
-                                                    onClick={() => {
-                                                        setSelectedTz(tz.value);
-                                                        setShowTzDropdown(false);
-                                                        setSelectedCallSlot(null);
-                                                    }}
-                                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-sky-50 transition-colors ${selectedTz === tz.value ? 'text-sky-600 font-medium bg-sky-50' : 'text-gray-700'
-                                                        }`}
-                                                >
-                                                    {tz.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="grid md:grid-cols-[200px_1fr] gap-6">
-                                {/* Date Selector */}
-                                <div className="space-y-2">
-                                    {(() => {
-                                        const dates: Date[] = [];
-                                        let current = addDays(new Date(), 1);
-                                        let daysAdded = 0;
-                                        while (daysAdded < 5) {
-                                            const dayOfWeek = current.getDay();
-                                            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-                                                dates.push(new Date(current));
-                                                daysAdded++;
-                                            }
-                                            current = addDays(current, 1);
-                                        }
-                                        return dates;
-                                    })().map((date, idx) => {
-                                        const isSelected = selectedCallSlot &&
-                                            format(new Date(selectedCallSlot), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
-                                        const isTomorrow = format(date, 'yyyy-MM-dd') === format(addDays(new Date(), 1), 'yyyy-MM-dd');
-
-                                        return (
-                                            <button
-                                                key={idx}
-                                                onClick={() => {
-                                                    const baseDate = startOfDay(date);
-                                                    const firstSlot = addHours(baseDate, 8);
-                                                    setSelectedCallSlot(firstSlot.toISOString());
-                                                }}
-                                                className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${isSelected
-                                                    ? 'border-sky-600 bg-sky-50 text-sky-900'
-                                                    : 'border-gray-200 hover:border-gray-300 bg-white'
-                                                    }`}
-                                            >
-                                                <div className={`text-xs font-medium ${isSelected ? 'text-sky-600' : 'text-gray-500'}`}>
-                                                    {format(date, 'EEE')}
-                                                </div>
-                                                <div className={`text-lg font-semibold ${isSelected ? 'text-sky-900' : 'text-gray-900'}`}>
-                                                    {format(date, 'MMM d')}
-                                                </div>
-                                                {isTomorrow && (
-                                                    <div className="text-xs text-sky-600 font-medium mt-0.5">Tomorrow</div>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* Time Slots */}
-                                <div>
-                                    {selectedCallSlot ? (
-                                        <div className="space-y-3">
-                                            <div className="text-sm font-medium text-gray-700 mb-3">
-                                                {format(new Date(selectedCallSlot), 'EEEE, MMMM d')}
-                                            </div>
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                                {(() => {
-                                                    const selectedDate = new Date(selectedCallSlot);
-                                                    const baseDate = startOfDay(selectedDate);
-                                                    // 8am to 10pm, 30-min intervals
-                                                    const times: { label: string; value: Date }[] = [];
-                                                    for (let hour = 8; hour <= 21; hour++) {
-                                                        times.push({ label: format(addHours(baseDate, hour), 'h:mm a'), value: addHours(baseDate, hour) });
-                                                        if (hour < 21) {
-                                                            times.push({ label: format(addMinutes(addHours(baseDate, hour), 30), 'h:mm a'), value: addMinutes(addHours(baseDate, hour), 30) });
-                                                        }
-                                                    }
-                                                    // Add 10:00 PM as last slot
-                                                    times.push({ label: format(addHours(baseDate, 22), 'h:mm a'), value: addHours(baseDate, 22) });
-
-                                                    return times.map((timeSlot, timeIndex) => {
-                                                        const str = timeSlot.value.toISOString();
-                                                        const selected = selectedCallSlot === str;
-                                                        const now = new Date();
-                                                        const isPast = timeSlot.value < now;
-
-                                                        return (
-                                                            <button
-                                                                key={timeIndex}
-                                                                onClick={() => setSelectedCallSlot(str)}
-                                                                disabled={isPast}
-                                                                className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-all ${selected
-                                                                    ? 'bg-sky-600 text-white border-sky-600'
-                                                                    : 'bg-white border-gray-200 hover:border-sky-300 hover:bg-sky-50'
-                                                                    } ${isPast ? 'opacity-40 cursor-not-allowed' : ''}`}
-                                                            >
-                                                                {timeSlot.label}
-                                                            </button>
-                                                        );
-                                                    });
-                                                })()}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center justify-center h-full text-gray-500 text-center">
-                                            <div>
-                                                <Clock className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                                                <p>Select a date to see available times</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Book Button */}
-                            <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200">
-                                <p className="text-sm text-gray-600">
-                                    {selectedCallSlot
-                                        ? `Selected: ${format(new Date(selectedCallSlot), 'MMM d, h:mm a')}`
-                                        : 'No time selected'}
-                                </p>
-                                <button
-                                    onClick={handleBookCall}
-                                    disabled={!selectedCallSlot || bookingCall}
-                                    className="px-6 py-2.5 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-                                >
-                                    {bookingCall ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
-                                    Book Onboarding Call
-                                </button>
-                            </div>
+                        {/* TidyCal Embed — clip bottom to hide branding */}
+                        <div className="bg-white rounded-xl shadow-lg overflow-hidden" style={{ marginBottom: '-40px', paddingBottom: 0 }}>
+                            <iframe
+                                src={`https://tidycal.com/xiri-facility-solutions/xiri-contractors-30-minutes?name=${encodeURIComponent(contactName || '')}&email=${encodeURIComponent(email || '')}`}
+                                width="100%"
+                                frameBorder="0"
+                                title="Schedule Onboarding Call"
+                                style={{ border: 'none', height: 'calc(100vh - 160px)', minHeight: '600px', marginBottom: '-50px' }}
+                            />
                         </div>
 
                         {/* Skip Option */}
@@ -854,6 +690,36 @@ export default function OnboardingPage() {
                             </div>
 
                             <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                                        Contact Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={contactName}
+                                        onChange={(e) => setContactName(e.target.value)}
+                                        placeholder="e.g. John Smith"
+                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-sky-600 focus:border-transparent"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                                        Your Role
+                                    </label>
+                                    <select
+                                        value={contactRole}
+                                        onChange={(e) => setContactRole(e.target.value as any)}
+                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 bg-white focus:ring-2 focus:ring-sky-600 focus:border-transparent"
+                                    >
+                                        <option value="Owner">Owner / Principal</option>
+                                        <option value="Dispatch">Dispatch / Ops Manager</option>
+                                        <option value="Sales">Sales Rep</option>
+                                        <option value="Billing">Billing / Accounting</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">
                                         {t('step3.email.label', language)}

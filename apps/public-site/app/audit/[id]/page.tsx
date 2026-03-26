@@ -4,17 +4,17 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Loader2, MapPin, Calendar, CheckCircle, ArrowRight, ArrowLeft, Phone, Building2 } from "lucide-react";
+import { Loader2, MapPin, CheckCircle, ArrowRight, ArrowLeft } from "lucide-react";
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
-import { addDays, format, startOfHour, addHours } from 'date-fns';
+
 import { trackEvent } from '@/lib/tracking';
 
 // Steps
 const STEPS = [
     { id: 'service', label: 'Service Needs' },
     { id: 'facility', label: 'Your Facility' },
-    { id: 'schedule', label: 'Schedule Audit' },
-    { id: 'contact', label: 'Contact Details' }
+    { id: 'contact', label: 'Contact Details' },
+    { id: 'schedule', label: 'Book Walkthrough' }
 ];
 
 export default function AuditWizardPage() {
@@ -35,7 +35,7 @@ export default function AuditWizardPage() {
     const [manualAddress, setManualAddress] = useState("");
     const [auditSlots, setAuditSlots] = useState<string[]>([]);
     const [meetingType, setMeetingType] = useState('audit'); // 'audit' | 'intro'
-    const [contact, setContact] = useState({ name: "", email: "", phone: "" });
+    const [contact, setContact] = useState({ name: "", email: "", phone: "", role: "Facility Manager" });
 
     // Load Lead
     useEffect(() => {
@@ -762,190 +762,9 @@ export default function AuditWizardPage() {
                     )}
 
 
-                    {/* STEP 2: Schedule */}
-                    {currentStep === 2 && (
-                        <div className="space-y-6 animate-fadeIn">
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-900">Select a Date & Time</h2>
-                                <p className="text-gray-600 mt-2">
-                                    {meetingType === 'audit'
-                                        ? 'Choose a time for your 1-hour site walkthrough (Early/Late hours available)'
-                                        : 'Schedule a 30-min intro call to discuss your needs'}
-                                </p>
-                            </div>
-
-                            {/* Meeting Type Toggle */}
-                            <div className="flex p-1 bg-gray-100 rounded-lg">
-                                <button
-                                    onClick={() => setMeetingType('audit')}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${meetingType === 'audit'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                >
-                                    <Building2 className="w-4 h-4" />
-                                    Site Walkthrough
-                                </button>
-                                <button
-                                    onClick={() => setMeetingType('intro')}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${meetingType === 'intro'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                >
-                                    <Phone className="w-4 h-4" />
-                                    Intro Call
-                                </button>
-                            </div>
-
-                            <div className="space-y-4">
-                                {/* Date Selector (Horizontal) */}
-                                <div className="overflow-x-auto pb-2">
-                                    <div className="flex gap-2 min-w-max">
-                                        {(() => {
-                                            const dates = [];
-                                            let current = addDays(new Date(), 1);
-                                            // Show next 7 days (including weekends)
-                                            for (let i = 0; i < 7; i++) {
-                                                dates.push(new Date(current));
-                                                current = addDays(current, 1);
-                                            }
-                                            return dates;
-                                        })().map((date, idx) => {
-                                            const isSelected = auditSlots.length > 0 &&
-                                                format(new Date(auditSlots[0]), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
-                                            const isTomorrow = format(date, 'yyyy-MM-dd') === format(addDays(new Date(), 1), 'yyyy-MM-dd');
-                                            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-
-                                            return (
-                                                <button
-                                                    key={idx}
-                                                    onClick={() => {
-                                                        // Create a new date at 9am on the selected day
-                                                        const selectedDate = new Date(date);
-                                                        selectedDate.setHours(9, 0, 0, 0);
-                                                        setAuditSlots([selectedDate.toISOString()]);
-                                                    }}
-                                                    className={`flex-shrink-0 w-20 text-center px-3 py-3 rounded-lg border transition-all ${isSelected
-                                                        ? 'border-sky-600 bg-sky-600 text-white shadow-md'
-                                                        : isWeekend
-                                                            ? 'border-gray-200 bg-gray-50 hover:border-sky-300 hover:bg-sky-50'
-                                                            : 'border-gray-200 bg-white hover:border-sky-300 hover:bg-sky-50'
-                                                        }`}
-                                                >
-                                                    <div className={`text-xs font-medium uppercase ${isSelected ? 'text-white' : 'text-gray-500'}`}>
-                                                        {format(date, 'EEE')}
-                                                    </div>
-                                                    <div className={`text-xs font-medium uppercase mt-1 ${isSelected ? 'text-sky-100' : 'text-gray-400'}`}>
-                                                        {format(date, 'MMM')}
-                                                    </div>
-                                                    <div className={`text-2xl font-bold mt-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>
-                                                        {format(date, 'd')}
-                                                    </div>
-                                                    {isTomorrow && !isSelected && (
-                                                        <div className="text-[10px] text-sky-600 font-medium mt-1">Tomorrow</div>
-                                                    )}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Time Slots */}
-                                <div>
-                                    {auditSlots.length > 0 ? (
-                                        <div className="space-y-3">
-                                            <div className="text-sm font-medium text-gray-700 mb-3">
-                                                {format(new Date(auditSlots[0]), 'EEEE, MMMM d')}
-                                            </div>
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                                {(() => {
-                                                    const selectedDate = new Date(auditSlots[0]);
-                                                    // Create time slots by setting hours directly to avoid timezone issues
-                                                    const times = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map(hour => {
-                                                        const timeSlot = new Date(selectedDate);
-                                                        timeSlot.setHours(hour, 0, 0, 0);
-                                                        return {
-                                                            label: hour < 12 ? `${hour}:00am` : hour === 12 ? '12:00pm' : `${hour - 12}:00pm`,
-                                                            value: timeSlot
-                                                        };
-                                                    });
-                                                    return times;
-                                                })().map((time, idx) => {
-                                                    const str = time.value.toISOString();
-                                                    const selected = auditSlots.includes(str);
-                                                    const hour = time.value.getHours();
-                                                    const isExtended = hour < 9 || hour > 17; // Visual cue for extended hours?
-
-                                                    return (
-                                                        <button
-                                                            key={idx}
-                                                            onClick={() => setAuditSlots([str])}
-                                                            className={`py-3 px-4 rounded-lg border text-sm font-semibold transition-all transform ${selected
-                                                                ? 'border-sky-600 bg-sky-600 text-white shadow-lg shadow-sky-600/30 scale-105 ring-2 ring-sky-600 ring-offset-2'
-                                                                : 'border-gray-200 hover:border-sky-400 hover:bg-sky-50 hover:text-sky-700 bg-white text-gray-700'
-                                                                } ${isExtended ? 'opacity-90' : ''}`}
-                                                        >
-                                                            {time.label}
-                                                            {isExtended && selected && <span className="text-[10px] ml-1 opacity-75 block leading-none">Extended</span>}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                            <p className="text-xs text-center text-gray-400 mt-4">
-                                                Need a time outside these hours? Call us at (555) 123-4567
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                                            Select a date to see available times
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                                <div className="flex items-center gap-4">
-                                    <button
-                                        onClick={() => setCurrentStep(1)}
-                                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                                    >
-                                        <ArrowLeft className="w-4 h-4" />
-                                        Back
-                                    </button>
-                                    {auditSlots.length > 0 && (
-                                        <div className="flex items-center gap-2 px-3 py-2 bg-sky-50 border border-sky-200 rounded-lg">
-                                            <svg className="w-4 h-4 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            <span className="text-sm font-semibold text-sky-900">
-                                                {format(new Date(auditSlots[0]), 'MMM d, h:mm a')}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {auditSlots.length === 0 && (
-                                        <p className="text-sm text-gray-500">No time selected</p>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={() => updateLead({
-                                        preferredAuditTimes: auditSlots,
-                                        meetingType,
-                                        meetingDuration: meetingType === 'audit' ? 60 : 30
-                                    }, 3)}
-                                    disabled={auditSlots.length === 0 || submitting}
-                                    className="px-6 py-2.5 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-                                >
-                                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continue'}
-                                    {!submitting && <ArrowRight className="w-4 h-4" />}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* STEP 3: Contact */}
+                    {/* STEP 2: Contact */}
                     {
-                        currentStep === 3 && (
+                        currentStep === 2 && (
                             <div className="space-y-6 animate-fadeIn">
                                 <h2 className="text-2xl font-bold text-gray-900">Who should we contact?</h2>
                                 <div className="space-y-4">
@@ -954,6 +773,18 @@ export default function AuditWizardPage() {
                                         value={contact.name} onChange={e => setContact({ ...contact, name: e.target.value })}
                                         className="w-full p-4 rounded-xl border border-gray-200"
                                     />
+                                    <select
+                                        value={contact.role}
+                                        onChange={e => setContact({ ...contact, role: e.target.value })}
+                                        className="w-full p-4 rounded-xl border border-gray-200 bg-white text-gray-900"
+                                    >
+                                        <option value="Facility Manager">Facility Manager</option>
+                                        <option value="Property Manager">Property Manager</option>
+                                        <option value="Operations Director">Operations Director</option>
+                                        <option value="Office Manager">Office Manager</option>
+                                        <option value="Owner">Owner / Principal</option>
+                                        <option value="Other">Other</option>
+                                    </select>
                                     <input
                                         type="email" placeholder="Email Address"
                                         value={contact.email} onChange={e => setContact({ ...contact, email: e.target.value })}
@@ -964,7 +795,7 @@ export default function AuditWizardPage() {
                                         placeholder="Phone Number"
                                         value={contact.phone}
                                         onChange={e => {
-                                            const input = e.target.value.replace(/\D/g, ''); // Remove all non-digits
+                                            const input = e.target.value.replace(/\D/g, '');
                                             let formatted = '';
 
                                             if (input.length > 0) {
@@ -985,6 +816,46 @@ export default function AuditWizardPage() {
                                 </div>
                                 <div className="flex items-center justify-between pt-4">
                                     <button
+                                        onClick={() => setCurrentStep(1)}
+                                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                                    >
+                                        <ArrowLeft className="w-4 h-4" />
+                                        Back
+                                    </button>
+                                    <button
+                                        onClick={() => updateLead({ ...contact, contactName: contact.name, contactPhone: contact.phone, contactRole: contact.role, status: 'new' }, 3)}
+                                        disabled={!contact.name || !contact.email || submitting}
+                                        className="btn-primary w-full max-w-xs"
+                                    >
+                                        Continue to Scheduling
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    }
+
+                    {/* STEP 3: Book Walkthrough via TidyCal */}
+                    {
+                        currentStep === 3 && (
+                            <div className="space-y-4 animate-fadeIn">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900">Book Your Site Walk-through</h2>
+                                    <p className="text-gray-600 mt-2">Pick a time that works best — we&apos;ll come to you.</p>
+                                </div>
+
+                                {/* TidyCal Embed — clip bottom to hide branding */}
+                                <div className="rounded-xl overflow-hidden" style={{ marginBottom: '-40px' }}>
+                                    <iframe
+                                        src={`https://tidycal.com/xiri-facility-solutions/walkthrough?name=${encodeURIComponent(contact.name || '')}&email=${encodeURIComponent(contact.email || '')}`}
+                                        width="100%"
+                                        frameBorder="0"
+                                        title="Book Site Walk-through"
+                                        style={{ border: 'none', height: 'calc(100vh - 280px)', minHeight: '500px', marginBottom: '-50px' }}
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between pt-4">
+                                    <button
                                         onClick={() => setCurrentStep(2)}
                                         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
                                     >
@@ -992,11 +863,10 @@ export default function AuditWizardPage() {
                                         Back
                                     </button>
                                     <button
-                                        onClick={() => updateLead({ ...contact, contactName: contact.name, contactPhone: contact.phone, status: 'new' }, 4)}
-                                        disabled={!contact.name || !contact.email || submitting}
-                                        className="btn-primary w-full max-w-xs"
+                                        onClick={() => setCurrentStep(4)}
+                                        className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
                                     >
-                                        Submit Request
+                                        Skip for now →
                                     </button>
                                 </div>
                             </div>
