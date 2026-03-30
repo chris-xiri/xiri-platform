@@ -463,7 +463,7 @@ function RegulationLocationView({
                             '@id': `${SITE.url}/guides/${slug}#business`,
                             name: `XIRI Facility Solutions — ${location.city}`,
                             url: `${SITE.url}/guides/${slug}`,
-                            telephone: '+1-516-526-9585',
+                            telephone: '+1-516-399-0350',
                             areaServed: {
                                 '@type': 'Place',
                                 name: `${location.city}, ${location.state}`,

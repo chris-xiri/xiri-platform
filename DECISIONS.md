@@ -333,7 +333,7 @@ Maintained by: @architect-cto
 
 > - Date: 2026-03-05
 > - Decision: **Social Links — Facebook + LinkedIn in Structured Data + Footer**
-> - Rationale: Added Facebook (`facebook.com/xirifacilitysolutions`) and LinkedIn (`linkedin.com/company/xiri-facility-solutions`) to the Organization schema's `sameAs` array in `layout.tsx`. Also added phone number `+1-516-526-9585` to both the Organization and ContactPoint schemas. Footer brand column now includes Facebook and LinkedIn SVG icons with gray-to-white hover transitions. This connects the website, Facebook page, and LinkedIn company page in Google's Knowledge Graph.
+> - Rationale: Added Facebook (`facebook.com/xirifacilitysolutions`) and LinkedIn (`linkedin.com/company/xiri-facility-solutions`) to the Organization schema's `sameAs` array in `layout.tsx`. Also added phone number `+1-516-399-0350` to both the Organization and ContactPoint schemas. Footer brand column now includes Facebook and LinkedIn SVG icons with gray-to-white hover transitions. This connects the website, Facebook page, and LinkedIn company page in Google's Knowledge Graph.
 > - **RULE: When adding new social profiles, update both `layout.tsx` sameAs schema AND Footer.tsx social icons.**
 > - Status: **Active**
 

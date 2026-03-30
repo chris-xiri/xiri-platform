@@ -78,7 +78,7 @@ export function IndustryHubPage({ industry, pillar, location, censusResult, cens
                                 "name": `XIRI ${industry.name} Cleaning — ${location.name}`,
                                 "description": location.localInsight || industry.heroSubtitle,
                                 "url": `${SITE.url}/industries/${pillar?.href?.split('/').pop()}/${industry.slug}`,
-                                "telephone": "+1-516-243-9474",
+                                "telephone": "+1-516-399-0350",
                                 "areaServed": {
                                     "@type": "Place",
                                     "name": location.region,

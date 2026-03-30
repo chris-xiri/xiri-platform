@@ -335,6 +335,45 @@ export const TASK_CATEGORIES = [
 ];
 
 // ============================================================
+// Room-Level Floor Types — grouped by cleaning method
+// ============================================================
+
+export type RoomFloorType = 'carpet' | 'vinyl' | 'vct' | 'tile' | 'concrete';
+
+export interface FloorTypeConfig {
+    id: RoomFloorType;
+    label: string;
+    cleaningMethod: string;
+    /** Maps to CleaningTask.floorType for time calculations */
+    taskFloorCategory: 'carpet' | 'hard';
+    /** Task IDs auto-recommended when this floor type is selected */
+    recommendedTasks: string[];
+}
+
+export const ROOM_FLOOR_TYPES: FloorTypeConfig[] = [
+    { id: 'carpet', label: 'Carpet', cleaningMethod: 'Vacuum + spot clean',
+        taskFloorCategory: 'carpet', recommendedTasks: ['vacuum'] },
+    { id: 'vinyl', label: 'Vinyl / LVP', cleaningMethod: 'Dust mop → damp mop',
+        taskFloorCategory: 'hard', recommendedTasks: ['mop'] },
+    { id: 'vct', label: 'VCT', cleaningMethod: 'Dust mop → damp mop, periodic strip & wax',
+        taskFloorCategory: 'hard', recommendedTasks: ['mop', 'floor-wax'] },
+    { id: 'tile', label: 'Tile (Ceramic/Porcelain)', cleaningMethod: 'Mop + periodic grout scrub',
+        taskFloorCategory: 'hard', recommendedTasks: ['mop'] },
+    { id: 'concrete', label: 'Concrete / Epoxy', cleaningMethod: 'Sweep → auto-scrub',
+        taskFloorCategory: 'hard', recommendedTasks: ['sweep', 'mop'] },
+];
+
+/** Given a room's floor breakdown, return recommended cleaning task IDs */
+export function getRecommendedFloorTasks(floorBreakdown: { type: RoomFloorType }[]): string[] {
+    const tasks = new Set<string>();
+    for (const fb of floorBreakdown) {
+        const config = ROOM_FLOOR_TYPES.find(f => f.id === fb.type);
+        config?.recommendedTasks.forEach(t => tasks.add(t));
+    }
+    return [...tasks];
+}
+
+// ============================================================
 // Room / Space Types for scope-per-room
 // ============================================================
 
@@ -344,16 +383,18 @@ export interface RoomType {
     icon: string;
     defaultTasks: string[];
     relevantCategories: string[];  // which task categories to show in this room
+    /** Controls fixture input visibility on room cards */
+    showFixtures?: 'prominent' | 'sinks-only' | false;
 }
 
 export const ROOM_TYPES: RoomType[] = [
     { id: "lobby", name: "Lobby / Reception", icon: "🏢", defaultTasks: ["trash", "dust", "wipe", "glass-entry", "vacuum", "mop"], relevantCategories: ["general", "floors", "specialty"] },
     { id: "offices", name: "Offices", icon: "💼", defaultTasks: ["trash", "dust", "wipe", "vacuum"], relevantCategories: ["general", "floors"] },
-    { id: "restrooms", name: "Restrooms", icon: "🚻", defaultTasks: ["restroom-clean", "restroom-restock", "mop"], relevantCategories: ["restrooms", "floors"] },
+    { id: "restrooms", name: "Restrooms", icon: "🚻", defaultTasks: ["restroom-clean", "restroom-restock", "mop"], relevantCategories: ["restrooms", "floors"], showFixtures: 'prominent' },
     { id: "hallways", name: "Hallways / Corridors", icon: "🚶", defaultTasks: ["vacuum", "mop", "dust"], relevantCategories: ["general", "floors"] },
-    { id: "kitchen", name: "Kitchen / Breakroom", icon: "🍽️", defaultTasks: ["breakroom", "trash", "wipe", "mop"], relevantCategories: ["general", "floors", "specialty"] },
+    { id: "kitchen", name: "Kitchen / Breakroom", icon: "🍽️", defaultTasks: ["breakroom", "trash", "wipe", "mop"], relevantCategories: ["general", "floors", "specialty"], showFixtures: 'sinks-only' },
     { id: "conference", name: "Conference Rooms", icon: "📋", defaultTasks: ["trash", "dust", "wipe", "vacuum", "glass-interior"], relevantCategories: ["general", "floors"] },
-    { id: "patient", name: "Patient / Exam Rooms", icon: "🩺", defaultTasks: ["trash", "dust", "wipe", "restroom-clean", "mop"], relevantCategories: ["general", "restrooms", "floors", "specialty"] },
+    { id: "patient", name: "Patient / Exam Rooms", icon: "🩺", defaultTasks: ["trash", "dust", "wipe", "restroom-clean", "mop"], relevantCategories: ["general", "restrooms", "floors", "specialty"], showFixtures: 'prominent' },
     { id: "common", name: "Common Areas", icon: "🛋️", defaultTasks: ["trash", "dust", "wipe", "vacuum"], relevantCategories: ["general", "floors", "specialty"] },
     { id: "warehouse", name: "Warehouse / Storage", icon: "📦", defaultTasks: ["sweep", "trash"], relevantCategories: ["general", "floors"] },
     { id: "exterior", name: "Exterior", icon: "🏗️", defaultTasks: ["pressure-wash"], relevantCategories: ["specialty"] },
@@ -418,11 +459,30 @@ export interface CustomTask {
     frequency?: string;   // per-task frequency (defaults to bid frequency)
 }
 
+export interface RoomFloorBreakdown {
+    type: RoomFloorType;
+    /** Percentage of room that is this floor type (should total 100 across all entries) */
+    percent: number;
+}
+
+export interface RoomFixtures {
+    toilets?: number;
+    urinals?: number;
+    sinks?: number;
+}
+
 export interface RoomScope {
     id: string;           // unique instance id (crypto.randomUUID)
     roomTypeId: string;
     customName?: string;  // editable name for custom rooms
     sqft?: number;        // per-room sqft (auto-distributed from total, user can override)
+    // Walkthrough dimensions
+    width?: number;       // feet (from walkthrough measurement)
+    length?: number;      // feet (from walkthrough measurement)
+    // Per-room floor type(s) — a room can have multiple (e.g. 70% tile + 30% carpet)
+    floorBreakdown?: RoomFloorBreakdown[];
+    // Per-room fixture counts from walkthrough
+    fixtures?: RoomFixtures;
     tasks: string[];      // selected preset task IDs
     customTasks?: CustomTask[];  // user-created tasks for this room
     taskOverrides?: Record<string, { name?: string; description?: string }>; // edited preset tasks
@@ -561,6 +621,35 @@ function applyFloorType(sqft: number, floorType: CleaningTask["floorType"], carp
 }
 
 /**
+ * Apply floor-type scaling using per-room floor breakdown.
+ * A room can have multiple floor types (e.g. 70% tile + 30% carpet).
+ * Calculates the effective sqft for a given task floor type.
+ */
+function applyRoomFloorBreakdown(
+    roomSqft: number,
+    taskFloorType: CleaningTask["floorType"],
+    floorBreakdown: RoomFloorBreakdown[]
+): number {
+    if (taskFloorType === "none") return roomSqft;
+
+    let carpetPct = 0;
+    let hardPct = 0;
+    for (const fb of floorBreakdown) {
+        const config = ROOM_FLOOR_TYPES.find(f => f.id === fb.type);
+        if (!config) continue;
+        if (config.taskFloorCategory === 'carpet') {
+            carpetPct += fb.percent;
+        } else {
+            hardPct += fb.percent;
+        }
+    }
+
+    if (taskFloorType === "carpet") return roomSqft * (carpetPct / 100);
+    if (taskFloorType === "hard") return roomSqft * (hardPct / 100);
+    return roomSqft;
+}
+
+/**
  * Task-based pricing engine.
  *
  * Computes monthly labor from each room's tasks (ISSA times × per-room sqft × frequency),
@@ -583,16 +672,31 @@ export function calculate(inputs: CalculatorInputs, rooms?: RoomScope[]): Calcul
     if (rooms && rooms.length > 0) {
         const taskMap = new Map(CLEANING_TASKS.map(t => [t.id, t]));
 
+        // Track whether any rooms have explicit fixture counts
+        let hasRoomFixtures = false;
+        let roomFixtureTotal = { toilets: 0, urinals: 0, sinks: 0 };
+
         for (const room of rooms) {
             // Room sqft: use room override, or fallback to total / roomCount
             const roomSqft = room.sqft || Math.round(inputs.sqft / rooms.length);
+
+            // Collect per-room fixture counts
+            if (room.fixtures && (room.fixtures.toilets || room.fixtures.urinals || room.fixtures.sinks)) {
+                hasRoomFixtures = true;
+                roomFixtureTotal.toilets += room.fixtures.toilets || 0;
+                roomFixtureTotal.urinals += room.fixtures.urinals || 0;
+                roomFixtureTotal.sinks += room.fixtures.sinks || 0;
+            }
 
             for (const taskId of room.tasks) {
                 const taskDef = taskMap.get(taskId);
                 if (!taskDef) continue;
 
                 // Calculate effective sqft (floor-type adjusted)
-                const effectiveSqft = applyFloorType(roomSqft, taskDef.floorType, buildingType.carpetPercent);
+                // Use per-room floor breakdown if available, otherwise fall back to building-level carpetPercent
+                const effectiveSqft = room.floorBreakdown && room.floorBreakdown.length > 0
+                    ? applyRoomFloorBreakdown(roomSqft, taskDef.floorType, room.floorBreakdown)
+                    : applyFloorType(roomSqft, taskDef.floorType, buildingType.carpetPercent);
                 if (effectiveSqft <= 0) continue;
 
                 // Base task time or user override
@@ -635,23 +739,65 @@ export function calculate(inputs: CalculatorInputs, rooms?: RoomScope[]): Calcul
                 }
             }
         }
+
+        // Fixtures: use room-level counts if any rooms specified them,
+        // otherwise fall back to global building-type estimate
+        if (hasRoomFixtures) {
+            const fixHours = fixtureTime(roomFixtureTotal);
+            totalMonthlyMinutes += fixHours * 60 * bidVisitsPerMonth;
+            maxFreqMinutesPerVisit += fixHours * 60;
+        } else {
+            const fixtureMultiplier = inputs.sqft / 10000;
+            const autoFixtures = {
+                toilets: Math.round(buildingType.fixturesPer10k.toilets * fixtureMultiplier),
+                urinals: Math.round(buildingType.fixturesPer10k.urinals * fixtureMultiplier),
+                sinks: Math.round(buildingType.fixturesPer10k.sinks * fixtureMultiplier),
+            };
+            const fixHours = fixtureTime(autoFixtures);
+            totalMonthlyMinutes += fixHours * 60 * bidVisitsPerMonth;
+            maxFreqMinutesPerVisit += fixHours * 60;
+        }
     } else {
         // Fallback: no rooms provided, use old production-rate model
         const baseHours = inputs.sqft / buildingType.productionRate;
         totalMonthlyMinutes = baseHours * 60 * bidVisitsPerMonth;
         maxFreqMinutesPerVisit = baseHours * 60;
+
+        // Global fixture estimate (no rooms)
+        const fixtureMultiplier = inputs.sqft / 10000;
+        const autoFixtures = {
+            toilets: Math.round(buildingType.fixturesPer10k.toilets * fixtureMultiplier),
+            urinals: Math.round(buildingType.fixturesPer10k.urinals * fixtureMultiplier),
+            sinks: Math.round(buildingType.fixturesPer10k.sinks * fixtureMultiplier),
+        };
+        const fixHours = fixtureTime(autoFixtures);
+        totalMonthlyMinutes += fixHours * 60 * bidVisitsPerMonth;
+        maxFreqMinutesPerVisit += fixHours * 60;
     }
 
-    // Fixture estimates based on sqft
+    // Fixture estimates for results output
     const fixtureMultiplier = inputs.sqft / 10000;
-    const estimatedFixtures = {
-        toilets: Math.round(buildingType.fixturesPer10k.toilets * fixtureMultiplier),
-        urinals: Math.round(buildingType.fixturesPer10k.urinals * fixtureMultiplier),
-        sinks: Math.round(buildingType.fixturesPer10k.sinks * fixtureMultiplier),
-    };
-    const fixtureHoursPerVisit = fixtureTime(estimatedFixtures);
-    totalMonthlyMinutes += fixtureHoursPerVisit * 60 * bidVisitsPerMonth;
-    maxFreqMinutesPerVisit += fixtureHoursPerVisit * 60;
+    const estimatedFixtures = rooms && rooms.length > 0
+        ? (() => {
+            const hasRoomFix = rooms.some(r => r.fixtures && (r.fixtures.toilets || r.fixtures.urinals || r.fixtures.sinks));
+            if (hasRoomFix) {
+                return rooms.reduce((acc, r) => ({
+                    toilets: acc.toilets + (r.fixtures?.toilets || 0),
+                    urinals: acc.urinals + (r.fixtures?.urinals || 0),
+                    sinks: acc.sinks + (r.fixtures?.sinks || 0),
+                }), { toilets: 0, urinals: 0, sinks: 0 });
+            }
+            return {
+                toilets: Math.round(buildingType.fixturesPer10k.toilets * fixtureMultiplier),
+                urinals: Math.round(buildingType.fixturesPer10k.urinals * fixtureMultiplier),
+                sinks: Math.round(buildingType.fixturesPer10k.sinks * fixtureMultiplier),
+            };
+        })()
+        : {
+            toilets: Math.round(buildingType.fixturesPer10k.toilets * fixtureMultiplier),
+            urinals: Math.round(buildingType.fixturesPer10k.urinals * fixtureMultiplier),
+            sinks: Math.round(buildingType.fixturesPer10k.sinks * fixtureMultiplier),
+        };
 
     // Apply building complexity multiplier
     totalMonthlyMinutes *= buildingType.complexityMultiplier;

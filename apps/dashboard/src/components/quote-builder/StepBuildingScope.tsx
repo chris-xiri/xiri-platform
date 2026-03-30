@@ -6,18 +6,23 @@ import { db } from '@/lib/firebase';
 import {
     type Lead,
     type RoomScope,
+    type RoomFloorBreakdown,
+    type RoomFixtures,
     type CalculatorInputs,
     type CalculatorResults,
     type Frequency,
     type CustomTask,
+    type RoomFloorType,
     BUILDING_TYPES,
     ROOM_TYPES,
     ROOM_AREA_RATIOS,
+    ROOM_FLOOR_TYPES,
     CLEANING_TASKS,
     FREQUENCIES,
     DEFAULT_INPUTS,
     getDefaultRooms,
     getTaskFrequencyOptions,
+    getRecommendedFloorTasks,
     resolveTaskFrequency,
     getStateDefaults,
     calculate,
@@ -105,6 +110,7 @@ export default function StepBuildingScope({
         initialData?.rooms || []
     );
     const [expandedRoom, setExpandedRoom] = useState<string | null>(null);
+    const [showFixturesFor, setShowFixturesFor] = useState<Set<string>>(new Set());
 
     // Calculator inputs
     const [frequency, setFrequency] = useState<Frequency>(
@@ -186,7 +192,8 @@ export default function StepBuildingScope({
     }, [buildingTypeId, sqft]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ─── Auto-distribute sqft across rooms ───────────────────────────
-    // Always redistribute when total sqft changes, unless user manually edited a room
+    // Skip rooms that have manual W×L dimensions (their sqft is locked).
+    // Redistribute remaining sqft proportionally across unlocked rooms.
     useEffect(() => {
         if (sqft <= 0 || rooms.length === 0) return;
         if (manualRoomSqftEdit.current) return; // User manually edited a room — don't override
@@ -194,12 +201,23 @@ export default function StepBuildingScope({
         const ratios = ROOM_AREA_RATIOS[buildingTypeId];
         if (!ratios) return;
 
-        const totalRatio = rooms.reduce((sum, r) => sum + (ratios[r.roomTypeId] || 0.10), 0);
-        if (totalRatio <= 0) return;
+        // Rooms with manual W×L are locked — their sqft = width * length
+        const lockedSqft = rooms.reduce((sum, r) => {
+            if (r.width && r.length) return sum + (r.width * r.length);
+            return sum;
+        }, 0);
+        const remainingSqft = Math.max(0, sqft - lockedSqft);
+
+        const unlockedRooms = rooms.filter(r => !(r.width && r.length));
+        const totalRatio = unlockedRooms.reduce((sum, r) => sum + (ratios[r.roomTypeId] || 0.10), 0);
 
         setRooms(prev => prev.map(r => {
+            // If this room has W×L, its sqft is locked
+            if (r.width && r.length) return { ...r, sqft: r.width * r.length };
+            // Otherwise distribute remaining sqft
+            if (totalRatio <= 0) return r;
             const ratio = ratios[r.roomTypeId] || 0.10;
-            return { ...r, sqft: Math.round(sqft * ratio / totalRatio) };
+            return { ...r, sqft: Math.round(remainingSqft * ratio / totalRatio) };
         }));
     }, [sqft, rooms.length, buildingTypeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -625,6 +643,13 @@ export default function StepBuildingScope({
                         const availableTasks = CLEANING_TASKS.filter(t =>
                             roomType?.relevantCategories?.includes(t.category) || room.tasks.includes(t.id)
                         );
+                        const fixtureMode = roomType?.showFixtures;
+                        const showFixtures = fixtureMode === 'prominent' || fixtureMode === 'sinks-only' || showFixturesFor.has(room.id);
+                        const hasDimensions = !!(room.width && room.length);
+                        const floorLabels = (room.floorBreakdown || []).map(fb => {
+                            const cfg = ROOM_FLOOR_TYPES.find(f => f.id === fb.type);
+                            return cfg ? `${cfg.label} ${fb.percent}%` : fb.type;
+                        }).join(', ');
 
                         return (
                             <div key={room.id} className="border rounded-lg overflow-hidden">
@@ -638,9 +663,16 @@ export default function StepBuildingScope({
                                         <span className="text-sm font-medium">
                                             {room.customName || roomType?.name || room.roomTypeId}
                                         </span>
-                                        {room.sqft ? (
+                                        {hasDimensions ? (
+                                            <span className="text-[10px] text-muted-foreground">
+                                                ({room.width}&apos;×{room.length}&apos; = {fmtNumber(room.sqft || 0)} sqft)
+                                            </span>
+                                        ) : room.sqft ? (
                                             <span className="text-[10px] text-muted-foreground">({fmtNumber(room.sqft)} sqft)</span>
                                         ) : null}
+                                        {floorLabels && (
+                                            <span className="text-[10px] text-blue-500">{floorLabels}</span>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className="text-xs text-muted-foreground">
@@ -658,32 +690,212 @@ export default function StepBuildingScope({
                                 {/* Room detail */}
                                 {isExpanded && (
                                     <div className="px-3 py-3 space-y-3 border-t">
-                                        <div className="grid grid-cols-3 gap-2">
-                                            <div>
-                                                <Label className="text-[10px]">Name</Label>
-                                                <Input
-                                                    value={room.customName || roomType?.name || ''}
-                                                    onChange={e => updateRoom(room.id, { customName: e.target.value })}
-                                                    className="h-7 text-xs mt-0.5"
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label className="text-[10px]">Sqft</Label>
-                                                <Input
-                                                    type="text"
-                                                    inputMode="numeric"
-                                                    value={room.sqft ? fmtNumber(room.sqft) : ''}
-                                                    onChange={e => {
-                                                        const raw = e.target.value.replace(/[^0-9]/g, '');
-                                                        manualRoomSqftEdit.current = true;
-                                                        updateRoom(room.id, { sqft: parseInt(raw) || 0 });
-                                                    }}
-                                                    className="h-7 text-xs mt-0.5"
-                                                />
+                                        {/* ─── NAME + DIMENSIONS ─── */}
+                                        <div>
+                                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">📐 Dimensions</p>
+                                            <div className="grid grid-cols-4 gap-2">
+                                                <div>
+                                                    <Label className="text-[10px]">Name</Label>
+                                                    <Input
+                                                        value={room.customName || roomType?.name || ''}
+                                                        onChange={e => updateRoom(room.id, { customName: e.target.value })}
+                                                        className="h-7 text-xs mt-0.5"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-[10px]">Width (ft)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        inputMode="numeric"
+                                                        value={room.width || ''}
+                                                        onChange={e => {
+                                                            const w = parseFloat(e.target.value) || undefined;
+                                                            const l = room.length;
+                                                            const autoSqft = w && l ? Math.round(w * l) : room.sqft;
+                                                            manualRoomSqftEdit.current = true;
+                                                            updateRoom(room.id, { width: w, sqft: autoSqft });
+                                                        }}
+                                                        placeholder="25"
+                                                        className="h-7 text-xs mt-0.5"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-[10px]">Length (ft)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        inputMode="numeric"
+                                                        value={room.length || ''}
+                                                        onChange={e => {
+                                                            const l = parseFloat(e.target.value) || undefined;
+                                                            const w = room.width;
+                                                            const autoSqft = w && l ? Math.round(w * l) : room.sqft;
+                                                            manualRoomSqftEdit.current = true;
+                                                            updateRoom(room.id, { length: l, sqft: autoSqft });
+                                                        }}
+                                                        placeholder="15"
+                                                        className="h-7 text-xs mt-0.5"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-[10px]">
+                                                        Sqft {hasDimensions && <span className="text-green-600">(auto)</span>}
+                                                    </Label>
+                                                    <Input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        value={room.sqft ? fmtNumber(room.sqft) : ''}
+                                                        onChange={e => {
+                                                            const raw = e.target.value.replace(/[^0-9]/g, '');
+                                                            manualRoomSqftEdit.current = true;
+                                                            updateRoom(room.id, { sqft: parseInt(raw) || 0, width: undefined, length: undefined });
+                                                        }}
+                                                        className={`h-7 text-xs mt-0.5 ${hasDimensions ? 'bg-muted/50' : ''}`}
+                                                        readOnly={hasDimensions}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
 
+                                        {/* ─── FIXTURES (from walkthrough) ─── */}
+                                        {showFixtures ? (
+                                            <div>
+                                                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">🔧 Fixtures (Walkthrough Count)</p>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {(fixtureMode !== 'sinks-only') && (
+                                                        <>
+                                                            <div>
+                                                                <Label className="text-[10px]">Toilets</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    min={0}
+                                                                    value={room.fixtures?.toilets ?? ''}
+                                                                    onChange={e => updateRoom(room.id, {
+                                                                        fixtures: { ...room.fixtures, toilets: parseInt(e.target.value) || 0 }
+                                                                    })}
+                                                                    placeholder="0"
+                                                                    className="h-7 text-xs mt-0.5"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <Label className="text-[10px]">Urinals</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    min={0}
+                                                                    value={room.fixtures?.urinals ?? ''}
+                                                                    onChange={e => updateRoom(room.id, {
+                                                                        fixtures: { ...room.fixtures, urinals: parseInt(e.target.value) || 0 }
+                                                                    })}
+                                                                    placeholder="0"
+                                                                    className="h-7 text-xs mt-0.5"
+                                                                />
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                    <div>
+                                                        <Label className="text-[10px]">Sinks</Label>
+                                                        <Input
+                                                            type="number"
+                                                            min={0}
+                                                            value={room.fixtures?.sinks ?? ''}
+                                                            onChange={e => updateRoom(room.id, {
+                                                                fixtures: { ...room.fixtures, sinks: parseInt(e.target.value) || 0 }
+                                                            })}
+                                                            placeholder="0"
+                                                            className="h-7 text-xs mt-0.5"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                                                onClick={() => setShowFixturesFor(prev => new Set([...prev, room.id]))}
+                                            >
+                                                + Add fixture counts
+                                            </button>
+                                        )}
+
+                                        {/* ─── FLOOR TYPE(S) ─── */}
+                                        <div>
+                                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">🏗️ Floor Type(s)</p>
+                                            <div className="flex flex-wrap gap-1.5 mb-1">
+                                                {ROOM_FLOOR_TYPES.map(ft => {
+                                                    const existing = (room.floorBreakdown || []).find(fb => fb.type === ft.id);
+                                                    const isSelected = !!existing;
+                                                    return (
+                                                        <div key={ft.id} className="flex items-center gap-0.5">
+                                                            <button
+                                                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] border transition-colors ${
+                                                                    isSelected
+                                                                        ? 'border-primary bg-primary/10 text-primary font-medium'
+                                                                        : 'border-input text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                                                                }`}
+                                                                onClick={() => {
+                                                                    const current = room.floorBreakdown || [];
+                                                                    let updated: RoomFloorBreakdown[];
+                                                                    if (isSelected) {
+                                                                        updated = current.filter(fb => fb.type !== ft.id);
+                                                                    } else {
+                                                                        // Auto-distribute: new floor type gets equal share
+                                                                        const newCount = current.length + 1;
+                                                                        const equalPct = Math.floor(100 / newCount);
+                                                                        updated = [
+                                                                            ...current.map(fb => ({ ...fb, percent: equalPct })),
+                                                                            { type: ft.id as RoomFloorType, percent: 100 - (equalPct * current.length) },
+                                                                        ];
+                                                                    }
+                                                                    // Auto-recommend tasks based on new floor breakdown
+                                                                    const recommended = getRecommendedFloorTasks(updated);
+                                                                    const newTasks = [...new Set([...room.tasks, ...recommended])];
+                                                                    updateRoom(room.id, { floorBreakdown: updated.length > 0 ? updated : undefined, tasks: newTasks });
+                                                                }}
+                                                            >
+                                                                {ft.label}
+                                                            </button>
+                                                            {isSelected && (room.floorBreakdown || []).length > 1 && (
+                                                                <Input
+                                                                    type="number"
+                                                                    min={1}
+                                                                    max={99}
+                                                                    value={existing.percent}
+                                                                    onChange={e => {
+                                                                        const pct = Math.min(99, Math.max(1, parseInt(e.target.value) || 1));
+                                                                        const updated = (room.floorBreakdown || []).map(fb =>
+                                                                            fb.type === ft.id ? { ...fb, percent: pct } : fb
+                                                                        );
+                                                                        updateRoom(room.id, { floorBreakdown: updated });
+                                                                    }}
+                                                                    className="h-5 w-10 text-[10px] px-1"
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            {(room.floorBreakdown || []).length > 0 && (
+                                                <p className="text-[10px] text-muted-foreground">
+                                                    Cleaning: {(room.floorBreakdown || []).map(fb => {
+                                                        const cfg = ROOM_FLOOR_TYPES.find(f => f.id === fb.type);
+                                                        return cfg?.cleaningMethod;
+                                                    }).filter(Boolean).join(' + ')}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* ─── WALKTHROUGH NOTES ─── */}
+                                        <div>
+                                            <Label className="text-[10px]">Walkthrough Notes</Label>
+                                            <textarea
+                                                value={room.notes || ''}
+                                                onChange={e => updateRoom(room.id, { notes: e.target.value })}
+                                                placeholder="Notes from walkthrough..."
+                                                className="w-full mt-0.5 px-2 py-1 text-xs border border-input rounded-md bg-background resize-none"
+                                                rows={2}
+                                            />
+                                        </div>
+
                                         <Separator />
+
 
                                         {/* Task checklist with edit capability */}
                                         <div>

@@ -350,7 +350,7 @@ export default async function SolutionPage({ params }: Props) {
                     description: dlp.metaDescription,
                     image: 'https://xiri.ai/xiri-logo-horizontal.svg',
                     url: `${SITE.url}/solutions/${slug}`,
-                    telephone: '+1-516-526-9585',
+                    telephone: '+1-516-399-0350',
                     priceRange: '$$',
                     address: { '@type': 'PostalAddress', addressLocality: location.name.split(',')[0], addressRegion: location.state, addressCountry: 'US' },
                     ...(location.latitude ? { geo: { '@type': 'GeoCoordinates', latitude: location.latitude, longitude: location.longitude } } : {}),

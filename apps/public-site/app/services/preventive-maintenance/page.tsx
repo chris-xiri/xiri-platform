@@ -123,7 +123,7 @@ export default function PreventiveMaintenancePage() {
                     "@id": "https://xiri.ai/#localbusiness",
                     "name": SITE.name,
                     "url": SITE.url,
-                    "telephone": "+1-516-243-9474",
+                    "telephone": "+1-516-399-0350",
                     "address": {
                         "@type": "PostalAddress",
                         "addressLocality": "Garden City",
