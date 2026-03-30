@@ -222,7 +222,7 @@ function wrapEmail(body: string): string {
 
         <!-- Footer -->
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
-            <p style="margin: 0;">XIRI Facility Solutions · 1225 Franklin Ave, Suite 325 · Garden City, NY 11530</p>
+            <p style="margin: 0;">XIRI Facility Solutions · 418 Broadway, Ste N · Albany, NY 12207</p>
             <p style="margin: 8px 0 0 0;">
                 <a href="mailto:chris@xiri.ai" style="color: #64748b; text-decoration: underline;">Contact Us</a>
             </p>

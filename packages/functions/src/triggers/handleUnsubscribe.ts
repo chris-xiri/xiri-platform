@@ -199,7 +199,7 @@ function renderPage(title: string, message: string, success: boolean): string {
         <div class="icon">${icon}</div>
         <h1>${title}</h1>
         <p>${message}</p>
-        <div class="footer">XIRI Facility Solutions · 1225 Franklin Ave, Suite 325 · Garden City, NY 11530</div>
+        <div class="footer">XIRI Facility Solutions · 418 Broadway, Ste N · Albany, NY 12207</div>
     </div>
 </body>
 </html>`;
