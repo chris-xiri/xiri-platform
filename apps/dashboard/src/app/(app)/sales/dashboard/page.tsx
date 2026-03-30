@@ -188,11 +188,11 @@ export default function SalesDashboardPage() {
                 status: 'new',
                 attribution: { source: 'property_sourcing', medium: property.source || 'mock', campaign: campaign?.label || 'sourcing', landingPage: '' },
                 propertySourcing: {
-                    sourceProvider: property.source, sourcePropertyId: property.sourceId,
-                    squareFootage: property.squareFootage, yearBuilt: property.yearBuilt,
-                    ownerName: property.ownerName, tenantName: property.tenantName,
-                    tenantCount: property.tenantCount, lastSalePrice: property.lastSalePrice,
-                    lastSaleDate: property.lastSaleDate, sourcedAt: new Date(),
+                    sourceProvider: property.source ?? null, sourcePropertyId: property.sourceId ?? null,
+                    squareFootage: property.squareFootage ?? null, yearBuilt: property.yearBuilt ?? null,
+                    ownerName: property.ownerName ?? null, tenantName: property.tenantName ?? null,
+                    tenantCount: property.tenantCount ?? null, lastSalePrice: property.lastSalePrice ?? null,
+                    lastSaleDate: property.lastSaleDate ?? null, sourcedAt: new Date(),
                 },
                 createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
             });
@@ -221,11 +221,11 @@ export default function SalesDashboardPage() {
                     status: 'new',
                     attribution: { source: 'property_sourcing', medium: property.source || 'mock', campaign: campaign.label || 'sourcing', landingPage: '' },
                     propertySourcing: {
-                        sourceProvider: property.source, sourcePropertyId: property.sourceId,
-                        squareFootage: property.squareFootage, yearBuilt: property.yearBuilt,
-                        ownerName: property.ownerName, tenantName: property.tenantName,
-                        tenantCount: property.tenantCount, lastSalePrice: property.lastSalePrice,
-                        lastSaleDate: property.lastSaleDate, sourcedAt: new Date(),
+                        sourceProvider: property.source ?? null, sourcePropertyId: property.sourceId ?? null,
+                        squareFootage: property.squareFootage ?? null, yearBuilt: property.yearBuilt ?? null,
+                        ownerName: property.ownerName ?? null, tenantName: property.tenantName ?? null,
+                        tenantCount: property.tenantCount ?? null, lastSalePrice: property.lastSalePrice ?? null,
+                        lastSaleDate: property.lastSaleDate ?? null, sourcedAt: new Date(),
                     },
                     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
                 });
