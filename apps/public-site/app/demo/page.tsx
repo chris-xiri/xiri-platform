@@ -49,7 +49,7 @@ function useInView(options?: IntersectionObserverInit) {
         }, { threshold: 0.15, ...options });
         obs.observe(el);
         return () => obs.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     return { ref, inView };
 }
@@ -68,13 +68,13 @@ export default function DemoPage() {
 
     useEffect(() => {
         if (liveSection.inView) startLiveSimulation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [liveSection.inView]);
 
     useEffect(() => {
         const fallback = setTimeout(() => startLiveSimulation(), 3000);
         return () => clearTimeout(fallback);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     function startLiveSimulation() {
@@ -136,7 +136,7 @@ export default function DemoPage() {
                         </p>
                         {/* Mini CTA right after hook */}
                         <a
-                            href="sms:+15165269585?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20demo.%20I%27m%20interested%20in%20learning%20more."
+                            href="sms:+15163990350?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20demo.%20I%27m%20interested%20in%20learning%20more."
                             className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
                         >
                             💬 Ready to talk? Text Chris →
@@ -199,11 +199,10 @@ export default function DemoPage() {
                                     return (
                                         <div
                                             key={i}
-                                            className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-500 ${
-                                                isActive ? 'bg-blue-50 border border-blue-200 scale-[1.01]' :
+                                            className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-500 ${isActive ? 'bg-blue-50 border border-blue-200 scale-[1.01]' :
                                                 isDone ? 'bg-green-50/60 border border-green-200/70' :
-                                                'bg-gray-50 border border-gray-100'
-                                            }`}
+                                                    'bg-gray-50 border border-gray-100'
+                                                }`}
                                         >
                                             <div className="flex items-center gap-3">
                                                 {isDone ? (
@@ -312,17 +311,17 @@ export default function DemoPage() {
                             </p>
 
                             <a
-                                href="sms:+15165269585?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20demo.%20I%27m%20interested%20in%20learning%20more%20about%20verified%20cleaning%20for%20my%20building."
+                                href="sms:+15163990350?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20demo.%20I%27m%20interested%20in%20learning%20more%20about%20verified%20cleaning%20for%20my%20building."
                                 className="block w-full py-4 rounded-lg bg-white text-indigo-900 font-bold text-base shadow-lg hover:bg-indigo-50 transition-all mb-2.5"
                             >
                                 💬 Text Chris
                             </a>
 
                             <a
-                                href="tel:+15165269585"
+                                href="tel:+15163990350"
                                 className="block w-full py-3.5 rounded-lg border border-indigo-300/40 text-indigo-100 font-medium text-sm hover:bg-indigo-800/30 transition-all mb-2.5"
                             >
-                                📞 Call: (516) 526-9585
+                                📞 Call: (516) 399-0350
                             </a>
 
                             <a
@@ -347,13 +346,13 @@ export default function DemoPage() {
             <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-gray-200 px-4 py-2.5 safe-area-inset-bottom">
                 <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
                     <a
-                        href="sms:+15165269585?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20demo.%20I%27m%20interested%20in%20learning%20more."
+                        href="sms:+15163990350?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20demo.%20I%27m%20interested%20in%20learning%20more."
                         className="flex-1 py-2.5 rounded-lg bg-indigo-600 text-white font-semibold text-sm text-center shadow-sm hover:bg-indigo-700 transition-all"
                     >
                         💬 Text Chris
                     </a>
                     <a
-                        href="tel:+15165269585"
+                        href="tel:+15163990350"
                         className="py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-all"
                     >
                         📞 Call

@@ -135,7 +135,7 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
             sessionStorage.setItem('xiri_lead_submitted', '1');
         } catch (err) {
             console.error('Referral form error:', err);
-            setError('Something went wrong. Please try again or call us at (516) 526-9585.');
+            setError('Something went wrong. Please try again or call us at (516) 399-0350.');
             trackEvent('referral_form_error', { trade: trade || 'unspecified' });
         } finally {
             setSubmitting(false);
@@ -168,7 +168,7 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                 >
                     Refer another building →
                 </button>
-                <p className="text-xs text-slate-400 mt-3">Questions? <a href="mailto:chris@xiri.ai" className="text-sky-600 underline">chris@xiri.ai</a> or <a href="tel:+15165269585" className="text-sky-600 underline">(516) 526-9585</a></p>
+                <p className="text-xs text-slate-400 mt-3">Questions? <a href="mailto:chris@xiri.ai" className="text-sky-600 underline">chris@xiri.ai</a> or <a href="tel:+15163990350" className="text-sky-600 underline">(516) 399-0350</a></p>
             </div>
         );
     }

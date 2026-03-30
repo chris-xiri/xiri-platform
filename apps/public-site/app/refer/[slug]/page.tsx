@@ -262,7 +262,7 @@ export default async function ReferralPartnerPage({ params }: Props) {
                     <h2 className="text-2xl font-bold mb-3">Ready to Earn?</h2>
                     <p className="text-emerald-100 mb-6">
                         Fill out the form above or call us directly at{' '}
-                        <a href="tel:+15165269585" className="underline font-semibold text-white">(516) 526-9585</a>
+                        <a href="tel:+15163990350" className="underline font-semibold text-white">(516) 399-0350</a>
                     </p>
                     <Link
                         href="/refer"
