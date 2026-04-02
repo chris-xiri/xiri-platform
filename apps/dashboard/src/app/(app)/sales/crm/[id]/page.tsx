@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
@@ -47,9 +47,21 @@ import {
     Rocket,
     XCircle,
     Activity,
+    Target,
+    Eye,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+
+// ─── Targeted template interface ──────────────────────────
+interface TargetedTemplate {
+    id: string;
+    name: string;
+    description?: string;
+    subject: string;
+    body: string;
+    category?: string;
+}
 
 // Helper to safely convert Firestore Timestamp to Date
 function toDate(value: any): Date | null {
@@ -116,6 +128,14 @@ export default function LeadDetailPage() {
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [activities, setActivities] = useState<{ id: string; type: string; description: string; createdAt: any; metadata?: any }[]>([]);
 
+    // ─── Targeted email send state ──────────────────────────
+    const [showSendDialog, setShowSendDialog] = useState(false);
+    const [targetedTemplates, setTargetedTemplates] = useState<TargetedTemplate[]>([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+    const [sendingEmail, setSendingEmail] = useState(false);
+    const [previewingEmail, setPreviewingEmail] = useState(false);
+    const [loadingTemplates, setLoadingTemplates] = useState(false);
+
     const fetchLead = async () => {
         try {
             const leadDoc = await getDoc(doc(db, 'leads', leadId));
@@ -150,6 +170,43 @@ export default function LeadDetailPage() {
             setActivities(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
         } catch (err) {
             console.error('Error fetching activities:', err);
+        }
+    };
+
+    // ─── Fetch targeted templates ────────────────────────────
+    const fetchTargetedTemplates = useCallback(async () => {
+        setLoadingTemplates(true);
+        try {
+            const snap = await getDocs(collection(db, 'templates'));
+            const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as TargetedTemplate));
+            setTargetedTemplates(all.filter(t => t.category === 'lead_targeted'));
+        } catch (err) {
+            console.error('Error fetching targeted templates:', err);
+        } finally {
+            setLoadingTemplates(false);
+        }
+    }, []);
+
+    // ─── Send targeted email handler ────────────────────────
+    const handleSendTargetedEmail = async () => {
+        if (!selectedTemplateId || !lead) return;
+        setSendingEmail(true);
+        setSequenceMessage(null);
+        try {
+            const sendSingle = httpsCallable(functions, 'sendSingleLeadEmail');
+            const result = await sendSingle({ leadId, templateId: selectedTemplateId });
+            const data = result.data as any;
+            setSequenceMessage({ type: 'success', text: data.message || 'Email sent successfully' });
+            setShowSendDialog(false);
+            setSelectedTemplateId('');
+            setPreviewingEmail(false);
+            await fetchLead();
+            await fetchActivities();
+        } catch (error: any) {
+            const message = error?.message || 'Failed to send email';
+            setSequenceMessage({ type: 'error', text: message });
+        } finally {
+            setSendingEmail(false);
         }
     };
 
@@ -279,6 +336,20 @@ export default function LeadDetailPage() {
                                 <SelectItem value="lost">Lost</SelectItem>
                             </SelectContent>
                         </Select>
+
+                        {/* Send Targeted Email */}
+                        <Button
+                            variant="outline"
+                            className="gap-2"
+                            disabled={!hasEmail}
+                            onClick={() => {
+                                fetchTargetedTemplates();
+                                setShowSendDialog(true);
+                            }}
+                        >
+                            <Target className="w-4 h-4" />
+                            Send Email
+                        </Button>
 
                         {/* Start Sequence CTA */}
                         <Button
@@ -617,6 +688,129 @@ export default function LeadDetailPage() {
                                 <Play className="w-4 h-4" />
                             )}
                             {startingSequence ? 'Starting...' : 'Start Sequence'}
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* ─── Send Targeted Email Dialog ─── */}
+            <AlertDialog open={showSendDialog} onOpenChange={(open: boolean) => { setShowSendDialog(open); if (!open) { setSelectedTemplateId(''); setPreviewingEmail(false); } }}>
+                <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                            <Target className="w-5 h-5" />
+                            Send Targeted Email
+                        </AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                            <div className="space-y-4">
+                                <p>
+                                    Choose a template to send a one-off email to <strong>{lead.businessName}</strong> ({lead.email}).
+                                </p>
+
+                                {loadingTemplates ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                    </div>
+                                ) : targetedTemplates.length === 0 ? (
+                                    <div className="text-center py-8 text-sm text-muted-foreground">
+                                        <Mail className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                        No targeted templates found. Create one in{' '}
+                                        <a href="/admin/email-templates" className="text-primary hover:underline font-medium">Settings → Email Templates</a>.
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Template selector */}
+                                        <div>
+                                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Select Template</label>
+                                            <Select value={selectedTemplateId} onValueChange={(v: string) => { setSelectedTemplateId(v); setPreviewingEmail(false); }}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Choose a template..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {targetedTemplates.map(t => (
+                                                        <SelectItem key={t.id} value={t.id}>
+                                                            <div className="flex flex-col">
+                                                                <span>{t.name}</span>
+                                                                {t.description && <span className="text-[10px] text-muted-foreground">{t.description}</span>}
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Preview */}
+                                        {selectedTemplateId && (() => {
+                                            const tpl = targetedTemplates.find(t => t.id === selectedTemplateId);
+                                            if (!tpl) return null;
+
+                                            // Simple preview merge
+                                            const mergeVars: Record<string, string> = {
+                                                businessName: lead.businessName || '',
+                                                contactName: lead.contactName || '',
+                                                facilityType: lead.facilityType || '',
+                                                address: lead.address || '',
+                                                squareFootage: (lead as any).squareFootage || '',
+                                            };
+                                            const previewSubject = tpl.subject.replace(/\{\{(\w+)\}\}/g, (_, k) => mergeVars[k] || `{{${k}}}`);
+                                            const previewBody = tpl.body.replace(/\{\{(\w+)\}\}/g, (_, k) => mergeVars[k] || `{{${k}}}`);
+
+                                            return (
+                                                <div className="space-y-3">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-7 text-xs gap-1.5"
+                                                        onClick={() => setPreviewingEmail(!previewingEmail)}
+                                                    >
+                                                        <Eye className="w-3 h-3" />
+                                                        {previewingEmail ? 'Hide Preview' : 'Preview Email'}
+                                                    </Button>
+
+                                                    {previewingEmail && (
+                                                        <div className="border rounded-lg bg-white dark:bg-background overflow-hidden">
+                                                            <div className="px-4 py-2.5 bg-muted/30 border-b text-[11px] space-y-0.5">
+                                                                <div>From: <span className="font-medium">XIRI Facility Solutions &lt;chris@xiri.ai&gt;</span></div>
+                                                                <div>To: <span className="font-medium">{lead.contactName} &lt;{lead.email}&gt;</span></div>
+                                                                <div>Subject: <span className="font-semibold text-xs">{previewSubject}</span></div>
+                                                            </div>
+                                                            <div className="px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed max-h-64 overflow-auto">
+                                                                {previewBody}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="bg-muted/30 p-3 rounded-lg text-xs space-y-1">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted-foreground">Template:</span>
+                                                            <span className="font-medium">{tpl.name}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted-foreground">Subject:</span>
+                                                            <span className="font-medium">{previewSubject}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted-foreground">Recipient:</span>
+                                                            <span className="font-medium">{lead.email}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+                                    </>
+                                )}
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={sendingEmail}>Cancel</AlertDialogCancel>
+                        <Button
+                            onClick={handleSendTargetedEmail}
+                            disabled={sendingEmail || !selectedTemplateId}
+                            className="gap-2"
+                        >
+                            {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                            {sendingEmail ? 'Sending...' : 'Send Email'}
                         </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>

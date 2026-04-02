@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
     Loader2, Save, Mail, Eye, EyeOff, ChevronDown, ChevronUp,
-    Check, Clock, HardHat, Building2, Handshake, ArrowRight
+    Check, Clock, HardHat, Building2, Handshake, ArrowRight,
+    Plus, Trash2, X, Target, Edit3,
 } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -21,10 +32,11 @@ interface EmailTemplate {
     sequence?: number;
     subject: string;
     body: string;
-    category?: string;
+    category?: string;        // 'lead_sequence' | 'lead_targeted'
     type?: string;            // 'template' | 'prompt'
     variables?: string[];
     updatedAt?: any;
+    createdAt?: any;
 }
 
 // ─── Merge field sample data per section ──────────────────────────
@@ -48,6 +60,13 @@ const SAMPLE_DATA: Record<string, Record<string, string>> = {
     referral: {
         contactName: "Harvey",
         businessName: "Nassau Commercial Realty",
+    },
+    targeted: {
+        businessName: "Morning Star Baptist Church",
+        contactName: "Pastor Johnson",
+        facilityType: "Religious Institution",
+        address: "1600 Hylan Boulevard, Staten Island, 10305",
+        squareFootage: "5,000 sq ft",
     },
 };
 
@@ -77,9 +96,22 @@ interface SectionConfig {
     sampleGroup: string;
     filter: (t: EmailTemplate) => boolean;
     timing: Record<number, string>;
+    allowCreate?: boolean;
+    allowDelete?: boolean;
 }
 
 const SECTIONS: SectionConfig[] = [
+    {
+        key: 'targeted',
+        title: 'Targeted Sends',
+        icon: <Target className="w-5 h-5" />,
+        description: 'One-off email templates sent to individual leads — not part of any drip sequence.',
+        sampleGroup: 'targeted',
+        filter: (t) => t.category === 'lead_targeted',
+        timing: {},
+        allowCreate: true,
+        allowDelete: true,
+    },
     {
         key: 'contractor',
         title: 'Contractors',
@@ -118,8 +150,22 @@ export default function EmailTemplatesPage() {
     const [previewMode, setPreviewMode] = useState(false);
     const [editSubject, setEditSubject] = useState("");
     const [editBody, setEditBody] = useState("");
+    const [editName, setEditName] = useState("");
+    const [editDescription, setEditDescription] = useState("");
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+
+    // Create new template state
+    const [showCreateDialog, setShowCreateDialog] = useState(false);
+    const [newName, setNewName] = useState("");
+    const [newDescription, setNewDescription] = useState("");
+    const [newSubject, setNewSubject] = useState("");
+    const [newBody, setNewBody] = useState("");
+    const [creating, setCreating] = useState(false);
+
+    // Delete confirmation
+    const [deleteTarget, setDeleteTarget] = useState<EmailTemplate | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     const fetchTemplates = useCallback(async () => {
         try {
@@ -143,6 +189,8 @@ export default function EmailTemplatesPage() {
             setExpandedId(template.id);
             setEditSubject(template.subject);
             setEditBody(template.body);
+            setEditName(template.name || '');
+            setEditDescription(template.description || '');
             setPreviewMode(false);
         }
     };
@@ -153,7 +201,9 @@ export default function EmailTemplatesPage() {
             await updateDoc(doc(db, "templates", templateId), {
                 subject: editSubject,
                 body: editBody,
-                updatedAt: new Date()
+                name: editName,
+                description: editDescription,
+                updatedAt: serverTimestamp(),
             });
             setSaveSuccess(templateId);
             setTimeout(() => setSaveSuccess(null), 2000);
@@ -162,6 +212,53 @@ export default function EmailTemplatesPage() {
             console.error("Error saving template:", error);
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleCreate = async () => {
+        if (!newName.trim() || !newSubject.trim()) return;
+        setCreating(true);
+        try {
+            // Generate a slug-style ID
+            const slug = 'targeted_' + newName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+            const docRef = doc(db, "templates", slug);
+            const { setDoc } = await import("firebase/firestore");
+            await setDoc(docRef, {
+                name: newName.trim(),
+                description: newDescription.trim(),
+                subject: newSubject.trim(),
+                body: newBody.trim(),
+                category: 'lead_targeted',
+                type: 'template',
+                variables: extractMergeFields(newSubject + newBody),
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+            setShowCreateDialog(false);
+            setNewName('');
+            setNewDescription('');
+            setNewSubject('');
+            setNewBody('');
+            await fetchTemplates();
+        } catch (error) {
+            console.error("Error creating template:", error);
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        setDeleting(true);
+        try {
+            await deleteDoc(doc(db, "templates", deleteTarget.id));
+            setDeleteTarget(null);
+            if (expandedId === deleteTarget.id) setExpandedId(null);
+            await fetchTemplates();
+        } catch (error) {
+            console.error("Error deleting template:", error);
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -235,55 +332,82 @@ export default function EmailTemplatesPage() {
                     })}
                 </div>
 
-                {/* ─── Expanded Section: Template Sequence ─── */}
+                {/* ─── Expanded Section ─── */}
                 {activeSection && (() => {
                     const section = SECTIONS.find(s => s.key === activeSection)!;
                     const templates = allTemplates
                         .filter(section.filter)
                         .sort((a, b) => {
-                            // Sort by sequence number extracted from ID
+                            // For targeted: sort alphabetically by name
+                            if (section.key === 'targeted') {
+                                return (a.name || '').localeCompare(b.name || '');
+                            }
+                            // For sequences: sort by sequence number extracted from ID
                             const aNum = parseInt(a.id.match(/(\d+)/)?.[1] || '0');
                             const bNum = parseInt(b.id.match(/(\d+)/)?.[1] || '0');
                             return aNum - bNum;
                         });
 
-                    if (templates.length === 0) {
-                        return (
-                            <Card>
-                                <CardContent className="py-10 text-center">
-                                    <Mail className="w-8 h-8 mx-auto text-muted-foreground/30 mb-3" />
-                                    <h3 className="font-medium text-sm">No {section.title} Templates</h3>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        {section.key === 'contractor' && <>Run <code className="bg-muted px-1 rounded">node scripts/seed-email-templates.js</code></>}
-                                        {section.key === 'lead' && <>These are AI prompts stored in Firestore. Seed with <code className="bg-muted px-1 rounded">sales_outreach_prompt</code></>}
-                                        {section.key === 'referral' && <>Run <code className="bg-muted px-1 rounded">node scripts/seed-referral-templates.js</code></>}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        );
-                    }
-
                     return (
                         <div className="space-y-3">
-                            {/* Sequence visual */}
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                {templates.map((t, i) => {
-                                    const stepNum = parseInt(t.id.match(/(\d+)/)?.[1] || '0');
-                                    return (
-                                        <div key={t.id} className="flex items-center gap-2">
-                                            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border cursor-pointer transition-all ${expandedId === t.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 border-border hover:border-muted-foreground/50'}`}
-                                                onClick={() => handleExpand(t)}
-                                            >
-                                                <span className="font-bold">{stepNum || i + 1}</span>
-                                                <span className="hidden sm:inline">
-                                                    {section.timing[stepNum] || section.timing[i] || `Step ${stepNum || i + 1}`}
-                                                </span>
+                            {/* Section header with create button for targeted */}
+                            {section.allowCreate && (
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Target className="w-4 h-4" />
+                                        {templates.length} targeted template{templates.length !== 1 ? 's' : ''}
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => setShowCreateDialog(true)}
+                                        className="gap-2"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        New Template
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Sequence visual (for non-targeted sections) */}
+                            {!section.allowCreate && templates.length > 0 && (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    {templates.map((t, i) => {
+                                        const stepNum = parseInt(t.id.match(/(\d+)/)?.[1] || '0');
+                                        return (
+                                            <div key={t.id} className="flex items-center gap-2">
+                                                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border cursor-pointer transition-all ${expandedId === t.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 border-border hover:border-muted-foreground/50'}`}
+                                                    onClick={() => handleExpand(t)}
+                                                >
+                                                    <span className="font-bold">{stepNum || i + 1}</span>
+                                                    <span className="hidden sm:inline">
+                                                        {section.timing[stepNum] || section.timing[i] || `Step ${stepNum || i + 1}`}
+                                                    </span>
+                                                </div>
+                                                {i < templates.length - 1 && <span className="text-muted-foreground">→</span>}
                                             </div>
-                                            {i < templates.length - 1 && <span className="text-muted-foreground">→</span>}
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {templates.length === 0 && (
+                                <Card>
+                                    <CardContent className="py-10 text-center">
+                                        <Mail className="w-8 h-8 mx-auto text-muted-foreground/30 mb-3" />
+                                        <h3 className="font-medium text-sm">No {section.title} Templates</h3>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {section.allowCreate
+                                                ? 'Click "New Template" to create your first targeted email template.'
+                                                : section.key === 'contractor'
+                                                    ? <>Run <code className="bg-muted px-1 rounded">node scripts/seed-email-templates.js</code></>
+                                                    : section.key === 'lead'
+                                                        ? <>These are AI prompts stored in Firestore.</>
+                                                        : <>Run <code className="bg-muted px-1 rounded">node scripts/seed-referral-templates.js</code></>
+                                            }
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            )}
 
                             {/* Template cards */}
                             {templates.map(template => {
@@ -292,6 +416,7 @@ export default function EmailTemplatesPage() {
                                 const isSaved = saveSuccess === template.id;
                                 const stepNum = parseInt(template.id.match(/(\d+)/)?.[1] || '0');
                                 const isPrompt = template.type === 'prompt' || template.id.includes('_prompt');
+                                const isTargeted = section.key === 'targeted';
 
                                 return (
                                     <Card key={template.id} className={`transition-all ${isExpanded ? 'ring-2 ring-primary/30' : ''}`}>
@@ -301,9 +426,15 @@ export default function EmailTemplatesPage() {
                                         >
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
-                                                        {stepNum || '?'}
-                                                    </div>
+                                                    {isTargeted ? (
+                                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                                                            <Target className="w-4 h-4" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
+                                                            {stepNum || '?'}
+                                                        </div>
+                                                    )}
                                                     <div>
                                                         <CardTitle className="text-sm">{template.name}</CardTitle>
                                                         {template.description && (
@@ -312,20 +443,27 @@ export default function EmailTemplatesPage() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    {isPrompt && (
+                                                    {isTargeted && (
+                                                        <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                                                            Targeted
+                                                        </Badge>
+                                                    )}
+                                                    {isPrompt && !isTargeted && (
                                                         <Badge variant="secondary" className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
                                                             AI Prompt
                                                         </Badge>
                                                     )}
-                                                    {!isPrompt && (
+                                                    {!isPrompt && !isTargeted && (
                                                         <Badge variant="secondary" className="text-[10px]">
                                                             Template
                                                         </Badge>
                                                     )}
-                                                    <Badge variant="outline" className="text-[10px]">
-                                                        <Clock className="w-3 h-3 mr-1" />
-                                                        {section.timing[stepNum] || `Step ${stepNum}`}
-                                                    </Badge>
+                                                    {!isTargeted && (
+                                                        <Badge variant="outline" className="text-[10px]">
+                                                            <Clock className="w-3 h-3 mr-1" />
+                                                            {section.timing[stepNum] || `Step ${stepNum}`}
+                                                        </Badge>
+                                                    )}
                                                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                                                 </div>
                                             </div>
@@ -351,18 +489,58 @@ export default function EmailTemplatesPage() {
                                                             ))}
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        size="sm"
-                                                        className="h-7 text-xs"
-                                                        onClick={() => handleSave(template.id)}
-                                                        disabled={saving}
-                                                    >
-                                                        {saving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> :
-                                                            isSaved ? <Check className="w-3 h-3 mr-1" /> :
-                                                                <Save className="w-3 h-3 mr-1" />}
-                                                        {isSaved ? "Saved!" : "Save"}
-                                                    </Button>
+                                                    <div className="flex items-center gap-2">
+                                                        {section.allowDelete && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="h-7 text-xs text-destructive hover:text-destructive"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setDeleteTarget(template);
+                                                                }}
+                                                            >
+                                                                <Trash2 className="w-3 h-3 mr-1" />
+                                                                Delete
+                                                            </Button>
+                                                        )}
+                                                        <Button
+                                                            size="sm"
+                                                            className="h-7 text-xs"
+                                                            onClick={() => handleSave(template.id)}
+                                                            disabled={saving}
+                                                        >
+                                                            {saving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> :
+                                                                isSaved ? <Check className="w-3 h-3 mr-1" /> :
+                                                                    <Save className="w-3 h-3 mr-1" />}
+                                                            {isSaved ? "Saved!" : "Save"}
+                                                        </Button>
+                                                    </div>
                                                 </div>
+
+                                                {/* Name & Description (editable for targeted) */}
+                                                {isTargeted && !previewMode && (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        <div>
+                                                            <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Template Name</label>
+                                                            <Input
+                                                                value={editName}
+                                                                onChange={e => setEditName(e.target.value)}
+                                                                className="mt-1 text-sm"
+                                                                placeholder="e.g. Backflow Preventer"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Description</label>
+                                                            <Input
+                                                                value={editDescription}
+                                                                onChange={e => setEditDescription(e.target.value)}
+                                                                className="mt-1 text-sm"
+                                                                placeholder="Short description..."
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 {/* Subject */}
                                                 <div>
@@ -434,6 +612,107 @@ export default function EmailTemplatesPage() {
                     </Card>
                 )}
             </div>
+
+            {/* ─── Create Template Dialog ─── */}
+            <AlertDialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                            <Plus className="w-5 h-5" />
+                            New Targeted Template
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Create a new email template for one-off targeted sends. Use <code className="bg-muted px-1 rounded text-[11px]">{"{{variableName}}"}</code> for merge fields.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <div className="space-y-4 py-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-xs font-medium text-muted-foreground">Template Name</label>
+                                <Input
+                                    value={newName}
+                                    onChange={e => setNewName(e.target.value)}
+                                    placeholder="e.g. Backflow Preventer"
+                                    className="mt-1"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-medium text-muted-foreground">Description (optional)</label>
+                                <Input
+                                    value={newDescription}
+                                    onChange={e => setNewDescription(e.target.value)}
+                                    placeholder="Short description..."
+                                    className="mt-1"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-medium text-muted-foreground">Subject Line</label>
+                            <Input
+                                value={newSubject}
+                                onChange={e => setNewSubject(e.target.value)}
+                                placeholder="Email subject..."
+                                className="mt-1"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-medium text-muted-foreground">Email Body</label>
+                            <Textarea
+                                value={newBody}
+                                onChange={e => setNewBody(e.target.value)}
+                                placeholder="Email body text..."
+                                className="mt-1 min-h-[250px] text-sm font-mono leading-relaxed"
+                            />
+                        </div>
+
+                        {newBody && (
+                            <div className="flex gap-1 flex-wrap text-[10px]">
+                                <span className="text-muted-foreground">Detected merge fields:</span>
+                                {extractMergeFields(newSubject + newBody).map(f => (
+                                    <Badge key={f} variant="secondary" className="text-[9px] px-1 h-5 font-mono">{`{{${f}}}`}</Badge>
+                                ))}
+                                {extractMergeFields(newSubject + newBody).length === 0 && (
+                                    <span className="text-muted-foreground italic">None</span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={creating}>Cancel</AlertDialogCancel>
+                        <Button
+                            onClick={handleCreate}
+                            disabled={creating || !newName.trim() || !newSubject.trim()}
+                            className="gap-2"
+                        >
+                            {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                            {creating ? 'Creating...' : 'Create Template'}
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* ─── Delete Confirmation Dialog ─── */}
+            <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Template</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                        <Button variant="destructive" onClick={handleDelete} disabled={deleting} className="gap-2">
+                            {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            {deleting ? 'Deleting...' : 'Delete'}
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </ProtectedRoute>
     );
 }

@@ -262,7 +262,7 @@ function buildEmailFooter(entityId?: string, entityType?: 'vendor' | 'lead'): st
 
     return `
 <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
-    <p style="margin: 0;">XIRI Facility Solutions · 418 Broadway, Ste N · Albany, NY 12207</p>
+    <p style="margin: 0;">XIRI Group LLC · 418 Broadway, Ste N · Albany, NY 12207</p>
     <p style="margin: 8px 0 0 0;">
         <a href="${unsubscribeUrl}" style="color: #64748b; text-decoration: underline;">Unsubscribe</a>
         &nbsp;·&nbsp;

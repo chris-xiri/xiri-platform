@@ -30,6 +30,7 @@ export { resendWebhook } from "./triggers/resendWebhook";
 export { onLeadUpdated, onVendorUpdated, onStaffUpdated } from "./triggers/onLeadUpdated";
 export { weeklyTemplateOptimizer, optimizeTemplate } from "./triggers/aiTemplateOptimizer";
 export { startLeadSequence } from "./triggers/startLeadSequence";
+export { sendSingleLeadEmail } from "./triggers/sendSingleLeadEmail";
 
 // ── Social AI Engine (scheduled) ──
 export { runSocialContentGenerator } from "./triggers/socialContentGenerator";
