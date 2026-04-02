@@ -337,7 +337,7 @@ export default function LeadDetailPage() {
                             </SelectContent>
                         </Select>
 
-                        {/* Send Targeted Email */}
+                        {/* Send Email (one-off) */}
                         <Button
                             variant="outline"
                             className="gap-2"
@@ -347,8 +347,8 @@ export default function LeadDetailPage() {
                                 setShowSendDialog(true);
                             }}
                         >
-                            <Target className="w-4 h-4" />
-                            Send Email
+                            <Mail className="w-4 h-4" />
+                            Email
                         </Button>
 
                         {/* Start Sequence CTA */}

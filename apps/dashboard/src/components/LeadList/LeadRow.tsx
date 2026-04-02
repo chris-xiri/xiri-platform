@@ -9,7 +9,24 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/lib/firebase';
+import { functions, db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
     Building2,
     Calendar,
@@ -24,6 +41,9 @@ import {
     MailCheck,
     AlertTriangle,
     Ban,
+    Target,
+    Send,
+    Eye,
 } from 'lucide-react';
 
 export type ColumnKey = 'business' | 'type' | 'contact' | 'location' | 'auditTime' | 'status' | 'source' | 'created' | 'actions';
@@ -130,6 +150,49 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
             console.error('Failed to start sequence:', err);
         } finally {
             setStartingSequence(false);
+        }
+    };
+
+    // ─── Targeted email state ─────────────────────────────────────
+    const [showSendDialog, setShowSendDialog] = useState(false);
+    const [targetedTemplates, setTargetedTemplates] = useState<{id:string;name:string;description?:string;subject:string;body:string;category?:string}[]>([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState('');
+    const [sendingEmail, setSendingEmail] = useState(false);
+    const [loadingTemplates, setLoadingTemplates] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [sendResult, setSendResult] = useState<{type:'success'|'error';text:string}|null>(null);
+
+    const openSendDialog = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setShowSendDialog(true);
+        setLoadingTemplates(true);
+        try {
+            const snap = await getDocs(collection(db, 'templates'));
+            const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+            setTargetedTemplates(all.filter((t: any) => t.category === 'lead_targeted'));
+        } catch (err) {
+            console.error('Error fetching templates:', err);
+        } finally {
+            setLoadingTemplates(false);
+        }
+    };
+
+    const handleSendEmail = async () => {
+        if (!selectedTemplateId || !lead.id) return;
+        setSendingEmail(true);
+        setSendResult(null);
+        try {
+            const sendSingle = httpsCallable(functions, 'sendSingleLeadEmail');
+            const result = await sendSingle({ leadId: lead.id, templateId: selectedTemplateId });
+            const data = result.data as any;
+            setSendResult({ type: 'success', text: data.message || 'Email sent!' });
+            setShowSendDialog(false);
+            setSelectedTemplateId('');
+            setPreviewOpen(false);
+        } catch (err: any) {
+            setSendResult({ type: 'error', text: err?.message || 'Failed to send' });
+        } finally {
+            setSendingEmail(false);
         }
     };
 
@@ -287,29 +350,147 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
             )}
 
             {show('actions') && (
-                <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                    {(lead as any).outreachStatus && ['PENDING', 'IN_PROGRESS', 'SENT', 'COMPLETED'].includes((lead as any).outreachStatus) ? (
-                        <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">
-                            <CheckCircle2 className="w-3 h-3 mr-1" /> Sequence Active
-                        </Badge>
-                    ) : lead.email ? (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 gap-1.5 text-xs"
-                            disabled={startingSequence}
-                            onClick={handleStartSequence}
-                        >
-                            {startingSequence
-                                ? <Loader2 className="w-3 h-3 animate-spin" />
-                                : <Rocket className="w-3 h-3" />}
-                            {startingSequence ? 'Starting…' : 'Start Sequence'}
-                        </Button>
+                <TableCell className="text-center" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    {lead.email ? (
+                        <div className="flex flex-col items-center gap-1">
+                            {/* ── Primary actions: Email & Sequence (HubSpot pattern) ── */}
+                            <div className="flex items-center gap-1.5">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 gap-1.5 text-xs"
+                                    onClick={openSendDialog}
+                                >
+                                    <Mail className="w-3 h-3" />
+                                    Email
+                                </Button>
+                                {(lead as any).outreachStatus && ['PENDING', 'IN_PROGRESS', 'SENT', 'COMPLETED'].includes((lead as any).outreachStatus) ? (
+                                    <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200 h-7 px-2">
+                                        <CheckCircle2 className="w-3 h-3 mr-1" /> In Sequence
+                                    </Badge>
+                                ) : (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                                        disabled={startingSequence}
+                                        onClick={handleStartSequence}
+                                    >
+                                        {startingSequence
+                                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                                            : <Rocket className="w-3 h-3" />}
+                                        {startingSequence ? 'Starting…' : 'Sequence'}
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
                     ) : (
                         <span className="text-[10px] text-muted-foreground">No email</span>
                     )}
+
+                    {/* Send result toast */}
+                    {sendResult && (
+                        <div className={`mt-1 text-[10px] px-1.5 py-0.5 rounded ${sendResult.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                            {sendResult.text}
+                        </div>
+                    )}
                 </TableCell>
             )}
+
+            {/* ─── Send Targeted Email Dialog ─── */}
+            <AlertDialog open={showSendDialog} onOpenChange={(open: boolean) => { setShowSendDialog(open); if (!open) { setSelectedTemplateId(''); setPreviewOpen(false); } }}>
+                <AlertDialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                            <Mail className="w-5 h-5" />
+                            Send Email to {lead.businessName}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                            <div className="space-y-4">
+                                <p className="text-sm">
+                                    Choose a targeted template to send a one-off email to <strong>{lead.email}</strong>.
+                                </p>
+
+                                {loadingTemplates ? (
+                                    <div className="flex items-center justify-center py-6">
+                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                                    </div>
+                                ) : targetedTemplates.length === 0 ? (
+                                    <div className="text-center py-6 text-sm text-muted-foreground">
+                                        <Mail className="w-7 h-7 mx-auto mb-2 opacity-30" />
+                                        No targeted templates yet.{' '}
+                                        <a href="/admin/email-templates" className="text-primary hover:underline font-medium">Create one</a>.
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Select Template</label>
+                                            <Select value={selectedTemplateId} onValueChange={(v: string) => { setSelectedTemplateId(v); setPreviewOpen(false); }}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Choose a template..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {targetedTemplates.map(t => (
+                                                        <SelectItem key={t.id} value={t.id}>
+                                                            {t.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {selectedTemplateId && (() => {
+                                            const tpl = targetedTemplates.find(t => t.id === selectedTemplateId);
+                                            if (!tpl) return null;
+                                            const vars: Record<string, string> = {
+                                                businessName: lead.businessName || '',
+                                                contactName: lead.contactName || '',
+                                                facilityType: lead.facilityType || '',
+                                                address: lead.address || '',
+                                                squareFootage: (lead as any).squareFootage || '',
+                                            };
+                                            const subj = tpl.subject.replace(/\{\{(\w+)\}\}/g, (_: string, k: string) => vars[k] || `{{${k}}}`);
+                                            const body = tpl.body.replace(/\{\{(\w+)\}\}/g, (_: string, k: string) => vars[k] || `{{${k}}}`);
+
+                                            return (
+                                                <div className="space-y-2">
+                                                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setPreviewOpen(!previewOpen)}>
+                                                        <Eye className="w-3 h-3" />
+                                                        {previewOpen ? 'Hide' : 'Preview'}
+                                                    </Button>
+                                                    {previewOpen && (
+                                                        <div className="border rounded-lg overflow-hidden bg-white dark:bg-background">
+                                                            <div className="px-3 py-2 bg-muted/30 border-b text-[11px] space-y-0.5">
+                                                                <div>From: <span className="font-medium">XIRI Facility Solutions</span></div>
+                                                                <div>To: <span className="font-medium">{lead.email}</span></div>
+                                                                <div>Subject: <span className="font-semibold">{subj}</span></div>
+                                                            </div>
+                                                            <div className="px-3 py-2 text-sm whitespace-pre-wrap leading-relaxed max-h-52 overflow-auto">
+                                                                {body}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <div className="bg-muted/30 p-2 rounded text-xs space-y-0.5">
+                                                        <div className="flex justify-between"><span className="text-muted-foreground">Template:</span><span className="font-medium">{tpl.name}</span></div>
+                                                        <div className="flex justify-between"><span className="text-muted-foreground">Subject:</span><span className="font-medium">{subj}</span></div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+                                    </>
+                                )}
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={sendingEmail}>Cancel</AlertDialogCancel>
+                        <Button onClick={handleSendEmail} disabled={sendingEmail || !selectedTemplateId} className="gap-2">
+                            {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                            {sendingEmail ? 'Sending...' : 'Send Email'}
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </TableRow>
     );
 }
