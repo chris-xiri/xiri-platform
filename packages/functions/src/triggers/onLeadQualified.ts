@@ -24,6 +24,16 @@ const db = admin.firestore();
 export const onLeadQualified = onDocumentUpdated({
     document: "leads/{leadId}",
 }, async (event) => {
+    // ──────────────────────────────────────────────────────────────────
+    // AUTO-ENROLLMENT DISABLED — Sequences are now manual-only.
+    // Users start sequences via the dashboard UI "Start Sequence" button,
+    // which calls the `startLeadSequence` callable function.
+    // The `sequences` Firestore collection stores sequence definitions.
+    // ──────────────────────────────────────────────────────────────────
+    logger.info('[SalesOutreach] Auto-enrollment disabled — leads must be manually enrolled in sequences.');
+    return;
+
+    /* --- Original auto-enrollment logic (preserved for reference) ---
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
     if (!before || !after) return;
@@ -135,4 +145,5 @@ export const onLeadQualified = onDocumentUpdated({
     });
 
     logger.info(`[SalesOutreach] ${leadType} drip campaign scheduled for lead ${leadId}: ${steps.length} emails (${schedule})`);
+    --- End original auto-enrollment logic --- */
 });

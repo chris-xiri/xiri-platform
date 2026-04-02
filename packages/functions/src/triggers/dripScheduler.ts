@@ -21,6 +21,15 @@ const db = admin.firestore();
 export const onAwaitingOnboarding = onDocumentUpdated({
     document: "vendors/{vendorId}",
 }, async (event) => {
+    // ──────────────────────────────────────────────────────────────────
+    // AUTO-ENROLLMENT DISABLED — Vendor sequences are now manual-only.
+    // Users start vendor sequences via the dashboard UI, which calls
+    // a callable function with a sequenceId from the `sequences` collection.
+    // ──────────────────────────────────────────────────────────────────
+    logger.info('[DripScheduler] Vendor auto-enrollment disabled — vendors must be manually enrolled in sequences.');
+    return;
+
+    /* --- Original auto-enrollment logic (preserved for reference) ---
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
     if (!before || !after) return;
@@ -81,6 +90,7 @@ export const onAwaitingOnboarding = onDocumentUpdated({
     }
 
     logger.info(`Drip campaign scheduled for ${vendorId}: 4 follow-ups at days 3, 7, 14, 21`);
+    --- End original auto-enrollment logic --- */
 });
 
 /**

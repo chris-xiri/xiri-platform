@@ -188,7 +188,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             icon: <Building2 className="w-3.5 h-3.5" />,
             show: showClientsNav,
             items: [
-                ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Pipeline', href: '/sales/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> }] : []),
+                ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Contacts', href: '/sales/crm', icon: <Users className="w-4 h-4" /> }] : []),
+                ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Companies', href: '/sales/companies', icon: <Building2 className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Referral Partners', href: '/sales/referrals', icon: <Share2 className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/quotes', profile.roles) ? [{ label: 'Quotes & Contracts', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> }] : []),
             ],
@@ -235,6 +236,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 { label: 'Pricing', href: '/admin/pricing', icon: <DollarSign className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'Email Analytics', href: '/admin/templates', icon: <Mail className="w-4 h-4" />, subGroup: 'Reporting' },
                 { label: 'Legal Templates', href: '/admin/legal', icon: <Scale className="w-4 h-4" />, subGroup: 'Communications' },
+                { label: 'Email Templates', href: '/admin/email-templates', icon: <Mail className="w-4 h-4" />, subGroup: 'Communications' },
                 { label: 'Social Media', href: '/admin/social', icon: <Share2 className="w-4 h-4" />, subGroup: 'Social Media' },
                 { label: 'Reports', href: '/admin/reports', icon: <BarChart3 className="w-4 h-4" />, subGroup: 'Reporting' },
                 { label: 'Commissions', href: '/admin/commissions', icon: <DollarSign className="w-4 h-4" />, subGroup: 'Reporting' },

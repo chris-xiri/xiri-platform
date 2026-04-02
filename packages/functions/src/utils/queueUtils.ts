@@ -6,7 +6,8 @@ export type QueueStatus = 'PENDING' | 'RETRY' | 'COMPLETED' | 'FAILED' | 'CANCEL
 export interface QueueItem {
     id?: string;
     vendorId?: string;    // For vendor outreach
-    leadId?: string;      // For sales lead outreach
+    leadId?: string;      // For sales lead outreach (company)
+    contactId?: string;   // For contact-centric outreach (the person being emailed)
     type: QueueTaskType;
     status: QueueStatus;
     scheduledAt: admin.firestore.Timestamp;

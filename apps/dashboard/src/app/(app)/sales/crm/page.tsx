@@ -20,7 +20,7 @@ export default function SalesCRMPage() {
                     </div>
                     <Button onClick={() => setShowAddLead(true)} className="gap-2">
                         <Plus className="w-4 h-4" />
-                        Add Lead
+                        Add Contact
                     </Button>
                 </div>
 

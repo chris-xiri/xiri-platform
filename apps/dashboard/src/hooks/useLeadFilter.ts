@@ -1,57 +1,68 @@
 import { useState, useMemo } from 'react';
-import { Lead, LeadStatus } from '@xiri-facility-solutions/shared';
+import { Contact, LeadStatus } from '@xiri-facility-solutions/shared';
 
-export function useLeadFilter(leads: Lead[], statusFilters?: LeadStatus[]) {
+/**
+ * Generic filter hook — works with both Contact[] for the new model 
+ * and still structurally compatible with Lead[].
+ * Searches across contact fields AND denormalized companyName.
+ */
+export function useLeadFilter(items: Contact[], statusFilters?: LeadStatus[]) {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
 
     const filteredLeads = useMemo(() => {
-        let filtered = leads;
+        let filtered = items;
 
-        // Apply status filter from props (if provided)
+        // Apply status filter from props (if provided) — status lives on company, 
+        // but is denormalized on the contact row via _companyStatus
         if (statusFilters && statusFilters.length > 0) {
-            filtered = filtered.filter(lead => statusFilters.includes(lead.status));
+            filtered = filtered.filter(c =>
+                statusFilters.includes((c as any)._companyStatus)
+            );
         }
 
         // Apply user-selected status filter
         if (statusFilter !== 'all') {
-            filtered = filtered.filter(lead => lead.status === statusFilter);
+            filtered = filtered.filter(c =>
+                (c as any)._companyStatus === statusFilter
+            );
         }
 
         // Apply search query
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(lead => {
-                const businessName = lead.businessName?.toLowerCase() || '';
-                const contactName = lead.contactName?.toLowerCase() || '';
-                const email = lead.email?.toLowerCase() || '';
-                const phone = lead.contactPhone?.toLowerCase() || '';
-                const address = lead.address?.toLowerCase() || '';
-                const city = lead.city?.toLowerCase() || '';
-                const state = lead.state?.toLowerCase() || '';
-                const zip = lead.zip?.toLowerCase() || '';
-                const zipCode = lead.zipCode?.toLowerCase() || '';
-                const source = lead.attribution?.source?.toLowerCase() || '';
-                const campaign = lead.attribution?.campaign?.toLowerCase() || '';
+            filtered = filtered.filter(contact => {
+                const firstName = contact.firstName?.toLowerCase() || '';
+                const lastName = contact.lastName?.toLowerCase() || '';
+                const email = contact.email?.toLowerCase() || '';
+                const phone = contact.phone?.toLowerCase() || '';
+                const companyName = contact.companyName?.toLowerCase() || '';
+                const role = contact.role?.toLowerCase() || '';
+
+                // Also search company-level fields that are denormalized
+                const address = (contact as any)._companyAddress?.toLowerCase() || '';
+                const city = (contact as any)._companyCity?.toLowerCase() || '';
+                const state = (contact as any)._companyState?.toLowerCase() || '';
+                const zip = (contact as any)._companyZip?.toLowerCase() || '';
 
                 return (
-                    businessName.includes(query) ||
-                    contactName.includes(query) ||
+                    firstName.includes(query) ||
+                    lastName.includes(query) ||
+                    `${firstName} ${lastName}`.includes(query) ||
                     email.includes(query) ||
                     phone.includes(query) ||
+                    companyName.includes(query) ||
+                    role.includes(query) ||
                     address.includes(query) ||
                     city.includes(query) ||
                     state.includes(query) ||
-                    zip.includes(query) ||
-                    zipCode.includes(query) ||
-                    source.includes(query) ||
-                    campaign.includes(query)
+                    zip.includes(query)
                 );
             });
         }
 
         return filtered;
-    }, [leads, searchQuery, statusFilter, statusFilters]);
+    }, [items, searchQuery, statusFilter, statusFilters]);
 
     const resetFilters = () => {
         setSearchQuery('');

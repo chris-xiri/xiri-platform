@@ -79,37 +79,37 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db22, task) {
-  return db22.collection(COLLECTION).add({
+async function enqueueTask(db23, task) {
+  return db23.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db22) {
+async function fetchPendingTasks(db23) {
   const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db22.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db23.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function updateTaskStatus(db22, taskId, status, updates = {}) {
-  await db22.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db23, taskId, status, updates = {}) {
+  await db23.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db22, vendorId) {
-  const snapshot = await db22.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db22.batch();
+async function cancelVendorTasks(db23, vendorId) {
+  const snapshot = await db23.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db23.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadTasks(db22, leadId) {
-  const snapshot = await db22.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db22.batch();
+async function cancelLeadTasks(db23, leadId) {
+  const snapshot = await db23.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db23.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
@@ -150,7 +150,7 @@ async function getTemplate(templateId) {
   }
 }
 function replaceVariables(content, variables) {
-  return content.replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] || `{{${key}}}`);
+  return content.replace(/\{\{(\w+)\}\}/g, (_, key) => key in variables ? variables[key] : `{{${key}}}`);
 }
 async function generatePersonalizedEmail(templateId, variables) {
   try {
@@ -307,7 +307,7 @@ function buildEmailFooter(entityId, entityType) {
   const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${entityId}&type=${entityType}`;
   return `
 <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
-    <p style="margin: 0;">XIRI Facility Solutions \xB7 1225 Franklin Ave, Suite 325 \xB7 Garden City, NY 11530</p>
+    <p style="margin: 0;">XIRI Group LLC \xB7 418 Broadway, Ste N \xB7 Albany, NY 12207</p>
     <p style="margin: 8px 0 0 0;">
         <a href="${unsubscribeUrl}" style="color: #64748b; text-decoration: underline;">Unsubscribe</a>
         &nbsp;\xB7&nbsp;
@@ -6613,7 +6613,7 @@ function fetch2(url, opts) {
   return new fetch2.Promise(function(resolve2, reject) {
     const request = new Request(url, opts);
     const options = getNodeRequestOptions(request);
-    const send = (options.protocol === "https:" ? import_https7.default : import_http.default).request;
+    const send = (options.protocol === "https:" ? import_https8.default : import_http.default).request;
     const signal = request.signal;
     let response = null;
     const abort = function abort2() {
@@ -6835,7 +6835,7 @@ function destroyStream(stream, err) {
     stream.end();
   }
 }
-var import_stream, import_http, import_url, import_whatwg_url, import_https7, import_zlib, Readable, BUFFER, TYPE, Blob, convert, INTERNALS, PassThrough, invalidTokenRegex, invalidHeaderCharRegex, MAP, Headers, INTERNAL, HeadersIteratorPrototype, INTERNALS$1, STATUS_CODES, Response, INTERNALS$2, URL2, parse_url, format_url, streamDestructionSupported, Request, URL$1, PassThrough$1, isDomainOrSubdomain, isSameProtocol, lib_default;
+var import_stream, import_http, import_url, import_whatwg_url, import_https8, import_zlib, Readable, BUFFER, TYPE, Blob, convert, INTERNALS, PassThrough, invalidTokenRegex, invalidHeaderCharRegex, MAP, Headers, INTERNAL, HeadersIteratorPrototype, INTERNALS$1, STATUS_CODES, Response, INTERNALS$2, URL2, parse_url, format_url, streamDestructionSupported, Request, URL$1, PassThrough$1, isDomainOrSubdomain, isSameProtocol, lib_default;
 var init_lib = __esm({
   "../../node_modules/node-fetch/lib/index.mjs"() {
     "use strict";
@@ -6843,7 +6843,7 @@ var init_lib = __esm({
     import_http = __toESM(require("http"), 1);
     import_url = __toESM(require("url"), 1);
     import_whatwg_url = __toESM(require_public_api(), 1);
-    import_https7 = __toESM(require("https"), 1);
+    import_https8 = __toESM(require("https"), 1);
     import_zlib = __toESM(require("zlib"), 1);
     Readable = import_stream.default.Readable;
     BUFFER = /* @__PURE__ */ Symbol("buffer");
@@ -11540,12 +11540,12 @@ var require_logging_utils = __commonJS({
             this.setFilters();
             this.filtersSet = true;
           }
-          let logger25 = this.cached.get(namespace);
-          if (!logger25) {
-            logger25 = this.makeLogger(namespace);
-            this.cached.set(namespace, logger25);
+          let logger26 = this.cached.get(namespace);
+          if (!logger26) {
+            logger26 = this.makeLogger(namespace);
+            this.cached.set(namespace, logger26);
           }
-          logger25(fields, ...args);
+          logger26(fields, ...args);
         } catch (e) {
           console.error(e);
         }
@@ -11682,7 +11682,7 @@ var require_logging_utils = __commonJS({
       } else if (cachedBackend === void 0) {
         cachedBackend = getNodeBackend();
       }
-      const logger25 = (() => {
+      const logger26 = (() => {
         let previousBackend = void 0;
         const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
           if (previousBackend !== cachedBackend) {
@@ -11697,8 +11697,8 @@ var require_logging_utils = __commonJS({
         });
         return newLogger;
       })();
-      loggerCache.set(namespace, logger25);
-      return logger25.func;
+      loggerCache.set(namespace, logger26);
+      return logger26.func;
     }
   }
 });
@@ -11762,14 +11762,14 @@ var require_src4 = __commonJS({
     var gaxios_1 = require_src2();
     var jsonBigint = require_json_bigint();
     var gcp_residency_1 = require_gcp_residency();
-    var logger25 = require_src3();
+    var logger26 = require_src3();
     exports2.BASE_PATH = "/computeMetadata/v1";
     exports2.HOST_ADDRESS = "http://169.254.169.254";
     exports2.SECONDARY_HOST_ADDRESS = "http://metadata.google.internal.";
     exports2.HEADER_NAME = "Metadata-Flavor";
     exports2.HEADER_VALUE = "Google";
     exports2.HEADERS = Object.freeze({ [exports2.HEADER_NAME]: exports2.HEADER_VALUE });
-    var log = logger25.log("gcp metadata");
+    var log = logger26.log("gcp metadata");
     exports2.METADATA_SERVER_DETECTION = Object.freeze({
       "assume-present": "don't try to ping the metadata server, but assume it's present",
       none: "don't try to ping the metadata server, but don't try to use it either",
@@ -13346,13 +13346,13 @@ var require_oauth2client = __commonJS({
           },
           url: this.endpoints.tokenInfoUrl.toString()
         });
-        const info19 = Object.assign({
+        const info20 = Object.assign({
           expiry_date: (/* @__PURE__ */ new Date()).getTime() + data.expires_in * 1e3,
           scopes: data.scope.split(" ")
         }, data);
-        delete info19.expires_in;
-        delete info19.scope;
-        return info19;
+        delete info20.expires_in;
+        delete info20.scope;
+        return info20;
       }
       getFederatedSignonCerts(callback) {
         if (callback) {
@@ -18812,6 +18812,7 @@ __export(index_exports, {
   sendBookingConfirmation: () => sendBookingConfirmation,
   sendOnboardingInvite: () => sendOnboardingInvite,
   sendQuoteEmail: () => sendQuoteEmail,
+  sendSingleLeadEmail: () => sendSingleLeadEmail,
   sendTestMorningReport: () => sendTestMorningReport,
   sendVendorBookingConfirmation: () => sendVendorBookingConfirmation,
   sourceProperties: () => sourceProperties,
@@ -19644,8 +19645,8 @@ async function setOutreachPending(vendorId, vendorData) {
     outreachStatus: "PENDING",
     statusUpdatedAt: /* @__PURE__ */ new Date()
   });
-  const { enqueueTask: enqueueTask2 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
-  await enqueueTask2(db, {
+  const { enqueueTask: enqueueTask3 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
+  await enqueueTask3(db, {
     vendorId,
     type: "GENERATE",
     scheduledAt: /* @__PURE__ */ new Date(),
@@ -20107,7 +20108,22 @@ async function handleLeadSend(task) {
       return;
     }
   }
-  const toEmail = task.metadata?.email;
+  const contactId = task.contactId || task.metadata?.contactId || null;
+  let toEmail = task.metadata?.email;
+  let contactName = task.metadata?.contactName || "there";
+  if (contactId) {
+    const contactDoc = await db4.collection("contacts").doc(contactId).get();
+    if (contactDoc.exists) {
+      const cData = contactDoc.data();
+      if (cData.unsubscribed) {
+        logger3.info(`[Suppression] Contact ${contactId} is unsubscribed \u2014 skipping send.`);
+        await updateTaskStatus(db4, task.id, "CANCELLED");
+        return;
+      }
+      toEmail = cData.email || toEmail;
+      contactName = `${cData.firstName || ""} ${cData.lastName || ""}`.trim() || contactName;
+    }
+  }
   if (!toEmail) {
     logger3.warn(`[LeadOutreach] No email for lead ${task.leadId}, skipping.`);
     await updateTaskStatus(db4, task.id, "COMPLETED");
@@ -20127,7 +20143,7 @@ async function handleLeadSend(task) {
   }
   const template = templateDoc.data();
   const mergeVars = {
-    contactName: task.metadata.contactName || "there",
+    contactName,
     businessName: task.metadata.businessName || "your practice",
     facilityType: titleCase(task.metadata.facilityType || "Medical Office"),
     address: task.metadata.address || "",
@@ -20156,6 +20172,7 @@ async function handleLeadSend(task) {
   );
   await db4.collection("lead_activities").add({
     leadId: task.leadId,
+    contactId: contactId || null,
     type: sendResult.success ? "OUTREACH_SENT" : "OUTREACH_FAILED",
     description: sendResult.success ? `Lead email sent to ${toEmail} (template: ${templateId}).` : `Failed to send lead email to ${toEmail}.`,
     createdAt: /* @__PURE__ */ new Date(),
@@ -20166,7 +20183,8 @@ async function handleLeadSend(task) {
       html: htmlBody,
       templateId,
       sequence: task.metadata.sequence,
-      resendId: sendResult.resendId || null
+      resendId: sendResult.resendId || null,
+      contactId: contactId || null
     }
   });
   await updateTaskStatus(db4, task.id, sendResult.success ? "COMPLETED" : "FAILED");
@@ -20795,8 +20813,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db22 = (0, import_firestore6.getFirestore)();
-    const docRef = db22.collection(collection).doc(documentId);
+    const db23 = (0, import_firestore6.getFirestore)();
+    const docRef = db23.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -21134,7 +21152,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger7.error("Error sending vendor confirmation:", err);
     }
   }
-  const db22 = admin9.firestore();
+  const db23 = admin9.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -21161,9 +21179,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db22.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db23.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger7.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db22.collection("vendor_activities").add({
+  await db23.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -21184,52 +21202,8 @@ var db7 = admin10.firestore();
 var onAwaitingOnboarding = (0, import_firestore8.onDocumentUpdated)({
   document: "vendors/{vendorId}"
 }, async (event) => {
-  const before = event.data?.before?.data();
-  const after = event.data?.after?.data();
-  if (!before || !after) return;
-  if (before.status === after.status) return;
-  if (after.status !== "awaiting_onboarding") return;
-  const vendorId = event.params.vendorId;
-  const businessName = after.businessName || "Unknown";
-  logger8.info(`Scheduling drip campaign for vendor ${vendorId} (${businessName})`);
-  const now = /* @__PURE__ */ new Date();
-  const followUps = [
-    { dayOffset: 3, sequence: 1, subject: "Quick reminder \u2014 complete your XIRI profile" },
-    { dayOffset: 7, sequence: 2, subject: "Just checking in \u2014 your XIRI application" },
-    { dayOffset: 14, sequence: 3, subject: "Final follow-up \u2014 don't miss out on work opportunities" },
-    { dayOffset: 21, sequence: 4, subject: "Last chance \u2014 XIRI partnership closing soon" }
-  ];
-  for (const fu of followUps) {
-    const scheduledDate = new Date(now);
-    scheduledDate.setDate(scheduledDate.getDate() + fu.dayOffset);
-    scheduledDate.setHours(15, 0, 0, 0);
-    await enqueueTask(db7, {
-      vendorId,
-      type: "FOLLOW_UP",
-      scheduledAt: admin10.firestore.Timestamp.fromDate(scheduledDate),
-      metadata: {
-        sequence: fu.sequence,
-        subject: fu.subject,
-        businessName,
-        email: after.email,
-        preferredLanguage: after.preferredLanguage || "en"
-      }
-    });
-  }
-  for (const fu of followUps) {
-    const scheduledDate = new Date(now);
-    scheduledDate.setDate(scheduledDate.getDate() + fu.dayOffset);
-    scheduledDate.setHours(15, 0, 0, 0);
-    await db7.collection("vendor_activities").add({
-      vendorId,
-      type: "DRIP_SCHEDULED",
-      description: `Follow-up #${fu.sequence} scheduled: "${fu.subject}"`,
-      createdAt: /* @__PURE__ */ new Date(),
-      scheduledFor: scheduledDate,
-      metadata: { sequence: fu.sequence, dayOffset: fu.dayOffset, subject: fu.subject }
-    });
-  }
-  logger8.info(`Drip campaign scheduled for ${vendorId}: 4 follow-ups at days 3, 7, 14, 21`);
+  logger8.info("[DripScheduler] Vendor auto-enrollment disabled \u2014 vendors must be manually enrolled in sequences.");
+  return;
 });
 var STAGES_PAST_OUTREACH = /* @__PURE__ */ new Set([
   "compliance_review",
@@ -21292,7 +21266,8 @@ var handleUnsubscribe = (0, import_https2.onRequest)({
   }
   try {
     if (entityType === "lead") {
-      await handleLeadUnsubscribe(entityId, res);
+      const contactId = req.query.contactId;
+      await handleLeadUnsubscribe(entityId, res, contactId);
     } else {
       await handleVendorUnsubscribe(entityId, res);
     }
@@ -21351,7 +21326,7 @@ async function handleVendorUnsubscribe(vendorId, res) {
     true
   ));
 }
-async function handleLeadUnsubscribe(leadId, res) {
+async function handleLeadUnsubscribe(leadId, res, contactId) {
   const leadDoc = await db8.collection("leads").doc(leadId).get();
   if (!leadDoc.exists) {
     res.status(404).send(renderPage(
@@ -21363,6 +21338,24 @@ async function handleLeadUnsubscribe(leadId, res) {
   }
   const lead = leadDoc.data();
   const businessName = lead.businessName || "Business";
+  let resolvedContactId = contactId || null;
+  if (!resolvedContactId) {
+    const primarySnap = await db8.collection("contacts").where("companyId", "==", leadId).where("isPrimary", "==", true).limit(1).get();
+    if (!primarySnap.empty) {
+      resolvedContactId = primarySnap.docs[0].id;
+    }
+  }
+  if (resolvedContactId) {
+    const contactDoc = await db8.collection("contacts").doc(resolvedContactId).get();
+    if (contactDoc.exists && contactDoc.data()?.unsubscribed) {
+      res.status(200).send(renderPage(
+        "Already Unsubscribed",
+        `You have already been removed from our outreach list. You won't receive any more emails.`,
+        true
+      ));
+      return;
+    }
+  }
   if (lead.unsubscribedAt || lead.status === "lost") {
     res.status(200).send(renderPage(
       "Already Unsubscribed",
@@ -21370,6 +21363,12 @@ async function handleLeadUnsubscribe(leadId, res) {
       true
     ));
     return;
+  }
+  if (resolvedContactId) {
+    await db8.collection("contacts").doc(resolvedContactId).update({
+      unsubscribed: true,
+      unsubscribedAt: /* @__PURE__ */ new Date()
+    });
   }
   const previousStatus = lead.status;
   await db8.collection("leads").doc(leadId).update({
@@ -21381,6 +21380,7 @@ async function handleLeadUnsubscribe(leadId, res) {
   const cancelledCount = await cancelLeadTasks(db8, leadId);
   await db8.collection("lead_activities").add({
     leadId,
+    contactId: resolvedContactId || null,
     type: "STATUS_CHANGE",
     description: `${businessName} unsubscribed via email link. Status changed from ${previousStatus} to lost. ${cancelledCount} pending tasks cancelled.`,
     createdAt: /* @__PURE__ */ new Date(),
@@ -21388,10 +21388,11 @@ async function handleLeadUnsubscribe(leadId, res) {
       from: previousStatus,
       to: "lost",
       trigger: "unsubscribe_link",
-      cancelledTasks: cancelledCount
+      cancelledTasks: cancelledCount,
+      contactId: resolvedContactId || null
     }
   });
-  logger9.info(`Lead ${leadId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
+  logger9.info(`Lead ${leadId} (${businessName}) unsubscribed. Contact: ${resolvedContactId || "none"}. ${cancelledCount} tasks cancelled.`);
   res.status(200).send(renderPage(
     "Unsubscribed Successfully",
     `${businessName} has been removed from our outreach list. You won't receive any more emails from XIRI Facility Solutions.<br/><br/>If this was a mistake, please contact us at <a href="mailto:chris@xiri.ai" style="color: #0369a1;">chris@xiri.ai</a>.`,
@@ -21421,7 +21422,7 @@ function renderPage(title, message, success) {
         <div class="icon">${icon}</div>
         <h1>${title}</h1>
         <p>${message}</p>
-        <div class="footer">XIRI Facility Solutions \xB7 1225 Franklin Ave, Suite 325 \xB7 Garden City, NY 11530</div>
+        <div class="footer">XIRI Facility Solutions \xB7 418 Broadway, Ste N \xB7 Albany, NY 12207</div>
     </div>
 </body>
 </html>`;
@@ -22128,10 +22129,10 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
   logger11.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
-  const db22 = admin15.firestore();
+  const db23 = admin15.firestore();
   let vendorData;
   try {
-    const vendorSnap = await db22.collection("vendors").doc(newVendorId).get();
+    const vendorSnap = await db23.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
       logger11.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
@@ -22144,7 +22145,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const salesTaxId = vendorData.compliance?.salesTaxId?.trim();
   if (!salesTaxId) {
     logger11.info(`[ST-120.1] Vendor ${newVendorId} has no salesTaxId \u2014 skipping certificate.`);
-    await db22.collection("vendor_activities").add({
+    await db23.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_SKIPPED",
       description: `ST-120.1 not generated for WO ${workOrderId} \u2014 vendor has no Sales Tax ID on file.`,
@@ -22156,7 +22157,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   let leadData = {};
   if (after.leadId) {
     try {
-      const leadSnap = await db22.collection("leads").doc(after.leadId).get();
+      const leadSnap = await db23.collection("leads").doc(after.leadId).get();
       if (leadSnap.exists) {
         leadData = leadSnap.data();
       }
@@ -22166,7 +22167,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   }
   let xiriData;
   try {
-    const settingsSnap = await db22.collection("settings").doc("corporate").get();
+    const settingsSnap = await db23.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
       logger11.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
@@ -22212,7 +22213,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const result = await generateST1201(vendorCertData, xiriData, projectDataInput);
   if (!result.success || !result.pdfBytes) {
     logger11.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
-    await db22.collection("vendor_activities").add({
+    await db23.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
       description: `ST-120.1 generation failed for WO ${workOrderId}: ${result.error}`,
@@ -22246,7 +22247,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     logger11.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err);
     return;
   }
-  await db22.collection("work_orders").doc(workOrderId).update({
+  await db23.collection("work_orders").doc(workOrderId).update({
     st1201CertificateUrl: pdfUrl,
     st1201IssueDate: result.issueDate,
     st1201ExpiryDate: result.expiryDate,
@@ -22255,7 +22256,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (vendorCertData.email) {
     const vendorName = vendorCertData.businessName;
     const projectName = projectDataInput.projectName;
-    await db22.collection("mail_queue").add({
+    await db23.collection("mail_queue").add({
       to: vendorCertData.email,
       subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${projectName}`,
       templateType: "st_120_1_certificate",
@@ -22275,7 +22276,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
       createdAt: admin15.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db22.collection("vendor_activities").add({
+  await db23.collection("vendor_activities").add({
     vendorId: newVendorId,
     type: "TAX_CERTIFICATE_ISSUED",
     description: `ST-120.1 generated for project "${projectDataInput.projectName}" (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
@@ -22297,7 +22298,6 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
 var import_firestore12 = require("firebase-functions/v2/firestore");
 var admin16 = __toESM(require("firebase-admin"));
 var logger12 = __toESM(require("firebase-functions/logger"));
-init_queueUtils();
 if (!admin16.apps.length) {
   admin16.initializeApp();
 }
@@ -22305,89 +22305,8 @@ var db12 = admin16.firestore();
 var onLeadQualified = (0, import_firestore12.onDocumentUpdated)({
   document: "leads/{leadId}"
 }, async (event) => {
-  const before = event.data?.before?.data();
-  const after = event.data?.after?.data();
-  if (!before || !after) return;
-  if (before.status === after.status) return;
-  if (after.status !== "qualified") return;
-  const leadId = event.params.leadId;
-  const businessName = after.businessName || "Unknown";
-  const contactEmail = after.email;
-  if (!contactEmail || contactEmail.trim().length === 0) {
-    logger12.warn(`[SalesOutreach] Lead ${leadId} (${businessName}) has no email \u2014 marking NEEDS_MANUAL.`);
-    await db12.collection("leads").doc(leadId).update({
-      outreachStatus: "NEEDS_MANUAL"
-    });
-    await db12.collection("lead_activities").add({
-      leadId,
-      type: "OUTREACH_NEEDS_MANUAL",
-      description: `No email found for ${businessName}. Manual outreach required.`,
-      createdAt: /* @__PURE__ */ new Date()
-    });
-    return;
-  }
-  logger12.info(`[SalesOutreach] Scheduling drip campaign for lead ${leadId} (${businessName})`);
-  const now = /* @__PURE__ */ new Date();
-  const leadType = after.leadType || "direct";
-  let steps;
-  if (leadType === "enterprise") {
-    steps = [
-      { dayOffset: 0, sequence: 0 },
-      { dayOffset: 4, sequence: 1 },
-      { dayOffset: 8, sequence: 2 },
-      { dayOffset: 14, sequence: 3 },
-      { dayOffset: 21, sequence: 4 }
-    ];
-  } else if (leadType === "referral_partnership") {
-    steps = [
-      { dayOffset: 0, sequence: 0 },
-      { dayOffset: 4, sequence: 1 },
-      { dayOffset: 10, sequence: 2 }
-    ];
-  } else {
-    steps = [
-      { dayOffset: 0, sequence: 0 },
-      { dayOffset: 3, sequence: 1 },
-      { dayOffset: 7, sequence: 2 },
-      { dayOffset: 14, sequence: 3 }
-    ];
-  }
-  for (const step of steps) {
-    const scheduledDate = new Date(now);
-    scheduledDate.setDate(scheduledDate.getDate() + step.dayOffset);
-    scheduledDate.setHours(14, 0, 0, 0);
-    const sendAt = step.dayOffset === 0 ? now : scheduledDate;
-    const templatePrefix = leadType === "enterprise" ? "enterprise_lead_" : leadType === "referral_partnership" ? "referral_partnership_" : "tenant_lead_";
-    await enqueueTask(db12, {
-      leadId,
-      type: "SEND",
-      scheduledAt: admin16.firestore.Timestamp.fromDate(sendAt),
-      metadata: {
-        sequence: step.sequence,
-        businessName,
-        email: contactEmail,
-        contactName: after.contactName || "",
-        facilityType: after.facilityType || "",
-        address: after.address || "",
-        squareFootage: after.squareFootage || "",
-        propertySourcing: after.propertySourcing || null,
-        leadType,
-        templateId: `${templatePrefix}${step.sequence + 1}`
-      }
-    });
-  }
-  await db12.collection("leads").doc(leadId).update({
-    outreachStatus: "PENDING"
-  });
-  const schedule = leadType === "enterprise" ? "Day 0/4/8/14/21" : leadType === "referral_partnership" ? "Day 0/4/10" : "Day 0/3/7/14";
-  await db12.collection("lead_activities").add({
-    leadId,
-    type: "DRIP_SCHEDULED",
-    description: `${leadType} drip campaign scheduled: ${steps.length} emails (${schedule}) for ${businessName}.`,
-    createdAt: /* @__PURE__ */ new Date(),
-    metadata: { followUpCount: steps.length, schedule, leadType }
-  });
-  logger12.info(`[SalesOutreach] ${leadType} drip campaign scheduled for lead ${leadId}: ${steps.length} emails (${schedule})`);
+  logger12.info("[SalesOutreach] Auto-enrollment disabled \u2014 leads must be manually enrolled in sequences.");
+  return;
 });
 
 // src/triggers/commissionTriggers.ts
@@ -23192,7 +23111,7 @@ function wrapEmail(body) {
 
         <!-- Footer -->
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
-            <p style="margin: 0;">XIRI Facility Solutions \xB7 1225 Franklin Ave, Suite 325 \xB7 Garden City, NY 11530</p>
+            <p style="margin: 0;">XIRI Facility Solutions \xB7 418 Broadway, Ste N \xB7 Albany, NY 12207</p>
             <p style="margin: 8px 0 0 0;">
                 <a href="mailto:chris@xiri.ai" style="color: #64748b; text-decoration: underline;">Contact Us</a>
             </p>
@@ -23593,6 +23512,7 @@ var resendWebhook = (0, import_https4.onRequest)({
     let entityId = null;
     let entityType = null;
     const tags = event?.data?.tags;
+    let tagContactId = null;
     if (tags) {
       const getTag = (key) => {
         if (typeof tags === "object" && !Array.isArray(tags) && tags[key]) return tags[key];
@@ -23604,6 +23524,7 @@ var resendWebhook = (0, import_https4.onRequest)({
       };
       const vendorId = getTag("vendorId");
       const leadId = getTag("leadId");
+      tagContactId = getTag("contactId");
       if (vendorId) {
         entityId = vendorId;
         entityType = "vendor";
@@ -23630,6 +23551,13 @@ var resendWebhook = (0, import_https4.onRequest)({
         }
       }
     }
+    let resolvedContactId = tagContactId || null;
+    if (!resolvedContactId && entityType === "lead") {
+      const actSnap = await db19.collection("lead_activities").where("metadata.resendId", "==", emailId).limit(1).get();
+      if (!actSnap.empty) {
+        resolvedContactId = actSnap.docs[0].data().contactId || actSnap.docs[0].data().metadata?.contactId || null;
+      }
+    }
     if (!entityId || !entityType) {
       import_v22.logger.warn(`Resend webhook: could not resolve entity for emailId ${emailId}`);
       res.status(200).json({ ok: true, notFound: true });
@@ -23637,7 +23565,7 @@ var resendWebhook = (0, import_https4.onRequest)({
     }
     const activitiesCollection = entityType === "vendor" ? "vendor_activities" : "lead_activities";
     const idField = entityType === "vendor" ? "vendorId" : "leadId";
-    await db19.collection(activitiesCollection).add({
+    const activityData = {
       [idField]: entityId,
       type: mapping.activityType,
       description: mapping.description,
@@ -23648,7 +23576,12 @@ var resendWebhook = (0, import_https4.onRequest)({
         rawEvent: eventType,
         to: event?.data?.to?.[0] || void 0
       }
-    });
+    };
+    if (entityType === "lead" && resolvedContactId) {
+      activityData.contactId = resolvedContactId;
+      activityData.metadata.contactId = resolvedContactId;
+    }
+    await db19.collection(activitiesCollection).add(activityData);
     const entityCollection = entityType === "vendor" ? "vendors" : "leads";
     const ENGAGEMENT_PRIORITY = {
       delivered: 1,
@@ -24055,8 +23988,14 @@ if (!admin25.apps.length) {
   admin25.initializeApp();
 }
 var db21 = admin25.firestore();
+var DEFAULT_SEQUENCE_MAP = {
+  enterprise: "enterprise_lead_sequence",
+  referral_partnership: "referral_partnership_sequence",
+  tenant: "tenant_lead_sequence",
+  direct: "tenant_lead_sequence"
+};
 var startLeadSequence = (0, import_https6.onCall)(async (request) => {
-  const { leadId } = request.data;
+  const { leadId, contactId: requestedContactId, sequenceId: requestedSequenceId } = request.data;
   if (!leadId) {
     throw new import_https6.HttpsError("invalid-argument", "leadId is required");
   }
@@ -24066,7 +24005,32 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
   }
   const lead = leadDoc.data();
   const businessName = lead.businessName || "Unknown";
-  const contactEmail = lead.email;
+  const leadType = lead.leadType || "direct";
+  let contactId = requestedContactId || null;
+  let contactEmail = "";
+  let contactName = "";
+  if (contactId) {
+    const contactDoc = await db21.collection("contacts").doc(contactId).get();
+    if (contactDoc.exists) {
+      const contact = contactDoc.data();
+      contactEmail = contact.email || "";
+      contactName = `${contact.firstName || ""} ${contact.lastName || ""}`.trim();
+    }
+  }
+  if (!contactEmail) {
+    const primarySnap = await db21.collection("contacts").where("companyId", "==", leadId).where("isPrimary", "==", true).limit(1).get();
+    if (!primarySnap.empty) {
+      const primaryContact = primarySnap.docs[0];
+      contactId = primaryContact.id;
+      const pData = primaryContact.data();
+      contactEmail = pData.email || "";
+      contactName = `${pData.firstName || ""} ${pData.lastName || ""}`.trim();
+    }
+  }
+  if (!contactEmail) {
+    contactEmail = lead.email || "";
+    contactName = lead.contactName || "";
+  }
   if (!contactEmail || contactEmail.trim().length === 0) {
     await db21.collection("leads").doc(leadId).update({
       outreachStatus: "NEEDS_MANUAL"
@@ -24076,84 +24040,255 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
       `Lead ${businessName} has no email \u2014 manual outreach required.`
     );
   }
+  const sequenceId = requestedSequenceId || DEFAULT_SEQUENCE_MAP[leadType] || "tenant_lead_sequence";
+  const sequenceDoc = await db21.collection("sequences").doc(sequenceId).get();
+  if (!sequenceDoc.exists) {
+    throw new import_https6.HttpsError(
+      "not-found",
+      `Sequence "${sequenceId}" not found. Create it in the Sequence Builder first.`
+    );
+  }
+  const sequence = sequenceDoc.data();
+  const steps = sequence.steps || [];
+  if (steps.length === 0) {
+    throw new import_https6.HttpsError(
+      "failed-precondition",
+      `Sequence "${sequence.name}" has no steps defined.`
+    );
+  }
+  if (contactId) {
+    const contactDoc = await db21.collection("contacts").doc(contactId).get();
+    if (contactDoc.exists) {
+      const contactData = contactDoc.data();
+      const history = contactData.sequenceHistory || {};
+      if (history[sequenceId]) {
+        const prevStart = history[sequenceId].startedAt;
+        const prevDate = prevStart?.toDate ? prevStart.toDate() : prevStart;
+        throw new import_https6.HttpsError(
+          "already-exists",
+          `${contactName || contactEmail} was already enrolled in "${sequence.name}" on ${prevDate ? prevDate.toLocaleDateString() : "a previous date"}. Contacts cannot be re-enrolled in the same sequence.`
+        );
+      }
+    }
+  }
   const { cancelLeadTasks: cancelLeadTasks2 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
   const cancelledCount = await cancelLeadTasks2(db21, leadId);
   if (cancelledCount > 0) {
     logger22.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
   }
-  const leadType = lead.leadType || "direct";
-  logger22.info(`[StartSequence] Manually starting ${leadType} sequence for lead ${leadId} (${businessName})`);
+  logger22.info(
+    `[StartSequence] Starting "${sequence.name}" (${sequenceId}) for lead ${leadId} (${businessName}), contact ${contactId || "lead-level"}`
+  );
   const now = /* @__PURE__ */ new Date();
-  let steps;
-  if (leadType === "enterprise") {
-    steps = [
-      { dayOffset: 0, sequence: 0 },
-      { dayOffset: 4, sequence: 1 },
-      { dayOffset: 8, sequence: 2 },
-      { dayOffset: 14, sequence: 3 },
-      { dayOffset: 21, sequence: 4 }
-    ];
-  } else if (leadType === "referral_partnership") {
-    steps = [
-      { dayOffset: 0, sequence: 0 },
-      { dayOffset: 4, sequence: 1 },
-      { dayOffset: 10, sequence: 2 }
-    ];
-  } else {
-    steps = [
-      { dayOffset: 0, sequence: 0 },
-      { dayOffset: 3, sequence: 1 },
-      { dayOffset: 7, sequence: 2 },
-      { dayOffset: 14, sequence: 3 }
-    ];
-  }
-  const templatePrefix = leadType === "enterprise" ? "enterprise_lead_" : leadType === "referral_partnership" ? "referral_partnership_" : "tenant_lead_";
-  for (const step of steps) {
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
     const scheduledDate = new Date(now);
     scheduledDate.setDate(scheduledDate.getDate() + step.dayOffset);
     scheduledDate.setHours(14, 0, 0, 0);
     const sendAt = step.dayOffset === 0 ? now : scheduledDate;
     await enqueueTask(db21, {
       leadId,
+      contactId: contactId || void 0,
       type: "SEND",
       scheduledAt: admin25.firestore.Timestamp.fromDate(sendAt),
       metadata: {
-        sequence: step.sequence,
+        sequence: i,
         businessName,
         email: contactEmail,
-        contactName: lead.contactName || "",
+        contactName,
+        contactId: contactId || null,
         facilityType: lead.facilityType || "",
         address: lead.address || "",
         squareFootage: lead.squareFootage || "",
         propertySourcing: lead.propertySourcing || null,
         leadType,
-        templateId: `${templatePrefix}${step.sequence + 1}`
+        templateId: step.templateId,
+        sequenceId,
+        stepLabel: step.label
       }
     });
   }
   await db21.collection("leads").doc(leadId).update({
     status: lead.status === "new" ? "contacted" : lead.status,
     outreachStatus: "PENDING",
+    sequenceId,
     sequenceStartedAt: admin25.firestore.FieldValue.serverTimestamp(),
     sequenceStartedBy: request.auth?.uid || "manual"
   });
-  const schedule = leadType === "enterprise" ? "Day 0/4/8/14/21" : leadType === "referral_partnership" ? "Day 0/4/10" : "Day 0/3/7/14";
+  if (contactId) {
+    await db21.collection("contacts").doc(contactId).update({
+      [`sequenceHistory.${sequenceId}`]: {
+        startedAt: admin25.firestore.FieldValue.serverTimestamp(),
+        startedBy: request.auth?.uid || "manual",
+        status: "in_progress",
+        sequenceName: sequence.name,
+        stepCount: steps.length
+      }
+    });
+  }
+  const dayList = steps.map((s) => `Day ${s.dayOffset}`).join("/");
   await db21.collection("lead_activities").add({
     leadId,
+    contactId: contactId || null,
     type: "SEQUENCE_STARTED",
-    description: `${leadType} email sequence manually started for ${businessName}. Schedule: ${schedule}`,
+    description: `"${sequence.name}" sequence started for ${businessName} \u2192 ${contactName || contactEmail}. Schedule: ${dayList}`,
     createdAt: /* @__PURE__ */ new Date(),
     startedBy: request.auth?.uid || "manual",
-    metadata: { leadType, stepCount: steps.length, schedule }
+    metadata: {
+      leadType,
+      sequenceId,
+      sequenceName: sequence.name,
+      stepCount: steps.length,
+      schedule: dayList,
+      contactId: contactId || null
+    }
   });
-  logger22.info(`[StartSequence] ${leadType} sequence started for ${leadId}: ${steps.length} emails`);
+  logger22.info(
+    `[StartSequence] "${sequence.name}" started for ${leadId}: ${steps.length} emails (${dayList})`
+  );
   return {
     success: true,
-    message: `${leadType} sequence started for ${businessName}`,
+    message: `"${sequence.name}" started for ${businessName}`,
+    sequenceId,
     stepCount: steps.length,
-    schedule
+    schedule: dayList
   };
 });
+
+// src/triggers/sendSingleLeadEmail.ts
+var import_https7 = require("firebase-functions/v2/https");
+var admin26 = __toESM(require("firebase-admin"));
+var logger23 = __toESM(require("firebase-functions/logger"));
+init_emailUtils();
+if (!admin26.apps.length) {
+  admin26.initializeApp();
+}
+var db22 = admin26.firestore();
+var sendSingleLeadEmail = (0, import_https7.onCall)(
+  { secrets: ["RESEND_API_KEY"] },
+  async (request) => {
+    const { leadId, templateId, contactId: requestedContactId } = request.data;
+    if (!leadId || !templateId) {
+      throw new import_https7.HttpsError("invalid-argument", "leadId and templateId are required");
+    }
+    const leadDoc = await db22.collection("leads").doc(leadId).get();
+    if (!leadDoc.exists) {
+      throw new import_https7.HttpsError("not-found", `Lead ${leadId} not found`);
+    }
+    const lead = leadDoc.data();
+    const businessName = lead.businessName || "Unknown";
+    let contactId = requestedContactId || null;
+    let contactEmail = "";
+    let contactName = "";
+    let contactUnsubscribed = false;
+    if (contactId) {
+      const contactDoc = await db22.collection("contacts").doc(contactId).get();
+      if (contactDoc.exists) {
+        const c = contactDoc.data();
+        contactEmail = c.email || "";
+        contactName = `${c.firstName || ""} ${c.lastName || ""}`.trim();
+        contactUnsubscribed = c.unsubscribed || false;
+      }
+    }
+    if (!contactEmail) {
+      const primarySnap = await db22.collection("contacts").where("companyId", "==", leadId).where("isPrimary", "==", true).limit(1).get();
+      if (!primarySnap.empty) {
+        const pDoc = primarySnap.docs[0];
+        contactId = pDoc.id;
+        const pData = pDoc.data();
+        contactEmail = pData.email || "";
+        contactName = `${pData.firstName || ""} ${pData.lastName || ""}`.trim();
+        contactUnsubscribed = pData.unsubscribed || false;
+      }
+    }
+    if (!contactEmail) {
+      contactEmail = lead.email || "";
+      contactName = lead.contactName || "";
+      contactUnsubscribed = lead.unsubscribed || false;
+    }
+    if (!contactEmail || contactEmail.trim().length === 0) {
+      throw new import_https7.HttpsError(
+        "failed-precondition",
+        `Lead ${businessName} has no email \u2014 cannot send.`
+      );
+    }
+    if (contactUnsubscribed) {
+      throw new import_https7.HttpsError(
+        "failed-precondition",
+        `${contactName || "Contact"} has unsubscribed from emails.`
+      );
+    }
+    const template = await getTemplate(templateId);
+    if (!template) {
+      throw new import_https7.HttpsError("not-found", `Template ${templateId} not found`);
+    }
+    const variables = {
+      businessName,
+      contactName,
+      facilityType: lead.facilityType || "",
+      address: lead.address || "",
+      squareFootage: lead.squareFootage || "",
+      email: contactEmail
+    };
+    logger23.info(`[SendSingle] Variables for merge:`, variables);
+    const mergedSubject = replaceVariables(template.subject, variables);
+    const templateBody = template.content || template.body || "";
+    logger23.info(`[SendSingle] Template body field found: ${templateBody ? "yes" : "no"}, length: ${templateBody.length}`);
+    const mergedBody = replaceVariables(templateBody, variables);
+    const htmlBody = mergedBody.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+    logger23.info(`[SendSingle] Sending "${templateId}" to ${contactEmail} for lead ${leadId}`);
+    const result = await sendEmail(
+      contactEmail,
+      mergedSubject,
+      htmlBody,
+      void 0,
+      // attachments
+      "XIRI Facility Solutions <chris@xiri.ai>",
+      leadId,
+      templateId,
+      "lead"
+    );
+    if (!result.success) {
+      await db22.collection("lead_activities").add({
+        leadId,
+        contactId: contactId || null,
+        type: "EMAIL_FAILED",
+        description: `Failed to send targeted email "${templateId}" to ${contactEmail}`,
+        createdAt: admin26.firestore.FieldValue.serverTimestamp(),
+        sentBy: request.auth?.uid || "manual",
+        metadata: { templateId, subject: mergedSubject, to: contactEmail, contactId: contactId || null }
+      });
+      throw new import_https7.HttpsError("internal", "Failed to send email via Resend");
+    }
+    await db22.collection("lead_activities").add({
+      leadId,
+      contactId: contactId || null,
+      type: "TARGETED_EMAIL_SENT",
+      description: `Targeted email "${templateId}" sent to ${contactEmail}: ${mergedSubject}`,
+      createdAt: admin26.firestore.FieldValue.serverTimestamp(),
+      sentBy: request.auth?.uid || "manual",
+      metadata: {
+        templateId,
+        subject: mergedSubject,
+        to: contactEmail,
+        resendId: result.resendId,
+        contactId: contactId || null
+      }
+    });
+    if (lead.status === "new") {
+      await db22.collection("leads").doc(leadId).update({
+        status: "contacted"
+      });
+    }
+    logger23.info(`[SendSingle] \u2705 Sent "${mergedSubject}" to ${contactEmail} (Resend: ${result.resendId})`);
+    return {
+      success: true,
+      message: `Email sent to ${contactEmail}`,
+      subject: mergedSubject,
+      resendId: result.resendId
+    };
+  }
+);
 
 // src/triggers/socialContentGenerator.ts
 var import_scheduler5 = require("firebase-functions/v2/scheduler");
@@ -24734,7 +24869,7 @@ var runSocialPublisher = (0, import_scheduler6.onSchedule)({
 });
 
 // src/functions/auth.ts
-var import_https8 = require("firebase-functions/v2/https");
+var import_https9 = require("firebase-functions/v2/https");
 var import_auth = require("firebase-admin/auth");
 
 // src/utils/cors.ts
@@ -24763,43 +24898,43 @@ var DASHBOARD_CORS = [
 ];
 
 // src/functions/auth.ts
-var adminUpdateAuthUser = (0, import_https8.onCall)({
+var adminUpdateAuthUser = (0, import_https9.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https9.HttpsError("unauthenticated", "Must be logged in");
   const callerDoc = await db.collection("users").doc(request.auth.uid).get();
   const callerRoles = callerDoc.data()?.roles || [];
-  if (!callerRoles.includes("admin")) throw new import_https8.HttpsError("permission-denied", "Admin only");
+  if (!callerRoles.includes("admin")) throw new import_https9.HttpsError("permission-denied", "Admin only");
   const { uid, email, password, displayName } = request.data;
-  if (!uid) throw new import_https8.HttpsError("invalid-argument", "uid is required");
+  if (!uid) throw new import_https9.HttpsError("invalid-argument", "uid is required");
   const updatePayload = {};
   if (email) updatePayload.email = email;
   if (password) updatePayload.password = password;
   if (displayName) updatePayload.displayName = displayName;
   if (Object.keys(updatePayload).length === 0) {
-    throw new import_https8.HttpsError("invalid-argument", "Nothing to update");
+    throw new import_https9.HttpsError("invalid-argument", "Nothing to update");
   }
   try {
     await (0, import_auth.getAuth)().updateUser(uid, updatePayload);
     return { success: true, message: `Auth updated for ${uid}` };
   } catch (error12) {
     console.error("adminUpdateAuthUser error:", error12);
-    throw new import_https8.HttpsError("internal", error12.message || "Failed to update Auth user");
+    throw new import_https9.HttpsError("internal", error12.message || "Failed to update Auth user");
   }
 });
-var adminCreateUser = (0, import_https8.onCall)({
+var adminCreateUser = (0, import_https9.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["RESEND_API_KEY"]
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https9.HttpsError("unauthenticated", "Must be logged in");
   const callerDoc = await db.collection("users").doc(request.auth.uid).get();
   const callerRoles = callerDoc.data()?.roles || [];
-  if (!callerRoles.includes("admin")) throw new import_https8.HttpsError("permission-denied", "Admin only");
+  if (!callerRoles.includes("admin")) throw new import_https9.HttpsError("permission-denied", "Admin only");
   const { email, displayName, roles } = request.data;
-  if (!email) throw new import_https8.HttpsError("invalid-argument", "email is required");
-  if (!displayName) throw new import_https8.HttpsError("invalid-argument", "displayName is required");
+  if (!email) throw new import_https9.HttpsError("invalid-argument", "email is required");
+  if (!displayName) throw new import_https9.HttpsError("invalid-argument", "displayName is required");
   if (!roles || !Array.isArray(roles) || roles.length === 0) {
-    throw new import_https8.HttpsError("invalid-argument", "At least one role is required");
+    throw new import_https9.HttpsError("invalid-argument", "At least one role is required");
   }
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
   const tempPassword = "Xiri-" + Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("") + "!";
@@ -24879,30 +25014,30 @@ var adminCreateUser = (0, import_https8.onCall)({
   } catch (error12) {
     console.error("adminCreateUser error:", error12);
     if (error12.code === "auth/email-already-exists") {
-      throw new import_https8.HttpsError("already-exists", "A user with this email already exists");
+      throw new import_https9.HttpsError("already-exists", "A user with this email already exists");
     }
-    throw new import_https8.HttpsError("internal", error12.message || "Failed to create user");
+    throw new import_https9.HttpsError("internal", error12.message || "Failed to create user");
   }
 });
-var changeMyPassword = (0, import_https8.onCall)({
+var changeMyPassword = (0, import_https9.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https8.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https9.HttpsError("unauthenticated", "Must be logged in");
   const { newPassword } = request.data;
   if (!newPassword || newPassword.length < 6) {
-    throw new import_https8.HttpsError("invalid-argument", "Password must be at least 6 characters");
+    throw new import_https9.HttpsError("invalid-argument", "Password must be at least 6 characters");
   }
   try {
     await (0, import_auth.getAuth)().updateUser(request.auth.uid, { password: newPassword });
     return { success: true, message: "Password updated" };
   } catch (error12) {
     console.error("changeMyPassword error:", error12);
-    throw new import_https8.HttpsError("internal", error12.message || "Failed to change password");
+    throw new import_https9.HttpsError("internal", error12.message || "Failed to change password");
   }
 });
 
 // src/functions/leads.ts
-var import_https9 = require("firebase-functions/v2/https");
+var import_https10 = require("firebase-functions/v2/https");
 
 // src/agents/recruiter.ts
 var import_generative_ai5 = require("@google/generative-ai");
@@ -25505,7 +25640,7 @@ var searchProperties = async (query, location, providerName = "mock") => {
 };
 
 // src/functions/leads.ts
-var generateLeads = (0, import_https9.onCall)({
+var generateLeads = (0, import_https10.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540
@@ -25518,7 +25653,7 @@ var generateLeads = (0, import_https9.onCall)({
   const provider = data.provider || "google_maps";
   const dcaCategory = data.dcaCategory;
   if (provider === "google_maps" && !query || !location) {
-    throw new import_https9.HttpsError("invalid-argument", "Missing required fields in request.");
+    throw new import_https10.HttpsError("invalid-argument", "Missing required fields in request.");
   }
   try {
     console.log(`Analyzing leads for query: ${query}, location: ${location}, provider: ${provider}, category: ${dcaCategory}${previewOnly ? " (PREVIEW MODE)" : ""}`);
@@ -25533,10 +25668,10 @@ var generateLeads = (0, import_https9.onCall)({
     };
   } catch (error12) {
     console.error("Error in generateLeads:", error12);
-    throw new import_https9.HttpsError("internal", error12.message || "An internal error occurred.");
+    throw new import_https10.HttpsError("internal", error12.message || "An internal error occurred.");
   }
 });
-var clearPipeline = (0, import_https9.onCall)({
+var clearPipeline = (0, import_https10.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   try {
@@ -25559,10 +25694,10 @@ var clearPipeline = (0, import_https9.onCall)({
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
   } catch (error12) {
-    throw new import_https9.HttpsError("internal", error12.message);
+    throw new import_https10.HttpsError("internal", error12.message);
   }
 });
-var runRecruiterAgent = (0, import_https9.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
+var runRecruiterAgent = (0, import_https10.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
   const rawVendors = req.body.vendors || [
     { name: "ABC Cleaning", services: "We do medical office cleaning and terminal cleaning." },
     { name: "Joe's Pizza", services: "Best pizza in town" },
@@ -25571,24 +25706,24 @@ var runRecruiterAgent = (0, import_https9.onRequest)({ secrets: ["GEMINI_API_KEY
   const result = await analyzeVendorLeads(rawVendors, "Commercial Cleaning");
   res.json(result);
 });
-var testSendEmail = (0, import_https9.onCall)({
+var testSendEmail = (0, import_https10.onCall)({
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
   cors: DASHBOARD_CORS
 }, async (request) => {
   const { sendTemplatedEmail: sendTemplatedEmail2 } = await Promise.resolve().then(() => (init_emailUtils(), emailUtils_exports));
   const { vendorId, templateId } = request.data;
   if (!vendorId || !templateId) {
-    throw new import_https9.HttpsError("invalid-argument", "Missing vendorId or templateId");
+    throw new import_https10.HttpsError("invalid-argument", "Missing vendorId or templateId");
   }
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
   } catch (error12) {
     console.error("Error sending test email:", error12);
-    throw new import_https9.HttpsError("internal", error12.message || "Failed to send email");
+    throw new import_https10.HttpsError("internal", error12.message || "Failed to send email");
   }
 });
-var sourceProperties = (0, import_https9.onCall)({
+var sourceProperties = (0, import_https10.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 120
 }, async (request) => {
@@ -25597,7 +25732,7 @@ var sourceProperties = (0, import_https9.onCall)({
   const location = data.location;
   const providerName = data.provider || "mock";
   if (!query || !location) {
-    throw new import_https9.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https10.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`[sourceProperties] query="${query}", location="${location}", provider=${providerName}`);
@@ -25609,22 +25744,22 @@ var sourceProperties = (0, import_https9.onCall)({
     };
   } catch (error12) {
     console.error("[sourceProperties] Error:", error12);
-    throw new import_https9.HttpsError("internal", error12.message || "Failed to source properties.");
+    throw new import_https10.HttpsError("internal", error12.message || "Failed to source properties.");
   }
 });
 
 // src/functions/social.ts
-var import_https10 = require("firebase-functions/v2/https");
+var import_https11 = require("firebase-functions/v2/https");
 init_promptUtils();
 init_facebookApi();
-var publishFacebookPost = (0, import_https10.onCall)({
+var publishFacebookPost = (0, import_https11.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const { message, link, imageUrl, scheduledTime } = request.data;
   if (!message) {
-    throw new import_https10.HttpsError("invalid-argument", "Message is required");
+    throw new import_https11.HttpsError("invalid-argument", "Message is required");
   }
   try {
     let result;
@@ -25651,14 +25786,14 @@ var publishFacebookPost = (0, import_https10.onCall)({
     return result;
   } catch (error12) {
     console.error("[Facebook] Publish error:", error12);
-    throw new import_https10.HttpsError("internal", error12.message || "Failed to publish to Facebook");
+    throw new import_https11.HttpsError("internal", error12.message || "Failed to publish to Facebook");
   }
 });
-var getFacebookPosts = (0, import_https10.onCall)({
+var getFacebookPosts = (0, import_https11.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const posts = await getRecentPosts(limit || 10);
@@ -25666,14 +25801,14 @@ var getFacebookPosts = (0, import_https10.onCall)({
     return { posts, insights };
   } catch (error12) {
     console.error("[Facebook] Get posts error:", error12);
-    throw new import_https10.HttpsError("internal", error12.message || "Failed to get Facebook posts");
+    throw new import_https11.HttpsError("internal", error12.message || "Failed to get Facebook posts");
   }
 });
-var getFacebookReels = (0, import_https10.onCall)({
+var getFacebookReels = (0, import_https11.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const { getRecentReels: getRecentReels2 } = await Promise.resolve().then(() => (init_facebookApi(), facebookApi_exports));
@@ -25681,16 +25816,16 @@ var getFacebookReels = (0, import_https10.onCall)({
     return { reels };
   } catch (error12) {
     console.error("[Facebook] Get reels error:", error12);
-    throw new import_https10.HttpsError("internal", error12.message || "Failed to get Facebook reels");
+    throw new import_https11.HttpsError("internal", error12.message || "Failed to get Facebook reels");
   }
 });
-var deleteFacebookPost = (0, import_https10.onCall)({
+var deleteFacebookPost = (0, import_https11.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https10.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https11.HttpsError("invalid-argument", "postId is required");
   try {
     const success = await deletePost(postId);
     const snapshot = await db.collection("social_posts").where("facebookPostId", "==", postId).limit(1).get();
@@ -25704,24 +25839,24 @@ var deleteFacebookPost = (0, import_https10.onCall)({
     return { success };
   } catch (error12) {
     console.error("[Facebook] Delete error:", error12);
-    throw new import_https10.HttpsError("internal", error12.message || "Failed to delete Facebook post");
+    throw new import_https11.HttpsError("internal", error12.message || "Failed to delete Facebook post");
   }
 });
-var triggerSocialContentGeneration = (0, import_https10.onCall)({
+var triggerSocialContentGeneration = (0, import_https11.onCall)({
   secrets: ["GEMINI_API_KEY", "FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const channel = request.data?.channel || "facebook_posts";
   await generateSocialContent(channel);
   return { success: true };
 });
-var updateSocialConfig = (0, import_https10.onCall)({
+var updateSocialConfig = (0, import_https11.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const { channel, cadence, preferredDays, preferredTime, tone, topics, hashtagSets, enabled, audienceMix } = request.data;
   const channelId = channel || "facebook_posts";
   const config2 = { updatedAt: /* @__PURE__ */ new Date() };
@@ -25738,18 +25873,18 @@ var updateSocialConfig = (0, import_https10.onCall)({
   console.log(`[Social] Config updated for ${channelId}:`, config2);
   return { success: true };
 });
-var reviewSocialPost = (0, import_https10.onCall)({
+var reviewSocialPost = (0, import_https11.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const { postId, action, editedMessage, rejectionReason, scheduledFor } = request.data;
   if (!postId || !action) {
-    throw new import_https10.HttpsError("invalid-argument", "postId and action are required");
+    throw new import_https11.HttpsError("invalid-argument", "postId and action are required");
   }
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
   if (!postDoc.exists) {
-    throw new import_https10.HttpsError("not-found", "Post not found");
+    throw new import_https11.HttpsError("not-found", "Post not found");
   }
   const update = {
     reviewedBy: request.auth.uid,
@@ -25766,24 +25901,24 @@ var reviewSocialPost = (0, import_https10.onCall)({
       update.rejectionReason = rejectionReason || null;
       break;
     default:
-      throw new import_https10.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
+      throw new import_https11.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
   }
   await postRef.update(update);
   console.log(`[Social] Post ${postId} ${action}ed by ${request.auth.uid}`);
   return { success: true, status: update.status };
 });
-var publishPostNow = (0, import_https10.onCall)({
+var publishPostNow = (0, import_https11.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   timeoutSeconds: 180,
   memory: "512MiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https10.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https11.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https10.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https11.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   try {
     let result;
@@ -25871,7 +26006,7 @@ file '${outroMp4}'
         error: result.error || "Publishing failed",
         failedAt: /* @__PURE__ */ new Date()
       });
-      throw new import_https10.HttpsError("internal", result.error || "Publishing failed");
+      throw new import_https11.HttpsError("internal", result.error || "Publishing failed");
     }
   } catch (err) {
     const errorMsg = err.message || "Publishing failed";
@@ -25882,37 +26017,37 @@ file '${outroMp4}'
       failedAt: /* @__PURE__ */ new Date()
     }).catch(() => {
     });
-    throw new import_https10.HttpsError("internal", errorMsg);
+    throw new import_https11.HttpsError("internal", errorMsg);
   }
 });
-var searchPlaces = (0, import_https10.onCall)({
+var searchPlaces = (0, import_https11.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"]
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const { query } = request.data;
-  if (!query) throw new import_https10.HttpsError("invalid-argument", "query is required");
+  if (!query) throw new import_https11.HttpsError("invalid-argument", "query is required");
   const results = await searchFacebookPlaces(query);
   return { places: results };
 });
-var regeneratePostImage = (0, import_https10.onCall)({
+var regeneratePostImage = (0, import_https11.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 300,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https10.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https11.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https10.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https11.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience || "contractor";
   console.log(`[RegenImage] Regenerating image for post ${postId} with feedback: "${feedback || "none"}"`);
   const { generatePostImage: generatePostImage2 } = await Promise.resolve().then(() => (init_imagenApi(), imagenApi_exports));
   const result = await generatePostImage2(post.message, audience, feedback || void 0);
   if (!result) {
-    throw new import_https10.HttpsError("internal", "Image generation failed");
+    throw new import_https11.HttpsError("internal", "Image generation failed");
   }
   await postRef.update({
     imageUrl: result.imageUrl,
@@ -25922,17 +26057,17 @@ var regeneratePostImage = (0, import_https10.onCall)({
   console.log(`[RegenImage] New image: ${result.imageUrl}`);
   return { success: true, imageUrl: result.imageUrl };
 });
-var regeneratePostCaption = (0, import_https10.onCall)({
+var regeneratePostCaption = (0, import_https11.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["GEMINI_API_KEY"],
   timeoutSeconds: 120
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https10.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https11.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https10.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https11.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
   console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
@@ -25968,7 +26103,7 @@ Respond with ONLY the post text. No introductions.`;
   const result = await model2.generateContent(prompt);
   const newCaption = result.response.text().trim();
   if (!newCaption) {
-    throw new import_https10.HttpsError("internal", "Caption generation returned empty");
+    throw new import_https11.HttpsError("internal", "Caption generation returned empty");
   }
   await postRef.update({
     message: newCaption,
@@ -25978,19 +26113,19 @@ Respond with ONLY the post text. No introductions.`;
   console.log(`[RegenCaption] New caption generated (${newCaption.length} chars)`);
   return { success: true, message: newCaption };
 });
-var getOutroPreview = (0, import_https10.onCall)({
+var getOutroPreview = (0, import_https11.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const { presetId } = request.data;
-  if (!presetId) throw new import_https10.HttpsError("invalid-argument", "presetId is required");
+  if (!presetId) throw new import_https11.HttpsError("invalid-argument", "presetId is required");
   const { getOrCreateOutroFrameUrl: getOrCreateOutroFrameUrl2 } = await Promise.resolve().then(() => (init_reelOutroGenerator(), reelOutroGenerator_exports));
   const url = await getOrCreateOutroFrameUrl2(presetId);
   return { url };
 });
 
 // src/functions/nfc.ts
-var import_https11 = require("firebase-functions/v2/https");
+var import_https12 = require("firebase-functions/v2/https");
 var crypto2 = __toESM(require("crypto"));
 
 // src/utils/googleChatUtils.ts
@@ -26375,27 +26510,27 @@ function hashSiteKey(plainKey) {
 function generateSessionToken() {
   return crypto2.randomUUID();
 }
-var validateSiteKey = (0, import_https11.onCall)({
+var validateSiteKey = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { locationId, siteKey, personName, personPhone } = request.data;
   if (!locationId || typeof locationId !== "string") {
-    throw new import_https11.HttpsError("invalid-argument", "locationId is required");
+    throw new import_https12.HttpsError("invalid-argument", "locationId is required");
   }
   if (!siteKey || typeof siteKey !== "string") {
-    throw new import_https11.HttpsError("invalid-argument", "Site key is required");
+    throw new import_https12.HttpsError("invalid-argument", "Site key is required");
   }
   if (!personName || typeof personName !== "string" || personName.trim().length === 0) {
-    throw new import_https11.HttpsError("invalid-argument", "Name is required");
+    throw new import_https12.HttpsError("invalid-argument", "Name is required");
   }
   const siteDoc = await db.collection("nfc_sites").doc(locationId).get();
   if (!siteDoc.exists) {
-    throw new import_https11.HttpsError("not-found", "Location not found. Check with your supervisor.");
+    throw new import_https12.HttpsError("not-found", "Location not found. Check with your supervisor.");
   }
   const siteData = siteDoc.data();
   if (siteData.revokedAt) {
-    throw new import_https11.HttpsError("permission-denied", "Access has been revoked. Contact your supervisor for a new site key.");
+    throw new import_https12.HttpsError("permission-denied", "Access has been revoked. Contact your supervisor for a new site key.");
   }
   const hashedInput = hashSiteKey(siteKey.trim());
   let personRole;
@@ -26404,7 +26539,7 @@ var validateSiteKey = (0, import_https11.onCall)({
   } else if (siteData.managerKeyHash && hashedInput === siteData.managerKeyHash) {
     personRole = "night_manager";
   } else {
-    throw new import_https11.HttpsError("permission-denied", "Invalid site key. Please check and try again.");
+    throw new import_https12.HttpsError("permission-denied", "Invalid site key. Please check and try again.");
   }
   const sessionId = generateSessionToken();
   const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1e3);
@@ -26458,25 +26593,25 @@ var validateSiteKey = (0, import_https11.onCall)({
     expiresAt: expiresAt.toISOString()
   };
 });
-var updateZoneScan = (0, import_https11.onCall)({
+var updateZoneScan = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { sessionId, zoneId, zoneName, tasksCompleted } = request.data;
   if (!sessionId || typeof sessionId !== "string") {
-    throw new import_https11.HttpsError("invalid-argument", "sessionId is required");
+    throw new import_https12.HttpsError("invalid-argument", "sessionId is required");
   }
   if (!zoneId || typeof zoneId !== "string") {
-    throw new import_https11.HttpsError("invalid-argument", "zoneId is required");
+    throw new import_https12.HttpsError("invalid-argument", "zoneId is required");
   }
   const sessionDoc = await db.collection("nfc_sessions").doc(sessionId).get();
   if (!sessionDoc.exists) {
-    throw new import_https11.HttpsError("not-found", "Session not found. Please tap the Start tag again.");
+    throw new import_https12.HttpsError("not-found", "Session not found. Please tap the Start tag again.");
   }
   const sessionData = sessionDoc.data();
   const expiresAt = sessionData.expiresAt?.toDate?.() || sessionData.expiresAt;
   if (expiresAt && /* @__PURE__ */ new Date() > new Date(expiresAt)) {
-    throw new import_https11.HttpsError("permission-denied", "Session expired. Please tap the Start tag to clock in again.");
+    throw new import_https12.HttpsError("permission-denied", "Session expired. Please tap the Start tag to clock in again.");
   }
   const scanResult = {
     zoneId,
@@ -26551,17 +26686,17 @@ var updateZoneScan = (0, import_https11.onCall)({
     allZonesDone: scannedZones >= totalZones
   };
 });
-var completeNfcSession = (0, import_https11.onCall)({
+var completeNfcSession = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { sessionId, auditScore, auditNotes } = request.data;
   if (!sessionId) {
-    throw new import_https11.HttpsError("invalid-argument", "sessionId is required");
+    throw new import_https12.HttpsError("invalid-argument", "sessionId is required");
   }
   const sessionDoc = await db.collection("nfc_sessions").doc(sessionId).get();
   if (!sessionDoc.exists) {
-    throw new import_https11.HttpsError("not-found", "Session not found.");
+    throw new import_https12.HttpsError("not-found", "Session not found.");
   }
   await db.collection("nfc_sessions").doc(sessionId).update({
     clockOutAt: /* @__PURE__ */ new Date(),
@@ -26591,16 +26726,16 @@ var completeNfcSession = (0, import_https11.onCall)({
 function getInitials(name) {
   return name.split(/\s+/).map((w) => w.charAt(0).toUpperCase()).join("").slice(0, 2) || "?";
 }
-var getComplianceLog = (0, import_https11.onCall)({
+var getComplianceLog = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const { locationId } = request.data;
   if (!locationId || typeof locationId !== "string") {
-    throw new import_https11.HttpsError("invalid-argument", "locationId is required");
+    throw new import_https12.HttpsError("invalid-argument", "locationId is required");
   }
   const siteDoc = await db.collection("nfc_sites").doc(locationId).get();
   if (!siteDoc.exists) {
-    throw new import_https11.HttpsError("not-found", "Location not found.");
+    throw new import_https12.HttpsError("not-found", "Location not found.");
   }
   const siteData = siteDoc.data();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3);
@@ -26649,7 +26784,7 @@ var getComplianceLog = (0, import_https11.onCall)({
 
 // src/functions/monitoring.ts
 var import_scheduler7 = require("firebase-functions/v2/scheduler");
-var import_https12 = require("firebase-functions/v2/https");
+var import_https13 = require("firebase-functions/v2/https");
 init_emailUtils();
 
 // src/utils/morningReportEmail.ts
@@ -26822,7 +26957,7 @@ function buildMorningReportHtml(data) {
         <!-- Footer -->
         <div style="padding: 16px 24px; text-align: center; border-radius: 0 0 12px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-top: none;">
             <p style="margin: 0; font-size: 11px; color: #94a3b8;">
-                XIRI Facility Solutions &middot; 1225 Franklin Ave, Suite 325 &middot; Garden City, NY 11530
+                XIRI Facility Solutions &middot; 418 Broadway, Ste N &middot; Albany, NY 12207
             </p>
             <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">
                 This is an automated report. Reply to this email or contact 
@@ -27222,20 +27357,20 @@ async function buildReportData(wo, dateRef, graceMin) {
     complianceLogUrl: `https://xiri.ai/c/${wo.buildingId}`
   };
 }
-var sendTestMorningReport = (0, import_https12.onCall)({
+var sendTestMorningReport = (0, import_https13.onCall)({
   cors: true
 }, async (request) => {
   const { workOrderId, recipientEmail, scenario } = request.data;
   if (!workOrderId) {
-    throw new import_https12.HttpsError("invalid-argument", "workOrderId is required");
+    throw new import_https13.HttpsError("invalid-argument", "workOrderId is required");
   }
   const woDoc = await db.collection("work_orders").doc(workOrderId).get();
   if (!woDoc.exists) {
-    throw new import_https12.HttpsError("not-found", "Work order not found");
+    throw new import_https13.HttpsError("not-found", "Work order not found");
   }
   const wo = await resolveWorkOrder(woDoc);
   if (!wo) {
-    throw new import_https12.HttpsError("failed-precondition", "Work order is not active");
+    throw new import_https13.HttpsError("failed-precondition", "Work order is not active");
   }
   const config2 = await loadMonitoringConfig();
   const graceMin = wo.graceMinutes || config2.graceMinutes;
@@ -27392,7 +27527,7 @@ var weeklyAIBotDigest = (0, import_scheduler8.onSchedule)({
 
 // src/triggers/clarityAnalysis.ts
 var import_scheduler9 = require("firebase-functions/v2/scheduler");
-var import_https13 = require("firebase-functions/v2/https");
+var import_https14 = require("firebase-functions/v2/https");
 var import_params5 = require("firebase-functions/params");
 var import_v25 = require("firebase-functions/v2");
 
@@ -27908,7 +28043,7 @@ var dailyClarityReport = (0, import_scheduler9.onSchedule)({
     throw err;
   }
 });
-var triggerClarityReport = (0, import_https13.onCall)({
+var triggerClarityReport = (0, import_https14.onCall)({
   cors: true,
   secrets: [CLARITY_API_TOKEN, CLARITY_CHAT_WEBHOOK, GEMINI_API_KEY3],
   timeoutSeconds: 120,
@@ -27967,7 +28102,7 @@ var triggerClarityReport = (0, import_https13.onCall)({
     };
   } catch (err) {
     import_v25.logger.error("\u274C Manual Clarity report failed:", err);
-    throw new import_https13.HttpsError("internal", err.message || "Clarity report failed");
+    throw new import_https14.HttpsError("internal", err.message || "Clarity report failed");
   }
 });
 async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
@@ -28001,7 +28136,7 @@ async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
 }
 
 // src/functions/tidycal-api.ts
-var import_https14 = require("firebase-functions/v2/https");
+var import_https15 = require("firebase-functions/v2/https");
 var import_params6 = require("firebase-functions/params");
 var import_firestore18 = require("firebase-admin/firestore");
 
@@ -28087,7 +28222,7 @@ async function listBookings(options) {
 
 // src/functions/tidycal-api.ts
 var TIDYCAL_API_KEY = (0, import_params6.defineSecret)("TIDYCAL_API_KEY");
-var getOnboardingTimeslots = (0, import_https14.onRequest)({
+var getOnboardingTimeslots = (0, import_https15.onRequest)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (req, res) => {
@@ -28110,7 +28245,7 @@ var getOnboardingTimeslots = (0, import_https14.onRequest)({
     res.status(500).json({ error: error12.message || "Failed to fetch timeslots" });
   }
 });
-var bookOnboardingCall = (0, import_https14.onRequest)({
+var bookOnboardingCall = (0, import_https15.onRequest)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (req, res) => {
@@ -28175,14 +28310,14 @@ var bookOnboardingCall = (0, import_https14.onRequest)({
     res.status(500).json({ error: error12.message || "Failed to book call" });
   }
 });
-var getDashboardTimeslots = (0, import_https14.onCall)({
+var getDashboardTimeslots = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { startDate, endDate, timezone, bookingTypeId } = request.data;
   if (!startDate || !endDate) {
-    throw new import_https14.HttpsError("invalid-argument", "startDate and endDate are required");
+    throw new import_https15.HttpsError("invalid-argument", "startDate and endDate are required");
   }
   const typeId = bookingTypeId || TIDYCAL_BOOKING_TYPES.DISCOVERY_CALL;
   const slots = await getTimeslots(
@@ -28193,19 +28328,19 @@ var getDashboardTimeslots = (0, import_https14.onCall)({
   );
   return { slots };
 });
-var bookDiscoveryCall = (0, import_https14.onCall)({
+var bookDiscoveryCall = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { leadId, name, email, starts_at, timezone, bookingTypeId } = request.data;
   if (!leadId || !name || !email || !starts_at) {
-    throw new import_https14.HttpsError("invalid-argument", "leadId, name, email, starts_at are required");
+    throw new import_https15.HttpsError("invalid-argument", "leadId, name, email, starts_at are required");
   }
   const leadRef = db.collection("leads").doc(leadId);
   const leadDoc = await leadRef.get();
   if (!leadDoc.exists) {
-    throw new import_https14.HttpsError("not-found", "Lead not found");
+    throw new import_https15.HttpsError("not-found", "Lead not found");
   }
   const typeId = bookingTypeId || TIDYCAL_BOOKING_TYPES.DISCOVERY_CALL;
   const booking = await createBooking(typeId, {
@@ -28246,11 +28381,11 @@ var bookDiscoveryCall = (0, import_https14.onCall)({
     }
   };
 });
-var getTidyCalBookings = (0, import_https14.onCall)({
+var getTidyCalBookings = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { bookingTypeId, page } = request.data || {};
   const result = await listBookings({
     bookingTypeId,
@@ -28319,6 +28454,7 @@ var getTidyCalBookings = (0, import_https14.onCall)({
   sendBookingConfirmation,
   sendOnboardingInvite,
   sendQuoteEmail,
+  sendSingleLeadEmail,
   sendTestMorningReport,
   sendVendorBookingConfirmation,
   sourceProperties,

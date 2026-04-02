@@ -1,8 +1,13 @@
 /**
  * startLeadSequence — Manually kick off a drip email sequence for a sales lead.
- * 
- * Called from the dashboard UI. Uses the lead's `leadType` to determine
- * which template sequence to schedule (tenant, referral_partnership, or direct).
+ *
+ * Now reads sequence definitions from the `sequences` Firestore collection
+ * instead of hardcoded step arrays. Accepts an optional `sequenceId`; if
+ * not provided, defaults based on the lead's `leadType`.
+ *
+ * Prevents duplicate enrollment: if the resolved contact has already been
+ * enrolled in the requested sequence (tracked via `sequenceHistory` map
+ * on the contact doc), the call is rejected.
  */
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -16,82 +21,134 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
+// ─── Default sequence mapping by leadType ──────────────────────
+const DEFAULT_SEQUENCE_MAP: Record<string, string> = {
+    enterprise: "enterprise_lead_sequence",
+    referral_partnership: "referral_partnership_sequence",
+    tenant: "tenant_lead_sequence",
+    direct: "tenant_lead_sequence",
+};
+
 export const startLeadSequence = onCall(async (request) => {
-    const { leadId } = request.data;
+    const { leadId, contactId: requestedContactId, sequenceId: requestedSequenceId } = request.data;
 
     if (!leadId) {
-        throw new HttpsError('invalid-argument', 'leadId is required');
+        throw new HttpsError("invalid-argument", "leadId is required");
     }
 
-    // Fetch the lead
+    // ── Fetch the lead (company) ──────────────────────────────
     const leadDoc = await db.collection("leads").doc(leadId).get();
     if (!leadDoc.exists) {
-        throw new HttpsError('not-found', `Lead ${leadId} not found`);
+        throw new HttpsError("not-found", `Lead ${leadId} not found`);
     }
 
     const lead = leadDoc.data()!;
-    const businessName = lead.businessName || 'Unknown';
-    const contactEmail = lead.email;
+    const businessName = lead.businessName || "Unknown";
+    const leadType = lead.leadType || "direct";
+
+    // ── Resolve contact (contact-centric model) ───────────────
+    let contactId: string | null = requestedContactId || null;
+    let contactEmail = "";
+    let contactName = "";
+
+    if (contactId) {
+        const contactDoc = await db.collection("contacts").doc(contactId).get();
+        if (contactDoc.exists) {
+            const contact = contactDoc.data()!;
+            contactEmail = contact.email || "";
+            contactName = `${contact.firstName || ""} ${contact.lastName || ""}`.trim();
+        }
+    }
+
+    if (!contactEmail) {
+        // Try primary contact lookup
+        const primarySnap = await db
+            .collection("contacts")
+            .where("companyId", "==", leadId)
+            .where("isPrimary", "==", true)
+            .limit(1)
+            .get();
+
+        if (!primarySnap.empty) {
+            const primaryContact = primarySnap.docs[0];
+            contactId = primaryContact.id;
+            const pData = primaryContact.data();
+            contactEmail = pData.email || "";
+            contactName = `${pData.firstName || ""} ${pData.lastName || ""}`.trim();
+        }
+    }
+
+    // Backward compat: fall back to lead-level email
+    if (!contactEmail) {
+        contactEmail = lead.email || "";
+        contactName = lead.contactName || "";
+    }
 
     // Guard: need an email
     if (!contactEmail || contactEmail.trim().length === 0) {
         await db.collection("leads").doc(leadId).update({
-            outreachStatus: 'NEEDS_MANUAL',
+            outreachStatus: "NEEDS_MANUAL",
         });
         throw new HttpsError(
-            'failed-precondition',
+            "failed-precondition",
             `Lead ${businessName} has no email — manual outreach required.`
         );
     }
 
-    // Cancel any existing pending/retry tasks before starting a new sequence
+    // ── Resolve sequence ──────────────────────────────────────
+    const sequenceId = requestedSequenceId || DEFAULT_SEQUENCE_MAP[leadType] || "tenant_lead_sequence";
+
+    const sequenceDoc = await db.collection("sequences").doc(sequenceId).get();
+    if (!sequenceDoc.exists) {
+        throw new HttpsError(
+            "not-found",
+            `Sequence "${sequenceId}" not found. Create it in the Sequence Builder first.`
+        );
+    }
+
+    const sequence = sequenceDoc.data()!;
+    const steps: { templateId: string; dayOffset: number; label: string }[] = sequence.steps || [];
+
+    if (steps.length === 0) {
+        throw new HttpsError(
+            "failed-precondition",
+            `Sequence "${sequence.name}" has no steps defined.`
+        );
+    }
+
+    // ── Duplicate enrollment check ────────────────────────────
+    if (contactId) {
+        const contactDoc = await db.collection("contacts").doc(contactId).get();
+        if (contactDoc.exists) {
+            const contactData = contactDoc.data()!;
+            const history = contactData.sequenceHistory || {};
+            if (history[sequenceId]) {
+                const prevStart = history[sequenceId].startedAt;
+                const prevDate = prevStart?.toDate ? prevStart.toDate() : prevStart;
+                throw new HttpsError(
+                    "already-exists",
+                    `${contactName || contactEmail} was already enrolled in "${sequence.name}" on ${prevDate ? prevDate.toLocaleDateString() : "a previous date"}. Contacts cannot be re-enrolled in the same sequence.`
+                );
+            }
+        }
+    }
+
+    // ── Cancel any existing pending/retry tasks ───────────────
     const { cancelLeadTasks } = await import("../utils/queueUtils");
     const cancelledCount = await cancelLeadTasks(db, leadId);
     if (cancelledCount > 0) {
         logger.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
     }
 
-    const leadType = lead.leadType || 'direct';
+    logger.info(
+        `[StartSequence] Starting "${sequence.name}" (${sequenceId}) for lead ${leadId} (${businessName}), contact ${contactId || "lead-level"}`
+    );
 
-    logger.info(`[StartSequence] Manually starting ${leadType} sequence for lead ${leadId} (${businessName})`);
-
+    // ── Schedule tasks from sequence steps ────────────────────
     const now = new Date();
 
-    // ── Different sequences per lead type ──
-    let steps: { dayOffset: number; sequence: number }[];
-
-    if (leadType === 'enterprise') {
-        steps = [
-            { dayOffset: 0, sequence: 0 },
-            { dayOffset: 4, sequence: 1 },
-            { dayOffset: 8, sequence: 2 },
-            { dayOffset: 14, sequence: 3 },
-            { dayOffset: 21, sequence: 4 },
-        ];
-    } else if (leadType === 'referral_partnership') {
-        steps = [
-            { dayOffset: 0, sequence: 0 },
-            { dayOffset: 4, sequence: 1 },
-            { dayOffset: 10, sequence: 2 },
-        ];
-    } else {
-        // tenant + direct both use 4-step sequence
-        steps = [
-            { dayOffset: 0, sequence: 0 },
-            { dayOffset: 3, sequence: 1 },
-            { dayOffset: 7, sequence: 2 },
-            { dayOffset: 14, sequence: 3 },
-        ];
-    }
-
-    // Determine template prefix by lead type
-    const templatePrefix = leadType === 'enterprise'
-        ? 'enterprise_lead_'
-        : leadType === 'referral_partnership'
-            ? 'referral_partnership_'
-            : 'tenant_lead_';
-
-    for (const step of steps) {
+    for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
         const scheduledDate = new Date(now);
         scheduledDate.setDate(scheduledDate.getDate() + step.dayOffset);
         scheduledDate.setHours(14, 0, 0, 0); // 9am ET = 14:00 UTC
@@ -100,49 +157,77 @@ export const startLeadSequence = onCall(async (request) => {
 
         await enqueueTask(db, {
             leadId,
-            type: 'SEND',
+            contactId: contactId || undefined,
+            type: "SEND",
             scheduledAt: admin.firestore.Timestamp.fromDate(sendAt),
             metadata: {
-                sequence: step.sequence,
+                sequence: i,
                 businessName,
                 email: contactEmail,
-                contactName: lead.contactName || '',
-                facilityType: lead.facilityType || '',
-                address: lead.address || '',
-                squareFootage: lead.squareFootage || '',
+                contactName,
+                contactId: contactId || null,
+                facilityType: lead.facilityType || "",
+                address: lead.address || "",
+                squareFootage: lead.squareFootage || "",
                 propertySourcing: lead.propertySourcing || null,
                 leadType,
-                templateId: `${templatePrefix}${step.sequence + 1}`,
-            }
+                templateId: step.templateId,
+                sequenceId,
+                stepLabel: step.label,
+            },
         });
     }
 
-    // Update lead — mark as contacted and set outreach status
+    // ── Update lead doc ───────────────────────────────────────
     await db.collection("leads").doc(leadId).update({
-        status: lead.status === 'new' ? 'contacted' : lead.status,
-        outreachStatus: 'PENDING',
+        status: lead.status === "new" ? "contacted" : lead.status,
+        outreachStatus: "PENDING",
+        sequenceId,
         sequenceStartedAt: admin.firestore.FieldValue.serverTimestamp(),
-        sequenceStartedBy: request.auth?.uid || 'manual',
+        sequenceStartedBy: request.auth?.uid || "manual",
     });
 
-    // Log activity
-    const schedule = leadType === 'enterprise' ? 'Day 0/4/8/14/21'
-        : leadType === 'referral_partnership' ? 'Day 0/4/10' : 'Day 0/3/7/14';
+    // ── Write sequenceHistory on contact doc ──────────────────
+    if (contactId) {
+        await db.collection("contacts").doc(contactId).update({
+            [`sequenceHistory.${sequenceId}`]: {
+                startedAt: admin.firestore.FieldValue.serverTimestamp(),
+                startedBy: request.auth?.uid || "manual",
+                status: "in_progress",
+                sequenceName: sequence.name,
+                stepCount: steps.length,
+            },
+        });
+    }
+
+    // ── Log activity ──────────────────────────────────────────
+    const dayList = steps.map((s) => `Day ${s.dayOffset}`).join("/");
     await db.collection("lead_activities").add({
         leadId,
+        contactId: contactId || null,
         type: "SEQUENCE_STARTED",
-        description: `${leadType} email sequence manually started for ${businessName}. Schedule: ${schedule}`,
+        description: `"${sequence.name}" sequence started for ${businessName} → ${contactName || contactEmail}. Schedule: ${dayList}`,
         createdAt: new Date(),
-        startedBy: request.auth?.uid || 'manual',
-        metadata: { leadType, stepCount: steps.length, schedule }
+        startedBy: request.auth?.uid || "manual",
+        metadata: {
+            leadType,
+            sequenceId,
+            sequenceName: sequence.name,
+            stepCount: steps.length,
+            schedule: dayList,
+            contactId: contactId || null,
+        },
     });
 
-    logger.info(`[StartSequence] ${leadType} sequence started for ${leadId}: ${steps.length} emails`);
+    logger.info(
+        `[StartSequence] "${sequence.name}" started for ${leadId}: ${steps.length} emails (${dayList})`
+    );
 
     return {
         success: true,
-        message: `${leadType} sequence started for ${businessName}`,
+        message: `"${sequence.name}" started for ${businessName}`,
+        sequenceId,
         stepCount: steps.length,
-        schedule,
+        schedule: dayList,
     };
 });

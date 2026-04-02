@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,8 @@ import {
     Plus, Trash2, X, Target, Edit3,
 } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import SequenceBuilder from "@/components/email/SequenceBuilder";
+import { Rocket } from "lucide-react";
 
 interface EmailTemplate {
     id: string;
@@ -148,12 +150,63 @@ export default function EmailTemplatesPage() {
     const [activeSection, setActiveSection] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [previewMode, setPreviewMode] = useState(false);
+    const [activeTab, setActiveTab] = useState<'templates' | 'sequences'>('templates');
     const [editSubject, setEditSubject] = useState("");
     const [editBody, setEditBody] = useState("");
     const [editName, setEditName] = useState("");
     const [editDescription, setEditDescription] = useState("");
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+
+    // Refs for inserting variables at cursor
+    const editSubjectRef = useRef<HTMLInputElement>(null);
+    const editBodyRef = useRef<HTMLTextAreaElement>(null);
+    const newSubjectRef = useRef<HTMLInputElement>(null);
+    const newBodyRef = useRef<HTMLTextAreaElement>(null);
+    const [activeEditField, setActiveEditField] = useState<'subject' | 'body'>('body');
+    const [activeNewField, setActiveNewField] = useState<'subject' | 'body'>('body');
+
+    const insertVariable = (
+        fieldType: 'subject' | 'body',
+        variable: string,
+        context: 'edit' | 'new'
+    ) => {
+        const token = `{{${variable}}}`;
+        if (context === 'edit') {
+            const ref = fieldType === 'subject' ? editSubjectRef.current : editBodyRef.current;
+            const setter = fieldType === 'subject' ? setEditSubject : setEditBody;
+            const value = fieldType === 'subject' ? editSubject : editBody;
+            if (ref) {
+                const start = ref.selectionStart ?? value.length;
+                const end = ref.selectionEnd ?? value.length;
+                const newValue = value.slice(0, start) + token + value.slice(end);
+                setter(newValue);
+                // Restore cursor after token
+                requestAnimationFrame(() => {
+                    ref.focus();
+                    ref.setSelectionRange(start + token.length, start + token.length);
+                });
+            } else {
+                setter(value + token);
+            }
+        } else {
+            const ref = fieldType === 'subject' ? newSubjectRef.current : newBodyRef.current;
+            const setter = fieldType === 'subject' ? setNewSubject : setNewBody;
+            const value = fieldType === 'subject' ? newSubject : newBody;
+            if (ref) {
+                const start = ref.selectionStart ?? value.length;
+                const end = ref.selectionEnd ?? value.length;
+                const newValue = value.slice(0, start) + token + value.slice(end);
+                setter(newValue);
+                requestAnimationFrame(() => {
+                    ref.focus();
+                    ref.setSelectionRange(start + token.length, start + token.length);
+                });
+            } else {
+                setter(value + token);
+            }
+        }
+    };
 
     // Create new template state
     const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -275,14 +328,46 @@ export default function EmailTemplatesPage() {
     return (
         <ProtectedRoute resource="admin/email-templates">
             <div className="space-y-6">
-                <div>
-                    <h2 className="text-2xl font-bold">Email Templates</h2>
-                    <p className="text-muted-foreground text-sm mt-1">
-                        Manage outreach templates by category. Use{" "}
-                        <code className="bg-muted px-1 rounded text-[11px]">{"{{variableName}}"}</code>{" "}
-                        merge fields — they get replaced with real data at send time.
-                    </p>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold">Email & Outreach</h2>
+                        <p className="text-muted-foreground text-sm mt-1">
+                            Manage templates and build multi-step email sequences.
+                        </p>
+                    </div>
                 </div>
+
+                {/* ─── Tab Switcher ─── */}
+                <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit">
+                    <button
+                        onClick={() => setActiveTab('templates')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                            activeTab === 'templates'
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <Mail className="w-4 h-4" />
+                        Templates
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('sequences')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                            activeTab === 'sequences'
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <Rocket className="w-4 h-4" />
+                        Sequences
+                    </button>
+                </div>
+
+                {activeTab === 'sequences' ? (
+                    <SequenceBuilder />
+                ) : (
+                <>
+                {/* Templates content below */}
 
                 {/* ─── Section Selector (horizontal pipeline-style) ─── */}
                 <div className="flex items-stretch gap-0 overflow-x-auto pb-2">
@@ -483,11 +568,6 @@ export default function EmailTemplatesPage() {
                                                             {previewMode ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
                                                             {previewMode ? "Edit" : "Preview"}
                                                         </Button>
-                                                        <div className="flex gap-1 flex-wrap">
-                                                            {mergeFields.map(f => (
-                                                                <Badge key={f} variant="secondary" className="text-[9px] px-1 h-5 font-mono">{`{{${f}}}`}</Badge>
-                                                            ))}
-                                                        </div>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         {section.allowDelete && (
@@ -542,6 +622,31 @@ export default function EmailTemplatesPage() {
                                                     </div>
                                                 )}
 
+                                                {/* Insert Variable Buttons */}
+                                                {!previewMode && (() => {
+                                                    const sampleKeys = Object.keys(SAMPLE_DATA[section.sampleGroup] || {});
+                                                    return sampleKeys.length > 0 && (
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Insert Variable:</span>
+                                                            {sampleKeys.map(v => (
+                                                                <Button
+                                                                    key={v}
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className="h-6 text-[10px] font-mono px-2 gap-1 hover:bg-primary/10 hover:border-primary/40"
+                                                                    onClick={() => insertVariable(activeEditField, v, 'edit')}
+                                                                >
+                                                                    <Plus className="w-2.5 h-2.5" />
+                                                                    {v}
+                                                                </Button>
+                                                            ))}
+                                                            <Badge variant="secondary" className="text-[9px] px-1.5 h-5">
+                                                                → {activeEditField === 'subject' ? 'Subject' : 'Body'}
+                                                            </Badge>
+                                                        </div>
+                                                    );
+                                                })()}
+
                                                 {/* Subject */}
                                                 <div>
                                                     <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Subject Line</label>
@@ -551,8 +656,10 @@ export default function EmailTemplatesPage() {
                                                         </div>
                                                     ) : (
                                                         <Input
+                                                            ref={editSubjectRef}
                                                             value={editSubject}
                                                             onChange={e => setEditSubject(e.target.value)}
+                                                            onFocus={() => setActiveEditField('subject')}
                                                             className="mt-1 text-sm font-medium"
                                                             placeholder="Email subject line..."
                                                         />
@@ -577,8 +684,10 @@ export default function EmailTemplatesPage() {
                                                         </div>
                                                     ) : (
                                                         <Textarea
+                                                            ref={editBodyRef}
                                                             value={editBody}
                                                             onChange={e => setEditBody(e.target.value)}
+                                                            onFocus={() => setActiveEditField('body')}
                                                             className="mt-1 text-sm min-h-[300px] font-mono leading-relaxed"
                                                             placeholder={isPrompt ? "AI prompt instructions..." : "Email body..."}
                                                         />
@@ -611,7 +720,6 @@ export default function EmailTemplatesPage() {
                         </CardContent>
                     </Card>
                 )}
-            </div>
 
             {/* ─── Create Template Dialog ─── */}
             <AlertDialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
@@ -648,11 +756,34 @@ export default function EmailTemplatesPage() {
                             </div>
                         </div>
 
+                        {/* Insert Variable Buttons for Create */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Insert Variable:</span>
+                            {Object.keys(SAMPLE_DATA['targeted'] || {}).map(v => (
+                                <Button
+                                    key={v}
+                                    size="sm"
+                                    variant="outline"
+                                    type="button"
+                                    className="h-6 text-[10px] font-mono px-2 gap-1 hover:bg-primary/10 hover:border-primary/40"
+                                    onClick={() => insertVariable(activeNewField, v, 'new')}
+                                >
+                                    <Plus className="w-2.5 h-2.5" />
+                                    {v}
+                                </Button>
+                            ))}
+                            <Badge variant="secondary" className="text-[9px] px-1.5 h-5">
+                                → {activeNewField === 'subject' ? 'Subject' : 'Body'}
+                            </Badge>
+                        </div>
+
                         <div>
                             <label className="text-xs font-medium text-muted-foreground">Subject Line</label>
                             <Input
+                                ref={newSubjectRef}
                                 value={newSubject}
                                 onChange={e => setNewSubject(e.target.value)}
+                                onFocus={() => setActiveNewField('subject')}
                                 placeholder="Email subject..."
                                 className="mt-1"
                             />
@@ -661,8 +792,10 @@ export default function EmailTemplatesPage() {
                         <div>
                             <label className="text-xs font-medium text-muted-foreground">Email Body</label>
                             <Textarea
+                                ref={newBodyRef}
                                 value={newBody}
                                 onChange={e => setNewBody(e.target.value)}
+                                onFocus={() => setActiveNewField('body')}
                                 placeholder="Email body text..."
                                 className="mt-1 min-h-[250px] text-sm font-mono leading-relaxed"
                             />
@@ -696,7 +829,7 @@ export default function EmailTemplatesPage() {
             </AlertDialog>
 
             {/* ─── Delete Confirmation Dialog ─── */}
-            <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+            <AlertDialog open={!!deleteTarget} onOpenChange={(open: boolean) => !open && setDeleteTarget(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Template</AlertDialogTitle>
@@ -713,6 +846,9 @@ export default function EmailTemplatesPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+                </>
+                )}
+            </div>
         </ProtectedRoute>
     );
 }

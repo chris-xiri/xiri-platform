@@ -83,6 +83,8 @@ export const resendWebhook = onRequest({
         let entityType: 'vendor' | 'lead' | null = null;
         const tags = event?.data?.tags;
 
+        let tagContactId: string | null = null;
+
         if (tags) {
             const getTag = (key: string): string | null => {
                 if (typeof tags === 'object' && !Array.isArray(tags) && tags[key]) return tags[key];
@@ -96,6 +98,7 @@ export const resendWebhook = onRequest({
             // Check for vendorId or leadId in tags
             const vendorId = getTag('vendorId');
             const leadId = getTag('leadId');
+            tagContactId = getTag('contactId');
             if (vendorId) {
                 entityId = vendorId;
                 entityType = 'vendor';
@@ -136,6 +139,20 @@ export const resendWebhook = onRequest({
             }
         }
 
+        // ─── Resolve contactId ───
+        let resolvedContactId: string | null = tagContactId || null;
+
+        // If no contactId from tags, try to get it from the matching activity
+        if (!resolvedContactId && entityType === 'lead') {
+            const actSnap = await db.collection('lead_activities')
+                .where('metadata.resendId', '==', emailId)
+                .limit(1)
+                .get();
+            if (!actSnap.empty) {
+                resolvedContactId = actSnap.docs[0].data().contactId || actSnap.docs[0].data().metadata?.contactId || null;
+            }
+        }
+
         if (!entityId || !entityType) {
             logger.warn(`Resend webhook: could not resolve entity for emailId ${emailId}`);
             res.status(200).json({ ok: true, notFound: true });
@@ -146,7 +163,7 @@ export const resendWebhook = onRequest({
         const activitiesCollection = entityType === 'vendor' ? 'vendor_activities' : 'lead_activities';
         const idField = entityType === 'vendor' ? 'vendorId' : 'leadId';
 
-        await db.collection(activitiesCollection).add({
+        const activityData: Record<string, any> = {
             [idField]: entityId,
             type: mapping.activityType,
             description: mapping.description,
@@ -157,7 +174,15 @@ export const resendWebhook = onRequest({
                 rawEvent: eventType,
                 to: event?.data?.to?.[0] || undefined,
             }
-        });
+        };
+
+        // Add contactId for lead activities
+        if (entityType === 'lead' && resolvedContactId) {
+            activityData.contactId = resolvedContactId;
+            activityData.metadata.contactId = resolvedContactId;
+        }
+
+        await db.collection(activitiesCollection).add(activityData);
 
         // ─── Update entity doc engagement cache ───
         const entityCollection = entityType === 'vendor' ? 'vendors' : 'leads';

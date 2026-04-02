@@ -10,6 +10,7 @@ import { Lead, LeadType } from '@xiri-facility-solutions/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -49,8 +50,13 @@ import {
     Activity,
     Target,
     Eye,
+    Pencil,
+    Check,
+    X,
+    FileText,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 // ─── Targeted template interface ──────────────────────────
@@ -115,6 +121,289 @@ const OUTREACH_STATUS_CONFIG: Record<string, { color: string; label: string }> =
     'NEEDS_MANUAL': { color: 'bg-red-100 text-red-700 border-red-200', label: 'Needs Manual Outreach' },
 };
 
+/* ─── Inline Editable Field ─────────────────────────────────────── */
+
+function EditableField({
+    label,
+    value,
+    icon: Icon,
+    onSave,
+    type = 'text',
+    linkPrefix,
+    renderDisplay,
+    multiline,
+}: {
+    label: string;
+    value: string;
+    icon: React.ElementType;
+    onSave: (val: string) => Promise<void>;
+    type?: string;
+    linkPrefix?: string;
+    renderDisplay?: (val: string) => React.ReactNode;
+    multiline?: boolean;
+}) {
+    const [editing, setEditing] = useState(false);
+    const [draft, setDraft] = useState(value);
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
+        if (draft === value) { setEditing(false); return; }
+        setSaving(true);
+        try {
+            await onSave(draft);
+            setEditing(false);
+        } catch (e) {
+            console.error('Save failed:', e);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCancel = () => { setDraft(value); setEditing(false); };
+
+    if (editing) {
+        return (
+            <div className="flex items-center gap-2">
+                <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                {multiline ? (
+                    <textarea
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        className="flex-1 text-sm rounded-md border border-input bg-background px-3 py-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-y"
+                        autoFocus
+                        onKeyDown={(e) => { if (e.key === 'Escape') handleCancel(); }}
+                    />
+                ) : (
+                    <Input
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        type={type}
+                        className="h-8 text-sm flex-1"
+                        autoFocus
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') handleCancel(); }}
+                    />
+                )}
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleSave} disabled={saving}>
+                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-green-600" />}
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCancel}>
+                    <X className="w-3.5 h-3.5 text-red-500" />
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => { setDraft(value); setEditing(true); }}>
+            <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            {renderDisplay ? renderDisplay(value) : linkPrefix && value ? (
+                <a href={`${linkPrefix}${value}`} className="text-base text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>{value}</a>
+            ) : (
+                <span className={`text-base ${value ? 'font-medium' : 'text-muted-foreground italic'}`}>{value || `Add ${label.toLowerCase()}`}</span>
+            )}
+            <Pencil className="w-3.5 h-3.5 text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-opacity ml-auto flex-shrink-0" />
+        </div>
+    );
+}
+
+/* ─── Editable Address with Google Places Autocomplete ──────────── */
+
+function EditableAddressField({
+    address,
+    city,
+    state,
+    zip,
+    onSave,
+}: {
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+    onSave: (fields: { address: string; city: string; state: string; zip: string }) => Promise<void>;
+}) {
+    const [editing, setEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [draft, setDraft] = useState({ address, city, state, zip });
+    const [autocompleteValue, setAutocompleteValue] = useState<any>(null);
+
+    const handlePlaceSelect = (selected: any) => {
+        setAutocompleteValue(selected);
+        if (selected?.value?.place_id) {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ placeId: selected.value.place_id }, (results, status) => {
+                if (status === 'OK' && results && results[0]) {
+                    const components = results[0].address_components;
+                    let streetNumber = '';
+                    let route = '';
+                    let newCity = '';
+                    let newState = '';
+                    let newZip = '';
+
+                    components.forEach((c: any) => {
+                        if (c.types.includes('street_number')) streetNumber = c.long_name;
+                        if (c.types.includes('route')) route = c.long_name;
+                        if (c.types.includes('locality')) newCity = c.long_name;
+                        if (c.types.includes('sublocality_level_1') && !newCity) newCity = c.long_name;
+                        if (c.types.includes('administrative_area_level_1')) newState = c.short_name;
+                        if (c.types.includes('postal_code')) newZip = c.long_name;
+                    });
+
+                    setDraft({
+                        address: `${streetNumber} ${route}`.trim(),
+                        city: newCity,
+                        state: newState,
+                        zip: newZip,
+                    });
+                }
+            });
+        }
+    };
+
+    const handleZipChange = async (zipVal: string) => {
+        setDraft(prev => ({ ...prev, zip: zipVal }));
+        if (/^\d{5}$/.test(zipVal)) {
+            try {
+                const res = await fetch(`https://api.zippopotam.us/us/${zipVal}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const place = data.places?.[0];
+                    if (place) {
+                        setDraft(prev => ({
+                            ...prev,
+                            city: place['place name'] || prev.city || '',
+                            state: place['state abbreviation'] || prev.state || '',
+                        }));
+                    }
+                }
+            } catch { /* ignore lookup errors */ }
+        }
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await onSave(draft);
+            setEditing(false);
+        } catch (e) {
+            console.error('Address save failed:', e);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCancel = () => {
+        setDraft({ address, city, state, zip });
+        setAutocompleteValue(null);
+        setEditing(false);
+    };
+
+    const startEditing = () => {
+        setDraft({ address, city, state, zip });
+        setAutocompleteValue(null);
+        setEditing(true);
+    };
+
+    if (editing) {
+        return (
+            <div className="space-y-3">
+                <div>
+                    <label className="text-xs font-medium text-muted-foreground">Search Address</label>
+                    <GooglePlacesAutocomplete
+                        apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                        autocompletionRequest={{
+                            componentRestrictions: { country: ['us'] },
+                        }}
+                        selectProps={{
+                            value: autocompleteValue,
+                            onChange: handlePlaceSelect,
+                            placeholder: 'Start typing address...',
+                            styles: {
+                                control: (base: any) => ({
+                                    ...base,
+                                    minHeight: '36px',
+                                    fontSize: '14px',
+                                    backgroundColor: 'hsl(var(--input))',
+                                    borderColor: 'hsl(var(--border))',
+                                    color: 'hsl(var(--foreground))',
+                                    '&:hover': { borderColor: 'hsl(var(--ring))' },
+                                }),
+                                input: (base: any) => ({ ...base, margin: 0, padding: 0, color: 'hsl(var(--foreground))' }),
+                                singleValue: (base: any) => ({ ...base, color: 'hsl(var(--foreground))' }),
+                                placeholder: (base: any) => ({ ...base, color: 'hsl(var(--muted-foreground))' }),
+                                menu: (base: any) => ({
+                                    ...base,
+                                    backgroundColor: 'hsl(var(--popover))',
+                                    border: '1px solid hsl(var(--border))',
+                                    zIndex: 50,
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                }),
+                                menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+                                option: (base: any, state: any) => ({
+                                    ...base,
+                                    backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'hsl(var(--popover))',
+                                    color: 'hsl(var(--foreground))',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    borderRadius: '4px',
+                                    '&:active': { backgroundColor: 'hsl(var(--accent))' },
+                                }),
+                            },
+                        }}
+                    />
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                    <div>
+                        <label className="text-xs font-medium text-muted-foreground">Street Address</label>
+                        <Input className="h-8 text-sm" value={draft.address} onChange={e => setDraft({ ...draft, address: e.target.value })} placeholder="123 Main St" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div>
+                            <label className="text-xs font-medium text-muted-foreground">City</label>
+                            <Input className="h-8 text-sm" value={draft.city} onChange={e => setDraft({ ...draft, city: e.target.value })} placeholder="City" />
+                        </div>
+                        <div>
+                            <label className="text-xs font-medium text-muted-foreground">State</label>
+                            <Input className="h-8 text-sm" value={draft.state} onChange={e => setDraft({ ...draft, state: e.target.value })} placeholder="NY" maxLength={2} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-medium text-muted-foreground">ZIP</label>
+                            <Input className="h-8 text-sm" value={draft.zip} onChange={e => handleZipChange(e.target.value)} placeholder="10001" maxLength={5} />
+                        </div>
+                    </div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleCancel}>Cancel</Button>
+                    <Button size="sm" className="h-7 text-xs gap-1" onClick={handleSave} disabled={saving}>
+                        {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                        Save
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    const displayParts = [address, [city, state].filter(Boolean).join(', '), zip].filter(Boolean);
+
+    return (
+        <div className="group cursor-pointer" onClick={startEditing}>
+            <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                    <p className={`text-base ${address ? 'font-medium' : 'text-muted-foreground italic'}`}>
+                        {address || 'Add address'}
+                    </p>
+                    {(city || state || zip) && (
+                        <p className="text-sm text-muted-foreground">
+                            {[city, state].filter(Boolean).join(', ')}{zip ? ` ${zip}` : ''}
+                        </p>
+                    )}
+                </div>
+                <Pencil className="w-3.5 h-3.5 text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-opacity flex-shrink-0 mt-1" />
+            </div>
+        </div>
+    );
+}
+
 export default function LeadDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -127,6 +416,13 @@ export default function LeadDetailPage() {
     const [sequenceMessage, setSequenceMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [activities, setActivities] = useState<{ id: string; type: string; description: string; createdAt: any; metadata?: any }[]>([]);
+
+    // ─── Sequence picker state ──────────────────────────────
+    const [availableSequences, setAvailableSequences] = useState<{ id: string; name: string; description?: string; steps: any[]; leadTypes?: string[] }[]>([]);
+    const [selectedSequenceId, setSelectedSequenceId] = useState<string>('');
+    const [contactSequenceHistory, setContactSequenceHistory] = useState<Record<string, any>>({});
+    const [loadingSequences, setLoadingSequences] = useState(false);
+    const [primaryContactId, setPrimaryContactId] = useState<string | null>(null);
 
     // ─── Targeted email send state ──────────────────────────
     const [showSendDialog, setShowSendDialog] = useState(false);
@@ -187,6 +483,37 @@ export default function LeadDetailPage() {
         }
     }, []);
 
+    // ─── Fetch available sequences + contact history ─────────
+    const fetchSequencesAndHistory = useCallback(async () => {
+        setLoadingSequences(true);
+        try {
+            // Fetch all sequences
+            const seqSnap = await getDocs(collection(db, 'sequences'));
+            const seqs = seqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+            setAvailableSequences(seqs);
+
+            // Fetch primary contact to get sequenceHistory
+            const contactsQ = query(
+                collection(db, 'contacts'),
+                where('companyId', '==', leadId),
+                where('isPrimary', '==', true)
+            );
+            const contactSnap = await getDocs(contactsQ);
+            if (!contactSnap.empty) {
+                const contactData = contactSnap.docs[0].data();
+                setPrimaryContactId(contactSnap.docs[0].id);
+                setContactSequenceHistory(contactData.sequenceHistory || {});
+            } else {
+                // Fall back: no primary contact, no history
+                setContactSequenceHistory({});
+            }
+        } catch (err) {
+            console.error('Error fetching sequences:', err);
+        } finally {
+            setLoadingSequences(false);
+        }
+    }, [leadId]);
+
     // ─── Send targeted email handler ────────────────────────
     const handleSendTargetedEmail = async () => {
         if (!selectedTemplateId || !lead) return;
@@ -215,6 +542,14 @@ export default function LeadDetailPage() {
         fetchActivities();
     }, [leadId]);
 
+    // ─── Generic field update helper ─────────────────────────
+    const updateField = useCallback(async (field: string, value: any) => {
+        if (!leadId) return;
+        await updateDoc(doc(db, 'leads', leadId), { [field]: value, updatedAt: new Date() });
+        // Re-fetch updated lead data
+        await fetchLead();
+    }, [leadId]);
+
     const handleStatusChange = async (newStatus: string) => {
         if (!lead) return;
         setUpdatingStatus(true);
@@ -239,6 +574,7 @@ export default function LeadDetailPage() {
     };
 
     const handleStartSequence = async () => {
+        if (!selectedSequenceId) return;
         setStartingSequence(true);
         setSequenceMessage(null);
         try {
@@ -248,12 +584,18 @@ export default function LeadDetailPage() {
             }
 
             const startSequence = httpsCallable(functions, 'startLeadSequence');
-            const result = await startSequence({ leadId });
+            const result = await startSequence({
+                leadId,
+                contactId: primaryContactId || undefined,
+                sequenceId: selectedSequenceId,
+            });
             const data = result.data as any;
 
             setSequenceMessage({ type: 'success', text: data.message });
             setShowSequenceDialog(false);
+            setSelectedSequenceId('');
             await fetchLead(); // Refresh lead data
+            await fetchActivities();
         } catch (error: any) {
             const message = error?.message || 'Failed to start sequence';
             setSequenceMessage({ type: 'error', text: message });
@@ -300,7 +642,15 @@ export default function LeadDetailPage() {
                             Back to CRM
                         </Button>
                         <div>
-                            <h1 className="text-3xl font-bold">{lead.businessName}</h1>
+                            <EditableField
+                                label="Business name"
+                                value={lead.businessName || ''}
+                                icon={Building2}
+                                onSave={(v) => updateField('businessName', v)}
+                                renderDisplay={(val) => (
+                                    <h1 className="text-3xl font-bold">{val || 'Unnamed Business'}</h1>
+                                )}
+                            />
                             <div className="flex items-center gap-2 mt-0.5">
                                 <span className="text-muted-foreground">
                                     {FACILITY_TYPE_LABELS[lead.facilityType] || lead.facilityType}
@@ -353,7 +703,10 @@ export default function LeadDetailPage() {
 
                         {/* Start Sequence CTA */}
                         <Button
-                            onClick={() => setShowSequenceDialog(true)}
+                            onClick={() => {
+                                fetchSequencesAndHistory();
+                                setShowSequenceDialog(true);
+                            }}
                             disabled={!canStartSequence || !hasEmail}
                             className="gap-2"
                             variant={canStartSequence && hasEmail ? "default" : "outline"}
@@ -406,43 +759,63 @@ export default function LeadDetailPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Name</label>
-                                        <p className="text-base font-medium">{lead.contactName}</p>
+                                        <EditableField
+                                            label="Contact name"
+                                            value={lead.contactName || ''}
+                                            icon={User}
+                                            onSave={(v) => updateField('contactName', v)}
+                                        />
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Email</label>
-                                        <div className="flex items-center gap-2">
-                                            <Mail className="w-4 h-4 text-muted-foreground" />
-                                            <a href={`mailto:${lead.email}`} className="text-base text-blue-600 hover:underline">
-                                                {lead.email}
-                                            </a>
-                                        </div>
+                                        <EditableField
+                                            label="Email"
+                                            value={lead.email || ''}
+                                            icon={Mail}
+                                            type="email"
+                                            linkPrefix="mailto:"
+                                            onSave={(v) => updateField('email', v)}
+                                        />
                                     </div>
-                                    {lead.contactPhone && (
-                                        <div>
-                                            <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                                            <div className="flex items-center gap-2">
-                                                <Phone className="w-4 h-4 text-muted-foreground" />
-                                                <a href={`tel:${lead.contactPhone}`} className="text-base text-blue-600 hover:underline">
-                                                    {lead.contactPhone}
-                                                </a>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {lead.address && (
-                                        <div className="md:col-span-2">
-                                            <label className="text-sm font-medium text-muted-foreground">Address</label>
-                                            <div className="flex items-start gap-2">
-                                                <MapPin className="w-4 h-4 text-muted-foreground mt-1" />
-                                                <p className="text-base">{lead.address}</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {lead.zipCode && (
-                                        <div>
-                                            <label className="text-sm font-medium text-muted-foreground">ZIP Code</label>
-                                            <p className="text-base font-medium">{lead.zipCode}</p>
-                                        </div>
-                                    )}
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                                        <EditableField
+                                            label="Phone"
+                                            value={lead.contactPhone || ''}
+                                            icon={Phone}
+                                            type="tel"
+                                            linkPrefix="tel:"
+                                            onSave={(v) => updateField('contactPhone', v)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground">Square Footage</label>
+                                        <EditableField
+                                            label="Square footage"
+                                            value={String((lead as any).squareFootage || '')}
+                                            icon={Building2}
+                                            onSave={(v) => updateField('squareFootage', v ? Number(v) : '')}
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="text-sm font-medium text-muted-foreground">Address</label>
+                                        <EditableAddressField
+                                            address={lead.address || ''}
+                                            city={(lead as any).city || ''}
+                                            state={(lead as any).state || ''}
+                                            zip={lead.zipCode || ''}
+                                            onSave={async (fields) => {
+                                                await updateDoc(doc(db, 'leads', leadId), {
+                                                    address: fields.address,
+                                                    city: fields.city,
+                                                    state: fields.state,
+                                                    zipCode: fields.zip,
+                                                    updatedAt: new Date(),
+                                                });
+                                                await fetchLead();
+                                            }}
+                                        />
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -497,12 +870,21 @@ export default function LeadDetailPage() {
                                     </div>
                                 )}
 
-                                {lead.notes && (
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Notes</label>
-                                        <p className="text-base mt-1 p-3 bg-muted/50 rounded-lg">{lead.notes}</p>
-                                    </div>
-                                )}
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Notes</label>
+                                    <EditableField
+                                        label="Notes"
+                                        value={lead.notes || ''}
+                                        icon={FileText}
+                                        multiline
+                                        onSave={(v) => updateField('notes', v)}
+                                        renderDisplay={(val) => (
+                                            <span className={val ? 'text-base' : 'text-muted-foreground italic text-base'}>
+                                                {val || 'Add notes'}
+                                            </span>
+                                        )}
+                                    />
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -645,43 +1027,121 @@ export default function LeadDetailPage() {
             </div>
 
             {/* Start Sequence Confirmation Dialog */}
-            <AlertDialog open={showSequenceDialog} onOpenChange={setShowSequenceDialog}>
-                <AlertDialogContent>
+            <AlertDialog open={showSequenceDialog} onOpenChange={(open: boolean) => { setShowSequenceDialog(open); if (!open) setSelectedSequenceId(''); }}>
+                <AlertDialogContent className="max-w-lg">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2">
                             <Play className="w-5 h-5" />
                             Start Email Sequence
                         </AlertDialogTitle>
                         <AlertDialogDescription asChild>
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                                 <p>
-                                    This will start an automated email drip campaign for <strong>{lead.businessName}</strong>.
+                                    Choose a sequence to start an automated email drip campaign for <strong>{lead.businessName}</strong>.
                                 </p>
-                                <div className="bg-muted p-3 rounded-lg space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Lead Type:</span>
-                                        <Badge variant="outline" className={typeConfig.color}>{typeConfig.label}</Badge>
+
+                                {loadingSequences ? (
+                                    <div className="flex items-center justify-center py-6">
+                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Sequence:</span>
-                                        <span className="font-medium">{typeConfig.sequence}</span>
+                                ) : availableSequences.length === 0 ? (
+                                    <div className="text-center py-6 text-sm text-muted-foreground">
+                                        <Rocket className="w-7 h-7 mx-auto mb-2 opacity-30" />
+                                        No sequences found. Create one in{' '}
+                                        <a href="/admin/email-templates" className="text-primary hover:underline font-medium">Email Templates → Sequences</a>.
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Recipient:</span>
-                                        <span className="font-medium">{lead.email}</span>
-                                    </div>
-                                </div>
-                                {lead.status !== 'qualified' && (
-                                    <p className="text-xs text-amber-600">
-                                        This will also update the lead status to <strong>Qualified</strong>.
-                                    </p>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Select Sequence</label>
+                                            <Select value={selectedSequenceId} onValueChange={setSelectedSequenceId}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Choose a sequence..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {availableSequences.map(seq => {
+                                                        const alreadyEnrolled = !!contactSequenceHistory[seq.id];
+                                                        return (
+                                                            <SelectItem
+                                                                key={seq.id}
+                                                                value={seq.id}
+                                                                disabled={alreadyEnrolled}
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    <span>{seq.name}</span>
+                                                                    <span className="text-[10px] text-muted-foreground">
+                                                                        ({seq.steps?.length || 0} emails)
+                                                                    </span>
+                                                                    {alreadyEnrolled && (
+                                                                        <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-600 border-amber-200 ml-1">
+                                                                            Already enrolled
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                            </SelectItem>
+                                                        );
+                                                    })}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Selected sequence details */}
+                                        {selectedSequenceId && (() => {
+                                            const seq = availableSequences.find(s => s.id === selectedSequenceId);
+                                            if (!seq) return null;
+                                            const dayList = seq.steps?.map((s: any) => `Day ${s.dayOffset}`).join(', ') || '';
+                                            return (
+                                                <div className="bg-muted p-3 rounded-lg space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted-foreground">Sequence:</span>
+                                                        <span className="font-medium">{seq.name}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted-foreground">Steps:</span>
+                                                        <span className="font-medium">{seq.steps?.length || 0} emails</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted-foreground">Schedule:</span>
+                                                        <span className="font-medium">{dayList}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted-foreground">Recipient:</span>
+                                                        <span className="font-medium">{lead.email}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {lead.status !== 'qualified' && (
+                                            <p className="text-xs text-amber-600">
+                                                This will also update the lead status to <strong>Qualified</strong>.
+                                            </p>
+                                        )}
+
+                                        {/* Enrollment history */}
+                                        {Object.keys(contactSequenceHistory).length > 0 && (
+                                            <div className="border-t pt-3">
+                                                <p className="text-xs font-medium text-muted-foreground mb-2">Previous Enrollments</p>
+                                                <div className="space-y-1">
+                                                    {Object.entries(contactSequenceHistory).map(([seqId, entry]: [string, any]) => (
+                                                        <div key={seqId} className="flex items-center justify-between text-xs bg-muted/50 px-2 py-1.5 rounded">
+                                                            <span className="font-medium">{entry.sequenceName || seqId}</span>
+                                                            <Badge variant="outline" className="text-[9px]">
+                                                                {entry.status === 'in_progress' ? 'Active' : entry.status || 'Enrolled'}
+                                                            </Badge>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={startingSequence}>Cancel</AlertDialogCancel>
-                        <Button onClick={handleStartSequence} disabled={startingSequence} className="gap-2">
+                        <Button onClick={handleStartSequence} disabled={startingSequence || !selectedSequenceId} className="gap-2">
                             {startingSequence ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (

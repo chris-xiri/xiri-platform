@@ -43,7 +43,8 @@ export const handleUnsubscribe = onRequest({
 
     try {
         if (entityType === 'lead') {
-            await handleLeadUnsubscribe(entityId, res);
+            const contactId = req.query.contactId as string | undefined;
+            await handleLeadUnsubscribe(entityId, res, contactId);
         } else {
             await handleVendorUnsubscribe(entityId, res);
         }
@@ -115,7 +116,7 @@ async function handleVendorUnsubscribe(vendorId: string, res: any) {
 
 // ── Lead unsubscribe ────────────────────────────────────────────
 
-async function handleLeadUnsubscribe(leadId: string, res: any) {
+async function handleLeadUnsubscribe(leadId: string, res: any, contactId?: string) {
     const leadDoc = await db.collection("leads").doc(leadId).get();
     if (!leadDoc.exists) {
         res.status(404).send(renderPage(
@@ -129,6 +130,34 @@ async function handleLeadUnsubscribe(leadId: string, res: any) {
     const lead = leadDoc.data()!;
     const businessName = lead.businessName || 'Business';
 
+    // ── Resolve contact for contact-level unsubscribe ──
+    let resolvedContactId = contactId || null;
+
+    if (!resolvedContactId) {
+        // Try to find the primary contact
+        const primarySnap = await db.collection('contacts')
+            .where('companyId', '==', leadId)
+            .where('isPrimary', '==', true)
+            .limit(1)
+            .get();
+        if (!primarySnap.empty) {
+            resolvedContactId = primarySnap.docs[0].id;
+        }
+    }
+
+    // Check if already unsubscribed (contact-level or lead-level)
+    if (resolvedContactId) {
+        const contactDoc = await db.collection('contacts').doc(resolvedContactId).get();
+        if (contactDoc.exists && contactDoc.data()?.unsubscribed) {
+            res.status(200).send(renderPage(
+                'Already Unsubscribed',
+                `You have already been removed from our outreach list. You won't receive any more emails.`,
+                true
+            ));
+            return;
+        }
+    }
+
     if (lead.unsubscribedAt || lead.status === 'lost') {
         res.status(200).send(renderPage(
             'Already Unsubscribed',
@@ -136,6 +165,14 @@ async function handleLeadUnsubscribe(leadId: string, res: any) {
             true
         ));
         return;
+    }
+
+    // Mark contact as unsubscribed
+    if (resolvedContactId) {
+        await db.collection('contacts').doc(resolvedContactId).update({
+            unsubscribed: true,
+            unsubscribedAt: new Date(),
+        });
     }
 
     // Update lead — mark as lost with unsubscribe reason
@@ -153,6 +190,7 @@ async function handleLeadUnsubscribe(leadId: string, res: any) {
     // Log activity
     await db.collection("lead_activities").add({
         leadId,
+        contactId: resolvedContactId || null,
         type: "STATUS_CHANGE",
         description: `${businessName} unsubscribed via email link. Status changed from ${previousStatus} to lost. ${cancelledCount} pending tasks cancelled.`,
         createdAt: new Date(),
@@ -161,10 +199,11 @@ async function handleLeadUnsubscribe(leadId: string, res: any) {
             to: 'lost',
             trigger: 'unsubscribe_link',
             cancelledTasks: cancelledCount,
+            contactId: resolvedContactId || null,
         }
     });
 
-    logger.info(`Lead ${leadId} (${businessName}) unsubscribed. ${cancelledCount} tasks cancelled.`);
+    logger.info(`Lead ${leadId} (${businessName}) unsubscribed. Contact: ${resolvedContactId || 'none'}. ${cancelledCount} tasks cancelled.`);
 
     res.status(200).send(renderPage(
         'Unsubscribed Successfully',

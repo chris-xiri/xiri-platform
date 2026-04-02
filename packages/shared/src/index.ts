@@ -132,7 +132,55 @@ export interface Lead {
     externalIds?: {
         xeroContactId?: string;
     };
+
+    // Contact-centric migration: FK to primary contact
+    primaryContactId?: string;
 }
+
+// ─── Contact-Centric CRM Types ──────────────────────────────────────────────
+
+/** Pipeline status — alias for forward compatibility */
+export type CompanyStatus = LeadStatus;
+
+/** Role a contact plays at a company */
+export type ContactRole = 'Owner' | 'Property Manager' | 'Office Manager' | 'Billing' | 'Tenant' | 'Other';
+
+/**
+ * A CRM contact — the primary entity in the contact-centric model.
+ * Contacts are the people you email/call; they belong to a Company.
+ */
+export interface Contact {
+    id?: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    companyId: string;
+    companyName: string;       // denormalized for list views
+    role?: ContactRole;
+    isPrimary: boolean;
+    unsubscribed?: boolean;
+    unsubscribedAt?: any;
+    notes?: string;
+    createdAt: any;
+    createdBy?: string;
+    updatedAt?: any;
+
+    // Email engagement (denormalized from activities)
+    emailEngagement?: {
+        lastEvent?: string;    // delivered | opened | clicked | bounced | spam
+        lastEventAt?: any;
+        openCount?: number;
+        clickCount?: number;
+    };
+}
+
+/**
+ * A CRM company — the business entity that holds operations linkage.
+ * Work orders, contracts, invoices, and quotes belong to a Company.
+ * @see Lead — the legacy interface; Company extends it with primaryContactId.
+ */
+export type Company = Lead;
 
 export type VendorStatus =
     | 'PENDING_REVIEW'        // Legacy uppercase (deprecated)

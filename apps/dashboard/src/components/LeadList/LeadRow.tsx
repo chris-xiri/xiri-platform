@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Lead, LeadStatus, LeadType, FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
+import { Contact, LeadStatus, LeadType, FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -44,12 +44,27 @@ import {
     Target,
     Send,
     Eye,
+    User,
 } from 'lucide-react';
 
 export type ColumnKey = 'business' | 'type' | 'contact' | 'location' | 'auditTime' | 'status' | 'source' | 'created' | 'actions';
 
+/** Contact row with denormalized company data */
+export interface ContactRow extends Contact {
+    _companyStatus: LeadStatus;
+    _companyLeadType?: LeadType;
+    _companyFacilityType?: string;
+    _companyAddress?: string;
+    _companyCity?: string;
+    _companyState?: string;
+    _companyZip?: string;
+    _companyAttribution?: { source?: string; medium?: string; campaign?: string; landingPage?: string };
+    _companyOutreachStatus?: string;
+    _companyPreferredAuditTimes?: any[];
+}
+
 interface LeadRowProps {
-    lead: Lead;
+    lead: ContactRow;
     index: number;
     isSelected?: boolean;
     onSelect?: (checked: boolean) => void;
@@ -68,8 +83,6 @@ const STATUS_COLORS: Record<LeadStatus, string> = {
     'lost': 'bg-gray-100 text-gray-800 border-gray-200',
     'churned': 'bg-red-100 text-red-800 border-red-200',
 };
-
-
 
 const LEAD_TYPE_CONFIG: Record<string, { color: string; label: string }> = {
     'direct': { color: 'bg-slate-100 text-slate-700 border-slate-200', label: 'Direct' },
@@ -93,15 +106,15 @@ function toDate(value: any): Date | null {
 }
 
 // ─── Engagement signal helpers ───
-function getEngagementSignal(lead: Lead) {
-    const eng = (lead as any).emailEngagement;
+function getEngagementSignal(contact: Contact) {
+    const eng = contact.emailEngagement;
     if (!eng) return null;
 
     switch (eng.lastEvent) {
         case 'clicked':
             return { icon: MousePointerClick, label: 'Clicked', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
         case 'opened':
-            return { icon: MailOpen, label: `Opened${eng.openCount > 1 ? ` ×${eng.openCount}` : ''}`, color: 'text-blue-600 bg-blue-50 border-blue-200' };
+            return { icon: MailOpen, label: `Opened${eng.openCount && eng.openCount > 1 ? ` ×${eng.openCount}` : ''}`, color: 'text-blue-600 bg-blue-50 border-blue-200' };
         case 'delivered':
             return { icon: MailCheck, label: 'Delivered', color: 'text-gray-500 bg-gray-50 border-gray-200' };
         case 'bounced':
@@ -131,21 +144,22 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
     const router = useRouter();
     const [startingSequence, setStartingSequence] = useState(false);
 
+    // Navigate to the contact detail page (now company-scoped)
     const handleClick = () => {
         if (onRowClick && lead.id) {
             onRowClick(lead.id);
         } else {
-            router.push(`/sales/dashboard/${lead.id}`);
+            router.push(`/sales/crm/${lead.companyId}`);
         }
     };
 
     const handleStartSequence = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!lead.email || !lead.id) return;
+        if (!lead.email || !lead.companyId) return;
         setStartingSequence(true);
         try {
             const startSequence = httpsCallable(functions, 'startLeadSequence');
-            await startSequence({ leadId: lead.id });
+            await startSequence({ leadId: lead.companyId, contactId: lead.id });
         } catch (err) {
             console.error('Failed to start sequence:', err);
         } finally {
@@ -153,7 +167,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
         }
     };
 
-    // ─── Targeted email state ─────────────────────────────────────
+    // ─── Targeted email state ─────────────────────────────────
     const [showSendDialog, setShowSendDialog] = useState(false);
     const [targetedTemplates, setTargetedTemplates] = useState<{id:string;name:string;description?:string;subject:string;body:string;category?:string}[]>([]);
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
@@ -183,7 +197,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
         setSendResult(null);
         try {
             const sendSingle = httpsCallable(functions, 'sendSingleLeadEmail');
-            const result = await sendSingle({ leadId: lead.id, templateId: selectedTemplateId });
+            const result = await sendSingle({ leadId: lead.companyId, contactId: lead.id, templateId: selectedTemplateId });
             const data = result.data as any;
             setSendResult({ type: 'success', text: data.message || 'Email sent!' });
             setShowSendDialog(false);
@@ -196,15 +210,17 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
         }
     };
 
-    const hasActiveSequence = !!(lead as any).sequenceStatus === true || (lead as any).sequenceStep > 0;
+    const hasActiveSequence = !!(lead as any)._companyOutreachStatus && ['PENDING', 'IN_PROGRESS', 'SENT', 'COMPLETED'].includes((lead as any)._companyOutreachStatus);
 
-    const firstAuditTime = lead.preferredAuditTimes && lead.preferredAuditTimes.length > 0
-        ? toDate(lead.preferredAuditTimes[0])
+    const firstAuditTime = lead._companyPreferredAuditTimes && lead._companyPreferredAuditTimes.length > 0
+        ? toDate(lead._companyPreferredAuditTimes[0])
         : null;
 
     const createdDate = toDate(lead.createdAt);
     const show = (col: ColumnKey) => visibleColumns.has(col);
     const engagement = getEngagementSignal(lead);
+
+    const fullName = `${lead.firstName} ${lead.lastName}`.trim();
 
     return (
         <TableRow className="hover:bg-muted/50 transition-colors">
@@ -213,7 +229,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                     <Checkbox
                         checked={isSelected}
                         onCheckedChange={onSelect}
-                        aria-label="Select lead"
+                        aria-label="Select contact"
                     />
                 </TableCell>
             )}
@@ -225,14 +241,53 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                 {index + 1}
             </TableCell>
 
-            {show('business') && (
+            {/* Contact column — now the PRIMARY display */}
+            {show('contact') && (
                 <TableCell className="cursor-pointer" onClick={handleClick}>
-                    <div className="flex flex-col gap-1">
-                        <div className="font-semibold text-sm">{lead.businessName}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Building2 className="w-3 h-3" />
-                            {FACILITY_TYPE_LABELS[lead.facilityType] || lead.facilityType}
+                    <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5">
+                            <User className="w-3 h-3 text-muted-foreground" />
+                            <span className="font-semibold text-sm">{fullName || lead.companyName || 'No name'}</span>
+                            {lead.isPrimary && (
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 bg-primary/10 text-primary border-primary/20">Primary</Badge>
+                            )}
                         </div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1 pl-[18px]">
+                            <Mail className="w-3 h-3" />
+                            {lead.email}
+                        </div>
+                        {lead.phone && (
+                            <div className="text-xs text-muted-foreground flex items-center gap-1 pl-[18px]">
+                                <Phone className="w-3 h-3" />
+                                {lead.phone}
+                            </div>
+                        )}
+                        {lead.role && (
+                            <span className="text-[10px] text-muted-foreground pl-[18px]">{lead.role}</span>
+                        )}
+                    </div>
+                </TableCell>
+            )}
+
+            {/* Business / Company column */}
+            {show('business') && (
+                <TableCell>
+                    <div className="flex flex-col gap-1">
+                        <div
+                            className="font-medium text-sm flex items-center gap-1 cursor-pointer hover:underline text-primary"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (lead.companyId) router.push(`/sales/dashboard/${lead.companyId}`);
+                            }}
+                        >
+                            <Building2 className="w-3 h-3 text-muted-foreground" />
+                            {lead.companyName}
+                        </div>
+                        {lead._companyFacilityType && (
+                            <div className="text-xs text-muted-foreground pl-4">
+                                {FACILITY_TYPE_LABELS[lead._companyFacilityType] || lead._companyFacilityType}
+                            </div>
+                        )}
                     </div>
                 </TableCell>
             )}
@@ -240,7 +295,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
             {show('type') && (
                 <TableCell className="text-center cursor-pointer" onClick={handleClick}>
                     {(() => {
-                        const lt = lead.leadType || 'direct';
+                        const lt = lead._companyLeadType || 'direct';
                         const cfg = LEAD_TYPE_CONFIG[lt] || LEAD_TYPE_CONFIG['direct'];
                         return (
                             <Badge variant="outline" className={`text-xs ${cfg.color}`}>
@@ -251,42 +306,18 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                 </TableCell>
             )}
 
-            {show('contact') && (
-                <TableCell className="cursor-pointer" onClick={handleClick}>
-                    <div className="flex flex-col gap-1">
-                        <div className="text-sm">{lead.contactName}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Mail className="w-3 h-3" />
-                            {lead.email}
-                        </div>
-                        {lead.contactPhone && (
-                            <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Phone className="w-3 h-3" />
-                                {lead.contactPhone}
-                            </div>
-                        )}
-                    </div>
-                </TableCell>
-            )}
-
             {show('location') && (
                 <TableCell className="cursor-pointer" onClick={handleClick}>
                     <div className="flex flex-col gap-0.5">
-                        {lead.address && (
+                        {lead._companyAddress && (
                             <div className="text-xs flex items-center gap-1">
                                 <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                                <span className="line-clamp-1">{lead.address}</span>
+                                <span className="line-clamp-1">{lead._companyAddress}</span>
                             </div>
                         )}
-                        {(lead.city || lead.state || lead.zip) && (
+                        {(lead._companyCity || lead._companyState || lead._companyZip) && (
                             <div className="text-xs text-muted-foreground pl-4">
-                                {[lead.city, lead.state].filter(Boolean).join(', ')}{lead.zip ? ` ${lead.zip}` : ''}
-                            </div>
-                        )}
-                        {!lead.address && !lead.city && lead.zipCode && (
-                            <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                ZIP: {lead.zipCode}
+                                {[lead._companyCity, lead._companyState].filter(Boolean).join(', ')}{lead._companyZip ? ` ${lead._companyZip}` : ''}
                             </div>
                         )}
                     </div>
@@ -316,16 +347,16 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                     <div className="flex flex-col items-center gap-1">
                         <Badge
                             variant="outline"
-                            className={`text-xs font-medium ${STATUS_COLORS[lead.status]}`}
+                            className={`text-xs font-medium ${STATUS_COLORS[lead._companyStatus]}`}
                         >
-                            {lead.status}
+                            {lead._companyStatus}
                         </Badge>
                         {engagement && (
                             <div className={`inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full border ${engagement.color}`}>
                                 <engagement.icon className="w-3 h-3" />
                                 {engagement.label}
-                                {(lead as any).emailEngagement?.lastEventAt && (
-                                    <span className="opacity-70">{timeAgo((lead as any).emailEngagement.lastEventAt)}</span>
+                                {lead.emailEngagement?.lastEventAt && (
+                                    <span className="opacity-70">{timeAgo(lead.emailEngagement.lastEventAt)}</span>
                                 )}
                             </div>
                         )}
@@ -335,9 +366,9 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
 
             {show('source') && (
                 <TableCell className="text-center cursor-pointer" onClick={handleClick}>
-                    {lead.attribution?.source && (
+                    {lead._companyAttribution?.source && (
                         <div className="text-xs text-muted-foreground">
-                            {lead.attribution.source}
+                            {lead._companyAttribution.source}
                         </div>
                     )}
                 </TableCell>
@@ -364,7 +395,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                                     <Mail className="w-3 h-3" />
                                     Email
                                 </Button>
-                                {(lead as any).outreachStatus && ['PENDING', 'IN_PROGRESS', 'SENT', 'COMPLETED'].includes((lead as any).outreachStatus) ? (
+                                {hasActiveSequence ? (
                                     <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200 h-7 px-2">
                                         <CheckCircle2 className="w-3 h-3 mr-1" /> In Sequence
                                     </Badge>
@@ -403,12 +434,13 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2">
                             <Mail className="w-5 h-5" />
-                            Send Email to {lead.businessName}
+                            Send Email to {fullName}
                         </AlertDialogTitle>
                         <AlertDialogDescription asChild>
                             <div className="space-y-4">
                                 <p className="text-sm">
                                     Choose a targeted template to send a one-off email to <strong>{lead.email}</strong>.
+                                    <span className="text-muted-foreground ml-1">({lead.companyName})</span>
                                 </p>
 
                                 {loadingTemplates ? (
@@ -443,11 +475,12 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                                             const tpl = targetedTemplates.find(t => t.id === selectedTemplateId);
                                             if (!tpl) return null;
                                             const vars: Record<string, string> = {
-                                                businessName: lead.businessName || '',
-                                                contactName: lead.contactName || '',
-                                                facilityType: lead.facilityType || '',
-                                                address: lead.address || '',
-                                                squareFootage: (lead as any).squareFootage || '',
+                                                businessName: lead.companyName || '',
+                                                contactName: fullName,
+                                                firstName: lead.firstName || '',
+                                                lastName: lead.lastName || '',
+                                                facilityType: lead._companyFacilityType || '',
+                                                address: lead._companyAddress || '',
                                             };
                                             const subj = tpl.subject.replace(/\{\{(\w+)\}\}/g, (_: string, k: string) => vars[k] || `{{${k}}}`);
                                             const body = tpl.body.replace(/\{\{(\w+)\}\}/g, (_: string, k: string) => vars[k] || `{{${k}}}`);

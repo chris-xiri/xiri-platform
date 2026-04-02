@@ -16,14 +16,16 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-export const sendSingleLeadEmail = onCall(async (request) => {
-    const { leadId, templateId } = request.data;
+export const sendSingleLeadEmail = onCall(
+    { secrets: ["RESEND_API_KEY"] },
+    async (request) => {
+    const { leadId, templateId, contactId: requestedContactId } = request.data;
 
     if (!leadId || !templateId) {
         throw new HttpsError('invalid-argument', 'leadId and templateId are required');
     }
 
-    // ── Fetch the lead ──
+    // ── Fetch the lead (company) ──
     const leadDoc = await db.collection("leads").doc(leadId).get();
     if (!leadDoc.exists) {
         throw new HttpsError('not-found', `Lead ${leadId} not found`);
@@ -31,7 +33,47 @@ export const sendSingleLeadEmail = onCall(async (request) => {
 
     const lead = leadDoc.data()!;
     const businessName = lead.businessName || 'Unknown';
-    const contactEmail = lead.email;
+
+    // ─── Resolve contact (contact-centric model) ───
+    let contactId: string | null = requestedContactId || null;
+    let contactEmail: string = '';
+    let contactName: string = '';
+    let contactUnsubscribed = false;
+
+    if (contactId) {
+        const contactDoc = await db.collection('contacts').doc(contactId).get();
+        if (contactDoc.exists) {
+            const c = contactDoc.data()!;
+            contactEmail = c.email || '';
+            contactName = `${c.firstName || ''} ${c.lastName || ''}`.trim();
+            contactUnsubscribed = c.unsubscribed || false;
+        }
+    }
+
+    if (!contactEmail) {
+        // Try primary contact lookup
+        const primarySnap = await db.collection('contacts')
+            .where('companyId', '==', leadId)
+            .where('isPrimary', '==', true)
+            .limit(1)
+            .get();
+
+        if (!primarySnap.empty) {
+            const pDoc = primarySnap.docs[0];
+            contactId = pDoc.id;
+            const pData = pDoc.data();
+            contactEmail = pData.email || '';
+            contactName = `${pData.firstName || ''} ${pData.lastName || ''}`.trim();
+            contactUnsubscribed = pData.unsubscribed || false;
+        }
+    }
+
+    // Backward compat: fall back to lead-level email
+    if (!contactEmail) {
+        contactEmail = lead.email || '';
+        contactName = lead.contactName || '';
+        contactUnsubscribed = lead.unsubscribed || false;
+    }
 
     if (!contactEmail || contactEmail.trim().length === 0) {
         throw new HttpsError(
@@ -40,11 +82,11 @@ export const sendSingleLeadEmail = onCall(async (request) => {
         );
     }
 
-    // Check unsubscribe
-    if (lead.unsubscribed) {
+    // Check unsubscribe (contact-level takes priority)
+    if (contactUnsubscribed) {
         throw new HttpsError(
             'failed-precondition',
-            `Lead ${businessName} has unsubscribed from emails.`
+            `${contactName || 'Contact'} has unsubscribed from emails.`
         );
     }
 
@@ -57,16 +99,20 @@ export const sendSingleLeadEmail = onCall(async (request) => {
     // ── Build merge variables ──
     const variables: Record<string, string> = {
         businessName,
-        contactName: lead.contactName || '',
+        contactName,
         facilityType: lead.facilityType || '',
         address: lead.address || '',
         squareFootage: lead.squareFootage || '',
         email: contactEmail,
     };
 
+    logger.info(`[SendSingle] Variables for merge:`, variables);
+
     // Merge subject + body with variables
     const mergedSubject = replaceVariables(template.subject, variables);
-    const mergedBody = replaceVariables(template.content || (template as any).body || '', variables);
+    const templateBody = (template as any).content || (template as any).body || '';
+    logger.info(`[SendSingle] Template body field found: ${templateBody ? 'yes' : 'no'}, length: ${templateBody.length}`);
+    const mergedBody = replaceVariables(templateBody, variables);
 
     // Convert plain text body to HTML (preserve line breaks)
     const htmlBody = mergedBody
@@ -93,11 +139,12 @@ export const sendSingleLeadEmail = onCall(async (request) => {
         // Log failure
         await db.collection("lead_activities").add({
             leadId,
+            contactId: contactId || null,
             type: "EMAIL_FAILED",
             description: `Failed to send targeted email "${templateId}" to ${contactEmail}`,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             sentBy: request.auth?.uid || 'manual',
-            metadata: { templateId, subject: mergedSubject, to: contactEmail },
+            metadata: { templateId, subject: mergedSubject, to: contactEmail, contactId: contactId || null },
         });
 
         throw new HttpsError('internal', 'Failed to send email via Resend');
@@ -106,6 +153,7 @@ export const sendSingleLeadEmail = onCall(async (request) => {
     // ── Log success ──
     await db.collection("lead_activities").add({
         leadId,
+        contactId: contactId || null,
         type: "TARGETED_EMAIL_SENT",
         description: `Targeted email "${templateId}" sent to ${contactEmail}: ${mergedSubject}`,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -115,6 +163,7 @@ export const sendSingleLeadEmail = onCall(async (request) => {
             subject: mergedSubject,
             to: contactEmail,
             resendId: result.resendId,
+            contactId: contactId || null,
         },
     });
 

@@ -449,11 +449,15 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
             <SheetContent className="w-full sm:max-w-[680px] overflow-y-auto p-0" side="right">
                 {loading ? (
                     <div className="p-6 space-y-4">
+                        <SheetTitle className="sr-only">Loading lead details</SheetTitle>
                         <Skeleton className="h-10 w-2/3" />
                         <Skeleton className="h-[200px] w-full" />
                     </div>
                 ) : !lead ? (
-                    <div className="p-6 text-muted-foreground">Lead not found</div>
+                    <div className="p-6 text-muted-foreground">
+                        <SheetTitle className="sr-only">Lead not found</SheetTitle>
+                        Lead not found
+                    </div>
                 ) : (
                     <>
                         {/* ─── Header (matches VendorDetailDrawer) ──── */}

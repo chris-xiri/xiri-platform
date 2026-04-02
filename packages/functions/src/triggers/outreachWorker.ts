@@ -546,7 +546,26 @@ async function handleLeadSend(task: QueueItem) {
         }
     }
 
-    const toEmail = task.metadata?.email;
+    // ── Resolve contact (contact-centric model) ──
+    const contactId = task.contactId || task.metadata?.contactId || null;
+    let toEmail = task.metadata?.email;
+    let contactName = task.metadata?.contactName || 'there';
+
+    // If contactId is available, use contact-level data and check contact unsub
+    if (contactId) {
+        const contactDoc = await db.collection('contacts').doc(contactId).get();
+        if (contactDoc.exists) {
+            const cData = contactDoc.data()!;
+            if (cData.unsubscribed) {
+                logger.info(`[Suppression] Contact ${contactId} is unsubscribed — skipping send.`);
+                await updateTaskStatus(db, task.id!, 'CANCELLED');
+                return;
+            }
+            toEmail = cData.email || toEmail;
+            contactName = `${cData.firstName || ''} ${cData.lastName || ''}`.trim() || contactName;
+        }
+    }
+
     if (!toEmail) {
         logger.warn(`[LeadOutreach] No email for lead ${task.leadId}, skipping.`);
         await updateTaskStatus(db, task.id!, 'COMPLETED');
@@ -572,7 +591,7 @@ async function handleLeadSend(task: QueueItem) {
 
     // Build merge variables from task metadata
     const mergeVars: Record<string, string> = {
-        contactName: task.metadata.contactName || 'there',
+        contactName,
         businessName: task.metadata.businessName || 'your practice',
         facilityType: titleCase(task.metadata.facilityType || 'Medical Office'),
         address: task.metadata.address || '',
@@ -604,6 +623,7 @@ async function handleLeadSend(task: QueueItem) {
 
     await db.collection("lead_activities").add({
         leadId: task.leadId,
+        contactId: contactId || null,
         type: sendResult.success ? "OUTREACH_SENT" : "OUTREACH_FAILED",
         description: sendResult.success
             ? `Lead email sent to ${toEmail} (template: ${templateId}).`
@@ -617,6 +637,7 @@ async function handleLeadSend(task: QueueItem) {
             templateId,
             sequence: task.metadata.sequence,
             resendId: sendResult.resendId || null,
+            contactId: contactId || null,
         },
     });
 

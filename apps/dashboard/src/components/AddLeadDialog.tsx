@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, X, Sparkles, Plus, User, ChevronDown, ChevronUp } from "lucide-react";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { Loader2, X, Sparkles, Plus, User, ChevronDown, ChevronUp, Building2, Search } from "lucide-react";
+import { collection, doc, serverTimestamp, writeBatch, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { EnrichButton } from "@/components/EnrichButton";
@@ -20,6 +20,13 @@ interface AddLeadDialogProps {
     onOpenChange: (open: boolean) => void;
 }
 
+interface CompanyOption {
+    id: string;
+    businessName: string;
+    address?: string;
+    city?: string;
+    state?: string;
+}
 
 function loadCustomFacilityTypes(): { value: string; label: string }[] {
     if (typeof window === 'undefined') return [];
@@ -58,7 +65,6 @@ function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v
     const exactMatch = allTypes.some(t => t.label.toLowerCase() === search.toLowerCase());
     const showAddNew = search.length > 0 && !exactMatch;
 
-    // Close on outside click
     useEffect(() => {
         const handler = (e: MouseEvent) => {
             if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -149,12 +155,204 @@ function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v
     );
 }
 
+// ─── Company Combobox ────────────────────────────────────────────────────────
+function CompanyCombobox({
+    value,
+    onChange,
+    onCreateNew,
+}: {
+    value: string | null;             // selected companyId
+    onChange: (companyId: string, companyName: string) => void;
+    onCreateNew: () => void;
+}) {
+    const [companies, setCompanies] = useState<CompanyOption[]>([]);
+    const [search, setSearch] = useState("");
+    const [isOpen, setIsOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const wrapperRef = useRef<HTMLDivElement>(null);
+
+    // Fetch companies once on mount
+    useEffect(() => {
+        const q = query(collection(db, "companies"), orderBy("businessName", "asc"));
+        const unsub = onSnapshot(q, (snap) => {
+            const list: CompanyOption[] = [];
+            snap.forEach((d) => {
+                const data = d.data();
+                list.push({
+                    id: d.id,
+                    businessName: data.businessName || "Unnamed",
+                    address: data.address,
+                    city: data.city,
+                    state: data.state,
+                });
+            });
+            setCompanies(list);
+            setLoading(false);
+        });
+        return () => unsub();
+    }, []);
+
+    // Also check 'leads' collection for backward compat (existing leads not yet migrated)
+    const [legacyCompanies, setLegacyCompanies] = useState<CompanyOption[]>([]);
+    useEffect(() => {
+        const q = query(collection(db, "leads"), orderBy("businessName", "asc"));
+        const unsub = onSnapshot(q, (snap) => {
+            const list: CompanyOption[] = [];
+            snap.forEach((d) => {
+                const data = d.data();
+                if (data.businessName) {
+                    list.push({
+                        id: d.id,
+                        businessName: data.businessName,
+                        address: data.address,
+                        city: data.city,
+                        state: data.state,
+                    });
+                }
+            });
+            setLegacyCompanies(list);
+        });
+        return () => unsub();
+    }, []);
+
+    const allCompanies = [...companies, ...legacyCompanies];
+
+    // Deduplicate by id
+    const uniqueCompanies = allCompanies.filter((c, i, arr) => arr.findIndex(x => x.id === c.id) === i);
+
+    const filtered = search
+        ? uniqueCompanies.filter(c =>
+            c.businessName.toLowerCase().includes(search.toLowerCase()) ||
+            (c.address && c.address.toLowerCase().includes(search.toLowerCase())) ||
+            (c.city && c.city.toLowerCase().includes(search.toLowerCase()))
+        )
+        : uniqueCompanies;
+
+    const selectedCompany = value ? uniqueCompanies.find(c => c.id === value) : null;
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+                setIsOpen(false);
+                setSearch("");
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
+    return (
+        <div ref={wrapperRef} className="relative">
+            <Label className="flex items-center gap-1.5 mb-1.5">
+                <Building2 className="w-3.5 h-3.5" /> Company
+            </Label>
+            <div
+                className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer hover:bg-accent/50 transition-colors"
+                onClick={() => { setIsOpen(true); setSearch(""); }}
+            >
+                {isOpen ? (
+                    <div className="flex items-center gap-2 w-full">
+                        <Search className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                        <input
+                            autoFocus
+                            className="w-full bg-transparent outline-none placeholder:text-muted-foreground"
+                            placeholder="Search existing companies..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Escape') { setIsOpen(false); setSearch(""); }
+                            }}
+                        />
+                    </div>
+                ) : (
+                    <span className={selectedCompany ? "text-foreground" : "text-muted-foreground"}>
+                        {selectedCompany ? selectedCompany.businessName : "Select or create a company"}
+                    </span>
+                )}
+                {selectedCompany && !isOpen && (
+                    <button
+                        type="button"
+                        className="ml-auto text-muted-foreground hover:text-foreground"
+                        onClick={(e) => { e.stopPropagation(); onChange("", ""); }}
+                    >
+                        <X className="w-3.5 h-3.5" />
+                    </button>
+                )}
+            </div>
+
+            {isOpen && (
+                <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-md border bg-popover shadow-lg">
+                    {loading ? (
+                        <div className="px-3 py-3 text-sm text-muted-foreground flex items-center gap-2">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading companies...
+                        </div>
+                    ) : (
+                        <>
+                            {/* Create new company option — always on top */}
+                            <button
+                                type="button"
+                                className="w-full text-left px-3 py-2.5 text-sm hover:bg-accent transition-colors text-primary font-medium flex items-center gap-1.5 border-b bg-primary/5"
+                                onClick={() => {
+                                    setIsOpen(false);
+                                    setSearch("");
+                                    onCreateNew();
+                                }}
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                                Create new company{search && ` "${search}"`}
+                            </button>
+
+                            {filtered.length === 0 ? (
+                                <div className="px-3 py-2 text-sm text-muted-foreground">
+                                    No companies match "{search}"
+                                </div>
+                            ) : (
+                                filtered.slice(0, 50).map((company) => (
+                                    <button
+                                        key={company.id}
+                                        type="button"
+                                        className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${company.id === value ? 'bg-accent font-medium' : ''}`}
+                                        onClick={() => {
+                                            onChange(company.id, company.businessName);
+                                            setIsOpen(false);
+                                            setSearch("");
+                                        }}
+                                    >
+                                        <div className="font-medium">{company.businessName}</div>
+                                        {(company.address || company.city) && (
+                                            <div className="text-xs text-muted-foreground mt-0.5">
+                                                {[company.address, company.city, company.state].filter(Boolean).join(', ')}
+                                            </div>
+                                        )}
+                                    </button>
+                                ))
+                            )}
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ─── Main Dialog ─────────────────────────────────────────────────────────────
 export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     const { user } = useAuth();
     const [submitting, setSubmitting] = useState(false);
-    const [tempLeadId, setTempLeadId] = useState<string | null>(null);
 
-    // Form state
+    // Contact fields
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [contactRole, setContactRole] = useState("");
+
+    // Company selection
+    const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+    const [selectedCompanyName, setSelectedCompanyName] = useState("");
+    const [creatingNewCompany, setCreatingNewCompany] = useState(false);
+
+    // New company fields (only shown when creatingNewCompany)
     const [businessName, setBusinessName] = useState("");
     const [website, setWebsite] = useState("");
     const [address, setAddress] = useState<any>(null);
@@ -163,63 +361,49 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     const [zip, setZip] = useState("");
     const [facilityType, setFacilityType] = useState("");
     const [leadType, setLeadType] = useState("tenant");
-    const [contactName, setContactName] = useState("");
-    const [email, setEmail] = useState("");
-    const [phone, setPhone] = useState("");
-    const [notes, setNotes] = useState("");
     const [attributionSource, setAttributionSource] = useState("__none");
-    const [showContact, setShowContact] = useState(false);
+    const [notes, setNotes] = useState("");
+
+    const handleCompanySelect = (companyId: string, companyName: string) => {
+        setSelectedCompanyId(companyId || null);
+        setSelectedCompanyName(companyName);
+        setCreatingNewCompany(false);
+    };
+
+    const handleCreateNewCompany = () => {
+        setSelectedCompanyId(null);
+        setSelectedCompanyName("");
+        setCreatingNewCompany(true);
+    };
 
     const handleAddressSelect = (selected: any) => {
         setAddress(selected);
 
-        // Extract address components from Google Places
         if (selected?.value?.place_id) {
             const geocoder = new google.maps.Geocoder();
             geocoder.geocode({ placeId: selected.value.place_id }, (results, status) => {
                 if (status === 'OK' && results && results[0]) {
                     const components = results[0].address_components;
-
                     let streetNumber = '';
                     let streetName = '';
 
                     components.forEach((component: any) => {
-                        if (component.types.includes('street_number')) {
-                            streetNumber = component.long_name;
-                        }
-                        if (component.types.includes('route')) {
-                            streetName = component.long_name;
-                        }
-                        if (component.types.includes('locality')) {
-                            setCity(component.long_name);
-                        }
-                        if (component.types.includes('administrative_area_level_1')) {
-                            setState(component.short_name);
-                        }
-                        if (component.types.includes('postal_code')) {
-                            setZip(component.long_name);
-                        }
+                        if (component.types.includes('street_number')) streetNumber = component.long_name;
+                        if (component.types.includes('route')) streetName = component.long_name;
+                        if (component.types.includes('locality')) setCity(component.long_name);
+                        if (component.types.includes('administrative_area_level_1')) setState(component.short_name);
+                        if (component.types.includes('postal_code')) setZip(component.long_name);
                     });
 
-                    // Show only street number + name in the address field
                     const streetOnly = [streetNumber, streetName].filter(Boolean).join(' ');
-                    if (streetOnly) {
-                        setAddress({ ...selected, label: streetOnly });
-                    }
+                    if (streetOnly) setAddress({ ...selected, label: streetOnly });
 
-                    // Infer facility type from place types
                     const types = results[0].types;
-                    if (types.includes('hospital') || types.includes('doctor')) {
-                        setFacilityType('medical_urgent_care');
-                    } else if (types.includes('car_dealer')) {
-                        setFacilityType('auto_dealer_showroom');
-                    } else if (types.includes('car_repair')) {
-                        setFacilityType('auto_service_center');
-                    } else if (types.includes('school')) {
-                        setFacilityType('edu_private_school');
-                    } else if (types.includes('gym')) {
-                        setFacilityType('fitness_gym');
-                    }
+                    if (types.includes('hospital') || types.includes('doctor')) setFacilityType('medical_urgent_care');
+                    else if (types.includes('car_dealer')) setFacilityType('auto_dealer_showroom');
+                    else if (types.includes('car_repair')) setFacilityType('auto_service_center');
+                    else if (types.includes('school')) setFacilityType('edu_private_school');
+                    else if (types.includes('gym')) setFacilityType('fitness_gym');
                 }
             });
         }
@@ -228,320 +412,353 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     const handlePhoneChange = (value: string) => {
         const input = value.replace(/\D/g, '');
         let formatted = '';
-
         if (input.length > 0) {
             formatted = '(' + input.substring(0, 3);
-            if (input.length >= 3) {
-                formatted += ') ' + input.substring(3, 6);
-            }
-            if (input.length >= 6) {
-                formatted += '-' + input.substring(6, 10);
-            }
+            if (input.length >= 3) formatted += ') ' + input.substring(3, 6);
+            if (input.length >= 6) formatted += '-' + input.substring(6, 10);
         }
-
         setPhone(formatted);
     };
 
+    const canSubmit = firstName && lastName && (selectedCompanyId || (creatingNewCompany && businessName && address));
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!businessName || !address) return;
+        if (!canSubmit) return;
 
         setSubmitting(true);
         try {
-            // Normalize website URL
             let normalizedWebsite = website?.trim() || null;
             if (normalizedWebsite && !/^https?:\/\//i.test(normalizedWebsite)) {
                 normalizedWebsite = `https://${normalizedWebsite}`;
             }
 
-            const leadData = {
-                businessName,
-                website: normalizedWebsite,
-                address: address.label,
-                city,
-                state,
-                zip,
-                facilityType: facilityType || null,
-                leadType,
-                contactName: contactName || null,
+            const batch = writeBatch(db);
+
+            let companyId: string;
+            let companyName: string;
+
+            if (creatingNewCompany) {
+                // Create a new company
+                const companyRef = doc(collection(db, 'companies'));
+                companyId = companyRef.id;
+                companyName = businessName;
+
+                batch.set(companyRef, {
+                    businessName,
+                    website: normalizedWebsite,
+                    address: address?.label || '',
+                    city,
+                    state,
+                    zip,
+                    facilityType: facilityType || null,
+                    leadType,
+                    status: 'new',
+                    attribution: {
+                        source: attributionSource === '__none' ? null : attributionSource,
+                        medium: 'manual',
+                        campaign: 'manual-entry',
+                        landingPage: '/sales/crm',
+                    },
+                    notes: notes || null,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    createdBy: user?.uid || 'unknown',
+                });
+            } else {
+                // Use existing company
+                companyId = selectedCompanyId!;
+                companyName = selectedCompanyName;
+            }
+
+            // Create the contact
+            const contactRef = doc(collection(db, 'contacts'));
+            batch.set(contactRef, {
+                firstName,
+                lastName,
                 email: email || null,
                 phone: phone || null,
-                notes: notes || null,
-                status: 'new',
-                attribution: {
-                    source: attributionSource === '__none' ? null : attributionSource,
-                    medium: 'manual',
-                    campaign: 'manual-entry',
-                    landingPage: '/sales/crm',
-                },
+                role: contactRole || null,
+                companyId,
+                companyName,
+                isPrimary: false, // existing company may already have a primary
+                unsubscribed: false,
+                notes: '',
                 createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
                 createdBy: user?.uid || 'unknown',
-            };
+            });
 
-            await addDoc(collection(db, 'leads'), leadData);
+            await batch.commit();
 
             // Reset form
-            setBusinessName("");
-            setWebsite("");
-            setAddress(null);
-            setCity("");
-            setState("");
-            setZip("");
-            setFacilityType("");
-            setLeadType("tenant");
-            setContactName("");
-            setEmail("");
-            setPhone("");
-            setNotes("");
-            setAttributionSource("__none");
-
+            resetForm();
             onOpenChange(false);
         } catch (error) {
-            console.error("Error adding lead:", error);
+            console.error("Error adding contact:", error);
         } finally {
             setSubmitting(false);
         }
     };
 
+    const resetForm = () => {
+        setFirstName("");
+        setLastName("");
+        setEmail("");
+        setPhone("");
+        setContactRole("");
+        setSelectedCompanyId(null);
+        setSelectedCompanyName("");
+        setCreatingNewCompany(false);
+        setBusinessName("");
+        setWebsite("");
+        setAddress(null);
+        setCity("");
+        setState("");
+        setZip("");
+        setFacilityType("");
+        setLeadType("tenant");
+        setNotes("");
+        setAttributionSource("__none");
+    };
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={(o: boolean) => { if (!o) resetForm(); onOpenChange(o); }}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Add New Lead</DialogTitle>
+                    <DialogTitle>Add New Contact</DialogTitle>
                     <DialogDescription>
-                        Manually add a lead from a referral or self-prospecting
+                        Add a contact and associate them with an existing or new company
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Business Name */}
-                    <div>
-                        <Label htmlFor="businessName">Business Name *</Label>
-                        <Input
-                            id="businessName"
-                            value={businessName}
-                            onChange={(e) => setBusinessName(e.target.value)}
-                            placeholder="ABC Medical Center"
-                            required
-                        />
+                    {/* ─── Contact Section ─── */}
+                    <div className="space-y-4">
+                        <h4 className="font-medium text-sm flex items-center gap-2">
+                            <User className="w-3.5 h-3.5" /> Contact Details
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="firstName">First Name *</Label>
+                                <Input
+                                    id="firstName"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                    placeholder="John"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="lastName">Last Name *</Label>
+                                <Input
+                                    id="lastName"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    placeholder="Smith"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="john@example.com"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="phone">Phone</Label>
+                                <Input
+                                    id="phone"
+                                    type="tel"
+                                    value={phone}
+                                    onChange={(e) => handlePhoneChange(e.target.value)}
+                                    placeholder="(555) 123-4567"
+                                    maxLength={14}
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="contactRole">Role / Title</Label>
+                                <Input
+                                    id="contactRole"
+                                    value={contactRole}
+                                    onChange={(e) => setContactRole(e.target.value)}
+                                    placeholder="Facility Manager"
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Website */}
-                    <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <Label htmlFor="website">Website (optional)</Label>
-                            {website && (
-                                <EnrichButton
-                                    website={website}
-                                    previewOnly={true}
+                    <div className="border-t my-2" />
+
+                    {/* ─── Company Section ─── */}
+                    <CompanyCombobox
+                        value={selectedCompanyId}
+                        onChange={handleCompanySelect}
+                        onCreateNew={handleCreateNewCompany}
+                    />
+
+                    {/* Show existing company badge when selected */}
+                    {selectedCompanyId && !creatingNewCompany && (
+                        <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
+                            <Building2 className="w-4 h-4" />
+                            <span>Linking to <strong>{selectedCompanyName}</strong></span>
+                        </div>
+                    )}
+
+                    {/* New company creation fields */}
+                    {creatingNewCompany && (
+                        <div className="space-y-4 p-4 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5">
+                            <div className="flex items-center justify-between">
+                                <h4 className="font-medium text-sm flex items-center gap-2 text-primary">
+                                    <Plus className="w-3.5 h-3.5" /> New Company
+                                </h4>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
                                     size="sm"
-                                    variant="outline"
-                                    onSuccess={(data) => {
-                                        // Auto-populate form fields
-                                        if (data.data?.email && !email) setEmail(data.data.email);
-                                        if (data.data?.phone && !phone) setPhone(data.data.phone);
-                                        if (data.data?.address && !address) {
-                                            // Note: Can't auto-fill address field as it requires Google Places object
-                                        }
-                                        if (data.data?.businessName && !businessName) setBusinessName(data.data.businessName);
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => setCreatingNewCompany(false)}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+
+                            <div>
+                                <Label htmlFor="businessName">Company Name *</Label>
+                                <Input
+                                    id="businessName"
+                                    value={businessName}
+                                    onChange={(e) => setBusinessName(e.target.value)}
+                                    placeholder="ABC Medical Center"
+                                    required={creatingNewCompany}
+                                />
+                            </div>
+
+                            {/* Website + Enrich */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <Label htmlFor="website">Website</Label>
+                                    {website && (
+                                        <EnrichButton
+                                            website={website}
+                                            previewOnly={true}
+                                            size="sm"
+                                            variant="outline"
+                                            onSuccess={(data) => {
+                                                if (data.data?.email && !email) setEmail(data.data.email);
+                                                if (data.data?.phone && !phone) setPhone(data.data.phone);
+                                                if (data.data?.businessName && !businessName) setBusinessName(data.data.businessName);
+                                            }}
+                                            onError={(error) => console.error('Enrichment error:', error)}
+                                        />
+                                    )}
+                                </div>
+                                <Input
+                                    id="website"
+                                    type="text"
+                                    value={website}
+                                    onChange={(e) => setWebsite(e.target.value)}
+                                    placeholder="example.com"
+                                />
+                            </div>
+
+                            {/* Address */}
+                            <div>
+                                <Label>Address *</Label>
+                                <GooglePlacesAutocomplete
+                                    apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                                    autocompletionRequest={{
+                                        componentRestrictions: { country: ['us'] },
                                     }}
-                                    onError={(error) => {
-                                        console.error('Enrichment error:', error);
+                                    selectProps={{
+                                        value: address,
+                                        onChange: handleAddressSelect,
+                                        placeholder: "Start typing address...",
+                                        className: "react-select-container",
+                                        classNamePrefix: "react-select",
                                     }}
                                 />
-                            )}
-                        </div>
-                        <Input
-                            id="website"
-                            type="text"
-                            value={website}
-                            onChange={(e) => setWebsite(e.target.value)}
-                            placeholder="example.com"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {website ? 'Click "Enrich" to auto-fill contact details' : 'Enter website to enable auto-fill'}
-                        </p>
-                    </div>
+                            </div>
 
-                    {/* Address */}
-                    <div>
-                        <Label>Address *</Label>
-                        <GooglePlacesAutocomplete
-                            apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-                            autocompletionRequest={{
-                                componentRestrictions: { country: ['us'] },
-                            }}
-                            selectProps={{
-                                value: address,
-                                onChange: handleAddressSelect,
-                                placeholder: "Start typing address...",
-                                className: "react-select-container",
-                                classNamePrefix: "react-select",
-                            }}
-                        />
-                    </div>
-
-                    {/* City, State, Zip */}
-                    <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <Label htmlFor="city">City</Label>
-                            <Input
-                                id="city"
-                                value={city}
-                                onChange={(e) => setCity(e.target.value)}
-                                placeholder="Chicago"
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="state">State</Label>
-                            <Input
-                                id="state"
-                                value={state}
-                                onChange={(e) => setState(e.target.value)}
-                                placeholder="IL"
-                                maxLength={2}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="zip">Zip</Label>
-                            <Input
-                                id="zip"
-                                value={zip}
-                                onChange={(e) => setZip(e.target.value)}
-                                placeholder="60601"
-                                maxLength={5}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Facility Type — Creatable Combobox */}
-                    <FacilityTypeCombobox value={facilityType} onChange={setFacilityType} />
-
-                    {/* Lead Type */}
-                    <div>
-                        <Label>Lead Type</Label>
-                        <Select value={leadType} onValueChange={setLeadType}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="direct">Direct</SelectItem>
-                                <SelectItem value="tenant">Tenant</SelectItem>
-                                <SelectItem value="referral_partnership">Referral Partnership</SelectItem>
-                                <SelectItem value="enterprise">Enterprise</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Contact Details — Collapsible */}
-                    <div className="pt-4 border-t">
-                        {!showContact ? (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="w-full gap-2 text-sm"
-                                onClick={() => setShowContact(true)}
-                            >
-                                <User className="w-3.5 h-3.5" />
-                                Add Contact Info
-                                <ChevronDown className="w-3.5 h-3.5 ml-auto" />
-                            </Button>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h4 className="font-medium text-sm">Contact Information</h4>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6"
-                                        onClick={() => setShowContact(false)}
-                                    >
-                                        <ChevronUp className="w-3.5 h-3.5" />
-                                    </Button>
-                                </div>
-
+                            {/* City / State / Zip */}
+                            <div className="grid grid-cols-3 gap-4">
                                 <div>
-                                    <Label htmlFor="contactName">Contact Name</Label>
-                                    <Input
-                                        id="contactName"
-                                        value={contactName}
-                                        onChange={(e) => setContactName(e.target.value)}
-                                        placeholder="John Smith"
-                                    />
+                                    <Label htmlFor="city">City</Label>
+                                    <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Chicago" />
                                 </div>
-
                                 <div>
-                                    <Label htmlFor="email">Email</Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="john@example.com"
-                                    />
+                                    <Label htmlFor="state">State</Label>
+                                    <Input id="state" value={state} onChange={(e) => setState(e.target.value)} placeholder="IL" maxLength={2} />
                                 </div>
-
                                 <div>
-                                    <Label htmlFor="phone">Phone</Label>
-                                    <Input
-                                        id="phone"
-                                        type="tel"
-                                        value={phone}
-                                        onChange={(e) => handlePhoneChange(e.target.value)}
-                                        placeholder="(555) 123-4567"
-                                        maxLength={14}
-                                    />
+                                    <Label htmlFor="zip">Zip</Label>
+                                    <Input id="zip" value={zip} onChange={(e) => setZip(e.target.value)} placeholder="60601" maxLength={5} />
                                 </div>
                             </div>
-                        )}
-                    </div>
 
-                    {/* Attribution */}
-                    <div>
-                        <Label htmlFor="attribution">Lead Source</Label>
-                        <Select value={attributionSource} onValueChange={setAttributionSource}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="— Select —" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="__none">— Select —</SelectItem>
-                                {ATTRIBUTION_SOURCES.map((source) => (
-                                    <SelectItem key={source.value} value={source.value}>
-                                        {source.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                            {/* Facility Type */}
+                            <FacilityTypeCombobox value={facilityType} onChange={setFacilityType} />
 
-                    {/* Notes */}
-                    <div>
-                        <Label htmlFor="notes">Notes</Label>
-                        <Textarea
-                            id="notes"
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Additional context about this lead..."
-                            rows={3}
-                        />
-                    </div>
+                            {/* Lead Type */}
+                            <div>
+                                <Label>Lead Type</Label>
+                                <Select value={leadType} onValueChange={setLeadType}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="direct">Direct</SelectItem>
+                                        <SelectItem value="tenant">Tenant</SelectItem>
+                                        <SelectItem value="referral_partnership">Referral Partnership</SelectItem>
+                                        <SelectItem value="enterprise">Enterprise</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Attribution */}
+                            <div>
+                                <Label>Source</Label>
+                                <Select value={attributionSource} onValueChange={setAttributionSource}>
+                                    <SelectTrigger><SelectValue placeholder="— Select —" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="__none">— Select —</SelectItem>
+                                        {ATTRIBUTION_SOURCES.map((s) => (
+                                            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Notes */}
+                            <div>
+                                <Label htmlFor="notes">Notes</Label>
+                                <Textarea
+                                    id="notes"
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    placeholder="Additional context..."
+                                    rows={2}
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Actions */}
                     <div className="flex justify-end gap-2 pt-4">
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => onOpenChange(false)}
+                            onClick={() => { resetForm(); onOpenChange(false); }}
                             disabled={submitting}
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={submitting || !businessName || !address}>
+                        <Button type="submit" disabled={submitting || !canSubmit}>
                             {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            Add Lead
+                            Add Contact
                         </Button>
                     </div>
                 </form>
