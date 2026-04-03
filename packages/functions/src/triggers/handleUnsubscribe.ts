@@ -2,6 +2,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import { cancelVendorTasks, cancelLeadTasks } from "../utils/queueUtils";
+import { COMPANY_NAME, COMPANY_ADDRESS, SERVICE_AREA } from "../utils/emailUtils";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -238,7 +239,7 @@ function renderPage(title: string, message: string, success: boolean): string {
         <div class="icon">${icon}</div>
         <h1>${title}</h1>
         <p>${message}</p>
-        <div class="footer">XIRI Facility Solutions · 418 Broadway, Ste N · Albany, NY 12207</div>
+        <div class="footer">${COMPANY_NAME} · ${COMPANY_ADDRESS}<br>${SERVICE_AREA}</div>
     </div>
 </body>
 </html>`;

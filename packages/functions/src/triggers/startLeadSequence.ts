@@ -36,10 +36,15 @@ export const startLeadSequence = onCall(async (request) => {
         throw new HttpsError("invalid-argument", "leadId is required");
     }
 
-    // ── Fetch the lead (company) ──────────────────────────────
-    const leadDoc = await db.collection("leads").doc(leadId).get();
+    // ── Fetch the lead (try companies first, fall back to leads) ──
+    let leadDoc = await db.collection("companies").doc(leadId).get();
+    let leadCollection = "companies";
     if (!leadDoc.exists) {
-        throw new HttpsError("not-found", `Lead ${leadId} not found`);
+        leadDoc = await db.collection("leads").doc(leadId).get();
+        leadCollection = "leads";
+    }
+    if (!leadDoc.exists) {
+        throw new HttpsError("not-found", `Lead/Company ${leadId} not found in companies or leads`);
     }
 
     const lead = leadDoc.data()!;
@@ -86,7 +91,7 @@ export const startLeadSequence = onCall(async (request) => {
 
     // Guard: need an email
     if (!contactEmail || contactEmail.trim().length === 0) {
-        await db.collection("leads").doc(leadId).update({
+        await db.collection(leadCollection).doc(leadId).update({
             outreachStatus: "NEEDS_MANUAL",
         });
         throw new HttpsError(
@@ -178,8 +183,8 @@ export const startLeadSequence = onCall(async (request) => {
         });
     }
 
-    // ── Update lead doc ───────────────────────────────────────
-    await db.collection("leads").doc(leadId).update({
+    // ── Update lead/company doc ────────────────────────────────
+    await db.collection(leadCollection).doc(leadId).update({
         status: lead.status === "new" ? "contacted" : lead.status,
         outreachStatus: "PENDING",
         sequenceId,

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>XIRI Email Preview — Header + Footer</title>
+    <style>
+        body { background: #f1f5f9; margin: 0; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .email-card { max-width: 600px; margin: 0 auto 48px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .label { text-align: center; font-size: 13px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        h2.section { text-align: center; color: #0f172a; font-size: 16px; margin: 48px 0 8px; }
+    </style>
+</head>
+<body>
+
+<h2 class="section">Updated Email Branding Preview</h2>
+<p style="text-align: center; color: #94a3b8; font-size: 13px; max-width: 500px; margin: 0 auto 32px;">
+    All emails now show the vertical logo header (centered) and the reordered footer with service area first.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- EXAMPLE 1: Lead / Vendor Outreach Email (with Unsubscribe) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<p class="label">Lead / Vendor Outreach Email (CAN-SPAM footer)</p>
+<div class="email-card">
+    <div style="padding: 0 32px 32px;">
+
+        <!-- ✅ NEW: Logo Header — from buildEmailHeader() -->
+        <div style="text-align: center; padding: 24px 0 16px;">
+            <img src="https://xiri.ai/logo-vertical.svg" alt="XIRI Facility Solutions" style="height: 80px;" />
+        </div>
+
+        <h1 style="color: #0c4a6e; font-size: 22px; margin: 0 0 16px;">Let's talk about your facility</h1>
+        <p style="color: #475569; line-height: 1.6; font-size: 15px;">
+            Hi <strong>John</strong>,
+        </p>
+        <p style="color: #475569; line-height: 1.6; font-size: 15px;">
+            I noticed your building at <strong>123 Main St, Flushing</strong> and wanted to reach out. 
+            We specialize in commercial janitorial services and would love to provide a free walkthrough and quote.
+        </p>
+        <p style="color: #475569; line-height: 1.6; font-size: 15px;">
+            Would you have 15 minutes this week for a quick call?
+        </p>
+        <p style="color: #475569; margin-top: 24px;">
+            Best,<br/><strong>Chris Leung</strong><br/>
+            <span style="font-size: 13px; color: #94a3b8;">XIRI Facility Solutions</span>
+        </p>
+
+        <!-- ✅ UPDATED: Footer — service area FIRST, then address -->
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+            <p style="margin: 0;">Serving Queens, Nassau &amp; Suffolk Counties</p>
+            <p style="margin: 4px 0 0 0;">XIRI Group LLC · 418 Broadway, Ste N · Albany, NY 12207</p>
+            <p style="margin: 8px 0 0 0;">
+                <a href="#" style="color: #64748b; text-decoration: underline;">Unsubscribe</a>
+                &nbsp;·&nbsp;
+                <a href="mailto:chris@xiri.ai" style="color: #64748b; text-decoration: underline;">Contact Us</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- EXAMPLE 2: Vendor Confirmation (no Unsubscribe)           -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<p class="label">Vendor Confirmation Email (simple footer)</p>
+<div class="email-card">
+    <div style="padding: 0 0 32px;">
+
+        <!-- ✅ NEW: Logo Header -->
+        <div style="text-align: center; padding: 24px 0 16px;">
+            <img src="https://xiri.ai/logo-vertical.svg" alt="XIRI Facility Solutions" style="height: 80px;" />
+        </div>
+
+        <div style="background: #0c4a6e; padding: 24px 32px;">
+            <h1 style="color: white; margin: 0; font-size: 22px;">We've received your application!</h1>
+        </div>
+        <div style="padding: 32px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="color: #1e293b; line-height: 1.8;">Hi <strong>ABC Cleaning Corp</strong>,</p>
+            <p style="color: #1e293b; line-height: 1.8;">
+                Thank you for completing your application to join the XIRI Contractor Network. 
+                We've received your information and our team will review it shortly.
+            </p>
+
+            <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <h3 style="margin: 0 0 12px 0; color: #0c4a6e; font-size: 15px;">What we received:</h3>
+                <p style="margin: 4px 0; font-size: 14px;">📧 Email: vendor@example.com</p>
+                <p style="margin: 4px 0; font-size: 14px;">📞 Phone: (516) 555-1234</p>
+                <p style="margin: 4px 0; font-size: 14px;">📋 Track: 🤝 Partner Network</p>
+            </div>
+
+            <p style="margin-top: 24px; color: #1e293b;">Best regards,<br/><strong>XIRI Facility Solutions Team</strong></p>
+
+            <!-- ✅ UPDATED: Footer — service area FIRST -->
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+                <p style="margin: 0;">Serving Queens, Nassau &amp; Suffolk Counties</p>
+                <p style="margin: 4px 0 0 0;">XIRI Group LLC · 418 Broadway, Ste N · Albany, NY 12207</p>
+                <p style="margin: 8px 0 0 0;">
+                    <a href="mailto:chris@xiri.ai" style="color: #64748b; text-decoration: underline;">Contact Us</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- EXAMPLE 3: Admin Invite Email                              -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<p class="label">Dashboard Invite Email</p>
+<div class="email-card">
+    <div style="padding: 0 32px 32px;">
+
+        <!-- ✅ NEW: Logo Header -->
+        <div style="text-align: center; padding: 24px 0 16px;">
+            <img src="https://xiri.ai/logo-vertical.svg" alt="XIRI Facility Solutions" style="height: 80px;" />
+        </div>
+
+        <div style="text-align: center; margin-bottom: 32px;">
+            <h1 style="font-size: 24px; font-weight: 700; color: #0f172a; margin: 0;">Welcome to XIRI</h1>
+            <p style="color: #64748b; font-size: 14px; margin-top: 8px;">Your dashboard account has been created</p>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <p style="margin: 0 0 16px; font-size: 14px; color: #475569;">Hi <strong>Sarah</strong>,</p>
+            <p style="margin: 0 0 16px; font-size: 14px; color: #475569;">Here are your login credentials:</p>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; font-size: 13px; color: #94a3b8; width: 100px;">Dashboard</td>
+                    <td style="padding: 8px 0; font-size: 14px; font-weight: 600;"><a href="https://app.xiri.ai" style="color: #2563eb; text-decoration: none;">app.xiri.ai</a></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-size: 13px; color: #94a3b8;">Email</td>
+                    <td style="padding: 8px 0; font-size: 14px; font-weight: 600; color: #0f172a;">sarah@example.com</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-size: 13px; color: #94a3b8;">Password</td>
+                    <td style="padding: 8px 0; font-size: 14px; font-weight: 600; color: #0f172a; font-family: 'Courier New', monospace;">Xiri-2026!</td>
+                </tr>
+            </table>
+        </div>
+        <div style="text-align: center; margin-bottom: 24px;">
+            <a href="#" style="display: inline-block; background: #2563eb; color: white; padding: 12px 32px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none;">Log In Now →</a>
+        </div>
+
+        <!-- ✅ UPDATED: Footer -->
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+            <p style="margin: 0;">Serving Queens, Nassau &amp; Suffolk Counties</p>
+            <p style="margin: 4px 0 0 0;">XIRI Group LLC · 418 Broadway, Ste N · Albany, NY 12207</p>
+            <p style="margin: 8px 0 0 0;">
+                <a href="mailto:chris@xiri.ai" style="color: #64748b; text-decoration: underline;">Contact Us</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

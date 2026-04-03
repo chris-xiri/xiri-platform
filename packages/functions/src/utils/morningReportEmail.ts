@@ -5,6 +5,8 @@
  * Designed to be glanceable in 3 seconds (Green) or actionable in 30 seconds (Red).
  */
 
+import { COMPANY_NAME, COMPANY_ADDRESS, SERVICE_AREA } from './emailUtils';
+
 // ─── Types ───────────────────────────────────────────────────────────
 
 export type ReportTier = 'green' | 'amber' | 'red';
@@ -221,7 +223,10 @@ export function buildMorningReportHtml(data: MorningReportData): string {
         <!-- Footer -->
         <div style="padding: 16px 24px; text-align: center; border-radius: 0 0 12px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-top: none;">
             <p style="margin: 0; font-size: 11px; color: #94a3b8;">
-                XIRI Facility Solutions &middot; 418 Broadway, Ste N &middot; Albany, NY 12207
+                ${COMPANY_NAME} &middot; ${COMPANY_ADDRESS}
+            </p>
+            <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">
+                ${SERVICE_AREA}
             </p>
             <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">
                 This is an automated report. Reply to this email or contact 

@@ -2,6 +2,7 @@ import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import { Resend } from "resend";
+import { buildSimpleFooter, buildEmailHeader, buildEmailSignature } from "../utils/emailUtils";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -47,6 +48,7 @@ export const onOnboardingComplete = onDocumentUpdated({
     const dashboardLink = `https://app.xiri.ai/supply/crm/${vendorId}`;
 
     const html = `
+    ${buildEmailHeader()}
     <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px;">
         <h2 style="color: #0c4a6e;">🏗️ Vendor Onboarding Complete</h2>
         <p><strong>${businessName}</strong> has completed the onboarding form and is ready for compliance review.</p>
@@ -72,6 +74,9 @@ export const onOnboardingComplete = onDocumentUpdated({
         <p style="margin-top: 32px; font-size: 12px; color: #94a3b8;">
             Vendor ID: ${vendorId}
         </p>
+
+        ${buildEmailSignature()}
+        ${buildSimpleFooter()}
     </div>`;
 
     try {
@@ -211,6 +216,7 @@ export const onOnboardingComplete = onDocumentUpdated({
         const isSpanish = lang === 'es';
 
         const vendorHtml = isSpanish ? `
+    ${buildEmailHeader()}
     <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px; color: #1e293b;">
         <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
             <h1 style="color: white; margin: 0; font-size: 22px;">¡Recibimos su solicitud!</h1>
@@ -235,9 +241,11 @@ export const onOnboardingComplete = onDocumentUpdated({
 
             <p style="font-size: 14px; color: #64748b;">Si tiene alguna pregunta, simplemente responda a este correo.</p>
 
-            <p style="margin-top: 24px;">Saludos cordiales,<br/><strong>Equipo XIRI Facility Solutions</strong></p>
+            ${buildEmailSignature()}
+            ${buildSimpleFooter()}
         </div>
     </div>` : `
+    ${buildEmailHeader()}
     <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px; color: #1e293b;">
         <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
             <h1 style="color: white; margin: 0; font-size: 22px;">We've received your application!</h1>
@@ -262,7 +270,8 @@ export const onOnboardingComplete = onDocumentUpdated({
 
             <p style="font-size: 14px; color: #64748b;">If you have any questions, just reply to this email.</p>
 
-            <p style="margin-top: 24px;">Best regards,<br/><strong>XIRI Facility Solutions Team</strong></p>
+            ${buildEmailSignature()}
+            ${buildSimpleFooter()}
         </div>
     </div>`;
 

@@ -252,6 +252,101 @@ export async function sendTemplatedEmail(
 
 const FUNCTIONS_BASE_URL = 'https://us-central1-xiri-facility-solutions.cloudfunctions.net';
 
+/* ─── Single source of truth for company email branding ──────── */
+export const COMPANY_NAME = 'XIRI Group LLC';
+export const COMPANY_ADDRESS = '418 Broadway, Ste N · Albany, NY 12207';
+export const SERVICE_AREA = 'Serving Queens, Nassau & Suffolk Counties';
+export const LOGO_URL = 'https://xiri.ai/logo-vertical.svg';
+
+/**
+ * Centered logo header for all outgoing emails.
+ */
+export function buildEmailHeader(): string {
+    return `
+<div style="text-align: center; padding: 24px 0 16px;">
+    <img src="${LOGO_URL}" alt="XIRI Facility Solutions" style="height: 80px;" />
+</div>`;
+}
+
+/** Signature config shape stored in Firestore: settings/emailSignature */
+export interface EmailSignatureConfig {
+    closing: string;
+    name: string;
+    title: string;
+    email: string;
+    phone: string;
+}
+
+/** Hardcoded fallback when Firestore doc doesn't exist yet */
+const DEFAULT_SIGNATURE: EmailSignatureConfig = {
+    closing: 'Best',
+    name: 'Chris Leung',
+    title: 'XIRI Facility Solutions',
+    email: 'chris@xiri.ai',
+    phone: '516-399-0350',
+};
+
+/**
+ * Fetch email signature config from Firestore with hardcoded fallback.
+ * Cached per cold-start (module-level variable).
+ */
+let _signatureCache: EmailSignatureConfig | null = null;
+export async function getEmailSignatureConfig(): Promise<EmailSignatureConfig> {
+    if (_signatureCache) return _signatureCache;
+    try {
+        const snap = await db.collection('settings').doc('emailSignature').get();
+        if (snap.exists) {
+            _signatureCache = { ...DEFAULT_SIGNATURE, ...(snap.data() as Partial<EmailSignatureConfig>) };
+        } else {
+            _signatureCache = DEFAULT_SIGNATURE;
+        }
+    } catch (err) {
+        console.warn('⚠️ Failed to fetch email signature from Firestore, using fallback:', err);
+        _signatureCache = DEFAULT_SIGNATURE;
+    }
+    return _signatureCache;
+}
+
+/** Clear the module-level cache (useful after admin updates) */
+export function clearSignatureCache(): void {
+    _signatureCache = null;
+}
+
+/**
+ * Standard email signature block.
+ * Auto-appended by sendEmail() and sendBatchEmails() before the footer.
+ * Accepts an optional config (pre-fetched from Firestore); falls back to DEFAULT_SIGNATURE.
+ */
+export function buildEmailSignature(config?: EmailSignatureConfig): string {
+    const c = config || DEFAULT_SIGNATURE;
+    return `
+<div style="margin-top: 28px; font-size: 14px; color: #1e293b; line-height: 1.6;">
+    <p style="margin: 0;">${c.closing},</p>
+    <p style="margin: 4px 0 0 0; font-weight: 600;">${c.name}  |  ${c.title}</p>
+    <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">
+        <a href="mailto:${c.email}" style="color: #64748b; text-decoration: none;">${c.email}</a>
+        &nbsp;|&nbsp;
+        <a href="tel:${c.phone.replace(/\D/g, '')}" style="color: #64748b; text-decoration: none;">${c.phone}</a>
+    </p>
+</div>`;
+}
+
+/**
+ * Build a simple company footer (no unsubscribe link).
+ * Use this in internal emails, reports, and templates that don't need CAN-SPAM.
+ */
+export function buildSimpleFooter(extraLine?: string): string {
+    return `
+<div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+    <p style="margin: 0;">${SERVICE_AREA}</p>
+    <p style="margin: 4px 0 0 0;">${COMPANY_NAME} · ${COMPANY_ADDRESS}</p>
+    ${extraLine ? `<p style="margin: 4px 0 0 0;">${extraLine}</p>` : ''}
+    <p style="margin: 8px 0 0 0;">
+        <a href="mailto:chris@xiri.ai" style="color: #64748b; text-decoration: underline;">Contact Us</a>
+    </p>
+</div>`;
+}
+
 /**
  * Build CAN-SPAM compliant email footer with unsubscribe link.
  */
@@ -262,7 +357,8 @@ function buildEmailFooter(entityId?: string, entityType?: 'vendor' | 'lead'): st
 
     return `
 <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
-    <p style="margin: 0;">XIRI Group LLC · 418 Broadway, Ste N · Albany, NY 12207</p>
+    <p style="margin: 0;">${SERVICE_AREA}</p>
+    <p style="margin: 4px 0 0 0;">${COMPANY_NAME} · ${COMPANY_ADDRESS}</p>
     <p style="margin: 8px 0 0 0;">
         <a href="${unsubscribeUrl}" style="color: #64748b; text-decoration: underline;">Unsubscribe</a>
         &nbsp;·&nbsp;
@@ -290,8 +386,11 @@ export async function sendEmail(
     try {
         // Determine entity ID for unsubscribe link
         const entityId = vendorId; // vendorId param is actually entityId (vendor or lead)
+        const header = buildEmailHeader();
+        const sigConfig = await getEmailSignatureConfig();
+        const signature = buildEmailSignature(sigConfig);
         const footer = buildEmailFooter(entityId, entityType);
-        const htmlWithFooter = footer ? html + footer : html;
+        const htmlWithFooter = header + html + signature + (footer || '');
 
         // Build tags array for webhook tracking
         const tags: { name: string; value: string }[] = [];
@@ -352,12 +451,15 @@ export async function sendBatchEmails(
     if (emails.length === 0) return { success: true, ids: [] };
 
     try {
+        const header = buildEmailHeader();
+        const sigConfig = await getEmailSignatureConfig();
+        const signature = buildEmailSignature(sigConfig);
         const payload = emails.map(e => ({
             from: e.from || 'XIRI Facility Solutions <reports@xiri.ai>',
             replyTo: e.replyTo || 'chris@xiri.ai',
             to: e.to,
             subject: e.subject,
-            html: e.html,
+            html: header + e.html + signature,
         }));
 
         const { data, error } = await resend.batch.send(payload);

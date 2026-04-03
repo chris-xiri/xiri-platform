@@ -11,7 +11,7 @@
 
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { logger } from "firebase-functions/v2";
-import { sendEmail } from "../utils/emailUtils";
+import { sendEmail, buildSimpleFooter } from "../utils/emailUtils";
 import * as admin from "firebase-admin";
 
 const db = admin.firestore();
@@ -213,20 +213,9 @@ async function sendPaymentNotification(
 function wrapEmail(body: string): string {
     return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 20px;">
-        <!-- Logo -->
-        <div style="margin-bottom: 24px;">
-            <img src="https://xiri.ai/logo.png" alt="XIRI" style="height: 32px;" />
-        </div>
-
         ${body}
 
-        <!-- Footer -->
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
-            <p style="margin: 0;">XIRI Facility Solutions · 418 Broadway, Ste N · Albany, NY 12207</p>
-            <p style="margin: 8px 0 0 0;">
-                <a href="mailto:chris@xiri.ai" style="color: #64748b; text-decoration: underline;">Contact Us</a>
-            </p>
-        </div>
+        ${buildSimpleFooter()}
     </div>`;
 }
 

@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, orderBy, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Lead, LeadType, FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
+import { Lead, LeadType, Contact, FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,7 +53,7 @@ const LEAD_TYPE_LABELS: Record<string, string> = {
 
 
 interface LeadDetailDrawerProps {
-    leadId: string | null;
+    leadId: string | null;  // This is actually a contactId from the LeadList
     open: boolean;
     onClose: () => void;
 }
@@ -365,9 +365,12 @@ function EditableAddressField({
 
 /* ─── Main Drawer ──────────────────────────────────────────────────── */
 
-export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDrawerProps) {
+export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: LeadDetailDrawerProps) {
     const router = useRouter();
-    const [lead, setLead] = useState<Lead | null>(null);
+    // Contact data
+    const [contact, setContact] = useState<Contact | null>(null);
+    // Company data (the "lead" / company record)
+    const [company, setCompany] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
     const [statusUpdating, setStatusUpdating] = useState(false);
     const [notesEditing, setNotesEditing] = useState(false);
@@ -378,70 +381,145 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
     const [activeTab, setActiveTab] = useState('overview');
     const [bookCallOpen, setBookCallOpen] = useState(false);
 
+    // Fetch contact → then company
     useEffect(() => {
-        if (!leadId || !open) { setLead(null); setLoading(true); setActiveTab('overview'); setBookCallOpen(false); return; }
+        if (!contactId || !open) {
+            setContact(null);
+            setCompany(null);
+            setLoading(true);
+            setActiveTab('overview');
+            setBookCallOpen(false);
+            return;
+        }
         setLoading(true);
-        const unsub = onSnapshot(doc(db, 'leads', leadId), (snap) => {
+
+        // Listen to the contact document
+        const unsubContact = onSnapshot(doc(db, 'contacts', contactId), async (snap) => {
             if (snap.exists()) {
                 const data = snap.data();
-                setLead({
+                const contactData: Contact = {
                     id: snap.id,
-                    ...data,
-                    createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
-                    preferredAuditTimes: data.preferredAuditTimes?.map((t: any) =>
-                        t?.toDate ? t.toDate() : new Date(t)
-                    ),
-                } as Lead);
+                    firstName: data.firstName || '',
+                    lastName: data.lastName || '',
+                    email: data.email || '',
+                    phone: data.phone || '',
+                    companyId: data.companyId || '',
+                    companyName: data.companyName || '',
+                    role: data.role,
+                    isPrimary: data.isPrimary ?? false,
+                    unsubscribed: data.unsubscribed || false,
+                    notes: data.notes || '',
+                    createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+                    createdBy: data.createdBy,
+                    emailEngagement: data.emailEngagement,
+                };
+                setContact(contactData);
+
+                // Fetch the associated company
+                if (data.companyId) {
+                    try {
+                        const compSnap = await getDoc(doc(db, 'companies', data.companyId));
+                        if (compSnap.exists()) {
+                            const compData = compSnap.data();
+                            setCompany({
+                                id: compSnap.id,
+                                ...compData,
+                                createdAt: compData.createdAt?.toDate ? compData.createdAt.toDate() : new Date(compData.createdAt || Date.now()),
+                                preferredAuditTimes: compData.preferredAuditTimes?.map((t: any) =>
+                                    t?.toDate ? t.toDate() : new Date(t)
+                                ),
+                            } as Lead);
+                        } else {
+                            setCompany(null);
+                        }
+                    } catch (err) {
+                        console.error('Failed to fetch company:', err);
+                        setCompany(null);
+                    }
+                } else {
+                    setCompany(null);
+                }
+            } else {
+                setContact(null);
+                setCompany(null);
             }
             setLoading(false);
         }, () => setLoading(false));
-        return () => unsub();
-    }, [leadId, open]);
 
-    // Fetch quotes for this lead
+        return () => unsubContact();
+    }, [contactId, open]);
+
+    // Fetch quotes for the company (using companyId, or fallback to contactId for legacy leadId)
     useEffect(() => {
-        if (!leadId || !open) { setQuotes([]); return; }
+        const companyId = contact?.companyId;
+        if (!companyId || !open) { setQuotes([]); return; }
         setQuotesLoading(true);
+
+        // Try matching quotes by leadId (companies collection uses the same ID pattern)
         getDocs(query(
             collection(db, 'quotes'),
-            where('leadId', '==', leadId),
+            where('leadId', '==', companyId),
             orderBy('createdAt', 'desc')
         )).then(snap => {
             setQuotes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         }).catch(() => { }).finally(() => setQuotesLoading(false));
-    }, [leadId, open]);
+    }, [contact?.companyId, open]);
 
-    const updateField = useCallback(async (field: string, value: any) => {
-        if (!leadId) return;
-        await updateDoc(doc(db, 'leads', leadId), { [field]: value, updatedAt: new Date() });
-    }, [leadId]);
+    // Update a field on the company document
+    const updateCompanyField = useCallback(async (field: string, value: any) => {
+        const companyId = contact?.companyId;
+        if (!companyId) return;
+        await updateDoc(doc(db, 'companies', companyId), { [field]: value, updatedAt: new Date() });
+        // Re-fetch company to keep state fresh
+        const compSnap = await getDoc(doc(db, 'companies', companyId));
+        if (compSnap.exists()) {
+            const compData = compSnap.data();
+            setCompany({
+                id: compSnap.id,
+                ...compData,
+                createdAt: compData.createdAt?.toDate ? compData.createdAt.toDate() : new Date(compData.createdAt || Date.now()),
+                preferredAuditTimes: compData.preferredAuditTimes?.map((t: any) =>
+                    t?.toDate ? t.toDate() : new Date(t)
+                ),
+            } as Lead);
+        }
+    }, [contact?.companyId]);
+
+    // Update a field on the contact document
+    const updateContactField = useCallback(async (field: string, value: any) => {
+        if (!contactId) return;
+        await updateDoc(doc(db, 'contacts', contactId), { [field]: value, updatedAt: new Date() });
+    }, [contactId]);
 
     const handleStatusChange = async (newStatus: string) => {
-        if (!leadId || newStatus === lead?.status) return;
+        if (!contact?.companyId || newStatus === company?.status) return;
         setStatusUpdating(true);
         try {
-            await updateField('status', newStatus);
+            await updateCompanyField('status', newStatus);
         } finally {
             setStatusUpdating(false);
         }
     };
 
     const handleLeadTypeChange = async (newType: string) => {
-        if (!leadId || newType === lead?.leadType) return;
-        await updateField('leadType', newType);
+        if (!contact?.companyId || newType === company?.leadType) return;
+        await updateCompanyField('leadType', newType);
     };
 
     const handleNotesSave = async () => {
         setNotesSaving(true);
         try {
-            await updateField('notes', notesDraft);
-            setNotesEditing(false);
+            await updateContactField('notes', notesDraft);
         } finally {
             setNotesSaving(false);
         }
     };
 
-    const createdDate = lead ? toDate(lead.createdAt) : null;
+    // Derived display values
+    const displayName = contact ? `${contact.firstName} ${contact.lastName}`.trim() : '';
+    const businessName = company?.businessName || contact?.companyName || '';
+    const createdDate = contact ? toDate(contact.createdAt) : null;
+    const companyId = contact?.companyId || '';
 
     return (
         <>
@@ -453,32 +531,32 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                         <Skeleton className="h-10 w-2/3" />
                         <Skeleton className="h-[200px] w-full" />
                     </div>
-                ) : !lead ? (
+                ) : !contact ? (
                     <div className="p-6 text-muted-foreground">
                         <SheetTitle className="sr-only">Lead not found</SheetTitle>
                         Lead not found
                     </div>
                 ) : (
                     <>
-                        {/* ─── Header (matches VendorDetailDrawer) ──── */}
+                        {/* ─── Header ──── */}
                         <div className="sticky top-0 bg-card border-b px-5 py-4 z-10">
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
-                                    {lead.businessName?.charAt(0) || '?'}
+                                    {businessName?.charAt(0) || displayName?.charAt(0) || '?'}
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <EditableField
                                         label="Business name"
-                                        value={lead.businessName || ''}
+                                        value={businessName}
                                         icon={() => null}
-                                        onSave={(v) => updateField('businessName', v)}
+                                        onSave={(v) => updateCompanyField('businessName', v)}
                                         renderDisplay={(val) => (
                                             <SheetTitle className="text-lg truncate group-[]:cursor-pointer">{val || 'Unnamed Lead'}</SheetTitle>
                                         )}
                                     />
                                     <div className="flex items-center gap-2 mt-0.5">
                                         <select
-                                            value={lead.status}
+                                            value={company?.status || 'new'}
                                             onChange={(e) => handleStatusChange(e.target.value)}
                                             disabled={statusUpdating}
                                             className="text-xs font-medium px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -489,8 +567,8 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                             ))}
                                         </select>
                                         <select
-                                            value={lead.facilityType || ''}
-                                            onChange={(e) => updateField('facilityType', e.target.value)}
+                                            value={company?.facilityType || ''}
+                                            onChange={(e) => updateCompanyField('facilityType', e.target.value)}
                                             className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
                                             aria-label="Facility type"
                                         >
@@ -500,7 +578,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                             ))}
                                         </select>
                                         <select
-                                            value={lead.leadType || 'direct'}
+                                            value={company?.leadType || 'direct'}
                                             onChange={(e) => handleLeadTypeChange(e.target.value)}
                                             className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
                                             aria-label="Lead type"
@@ -515,7 +593,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                     variant="ghost"
                                     size="sm"
                                     className="h-7 text-xs gap-1 text-muted-foreground"
-                                    onClick={() => router.push(`/sales/dashboard/${leadId}`)}
+                                    onClick={() => router.push(`/sales/dashboard/${contactId}`)}
                                 >
                                     <ExternalLink className="w-3 h-3" />
                                     Full Page
@@ -543,47 +621,63 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                         </CardHeader>
                                         <CardContent className="space-y-2.5">
                                             <EditableField
-                                                label="Contact name"
-                                                value={lead.contactName || ''}
+                                                label="First name"
+                                                value={contact.firstName || ''}
                                                 icon={User}
-                                                onSave={(v) => updateField('contactName', v)}
+                                                onSave={(v) => updateContactField('firstName', v)}
+                                                renderDisplay={(val) => (
+                                                    <span>{displayName || 'Add contact name'}</span>
+                                                )}
                                             />
                                             <EditableField
                                                 label="Email"
-                                                value={lead.email || ''}
+                                                value={contact.email || ''}
                                                 icon={Mail}
                                                 type="email"
                                                 linkPrefix="mailto:"
-                                                onSave={(v) => updateField('email', v)}
+                                                onSave={(v) => updateContactField('email', v)}
                                             />
                                             <EditableField
                                                 label="Phone"
-                                                value={lead.contactPhone || ''}
+                                                value={contact.phone || ''}
                                                 icon={Phone}
                                                 type="tel"
                                                 linkPrefix="tel:"
-                                                onSave={(v) => updateField('contactPhone', v)}
+                                                onSave={(v) => updateContactField('phone', v)}
                                             />
                                             <EditableAddressField
-                                                address={lead.address || ''}
-                                                city={lead.city || ''}
-                                                state={lead.state || ''}
-                                                zip={lead.zip || lead.zipCode || ''}
+                                                address={company?.address || ''}
+                                                city={company?.city || ''}
+                                                state={company?.state || ''}
+                                                zip={company?.zip || company?.zipCode || ''}
                                                 onSave={async (fields) => {
-                                                    if (!leadId) return;
-                                                    await updateDoc(doc(db, 'leads', leadId), {
+                                                    if (!companyId) return;
+                                                    await updateDoc(doc(db, 'companies', companyId), {
                                                         address: fields.address,
                                                         city: fields.city,
                                                         state: fields.state,
                                                         zip: fields.zip,
                                                         updatedAt: new Date(),
                                                     });
+                                                    // Re-fetch company
+                                                    const compSnap = await getDoc(doc(db, 'companies', companyId));
+                                                    if (compSnap.exists()) {
+                                                        const compData = compSnap.data();
+                                                        setCompany({
+                                                            id: compSnap.id,
+                                                            ...compData,
+                                                            createdAt: compData.createdAt?.toDate ? compData.createdAt.toDate() : new Date(compData.createdAt || Date.now()),
+                                                            preferredAuditTimes: compData.preferredAuditTimes?.map((t: any) =>
+                                                                t?.toDate ? t.toDate() : new Date(t)
+                                                            ),
+                                                        } as Lead);
+                                                    }
                                                 }}
                                             />
                                         </CardContent>
                                     </Card>
 
-                                    {/* Notes — Editable */}
+                                    {/* Notes — Editable (stored on contact) */}
                                     <Card>
                                         <CardHeader className="py-3 flex flex-row items-center justify-between">
                                             <CardTitle className="text-sm flex items-center gap-2">
@@ -591,7 +685,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                             </CardTitle>
                                             {!notesEditing && (
                                                 <Button variant="ghost" size="sm" className="h-6 text-xs gap-1"
-                                                    onClick={() => { setNotesDraft(lead.notes || ''); setNotesEditing(true); }}>
+                                                    onClick={() => { setNotesDraft(contact.notes || ''); setNotesEditing(true); }}>
                                                     <Pencil className="w-3 h-3" /> Edit
                                                 </Button>
                                             )}
@@ -617,65 +711,65 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <p className={`text-sm ${lead.notes ? '' : 'text-muted-foreground italic'}`}>
-                                                    {lead.notes || 'No notes yet — click Edit to add'}
+                                                <p className={`text-sm ${contact.notes ? '' : 'text-muted-foreground italic'}`}>
+                                                    {contact.notes || 'No notes yet — click Edit to add'}
                                                 </p>
                                             )}
                                         </CardContent>
                                     </Card>
 
-                                    {/* Calculator Estimate — shown when lead came from calculator */}
-                                    {lead.calculatorData && (
+                                    {/* Calculator Estimate — shown when company came from calculator */}
+                                    {company?.calculatorData && (
                                         <Card className="border-sky-200 bg-sky-50/30">
                                             <CardHeader className="py-3 flex flex-row items-center justify-between">
                                                 <CardTitle className="text-sm flex items-center gap-2">
                                                     <Calculator className="w-4 h-4 text-sky-600" /> Calculator Estimate
                                                 </CardTitle>
                                                 <Badge variant="outline" className="text-[10px] border-sky-300 text-sky-700">
-                                                    {lead.source === 'calculator_client' ? 'Client Calculator' : 'Calculator'}
+                                                    {company.source === 'calculator_client' ? 'Client Calculator' : 'Calculator'}
                                                 </Badge>
                                             </CardHeader>
                                             <CardContent>
                                                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                                                    {lead.facilityType && (
+                                                    {company.facilityType && (
                                                         <div>
                                                             <p className="text-[10px] uppercase text-muted-foreground">Facility Type</p>
-                                                            <p className="font-medium">{FACILITY_TYPE_LABELS[lead.facilityType] || lead.facilityType}</p>
+                                                            <p className="font-medium">{FACILITY_TYPE_LABELS[company.facilityType] || company.facilityType}</p>
                                                         </div>
                                                     )}
-                                                    {(lead.sqft || lead.sqft === '0') && (
+                                                    {(company.sqft || company.sqft === '0') && (
                                                         <div>
                                                             <p className="text-[10px] uppercase text-muted-foreground">Square Footage</p>
-                                                            <p className="font-medium">{Number(lead.sqft).toLocaleString()} sqft</p>
+                                                            <p className="font-medium">{Number(company.sqft).toLocaleString()} sqft</p>
                                                         </div>
                                                     )}
-                                                    {lead.calculatorData.daysPerWeek && (
+                                                    {company.calculatorData.daysPerWeek && (
                                                         <div>
                                                             <p className="text-[10px] uppercase text-muted-foreground">Frequency</p>
-                                                            <p className="font-medium">{lead.calculatorData.daysPerWeek}x / week</p>
+                                                            <p className="font-medium">{company.calculatorData.daysPerWeek}x / week</p>
                                                         </div>
                                                     )}
-                                                    {lead.state && (
+                                                    {company.state && (
                                                         <div>
                                                             <p className="text-[10px] uppercase text-muted-foreground">State</p>
-                                                            <p className="font-medium">{lead.state}</p>
+                                                            <p className="font-medium">{company.state}</p>
                                                         </div>
                                                     )}
                                                 </div>
-                                                {(lead.calculatorData.monthlyLow || lead.calculatorData.monthlyEstimate) && (
+                                                {(company.calculatorData.monthlyLow || company.calculatorData.monthlyEstimate) && (
                                                     <div className="bg-card rounded-lg border p-3 text-center">
                                                         <p className="text-[10px] uppercase text-muted-foreground mb-1">Monthly Estimate</p>
-                                                        {lead.calculatorData.monthlyLow ? (
+                                                        {company.calculatorData.monthlyLow ? (
                                                             <p className="text-lg font-bold text-sky-700">
-                                                                {fmt(lead.calculatorData.monthlyLow)} – {fmt(lead.calculatorData.monthlyHigh!)}
+                                                                {fmt(company.calculatorData.monthlyLow)} – {fmt(company.calculatorData.monthlyHigh!)}
                                                             </p>
                                                         ) : (
                                                             <p className="text-lg font-bold text-sky-700">
-                                                                ~{fmt(lead.calculatorData.monthlyEstimate!)}/mo
+                                                                ~{fmt(company.calculatorData.monthlyEstimate!)}/mo
                                                             </p>
                                                         )}
-                                                        {lead.calculatorData.monthlyEstimate && (
-                                                            <p className="text-xs text-muted-foreground">Mid-point: {fmt(lead.calculatorData.monthlyEstimate)}/mo</p>
+                                                        {company.calculatorData.monthlyEstimate && (
+                                                            <p className="text-xs text-muted-foreground">Mid-point: {fmt(company.calculatorData.monthlyEstimate)}/mo</p>
                                                         )}
                                                     </div>
                                                 )}
@@ -684,13 +778,13 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                                     size="sm"
                                                     className="w-full mt-3 h-8 text-xs gap-1.5 border-sky-300 text-sky-700 hover:bg-sky-100"
                                                     onClick={() => {
-                                                        if (!leadId) return;
+                                                        if (!companyId) return;
                                                         const params = new URLSearchParams({
                                                             new: 'true',
-                                                            leadId,
-                                                            ...(lead.calculatorData?.monthlyEstimate ? { rate: String(lead.calculatorData.monthlyEstimate) } : {}),
-                                                            ...(lead.facilityType ? { facilityType: lead.facilityType } : {}),
-                                                            ...(lead.sqft ? { sqft: String(lead.sqft) } : {}),
+                                                            leadId: companyId,
+                                                            ...(company.calculatorData?.monthlyEstimate ? { rate: String(company.calculatorData.monthlyEstimate) } : {}),
+                                                            ...(company.facilityType ? { facilityType: company.facilityType } : {}),
+                                                            ...(company.sqft ? { sqft: String(company.sqft) } : {}),
                                                         });
                                                         router.push(`/sales/quotes?${params.toString()}`);
                                                     }}
@@ -711,7 +805,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                                 )}
                                             </CardTitle>
                                             <Button variant="outline" size="sm" className="h-6 text-xs gap-1"
-                                                onClick={() => router.push(`/sales/quotes?new=true&leadId=${leadId}`)}>
+                                                onClick={() => router.push(`/sales/quotes?new=true&leadId=${companyId}`)}>
                                                 <Plus className="w-3 h-3" /> Create Quote
                                             </Button>
                                         </CardHeader>
@@ -760,7 +854,8 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
 
                                     {/* Meta */}
                                     <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-                                        <p><span className="font-medium">ID:</span> {lead.id}</p>
+                                        <p><span className="font-medium">Contact ID:</span> {contact.id}</p>
+                                        {companyId && <p><span className="font-medium">Company ID:</span> {companyId}</p>}
                                         {createdDate && <p><span className="font-medium">Created:</span> {format(createdDate, 'MMM d, yyyy h:mm a')}</p>}
                                     </div>
                                 </TabsContent>
@@ -773,9 +868,9 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent className="space-y-3">
-                                            {lead.preferredAuditTimes && lead.preferredAuditTimes.length > 0 ? (
+                                            {company?.preferredAuditTimes && company.preferredAuditTimes.length > 0 ? (
                                                 <div className="space-y-2">
-                                                    {lead.preferredAuditTimes.map((time, idx) => {
+                                                    {company.preferredAuditTimes.map((time, idx) => {
                                                         const d = toDate(time);
                                                         return d ? (
                                                             <div key={idx} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg text-sm">
@@ -792,10 +887,10 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                             ) : (
                                                 <p className="text-xs text-muted-foreground">No audit times scheduled</p>
                                             )}
-                                            {lead.serviceInterest && (
+                                            {company?.serviceInterest && (
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
-                                                    <span className="capitalize">{lead.serviceInterest.replace(/_/g, ' ')}</span>
+                                                    <span className="capitalize">{company.serviceInterest.replace(/_/g, ' ')}</span>
                                                 </div>
                                             )}
                                         </CardContent>
@@ -817,7 +912,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                 </TabsContent>
 
                                 <TabsContent value="attribution" className="space-y-4">
-                                    {lead.attribution && (lead.attribution.source || lead.attribution.medium || lead.attribution.campaign) ? (
+                                    {company?.attribution && (company.attribution.source || company.attribution.medium || company.attribution.campaign) ? (
                                         <Card>
                                             <CardHeader className="py-3">
                                                 <CardTitle className="text-sm flex items-center gap-2">
@@ -826,28 +921,28 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                             </CardHeader>
                                             <CardContent>
                                                 <div className="grid grid-cols-2 gap-3 text-sm">
-                                                    {lead.attribution.source && (
+                                                    {company.attribution.source && (
                                                         <div>
                                                             <p className="text-[10px] uppercase text-muted-foreground">Source</p>
-                                                            <p className="font-medium capitalize">{lead.attribution.source}</p>
+                                                            <p className="font-medium capitalize">{company.attribution.source}</p>
                                                         </div>
                                                     )}
-                                                    {lead.attribution.medium && (
+                                                    {company.attribution.medium && (
                                                         <div>
                                                             <p className="text-[10px] uppercase text-muted-foreground">Medium</p>
-                                                            <p className="capitalize">{lead.attribution.medium}</p>
+                                                            <p className="capitalize">{company.attribution.medium}</p>
                                                         </div>
                                                     )}
-                                                    {lead.attribution.campaign && (
+                                                    {company.attribution.campaign && (
                                                         <div className="col-span-2">
                                                             <p className="text-[10px] uppercase text-muted-foreground">Campaign</p>
-                                                            <p>{lead.attribution.campaign}</p>
+                                                            <p>{company.attribution.campaign}</p>
                                                         </div>
                                                     )}
-                                                    {lead.attribution.landingPage && (
+                                                    {company.attribution.landingPage && (
                                                         <div className="col-span-2">
                                                             <p className="text-[10px] uppercase text-muted-foreground">Landing Page</p>
-                                                            <p className="text-xs text-primary break-all">{lead.attribution.landingPage}</p>
+                                                            <p className="text-xs text-primary break-all">{company.attribution.landingPage}</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -863,7 +958,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
                                 </TabsContent>
 
                                 <TabsContent value="activity">
-                                    <LeadActivityFeed leadId={leadId!} />
+                                    <LeadActivityFeed leadId={companyId || contactId!} />
                                 </TabsContent>
                             </Tabs>
                         </div>
@@ -872,13 +967,13 @@ export default function LeadDetailDrawer({ leadId, open, onClose }: LeadDetailDr
             </SheetContent>
         </Sheet>
 
-            {lead && (
+            {contact && (
                 <BookCallDialog
                     open={bookCallOpen}
                     onClose={() => setBookCallOpen(false)}
-                    entityId={lead.id!}
-                    entityName={(lead as any).companyName || lead.contactName || 'Lead'}
-                    entityEmail={lead.email || ''}
+                    entityId={companyId || contact.id!}
+                    entityName={businessName || displayName || 'Lead'}
+                    entityEmail={contact.email || ''}
                     entityType="lead"
                     onBooked={(booking) => {
                         console.log('Discovery call booked:', booking);

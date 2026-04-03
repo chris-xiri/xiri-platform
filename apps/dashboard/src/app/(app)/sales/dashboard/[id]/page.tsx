@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { useCallback } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { db } from '@/lib/firebase';
 import { functions } from '@/lib/firebase';
@@ -106,6 +107,13 @@ export default function LeadDetailPage() {
     const [referralDoc, setReferralDoc] = useState<{ id: string; status: string; paymentInfo?: any; referrerName?: string; referrerEmail?: string; referrerPhone?: string } | null>(null);
     const [updatingReferralStatus, setUpdatingReferralStatus] = useState(false);
 
+    // ─── Sequence picker state ──────────────────────────────
+    const [availableSequences, setAvailableSequences] = useState<{ id: string; name: string; description?: string; steps: any[]; leadTypes?: string[] }[]>([]);
+    const [selectedSequenceId, setSelectedSequenceId] = useState<string>('');
+    const [contactSequenceHistory, setContactSequenceHistory] = useState<Record<string, any>>({});
+    const [loadingSequences, setLoadingSequences] = useState(false);
+    const [primaryContactId, setPrimaryContactId] = useState<string | null>(null);
+
     const fetchLead = async () => {
         try {
             const leadDoc = await getDoc(doc(db, 'leads', leadId));
@@ -205,7 +213,37 @@ export default function LeadDetailPage() {
         }
     };
 
+    // ─── Fetch available sequences + contact history ─────────
+    const fetchSequencesAndHistory = useCallback(async () => {
+        setLoadingSequences(true);
+        try {
+            const seqSnap = await getDocs(collection(db, 'sequences'));
+            const seqs = seqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+            setAvailableSequences(seqs);
+
+            // Fetch primary contact to get sequenceHistory
+            const contactsQ = query(
+                collection(db, 'contacts'),
+                where('companyId', '==', leadId),
+                where('isPrimary', '==', true)
+            );
+            const contactSnap = await getDocs(contactsQ);
+            if (!contactSnap.empty) {
+                const contactData = contactSnap.docs[0].data();
+                setPrimaryContactId(contactSnap.docs[0].id);
+                setContactSequenceHistory(contactData.sequenceHistory || {});
+            } else {
+                setContactSequenceHistory({});
+            }
+        } catch (err) {
+            console.error('Error fetching sequences:', err);
+        } finally {
+            setLoadingSequences(false);
+        }
+    }, [leadId]);
+
     const handleStartSequence = async () => {
+        if (!selectedSequenceId) return;
         setStartingSequence(true);
         setSequenceMessage(null);
         try {
@@ -215,11 +253,16 @@ export default function LeadDetailPage() {
             }
 
             const startSequence = httpsCallable(functions, 'startLeadSequence');
-            const result = await startSequence({ leadId });
+            const result = await startSequence({
+                leadId,
+                contactId: primaryContactId || undefined,
+                sequenceId: selectedSequenceId,
+            });
             const data = result.data as any;
 
             setSequenceMessage({ type: 'success', text: data.message });
             setShowSequenceDialog(false);
+            setSelectedSequenceId('');
             await fetchLead(); // Refresh lead data
         } catch (error: any) {
             const message = error?.message || 'Failed to start sequence';
@@ -306,7 +349,7 @@ export default function LeadDetailPage() {
 
                         {/* Start Sequence CTA */}
                         <Button
-                            onClick={() => setShowSequenceDialog(true)}
+                            onClick={() => { setShowSequenceDialog(true); fetchSequencesAndHistory(); }}
                             disabled={!canStartSequence || !hasEmail}
                             className="gap-2"
                             variant={canStartSequence && hasEmail ? "default" : "outline"}
@@ -680,7 +723,7 @@ export default function LeadDetailPage() {
             </div>
 
             {/* Start Sequence Confirmation Dialog */}
-            <AlertDialog open={showSequenceDialog} onOpenChange={setShowSequenceDialog}>
+            <AlertDialog open={showSequenceDialog} onOpenChange={(open: boolean) => { setShowSequenceDialog(open); if (!open) setSelectedSequenceId(''); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2">
@@ -690,33 +733,112 @@ export default function LeadDetailPage() {
                         <AlertDialogDescription asChild>
                             <div className="space-y-3">
                                 <p>
-                                    This will start an automated email drip campaign for <strong>{lead.businessName}</strong>.
+                                    Choose a sequence for <strong>{lead.businessName}</strong> and start an automated email drip campaign.
                                 </p>
-                                <div className="bg-muted p-3 rounded-lg space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Lead Type:</span>
-                                        <Badge variant="outline" className={typeConfig.color}>{typeConfig.label}</Badge>
+
+                                {loadingSequences ? (
+                                    <div className="flex items-center justify-center py-6">
+                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Sequence:</span>
-                                        <span className="font-medium">{typeConfig.sequence}</span>
+                                ) : availableSequences.length === 0 ? (
+                                    <div className="text-center py-6 text-sm text-muted-foreground">
+                                        <Rocket className="w-7 h-7 mx-auto mb-2 opacity-30" />
+                                        No sequences found.{' '}
+                                        <a href="/admin/email-templates" className="text-primary hover:underline font-medium">Create one</a>.
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Recipient:</span>
-                                        <span className="font-medium">{lead.email}</span>
-                                    </div>
-                                </div>
-                                {lead.status !== 'qualified' && (
-                                    <p className="text-xs text-amber-600">
-                                        This will also update the lead status to <strong>Qualified</strong>.
-                                    </p>
+                                ) : (
+                                    <>
+                                        {/* Sequence selector */}
+                                        <div>
+                                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Select Sequence</label>
+                                            <Select value={selectedSequenceId} onValueChange={setSelectedSequenceId}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Choose a sequence..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {availableSequences.map(seq => {
+                                                        const alreadyEnrolled = !!contactSequenceHistory[seq.id];
+                                                        return (
+                                                            <SelectItem
+                                                                key={seq.id}
+                                                                value={seq.id}
+                                                                disabled={alreadyEnrolled}
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    <span>{seq.name}</span>
+                                                                    <span className="text-[10px] text-muted-foreground">
+                                                                        ({seq.steps?.length || 0} emails)
+                                                                    </span>
+                                                                    {alreadyEnrolled && (
+                                                                        <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-600 border-amber-200 ml-1">
+                                                                            Already enrolled
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                            </SelectItem>
+                                                        );
+                                                    })}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Selected sequence details */}
+                                        {selectedSequenceId && (() => {
+                                            const seq = availableSequences.find(s => s.id === selectedSequenceId);
+                                            if (!seq) return null;
+                                            const dayList = seq.steps?.map((s: any) => `Day ${s.dayOffset}`).join(', ') || '';
+                                            return (
+                                                <div className="bg-muted p-3 rounded-lg space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted-foreground">Sequence:</span>
+                                                        <span className="font-medium">{seq.name}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted-foreground">Steps:</span>
+                                                        <span className="font-medium">{seq.steps?.length || 0} emails</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted-foreground">Schedule:</span>
+                                                        <span className="font-medium">{dayList}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted-foreground">Recipient:</span>
+                                                        <span className="font-medium">{lead.email}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {lead.status !== 'qualified' && (
+                                            <p className="text-xs text-amber-600">
+                                                This will also update the lead status to <strong>Qualified</strong>.
+                                            </p>
+                                        )}
+
+                                        {/* Enrollment history */}
+                                        {Object.keys(contactSequenceHistory).length > 0 && (
+                                            <div className="border-t pt-3">
+                                                <p className="text-xs font-medium text-muted-foreground mb-2">Previous Enrollments</p>
+                                                <div className="space-y-1">
+                                                    {Object.entries(contactSequenceHistory).map(([seqId, entry]: [string, any]) => (
+                                                        <div key={seqId} className="flex items-center justify-between text-xs bg-muted/50 px-2 py-1.5 rounded">
+                                                            <span className="font-medium">{entry.sequenceName || seqId}</span>
+                                                            <Badge variant="outline" className="text-[9px]">
+                                                                {entry.status === 'in_progress' ? 'Active' : entry.status || 'Enrolled'}
+                                                            </Badge>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={startingSequence}>Cancel</AlertDialogCancel>
-                        <Button onClick={handleStartSequence} disabled={startingSequence} className="gap-2">
+                        <Button onClick={handleStartSequence} disabled={startingSequence || !selectedSequenceId} className="gap-2">
                             {startingSequence ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (

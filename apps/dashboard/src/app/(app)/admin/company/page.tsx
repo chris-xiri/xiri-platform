@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Building2, Save, CheckCircle, Loader2, Calculator } from 'lucide-react';
+import { Building2, Save, CheckCircle, Loader2, Calculator, Mail } from 'lucide-react';
 
 export default function CompanySettingsPage() {
     const { profile } = useAuth();
@@ -20,6 +20,17 @@ export default function CompanySettingsPage() {
     const [saved, setSaved] = useState(false);
     const [data, setData] = useState<Record<string, any>>({});
     const [companyId, setCompanyId] = useState<string | null>(null);
+
+    // Email signature settings (stored in settings/emailSignature)
+    const [sigData, setSigData] = useState({
+        closing: 'Best',
+        name: 'Chris Leung',
+        title: 'XIRI Facility Solutions',
+        email: 'chris@xiri.ai',
+        phone: '516-399-0350',
+    });
+    const [sigSaving, setSigSaving] = useState(false);
+    const [sigSaved, setSigSaved] = useState(false);
 
     useEffect(() => {
         async function load() {
@@ -54,6 +65,16 @@ export default function CompanySettingsPage() {
                 console.error('Failed to load company settings:', err);
             }
             setLoading(false);
+
+            // Load email signature settings
+            try {
+                const sigSnap = await getDoc(doc(db, 'settings', 'emailSignature'));
+                if (sigSnap.exists()) {
+                    setSigData(prev => ({ ...prev, ...sigSnap.data() }));
+                }
+            } catch (err) {
+                console.error('Failed to load email signature settings:', err);
+            }
         }
         load();
     }, [profile]);
@@ -90,6 +111,27 @@ export default function CompanySettingsPage() {
             alert('Failed to save. Check console for details.');
         }
         setSaving(false);
+    };
+
+    const updateSig = (key: string, value: string) => {
+        setSigData(prev => ({ ...prev, [key]: value }));
+        setSigSaved(false);
+    };
+
+    const handleSaveSig = async () => {
+        setSigSaving(true);
+        try {
+            await setDoc(doc(db, 'settings', 'emailSignature'), {
+                ...sigData,
+                updatedAt: serverTimestamp(),
+            }, { merge: true });
+            setSigSaved(true);
+            setTimeout(() => setSigSaved(false), 3000);
+        } catch (err) {
+            console.error('Failed to save email signature:', err);
+            alert('Failed to save. Check console for details.');
+        }
+        setSigSaving(false);
     };
 
     const calcDefaults = data.calculatorDefaults || {};
@@ -376,6 +418,96 @@ export default function CompanySettingsPage() {
                             />
                         </div>
                     )}
+                </CardContent>
+            </Card>
+
+            {/* Email Signature Settings */}
+            <Card>
+                <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="text-sm flex items-center gap-2">
+                                <Mail className="w-4 h-4" /> Email Signature
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                                Auto-appended to all outgoing emails via Resend
+                            </CardDescription>
+                        </div>
+                        <Button size="sm" onClick={handleSaveSig} disabled={sigSaving} className="gap-2">
+                            {sigSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : sigSaved ? <CheckCircle className="w-3 h-3" /> : <Save className="w-3 h-3" />}
+                            {sigSaving ? 'Saving...' : sigSaved ? 'Saved!' : 'Save Signature'}
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <Label className="text-xs">Closing</Label>
+                            <Input
+                                value={sigData.closing}
+                                onChange={e => updateSig('closing', e.target.value)}
+                                placeholder="e.g. Best, Regards, Thanks"
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs">Full Name</Label>
+                            <Input
+                                value={sigData.name}
+                                onChange={e => updateSig('name', e.target.value)}
+                                className="mt-1"
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <div>
+                            <Label className="text-xs">Title / Company</Label>
+                            <Input
+                                value={sigData.title}
+                                onChange={e => updateSig('title', e.target.value)}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs">Email</Label>
+                            <Input
+                                value={sigData.email}
+                                onChange={e => updateSig('email', e.target.value)}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs">Phone</Label>
+                            <Input
+                                value={sigData.phone}
+                                onChange={e => updateSig('phone', e.target.value)}
+                                className="mt-1"
+                            />
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Live Preview */}
+                    <div>
+                        <Label className="text-xs text-muted-foreground">Preview</Label>
+                        <div
+                            className="mt-2 p-4 rounded-lg border bg-white text-sm"
+                            dangerouslySetInnerHTML={{
+                                __html: `
+                                    <div style="font-size: 14px; color: #1e293b; line-height: 1.6;">
+                                        <p style="margin: 0;">${sigData.closing},</p>
+                                        <p style="margin: 4px 0 0 0; font-weight: 600;">${sigData.name}  |  ${sigData.title}</p>
+                                        <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">
+                                            <a href="mailto:${sigData.email}" style="color: #64748b; text-decoration: none;">${sigData.email}</a>
+                                            &nbsp;|&nbsp;
+                                            <a href="tel:${sigData.phone.replace(/\D/g, '')}" style="color: #64748b; text-decoration: none;">${sigData.phone}</a>
+                                        </p>
+                                    </div>
+                                `,
+                            }}
+                        />
+                    </div>
                 </CardContent>
             </Card>
         </div>

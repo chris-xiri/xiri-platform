@@ -2,6 +2,7 @@ import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import { verifyDocument, verifyAcord25 } from "../agents/documentVerifier";
+import { buildSimpleFooter, buildEmailHeader, buildEmailSignature } from "../utils/emailUtils";
 
 const db = admin.firestore();
 
@@ -161,6 +162,7 @@ async function sendFlagNotification(vendorId: string, vendorName: string, flags:
             to: 'chris@xiri.ai',
             subject: `⚠️ ACORD 25 Flagged: ${vendorName}`,
             html: `
+            ${buildEmailHeader()}
             <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px;">
                 <h2 style="color: #b45309;">⚠️ ACORD 25 Flagged for Review</h2>
                 <p><strong>${vendorName}</strong>'s ACORD 25 has been flagged by AI verification.</p>
@@ -179,6 +181,9 @@ async function sendFlagNotification(vendorId: string, vendorName: string, flags:
                 <p style="margin-top: 32px; font-size: 12px; color: #94a3b8;">
                     Vendor ID: ${vendorId}
                 </p>
+
+                ${buildEmailSignature()}
+                ${buildSimpleFooter()}
             </div>`
         });
 

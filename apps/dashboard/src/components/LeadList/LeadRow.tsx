@@ -153,13 +153,36 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
         }
     };
 
-    const handleStartSequence = async (e: React.MouseEvent) => {
+    // ─── Sequence picker state ──────────────────────────────
+    const [showSequenceDialog, setShowSequenceDialog] = useState(false);
+    const [availableSequences, setAvailableSequences] = useState<{id:string;name:string;description?:string;steps:any[];leadTypes?:string[]}[]>([]);
+    const [selectedSequenceId, setSelectedSequenceId] = useState('');
+    const [loadingSequencesList, setLoadingSequencesList] = useState(false);
+
+    const openSequenceDialog = async (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!lead.email || !lead.companyId) return;
+        setShowSequenceDialog(true);
+        setLoadingSequencesList(true);
+        try {
+            const seqSnap = await getDocs(collection(db, 'sequences'));
+            setAvailableSequences(seqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+        } catch (err) {
+            console.error('Error loading sequences:', err);
+        } finally {
+            setLoadingSequencesList(false);
+        }
+    };
+
+    const handleStartSequence = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!lead.email || !lead.companyId || !selectedSequenceId) return;
         setStartingSequence(true);
         try {
             const startSequence = httpsCallable(functions, 'startLeadSequence');
-            await startSequence({ leadId: lead.companyId, contactId: lead.id });
+            await startSequence({ leadId: lead.companyId, contactId: lead.id, sequenceId: selectedSequenceId });
+            setShowSequenceDialog(false);
+            setSelectedSequenceId('');
         } catch (err) {
             console.error('Failed to start sequence:', err);
         } finally {
@@ -405,7 +428,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                                         size="sm"
                                         className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                                         disabled={startingSequence}
-                                        onClick={handleStartSequence}
+                                        onClick={openSequenceDialog}
                                     >
                                         {startingSequence
                                             ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -520,6 +543,89 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                         <Button onClick={handleSendEmail} disabled={sendingEmail || !selectedTemplateId} className="gap-2">
                             {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                             {sendingEmail ? 'Sending...' : 'Send Email'}
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* ─── Sequence Picker Dialog ─── */}
+            <AlertDialog open={showSequenceDialog} onOpenChange={(open: boolean) => { setShowSequenceDialog(open); if (!open) setSelectedSequenceId(''); }}>
+                <AlertDialogContent className="max-w-md" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                            <Rocket className="w-5 h-5" />
+                            Start Email Sequence
+                        </AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                            <div className="space-y-3">
+                                <p className="text-sm">
+                                    Choose a sequence for <strong>{fullName}</strong> ({lead.email}).
+                                </p>
+
+                                {loadingSequencesList ? (
+                                    <div className="flex items-center justify-center py-6">
+                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                                    </div>
+                                ) : availableSequences.length === 0 ? (
+                                    <div className="text-center py-6 text-sm text-muted-foreground">
+                                        <Rocket className="w-7 h-7 mx-auto mb-2 opacity-30" />
+                                        No sequences found.{' '}
+                                        <a href="/admin/email-templates" className="text-primary hover:underline font-medium">Create one</a>.
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Select Sequence</label>
+                                            <Select value={selectedSequenceId} onValueChange={setSelectedSequenceId}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Choose a sequence..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {availableSequences.map(seq => (
+                                                        <SelectItem key={seq.id} value={seq.id}>
+                                                            <div className="flex items-center gap-2">
+                                                                <span>{seq.name}</span>
+                                                                <span className="text-[10px] text-muted-foreground">
+                                                                    ({seq.steps?.length || 0} emails)
+                                                                </span>
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {selectedSequenceId && (() => {
+                                            const seq = availableSequences.find(s => s.id === selectedSequenceId);
+                                            if (!seq) return null;
+                                            const dayList = seq.steps?.map((s: any) => `Day ${s.dayOffset}`).join(', ') || '';
+                                            return (
+                                                <div className="bg-muted p-3 rounded-lg space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted-foreground">Steps:</span>
+                                                        <span className="font-medium">{seq.steps?.length || 0} emails</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted-foreground">Schedule:</span>
+                                                        <span className="font-medium">{dayList}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted-foreground">Recipient:</span>
+                                                        <span className="font-medium">{lead.email}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+                                    </>
+                                )}
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={startingSequence}>Cancel</AlertDialogCancel>
+                        <Button onClick={handleStartSequence} disabled={startingSequence || !selectedSequenceId} className="gap-2">
+                            {startingSequence ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
+                            {startingSequence ? 'Starting...' : 'Start Sequence'}
                         </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>

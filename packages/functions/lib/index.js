@@ -128,7 +128,16 @@ var init_queueUtils = __esm({
 // src/utils/emailUtils.ts
 var emailUtils_exports = {};
 __export(emailUtils_exports, {
+  COMPANY_ADDRESS: () => COMPANY_ADDRESS,
+  COMPANY_NAME: () => COMPANY_NAME,
+  LOGO_URL: () => LOGO_URL,
+  SERVICE_AREA: () => SERVICE_AREA,
+  buildEmailHeader: () => buildEmailHeader,
+  buildEmailSignature: () => buildEmailSignature,
+  buildSimpleFooter: () => buildSimpleFooter,
+  clearSignatureCache: () => clearSignatureCache,
   generatePersonalizedEmail: () => generatePersonalizedEmail,
+  getEmailSignatureConfig: () => getEmailSignatureConfig,
   getTemplate: () => getTemplate,
   parseAddress: () => parseAddress,
   replaceVariables: () => replaceVariables,
@@ -302,12 +311,61 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
     console.error("Error sending email:", error12);
   }
 }
+function buildEmailHeader() {
+  return `
+<div style="text-align: center; padding: 24px 0 16px;">
+    <img src="${LOGO_URL}" alt="XIRI Facility Solutions" style="height: 80px;" />
+</div>`;
+}
+async function getEmailSignatureConfig() {
+  if (_signatureCache) return _signatureCache;
+  try {
+    const snap = await db3.collection("settings").doc("emailSignature").get();
+    if (snap.exists) {
+      _signatureCache = { ...DEFAULT_SIGNATURE, ...snap.data() };
+    } else {
+      _signatureCache = DEFAULT_SIGNATURE;
+    }
+  } catch (err) {
+    console.warn("\u26A0\uFE0F Failed to fetch email signature from Firestore, using fallback:", err);
+    _signatureCache = DEFAULT_SIGNATURE;
+  }
+  return _signatureCache;
+}
+function clearSignatureCache() {
+  _signatureCache = null;
+}
+function buildEmailSignature(config2) {
+  const c = config2 || DEFAULT_SIGNATURE;
+  return `
+<div style="margin-top: 28px; font-size: 14px; color: #1e293b; line-height: 1.6;">
+    <p style="margin: 0;">${c.closing},</p>
+    <p style="margin: 4px 0 0 0; font-weight: 600;">${c.name}  |  ${c.title}</p>
+    <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">
+        <a href="mailto:${c.email}" style="color: #64748b; text-decoration: none;">${c.email}</a>
+        &nbsp;|&nbsp;
+        <a href="tel:${c.phone.replace(/\D/g, "")}" style="color: #64748b; text-decoration: none;">${c.phone}</a>
+    </p>
+</div>`;
+}
+function buildSimpleFooter(extraLine) {
+  return `
+<div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+    <p style="margin: 0;">${SERVICE_AREA}</p>
+    <p style="margin: 4px 0 0 0;">${COMPANY_NAME} \xB7 ${COMPANY_ADDRESS}</p>
+    ${extraLine ? `<p style="margin: 4px 0 0 0;">${extraLine}</p>` : ""}
+    <p style="margin: 8px 0 0 0;">
+        <a href="mailto:chris@xiri.ai" style="color: #64748b; text-decoration: underline;">Contact Us</a>
+    </p>
+</div>`;
+}
 function buildEmailFooter(entityId, entityType) {
   if (!entityId || !entityType) return "";
   const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${entityId}&type=${entityType}`;
   return `
 <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
-    <p style="margin: 0;">XIRI Group LLC \xB7 418 Broadway, Ste N \xB7 Albany, NY 12207</p>
+    <p style="margin: 0;">${SERVICE_AREA}</p>
+    <p style="margin: 4px 0 0 0;">${COMPANY_NAME} \xB7 ${COMPANY_ADDRESS}</p>
     <p style="margin: 8px 0 0 0;">
         <a href="${unsubscribeUrl}" style="color: #64748b; text-decoration: underline;">Unsubscribe</a>
         &nbsp;\xB7&nbsp;
@@ -318,8 +376,11 @@ function buildEmailFooter(entityId, entityType) {
 async function sendEmail(to, subject, html, attachments, from, vendorId, templateId, entityType) {
   try {
     const entityId = vendorId;
+    const header = buildEmailHeader();
+    const sigConfig = await getEmailSignatureConfig();
+    const signature = buildEmailSignature(sigConfig);
     const footer = buildEmailFooter(entityId, entityType);
-    const htmlWithFooter = footer ? html + footer : html;
+    const htmlWithFooter = header + html + signature + (footer || "");
     const tags = [];
     if (vendorId) {
       const tagName = entityType === "lead" ? "leadId" : "vendorId";
@@ -356,12 +417,15 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
 async function sendBatchEmails(emails) {
   if (emails.length === 0) return { success: true, ids: [] };
   try {
+    const header = buildEmailHeader();
+    const sigConfig = await getEmailSignatureConfig();
+    const signature = buildEmailSignature(sigConfig);
     const payload = emails.map((e) => ({
       from: e.from || "XIRI Facility Solutions <reports@xiri.ai>",
       replyTo: e.replyTo || "chris@xiri.ai",
       to: e.to,
       subject: e.subject,
-      html: e.html
+      html: header + e.html + signature
     }));
     const { data, error: error12 } = await resend.batch.send(payload);
     if (error12) {
@@ -376,7 +440,7 @@ async function sendBatchEmails(emails) {
     return { success: false, error: err.message };
   }
 }
-var admin5, import_generative_ai2, import_resend, db3, genAI, resend, FUNCTIONS_BASE_URL;
+var admin5, import_generative_ai2, import_resend, db3, genAI, resend, FUNCTIONS_BASE_URL, COMPANY_NAME, COMPANY_ADDRESS, SERVICE_AREA, LOGO_URL, DEFAULT_SIGNATURE, _signatureCache;
 var init_emailUtils = __esm({
   "src/utils/emailUtils.ts"() {
     "use strict";
@@ -388,6 +452,18 @@ var init_emailUtils = __esm({
     genAI = new import_generative_ai2.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     resend = new import_resend.Resend(process.env.RESEND_API_KEY || "re_dummy_key");
     FUNCTIONS_BASE_URL = "https://us-central1-xiri-facility-solutions.cloudfunctions.net";
+    COMPANY_NAME = "XIRI Group LLC";
+    COMPANY_ADDRESS = "418 Broadway, Ste N \xB7 Albany, NY 12207";
+    SERVICE_AREA = "Serving Queens, Nassau & Suffolk Counties";
+    LOGO_URL = "https://xiri.ai/logo-vertical.svg";
+    DEFAULT_SIGNATURE = {
+      closing: "Best",
+      name: "Chris Leung",
+      title: "XIRI Facility Solutions",
+      email: "chris@xiri.ai",
+      phone: "516-399-0350"
+    };
+    _signatureCache = null;
   }
 });
 
@@ -20370,6 +20446,7 @@ Return JSON with valid, reasoning, flags, and extracted fields.`;
 }
 
 // src/triggers/onDocumentUploaded.ts
+init_emailUtils();
 var db5 = admin7.firestore();
 var onDocumentUploaded = (0, import_firestore3.onDocumentUpdated)({
   document: "vendors/{vendorId}",
@@ -20494,6 +20571,7 @@ async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
       to: "chris@xiri.ai",
       subject: `\u26A0\uFE0F ACORD 25 Flagged: ${vendorName}`,
       html: `
+            ${buildEmailHeader()}
             <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px;">
                 <h2 style="color: #b45309;">\u26A0\uFE0F ACORD 25 Flagged for Review</h2>
                 <p><strong>${vendorName}</strong>'s ACORD 25 has been flagged by AI verification.</p>
@@ -20512,6 +20590,9 @@ async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
                 <p style="margin-top: 32px; font-size: 12px; color: #94a3b8;">
                     Vendor ID: ${vendorId}
                 </p>
+
+                ${buildEmailSignature()}
+                ${buildSimpleFooter()}
             </div>`
     });
     logger5.info(`Flag notification sent for vendor ${vendorId}`);
@@ -20897,6 +20978,7 @@ var import_firestore7 = require("firebase-functions/v2/firestore");
 var admin9 = __toESM(require("firebase-admin"));
 var logger7 = __toESM(require("firebase-functions/logger"));
 var import_resend2 = require("resend");
+init_emailUtils();
 if (!admin9.apps.length) {
   admin9.initializeApp();
 }
@@ -20927,6 +21009,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   ].join("<br/>");
   const dashboardLink = `https://app.xiri.ai/supply/crm/${vendorId}`;
   const html = `
+    ${buildEmailHeader()}
     <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px;">
         <h2 style="color: #0c4a6e;">\u{1F3D7}\uFE0F Vendor Onboarding Complete</h2>
         <p><strong>${businessName}</strong> has completed the onboarding form and is ready for compliance review.</p>
@@ -20952,6 +21035,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
         <p style="margin-top: 32px; font-size: 12px; color: #94a3b8;">
             Vendor ID: ${vendorId}
         </p>
+
+        ${buildEmailSignature()}
+        ${buildSimpleFooter()}
     </div>`;
   try {
     const { data, error: error12 } = await resend2.emails.send({
@@ -21080,6 +21166,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (email && email !== "N/A") {
     const isSpanish = lang === "es";
     const vendorHtml = isSpanish ? `
+    ${buildEmailHeader()}
     <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px; color: #1e293b;">
         <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
             <h1 style="color: white; margin: 0; font-size: 22px;">\xA1Recibimos su solicitud!</h1>
@@ -21104,9 +21191,11 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
 
             <p style="font-size: 14px; color: #64748b;">Si tiene alguna pregunta, simplemente responda a este correo.</p>
 
-            <p style="margin-top: 24px;">Saludos cordiales,<br/><strong>Equipo XIRI Facility Solutions</strong></p>
+            ${buildEmailSignature()}
+            ${buildSimpleFooter()}
         </div>
     </div>` : `
+    ${buildEmailHeader()}
     <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px; color: #1e293b;">
         <div style="background: #0c4a6e; padding: 24px 32px; border-radius: 12px 12px 0 0;">
             <h1 style="color: white; margin: 0; font-size: 22px;">We've received your application!</h1>
@@ -21131,7 +21220,8 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
 
             <p style="font-size: 14px; color: #64748b;">If you have any questions, just reply to this email.</p>
 
-            <p style="margin-top: 24px;">Best regards,<br/><strong>XIRI Facility Solutions Team</strong></p>
+            ${buildEmailSignature()}
+            ${buildSimpleFooter()}
         </div>
     </div>`;
     const vendorSubject = isSpanish ? `\u2705 Solicitud recibida \u2014 ${businessName}` : `\u2705 Application received \u2014 ${businessName}`;
@@ -21247,6 +21337,7 @@ var import_https2 = require("firebase-functions/v2/https");
 var admin11 = __toESM(require("firebase-admin"));
 var logger9 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
+init_emailUtils();
 if (!admin11.apps.length) {
   admin11.initializeApp();
 }
@@ -21422,7 +21513,7 @@ function renderPage(title, message, success) {
         <div class="icon">${icon}</div>
         <h1>${title}</h1>
         <p>${message}</p>
-        <div class="footer">XIRI Facility Solutions \xB7 418 Broadway, Ste N \xB7 Albany, NY 12207</div>
+        <div class="footer">${COMPANY_NAME} \xB7 ${COMPANY_ADDRESS}<br>${SERVICE_AREA}</div>
     </div>
 </body>
 </html>`;
@@ -23102,20 +23193,9 @@ async function sendPaymentNotification(referralId, data, type) {
 function wrapEmail(body) {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 20px;">
-        <!-- Logo -->
-        <div style="margin-bottom: 24px;">
-            <img src="https://xiri.ai/logo.png" alt="XIRI" style="height: 32px;" />
-        </div>
-
         ${body}
 
-        <!-- Footer -->
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.6;">
-            <p style="margin: 0;">XIRI Facility Solutions \xB7 418 Broadway, Ste N \xB7 Albany, NY 12207</p>
-            <p style="margin: 8px 0 0 0;">
-                <a href="mailto:chris@xiri.ai" style="color: #64748b; text-decoration: underline;">Contact Us</a>
-            </p>
-        </div>
+        ${buildSimpleFooter()}
     </div>`;
 }
 function payoutStep(num, label, detail, done, current = false) {
@@ -23999,9 +24079,14 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
   if (!leadId) {
     throw new import_https6.HttpsError("invalid-argument", "leadId is required");
   }
-  const leadDoc = await db21.collection("leads").doc(leadId).get();
+  let leadDoc = await db21.collection("companies").doc(leadId).get();
+  let leadCollection = "companies";
   if (!leadDoc.exists) {
-    throw new import_https6.HttpsError("not-found", `Lead ${leadId} not found`);
+    leadDoc = await db21.collection("leads").doc(leadId).get();
+    leadCollection = "leads";
+  }
+  if (!leadDoc.exists) {
+    throw new import_https6.HttpsError("not-found", `Lead/Company ${leadId} not found in companies or leads`);
   }
   const lead = leadDoc.data();
   const businessName = lead.businessName || "Unknown";
@@ -24032,7 +24117,7 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     contactName = lead.contactName || "";
   }
   if (!contactEmail || contactEmail.trim().length === 0) {
-    await db21.collection("leads").doc(leadId).update({
+    await db21.collection(leadCollection).doc(leadId).update({
       outreachStatus: "NEEDS_MANUAL"
     });
     throw new import_https6.HttpsError(
@@ -24108,7 +24193,7 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
       }
     });
   }
-  await db21.collection("leads").doc(leadId).update({
+  await db21.collection(leadCollection).doc(leadId).update({
     status: lead.status === "new" ? "contacted" : lead.status,
     outreachStatus: "PENDING",
     sequenceId,
@@ -24898,6 +24983,7 @@ var DASHBOARD_CORS = [
 ];
 
 // src/functions/auth.ts
+init_emailUtils();
 var adminUpdateAuthUser = (0, import_https9.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
@@ -24965,6 +25051,7 @@ var adminCreateUser = (0, import_https9.onCall)({
         to: email,
         subject: `Welcome to XIRI Dashboard \u2014 Your login credentials`,
         html: `
+                    ${buildEmailHeader()}
                     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px;">
                         <div style="text-align: center; margin-bottom: 32px;">
                             <h1 style="font-size: 24px; font-weight: 700; color: #0f172a; margin: 0;">Welcome to XIRI</h1>
@@ -24996,6 +25083,9 @@ var adminCreateUser = (0, import_https9.onCall)({
                             <a href="https://app.xiri.ai" style="display: inline-block; background: #2563eb; color: white; padding: 12px 32px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none;">Log In Now \u2192</a>
                         </div>
                         <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">Please change your password after first login via Settings.</p>
+
+                        ${buildEmailSignature()}
+                        ${buildSimpleFooter()}
                     </div>
                 `
       });
@@ -26788,6 +26878,7 @@ var import_https13 = require("firebase-functions/v2/https");
 init_emailUtils();
 
 // src/utils/morningReportEmail.ts
+init_emailUtils();
 function buildSubjectLine(data) {
   switch (data.tier) {
     case "green":
@@ -26957,7 +27048,10 @@ function buildMorningReportHtml(data) {
         <!-- Footer -->
         <div style="padding: 16px 24px; text-align: center; border-radius: 0 0 12px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-top: none;">
             <p style="margin: 0; font-size: 11px; color: #94a3b8;">
-                XIRI Facility Solutions &middot; 418 Broadway, Ste N &middot; Albany, NY 12207
+                ${COMPANY_NAME} &middot; ${COMPANY_ADDRESS}
+            </p>
+            <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">
+                ${SERVICE_AREA}
             </p>
             <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">
                 This is an automated report. Reply to this email or contact 

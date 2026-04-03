@@ -2,6 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getAuth } from "firebase-admin/auth";
 import { db } from "../utils/firebase";
 import { DASHBOARD_CORS } from "../utils/cors";
+import { buildSimpleFooter, buildEmailHeader, buildEmailSignature } from "../utils/emailUtils";
 
 /**
  * Admin-only: update a user's email and/or password in Firebase Auth
@@ -96,6 +97,7 @@ export const adminCreateUser = onCall({
                 to: email,
                 subject: `Welcome to XIRI Dashboard — Your login credentials`,
                 html: `
+                    ${buildEmailHeader()}
                     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px;">
                         <div style="text-align: center; margin-bottom: 32px;">
                             <h1 style="font-size: 24px; font-weight: 700; color: #0f172a; margin: 0;">Welcome to XIRI</h1>
@@ -127,6 +129,9 @@ export const adminCreateUser = onCall({
                             <a href="https://app.xiri.ai" style="display: inline-block; background: #2563eb; color: white; padding: 12px 32px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none;">Log In Now →</a>
                         </div>
                         <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">Please change your password after first login via Settings.</p>
+
+                        ${buildEmailSignature()}
+                        ${buildSimpleFooter()}
                     </div>
                 `,
             });
