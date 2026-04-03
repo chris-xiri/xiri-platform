@@ -349,33 +349,61 @@ export default function DemoPage() {
                     </div>
                 </div>
 
-                {/* Diagnostic question — consultative entry */}
-                <div className="bg-gradient-to-b from-gray-50/80 to-white border-b border-gray-100">
-                    <div className="max-w-3xl mx-auto px-4 py-6">
-                        <h2 className="text-base font-semibold text-gray-900">
-                            What frustrates you most about your cleaning service?
-                        </h2>
-                        <p className="text-xs text-gray-400 mt-0.5 mb-4">Pick one — we&apos;ll show you how we solve it.</p>
+                {/* Quiz-style diagnostic — engaging poll design */}
+                <div className="bg-gradient-to-b from-indigo-950 via-indigo-900 to-indigo-950 border-b border-indigo-800 py-10">
+                    <div className="max-w-3xl mx-auto px-4">
+                        {/* Poll header */}
+                        <div className="text-center mb-6">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-800/60 border border-indigo-700/50 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-4">
+                                📊 Quick Poll
+                            </span>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">
+                                What frustrates you most<br className="sm:hidden" /> about your cleaning service?
+                            </h2>
+                            <p className="text-sm text-indigo-300/80">
+                                Tap your answer — we&apos;ll show you how we solve it in real time.
+                            </p>
+                        </div>
 
-                        <div className="grid grid-cols-2 gap-2">
-                            {PAIN_POINTS.map(p => (
+                        {/* Poll options — stacked full-width */}
+                        <div className="space-y-2.5">
+                            {PAIN_POINTS.map((p, idx) => (
                                 <button
                                     key={p.id}
                                     onClick={() => selectPainPoint(p.id)}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all duration-300 ${
+                                    className={`group w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all duration-300 ${
                                         selectedPain === p.id
-                                            ? 'bg-indigo-50 border-indigo-400 ring-1 ring-indigo-200 shadow-sm'
+                                            ? 'bg-indigo-600 border-indigo-500 shadow-lg shadow-indigo-900/40 scale-[1.02]'
                                             : selectedPain === null
-                                                ? 'bg-white border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/30 cursor-pointer'
-                                                : 'bg-gray-50/50 border-gray-100 opacity-40 cursor-pointer hover:opacity-70'
+                                                ? 'bg-indigo-900/40 border-indigo-700/40 hover:bg-indigo-800/60 hover:border-indigo-600/60 hover:scale-[1.01] cursor-pointer'
+                                                : 'bg-indigo-950/40 border-indigo-800/20 opacity-40 cursor-pointer hover:opacity-60'
                                     }`}
                                 >
-                                    <span className="text-lg shrink-0">{p.icon}</span>
-                                    <span className="text-sm text-gray-700 font-medium">{p.label}</span>
-                                    {selectedPain === p.id && <span className="ml-auto text-indigo-600 text-sm">✓</span>}
+                                    <span className="text-2xl shrink-0">{p.icon}</span>
+                                    <span className={`text-base font-semibold flex-1 ${
+                                        selectedPain === p.id ? 'text-white' : 'text-indigo-100'
+                                    }`}>{p.label}</span>
+                                    {selectedPain === p.id ? (
+                                        <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                                            <span className="text-white text-sm font-bold">✓</span>
+                                        </span>
+                                    ) : (
+                                        <span className={`w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                            selectedPain === null ? 'border-indigo-600 group-hover:border-indigo-400' : 'border-indigo-800/30'
+                                        }`}>
+                                            <span className="text-xs text-indigo-400 font-bold">{String.fromCharCode(65 + idx)}</span>
+                                        </span>
+                                    )}
                                 </button>
                             ))}
                         </div>
+
+                        {/* Engagement nudge */}
+                        {!selectedPain && (
+                            <p className="text-center text-xs text-indigo-400/60 mt-4 animate-pulse">
+                                👆 Pick the one that hits closest to home
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
