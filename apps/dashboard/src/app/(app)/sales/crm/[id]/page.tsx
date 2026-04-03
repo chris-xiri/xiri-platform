@@ -434,7 +434,7 @@ export default function LeadDetailPage() {
 
     const fetchLead = async () => {
         try {
-            const leadDoc = await getDoc(doc(db, 'leads', leadId));
+            const leadDoc = await getDoc(doc(db, 'companies', leadId));
             if (leadDoc.exists()) {
                 const data = leadDoc.data();
                 setLead({
@@ -545,7 +545,7 @@ export default function LeadDetailPage() {
     // ─── Generic field update helper ─────────────────────────
     const updateField = useCallback(async (field: string, value: any) => {
         if (!leadId) return;
-        await updateDoc(doc(db, 'leads', leadId), { [field]: value, updatedAt: new Date() });
+        await updateDoc(doc(db, 'companies', leadId), { [field]: value, updatedAt: new Date() });
         // Re-fetch updated lead data
         await fetchLead();
     }, [leadId]);
@@ -805,7 +805,7 @@ export default function LeadDetailPage() {
                                             state={(lead as any).state || ''}
                                             zip={lead.zipCode || ''}
                                             onSave={async (fields) => {
-                                                await updateDoc(doc(db, 'leads', leadId), {
+                                                await updateDoc(doc(db, 'companies', leadId), {
                                                     address: fields.address,
                                                     city: fields.city,
                                                     state: fields.state,
