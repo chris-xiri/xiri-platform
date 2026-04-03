@@ -713,8 +713,9 @@ export default function DemoPage() {
             </div>
             </div>
 
-            {/* ── Services Section — distinct background ── */}
-            <div className="bg-white border-y border-gray-200 py-8">
+            {/* ── Services Section — only show after pain point selected ── */}
+            {selectedPain && (
+            <div className="bg-white border-y border-gray-200 py-8 animate-fadeIn">
             <div className="max-w-3xl mx-auto px-4 space-y-8">
                 {/* ── Services ── */}
                 <div
@@ -744,9 +745,11 @@ export default function DemoPage() {
                 </div>
             </div>
             </div>
+            )}
 
-            {/* ── CTA Section — gradient background ── */}
-            <div className="bg-gradient-to-b from-gray-50 to-white py-8">
+            {/* ── CTA Section — only show after pain point selected ── */}
+            {selectedPain && (
+            <div className="bg-gradient-to-b from-gray-50 to-white py-8 animate-fadeIn">
             <div className="max-w-3xl mx-auto px-4 space-y-4">
                 <div
                     ref={(el) => {
@@ -804,8 +807,10 @@ export default function DemoPage() {
                 </div>
             </div>
             </div>
+            )}
 
-            {/* ── Sticky Bottom CTA Bar — hidden when bottom CTA is visible ── */}
+            {/* ── Sticky Bottom CTA Bar — hidden until pain point selected and when bottom CTA is visible ── */}
+            {selectedPain && (
             <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-gray-200 px-4 py-2.5 safe-area-inset-bottom transition-all duration-300 ${
                 ctaVisibility.isVisible ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
             }`}>
@@ -824,6 +829,7 @@ export default function DemoPage() {
                     </a>
                 </div>
             </div>
+            )}
 
             {/* ── CSS animation ── */}
             <style jsx>{`

@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-// Initialize Firebase Admin (reuse if already initialized)
-if (!getApps().length) {
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.FIREBASE_CONFIG) {
-        initializeApp();
-    } else {
-        // Local dev — uses ADC or emulator
-        initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'xiri-app' });
-    }
-}
+// Initialize Firebase client (reuse if already initialized)
+const firebaseConfig = {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
 
-const db = getFirestore();
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const db = getFirestore(app);
 
 export async function POST(req: NextRequest) {
     try {
@@ -23,18 +24,17 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'painPoint required' }, { status: 400 });
         }
 
-        // Grab useful metadata
         const ua = req.headers.get('user-agent') || '';
         const referer = req.headers.get('referer') || '';
         const forwarded = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '';
 
-        await db.collection('demo_clicks').add({
+        await addDoc(collection(db, 'demo_clicks'), {
             painPoint,
             sessionId: sessionId || null,
             userAgent: ua,
             referer,
             ip: forwarded.split(',')[0]?.trim() || null,
-            createdAt: new Date(),
+            createdAt: serverTimestamp(),
         });
 
         return NextResponse.json({ ok: true });

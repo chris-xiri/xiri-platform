@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 
-if (!getApps().length) {
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.FIREBASE_CONFIG) {
-        initializeApp();
-    } else {
-        initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'xiri-app' });
-    }
-}
+// Initialize Firebase client (reuse if already initialized)
+const firebaseConfig = {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
 
-const db = getFirestore();
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const db = getFirestore(app);
 
 const GCHAT_WEBHOOK = "https://chat.googleapis.com/v1/spaces/AAQA5xbduUw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=3oOtBqJMN61HDSZRB-6_SD6JhHHLJSmQlKQq3g42R7I";
 
@@ -31,15 +34,24 @@ export async function GET(req: NextRequest) {
 
         // Default: last 7 days
         const daysBack = parseInt(req.nextUrl.searchParams.get('days') || '7', 10);
-        const since = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
+        const since = Timestamp.fromDate(new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000));
 
-        const snap = await db
-            .collection('demo_clicks')
-            .where('createdAt', '>=', since)
-            .get();
+        const q = query(
+            collection(db, 'demo_clicks'),
+            where('createdAt', '>=', since)
+        );
+        const snap = await getDocs(q);
 
         if (snap.empty) {
-            return NextResponse.json({ message: 'No clicks in period', sent: false });
+            // Still send a chat message so you know it ran
+            await fetch(GCHAT_WEBHOOK, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    text: `📊 Demo Pain Point Report (${daysBack}d): No clicks recorded in the last ${daysBack} days.`,
+                }),
+            });
+            return NextResponse.json({ message: 'No clicks in period', sent: true });
         }
 
         // Aggregate
