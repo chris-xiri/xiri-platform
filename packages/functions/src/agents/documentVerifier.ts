@@ -34,13 +34,21 @@ interface VerificationResult {
 // ─── ACORD 25 Extracted Data ───
 export interface AcordExtracted {
     insuredName?: string;
+    glActive?: boolean;
+    glPolicyNumber?: string;
     glPerOccurrence?: number;
     glAggregate?: number;
     wcActive?: boolean;
     wcPolicyNumber?: string;
+    wcPerStatute?: boolean;
+    wcEachAccident?: number;
     autoActive?: boolean;
-    expirationDates?: Array<{ policy: string; expires: string }>;
+    autoPolicyNumber?: string;
+    autoCombinedSingleLimit?: number;
+    umbrellaActive?: boolean;
+    expirationDates?: Array<{ policy: string; effective?: string; expires: string }>;
     certificateHolder?: string;
+    certificateDate?: string;
 }
 
 export interface Acord25VerificationResult {
