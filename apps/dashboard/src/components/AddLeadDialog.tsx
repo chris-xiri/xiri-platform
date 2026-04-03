@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, X, Sparkles, Plus, User, ChevronDown, ChevronUp, Building2, Search } from "lucide-react";
+import { Loader2, X, Sparkles, Plus, User, ChevronDown, ChevronUp, Building2, Search, MapPin } from "lucide-react";
 import { collection, doc, serverTimestamp, writeBatch, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -354,8 +354,10 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
 
     // New company fields (only shown when creatingNewCompany)
     const [businessName, setBusinessName] = useState("");
+    const [businessNamePlaces, setBusinessNamePlaces] = useState<any>(null);
     const [website, setWebsite] = useState("");
     const [address, setAddress] = useState<any>(null);
+    const [companyPhone, setCompanyPhone] = useState("");
     const [city, setCity] = useState("");
     const [state, setState] = useState("");
     const [zip, setZip] = useState("");
@@ -363,6 +365,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     const [leadType, setLeadType] = useState("tenant");
     const [attributionSource, setAttributionSource] = useState("__none");
     const [notes, setNotes] = useState("");
+    const placesServiceRef = useRef<HTMLDivElement>(null);
 
     const handleCompanySelect = (companyId: string, companyName: string) => {
         setSelectedCompanyId(companyId || null);
@@ -376,36 +379,104 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         setCreatingNewCompany(true);
     };
 
+    // Helper: extract address components from PlacesService result
+    const extractAddressComponents = useCallback((place: google.maps.places.PlaceResult) => {
+        const components = place.address_components || [];
+        let streetNumber = '';
+        let streetName = '';
+
+        components.forEach((component: any) => {
+            if (component.types.includes('street_number')) streetNumber = component.long_name;
+            if (component.types.includes('route')) streetName = component.long_name;
+            if (component.types.includes('locality')) setCity(component.long_name);
+            if (component.types.includes('administrative_area_level_1')) setState(component.short_name);
+            if (component.types.includes('postal_code')) setZip(component.long_name);
+        });
+
+        const streetOnly = [streetNumber, streetName].filter(Boolean).join(' ');
+        if (streetOnly) {
+            setAddress({ label: streetOnly, value: { place_id: place.place_id } });
+        } else if (place.formatted_address) {
+            // Fallback: use the portion before the first comma
+            const addrPart = place.formatted_address.split(',')[0];
+            setAddress({ label: addrPart, value: { place_id: place.place_id } });
+        }
+
+        // Auto-detect facility type from place types
+        const types = place.types || [];
+        if (types.includes('hospital') || types.includes('doctor')) setFacilityType('medical_urgent_care');
+        else if (types.includes('car_dealer')) setFacilityType('auto_dealer_showroom');
+        else if (types.includes('car_repair')) setFacilityType('auto_service_center');
+        else if (types.includes('school')) setFacilityType('edu_private_school');
+        else if (types.includes('gym')) setFacilityType('fitness_gym');
+    }, []);
+
+    // Format a raw US phone string into (XXX) XXX-XXXX
+    const formatPhoneNumber = (raw: string): string => {
+        const digits = raw.replace(/\D/g, '');
+        // Strip leading country code 1
+        const local = digits.startsWith('1') && digits.length === 11 ? digits.substring(1) : digits;
+        if (local.length === 10) {
+            return `(${local.substring(0, 3)}) ${local.substring(3, 6)}-${local.substring(6, 10)}`;
+        }
+        return raw; // Return as-is if not standard US
+    };
+
+    // Fetch full place details (address, phone, website) from a place_id
+    const fetchPlaceDetails = useCallback((placeId: string, opts?: { setName?: boolean }) => {
+        if (!placesServiceRef.current) return;
+        const service = new google.maps.places.PlacesService(placesServiceRef.current);
+        service.getDetails(
+            {
+                placeId,
+                fields: [
+                    'name', 'formatted_address', 'address_components',
+                    'formatted_phone_number', 'international_phone_number',
+                    'website', 'types', 'place_id',
+                ],
+            },
+            (place, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+                    // Set business name if requested (from Business Name autocomplete)
+                    if (opts?.setName && place.name) {
+                        setBusinessName(place.name);
+                    }
+
+                    // Extract address components
+                    extractAddressComponents(place);
+
+                    // Phone number
+                    if (place.formatted_phone_number) {
+                        const formatted = formatPhoneNumber(place.formatted_phone_number);
+                        setCompanyPhone(formatted);
+                        // Also set contact phone if empty
+                        setPhone(prev => prev || formatted);
+                    }
+
+                    // Website
+                    if (place.website && !website) {
+                        const w = place.website.replace(/\/$/, '');
+                        setWebsite(w);
+                    }
+                }
+            }
+        );
+    }, [extractAddressComponents, website]);
+
+    // Handle business name autocomplete selection
+    const handleBusinessNameSelect = (selected: any) => {
+        setBusinessNamePlaces(selected);
+        if (selected?.value?.place_id) {
+            fetchPlaceDetails(selected.value.place_id, { setName: true });
+        } else if (selected?.label) {
+            setBusinessName(selected.label);
+        }
+    };
+
     const handleAddressSelect = (selected: any) => {
         setAddress(selected);
-
         if (selected?.value?.place_id) {
-            const geocoder = new google.maps.Geocoder();
-            geocoder.geocode({ placeId: selected.value.place_id }, (results, status) => {
-                if (status === 'OK' && results && results[0]) {
-                    const components = results[0].address_components;
-                    let streetNumber = '';
-                    let streetName = '';
-
-                    components.forEach((component: any) => {
-                        if (component.types.includes('street_number')) streetNumber = component.long_name;
-                        if (component.types.includes('route')) streetName = component.long_name;
-                        if (component.types.includes('locality')) setCity(component.long_name);
-                        if (component.types.includes('administrative_area_level_1')) setState(component.short_name);
-                        if (component.types.includes('postal_code')) setZip(component.long_name);
-                    });
-
-                    const streetOnly = [streetNumber, streetName].filter(Boolean).join(' ');
-                    if (streetOnly) setAddress({ ...selected, label: streetOnly });
-
-                    const types = results[0].types;
-                    if (types.includes('hospital') || types.includes('doctor')) setFacilityType('medical_urgent_care');
-                    else if (types.includes('car_dealer')) setFacilityType('auto_dealer_showroom');
-                    else if (types.includes('car_repair')) setFacilityType('auto_service_center');
-                    else if (types.includes('school')) setFacilityType('edu_private_school');
-                    else if (types.includes('gym')) setFacilityType('fitness_gym');
-                }
-            });
+            fetchPlaceDetails(selected.value.place_id);
         }
     };
 
@@ -451,6 +522,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                     city,
                     state,
                     zip,
+                    phone: companyPhone || null,
                     facilityType: facilityType || null,
                     leadType,
                     status: 'new',
@@ -510,8 +582,10 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         setSelectedCompanyName("");
         setCreatingNewCompany(false);
         setBusinessName("");
+        setBusinessNamePlaces(null);
         setWebsite("");
         setAddress(null);
+        setCompanyPhone("");
         setCity("");
         setState("");
         setZip("");
@@ -523,6 +597,8 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={(o: boolean) => { if (!o) resetForm(); onOpenChange(o); }}>
+            {/* Hidden container for PlacesService */}
+            <div ref={placesServiceRef} style={{ display: 'none' }} />
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Add New Contact</DialogTitle>
@@ -629,14 +705,36 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                             </div>
 
                             <div>
-                                <Label htmlFor="businessName">Company Name *</Label>
-                                <Input
-                                    id="businessName"
-                                    value={businessName}
-                                    onChange={(e) => setBusinessName(e.target.value)}
-                                    placeholder="ABC Medical Center"
-                                    required={creatingNewCompany}
+                                <Label htmlFor="businessName" className="flex items-center gap-1.5">
+                                    <MapPin className="w-3 h-3 text-muted-foreground" />
+                                    Company Name * <span className="text-xs text-muted-foreground font-normal ml-1">— search to auto-fill address &amp; phone</span>
+                                </Label>
+                                <GooglePlacesAutocomplete
+                                    apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                                    autocompletionRequest={{
+                                        componentRestrictions: { country: ['us'] },
+                                        types: ['establishment'],
+                                    }}
+                                    selectProps={{
+                                        value: businessNamePlaces,
+                                        onChange: handleBusinessNameSelect,
+                                        placeholder: "Search business name...",
+                                        isClearable: true,
+                                        className: "react-select-container",
+                                        classNamePrefix: "react-select",
+                                        noOptionsMessage: () => "Type a business name to search",
+                                    }}
                                 />
+                                {/* Fallback: manual entry if business not found in Google */}
+                                {businessNamePlaces === null && (
+                                    <Input
+                                        id="businessName"
+                                        value={businessName}
+                                        onChange={(e) => setBusinessName(e.target.value)}
+                                        placeholder="Or type company name manually"
+                                        className="mt-1.5"
+                                    />
+                                )}
                             </div>
 
                             {/* Website + Enrich */}
@@ -699,6 +797,31 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                                     <Label htmlFor="zip">Zip</Label>
                                     <Input id="zip" value={zip} onChange={(e) => setZip(e.target.value)} placeholder="60601" maxLength={5} />
                                 </div>
+                            </div>
+
+                            {/* Company Phone (auto-filled from Google Places) */}
+                            <div>
+                                <Label htmlFor="companyPhone" className="flex items-center gap-1.5">
+                                    Company Phone
+                                    {companyPhone && <span className="text-xs text-green-600 font-normal">✓ from Google</span>}
+                                </Label>
+                                <Input
+                                    id="companyPhone"
+                                    type="tel"
+                                    value={companyPhone}
+                                    onChange={(e) => {
+                                        const input = e.target.value.replace(/\D/g, '');
+                                        let formatted = '';
+                                        if (input.length > 0) {
+                                            formatted = '(' + input.substring(0, 3);
+                                            if (input.length >= 3) formatted += ') ' + input.substring(3, 6);
+                                            if (input.length >= 6) formatted += '-' + input.substring(6, 10);
+                                        }
+                                        setCompanyPhone(formatted);
+                                    }}
+                                    placeholder="(555) 123-4567"
+                                    maxLength={14}
+                                />
                             </div>
 
                             {/* Facility Type */}
