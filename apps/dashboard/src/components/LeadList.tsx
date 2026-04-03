@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useCallback } from "react";
 
 import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
@@ -34,9 +34,10 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight, ChevronDown, Building2, Settings2, Tag } from "lucide-react";
-import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, writeBatch, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight, ChevronDown, Building2, Settings2, Tag, Play } from "lucide-react";
+import { httpsCallable } from "firebase/functions";
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, writeBatch, getDoc, getDocs } from "firebase/firestore";
+import { db, functions } from "@/lib/firebase";
 import { LeadStatus, LeadType } from "@xiri-facility-solutions/shared";
 import { useLeadFilter } from "@/hooks/useLeadFilter";
 import { LeadRow, ColumnKey, ContactRow } from "./LeadList/LeadRow";
@@ -70,6 +71,7 @@ export default function LeadList({
     const [contacts, setContacts] = useState<ContactRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+    const [bulkAction, setBulkAction] = useState<'status'|'type'|'sequence'|'delete'|null>(null);
     const [bulkStatus, setBulkStatus] = useState<LeadStatus | "">("");
     const [bulkLeadType, setBulkLeadType] = useState<LeadType | "">("");
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -77,6 +79,13 @@ export default function LeadList({
     const [deleting, setDeleting] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [updatingType, setUpdatingType] = useState(false);
+    // Bulk sequence
+    const [showBulkSequenceDialog, setShowBulkSequenceDialog] = useState(false);
+    const [bulkSequences, setBulkSequences] = useState<{id:string;name:string;description?:string;steps:any[]}[]>([]);
+    const [bulkSelectedSequenceId, setBulkSelectedSequenceId] = useState('');
+    const [enrollingSequence, setEnrollingSequence] = useState(false);
+    const [loadingBulkSequences, setLoadingBulkSequences] = useState(false);
+    const [bulkSequenceProgress, setBulkSequenceProgress] = useState<{done:number;total:number;errors:string[]}|null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const PAGE_SIZE = 50;
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -292,6 +301,52 @@ export default function LeadList({
         }
     };
 
+    // ─── Bulk sequence enrollment ────────────────────────────
+    const openBulkSequenceDialog = useCallback(async () => {
+        setShowBulkSequenceDialog(true);
+        setLoadingBulkSequences(true);
+        setBulkSequenceProgress(null);
+        try {
+            const seqSnap = await getDocs(collection(db, 'sequences'));
+            setBulkSequences(seqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+        } catch (err) {
+            console.error('Error loading sequences:', err);
+        } finally {
+            setLoadingBulkSequences(false);
+        }
+    }, []);
+
+    const handleBulkStartSequence = async () => {
+        if (!bulkSelectedSequenceId || selectedLeads.size === 0) return;
+        setEnrollingSequence(true);
+        const startSequence = httpsCallable(functions, 'startLeadSequence');
+        const ids = Array.from(selectedLeads);
+        const eligibleContacts = ids
+            .map(id => contacts.find(c => c.id === id))
+            .filter(c => c && c.email && c.companyId) as ContactRow[];
+
+        const progress = { done: 0, total: eligibleContacts.length, errors: [] as string[] };
+        setBulkSequenceProgress({ ...progress });
+
+        for (const contact of eligibleContacts) {
+            try {
+                await startSequence({ leadId: contact.companyId, contactId: contact.id, sequenceId: bulkSelectedSequenceId });
+            } catch (err: any) {
+                progress.errors.push(`${contact.firstName} ${contact.lastName}: ${err.message || 'Failed'}`);
+            }
+            progress.done++;
+            setBulkSequenceProgress({ ...progress });
+        }
+
+        setEnrollingSequence(false);
+        if (progress.errors.length === 0) {
+            setShowBulkSequenceDialog(false);
+            setBulkSelectedSequenceId('');
+            setSelectedLeads(new Set());
+            setBulkSequenceProgress(null);
+        }
+    };
+
     const toggleColumn = (col: ColumnKey) => {
         setVisibleColumns(prev => {
             const next = new Set(prev);
@@ -371,81 +426,94 @@ export default function LeadList({
 
             {/* Bulk Actions Bar */}
             {selectedLeads.size > 0 && (
-                <div className="px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg mb-2 flex items-center gap-3">
-                    <span className="text-sm font-medium text-primary tabular-nums">
+                <div className="px-3 py-2 bg-primary/5 border border-primary/15 rounded-lg mb-2 flex items-center gap-2">
+                    <Checkbox
+                        checked={allSelected}
+                        onCheckedChange={handleSelectAll}
+                        className="mr-1"
+                    />
+                    <span className="text-sm font-semibold text-primary tabular-nums whitespace-nowrap">
                         {selectedLeads.size} selected
                     </span>
-                    <div className="flex items-center gap-2 flex-1">
-                        <Select value={bulkStatus} onValueChange={(value: string) => setBulkStatus(value as LeadStatus)}>
-                            <SelectTrigger className="w-[180px] h-8 text-sm">
-                                <SelectValue placeholder="Update status..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="new">New</SelectItem>
-                                <SelectItem value="contacted">Contacted</SelectItem>
-                                <SelectItem value="qualified">Qualified</SelectItem>
-                                <SelectItem value="walkthrough">Walkthrough</SelectItem>
-                                <SelectItem value="proposal">Proposal</SelectItem>
-                                <SelectItem value="won">Won</SelectItem>
-                                <SelectItem value="lost">Lost</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Button
-                            size="sm"
-                            onClick={handleBulkStatusUpdate}
-                            disabled={!bulkStatus || updatingStatus}
-                            className="h-8"
-                        >
-                            {updatingStatus ? (
-                                <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Updating…</>
-                            ) : (
-                                <><Edit className="w-3 h-3 mr-1" /> Update Status</>
-                            )}
-                        </Button>
 
-                        <div className="w-px h-6 bg-primary/20 mx-1" />
+                    <div className="w-px h-5 bg-border mx-1" />
 
-                        <Select value={bulkLeadType} onValueChange={(value: string) => setBulkLeadType(value as LeadType)}>
-                            <SelectTrigger className="w-[160px] h-8 text-sm">
-                                <SelectValue placeholder="Update type..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="direct">Direct</SelectItem>
-                                <SelectItem value="tenant">Tenant</SelectItem>
-                                <SelectItem value="referral_partnership">Referral Partnership</SelectItem>
-                                <SelectItem value="enterprise">Enterprise</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Button
-                            size="sm"
-                            onClick={handleBulkLeadTypeUpdate}
-                            disabled={!bulkLeadType || updatingType}
-                            className="h-8"
-                        >
-                            {updatingType ? (
-                                <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Updating…</>
-                            ) : (
-                                <><Tag className="w-3 h-3 mr-1" /> Update Type</>
-                            )}
-                        </Button>
-                    </div>
+                    {/* ─── Inline quick-actions ─── */}
+                    {!bulkAction && (
+                        <div className="flex items-center gap-1 flex-1">
+                            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 px-2.5" onClick={() => setBulkAction('status')}>
+                                <Edit className="w-3 h-3" /> Status
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 px-2.5" onClick={() => setBulkAction('type')}>
+                                <Tag className="w-3 h-3" /> Type
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 px-2.5" onClick={openBulkSequenceDialog}>
+                                <Play className="w-3 h-3" /> Sequence
+                            </Button>
+                            <div className="w-px h-5 bg-border mx-1" />
+                            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 px-2.5 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setShowDeleteDialog(true)}>
+                                <Trash2 className="w-3 h-3" /> Delete
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* ─── Status inline picker ─── */}
+                    {bulkAction === 'status' && (
+                        <div className="flex items-center gap-2 flex-1 animate-in fade-in slide-in-from-left-2 duration-150">
+                            <Select value={bulkStatus} onValueChange={(v: string) => setBulkStatus(v as LeadStatus)}>
+                                <SelectTrigger className="w-[160px] h-7 text-xs">
+                                    <SelectValue placeholder="Choose status…" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="new">New</SelectItem>
+                                    <SelectItem value="contacted">Contacted</SelectItem>
+                                    <SelectItem value="qualified">Qualified</SelectItem>
+                                    <SelectItem value="walkthrough">Walkthrough</SelectItem>
+                                    <SelectItem value="proposal">Proposal</SelectItem>
+                                    <SelectItem value="won">Won</SelectItem>
+                                    <SelectItem value="lost">Lost</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button size="sm" className="h-7 text-xs" onClick={handleBulkStatusUpdate} disabled={!bulkStatus || updatingStatus}>
+                                {updatingStatus ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Apply'}
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => { setBulkAction(null); setBulkStatus(''); }}>
+                                <X className="w-3 h-3" />
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* ─── Type inline picker ─── */}
+                    {bulkAction === 'type' && (
+                        <div className="flex items-center gap-2 flex-1 animate-in fade-in slide-in-from-left-2 duration-150">
+                            <Select value={bulkLeadType} onValueChange={(v: string) => setBulkLeadType(v as LeadType)}>
+                                <SelectTrigger className="w-[180px] h-7 text-xs">
+                                    <SelectValue placeholder="Choose type…" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="direct">Direct</SelectItem>
+                                    <SelectItem value="tenant">Tenant</SelectItem>
+                                    <SelectItem value="referral_partnership">Referral Partnership</SelectItem>
+                                    <SelectItem value="enterprise">Enterprise</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button size="sm" className="h-7 text-xs" onClick={handleBulkLeadTypeUpdate} disabled={!bulkLeadType || updatingType}>
+                                {updatingType ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Apply'}
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => { setBulkAction(null); setBulkLeadType(''); }}>
+                                <X className="w-3 h-3" />
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* ─── Clear all ─── */}
                     <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => setShowDeleteDialog(true)}
-                        className="h-8"
-                    >
-                        <Trash2 className="w-3 h-3 mr-1" />
-                        Delete
-                    </Button>
-                    <Button
-                        size="sm"
                         variant="ghost"
-                        onClick={() => setSelectedLeads(new Set())}
-                        className="h-8"
+                        size="sm"
+                        onClick={() => { setSelectedLeads(new Set()); setBulkAction(null); }}
+                        className="h-7 text-xs px-2 ml-auto text-muted-foreground"
                     >
-                        <X className="w-3 h-3 mr-1" />
-                        Clear
+                        <X className="w-3 h-3" />
                     </Button>
                 </div>
             )}
@@ -720,6 +788,79 @@ export default function LeadList({
                             ) : (
                                 'Delete'
                             )}
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Bulk Sequence Enrollment Dialog */}
+            <AlertDialog open={showBulkSequenceDialog} onOpenChange={(open: boolean) => { setShowBulkSequenceDialog(open); if (!open) { setBulkSelectedSequenceId(''); setBulkSequenceProgress(null); } }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                            <Play className="w-4 h-4 text-primary" />
+                            Enroll {selectedLeads.size} contact(s) in sequence
+                        </AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                            <div className="space-y-4">
+                                {(() => {
+                                    const ids = Array.from(selectedLeads);
+                                    const eligible = ids.filter(id => { const c = contacts.find(ct => ct.id === id); return c && c.email && c.companyId; });
+                                    const skipped = ids.length - eligible.length;
+                                    return (
+                                        <>
+                                            <p className="text-sm">
+                                                {eligible.length} contact{eligible.length !== 1 ? 's' : ''} with email will be enrolled.
+                                                {skipped > 0 && <span className="text-amber-600 font-medium"> {skipped} skipped (no email).</span>}
+                                            </p>
+                                            {loadingBulkSequences ? (
+                                                <div className="flex items-center gap-2 py-4 justify-center">
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    <span className="text-sm text-muted-foreground">Loading sequences…</span>
+                                                </div>
+                                            ) : (
+                                                <Select value={bulkSelectedSequenceId} onValueChange={setBulkSelectedSequenceId}>
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Select a sequence…" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {bulkSequences.map(seq => (
+                                                            <SelectItem key={seq.id} value={seq.id}>
+                                                                <div className="flex flex-col">
+                                                                    <span>{seq.name}</span>
+                                                                    <span className="text-xs text-muted-foreground">{seq.steps?.length || 0} steps{seq.description ? ` · ${seq.description}` : ''}</span>
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                            {bulkSequenceProgress && (
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                                        <span>Enrolling…</span>
+                                                        <span className="tabular-nums">{bulkSequenceProgress.done}/{bulkSequenceProgress.total}</span>
+                                                    </div>
+                                                    <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                                                        <div className="bg-primary h-full rounded-full transition-all duration-300" style={{ width: `${(bulkSequenceProgress.done / bulkSequenceProgress.total) * 100}%` }} />
+                                                    </div>
+                                                    {bulkSequenceProgress.errors.length > 0 && (
+                                                        <div className="text-xs text-destructive bg-destructive/10 p-2 rounded max-h-20 overflow-y-auto">
+                                                            {bulkSequenceProgress.errors.map((e, i) => <div key={i}>{e}</div>)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={enrollingSequence}>Cancel</AlertDialogCancel>
+                        <Button onClick={handleBulkStartSequence} disabled={enrollingSequence || !bulkSelectedSequenceId} className="gap-2">
+                            {enrollingSequence ? <><Loader2 className="w-4 h-4 animate-spin" /> Enrolling…</> : <><Play className="w-4 h-4" /> Start Sequence</>}
                         </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
