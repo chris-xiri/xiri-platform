@@ -657,38 +657,53 @@ export default function LeadList({
                                     {groupByCompany && companyGroups ? (
                                         companyGroups.map(group => (
                                             <Fragment key={group.key}>
-                                                <TableRow
-                                                    key={`group-${group.key}`}
-                                                    className={`cursor-pointer hover:bg-muted/50 border-b ${group.contacts.length > 1 ? 'bg-amber-500/5' : 'bg-muted/20'
-                                                        }`}
-                                                    onClick={() => toggleGroup(group.key)}
-                                                >
-                                                    <TableCell colSpan={visibleColumns.size + 2} className="py-1.5 px-3">
-                                                        <div className="flex items-center gap-2">
-                                                            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${collapsedGroups.has(group.key) ? '-rotate-90' : ''}`} />
-                                                            <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
-                                                            <span className="text-xs font-medium">{group.label}</span>
-                                                            {group.sublabel && (
-                                                                <span className="text-xs text-muted-foreground">— {group.sublabel}</span>
-                                                            )}
-                                                            <Badge variant={group.contacts.length > 1 ? 'default' : 'secondary'}
-                                                                className={`text-[10px] px-1.5 py-0 h-4 ml-auto ${group.contacts.length > 1 ? 'bg-amber-500 hover:bg-amber-600' : ''}`}>
-                                                                {group.contacts.length} {group.contacts.length === 1 ? 'contact' : 'contacts'}
-                                                            </Badge>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                                {!collapsedGroups.has(group.key) && group.contacts.map(({ contact, globalIndex }) => (
+                                                {group.contacts.length === 1 ? (
+                                                    /* Single contact — render flat row, no group header */
                                                     <LeadRow
-                                                        key={contact.id}
-                                                        lead={contact}
-                                                        index={globalIndex}
-                                                        isSelected={selectedLeads.has(contact.id!)}
-                                                        onSelect={(checked) => handleSelectLead(contact.id!, checked)}
+                                                        key={group.contacts[0].contact.id}
+                                                        lead={group.contacts[0].contact}
+                                                        index={group.contacts[0].globalIndex}
+                                                        isSelected={selectedLeads.has(group.contacts[0].contact.id!)}
+                                                        onSelect={(checked) => handleSelectLead(group.contacts[0].contact.id!, checked)}
                                                         onRowClick={onRowClick}
                                                         visibleColumns={visibleColumns}
                                                     />
-                                                ))}
+                                                ) : (
+                                                    /* Multiple contacts — show collapsible group header */
+                                                    <>
+                                                        <TableRow
+                                                            key={`group-${group.key}`}
+                                                            className="cursor-pointer hover:bg-muted/50 border-b bg-amber-500/5"
+                                                            onClick={() => toggleGroup(group.key)}
+                                                        >
+                                                            <TableCell colSpan={visibleColumns.size + 2} className="py-1.5 px-3">
+                                                                <div className="flex items-center gap-2">
+                                                                    <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${collapsedGroups.has(group.key) ? '-rotate-90' : ''}`} />
+                                                                    <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                    <span className="text-xs font-medium">{group.label}</span>
+                                                                    {group.sublabel && (
+                                                                        <span className="text-xs text-muted-foreground">— {group.sublabel}</span>
+                                                                    )}
+                                                                    <Badge variant="default"
+                                                                        className="text-[10px] px-1.5 py-0 h-4 ml-auto bg-amber-500 hover:bg-amber-600">
+                                                                        {group.contacts.length} contacts
+                                                                    </Badge>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                        {!collapsedGroups.has(group.key) && group.contacts.map(({ contact, globalIndex }) => (
+                                                            <LeadRow
+                                                                key={contact.id}
+                                                                lead={contact}
+                                                                index={globalIndex}
+                                                                isSelected={selectedLeads.has(contact.id!)}
+                                                                onSelect={(checked) => handleSelectLead(contact.id!, checked)}
+                                                                onRowClick={onRowClick}
+                                                                visibleColumns={visibleColumns}
+                                                            />
+                                                        ))}
+                                                    </>
+                                                )}
                                             </Fragment>
                                         ))
                                     ) : (

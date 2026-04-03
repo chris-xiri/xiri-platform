@@ -239,7 +239,19 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
         }
     };
 
-    const hasActiveSequence = !!(lead as any)._companyOutreachStatus && ['PENDING', 'IN_PROGRESS', 'SENT', 'COMPLETED'].includes((lead as any)._companyOutreachStatus);
+    // Check both company-level outreach status AND contact-level sequenceHistory
+    const hasActiveSequence = (() => {
+        // Check contact-level sequenceHistory (real-time via onSnapshot)
+        if (lead.sequenceHistory) {
+            const activeStatuses = ['active', 'in_progress', 'pending', 'PENDING', 'IN_PROGRESS'];
+            const hasActive = Object.values(lead.sequenceHistory).some(
+                s => activeStatuses.includes(s.status || '')
+            );
+            if (hasActive) return true;
+        }
+        // Fallback: company-level outreach status
+        return !!(lead as any)._companyOutreachStatus && ['PENDING', 'IN_PROGRESS', 'SENT', 'COMPLETED'].includes((lead as any)._companyOutreachStatus);
+    })();
 
     const firstAuditTime = lead._companyPreferredAuditTimes && lead._companyPreferredAuditTimes.length > 0
         ? toDate(lead._companyPreferredAuditTimes[0])
