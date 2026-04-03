@@ -12,8 +12,45 @@ import { collection, doc, serverTimestamp, writeBatch, onSnapshot, query, orderB
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { EnrichButton } from "@/components/EnrichButton";
-import { FACILITY_TYPE_OPTIONS } from '@xiri-facility-solutions/shared';
+import { FACILITY_TYPE_OPTIONS, FacilityType } from '@xiri-facility-solutions/shared';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
+
+/**
+ * Maps Google Places `types` to the canonical FacilityType enum.
+ * Order matters — first match wins (specific before generic).
+ */
+const PLACES_TYPE_MAP: [string[], FacilityType][] = [
+    // Medical
+    [['dentist'], 'medical_dental'],
+    [['veterinary_care'], 'medical_veterinary'],
+    [['hospital', 'emergency_room'], 'medical_urgent_care'],
+    [['doctor', 'physiotherapist', 'health'], 'medical_private'],
+    // Auto
+    [['car_dealer'], 'auto_dealer_showroom'],
+    [['car_repair', 'car_wash'], 'auto_service_center'],
+    // Education
+    [['daycare', 'child_care'], 'edu_daycare'],
+    [['school', 'primary_school', 'secondary_school', 'university'], 'edu_private_school'],
+    // Fitness
+    [['gym'], 'fitness_gym'],
+    // Retail
+    [['store', 'shopping_mall', 'clothing_store', 'jewelry_store', 'shoe_store',
+      'electronics_store', 'hardware_store', 'furniture_store', 'book_store',
+      'pet_store', 'convenience_store', 'supermarket', 'department_store',
+      'home_goods_store', 'florist', 'bakery', 'liquor_store'], 'retail_storefront'],
+    // Office (catch-all for professional services)
+    [['accounting', 'lawyer', 'insurance_agency', 'real_estate_agency',
+      'travel_agency', 'finance', 'bank'], 'office_general'],
+];
+
+function inferFacilityType(placeTypes: string[]): FacilityType | null {
+    for (const [googleTypes, facilityType] of PLACES_TYPE_MAP) {
+        if (googleTypes.some(t => placeTypes.includes(t))) {
+            return facilityType;
+        }
+    }
+    return null;
+}
 
 interface AddLeadDialogProps {
     open: boolean;
@@ -163,13 +200,24 @@ function CompanyCombobox({
 }: {
     value: string | null;             // selected companyId
     onChange: (companyId: string, companyName: string) => void;
-    onCreateNew: () => void;
+    onCreateNew: (searchText?: string) => void;
+    autoFocus?: boolean;
 }) {
     const [companies, setCompanies] = useState<CompanyOption[]>([]);
     const [search, setSearch] = useState("");
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const { autoFocus } = { autoFocus: arguments[0].autoFocus };
+
+    // Auto-open when autoFocus is true (dialog just opened)
+    useEffect(() => {
+        if (autoFocus && !value) {
+            // Small delay to let dialog mount
+            const t = setTimeout(() => setIsOpen(true), 150);
+            return () => clearTimeout(t);
+        }
+    }, [autoFocus, value]);
 
     // Fetch companies once on mount
     useEffect(() => {
@@ -293,9 +341,10 @@ function CompanyCombobox({
                                 type="button"
                                 className="w-full text-left px-3 py-2.5 text-sm hover:bg-accent transition-colors text-primary font-medium flex items-center gap-1.5 border-b bg-primary/5"
                                 onClick={() => {
+                                    const currentSearch = search;
                                     setIsOpen(false);
                                     setSearch("");
-                                    onCreateNew();
+                                    onCreateNew(currentSearch);
                                 }}
                             >
                                 <Plus className="w-3.5 h-3.5" />
@@ -373,10 +422,14 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         setCreatingNewCompany(false);
     };
 
-    const handleCreateNewCompany = () => {
+    const handleCreateNewCompany = (searchText?: string) => {
         setSelectedCompanyId(null);
         setSelectedCompanyName("");
         setCreatingNewCompany(true);
+        // Pre-fill the business name from the search text
+        if (searchText) {
+            setBusinessName(searchText);
+        }
     };
 
     // Helper: extract address components from PlacesService result
@@ -402,13 +455,10 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
             setAddress({ label: addrPart, value: { place_id: place.place_id } });
         }
 
-        // Auto-detect facility type from place types
+        // Auto-detect facility type from Google Places types
         const types = place.types || [];
-        if (types.includes('hospital') || types.includes('doctor')) setFacilityType('medical_urgent_care');
-        else if (types.includes('car_dealer')) setFacilityType('auto_dealer_showroom');
-        else if (types.includes('car_repair')) setFacilityType('auto_service_center');
-        else if (types.includes('school')) setFacilityType('edu_private_school');
-        else if (types.includes('gym')) setFacilityType('fitness_gym');
+        const inferredType = inferFacilityType(types);
+        if (inferredType) setFacilityType(inferredType);
     }, []);
 
     // Format a raw US phone string into (XXX) XXX-XXXX
@@ -615,6 +665,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                         value={selectedCompanyId}
                         onChange={handleCompanySelect}
                         onCreateNew={handleCreateNewCompany}
+                        autoFocus
                     />
 
                     {/* Show existing company badge when selected */}

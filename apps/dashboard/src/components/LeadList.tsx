@@ -168,6 +168,7 @@ export default function LeadList({
                         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
                         createdBy: data.createdBy,
                         emailEngagement: data.emailEngagement,
+                        sequenceHistory: data.sequenceHistory || undefined,
                         // Denormalized company fields
                         _companyStatus: company.status || "new",
                         _companyLeadType: company.leadType,

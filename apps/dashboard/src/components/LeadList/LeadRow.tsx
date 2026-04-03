@@ -61,6 +61,7 @@ export interface ContactRow extends Contact {
     _companyAttribution?: { source?: string; medium?: string; campaign?: string; landingPage?: string };
     _companyOutreachStatus?: string;
     _companyPreferredAuditTimes?: any[];
+    sequenceHistory?: Record<string, { startedAt?: any; status?: string; sequenceName?: string }>;
 }
 
 interface LeadRowProps {
@@ -143,6 +144,7 @@ function timeAgo(timestamp: any): string {
 export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visibleColumns = ALL_COLUMNS }: LeadRowProps) {
     const router = useRouter();
     const [startingSequence, setStartingSequence] = useState(false);
+    const [sequenceError, setSequenceError] = useState<string | null>(null);
 
     // Navigate to the contact detail page (now company-scoped)
     const handleClick = () => {
@@ -178,13 +180,17 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
         e.stopPropagation();
         if (!lead.email || !lead.companyId || !selectedSequenceId) return;
         setStartingSequence(true);
+        setSequenceError(null);
         try {
             const startSequence = httpsCallable(functions, 'startLeadSequence');
             await startSequence({ leadId: lead.companyId, contactId: lead.id, sequenceId: selectedSequenceId });
             setShowSequenceDialog(false);
             setSelectedSequenceId('');
-        } catch (err) {
-            console.error('Failed to start sequence:', err);
+        } catch (err: any) {
+            const msg = err?.message || 'Failed to start sequence';
+            // Firebase callable errors wrap the message
+            const cleanMsg = msg.replace(/^.*?:\s*/, '');
+            setSequenceError(cleanMsg);
         } finally {
             setStartingSequence(false);
         }
@@ -308,7 +314,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                         </div>
                         {lead._companyFacilityType && (
                             <div className="text-xs text-muted-foreground pl-4">
-                                {FACILITY_TYPE_LABELS[lead._companyFacilityType] || lead._companyFacilityType}
+                                {(FACILITY_TYPE_LABELS as Record<string, string>)[lead._companyFacilityType] || lead._companyFacilityType}
                             </div>
                         )}
                     </div>
@@ -549,7 +555,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
             </AlertDialog>
 
             {/* ─── Sequence Picker Dialog ─── */}
-            <AlertDialog open={showSequenceDialog} onOpenChange={(open: boolean) => { setShowSequenceDialog(open); if (!open) setSelectedSequenceId(''); }}>
+            <AlertDialog open={showSequenceDialog} onOpenChange={(open: boolean) => { setShowSequenceDialog(open); if (!open) { setSelectedSequenceId(''); setSequenceError(null); } }}>
                 <AlertDialogContent className="max-w-md" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2">
@@ -617,6 +623,17 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                                             );
                                         })()}
                                     </>
+                                )}
+
+                                {/* Sequence error display */}
+                                {sequenceError && (
+                                    <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
+                                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                            <div className="font-medium">Cannot start sequence</div>
+                                            <div className="text-xs mt-0.5 opacity-80">{sequenceError}</div>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </AlertDialogDescription>
