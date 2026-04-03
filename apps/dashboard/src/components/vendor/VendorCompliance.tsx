@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
     ShieldCheck, ShieldAlert, CheckCircle2, XCircle,
-    Building2, Shield, Users, Car, Droplet, FileText, AlertTriangle
+    Building2, Shield, Users, Car, Droplet, FileText, AlertTriangle,
+    Download, ExternalLink
 } from 'lucide-react';
 
 interface VendorComplianceProps {
@@ -66,8 +67,46 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
         </div>
     );
 
+    const acord25 = compliance.acord25 as any;
+
     return (
         <div className="space-y-4">
+            {/* ACORD 25 Document */}
+            {acord25?.url && (
+                <div className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-full bg-blue-100 text-blue-700">
+                                <FileText className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium">ACORD 25 — Certificate of Insurance</p>
+                                <p className="text-xs text-muted-foreground">
+                                    Uploaded{acord25.uploadedAt?.toDate ? ` ${acord25.uploadedAt.toDate().toLocaleDateString()}` : ''}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Badge
+                                variant={acord25.status === 'VERIFIED' ? 'default' : 'outline'}
+                                className={acord25.status === 'VERIFIED' ? 'bg-green-600' : acord25.status === 'REJECTED' ? 'border-red-400 text-red-600' : ''}
+                            >
+                                {acord25.status || 'PENDING'}
+                            </Badge>
+                            <a
+                                href={acord25.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                            >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                View PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header / Score */}
             <div className="flex items-center justify-between bg-muted/30 p-3 rounded-lg border">
                 <div>

@@ -88,13 +88,16 @@ export default function OnboardingPage() {
             if (doc.exists()) {
                 const vendorData = { id: doc.id, ...doc.data() } as Vendor;
                 setVendor(vendorData);
-                setEmail(vendorData.email || '');
+                if (!contactName) setContactName(vendorData.contactName || '');
+                if (!email) setEmail(vendorData.email || '');
                 const rawPhone = vendorData.phone || '';
                 const formattedPhone = rawPhone.replace(/\D/g, '');
-                if (formattedPhone.length === 10) {
-                    setPhone(`(${formattedPhone.slice(0, 3)}) ${formattedPhone.slice(3, 6)}-${formattedPhone.slice(6, 10)}`);
-                } else {
-                    setPhone(rawPhone);
+                if (!phone) {
+                    if (formattedPhone.length === 10) {
+                        setPhone(`(${formattedPhone.slice(0, 3)}) ${formattedPhone.slice(3, 6)}-${formattedPhone.slice(6, 10)}`);
+                    } else {
+                        setPhone(rawPhone);
+                    }
                 }
             }
             setLoading(false);
@@ -208,25 +211,26 @@ export default function OnboardingPage() {
         setSubmitting(true);
 
         try {
-            const complianceData: any = {
-                hasBusinessEntity,
-                generalLiability: {
+            // Merge compliance data — preserve existing fields like acord25
+            const complianceUpdate: Record<string, any> = {
+                'compliance.hasBusinessEntity': hasBusinessEntity,
+                'compliance.generalLiability': {
                     hasInsurance: hasGeneralLiability,
                     verified: false
                 },
-                workersComp: {
+                'compliance.workersComp': {
                     hasInsurance: hasWorkersComp,
                     verified: false
                 },
-                autoInsurance: {
+                'compliance.autoInsurance': {
                     hasInsurance: hasAutoInsurance,
                     verified: false
                 },
-                w9Collected: false
+                'compliance.w9Collected': false,
             };
 
             if (requiresPollution) {
-                complianceData.additionalInsurance = [{
+                complianceUpdate['compliance.additionalInsurance'] = [{
                     type: 'Pollution Liability',
                     hasInsurance: hasPollutionLiability,
                     verified: false
@@ -258,7 +262,7 @@ export default function OnboardingPage() {
                 status: 'compliance_review',
                 onboardingTrack: currentTrack,
                 preferredLanguage: language, // Save 'en' or 'es'
-                compliance: complianceData,
+                ...complianceUpdate,
                 updatedAt: serverTimestamp()
             });
 
