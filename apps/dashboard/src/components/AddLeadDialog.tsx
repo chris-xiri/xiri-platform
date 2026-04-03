@@ -89,8 +89,10 @@ const ATTRIBUTION_SOURCES = [
 function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
     const [search, setSearch] = useState("");
     const [isOpen, setIsOpen] = useState(false);
+    const [highlightedIndex, setHighlightedIndex] = useState(0);
     const [customTypes, setCustomTypes] = useState<{ value: string; label: string }[]>(loadCustomFacilityTypes());
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
 
     const allTypes = [...FACILITY_TYPE_OPTIONS, ...customTypes];
     const selectedLabel = allTypes.find(t => t.value === value)?.label || value || "";
@@ -101,6 +103,22 @@ function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v
 
     const exactMatch = allTypes.some(t => t.label.toLowerCase() === search.toLowerCase());
     const showAddNew = search.length > 0 && !exactMatch;
+
+    // Total selectable items: filtered options + optional "Add new" row
+    const totalItems = filtered.length + (showAddNew ? 1 : 0);
+
+    // Reset highlight when search changes
+    useEffect(() => {
+        setHighlightedIndex(0);
+    }, [search]);
+
+    // Scroll highlighted item into view
+    useEffect(() => {
+        if (isOpen && listRef.current) {
+            const items = listRef.current.querySelectorAll('[data-option]');
+            items[highlightedIndex]?.scrollIntoView({ block: 'nearest' });
+        }
+    }, [highlightedIndex, isOpen]);
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
@@ -129,12 +147,34 @@ function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v
         setSearch("");
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') { setIsOpen(false); setSearch(""); return; }
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setHighlightedIndex(i => (i + 1) % Math.max(totalItems, 1));
+            return;
+        }
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setHighlightedIndex(i => (i - 1 + Math.max(totalItems, 1)) % Math.max(totalItems, 1));
+            return;
+        }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlightedIndex < filtered.length) {
+                handleSelect(filtered[highlightedIndex].value);
+            } else if (showAddNew) {
+                handleAddNew();
+            }
+        }
+    };
+
     return (
         <div ref={wrapperRef} className="relative">
             <Label>Facility Type</Label>
             <div
                 className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer hover:bg-accent/50 transition-colors"
-                onClick={() => { setIsOpen(true); setSearch(""); }}
+                onClick={() => { setIsOpen(true); setSearch(""); setHighlightedIndex(0); }}
             >
                 {isOpen ? (
                     <input
@@ -143,17 +183,7 @@ function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v
                         placeholder="Search or type new..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Escape') { setIsOpen(false); setSearch(""); }
-                            if (e.key === 'Enter' && filtered.length === 1) {
-                                e.preventDefault();
-                                handleSelect(filtered[0].value);
-                            }
-                            if (e.key === 'Enter' && filtered.length === 0 && showAddNew) {
-                                e.preventDefault();
-                                handleAddNew();
-                            }
-                        }}
+                        onKeyDown={handleKeyDown}
                     />
                 ) : (
                     <span className={selectedLabel ? "text-foreground" : "text-muted-foreground"}>
@@ -163,13 +193,17 @@ function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v
             </div>
 
             {isOpen && (
-                <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-md border bg-popover shadow-lg">
-                    {filtered.map((type) => (
+                <div ref={listRef} className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-md border bg-popover shadow-lg">
+                    {filtered.map((type, idx) => (
                         <button
                             key={type.value}
                             type="button"
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${type.value === value ? 'bg-accent font-medium' : ''}`}
+                            data-option
+                            className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                                idx === highlightedIndex ? 'bg-accent' : ''
+                            } ${type.value === value ? 'font-medium' : ''}`}
                             onClick={() => handleSelect(type.value)}
+                            onMouseEnter={() => setHighlightedIndex(idx)}
                         >
                             {type.label}
                         </button>
@@ -177,8 +211,12 @@ function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v
                     {showAddNew && (
                         <button
                             type="button"
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors text-primary font-medium flex items-center gap-1.5 border-t"
+                            data-option
+                            className={`w-full text-left px-3 py-2 text-sm transition-colors text-primary font-medium flex items-center gap-1.5 border-t ${
+                                highlightedIndex === filtered.length ? 'bg-accent' : ''
+                            }`}
                             onClick={handleAddNew}
+                            onMouseEnter={() => setHighlightedIndex(filtered.length)}
                         >
                             <Plus className="w-3.5 h-3.5" /> Add &ldquo;{search}&rdquo; as new type
                         </button>
@@ -399,7 +437,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     // Company selection
     const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
     const [selectedCompanyName, setSelectedCompanyName] = useState("");
-    const [creatingNewCompany, setCreatingNewCompany] = useState(false);
+    const [creatingNewCompany, setCreatingNewCompany] = useState(true);
 
     // New company fields (only shown when creatingNewCompany)
     const [businessName, setBusinessName] = useState("");
@@ -632,7 +670,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         setContactRole("");
         setSelectedCompanyId(null);
         setSelectedCompanyName("");
-        setCreatingNewCompany(false);
+        setCreatingNewCompany(true);
         setBusinessName("");
         setBusinessNamePlaces(null);
         setWebsite("");
@@ -660,44 +698,65 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* ─── Company Section (first) ─── */}
-                    <CompanyCombobox
-                        value={selectedCompanyId}
-                        onChange={handleCompanySelect}
-                        onCreateNew={handleCreateNewCompany}
-                        autoFocus
-                    />
-
-                    {/* Show existing company badge when selected */}
-                    {selectedCompanyId && !creatingNewCompany && (
-                        <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
-                            <Building2 className="w-4 h-4" />
-                            <span>Linking to <strong>{selectedCompanyName}</strong></span>
+                    {/* ─── Company Mode Toggle ─── */}
+                    <div>
+                        <Label className="flex items-center gap-1.5 mb-1.5">
+                            <Building2 className="w-3.5 h-3.5" /> Company
+                        </Label>
+                        <div className="flex rounded-lg border overflow-hidden mb-3">
+                            <button
+                                type="button"
+                                className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                                    creatingNewCompany
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-background text-muted-foreground hover:bg-accent'
+                                }`}
+                                onClick={() => { setCreatingNewCompany(true); setSelectedCompanyId(null); setSelectedCompanyName(''); }}
+                            >
+                                <Plus className="w-3.5 h-3.5 inline mr-1.5" />
+                                New Company
+                            </button>
+                            <button
+                                type="button"
+                                className={`flex-1 py-2 text-sm font-medium transition-colors border-l ${
+                                    !creatingNewCompany
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-background text-muted-foreground hover:bg-accent'
+                                }`}
+                                onClick={() => { setCreatingNewCompany(false); setBusinessName(''); setBusinessNamePlaces(null); setAddress(null); setCity(''); setState(''); setZip(''); setCompanyPhone(''); setWebsite(''); setFacilityType(''); }}
+                            >
+                                <Search className="w-3.5 h-3.5 inline mr-1.5" />
+                                Existing Company
+                            </button>
                         </div>
+                    </div>
+
+                    {/* ─── Existing company selector ─── */}
+                    {!creatingNewCompany && (
+                        <>
+                            <CompanyCombobox
+                                value={selectedCompanyId}
+                                onChange={handleCompanySelect}
+                                onCreateNew={handleCreateNewCompany}
+                                autoFocus
+                            />
+
+                            {selectedCompanyId && (
+                                <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
+                                    <Building2 className="w-4 h-4" />
+                                    <span>Linking to <strong>{selectedCompanyName}</strong></span>
+                                </div>
+                            )}
+                        </>
                     )}
 
-                    {/* New company creation fields */}
+                    {/* ─── New company creation fields (default) ─── */}
                     {creatingNewCompany && (
-                        <div className="space-y-4 p-4 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5">
-                            <div className="flex items-center justify-between">
-                                <h4 className="font-medium text-sm flex items-center gap-2 text-primary">
-                                    <Plus className="w-3.5 h-3.5" /> New Company
-                                </h4>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 px-2 text-xs"
-                                    onClick={() => setCreatingNewCompany(false)}
-                                >
-                                    Cancel
-                                </Button>
-                            </div>
-
+                        <div className="space-y-4 p-4 rounded-lg border border-border bg-muted/30">
                             <div>
                                 <Label htmlFor="businessName" className="flex items-center gap-1.5">
                                     <MapPin className="w-3 h-3 text-muted-foreground" />
-                                    Company Name * <span className="text-xs text-muted-foreground font-normal ml-1">— search to auto-fill address &amp; phone</span>
+                                    Business Name * <span className="text-xs text-muted-foreground font-normal ml-1">— search to auto-fill address &amp; phone</span>
                                 </Label>
                                 <GooglePlacesAutocomplete
                                     apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
@@ -710,6 +769,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                                         onChange: handleBusinessNameSelect,
                                         placeholder: "Search business name...",
                                         isClearable: true,
+                                        autoFocus: true,
                                         className: "react-select-container",
                                         classNamePrefix: "react-select",
                                         noOptionsMessage: () => "Type a business name to search",
