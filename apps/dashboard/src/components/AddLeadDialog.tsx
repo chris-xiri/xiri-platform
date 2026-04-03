@@ -491,7 +491,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
         setPhone(formatted);
     };
 
-    const canSubmit = firstName && lastName && (selectedCompanyId || (creatingNewCompany && businessName && address));
+    const canSubmit = selectedCompanyId || (creatingNewCompany && businessName && address);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -543,22 +543,24 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                 companyName = selectedCompanyName;
             }
 
-            // Create the contact
-            const contactRef = doc(collection(db, 'contacts'));
-            batch.set(contactRef, {
-                firstName,
-                lastName,
-                email: email || null,
-                phone: phone || null,
-                role: contactRole || null,
-                companyId,
-                companyName,
-                isPrimary: false, // existing company may already have a primary
-                unsubscribed: false,
-                notes: '',
-                createdAt: serverTimestamp(),
-                createdBy: user?.uid || 'unknown',
-            });
+            // Create the contact only if name is provided
+            if (firstName || lastName) {
+                const contactRef = doc(collection(db, 'contacts'));
+                batch.set(contactRef, {
+                    firstName,
+                    lastName,
+                    email: email || null,
+                    phone: phone || null,
+                    role: contactRole || null,
+                    companyId,
+                    companyName,
+                    isPrimary: false,
+                    unsubscribed: false,
+                    notes: '',
+                    createdAt: serverTimestamp(),
+                    createdBy: user?.uid || 'unknown',
+                });
+            }
 
             await batch.commit();
 
@@ -608,70 +610,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* ─── Contact Section ─── */}
-                    <div className="space-y-4">
-                        <h4 className="font-medium text-sm flex items-center gap-2">
-                            <User className="w-3.5 h-3.5" /> Contact Details
-                        </h4>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="firstName">First Name *</Label>
-                                <Input
-                                    id="firstName"
-                                    value={firstName}
-                                    onChange={(e) => setFirstName(e.target.value)}
-                                    placeholder="John"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="lastName">Last Name *</Label>
-                                <Input
-                                    id="lastName"
-                                    value={lastName}
-                                    onChange={(e) => setLastName(e.target.value)}
-                                    placeholder="Smith"
-                                    required
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="john@example.com"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="phone">Phone</Label>
-                                <Input
-                                    id="phone"
-                                    type="tel"
-                                    value={phone}
-                                    onChange={(e) => handlePhoneChange(e.target.value)}
-                                    placeholder="(555) 123-4567"
-                                    maxLength={14}
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="contactRole">Role / Title</Label>
-                                <Input
-                                    id="contactRole"
-                                    value={contactRole}
-                                    onChange={(e) => setContactRole(e.target.value)}
-                                    placeholder="Facility Manager"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="border-t my-2" />
-
-                    {/* ─── Company Section ─── */}
+                    {/* ─── Company Section (first) ─── */}
                     <CompanyCombobox
                         value={selectedCompanyId}
                         onChange={handleCompanySelect}
@@ -869,6 +808,67 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                         </div>
                     )}
 
+                    <div className="border-t my-2" />
+
+                    {/* ─── Contact Section (optional) ─── */}
+                    <div className="space-y-4">
+                        <h4 className="font-medium text-sm flex items-center gap-2">
+                            <User className="w-3.5 h-3.5" /> Contact Details <span className="text-xs text-muted-foreground font-normal">(optional — can add later)</span>
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="firstName">First Name</Label>
+                                <Input
+                                    id="firstName"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                    placeholder="John"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="lastName">Last Name</Label>
+                                <Input
+                                    id="lastName"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    placeholder="Smith"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="john@example.com"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="phone">Phone</Label>
+                                <Input
+                                    id="phone"
+                                    type="tel"
+                                    value={phone}
+                                    onChange={(e) => handlePhoneChange(e.target.value)}
+                                    placeholder="(555) 123-4567"
+                                    maxLength={14}
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="contactRole">Role / Title</Label>
+                                <Input
+                                    id="contactRole"
+                                    value={contactRole}
+                                    onChange={(e) => setContactRole(e.target.value)}
+                                    placeholder="Facility Manager"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Actions */}
                     <div className="flex justify-end gap-2 pt-4">
                         <Button
@@ -881,7 +881,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                         </Button>
                         <Button type="submit" disabled={submitting || !canSubmit}>
                             {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            Add Contact
+                            {firstName || lastName ? 'Add Lead & Contact' : 'Add Lead'}
                         </Button>
                     </div>
                 </form>
