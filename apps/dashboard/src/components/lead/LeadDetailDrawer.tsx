@@ -538,55 +538,30 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                     </div>
                 ) : (
                     <>
-                        {/* ─── Header ──── */}
+                        {/* ─── Header (Contact-focused) ──── */}
                         <div className="sticky top-0 bg-card border-b px-5 py-4 z-10">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
-                                    {businessName?.charAt(0) || displayName?.charAt(0) || '?'}
+                            <div className="flex items-center gap-3 mb-2">
+                                {/* Avatar — contact initials */}
+                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
+                                    {(contact.firstName?.charAt(0) || '').toUpperCase()}{(contact.lastName?.charAt(0) || '').toUpperCase() || '?'}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <EditableField
-                                        label="Business name"
-                                        value={businessName}
-                                        icon={() => null}
-                                        onSave={(v) => updateCompanyField('businessName', v)}
-                                        renderDisplay={(val) => (
-                                            <SheetTitle className="text-lg truncate group-[]:cursor-pointer">{val || 'Unnamed Lead'}</SheetTitle>
-                                        )}
-                                    />
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        <select
-                                            value={company?.status || 'new'}
-                                            onChange={(e) => handleStatusChange(e.target.value)}
-                                            disabled={statusUpdating}
-                                            className="text-xs font-medium px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                            aria-label="Lead status"
-                                        >
-                                            {STATUS_ORDER.map((s) => (
-                                                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                                            ))}
-                                        </select>
-                                        <select
-                                            value={company?.facilityType || ''}
-                                            onChange={(e) => updateCompanyField('facilityType', e.target.value)}
-                                            className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
-                                            aria-label="Facility type"
-                                        >
-                                            <option value="">— Facility Type —</option>
-                                            {Object.entries(FACILITY_TYPE_LABELS).map(([key, label]) => (
-                                                <option key={key} value={key}>{label}</option>
-                                            ))}
-                                        </select>
-                                        <select
-                                            value={company?.leadType || 'direct'}
-                                            onChange={(e) => handleLeadTypeChange(e.target.value)}
-                                            className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
-                                            aria-label="Lead type"
-                                        >
-                                            {Object.entries(LEAD_TYPE_LABELS).map(([key, label]) => (
-                                                <option key={key} value={key}>{label}</option>
-                                            ))}
-                                        </select>
+                                    {/* Contact name — primary title */}
+                                    <SheetTitle className="text-lg truncate">
+                                        {displayName || 'Unnamed Contact'}
+                                    </SheetTitle>
+                                    {/* Company — secondary subtitle */}
+                                    <div className="flex items-center gap-1.5 mt-0.5 text-sm text-muted-foreground">
+                                        <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
+                                        <EditableField
+                                            label="Business name"
+                                            value={businessName}
+                                            icon={() => null}
+                                            onSave={(v) => updateCompanyField('businessName', v)}
+                                            renderDisplay={(val) => (
+                                                <span className="truncate text-muted-foreground">{val || 'Add company'}</span>
+                                            )}
+                                        />
                                     </div>
                                 </div>
                                 <Button
@@ -598,6 +573,41 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                                     <ExternalLink className="w-3 h-3" />
                                     Full Page
                                 </Button>
+                            </div>
+                            {/* Company selectors — compact row */}
+                            <div className="flex items-center gap-2 pl-[52px]">
+                                <select
+                                    value={company?.status || 'new'}
+                                    onChange={(e) => handleStatusChange(e.target.value)}
+                                    disabled={statusUpdating}
+                                    className="text-xs font-medium px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    aria-label="Lead status"
+                                >
+                                    {STATUS_ORDER.map((s) => (
+                                        <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={company?.facilityType || ''}
+                                    onChange={(e) => updateCompanyField('facilityType', e.target.value)}
+                                    className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
+                                    aria-label="Facility type"
+                                >
+                                    <option value="">— Facility Type —</option>
+                                    {Object.entries(FACILITY_TYPE_LABELS).map(([key, label]) => (
+                                        <option key={key} value={key}>{label}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={company?.leadType || 'direct'}
+                                    onChange={(e) => handleLeadTypeChange(e.target.value)}
+                                    className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
+                                    aria-label="Lead type"
+                                >
+                                    {Object.entries(LEAD_TYPE_LABELS).map(([key, label]) => (
+                                        <option key={key} value={key}>{label}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 
