@@ -20475,6 +20475,10 @@ var onDocumentUploaded = (0, import_firestore3.onDocumentUpdated)({
     try {
       const result = await verifyAcord25(fileUrl, vendorName, attestations);
       const status = result.valid ? "VERIFIED" : result.flags.length > 0 ? "FLAGGED" : "REJECTED";
+      const ext = result.extracted || {};
+      const glVerified = ext.glActive === true;
+      const wcVerified = ext.wcActive === true;
+      const autoVerified = ext.autoActive === true;
       await db5.doc(`vendors/${vendorId}`).update({
         "compliance.acord25.status": status,
         "compliance.acord25.verifiedAt": admin7.firestore.FieldValue.serverTimestamp(),
@@ -20484,6 +20488,12 @@ var onDocumentUploaded = (0, import_firestore3.onDocumentUpdated)({
           extracted: result.extracted
         },
         "compliance.acord25.extractedData": result.extracted,
+        // Sync per-coverage verified flags from AI extraction
+        "compliance.generalLiability.verified": glVerified,
+        "compliance.generalLiability.hasInsurance": glVerified,
+        "compliance.workersComp.verified": wcVerified,
+        "compliance.workersComp.hasInsurance": wcVerified,
+        "compliance.autoInsurance.verified": autoVerified,
         updatedAt: admin7.firestore.FieldValue.serverTimestamp()
       });
       await db5.collection("vendor_activities").add({

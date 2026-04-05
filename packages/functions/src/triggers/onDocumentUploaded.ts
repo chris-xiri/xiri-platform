@@ -43,6 +43,12 @@ export const onDocumentUploaded = onDocumentUpdated({
             // Determine status: VERIFIED, FLAGGED, or REJECTED
             const status = result.valid ? 'VERIFIED' : (result.flags.length > 0 ? 'FLAGGED' : 'REJECTED');
 
+            // Derive per-coverage verification from AI extraction
+            const ext = result.extracted || {} as any;
+            const glVerified = ext.glActive === true;
+            const wcVerified = ext.wcActive === true;
+            const autoVerified = ext.autoActive === true;
+
             // Update the vendor document
             await db.doc(`vendors/${vendorId}`).update({
                 'compliance.acord25.status': status,
@@ -53,6 +59,12 @@ export const onDocumentUploaded = onDocumentUpdated({
                     extracted: result.extracted
                 },
                 'compliance.acord25.extractedData': result.extracted,
+                // Sync per-coverage verified flags from AI extraction
+                'compliance.generalLiability.verified': glVerified,
+                'compliance.generalLiability.hasInsurance': glVerified,
+                'compliance.workersComp.verified': wcVerified,
+                'compliance.workersComp.hasInsurance': wcVerified,
+                'compliance.autoInsurance.verified': autoVerified,
                 updatedAt: admin.firestore.FieldValue.serverTimestamp()
             });
 

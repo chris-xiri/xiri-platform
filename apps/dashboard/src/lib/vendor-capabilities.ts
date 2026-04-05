@@ -23,6 +23,7 @@ export const VENDOR_CAPABILITIES: CapabilityOption[] = [
   { value: 'pressure_washing',     label: 'Pressure Washing',       group: 'cleaning' },
   { value: 'disinfecting',         label: 'Disinfecting Services',  group: 'cleaning' },
   { value: 'day_porter',           label: 'Day Porters',            group: 'cleaning' },
+  { value: 'post_construction',    label: 'Post-Construction Cleaning', group: 'cleaning' },
 
   // ── Facility / Maintenance ──
   { value: 'hvac',                 label: 'HVAC Maintenance',       group: 'facility' },
@@ -85,6 +86,12 @@ const NORMALIZE_MAP: Record<string, string> = {
   'day porter':             'day_porter',
   'day porters':            'day_porter',
   'day-porter':             'day_porter',
+  // Post-Construction
+  'post-construction':      'post_construction',
+  'post construction':      'post_construction',
+  'post construction cleaning': 'post_construction',
+  'post-construction cleaning': 'post_construction',
+  'construction cleanup':   'post_construction',
   // Facility
   'hvac':                   'hvac',
   'hvac maintenance':       'hvac',

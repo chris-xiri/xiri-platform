@@ -43,7 +43,24 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
     const totalRequirements = requirements.length;
     const complianceScore = Math.round((metRequirements / totalRequirements) * 100);
 
-    const CompactItem = ({ icon: Icon, label, value, verified, required }: any) => (
+    // Derive insurance coverage from AI-extracted ACORD data when available
+    const acordExtracted = (compliance as any).acord25?.extractedData;
+    const hasAcordAnalysis = !!acordExtracted;
+
+    const getInsuranceStatus = (coverageField: any, acordActive: boolean | undefined) => {
+        if (hasAcordAnalysis && acordActive !== undefined) {
+            // AI extraction is the source of truth
+            return { value: acordActive, verified: true, notFound: !acordActive };
+        }
+        // No ACORD analysis yet — use self-attestation
+        return { value: coverageField?.hasInsurance, verified: coverageField?.verified, notFound: false };
+    };
+
+    const glStatus = getInsuranceStatus(compliance.generalLiability, acordExtracted?.glActive);
+    const wcStatus = getInsuranceStatus(compliance.workersComp, acordExtracted?.wcActive);
+    const autoStatus = getInsuranceStatus(compliance.autoInsurance, acordExtracted?.autoActive);
+
+    const CompactItem = ({ icon: Icon, label, value, verified, notFound, required }: any) => (
         <div className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors text-sm">
             <div className="flex items-center gap-2">
                 <div className={`p-1.5 rounded-full ${value ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -54,8 +71,14 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
             </div>
             <div className="flex items-center gap-2">
                 {verified !== undefined && (
-                    <Badge variant={verified ? "outline" : "secondary"} className="text-[10px] h-5 px-1.5 font-normal">
-                        {verified ? "Verified" : "Pending"}
+                    <Badge
+                        variant={verified && value ? "outline" : "secondary"}
+                        className={`text-[10px] h-5 px-1.5 font-normal ${
+                            notFound ? 'bg-red-100 text-red-700 border-red-200' :
+                            verified && value ? 'bg-green-100 text-green-700 border-green-200' : ''
+                        }`}
+                    >
+                        {notFound ? "Not Found" : verified ? "Verified" : "Pending"}
                     </Badge>
                 )}
                 {value ? (
@@ -163,21 +186,25 @@ export default function VendorCompliance({ vendor }: VendorComplianceProps) {
                     <CompactItem
                         icon={Shield}
                         label="General Liability"
-                        value={compliance.generalLiability?.hasInsurance}
-                        verified={compliance.generalLiability?.verified}
+                        value={glStatus.value}
+                        verified={glStatus.verified}
+                        notFound={glStatus.notFound}
                         required={true}
                     />
                     <CompactItem
                         icon={Users}
                         label="Workers' Comp"
-                        value={compliance.workersComp?.hasInsurance}
-                        verified={compliance.workersComp?.verified}
+                        value={wcStatus.value}
+                        verified={wcStatus.verified}
+                        notFound={wcStatus.notFound}
+                        required={true}
                     />
                     <CompactItem
                         icon={Car}
                         label="Commercial Auto"
-                        value={compliance.autoInsurance?.hasInsurance}
-                        verified={compliance.autoInsurance?.verified}
+                        value={autoStatus.value}
+                        verified={autoStatus.verified}
+                        notFound={autoStatus.notFound}
                     />
                     {compliance.additionalInsurance?.map((ins: any, idx: number) => (
                         <CompactItem

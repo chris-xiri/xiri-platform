@@ -164,6 +164,14 @@ export const CAPABILITY_DIRECTORY: CapabilityMeta[] = [
     seoDescription: 'Reliable day porter contractors for lobbies, restrooms, and common areas. Background-checked and XIRI-verified. NY metro area.',
     definitionBlock: 'XIRI\'s day porter partners provide daytime cleaning and maintenance for high-traffic commercial lobbies, restrooms, breakrooms, and common areas. All porters are background-checked and NFC-verified on each shift.',
   },
+  {
+    value: 'post_construction', label: 'Post-Construction Cleaning', slug: 'post-construction-cleaning',
+    group: 'cleaning', groupLabel: 'Cleaning',
+    icon: 'HardHat',
+    seoTitle: 'Post-Construction Cleaning Contractors | XIRI Partners',
+    seoDescription: 'Vetted post-construction cleaning contractors for final cleans, rough cleans, and construction debris removal. XIRI-verified and insured. NY metro area.',
+    definitionBlock: 'XIRI\'s post-construction cleaning partners specialize in rough cleans, final cleans, and punch-list cleaning for newly built or renovated commercial spaces. Services include dust removal, window detailing, floor finishing, and debris hauling. All contractors carry $1M+ general liability insurance.',
+  },
 
   // ── Facility / Maintenance ──
   {
@@ -314,6 +322,11 @@ Object.assign(CAPABILITY_NORMALIZE_MAP, {
   'sanitization': 'disinfecting',
   'restroom sanitation': 'janitorial',
   'trash removal': 'janitorial',
+  'post-construction': 'post_construction',
+  'post construction': 'post_construction',
+  'post construction cleaning': 'post_construction',
+  'post-construction cleaning': 'post_construction',
+  'construction cleanup': 'post_construction',
 });
 
 /** Normalize a single capability string to its slug value */
