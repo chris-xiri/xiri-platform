@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 
 export type QueueTaskType = 'GENERATE' | 'SEND' | 'FOLLOW_UP';
-export type QueueStatus = 'PENDING' | 'RETRY' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+export type QueueStatus = 'PENDING' | 'RETRY' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
 export interface QueueItem {
     id?: string;
@@ -42,6 +42,33 @@ export async function fetchPendingTasks(db: admin.firestore.Firestore) {
         .get();
 
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QueueItem));
+}
+
+/**
+ * Atomically claim a task for processing.
+ * Uses a Firestore transaction to ensure only one worker processes a task.
+ * Returns true if the task was successfully claimed, false if another worker
+ * already picked it up (status is no longer PENDING/RETRY).
+ */
+export async function claimTask(db: admin.firestore.Firestore, taskId: string): Promise<boolean> {
+    const ref = db.collection(COLLECTION).doc(taskId);
+    try {
+        return await db.runTransaction(async (txn) => {
+            const snap = await txn.get(ref);
+            if (!snap.exists) return false;
+            const current = snap.data()!;
+            if (current.status !== 'PENDING' && current.status !== 'RETRY') {
+                return false; // Already claimed, completed, or cancelled
+            }
+            txn.update(ref, {
+                status: 'IN_PROGRESS',
+                claimedAt: new Date(),
+            });
+            return true;
+        });
+    } catch {
+        return false; // Transaction contention — another worker won
+    }
 }
 
 export async function updateTaskStatus(db: admin.firestore.Firestore, taskId: string, status: QueueStatus, updates: Partial<QueueItem> = {}) {

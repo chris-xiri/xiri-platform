@@ -34,7 +34,7 @@ export async function getTemplate(templateId: string): Promise<EmailTemplate | n
  * Replace variables in template content
  */
 export function replaceVariables(content: string, variables: Record<string, string>): string {
-    return content.replace(/\{\{(\w+)\}\}/g, (_, key) => key in variables ? variables[key] : `{{${key}}}`);
+    return content.replace(/\{\{(\w+)\}\}/g, (_, key) => key in variables ? variables[key] : '');
 }
 
 /**

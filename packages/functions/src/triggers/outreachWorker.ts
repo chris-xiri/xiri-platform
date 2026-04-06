@@ -1,8 +1,43 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from 'firebase-admin';
 import * as logger from "firebase-functions/logger";
-import { fetchPendingTasks, updateTaskStatus, enqueueTask, QueueItem } from "../utils/queueUtils";
+import { fetchPendingTasks, updateTaskStatus, enqueueTask, claimTask, QueueItem } from "../utils/queueUtils";
 import { sendEmail } from "../utils/emailUtils";
+
+// ── Smart fallbacks for unresolved merge variables ─────────────────
+const SMART_FALLBACKS: Record<string, string> = {
+    contactName: 'there',
+    businessName: 'your facility',
+    vendorName: 'your company',
+    facilityType: 'your facility',
+    address: '',
+    squareFootage: '',
+    city: 'your area',
+    state: '',
+    services: 'facility maintenance',
+    specialty: 'facility maintenance',
+    onboardingUrl: 'https://xiri.ai/demo',
+};
+
+/**
+ * Replace any remaining unresolved {{variables}} with smart fallbacks,
+ * then clean up leftover artifacts (double spaces, orphaned commas).
+ */
+function sanitizeUnresolvedVars(text: string): { cleaned: string; replaced: string[] } {
+    const replaced: string[] = [];
+    const cleaned = text
+        .replace(/\{\{([a-zA-Z_]+)\}\}/g, (match, key) => {
+            replaced.push(match);
+            return SMART_FALLBACKS[key] ?? '';
+        })
+        .replace(/\s{2,}/g, ' ')
+        .replace(/,\s*,/g, ',')
+        .replace(/\|\s*\|/g, '|')
+        .replace(/^\s*,\s*/gm, '')
+        .replace(/,\s*$/gm, '')
+        .trim();
+    return { cleaned, replaced };
+}
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -87,6 +122,13 @@ export const processOutreachQueue = onSchedule({
 
         for (const task of tasks) {
             try {
+                // ── Claim the task before processing (prevents duplicate sends) ──
+                const claimed = await claimTask(db, task.id!);
+                if (!claimed) {
+                    logger.info(`Task ${task.id} already claimed by another worker — skipping.`);
+                    continue;
+                }
+
                 if (task.leadId) {
                     // ── Lead Outreach (template-based) ──
                     await handleLeadSend(task);
@@ -477,6 +519,16 @@ async function handleFollowUp(task: QueueItem) {
     }
     body = body.replace(/\[ONBOARDING_LINK\]/g, onboardingUrl);
 
+    // ── Safety net: replace any remaining unresolved {{variables}} ──
+    const subjectSanitized = sanitizeUnresolvedVars(subject);
+    const bodySanitized = sanitizeUnresolvedVars(body);
+    if (subjectSanitized.replaced.length || bodySanitized.replaced.length) {
+        logger.warn(`[VendorOutreach] Unresolved merge vars in template ${templateId}: ` +
+            `subject=[${subjectSanitized.replaced.join(', ')}], body=[${bodySanitized.replaced.join(', ')}]`);
+    }
+    subject = subjectSanitized.cleaned;
+    body = bodySanitized.cleaned;
+
     const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${body.replace(/\n/g, '<br/>')}</div>`;
 
     // Resolve sender from email_senders collection
@@ -535,15 +587,18 @@ async function handleFollowUp(task: QueueItem) {
 async function handleLeadSend(task: QueueItem) {
     logger.info(`[LeadOutreach] Sending template email for lead ${task.leadId}`);
 
-    // ── Suppression check: skip lost/unsubscribed leads ──
+    // ── Suppression check: skip deleted / lost / unsubscribed leads ──
     const leadDoc = await db.collection("leads").doc(task.leadId!).get();
-    if (leadDoc.exists) {
-        const leadData = leadDoc.data()!;
-        if (leadData.status === 'lost' || leadData.unsubscribedAt) {
-            logger.info(`[Suppression] Lead ${task.leadId} is ${leadData.status}/unsubscribed — skipping send.`);
-            await updateTaskStatus(db, task.id!, 'CANCELLED');
-            return;
-        }
+    if (!leadDoc.exists) {
+        logger.info(`[Suppression] Lead ${task.leadId} was deleted — cancelling task.`);
+        await updateTaskStatus(db, task.id!, 'CANCELLED');
+        return;
+    }
+    const leadData = leadDoc.data()!;
+    if (leadData.status === 'lost' || leadData.unsubscribedAt) {
+        logger.info(`[Suppression] Lead ${task.leadId} is ${leadData.status}/unsubscribed — skipping send.`);
+        await updateTaskStatus(db, task.id!, 'CANCELLED');
+        return;
     }
 
     // ── Resolve contact (contact-centric model) ──
@@ -623,17 +678,17 @@ async function handleLeadSend(task: QueueItem) {
         body = body.replace(regex, value);
     }
 
-    // ── Safety strip: remove any remaining unresolved {{variables}} ──
-    // This prevents raw merge tags from ever reaching a recipient's inbox.
-    const unresolvedPattern = /\{\{[a-zA-Z_]+\}\}/g;
-    const unresolvedSubject = subject.match(unresolvedPattern);
-    const unresolvedBody = body.match(unresolvedPattern);
-    if (unresolvedSubject || unresolvedBody) {
-        logger.warn(`[LeadOutreach] Unresolved merge vars found in template ${templateId}: ` +
-            `subject=[${unresolvedSubject?.join(', ')}], body=[${unresolvedBody?.join(', ')}]`);
-        subject = subject.replace(unresolvedPattern, '');
-        body = body.replace(unresolvedPattern, '');
+    // ── Safety net: replace any remaining unresolved {{variables}} ──
+    // Uses smart fallbacks (e.g. "there" for contactName) instead of
+    // leaving raw curly brackets or blank gaps in the email.
+    const subjectSanitized = sanitizeUnresolvedVars(subject);
+    const bodySanitized = sanitizeUnresolvedVars(body);
+    if (subjectSanitized.replaced.length || bodySanitized.replaced.length) {
+        logger.warn(`[LeadOutreach] Unresolved merge vars in template ${templateId}: ` +
+            `subject=[${subjectSanitized.replaced.join(', ')}], body=[${bodySanitized.replaced.join(', ')}]`);
     }
+    subject = subjectSanitized.cleaned;
+    body = bodySanitized.cleaned;
 
     const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${body.replace(/\n/g, '<br/>')}</div>`;
 

@@ -1,6 +1,7 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { logger } from "firebase-functions/v2";
+import { cancelVendorTasks, cancelLeadTasks } from "../utils/queueUtils";
 
 const db = admin.firestore();
 
@@ -244,6 +245,78 @@ export const resendWebhook = onRequest({
             logger.info(`${entityType} ${entityId}: emailEngagement updated (${mapping.deliveryStatus}, lastEvent=${shouldUpdateLastEvent ? 'updated' : 'preserved'})`);
         } catch (engErr) {
             logger.warn(`Failed to update ${entityType} engagement:`, engErr);
+        }
+
+        // ─── Auto-suppress on bounce / spam complaint ─────────────────
+        // Dismiss vendor or mark lead as lost, and cancel all pending tasks
+        // so we stop wasting queue cycles on undeliverable addresses.
+        if (eventType === 'email.bounced' || eventType === 'email.complained') {
+            const reason = eventType === 'email.bounced' ? 'hard_bounce' : 'spam_complaint';
+            const reasonLabel = eventType === 'email.bounced' ? 'Hard bounce' : 'Spam complaint';
+
+            try {
+                if (entityType === 'vendor') {
+                    // Check if already dismissed
+                    const vendorDoc = await db.collection('vendors').doc(entityId).get();
+                    if (vendorDoc.exists && vendorDoc.data()?.status !== 'dismissed') {
+                        await db.collection('vendors').doc(entityId).update({
+                            status: 'dismissed',
+                            statusUpdatedAt: new Date(),
+                            dismissReason: reason,
+                            unsubscribedAt: new Date(),
+                        });
+
+                        const cancelledCount = await cancelVendorTasks(db, entityId);
+
+                        await db.collection('vendor_activities').add({
+                            vendorId: entityId,
+                            type: 'STATUS_CHANGE',
+                            description: `${reasonLabel} detected — vendor auto-dismissed. ${cancelledCount} pending tasks cancelled.`,
+                            createdAt: new Date(),
+                            metadata: { from: vendorDoc.data()?.status, to: 'dismissed', trigger: reason, cancelledTasks: cancelledCount },
+                        });
+
+                        logger.info(`[AutoSuppress] Vendor ${entityId} dismissed (${reason}). ${cancelledCount} tasks cancelled.`);
+                    }
+                } else if (entityType === 'lead') {
+                    // Check if already lost
+                    const leadDoc = await db.collection('leads').doc(entityId).get();
+                    if (leadDoc.exists && leadDoc.data()?.status !== 'lost') {
+                        const prevStatus = leadDoc.data()?.status;
+                        await db.collection('leads').doc(entityId).update({
+                            status: 'lost',
+                            lostReason: reason,
+                            unsubscribedAt: new Date(),
+                            outreachStatus: reason === 'spam_complaint' ? 'SPAM_COMPLAINT' : 'BOUNCED',
+                        });
+
+                        const cancelledCount = await cancelLeadTasks(db, entityId);
+
+                        // Also mark contact as unsubscribed if we have one
+                        if (resolvedContactId) {
+                            await db.collection('contacts').doc(resolvedContactId).update({
+                                unsubscribed: true,
+                                unsubscribedAt: new Date(),
+                                unsubscribeReason: reason,
+                            });
+                        }
+
+                        await db.collection('lead_activities').add({
+                            leadId: entityId,
+                            contactId: resolvedContactId || null,
+                            type: 'STATUS_CHANGE',
+                            description: `${reasonLabel} detected — lead auto-marked as lost. ${cancelledCount} pending tasks cancelled.`,
+                            createdAt: new Date(),
+                            metadata: { from: prevStatus, to: 'lost', trigger: reason, cancelledTasks: cancelledCount, contactId: resolvedContactId || null },
+                        });
+
+                        logger.info(`[AutoSuppress] Lead ${entityId} marked lost (${reason}). ${cancelledCount} tasks cancelled.`);
+                    }
+                }
+            } catch (suppressErr) {
+                // Non-critical — don't fail the webhook, but log prominently
+                logger.error(`[AutoSuppress] Failed to suppress ${entityType} ${entityId}:`, suppressErr);
+            }
         }
 
         // ─── Template Stats Tracking (for A/B testing analytics) ───
