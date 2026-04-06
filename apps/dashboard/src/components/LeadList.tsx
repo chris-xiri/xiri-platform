@@ -309,7 +309,10 @@ export default function LeadList({
         setBulkSequenceProgress(null);
         try {
             const seqSnap = await getDocs(collection(db, 'sequences'));
-            setBulkSequences(seqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+            const allSeqs = seqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+            // Only show lead-appropriate sequences — exclude vendor sequences
+            const LEAD_CATEGORIES = ['lead', 'referral', 'custom'];
+            setBulkSequences(allSeqs.filter((s: any) => !s.category || LEAD_CATEGORIES.includes(s.category)));
         } catch (err) {
             console.error('Error loading sequences:', err);
         } finally {

@@ -598,6 +598,22 @@ async function handleLeadSend(task: QueueItem) {
         squareFootage: task.metadata.squareFootage || '',
     };
 
+    // ── Defensive aliases ───────────────────────────────────────────
+    // If the AI template optimizer (or a manual edit) accidentally
+    // introduced vendor-style variables into a lead template, map them
+    // to the closest lead-context equivalents so they still render.
+    const defensiveAliases: Record<string, string> = {
+        vendorName: mergeVars.businessName,
+        city: task.metadata.city || task.metadata.address?.split(',')[0]?.trim() || '',
+        state: task.metadata.state || '',
+        services: titleCase(task.metadata.facilityType || 'Facility Services'),
+        specialty: titleCase(task.metadata.facilityType || 'Facility Services'),
+        onboardingUrl: 'https://xiri.ai/demo',
+    };
+    for (const [key, value] of Object.entries(defensiveAliases)) {
+        if (!mergeVars[key]) mergeVars[key] = value;
+    }
+
     // Merge template
     let subject = template.subject || task.metadata.subject || '';
     let body = template.body || '';
@@ -605,6 +621,18 @@ async function handleLeadSend(task: QueueItem) {
         const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
         subject = subject.replace(regex, value);
         body = body.replace(regex, value);
+    }
+
+    // ── Safety strip: remove any remaining unresolved {{variables}} ──
+    // This prevents raw merge tags from ever reaching a recipient's inbox.
+    const unresolvedPattern = /\{\{[a-zA-Z_]+\}\}/g;
+    const unresolvedSubject = subject.match(unresolvedPattern);
+    const unresolvedBody = body.match(unresolvedPattern);
+    if (unresolvedSubject || unresolvedBody) {
+        logger.warn(`[LeadOutreach] Unresolved merge vars found in template ${templateId}: ` +
+            `subject=[${unresolvedSubject?.join(', ')}], body=[${unresolvedBody?.join(', ')}]`);
+        subject = subject.replace(unresolvedPattern, '');
+        body = body.replace(unresolvedPattern, '');
     }
 
     const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${body.replace(/\n/g, '<br/>')}</div>`;

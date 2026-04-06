@@ -51,6 +51,14 @@ export const startLeadSequence = onCall(async (request) => {
     const businessName = lead.businessName || "Unknown";
     const leadType = lead.leadType || "direct";
 
+    // ── Guard: block enrollment of unsubscribed / lost leads ──
+    if (lead.unsubscribedAt || lead.status === 'lost') {
+        throw new HttpsError(
+            "failed-precondition",
+            `${businessName} has unsubscribed or is marked as lost — cannot enroll in a sequence.`
+        );
+    }
+
     // ── Resolve contact (contact-centric model) ───────────────
     let contactId: string | null = requestedContactId || null;
     let contactEmail = "";
@@ -60,6 +68,12 @@ export const startLeadSequence = onCall(async (request) => {
         const contactDoc = await db.collection("contacts").doc(contactId).get();
         if (contactDoc.exists) {
             const contact = contactDoc.data()!;
+            if (contact.unsubscribed) {
+                throw new HttpsError(
+                    "failed-precondition",
+                    `Contact ${contact.firstName || ''} ${contact.lastName || ''} has unsubscribed — cannot enroll in a sequence.`.trim()
+                );
+            }
             contactEmail = contact.email || "";
             contactName = `${contact.firstName || ""} ${contact.lastName || ""}`.trim();
         }
@@ -112,6 +126,18 @@ export const startLeadSequence = onCall(async (request) => {
     }
 
     const sequence = sequenceDoc.data()!;
+
+    // ── Guard: prevent cross-audience enrollment ────────────
+    // Vendor sequences should never be assigned to leads. This can happen
+    // if the UI fails to filter or if the callable is invoked directly.
+    const BLOCKED_CATEGORIES = ['vendor', 'vendor_email'];
+    if (BLOCKED_CATEGORIES.includes(sequence.category)) {
+        throw new HttpsError(
+            'failed-precondition',
+            `Cannot enroll a lead in vendor sequence "${sequence.name || sequenceId}". Use a lead or referral sequence instead.`
+        );
+    }
+
     const steps: { templateId: string; dayOffset: number; label: string }[] = sequence.steps || [];
 
     if (steps.length === 0) {

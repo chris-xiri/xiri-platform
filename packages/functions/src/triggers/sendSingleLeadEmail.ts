@@ -34,6 +34,14 @@ export const sendSingleLeadEmail = onCall(
     const lead = leadDoc.data()!;
     const businessName = lead.businessName || 'Unknown';
 
+    // ── Guard: block sends to unsubscribed / lost leads ──
+    if (lead.unsubscribedAt || lead.status === 'lost') {
+        throw new HttpsError(
+            'failed-precondition',
+            `${businessName} has unsubscribed or is marked as lost — cannot send email.`
+        );
+    }
+
     // ─── Resolve contact (contact-centric model) ───
     let contactId: string | null = requestedContactId || null;
     let contactEmail: string = '';

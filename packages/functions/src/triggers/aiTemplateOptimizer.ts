@@ -122,10 +122,42 @@ async function optimizeSingleTemplate(templateId: string) {
         throw new HttpsError('failed-precondition', 'GEMINI_API_KEY not set');
     }
 
-    const FALLBACK = `You are an email marketing expert specializing in B2B contractor outreach for facility management companies.
+    // ── Category-aware prompt context ────────────────────────────
+    // Each template category targets a different audience with different
+    // merge variables. Using the wrong context causes the AI to generate
+    // copy for the wrong audience (e.g. contractor copy for tenants).
+    const category = template.category || 'vendor';
+
+    const CATEGORY_CONFIG: Record<string, { role: string; context: string; mergeVars: string }> = {
+        vendor: {
+            role: 'B2B contractor outreach for facility management companies',
+            context: 'This email targets independent contractors (janitors, cleaners, handymen) to join a facility management network as service providers. Keep tone professional but blue-collar-friendly. The goal is to get them to create a profile and join the XIRI contractor network.',
+            mergeVars: '{{vendorName}}, {{contactName}}, {{city}}, {{state}}, {{services}}, {{specialty}}, {{onboardingUrl}}',
+        },
+        tenant_lead: {
+            role: 'B2B facility services sales to commercial tenants and medical practices',
+            context: 'This email targets office managers, practice managers, and facility decision-makers at commercial tenants and medical practices. We are selling XIRI facility management services TO them — cleaning, maintenance, supplies, compliance. Keep tone professional and consultative. The goal is to book a 10-minute introductory call or demo. Do NOT write copy that recruits contractors or asks them to join a network — these are potential CLIENTS, not service providers.',
+            mergeVars: '{{contactName}}, {{businessName}}, {{facilityType}}, {{address}}, {{squareFootage}}',
+        },
+        enterprise_lead: {
+            role: 'B2B enterprise facility services sales to large organizations',
+            context: 'This email targets enterprise facility directors and operations managers at large organizations (urgent care groups, hospital networks, corporate offices). We are selling XIRI facility management services TO them. Keep tone polished and executive-level. The goal is to book a meeting or demo. Do NOT write contractor recruitment copy.',
+            mergeVars: '{{contactName}}, {{businessName}}, {{facilityType}}, {{address}}, {{squareFootage}}',
+        },
+        referral_partnership: {
+            role: 'B2B referral partnership outreach for facility management',
+            context: 'This email targets potential referral partners (real estate brokers, property managers, medical equipment suppliers) who could refer facility management clients to XIRI. Keep tone collaborative and partnership-focused. The goal is to establish a mutual referral relationship.',
+            mergeVars: '{{contactName}}, {{businessName}}, {{facilityType}}',
+        },
+    };
+
+    const config = CATEGORY_CONFIG[category] || CATEGORY_CONFIG['vendor'];
+
+    const FALLBACK = `You are an email marketing expert specializing in ${config.role}.
 
 ## Current Template Performance
 - Template: "{{templateName}}" ({{templateId}})
+- Category: {{templateCategory}}
 - Sent: {{statsSent}} | Delivered: {{statsDelivered}} | Opened: {{statsOpened}} | Clicked: {{statsClicked}}
 - Open Rate: {{openRate}}% | Click Rate: {{clickRate}}% | Bounce Rate: {{bounceRate}}%
 
@@ -136,10 +168,15 @@ async function optimizeSingleTemplate(templateId: string) {
 {{currentBody}}
 
 ## Context
-This email targets independent contractors to join a facility management network. Keep tone professional but blue-collar-friendly.
+${config.context}
 
-## Available Merge Variables
-{{vendorName}}, {{contactName}}, {{city}}, {{state}}, {{services}}, {{specialty}}, {{onboardingUrl}}
+## Available Merge Variables (ONLY use these — do NOT invent others)
+${config.mergeVars}
+
+## CRITICAL RULES
+1. ONLY use merge variables from the list above. Do NOT use variables from other template categories.
+2. Write copy appropriate for the target audience described in Context. Do NOT mix up audiences.
+3. If this is a tenant/enterprise lead template, never mention "joining a network", "onboarding profile", or "getting more jobs" — those are contractor concepts.
 
 ## Instructions
 Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Return ONLY valid JSON, no markdown fences.`;
@@ -147,6 +184,7 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
     const prompt = await getPrompt('template_optimizer', FALLBACK, {
         templateName: template.name,
         templateId,
+        templateCategory: category,
         statsSent: String(stats.sent),
         statsDelivered: String(stats.delivered),
         statsOpened: String(stats.opened),
