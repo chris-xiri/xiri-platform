@@ -118,17 +118,14 @@ export default function DemoPage() {
     const [emailScenario, setEmailScenario] = useState<EmailScenario>('green');
     const [selectedPain, setSelectedPain] = useState<PainPoint | null>(null);
     const [solutionBridge, setSolutionBridge] = useState<{ solution: string; detail: string } | null>(null);
+    const [showNudge, setShowNudge] = useState(false);
     const liveStartedRef = useRef(false);
     const sessionRef = useRef(typeof crypto !== 'undefined' ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+    const simSectionRef = useRef<HTMLDivElement>(null);
 
     // Section visibility
     const heroSection = useInView();
     const liveSection = useInView();
-    const servicesSection = useInView();
-    const ctaSection = useInView();
-
-    // Track if bottom CTA is visible — hides sticky footer
-    const ctaVisibility = useIsVisible();
 
     // Use a ref so the simulation closure always sees the latest scenario
     const scenarioRef = useRef(emailScenario);
@@ -223,6 +220,7 @@ export default function DemoPage() {
         setEmailScenario(mapping.scenario);
         scenarioRef.current = mapping.scenario;
         setEmailPhase('simulation');
+        setShowNudge(false);
         liveStartedRef.current = false;
         setSim({ activeZone: -1, completedTasks: 0, completedZones: [], blockedZone: null, lateWarning: false, lateResolved: false, auditPhase: 'idle', auditZone: -1, approvedZones: [] });
 
@@ -240,6 +238,10 @@ export default function DemoPage() {
             } else {
                 startLiveSimulation();
             }
+            // Auto-scroll to simulation area
+            setTimeout(() => {
+                simSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 300);
         }, 3500);
 
         // GA4 tracking
@@ -324,43 +326,36 @@ export default function DemoPage() {
         : Math.min(sim.completedZones.length, LIVE_ZONES.length);
 
     return (
-        <div className="min-h-screen bg-white text-gray-900 pb-16">
+        <div className="bg-white text-gray-900">
             {/* ── Header ── */}
             <div
                 ref={heroSection.ref}
                 className={`transition-all duration-700 ${heroSection.inView ? 'opacity-100' : 'opacity-0'}`}
             >
                 <div className="border-b border-gray-200 bg-white">
-                    <div className="max-w-3xl mx-auto px-4 py-4">
+                    <div className="max-w-3xl mx-auto px-4 py-3">
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
-                                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h1 className="text-lg font-bold text-gray-900">See Verified Facility Management</h1>
-                                    <p className="text-xs text-gray-400">How XIRI keeps your building clean & accountable</p>
-                                </div>
-                            </div>
-                            <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider bg-gray-100 px-2.5 py-1 rounded-md">Interactive Demo</span>
+                            <a href="/" className="flex items-center gap-2">
+                                <span className="text-2xl font-bold text-sky-700 tracking-tight" style={{ fontFamily: 'var(--font-heading, system-ui)' }}>XIRI</span>
+                                <span className="text-[11px] font-normal text-gray-400 mt-1 hidden sm:inline">FACILITY SOLUTIONS</span>
+                            </a>
+                            <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider bg-gray-100 px-3 py-1.5 rounded-md border border-gray-200">Interactive Demo</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Quiz-style diagnostic — engaging poll design */}
-                <div className="bg-gradient-to-b from-indigo-950 via-indigo-900 to-indigo-950 border-b border-indigo-800 py-10">
+                <div className="bg-slate-900 border-b border-slate-700 py-10">
                     <div className="max-w-3xl mx-auto px-4">
                         {/* Poll header */}
                         <div className="text-center mb-6">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-800/60 border border-indigo-700/50 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-4">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 border border-slate-600 text-slate-300 text-xs font-semibold uppercase tracking-wider mb-4">
                                 📊 Quick Poll
                             </span>
                             <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">
                                 What frustrates you most<br className="sm:hidden" /> about your cleaning service?
                             </h2>
-                            <p className="text-sm text-indigo-300/80">
+                            <p className="text-sm text-slate-400">
                                 Tap your answer — we&apos;ll show you how we solve it in real time.
                             </p>
                         </div>
@@ -373,15 +368,15 @@ export default function DemoPage() {
                                     onClick={() => selectPainPoint(p.id)}
                                     className={`group w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-left transition-all duration-300 ${
                                         selectedPain === p.id
-                                            ? 'bg-indigo-600 border-indigo-500 shadow-lg shadow-indigo-900/40 scale-[1.02]'
+                                            ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-900/30 scale-[1.02]'
                                             : selectedPain === null
-                                                ? 'bg-indigo-900/40 border-indigo-700/40 hover:bg-indigo-800/60 hover:border-indigo-600/60 hover:scale-[1.01] cursor-pointer'
-                                                : 'bg-indigo-950/40 border-indigo-800/20 opacity-40 cursor-pointer hover:opacity-60'
+                                                ? 'bg-slate-800/60 border-slate-600/50 hover:bg-slate-700/80 hover:border-slate-500 hover:scale-[1.01] cursor-pointer'
+                                                : 'bg-slate-800/20 border-slate-700/20 opacity-40 cursor-pointer hover:opacity-60'
                                     }`}
                                 >
                                     <span className="text-2xl shrink-0">{p.icon}</span>
                                     <span className={`text-base font-semibold flex-1 ${
-                                        selectedPain === p.id ? 'text-white' : 'text-indigo-100'
+                                        selectedPain === p.id ? 'text-white' : 'text-slate-200'
                                     }`}>{p.label}</span>
                                     {selectedPain === p.id ? (
                                         <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
@@ -389,9 +384,9 @@ export default function DemoPage() {
                                         </span>
                                     ) : (
                                         <span className={`w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                                            selectedPain === null ? 'border-indigo-600 group-hover:border-indigo-400' : 'border-indigo-800/30'
+                                            selectedPain === null ? 'border-slate-500 group-hover:border-slate-400' : 'border-slate-700/30'
                                         }`}>
-                                            <span className="text-xs text-indigo-400 font-bold">{String.fromCharCode(65 + idx)}</span>
+                                            <span className="text-xs text-slate-400 font-bold">{String.fromCharCode(65 + idx)}</span>
                                         </span>
                                     )}
                                 </button>
@@ -400,7 +395,7 @@ export default function DemoPage() {
 
                         {/* Engagement nudge */}
                         {!selectedPain && (
-                            <p className="text-center text-xs text-indigo-400/60 mt-4 animate-pulse">
+                            <p className="text-center text-xs text-slate-500 mt-4 animate-pulse">
                                 👆 Pick the one that hits closest to home
                             </p>
                         )}
@@ -410,20 +405,20 @@ export default function DemoPage() {
 
             {/* ── Solution Bridge — own section with distinct background ── */}
             {solutionBridge && (
-                <div className="bg-gradient-to-b from-indigo-50/60 to-indigo-50/30 border-y border-indigo-100 py-8 animate-fadeIn">
+                <div className="bg-slate-50 border-y border-slate-200 py-6 animate-fadeIn">
                     <div className="max-w-3xl mx-auto px-4">
-                        <div className="rounded-xl border border-indigo-200 bg-white p-6 shadow-md">
+                        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                             <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mt-0.5">
+                                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0 mt-0.5">
                                     <span className="text-white text-lg">✦</span>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold text-indigo-900 mb-1">Here&apos;s how XIRI solves this:</p>
+                                    <p className="text-sm font-semibold text-slate-700 mb-1">Here&apos;s how XIRI solves this:</p>
                                     <p className="text-base font-bold text-gray-900 mb-2">{solutionBridge.solution}</p>
                                     <p className="text-sm text-gray-600 leading-relaxed">{solutionBridge.detail}</p>
                                     {!(emailPhase !== 'simulation' || sim.activeZone >= 0) && (
-                                    <p className="text-xs text-indigo-400 mt-3 flex items-center gap-1.5">
-                                        <span className="inline-block w-3 h-3 border-2 border-indigo-300 border-t-transparent rounded-full animate-spin" />
+                                    <p className="text-xs text-blue-500 mt-3 flex items-center gap-1.5">
+                                        <span className="inline-block w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
                                         {selectedPain === 'poor-comms' ? 'Loading your morning report…' :
                                          selectedPain === 'late-noshow' ? 'Starting SMS simulation…' :
                                          selectedPain === 'turnover' ? 'Starting crew swap timeline…' :
@@ -438,14 +433,15 @@ export default function DemoPage() {
             )}
 
             {/* ── Simulation / Email Section — separate visual block ── */}
-            <div className={`${selectedPain ? 'bg-gray-50/50 border-y border-gray-100 py-8' : ''}`}>
-            <div className="max-w-3xl mx-auto px-4 py-6 space-y-8">
+            {selectedPain && (
+            <div ref={simSectionRef} className="bg-gray-50/50 border-y border-gray-100 py-6">
+            <div className="max-w-3xl mx-auto px-4 py-4 space-y-6">
 
                 {/* ── Section 1: Live NFC Simulation → Email Preview ── */}
                 <div
                     id="sim-section"
                     ref={liveSection.ref}
-                    className={`transition-all duration-700 delay-100 ${!selectedPain || (emailPhase === 'simulation' && sim.activeZone < 0) ? 'hidden' : liveSection.inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                    className={`transition-all duration-700 delay-100 ${(emailPhase === 'simulation' && sim.activeZone < 0) ? 'hidden' : liveSection.inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                 >
                     {emailPhase === 'email' ? (
                         /* ── Email Preview (replaces live view) ── */
@@ -510,7 +506,7 @@ export default function DemoPage() {
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xs font-bold">MR</div>
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold">MR</div>
                                             <div>
                                                 <p className="text-sm font-medium text-gray-900">Miguel R. — Clocked in</p>
                                                 <p className="text-xs text-gray-400">Tonight, 9:14 PM · Est. 2h 30m</p>
@@ -737,115 +733,40 @@ export default function DemoPage() {
                             </p>
                         </div>
                     )}
-                </div>
-            </div>
-            </div>
 
-            {/* ── Services Section — only show after pain point selected ── */}
-            {selectedPain && (
-            <div className="bg-white border-y border-gray-200 py-8 animate-fadeIn">
-            <div className="max-w-3xl mx-auto px-4 space-y-8">
-                {/* ── Services ── */}
-                <div
-                    ref={servicesSection.ref}
-                    className={`transition-all duration-700 delay-100 ${servicesSection.inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                >
-                    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-                        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60">
-                            <h3 className="text-sm font-semibold text-gray-900">One Partner. Everything Covered.</h3>
-                            <p className="text-xs text-gray-400 mt-0.5">We&apos;re not just a cleaning company — we&apos;re your outsourced facility manager.</p>
-                        </div>
-                        <div className="grid grid-cols-3 gap-px bg-gray-100 p-px">
-                            {SERVICES.map(svc => (
-                                <div key={svc.name} className="bg-white p-3 text-center">
-                                    <span className="text-xl block mb-1">{svc.icon}</span>
-                                    <p className="text-xs font-semibold text-gray-900 leading-tight">{svc.name}</p>
-                                    <p className="text-[10px] text-gray-400 mt-0.5">{svc.desc}</p>
+                    {/* ── Re-engagement Nudge — appears after any simulation completes ── */}
+                    {selectedPain && (emailPhase === 'email' || emailPhase === 'crew-swap' || (emailPhase === 'simulation' && allDone)) && (
+                        <div className="mt-6 animate-fadeIn">
+                            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <p className="text-sm font-semibold text-gray-900 mb-1">Want to see another scenario?</p>
+                                <p className="text-xs text-gray-500 mb-3">Each pain point has a different simulation — try them all.</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {PAIN_POINTS.filter(p => p.id !== selectedPain).map(p => (
+                                        <button
+                                            key={p.id}
+                                            onClick={() => selectPainPoint(p.id)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all cursor-pointer"
+                                        >
+                                            <span>{p.icon}</span>
+                                            <span>{p.label}</span>
+                                        </button>
+                                    ))}
                                 </div>
-                            ))}
+                            </div>
                         </div>
-                        <div className="px-4 py-3 border-t border-gray-100">
-                            <p className="text-sm text-indigo-600 leading-relaxed">
-                                <span className="font-bold">One invoice.</span> Cleaning + maintenance + supplies + compliance verification. Stop juggling 20 vendors.
-                            </p>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
             </div>
             )}
 
-            {/* ── CTA Section — only show after pain point selected ── */}
-            {selectedPain && (
-            <div className="bg-gradient-to-b from-gray-50 to-white py-8 animate-fadeIn">
-            <div className="max-w-3xl mx-auto px-4 space-y-4">
-                <div
-                    ref={(el) => {
-                        // Combine both refs on this element
-                        (ctaSection.ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
-                        (ctaVisibility.ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
-                    }}
-                    className={`transition-all duration-700 delay-100 ${ctaSection.inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-                >
-                    {/* Scarcity */}
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-4">
-                        <p className="text-sm text-amber-800 leading-relaxed">
-                            <span className="font-bold">📍 We have one spot left in your area.</span> We&apos;re onboarding a location nearby this month and looking to add one more building in the route. Reach out while we&apos;re still scheduling.
-                        </p>
-                    </div>
-
-                    <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm" style={{ background: 'linear-gradient(135deg, #312e81 0%, #4338ca 100%)' }}>
-                        <div className="px-6 py-8 text-center">
-                            <h2 className="text-2xl font-bold text-white mb-2">
-                                See This For Your Building
-                            </h2>
-                            <p className="text-sm text-indigo-200/80 mb-6 leading-relaxed">
-                                Free 15-minute walkthrough. We&apos;ll scope your building and show you exactly what verified cleaning looks like — no obligation.
-                            </p>
-
-                            <a
-                                href="sms:+15163990350?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20demo.%20I%27m%20interested%20in%20learning%20more%20about%20verified%20cleaning%20for%20my%20building."
-                                className="block w-full py-4 rounded-lg bg-white text-indigo-900 font-bold text-base shadow-lg hover:bg-indigo-50 transition-all mb-2.5"
-                            >
-                                💬 Text Chris
-                            </a>
-
-                            <a
-                                href="tel:+15163990350"
-                                className="block w-full py-3.5 rounded-lg border border-indigo-300/40 text-indigo-100 font-medium text-sm hover:bg-indigo-800/30 transition-all mb-2.5"
-                            >
-                                📞 Call: (516) 399-0350
-                            </a>
-
-                            <a
-                                href="mailto:chris@xiri.ai?subject=Interested%20in%20XIRI%20Facility%20Management&body=Hi%20Chris%2C%0A%0AI%20saw%20the%20XIRI%20demo%20and%20I%27m%20interested%20in%20learning%20more%20about%20verified%20cleaning%20for%20my%20building.%0A%0ABuilding%20name%3A%20%0AAddress%3A%20%0A%0AThanks!"
-                                className="block w-full py-3.5 rounded-lg border border-indigo-300/40 text-indigo-100 font-medium text-sm hover:bg-indigo-800/30 transition-all mb-3"
-                            >
-                                ✉️ Email Chris
-                            </a>
-
-                            <button
-                                onClick={handleShare}
-                                className="w-full py-3 rounded-lg text-indigo-300/60 font-medium text-sm hover:text-indigo-200 transition-all cursor-pointer"
-                            >
-                                📤 Share with your decision maker
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            </div>
-            )}
-
-            {/* ── Sticky Bottom CTA Bar — hidden until pain point selected and when bottom CTA is visible ── */}
-            {selectedPain && (
-            <div className={`fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-gray-200 px-4 py-2.5 safe-area-inset-bottom transition-all duration-300 ${
-                ctaVisibility.isVisible ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
-            }`}>
+            {/* ── Sticky Bottom CTA Bar — shows after experience completes ── */}
+            {selectedPain && (emailPhase === 'email' || emailPhase === 'crew-swap' || (emailPhase === 'simulation' && allDone)) && (
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-gray-200 px-4 py-2.5 safe-area-inset-bottom animate-fadeIn">
                 <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
                     <a
                         href="sms:+15163990350?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20demo.%20I%27m%20interested%20in%20learning%20more."
-                        className="flex-1 py-2.5 rounded-lg bg-indigo-600 text-white font-semibold text-sm text-center shadow-sm hover:bg-indigo-700 transition-all"
+                        className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white font-semibold text-sm text-center shadow-sm hover:bg-blue-700 transition-all"
                     >
                         💬 Text Chris
                     </a>
@@ -1007,14 +928,14 @@ function SmsSimulationCard({ onComplete }: { onComplete: () => void }) {
                         )}
                         <div className={`max-w-[75%] px-3 py-2 rounded-xl text-xs leading-relaxed ${
                             msg.from === 'xiri'
-                                ? 'bg-indigo-600 text-white rounded-br-sm'
+                                ? 'bg-blue-600 text-white rounded-br-sm'
                                 : 'bg-gray-100 text-gray-800 rounded-bl-sm'
                         }`}>
                             <p>{msg.text}</p>
-                            <p className={`text-[9px] mt-1 ${msg.from === 'xiri' ? 'text-indigo-200' : 'text-gray-400'}`}>{msg.time}</p>
+                            <p className={`text-[9px] mt-1 ${msg.from === 'xiri' ? 'text-blue-200' : 'text-gray-400'}`}>{msg.time}</p>
                         </div>
                         {msg.from === 'xiri' && (
-                            <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">👤</div>
+                            <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">👤</div>
                         )}
                     </div>
                 ))}
@@ -1085,7 +1006,7 @@ function VendorNetworkCard() {
                         <h3 className="text-sm font-semibold text-gray-900">🏢 XIRI Vendor Network</h3>
                         <p className="text-[11px] text-gray-400 mt-0.5">Vetted cleaning companies ready to deploy in your area</p>
                     </div>
-                    <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">38 AVAILABLE</span>
+                    <span className="text-[10px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">38 AVAILABLE</span>
                 </div>
             </div>
 
@@ -1288,7 +1209,7 @@ function EmailPreviewCard({ scenario, painPoint }: { scenario: EmailScenario; pa
                     </p>
                     <a
                         href="sms:+15163990350?body=Hi%20Chris%2C%20I%20saw%20the%20XIRI%20demo.%20I%27m%20interested%20in%20learning%20more."
-                        className="inline-flex items-center gap-1.5 mt-2 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+                        className="inline-flex items-center gap-1.5 mt-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
                     >
                         💬 Text Chris to learn more →
                     </a>

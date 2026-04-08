@@ -75,41 +75,62 @@ var queueUtils_exports = {};
 __export(queueUtils_exports, {
   cancelLeadTasks: () => cancelLeadTasks,
   cancelVendorTasks: () => cancelVendorTasks,
+  claimTask: () => claimTask,
   enqueueTask: () => enqueueTask,
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db23, task) {
-  return db23.collection(COLLECTION).add({
+async function enqueueTask(db24, task) {
+  return db24.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db23) {
+async function fetchPendingTasks(db24) {
   const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db23.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db24.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function updateTaskStatus(db23, taskId, status, updates = {}) {
-  await db23.collection(COLLECTION).doc(taskId).update({
+async function claimTask(db24, taskId) {
+  const ref = db24.collection(COLLECTION).doc(taskId);
+  try {
+    return await db24.runTransaction(async (txn) => {
+      const snap = await txn.get(ref);
+      if (!snap.exists) return false;
+      const current = snap.data();
+      if (current.status !== "PENDING" && current.status !== "RETRY") {
+        return false;
+      }
+      txn.update(ref, {
+        status: "IN_PROGRESS",
+        claimedAt: /* @__PURE__ */ new Date()
+      });
+      return true;
+    });
+  } catch {
+    return false;
+  }
+}
+async function updateTaskStatus(db24, taskId, status, updates = {}) {
+  await db24.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db23, vendorId) {
-  const snapshot = await db23.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db23.batch();
+async function cancelVendorTasks(db24, vendorId) {
+  const snapshot = await db24.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db24.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadTasks(db23, leadId) {
-  const snapshot = await db23.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db23.batch();
+async function cancelLeadTasks(db24, leadId) {
+  const snapshot = await db24.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db24.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
@@ -159,7 +180,7 @@ async function getTemplate(templateId) {
   }
 }
 function replaceVariables(content, variables) {
-  return content.replace(/\{\{(\w+)\}\}/g, (_, key) => key in variables ? variables[key] : `{{${key}}}`);
+  return content.replace(/\{\{(\w+)\}\}/g, (_, key) => key in variables ? variables[key] : "");
 }
 async function generatePersonalizedEmail(templateId, variables) {
   try {
@@ -11616,12 +11637,12 @@ var require_logging_utils = __commonJS({
             this.setFilters();
             this.filtersSet = true;
           }
-          let logger26 = this.cached.get(namespace);
-          if (!logger26) {
-            logger26 = this.makeLogger(namespace);
-            this.cached.set(namespace, logger26);
+          let logger27 = this.cached.get(namespace);
+          if (!logger27) {
+            logger27 = this.makeLogger(namespace);
+            this.cached.set(namespace, logger27);
           }
-          logger26(fields, ...args);
+          logger27(fields, ...args);
         } catch (e) {
           console.error(e);
         }
@@ -11758,7 +11779,7 @@ var require_logging_utils = __commonJS({
       } else if (cachedBackend === void 0) {
         cachedBackend = getNodeBackend();
       }
-      const logger26 = (() => {
+      const logger27 = (() => {
         let previousBackend = void 0;
         const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
           if (previousBackend !== cachedBackend) {
@@ -11773,8 +11794,8 @@ var require_logging_utils = __commonJS({
         });
         return newLogger;
       })();
-      loggerCache.set(namespace, logger26);
-      return logger26.func;
+      loggerCache.set(namespace, logger27);
+      return logger27.func;
     }
   }
 });
@@ -11838,14 +11859,14 @@ var require_src4 = __commonJS({
     var gaxios_1 = require_src2();
     var jsonBigint = require_json_bigint();
     var gcp_residency_1 = require_gcp_residency();
-    var logger26 = require_src3();
+    var logger27 = require_src3();
     exports2.BASE_PATH = "/computeMetadata/v1";
     exports2.HOST_ADDRESS = "http://169.254.169.254";
     exports2.SECONDARY_HOST_ADDRESS = "http://metadata.google.internal.";
     exports2.HEADER_NAME = "Metadata-Flavor";
     exports2.HEADER_VALUE = "Google";
     exports2.HEADERS = Object.freeze({ [exports2.HEADER_NAME]: exports2.HEADER_VALUE });
-    var log = logger26.log("gcp metadata");
+    var log = logger27.log("gcp metadata");
     exports2.METADATA_SERVER_DETECTION = Object.freeze({
       "assume-present": "don't try to ping the metadata server, but assume it's present",
       none: "don't try to ping the metadata server, but don't try to use it either",
@@ -13422,13 +13443,13 @@ var require_oauth2client = __commonJS({
           },
           url: this.endpoints.tokenInfoUrl.toString()
         });
-        const info20 = Object.assign({
+        const info21 = Object.assign({
           expiry_date: (/* @__PURE__ */ new Date()).getTime() + data.expires_in * 1e3,
           scopes: data.scope.split(" ")
         }, data);
-        delete info20.expires_in;
-        delete info20.scope;
-        return info20;
+        delete info21.expires_in;
+        delete info21.scope;
+        return info21;
       }
       getFederatedSignonCerts(callback) {
         if (callback) {
@@ -18856,6 +18877,7 @@ __export(index_exports, {
   onAuditSubmitted: () => onAuditSubmitted,
   onAwaitingOnboarding: () => onAwaitingOnboarding,
   onClientCancelled: () => onClientCancelled,
+  onContactDeleted: () => onContactDeleted,
   onDocumentUploaded: () => onDocumentUploaded,
   onInvoicePaid: () => onInvoicePaid,
   onLeadQualified: () => onLeadQualified,
@@ -19761,6 +19783,27 @@ var admin6 = __toESM(require("firebase-admin"));
 var logger3 = __toESM(require("firebase-functions/logger"));
 init_queueUtils();
 init_emailUtils();
+var SMART_FALLBACKS = {
+  contactName: "there",
+  businessName: "your facility",
+  vendorName: "your company",
+  facilityType: "your facility",
+  address: "",
+  squareFootage: "",
+  city: "your area",
+  state: "",
+  services: "facility maintenance",
+  specialty: "facility maintenance",
+  onboardingUrl: "https://xiri.ai/demo"
+};
+function sanitizeUnresolvedVars(text) {
+  const replaced = [];
+  const cleaned = text.replace(/\{\{([a-zA-Z_]+)\}\}/g, (match, key) => {
+    replaced.push(match);
+    return SMART_FALLBACKS[key] ?? "";
+  }).replace(/\s{2,}/g, " ").replace(/,\s*,/g, ",").replace(/\|\s*\|/g, "|").replace(/^\s*,\s*/gm, "").replace(/,\s*$/gm, "").trim();
+  return { cleaned, replaced };
+}
 if (!admin6.apps.length) {
   admin6.initializeApp();
 }
@@ -19815,6 +19858,11 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
     logger3.info(`Found ${tasks.length} tasks to process.`);
     for (const task of tasks) {
       try {
+        const claimed = await claimTask(db4, task.id);
+        if (!claimed) {
+          logger3.info(`Task ${task.id} already claimed by another worker \u2014 skipping.`);
+          continue;
+        }
         if (task.leadId) {
           await handleLeadSend(task);
         } else {
@@ -20126,6 +20174,13 @@ async function handleFollowUp(task) {
     body = body.replace(regex, value);
   }
   body = body.replace(/\[ONBOARDING_LINK\]/g, onboardingUrl);
+  const subjectSanitized = sanitizeUnresolvedVars(subject);
+  const bodySanitized = sanitizeUnresolvedVars(body);
+  if (subjectSanitized.replaced.length || bodySanitized.replaced.length) {
+    logger3.warn(`[VendorOutreach] Unresolved merge vars in template ${templateId}: subject=[${subjectSanitized.replaced.join(", ")}], body=[${bodySanitized.replaced.join(", ")}]`);
+  }
+  subject = subjectSanitized.cleaned;
+  body = bodySanitized.cleaned;
   const htmlBody = `<div style="font-family: sans-serif; line-height: 1.6;">${body.replace(/\n/g, "<br/>")}</div>`;
   const followUpSenderId = task.metadata?.senderId || "partnerships";
   const followUpSenderFrom = await getSenderFrom(followUpSenderId);
@@ -20176,13 +20231,16 @@ async function handleFollowUp(task) {
 async function handleLeadSend(task) {
   logger3.info(`[LeadOutreach] Sending template email for lead ${task.leadId}`);
   const leadDoc = await db4.collection("leads").doc(task.leadId).get();
-  if (leadDoc.exists) {
-    const leadData = leadDoc.data();
-    if (leadData.status === "lost" || leadData.unsubscribedAt) {
-      logger3.info(`[Suppression] Lead ${task.leadId} is ${leadData.status}/unsubscribed \u2014 skipping send.`);
-      await updateTaskStatus(db4, task.id, "CANCELLED");
-      return;
-    }
+  if (!leadDoc.exists) {
+    logger3.info(`[Suppression] Lead ${task.leadId} was deleted \u2014 cancelling task.`);
+    await updateTaskStatus(db4, task.id, "CANCELLED");
+    return;
+  }
+  const leadData = leadDoc.data();
+  if (leadData.status === "lost" || leadData.unsubscribedAt) {
+    logger3.info(`[Suppression] Lead ${task.leadId} is ${leadData.status}/unsubscribed \u2014 skipping send.`);
+    await updateTaskStatus(db4, task.id, "CANCELLED");
+    return;
   }
   const contactId = task.contactId || task.metadata?.contactId || null;
   let toEmail = task.metadata?.email;
@@ -20225,6 +20283,17 @@ async function handleLeadSend(task) {
     address: task.metadata.address || "",
     squareFootage: task.metadata.squareFootage || ""
   };
+  const defensiveAliases = {
+    vendorName: mergeVars.businessName,
+    city: task.metadata.city || task.metadata.address?.split(",")[0]?.trim() || "",
+    state: task.metadata.state || "",
+    services: titleCase(task.metadata.facilityType || "Facility Services"),
+    specialty: titleCase(task.metadata.facilityType || "Facility Services"),
+    onboardingUrl: "https://xiri.ai/demo"
+  };
+  for (const [key, value] of Object.entries(defensiveAliases)) {
+    if (!mergeVars[key]) mergeVars[key] = value;
+  }
   let subject = template.subject || task.metadata.subject || "";
   let body = template.body || "";
   for (const [key, value] of Object.entries(mergeVars)) {
@@ -20232,6 +20301,13 @@ async function handleLeadSend(task) {
     subject = subject.replace(regex, value);
     body = body.replace(regex, value);
   }
+  const subjectSanitized = sanitizeUnresolvedVars(subject);
+  const bodySanitized = sanitizeUnresolvedVars(body);
+  if (subjectSanitized.replaced.length || bodySanitized.replaced.length) {
+    logger3.warn(`[LeadOutreach] Unresolved merge vars in template ${templateId}: subject=[${subjectSanitized.replaced.join(", ")}], body=[${bodySanitized.replaced.join(", ")}]`);
+  }
+  subject = subjectSanitized.cleaned;
+  body = bodySanitized.cleaned;
   const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${body.replace(/\n/g, "<br/>")}</div>`;
   const leadSenderId = task.metadata?.senderId || "sales";
   const leadSenderFrom = await getSenderFrom(leadSenderId);
@@ -20904,8 +20980,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db23 = (0, import_firestore6.getFirestore)();
-    const docRef = db23.collection(collection).doc(documentId);
+    const db24 = (0, import_firestore6.getFirestore)();
+    const docRef = db24.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -21252,7 +21328,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger7.error("Error sending vendor confirmation:", err);
     }
   }
-  const db23 = admin9.firestore();
+  const db24 = admin9.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -21279,9 +21355,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db23.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db24.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger7.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db23.collection("vendor_activities").add({
+  await db24.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -22230,10 +22306,10 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
   logger11.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
-  const db23 = admin15.firestore();
+  const db24 = admin15.firestore();
   let vendorData;
   try {
-    const vendorSnap = await db23.collection("vendors").doc(newVendorId).get();
+    const vendorSnap = await db24.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
       logger11.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
@@ -22246,7 +22322,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const salesTaxId = vendorData.compliance?.salesTaxId?.trim();
   if (!salesTaxId) {
     logger11.info(`[ST-120.1] Vendor ${newVendorId} has no salesTaxId \u2014 skipping certificate.`);
-    await db23.collection("vendor_activities").add({
+    await db24.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_SKIPPED",
       description: `ST-120.1 not generated for WO ${workOrderId} \u2014 vendor has no Sales Tax ID on file.`,
@@ -22258,7 +22334,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   let leadData = {};
   if (after.leadId) {
     try {
-      const leadSnap = await db23.collection("leads").doc(after.leadId).get();
+      const leadSnap = await db24.collection("leads").doc(after.leadId).get();
       if (leadSnap.exists) {
         leadData = leadSnap.data();
       }
@@ -22268,7 +22344,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   }
   let xiriData;
   try {
-    const settingsSnap = await db23.collection("settings").doc("corporate").get();
+    const settingsSnap = await db24.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
       logger11.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
@@ -22314,7 +22390,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const result = await generateST1201(vendorCertData, xiriData, projectDataInput);
   if (!result.success || !result.pdfBytes) {
     logger11.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
-    await db23.collection("vendor_activities").add({
+    await db24.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
       description: `ST-120.1 generation failed for WO ${workOrderId}: ${result.error}`,
@@ -22348,7 +22424,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     logger11.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err);
     return;
   }
-  await db23.collection("work_orders").doc(workOrderId).update({
+  await db24.collection("work_orders").doc(workOrderId).update({
     st1201CertificateUrl: pdfUrl,
     st1201IssueDate: result.issueDate,
     st1201ExpiryDate: result.expiryDate,
@@ -22357,7 +22433,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (vendorCertData.email) {
     const vendorName = vendorCertData.businessName;
     const projectName = projectDataInput.projectName;
-    await db23.collection("mail_queue").add({
+    await db24.collection("mail_queue").add({
       to: vendorCertData.email,
       subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${projectName}`,
       templateType: "st_120_1_certificate",
@@ -22377,7 +22453,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
       createdAt: admin15.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db23.collection("vendor_activities").add({
+  await db24.collection("vendor_activities").add({
     vendorId: newVendorId,
     type: "TAX_CERTIFICATE_ISSUED",
     description: `ST-120.1 generated for project "${projectDataInput.projectName}" (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
@@ -23546,6 +23622,7 @@ var generateMonthlyInvoices = (0, import_scheduler3.onSchedule)({
 var import_https4 = require("firebase-functions/v2/https");
 var admin23 = __toESM(require("firebase-admin"));
 var import_v22 = require("firebase-functions/v2");
+init_queueUtils();
 var db19 = admin23.firestore();
 var resendWebhook = (0, import_https4.onRequest)({
   cors: true,
@@ -23717,6 +23794,62 @@ var resendWebhook = (0, import_https4.onRequest)({
       import_v22.logger.info(`${entityType} ${entityId}: emailEngagement updated (${mapping.deliveryStatus}, lastEvent=${shouldUpdateLastEvent ? "updated" : "preserved"})`);
     } catch (engErr) {
       import_v22.logger.warn(`Failed to update ${entityType} engagement:`, engErr);
+    }
+    if (eventType === "email.bounced" || eventType === "email.complained") {
+      const reason = eventType === "email.bounced" ? "hard_bounce" : "spam_complaint";
+      const reasonLabel = eventType === "email.bounced" ? "Hard bounce" : "Spam complaint";
+      try {
+        if (entityType === "vendor") {
+          const vendorDoc = await db19.collection("vendors").doc(entityId).get();
+          if (vendorDoc.exists && vendorDoc.data()?.status !== "dismissed") {
+            await db19.collection("vendors").doc(entityId).update({
+              status: "dismissed",
+              statusUpdatedAt: /* @__PURE__ */ new Date(),
+              dismissReason: reason,
+              unsubscribedAt: /* @__PURE__ */ new Date()
+            });
+            const cancelledCount = await cancelVendorTasks(db19, entityId);
+            await db19.collection("vendor_activities").add({
+              vendorId: entityId,
+              type: "STATUS_CHANGE",
+              description: `${reasonLabel} detected \u2014 vendor auto-dismissed. ${cancelledCount} pending tasks cancelled.`,
+              createdAt: /* @__PURE__ */ new Date(),
+              metadata: { from: vendorDoc.data()?.status, to: "dismissed", trigger: reason, cancelledTasks: cancelledCount }
+            });
+            import_v22.logger.info(`[AutoSuppress] Vendor ${entityId} dismissed (${reason}). ${cancelledCount} tasks cancelled.`);
+          }
+        } else if (entityType === "lead") {
+          const leadDoc = await db19.collection("leads").doc(entityId).get();
+          if (leadDoc.exists && leadDoc.data()?.status !== "lost") {
+            const prevStatus = leadDoc.data()?.status;
+            await db19.collection("leads").doc(entityId).update({
+              status: "lost",
+              lostReason: reason,
+              unsubscribedAt: /* @__PURE__ */ new Date(),
+              outreachStatus: reason === "spam_complaint" ? "SPAM_COMPLAINT" : "BOUNCED"
+            });
+            const cancelledCount = await cancelLeadTasks(db19, entityId);
+            if (resolvedContactId) {
+              await db19.collection("contacts").doc(resolvedContactId).update({
+                unsubscribed: true,
+                unsubscribedAt: /* @__PURE__ */ new Date(),
+                unsubscribeReason: reason
+              });
+            }
+            await db19.collection("lead_activities").add({
+              leadId: entityId,
+              contactId: resolvedContactId || null,
+              type: "STATUS_CHANGE",
+              description: `${reasonLabel} detected \u2014 lead auto-marked as lost. ${cancelledCount} pending tasks cancelled.`,
+              createdAt: /* @__PURE__ */ new Date(),
+              metadata: { from: prevStatus, to: "lost", trigger: reason, cancelledTasks: cancelledCount, contactId: resolvedContactId || null }
+            });
+            import_v22.logger.info(`[AutoSuppress] Lead ${entityId} marked lost (${reason}). ${cancelledCount} tasks cancelled.`);
+          }
+        }
+      } catch (suppressErr) {
+        import_v22.logger.error(`[AutoSuppress] Failed to suppress ${entityType} ${entityId}:`, suppressErr);
+      }
     }
     try {
       let templateId = null;
@@ -23991,10 +24124,35 @@ async function optimizeSingleTemplate(templateId) {
   if (!apiKey) {
     throw new import_https5.HttpsError("failed-precondition", "GEMINI_API_KEY not set");
   }
-  const FALLBACK = `You are an email marketing expert specializing in B2B contractor outreach for facility management companies.
+  const category = template.category || "vendor";
+  const CATEGORY_CONFIG = {
+    vendor: {
+      role: "B2B contractor outreach for facility management companies",
+      context: "This email targets independent contractors (janitors, cleaners, handymen) to join a facility management network as service providers. Keep tone professional but blue-collar-friendly. The goal is to get them to create a profile and join the XIRI contractor network.",
+      mergeVars: "{{vendorName}}, {{contactName}}, {{city}}, {{state}}, {{services}}, {{specialty}}, {{onboardingUrl}}"
+    },
+    tenant_lead: {
+      role: "B2B facility services sales to commercial tenants and medical practices",
+      context: "This email targets office managers, practice managers, and facility decision-makers at commercial tenants and medical practices. We are selling XIRI facility management services TO them \u2014 cleaning, maintenance, supplies, compliance. Keep tone professional and consultative. The goal is to book a 10-minute introductory call or demo. Do NOT write copy that recruits contractors or asks them to join a network \u2014 these are potential CLIENTS, not service providers.",
+      mergeVars: "{{contactName}}, {{businessName}}, {{facilityType}}, {{address}}, {{squareFootage}}"
+    },
+    enterprise_lead: {
+      role: "B2B enterprise facility services sales to large organizations",
+      context: "This email targets enterprise facility directors and operations managers at large organizations (urgent care groups, hospital networks, corporate offices). We are selling XIRI facility management services TO them. Keep tone polished and executive-level. The goal is to book a meeting or demo. Do NOT write contractor recruitment copy.",
+      mergeVars: "{{contactName}}, {{businessName}}, {{facilityType}}, {{address}}, {{squareFootage}}"
+    },
+    referral_partnership: {
+      role: "B2B referral partnership outreach for facility management",
+      context: "This email targets potential referral partners (real estate brokers, property managers, medical equipment suppliers) who could refer facility management clients to XIRI. Keep tone collaborative and partnership-focused. The goal is to establish a mutual referral relationship.",
+      mergeVars: "{{contactName}}, {{businessName}}, {{facilityType}}"
+    }
+  };
+  const config2 = CATEGORY_CONFIG[category] || CATEGORY_CONFIG["vendor"];
+  const FALLBACK = `You are an email marketing expert specializing in ${config2.role}.
 
 ## Current Template Performance
 - Template: "{{templateName}}" ({{templateId}})
+- Category: {{templateCategory}}
 - Sent: {{statsSent}} | Delivered: {{statsDelivered}} | Opened: {{statsOpened}} | Clicked: {{statsClicked}}
 - Open Rate: {{openRate}}% | Click Rate: {{clickRate}}% | Bounce Rate: {{bounceRate}}%
 
@@ -24005,16 +24163,22 @@ async function optimizeSingleTemplate(templateId) {
 {{currentBody}}
 
 ## Context
-This email targets independent contractors to join a facility management network. Keep tone professional but blue-collar-friendly.
+${config2.context}
 
-## Available Merge Variables
-{{vendorName}}, {{contactName}}, {{city}}, {{state}}, {{services}}, {{specialty}}, {{onboardingUrl}}
+## Available Merge Variables (ONLY use these \u2014 do NOT invent others)
+${config2.mergeVars}
+
+## CRITICAL RULES
+1. ONLY use merge variables from the list above. Do NOT use variables from other template categories.
+2. Write copy appropriate for the target audience described in Context. Do NOT mix up audiences.
+3. If this is a tenant/enterprise lead template, never mention "joining a network", "onboarding profile", or "getting more jobs" \u2014 those are contractor concepts.
 
 ## Instructions
 Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Return ONLY valid JSON, no markdown fences.`;
   const prompt = await getPrompt("template_optimizer", FALLBACK, {
     templateName: template.name,
     templateId,
+    templateCategory: category,
     statsSent: String(stats.sent),
     statsDelivered: String(stats.delivered),
     statsOpened: String(stats.opened),
@@ -24101,6 +24265,12 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
   const lead = leadDoc.data();
   const businessName = lead.businessName || "Unknown";
   const leadType = lead.leadType || "direct";
+  if (lead.unsubscribedAt || lead.status === "lost") {
+    throw new import_https6.HttpsError(
+      "failed-precondition",
+      `${businessName} has unsubscribed or is marked as lost \u2014 cannot enroll in a sequence.`
+    );
+  }
   let contactId = requestedContactId || null;
   let contactEmail = "";
   let contactName = "";
@@ -24108,6 +24278,12 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     const contactDoc = await db21.collection("contacts").doc(contactId).get();
     if (contactDoc.exists) {
       const contact = contactDoc.data();
+      if (contact.unsubscribed) {
+        throw new import_https6.HttpsError(
+          "failed-precondition",
+          `Contact ${contact.firstName || ""} ${contact.lastName || ""} has unsubscribed \u2014 cannot enroll in a sequence.`.trim()
+        );
+      }
       contactEmail = contact.email || "";
       contactName = `${contact.firstName || ""} ${contact.lastName || ""}`.trim();
     }
@@ -24144,6 +24320,13 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     );
   }
   const sequence = sequenceDoc.data();
+  const BLOCKED_CATEGORIES = ["vendor", "vendor_email"];
+  if (BLOCKED_CATEGORIES.includes(sequence.category)) {
+    throw new import_https6.HttpsError(
+      "failed-precondition",
+      `Cannot enroll a lead in vendor sequence "${sequence.name || sequenceId}". Use a lead or referral sequence instead.`
+    );
+  }
   const steps = sequence.steps || [];
   if (steps.length === 0) {
     throw new import_https6.HttpsError(
@@ -24272,6 +24455,12 @@ var sendSingleLeadEmail = (0, import_https7.onCall)(
     }
     const lead = leadDoc.data();
     const businessName = lead.businessName || "Unknown";
+    if (lead.unsubscribedAt || lead.status === "lost") {
+      throw new import_https7.HttpsError(
+        "failed-precondition",
+        `${businessName} has unsubscribed or is marked as lost \u2014 cannot send email.`
+      );
+    }
     let contactId = requestedContactId || null;
     let contactEmail = "";
     let contactName = "";
@@ -24384,6 +24573,50 @@ var sendSingleLeadEmail = (0, import_https7.onCall)(
     };
   }
 );
+
+// src/triggers/onContactDeleted.ts
+var import_firestore18 = require("firebase-functions/v2/firestore");
+var admin27 = __toESM(require("firebase-admin"));
+var logger24 = __toESM(require("firebase-functions/logger"));
+if (!admin27.apps.length) {
+  admin27.initializeApp();
+}
+var db23 = admin27.firestore();
+var onContactDeleted = (0, import_firestore18.onDocumentDeleted)("contacts/{contactId}", async (event) => {
+  const contactId = event.params.contactId;
+  const deletedData = event.data?.data();
+  const email = deletedData?.email || "unknown";
+  const companyId = deletedData?.companyId || null;
+  logger24.info(`[ContactCleanup] Contact ${contactId} (${email}) deleted. Cancelling pending tasks.`);
+  const contactTasks = await db23.collection("outreach_queue").where("contactId", "==", contactId).where("status", "in", ["PENDING", "RETRY"]).get();
+  let leadTasks = null;
+  if (companyId) {
+    leadTasks = await db23.collection("outreach_queue").where("leadId", "==", companyId).where("status", "in", ["PENDING", "RETRY"]).get();
+  }
+  const batch = db23.batch();
+  let count = 0;
+  const seen = /* @__PURE__ */ new Set();
+  for (const doc of contactTasks.docs) {
+    batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
+    seen.add(doc.id);
+    count++;
+  }
+  if (leadTasks) {
+    for (const doc of leadTasks.docs) {
+      if (!seen.has(doc.id)) {
+        const taskEmail = doc.data().metadata?.email;
+        if (taskEmail === email) {
+          batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
+          count++;
+        }
+      }
+    }
+  }
+  if (count > 0) {
+    await batch.commit();
+  }
+  logger24.info(`[ContactCleanup] Cancelled ${count} pending task(s) for deleted contact ${contactId} (${email}).`);
+});
 
 // src/triggers/socialContentGenerator.ts
 var import_scheduler5 = require("firebase-functions/v2/scheduler");
@@ -28242,7 +28475,7 @@ async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
 // src/functions/tidycal-api.ts
 var import_https15 = require("firebase-functions/v2/https");
 var import_params6 = require("firebase-functions/params");
-var import_firestore18 = require("firebase-admin/firestore");
+var import_firestore19 = require("firebase-admin/firestore");
 
 // src/utils/tidycal.ts
 var TIDYCAL_BASE = "https://tidycal.com/api";
@@ -28385,13 +28618,13 @@ var bookOnboardingCall = (0, import_https15.onRequest)({
       tidycalBookingId: booking.id,
       tidycalMeetingUrl: booking.meeting_url || null,
       tidycalRescheduleUrl: booking.reschedule_url || null,
-      updatedAt: import_firestore18.FieldValue.serverTimestamp()
+      updatedAt: import_firestore19.FieldValue.serverTimestamp()
     });
     await db.collection("vendor_activities").add({
       vendorId,
       type: "ONBOARDING_CALL_BOOKED",
       description: `Onboarding call booked for ${new Date(starts_at).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}`,
-      createdAt: import_firestore18.FieldValue.serverTimestamp(),
+      createdAt: import_firestore19.FieldValue.serverTimestamp(),
       metadata: {
         tidycalBookingId: booking.id,
         starts_at,
@@ -28459,13 +28692,13 @@ var bookDiscoveryCall = (0, import_https15.onCall)({
     tidycalBookingId: booking.id,
     tidycalMeetingUrl: booking.meeting_url || null,
     tidycalRescheduleUrl: booking.reschedule_url || null,
-    updatedAt: import_firestore18.FieldValue.serverTimestamp()
+    updatedAt: import_firestore19.FieldValue.serverTimestamp()
   });
   await db.collection("lead_activities").add({
     leadId,
     type: "DISCOVERY_CALL_BOOKED",
     description: `Discovery call booked for ${new Date(starts_at).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}`,
-    createdAt: import_firestore18.FieldValue.serverTimestamp(),
+    createdAt: import_firestore19.FieldValue.serverTimestamp(),
     createdBy: request.auth.uid,
     metadata: {
       tidycalBookingId: booking.id,
@@ -28526,6 +28759,7 @@ var getTidyCalBookings = (0, import_https15.onCall)({
   onAuditSubmitted,
   onAwaitingOnboarding,
   onClientCancelled,
+  onContactDeleted,
   onDocumentUploaded,
   onInvoicePaid,
   onLeadQualified,
