@@ -15,6 +15,11 @@ interface ScrapedData {
     };
     confidence: 'high' | 'medium' | 'low';
     source: string;
+    // Owner/decision-maker info — extracted by AI
+    ownerName?: string;
+    ownerTitle?: string;
+    ownerEmail?: string;
+    allEmails?: { email: string; type: 'personal' | 'generic' }[];
 }
 
 interface EnrichmentResult {
@@ -101,6 +106,20 @@ export async function scrapeWebsite(url: string, geminiApiKey: string): Promise<
             source: 'web-scraper',
         };
 
+        // ─── Step 3b: Collect ALL emails for categorization ───
+        const allEmailsFromLinks = extractAllMailtoEmails(homepage.$);
+        for (const pageUrl of additionalPages.slice(0, 3)) {
+            const page = await fetchPage(pageUrl);
+            if (page) allEmailsFromLinks.push(...extractAllMailtoEmails(page.$));
+        }
+        // De-duplicate and categorize
+        const seenEmails = new Set<string>();
+        combinedData.allEmails = allEmailsFromLinks.filter(e => {
+            if (seenEmails.has(e.email)) return false;
+            seenEmails.add(e.email);
+            return true;
+        });
+
         // ─── Step 4: Generic email fallback (info@, contact@) if no personal email found ───
         if (!combinedData.email) {
             const genericEmail = findGenericEmail(homepage.html, allAdditionalHtml);
@@ -109,16 +128,17 @@ export async function scrapeWebsite(url: string, geminiApiKey: string): Promise<
             }
         }
 
-        // ─── Step 5: AI extraction on the best available HTML ───
-        if (!combinedData.email || !combinedData.phone) {
-            // Feed AI the contact/about page if available, otherwise homepage
-            const aiHtml = allAdditionalHtml.length > 500 ? allAdditionalHtml : homepage.html;
-            const aiData = await extractWithAI(aiHtml, geminiApiKey);
-            combinedData.email = combinedData.email || aiData.email;
-            combinedData.phone = combinedData.phone || aiData.phone;
-            combinedData.address = combinedData.address || aiData.address;
-            combinedData.businessName = combinedData.businessName || aiData.businessName;
-        }
+        // ─── Step 5: AI extraction on the best available HTML (owner detection) ───
+        // Always run AI to try to find owner/decision-maker, even if we have an email
+        const aiHtml = allAdditionalHtml.length > 500 ? allAdditionalHtml : homepage.html;
+        const aiData = await extractWithAI(aiHtml, geminiApiKey);
+        combinedData.email = combinedData.email || aiData.email;
+        combinedData.phone = combinedData.phone || aiData.phone;
+        combinedData.address = combinedData.address || aiData.address;
+        combinedData.businessName = combinedData.businessName || aiData.businessName;
+        combinedData.ownerName = aiData.ownerName;
+        combinedData.ownerTitle = aiData.ownerTitle;
+        combinedData.ownerEmail = aiData.ownerEmail;
 
         // ─── Step 6: Validate and format ───
         if (combinedData.email) {
@@ -147,18 +167,22 @@ function extractMailtoAndTel($: cheerio.CheerioAPI): { email?: string; phone?: s
     let email: string | undefined;
     let phone: string | undefined;
 
-    // mailto: links
+    // mailto: links — prefer personal over generic
+    const allMailtos: { email: string; isPersonal: boolean }[] = [];
     $('a[href^="mailto:"]').each((_, elem) => {
-        if (email) return;
         const href = $(elem).attr('href');
         if (href) {
             const addr = href.replace('mailto:', '').split('?')[0].trim().toLowerCase();
-            // Prefer personal emails over generic
-            if (!addr.match(/^(noreply|no-reply|support|webmaster)@/i)) {
-                email = addr;
+            if (!addr.match(/^(noreply|no-reply|support|webmaster|bounce|mailer-daemon)@/i) && addr.includes('@')) {
+                const isPersonal = !addr.match(/^(info|contact|hello|office|admin|sales|team|service|services|marketing)@/i);
+                allMailtos.push({ email: addr, isPersonal });
             }
         }
     });
+
+    // Prefer personal email
+    const personal = allMailtos.find(m => m.isPersonal);
+    email = personal?.email || allMailtos[0]?.email;
 
     // tel: links
     $('a[href^="tel:"]').each((_, elem) => {
@@ -170,6 +194,24 @@ function extractMailtoAndTel($: cheerio.CheerioAPI): { email?: string; phone?: s
     });
 
     return { email, phone };
+}
+
+/**
+ * Extract ALL mailto emails from a page, categorized as personal or generic.
+ */
+function extractAllMailtoEmails($: cheerio.CheerioAPI): { email: string; type: 'personal' | 'generic' }[] {
+    const result: { email: string; type: 'personal' | 'generic' }[] = [];
+    $('a[href^="mailto:"]').each((_, elem) => {
+        const href = $(elem).attr('href');
+        if (href) {
+            const addr = href.replace('mailto:', '').split('?')[0].trim().toLowerCase();
+            if (addr.includes('@') && !addr.match(/^(noreply|no-reply|bounce|mailer-daemon)@/i)) {
+                const isGeneric = !!addr.match(/^(info|contact|hello|office|admin|sales|team|service|services|marketing)@/i);
+                result.push({ email: addr, type: isGeneric ? 'generic' : 'personal' });
+            }
+        }
+    });
+    return result;
 }
 
 /**
@@ -366,20 +408,24 @@ function mergeContactPages(pages: Partial<ScrapedData>[]): Partial<ScrapedData> 
 async function extractWithAI(html: string, geminiApiKey: string): Promise<Partial<ScrapedData>> {
     try {
         const genAI = new GoogleGenerativeAI(geminiApiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-        // Strip HTML to plain text and limit size (use more content for better results)
+        // Strip HTML to plain text and limit size
         const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').substring(0, 15000);
 
-        const FALLBACK = `Extract business contact information from this website content. 
-This is a commercial cleaning or janitorial company. Find the owner/manager's direct contact info if possible.
+        const FALLBACK = `Extract business contact information AND owner/decision-maker info from this website content.
+Look specifically for the highest-ranking person listed — owner, founder, CEO, president, managing director, doctor, principal, or office manager.
+Check the About Us, Our Team, Staff, Leadership, or Meet the Doctor sections.
 
 Return ONLY a JSON object with these fields (use null if not found):
 {
   "email": "email address (prefer personal/owner email over generic info@)",
   "phone": "primary phone number in format (xxx) xxx-xxxx",
   "address": "full physical address if available",
-  "businessName": "official business name"
+  "businessName": "official business name",
+  "ownerName": "full name of owner/highest decision-maker (e.g. 'Dr. John Smith')",
+  "ownerTitle": "their title (e.g. 'Owner', 'CEO', 'Managing Director', 'DDS')",
+  "ownerEmail": "owner's personal email if different from the general email"
 }
 
 Website content:
@@ -395,11 +441,15 @@ Website content:
         const jsonMatch = response.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             const data = JSON.parse(jsonMatch[0]);
+            const clean = (v: any) => (v && v !== 'null' && v !== null && v !== 'N/A' && v !== 'n/a') ? v : undefined;
             return {
-                email: data.email && data.email !== 'null' && data.email !== null ? data.email : undefined,
-                phone: data.phone && data.phone !== 'null' && data.phone !== null ? data.phone : undefined,
-                address: data.address && data.address !== 'null' && data.address !== null ? data.address : undefined,
-                businessName: data.businessName && data.businessName !== 'null' && data.businessName !== null ? data.businessName : undefined,
+                email: clean(data.email),
+                phone: clean(data.phone),
+                address: clean(data.address),
+                businessName: clean(data.businessName),
+                ownerName: clean(data.ownerName),
+                ownerTitle: clean(data.ownerTitle),
+                ownerEmail: clean(data.ownerEmail),
             };
         }
 
@@ -552,8 +602,9 @@ export async function searchWebForEmail(
     businessName: string,
     location: string,
     domain?: string,
-    serperApiKey?: string
-): Promise<{ email?: string; phone?: string; source: string }> {
+    serperApiKey?: string,
+    contactName?: string
+): Promise<{ email?: string; phone?: string; facebookUrl?: string; source: string }> {
     const apiKey = serperApiKey || process.env.SERPER_API_KEY;
     if (!apiKey) {
         console.warn('No SERPER_API_KEY available for web email search.');
@@ -570,8 +621,21 @@ export async function searchWebForEmail(
         queries.push(`site:${domain} email OR contact`);
     }
 
-    // Strategy 2: business name + location search
+    // Strategy 2: Facebook page search — many small businesses list email here
+    queries.push(`site:facebook.com "${businessName}" ${location} email`);
+
+    // Strategy 3: Named person search (if we found an owner via AI)
+    if (contactName) {
+        queries.push(`"${contactName}" "${businessName}" email`);
+    }
+
+    // Strategy 4: General business + location search
     queries.push(`"${businessName}" ${location} email contact`);
+
+    // Strategy 5: Chamber of commerce / directory search
+    queries.push(`"${businessName}" ${location} email site:bbb.org OR site:chamberofcommerce.com OR site:yelp.com`);
+
+    let facebookUrl: string | undefined;
 
     for (const query of queries) {
         try {
@@ -592,6 +656,11 @@ export async function searchWebForEmail(
 
             // Extract emails from snippets
             for (const result of organic) {
+                // Capture Facebook URL if found
+                if (!facebookUrl && result.link?.includes('facebook.com') && !result.link?.includes('sharer')) {
+                    facebookUrl = result.link;
+                }
+
                 const text = `${result.snippet || ''} ${result.title || ''}`;
                 const emails = text.match(emailRegex) || [];
                 const phones = text.match(phoneRegex) || [];
@@ -610,7 +679,8 @@ export async function searchWebForEmail(
                     return {
                         email: validEmails[0].toLowerCase(),
                         phone: phones[0],
-                        source: 'serper_web_search'
+                        facebookUrl,
+                        source: query.includes('facebook.com') ? 'serper_facebook' : 'serper_web_search'
                     };
                 }
             }
@@ -619,10 +689,10 @@ export async function searchWebForEmail(
             if (data.knowledgeGraph) {
                 const kg = data.knowledgeGraph;
                 if (kg.email) {
-                    return { email: kg.email.toLowerCase(), phone: kg.phone, source: 'serper_knowledge_graph' };
+                    return { email: kg.email.toLowerCase(), phone: kg.phone, facebookUrl, source: 'serper_knowledge_graph' };
                 }
                 if (kg.phone && !data.organic?.length) {
-                    return { phone: kg.phone, source: 'serper_knowledge_graph' };
+                    return { phone: kg.phone, facebookUrl, source: 'serper_knowledge_graph' };
                 }
             }
 
@@ -631,6 +701,6 @@ export async function searchWebForEmail(
         }
     }
 
-    return { source: 'serper_exhausted' };
+    return { facebookUrl, source: 'serper_exhausted' };
 }
 

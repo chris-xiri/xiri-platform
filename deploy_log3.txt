@@ -1,0 +1,74 @@
+(node:67248) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+[1m[37m===[39m Deploying to 'xiri-os'...[22m
+
+[36m[1mi [22m[39m deploying [1mfunctions[22m
+Running command: npm --prefix "$RESOURCE_DIR" run build
+
+> @xiri/functions@1.0.0 build
+> tsup
+
+[34mCLI[39m Building entry: src/index.ts
+[34mCLI[39m Using tsconfig: tsconfig.json
+[34mCLI[39m tsup v8.5.1
+[34mCLI[39m Using tsup config: K:\Repos\xiri-platform\packages\functions\tsup.config.ts
+[34mCLI[39m Target: node18
+[34mCLI[39m Cleaning output folder
+[34mCJS[39m Build start
+[32mCJS[39m [1mlib\index.js     [22m[32m1.80 MB[39m
+[32mCJS[39m [1mlib\index.js.map [22m[32m2.70 MB[39m
+[32mCJS[39m ΓÜí∩╕Å Build success in 102ms
+[post-build] Copied templates/ ΓåÆ lib/templates/
+[32m[1m+ [22m[39m [32m[1mfunctions:[22m[39m Finished running [1mpredeploy[22m script.
+[36m[1mi  functions:[22m[39m preparing codebase [1mdefault[22m for deployment
+[36m[1mi  functions:[22m[39m ensuring required API [1mcloudfunctions.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m ensuring required API [1mcloudbuild.googleapis.com[22m is enabled...
+[36m[1mi  artifactregistry:[22m[39m ensuring required API [1martifactregistry.googleapis.com[22m is enabled...
+[33m[1m! [22m[39m [1m[33mfunctions: [39m[22mpackage.json indicates an outdated version of firebase-functions. Please upgrade using [1mnpm install --save firebase-functions@latest[22m in your functions directory.
+[36m[1mi  functions:[22m[39m Loading and analyzing source code for codebase default to determine what to deploy
+Serving at port 8542
+
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+
+Loading vendor enrichment triggers...
+
+(node:51428) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+[36m[1mi  extensions:[22m[39m ensuring required API [1mfirebaseextensions.googleapis.com[22m is enabled...
+[36m[1mi [22m[39m [36m[1mfunctions: [22m[39mLoaded environment variables from .env.
+[36m[1mi  functions:[22m[39m preparing [1mpackages/functions[22m directory for uploading...
+[36m[1mi [22m[39m [36m[1mfunctions:[22m[39m packaged [1mK:\Repos\xiri-platform\packages\functions[22m (2.02 MB) for uploading
+[36m[1mi  functions:[22m[39m ensuring required API [1mcloudscheduler.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m ensuring required API [1mrun.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m ensuring required API [1meventarc.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m ensuring required API [1mpubsub.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m ensuring required API [1mstorage.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m generating the service identity for [1mpubsub.googleapis.com[22m...
+[36m[1mi  functions:[22m[39m generating the service identity for [1meventarc.googleapis.com[22m...
+[36m[1mi  functions:[22m[39m ensuring required API [1msecretmanager.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m ensuring [1m999029412758-compute@developer.gserviceaccount.com[22m access to secret [1mSERPER_API_KEY[22m.
+[36m[1mi  functions:[22m[39m ensuring [1m999029412758-compute@developer.gserviceaccount.com[22m access to secret [1mGEMINI_API_KEY[22m.
+[36m[1mi  functions:[22m[39m ensuring [1m999029412758-compute@developer.gserviceaccount.com[22m access to secret [1mHUNTER_API_KEY[22m.
+[36m[1mi  functions:[22m[39m ensuring [1m999029412758-compute@developer.gserviceaccount.com[22m access to secret [1mSNOV_USER_ID[22m.
+[36m[1mi  functions:[22m[39m ensuring [1m999029412758-compute@developer.gserviceaccount.com[22m access to secret [1mSNOV_API_SECRET[22m.
+[32m[1m+  secretmanager:[22m[39m Granted roles/secretmanager.secretAccessor on projects/xiri-os/secrets/GEMINI_API_KEY to 999029412758-compute@developer.gserviceaccount.com
+[32m[1m+  functions:[22m[39m ensured [1m999029412758-compute@developer.gserviceaccount.com[22m access to [1mGEMINI_API_KEY[22m.
+[32m[1m+  secretmanager:[22m[39m Granted roles/secretmanager.secretAccessor on projects/xiri-os/secrets/SNOV_API_SECRET to 999029412758-compute@developer.gserviceaccount.com
+[32m[1m+  functions:[22m[39m ensured [1m999029412758-compute@developer.gserviceaccount.com[22m access to [1mSNOV_API_SECRET[22m.
+[32m[1m+  secretmanager:[22m[39m Granted roles/secretmanager.secretAccessor on projects/xiri-os/secrets/SNOV_USER_ID to 999029412758-compute@developer.gserviceaccount.com
+[32m[1m+  functions:[22m[39m ensured [1m999029412758-compute@developer.gserviceaccount.com[22m access to [1mSNOV_USER_ID[22m.
+[32m[1m+  secretmanager:[22m[39m Granted roles/secretmanager.secretAccessor on projects/xiri-os/secrets/HUNTER_API_KEY to 999029412758-compute@developer.gserviceaccount.com
+[32m[1m+  functions:[22m[39m ensured [1m999029412758-compute@developer.gserviceaccount.com[22m access to [1mHUNTER_API_KEY[22m.
+[32m[1m+  secretmanager:[22m[39m Granted roles/secretmanager.secretAccessor on projects/xiri-os/secrets/SERPER_API_KEY to 999029412758-compute@developer.gserviceaccount.com
+[32m[1m+  functions:[22m[39m ensured [1m999029412758-compute@developer.gserviceaccount.com[22m access to [1mSERPER_API_KEY[22m.
+[32m[1m+  functions:[22m[39m [1mpackages/functions[22m source uploaded successfully
+[36m[1mi  functions:[22m[39m creating Node.js 22 (2nd Gen) function [1maddProspectsToCrm(us-central1)[22m...
+[36m[1mi  functions:[22m[39m creating Node.js 22 (2nd Gen) function [1mrunProspector(us-central1)[22m...
+[32m[1m+ [22m[39m [1m[32mfunctions[runProspector(us-central1)][39m[22m Successful create operation.
+[32m[1m+ [22m[39m [1m[32mfunctions[addProspectsToCrm(us-central1)][39m[22m Successful create operation.
+
+[32m[1m+ [22m[39m [1m[4mDeploy complete![24m[22m
+
+[1mProject Console:[22m https://console.firebase.google.com/project/xiri-os/overview

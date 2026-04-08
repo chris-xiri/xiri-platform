@@ -79,3 +79,6 @@ export {
     bookDiscoveryCall,
     getTidyCalBookings,
 } from "./functions/tidycal-api";
+
+// ── Lead Prospecting & Enrichment (onCall) ──
+export { runProspector, addProspectsToCrm } from "./functions/prospecting";

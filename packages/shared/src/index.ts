@@ -1283,3 +1283,46 @@ export interface NrrSnapshot {
     bonusAmount: number;
     calculatedAt: Date;
 }
+
+// --- LEAD PROSPECTING ---
+
+export type EmailSource =
+    | 'mailto'
+    | 'structured_data'
+    | 'regex'
+    | 'ai_extraction'
+    | 'serper_search'
+    | 'serper_facebook'
+    | 'hunter'
+    | 'snov'
+    | 'none';
+
+export type EmailConfidence = 'high' | 'medium' | 'low';
+
+/** A single prospect discovered and enriched by the prospecting pipeline */
+export interface EnrichedProspect {
+    // Business info (from Google Places / Serper)
+    businessName: string;
+    address?: string;
+    phone?: string;
+    website?: string;
+    rating?: number;
+    userRatingsTotal?: number;
+
+    // Contact (owner / decision-maker — from AI extraction)
+    contactName?: string;       // "Dr. John Smith"
+    contactTitle?: string;      // "Owner", "Managing Director"
+    contactEmail?: string;      // "jsmith@business.com"
+
+    // Fallback
+    genericEmail?: string;      // "info@business.com"
+
+    // Social
+    facebookUrl?: string;
+    linkedinUrl?: string;
+
+    // Enrichment metadata
+    emailSource: EmailSource;
+    emailConfidence: EmailConfidence;
+    enrichmentLog?: string[];   // Trace of steps tried — useful for debugging
+}

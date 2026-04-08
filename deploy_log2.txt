@@ -1,0 +1,45 @@
+(node:17720) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+[1m[37m===[39m Deploying to 'xiri-os'...[22m
+
+[36m[1mi [22m[39m deploying [1mfunctions[22m
+Running command: npm --prefix "$RESOURCE_DIR" run build
+
+> @xiri/functions@1.0.0 build
+> tsup
+
+[34mCLI[39m Building entry: src/index.ts
+[34mCLI[39m Using tsconfig: tsconfig.json
+[34mCLI[39m tsup v8.5.1
+[34mCLI[39m Using tsup config: K:\Repos\xiri-platform\packages\functions\tsup.config.ts
+[34mCLI[39m Target: node18
+[34mCLI[39m Cleaning output folder
+[34mCJS[39m Build start
+[32mCJS[39m [1mlib\index.js     [22m[32m1.80 MB[39m
+[32mCJS[39m [1mlib\index.js.map [22m[32m2.70 MB[39m
+[32mCJS[39m ΓÜí∩╕Å Build success in 104ms
+[post-build] Copied templates/ ΓåÆ lib/templates/
+[32m[1m+ [22m[39m [32m[1mfunctions:[22m[39m Finished running [1mpredeploy[22m script.
+[36m[1mi  functions:[22m[39m preparing codebase [1mdefault[22m for deployment
+[36m[1mi  functions:[22m[39m ensuring required API [1mcloudfunctions.googleapis.com[22m is enabled...
+[36m[1mi  functions:[22m[39m ensuring required API [1mcloudbuild.googleapis.com[22m is enabled...
+[36m[1mi  artifactregistry:[22m[39m ensuring required API [1martifactregistry.googleapis.com[22m is enabled...
+[33m[1m! [22m[39m [1m[33mfunctions: [39m[22mpackage.json indicates an outdated version of firebase-functions. Please upgrade using [1mnpm install --save firebase-functions@latest[22m in your functions directory.
+[36m[1mi  functions:[22m[39m Loading and analyzing source code for codebase default to determine what to deploy
+Serving at port 8310
+
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+
+Loading vendor enrichment triggers...
+
+(node:61236) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+[36m[1mi  extensions:[22m[39m ensuring required API [1mfirebaseextensions.googleapis.com[22m is enabled...
+[36m[1mi [22m[39m [36m[1mfunctions: [22m[39mLoaded environment variables from .env.
+
+[1m[31mError:[39m[22m In non-interactive mode but have no value for the secret: CLARITY_CHAT_WEBHOOK_URL
+
+Set this secret before deploying:
+	firebase functions:secrets:set CLARITY_CHAT_WEBHOOK_URL

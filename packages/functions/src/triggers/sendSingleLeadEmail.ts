@@ -25,14 +25,19 @@ export const sendSingleLeadEmail = onCall(
         throw new HttpsError('invalid-argument', 'leadId and templateId are required');
     }
 
-    // ── Fetch the lead (company) ──
-    const leadDoc = await db.collection("leads").doc(leadId).get();
+    // ── Fetch the lead (try companies first, fall back to leads) ──
+    let leadDoc = await db.collection("companies").doc(leadId).get();
+    let leadCollection = "companies";
     if (!leadDoc.exists) {
-        throw new HttpsError('not-found', `Lead ${leadId} not found`);
+        leadDoc = await db.collection("leads").doc(leadId).get();
+        leadCollection = "leads";
+    }
+    if (!leadDoc.exists) {
+        throw new HttpsError('not-found', `Lead/Company ${leadId} not found`);
     }
 
     const lead = leadDoc.data()!;
-    const businessName = lead.businessName || 'Unknown';
+    const businessName = lead.businessName || lead.name || 'Unknown';
 
     // ── Guard: block sends to unsubscribed / lost leads ──
     if (lead.unsubscribedAt || lead.status === 'lost') {
@@ -177,7 +182,7 @@ export const sendSingleLeadEmail = onCall(
 
     // Update lead status to contacted if still new
     if (lead.status === 'new') {
-        await db.collection("leads").doc(leadId).update({
+        await db.collection(leadCollection).doc(leadId).update({
             status: 'contacted',
         });
     }

@@ -18850,6 +18850,7 @@ var init_reelOutroGenerator = __esm({
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
+  addProspectsToCrm: () => addProspectsToCrm,
   adminCreateUser: () => adminCreateUser,
   adminUpdateAuthUser: () => adminUpdateAuthUser,
   bookDiscoveryCall: () => bookDiscoveryCall,
@@ -18903,6 +18904,7 @@ __export(index_exports, {
   resendWebhook: () => resendWebhook,
   respondToQuote: () => respondToQuote,
   reviewSocialPost: () => reviewSocialPost,
+  runProspector: () => runProspector,
   runRecruiterAgent: () => runRecruiterAgent,
   runSocialContentGenerator: () => runSocialContentGenerator,
   runSocialPublisher: () => runSocialPublisher,
@@ -19009,20 +19011,32 @@ async function scrapeWebsite(url, geminiApiKey) {
       confidence: "low",
       source: "web-scraper"
     };
+    const allEmailsFromLinks = extractAllMailtoEmails(homepage.$);
+    for (const pageUrl of additionalPages.slice(0, 3)) {
+      const page = await fetchPage(pageUrl);
+      if (page) allEmailsFromLinks.push(...extractAllMailtoEmails(page.$));
+    }
+    const seenEmails = /* @__PURE__ */ new Set();
+    combinedData.allEmails = allEmailsFromLinks.filter((e) => {
+      if (seenEmails.has(e.email)) return false;
+      seenEmails.add(e.email);
+      return true;
+    });
     if (!combinedData.email) {
       const genericEmail = findGenericEmail(homepage.html, allAdditionalHtml);
       if (genericEmail) {
         combinedData.email = genericEmail;
       }
     }
-    if (!combinedData.email || !combinedData.phone) {
-      const aiHtml = allAdditionalHtml.length > 500 ? allAdditionalHtml : homepage.html;
-      const aiData = await extractWithAI(aiHtml, geminiApiKey);
-      combinedData.email = combinedData.email || aiData.email;
-      combinedData.phone = combinedData.phone || aiData.phone;
-      combinedData.address = combinedData.address || aiData.address;
-      combinedData.businessName = combinedData.businessName || aiData.businessName;
-    }
+    const aiHtml = allAdditionalHtml.length > 500 ? allAdditionalHtml : homepage.html;
+    const aiData = await extractWithAI(aiHtml, geminiApiKey);
+    combinedData.email = combinedData.email || aiData.email;
+    combinedData.phone = combinedData.phone || aiData.phone;
+    combinedData.address = combinedData.address || aiData.address;
+    combinedData.businessName = combinedData.businessName || aiData.businessName;
+    combinedData.ownerName = aiData.ownerName;
+    combinedData.ownerTitle = aiData.ownerTitle;
+    combinedData.ownerEmail = aiData.ownerEmail;
     if (combinedData.email) {
       combinedData.email = validateEmail(combinedData.email);
     }
@@ -19038,16 +19052,19 @@ async function scrapeWebsite(url, geminiApiKey) {
 function extractMailtoAndTel($) {
   let email;
   let phone;
+  const allMailtos = [];
   $('a[href^="mailto:"]').each((_, elem) => {
-    if (email) return;
     const href = $(elem).attr("href");
     if (href) {
       const addr = href.replace("mailto:", "").split("?")[0].trim().toLowerCase();
-      if (!addr.match(/^(noreply|no-reply|support|webmaster)@/i)) {
-        email = addr;
+      if (!addr.match(/^(noreply|no-reply|support|webmaster|bounce|mailer-daemon)@/i) && addr.includes("@")) {
+        const isPersonal = !addr.match(/^(info|contact|hello|office|admin|sales|team|service|services|marketing)@/i);
+        allMailtos.push({ email: addr, isPersonal });
       }
     }
   });
+  const personal = allMailtos.find((m) => m.isPersonal);
+  email = personal?.email || allMailtos[0]?.email;
   $('a[href^="tel:"]').each((_, elem) => {
     if (phone) return;
     const href = $(elem).attr("href");
@@ -19056,6 +19073,20 @@ function extractMailtoAndTel($) {
     }
   });
   return { email, phone };
+}
+function extractAllMailtoEmails($) {
+  const result = [];
+  $('a[href^="mailto:"]').each((_, elem) => {
+    const href = $(elem).attr("href");
+    if (href) {
+      const addr = href.replace("mailto:", "").split("?")[0].trim().toLowerCase();
+      if (addr.includes("@") && !addr.match(/^(noreply|no-reply|bounce|mailer-daemon)@/i)) {
+        const isGeneric = !!addr.match(/^(info|contact|hello|office|admin|sales|team|service|services|marketing)@/i);
+        result.push({ email: addr, type: isGeneric ? "generic" : "personal" });
+      }
+    }
+  });
+  return result;
 }
 function extractStructuredData($) {
   const data = {};
@@ -19186,17 +19217,21 @@ function mergeContactPages(pages) {
 async function extractWithAI(html, geminiApiKey) {
   try {
     const genAI4 = new import_generative_ai.GoogleGenerativeAI(geminiApiKey);
-    const model2 = genAI4.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
     const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 15e3);
-    const FALLBACK = `Extract business contact information from this website content. 
-This is a commercial cleaning or janitorial company. Find the owner/manager's direct contact info if possible.
+    const FALLBACK = `Extract business contact information AND owner/decision-maker info from this website content.
+Look specifically for the highest-ranking person listed \u2014 owner, founder, CEO, president, managing director, doctor, principal, or office manager.
+Check the About Us, Our Team, Staff, Leadership, or Meet the Doctor sections.
 
 Return ONLY a JSON object with these fields (use null if not found):
 {
   "email": "email address (prefer personal/owner email over generic info@)",
   "phone": "primary phone number in format (xxx) xxx-xxxx",
   "address": "full physical address if available",
-  "businessName": "official business name"
+  "businessName": "official business name",
+  "ownerName": "full name of owner/highest decision-maker (e.g. 'Dr. John Smith')",
+  "ownerTitle": "their title (e.g. 'Owner', 'CEO', 'Managing Director', 'DDS')",
+  "ownerEmail": "owner's personal email if different from the general email"
 }
 
 Website content:
@@ -19209,11 +19244,15 @@ Website content:
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const data = JSON.parse(jsonMatch[0]);
+      const clean = (v) => v && v !== "null" && v !== null && v !== "N/A" && v !== "n/a" ? v : void 0;
       return {
-        email: data.email && data.email !== "null" && data.email !== null ? data.email : void 0,
-        phone: data.phone && data.phone !== "null" && data.phone !== null ? data.phone : void 0,
-        address: data.address && data.address !== "null" && data.address !== null ? data.address : void 0,
-        businessName: data.businessName && data.businessName !== "null" && data.businessName !== null ? data.businessName : void 0
+        email: clean(data.email),
+        phone: clean(data.phone),
+        address: clean(data.address),
+        businessName: clean(data.businessName),
+        ownerName: clean(data.ownerName),
+        ownerTitle: clean(data.ownerTitle),
+        ownerEmail: clean(data.ownerEmail)
       };
     }
     return {};
@@ -19295,7 +19334,7 @@ async function deepMailtoScan(baseUrl) {
     return { pagesScanned: visited.size };
   }
 }
-async function searchWebForEmail(businessName, location, domain, serperApiKey) {
+async function searchWebForEmail(businessName, location, domain, serperApiKey, contactName) {
   const apiKey = serperApiKey || process.env.SERPER_API_KEY;
   if (!apiKey) {
     console.warn("No SERPER_API_KEY available for web email search.");
@@ -19307,7 +19346,13 @@ async function searchWebForEmail(businessName, location, domain, serperApiKey) {
   if (domain) {
     queries.push(`site:${domain} email OR contact`);
   }
+  queries.push(`site:facebook.com "${businessName}" ${location} email`);
+  if (contactName) {
+    queries.push(`"${contactName}" "${businessName}" email`);
+  }
   queries.push(`"${businessName}" ${location} email contact`);
+  queries.push(`"${businessName}" ${location} email site:bbb.org OR site:chamberofcommerce.com OR site:yelp.com`);
+  let facebookUrl;
   for (const query of queries) {
     try {
       const response = await fetch("https://google.serper.dev/search", {
@@ -19323,6 +19368,9 @@ async function searchWebForEmail(businessName, location, domain, serperApiKey) {
       const data = await response.json();
       const organic = data.organic || [];
       for (const result of organic) {
+        if (!facebookUrl && result.link?.includes("facebook.com") && !result.link?.includes("sharer")) {
+          facebookUrl = result.link;
+        }
         const text = `${result.snippet || ""} ${result.title || ""}`;
         const emails = text.match(emailRegex) || [];
         const phones = text.match(phoneRegex) || [];
@@ -19333,24 +19381,25 @@ async function searchWebForEmail(businessName, location, domain, serperApiKey) {
           return {
             email: validEmails[0].toLowerCase(),
             phone: phones[0],
-            source: "serper_web_search"
+            facebookUrl,
+            source: query.includes("facebook.com") ? "serper_facebook" : "serper_web_search"
           };
         }
       }
       if (data.knowledgeGraph) {
         const kg = data.knowledgeGraph;
         if (kg.email) {
-          return { email: kg.email.toLowerCase(), phone: kg.phone, source: "serper_knowledge_graph" };
+          return { email: kg.email.toLowerCase(), phone: kg.phone, facebookUrl, source: "serper_knowledge_graph" };
         }
         if (kg.phone && !data.organic?.length) {
-          return { phone: kg.phone, source: "serper_knowledge_graph" };
+          return { phone: kg.phone, facebookUrl, source: "serper_knowledge_graph" };
         }
       }
     } catch (error12) {
       console.error(`Serper search error for query "${query}":`, error12);
     }
   }
-  return { source: "serper_exhausted" };
+  return { facebookUrl, source: "serper_exhausted" };
 }
 
 // src/utils/emailVerification.ts
@@ -20464,6 +20513,77 @@ Verify compliance and extract key data. Return JSON:
     };
   }
 }
+var COVERAGE_MINIMUMS = {
+  glPerOccurrence: 1e6,
+  // $1M
+  glAggregate: 2e6,
+  // $2M
+  wcEachAccident: 5e5
+  // $500K
+};
+function validateExtracted(extracted, vendorName, attestations, today) {
+  const flags = [];
+  let valid = true;
+  if (!extracted.glActive) {
+    valid = false;
+    flags.push("No active Commercial General Liability coverage found \u2014 CGL is required");
+  }
+  if (!extracted.wcActive) {
+    valid = false;
+    flags.push("No active Workers' Compensation coverage found \u2014 WC is required");
+  }
+  if (extracted.glActive) {
+    if (extracted.glPerOccurrence != null && extracted.glPerOccurrence < COVERAGE_MINIMUMS.glPerOccurrence) {
+      valid = false;
+      flags.push(`CGL Per Occurrence $${extracted.glPerOccurrence.toLocaleString()} is below required minimum $${COVERAGE_MINIMUMS.glPerOccurrence.toLocaleString()}`);
+    }
+    if (extracted.glAggregate != null && extracted.glAggregate < COVERAGE_MINIMUMS.glAggregate) {
+      valid = false;
+      flags.push(`CGL General Aggregate $${extracted.glAggregate.toLocaleString()} is below required minimum $${COVERAGE_MINIMUMS.glAggregate.toLocaleString()}`);
+    }
+  }
+  if (extracted.wcActive) {
+    if (extracted.wcEachAccident != null && extracted.wcEachAccident < COVERAGE_MINIMUMS.wcEachAccident) {
+      valid = false;
+      flags.push(`WC E.L. Each Accident $${extracted.wcEachAccident.toLocaleString()} is below required minimum $${COVERAGE_MINIMUMS.wcEachAccident.toLocaleString()}`);
+    }
+  }
+  if (extracted.expirationDates) {
+    for (const entry of extracted.expirationDates) {
+      if (entry.expires && entry.expires < today) {
+        valid = false;
+        flags.push(`${entry.policy} policy expired on ${entry.expires}`);
+      }
+    }
+  }
+  if (extracted.insuredName && vendorName) {
+    const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const extractedNorm = normalize(extracted.insuredName);
+    const vendorNorm = normalize(vendorName);
+    if (!extractedNorm.includes(vendorNorm) && !vendorNorm.includes(extractedNorm)) {
+      flags.push(`Insured name "${extracted.insuredName}" may not match vendor "${vendorName}" \u2014 manual review recommended`);
+    }
+  }
+  const allNo = !attestations.hasGL && !attestations.hasWC && !attestations.hasAuto;
+  if (!allNo) {
+    if (attestations.hasGL && !extracted.glActive) {
+      flags.push("Vendor attested to having General Liability but ACORD shows no active CGL policy");
+    }
+    if (attestations.hasWC && !extracted.wcActive) {
+      flags.push("Vendor attested to having Workers' Comp but ACORD shows no active WC policy");
+    }
+    if (attestations.hasAuto && !extracted.autoActive) {
+      flags.push("Vendor attested to having Auto Insurance but ACORD shows no active auto policy");
+    }
+  }
+  const parts = [];
+  if (extracted.glActive) parts.push(`CGL active ($${(extracted.glPerOccurrence || 0).toLocaleString()} occ / $${(extracted.glAggregate || 0).toLocaleString()} agg)`);
+  if (extracted.wcActive) parts.push(`WC active ($${(extracted.wcEachAccident || 0).toLocaleString()} ea accident)`);
+  if (extracted.autoActive) parts.push("Auto active");
+  if (extracted.umbrellaActive) parts.push("Umbrella active");
+  const reasoning = valid ? `All required coverages present and meet minimums. ${parts.join(", ")}.` : `Verification failed. ${flags.join(". ")}.`;
+  return { valid, reasoning, flags };
+}
 async function verifyAcord25(fileUrl, vendorName, attestations) {
   const model2 = genAI2.getGenerativeModel({ model: "gemini-2.0-flash" });
   try {
@@ -20474,14 +20594,13 @@ async function verifyAcord25(fileUrl, vendorName, attestations) {
     const isPng = fileUrl.toLowerCase().includes(".png");
     const contentType = isPdf ? "application/pdf" : isJpg ? "image/jpeg" : isPng ? "image/png" : "application/pdf";
     const base64Data = buffer.toString("base64");
-    const ACORD_FALLBACK = `You are an insurance compliance verification agent for XIRI Facility Solutions.
+    const ACORD_FALLBACK = `You are an insurance document data extraction agent for XIRI Facility Solutions.
 
-Analyze this ACORD 25 Certificate of Liability Insurance and extract data in JSON format.
+Analyze this ACORD 25 Certificate of Liability Insurance and extract all data into JSON.
 Vendor: "{{vendorName}}"
-GL: {{hasGL}}, WC: {{hasWC}}, Auto: {{hasAuto}}, Entity: {{hasEntity}}
 Today: {{todayDate}}
 
-Return JSON with valid, reasoning, flags, and extracted fields.`;
+Return ONLY the extracted JSON \u2014 do NOT make pass/fail judgments.`;
     const prompt = await getPrompt("acord25_verifier", ACORD_FALLBACK, {
       vendorName,
       hasGL: attestations.hasGL ? "YES" : "NO",
@@ -20510,12 +20629,17 @@ Return JSON with valid, reasoning, flags, and extracted fields.`;
     if (!jsonMatch) {
       throw new Error("No JSON found in Gemini response");
     }
-    const parsed = JSON.parse(jsonMatch[0]);
-    if (!parsed.flags) {
-      parsed.flags = [];
-    }
-    logger4.info(`ACORD 25 verification result: valid=${parsed.valid}, flags=${parsed.flags.length}`);
-    return parsed;
+    const aiResult = JSON.parse(jsonMatch[0]);
+    const extracted = aiResult.extracted || aiResult;
+    const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    const validation = validateExtracted(extracted, vendorName, attestations, today);
+    logger4.info(`ACORD 25 verification: valid=${validation.valid}, flags=${validation.flags.length} (deterministic)`);
+    return {
+      valid: validation.valid,
+      reasoning: validation.reasoning,
+      extracted,
+      flags: validation.flags
+    };
   } catch (error12) {
     logger4.error("ACORD 25 verification failed:", error12);
     return {
@@ -28786,8 +28910,504 @@ var getTidyCalBookings = (0, import_https15.onCall)({
   });
   return result;
 });
+
+// src/functions/prospecting.ts
+var import_https16 = require("firebase-functions/v2/https");
+
+// src/utils/enrichmentProviders.ts
+var HunterProvider = class {
+  constructor(apiKey) {
+    this.name = "hunter";
+    this.apiKey = apiKey;
+  }
+  async findEmailsByDomain(domain) {
+    try {
+      const url = `https://api.hunter.io/v2/domain-search?domain=${encodeURIComponent(domain)}&api_key=${this.apiKey}`;
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(1e4)
+      });
+      if (!response.ok) {
+        const errorBody = await response.text();
+        if (response.status === 429 || response.status === 402) {
+          return { emails: [], creditsUsed: 0, error: "credits_exhausted" };
+        }
+        return { emails: [], creditsUsed: 0, error: `HTTP ${response.status}: ${errorBody}` };
+      }
+      const data = await response.json();
+      const hunterEmails = data.data?.emails || [];
+      const meta = data.meta || {};
+      const emails = hunterEmails.map((e) => ({
+        email: e.value?.toLowerCase(),
+        firstName: e.first_name || void 0,
+        lastName: e.last_name || void 0,
+        position: e.position || void 0,
+        confidence: e.confidence || 0,
+        type: e.type === "personal" ? "personal" : "generic",
+        provider: "hunter"
+      }));
+      emails.sort((a, b) => {
+        if (a.type === "personal" && b.type !== "personal") return -1;
+        if (a.type !== "personal" && b.type === "personal") return 1;
+        return (b.confidence || 0) - (a.confidence || 0);
+      });
+      return {
+        emails,
+        creditsUsed: hunterEmails.length,
+        creditsRemaining: meta.available !== void 0 ? meta.available - meta.used : void 0
+      };
+    } catch (error12) {
+      console.error(`[Hunter] Error searching ${domain}:`, error12.message);
+      return { emails: [], creditsUsed: 0, error: error12.message };
+    }
+  }
+};
+var SnovProvider = class {
+  constructor(userId, apiSecret) {
+    this.name = "snov";
+    this.accessToken = null;
+    this.tokenExpiry = 0;
+    this.userId = userId;
+    this.apiSecret = apiSecret;
+  }
+  async getAccessToken() {
+    if (this.accessToken && Date.now() < this.tokenExpiry) {
+      return this.accessToken;
+    }
+    const response = await fetch("https://api.snov.io/v1/oauth/access_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        grant_type: "client_credentials",
+        client_id: this.userId,
+        client_secret: this.apiSecret
+      }),
+      signal: AbortSignal.timeout(1e4)
+    });
+    if (!response.ok) {
+      throw new Error(`Snov auth failed: HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    this.accessToken = data.access_token;
+    this.tokenExpiry = Date.now() + 50 * 60 * 1e3;
+    return this.accessToken;
+  }
+  async findEmailsByDomain(domain) {
+    try {
+      const token = await this.getAccessToken();
+      const response = await fetch("https://api.snov.io/v2/domain-emails-with-info", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          domain,
+          type: "all",
+          limit: 10
+        }),
+        signal: AbortSignal.timeout(1e4)
+      });
+      if (!response.ok) {
+        const errorBody = await response.text();
+        if (response.status === 402 || response.status === 429) {
+          return { emails: [], creditsUsed: 0, error: "credits_exhausted" };
+        }
+        return { emails: [], creditsUsed: 0, error: `HTTP ${response.status}: ${errorBody}` };
+      }
+      const data = await response.json();
+      const snovEmails = data.emails || [];
+      const emails = snovEmails.map((e) => {
+        const isGeneric = /^(info|contact|hello|office|admin|support|sales|team|service|services)@/i.test(e.email || "");
+        return {
+          email: (e.email || "").toLowerCase(),
+          firstName: e.firstName || e.first_name || void 0,
+          lastName: e.lastName || e.last_name || void 0,
+          position: e.position || void 0,
+          confidence: e.score || 0,
+          type: isGeneric ? "generic" : "personal",
+          provider: "snov"
+        };
+      });
+      emails.sort((a, b) => {
+        if (a.type === "personal" && b.type !== "personal") return -1;
+        if (a.type !== "personal" && b.type === "personal") return 1;
+        return (b.confidence || 0) - (a.confidence || 0);
+      });
+      return {
+        emails,
+        creditsUsed: 1
+        // Snov charges 1 credit per domain search
+      };
+    } catch (error12) {
+      console.error(`[Snov] Error searching ${domain}:`, error12.message);
+      return { emails: [], creditsUsed: 0, error: error12.message };
+    }
+  }
+};
+async function runEnrichmentWaterfall(domain, secrets) {
+  const providers2 = [];
+  const log = [];
+  if (secrets.hunterApiKey) {
+    providers2.push(new HunterProvider(secrets.hunterApiKey));
+  }
+  if (secrets.snovUserId && secrets.snovApiSecret) {
+    providers2.push(new SnovProvider(secrets.snovUserId, secrets.snovApiSecret));
+  }
+  if (providers2.length === 0) {
+    log.push("No enrichment providers configured \u2014 skipping API waterfall");
+    return { type: "none", provider: "none", allEmails: [], log };
+  }
+  const allEmails = [];
+  for (const provider of providers2) {
+    log.push(`Trying ${provider.name} for ${domain}...`);
+    const result = await provider.findEmailsByDomain(domain);
+    if (result.error === "credits_exhausted") {
+      log.push(`${provider.name}: credits exhausted, skipping`);
+      continue;
+    }
+    if (result.error) {
+      log.push(`${provider.name}: error \u2014 ${result.error}`);
+      continue;
+    }
+    if (result.emails.length === 0) {
+      log.push(`${provider.name}: no emails found`);
+      continue;
+    }
+    allEmails.push(...result.emails);
+    const personalEmail = result.emails.find((e) => e.type === "personal");
+    if (personalEmail) {
+      log.push(`${provider.name}: found personal email \u2014 ${personalEmail.email} (${personalEmail.position || "unknown role"})`);
+      return {
+        email: personalEmail.email,
+        firstName: personalEmail.firstName,
+        lastName: personalEmail.lastName,
+        position: personalEmail.position,
+        confidence: personalEmail.confidence,
+        type: "personal",
+        provider: provider.name,
+        allEmails,
+        log
+      };
+    }
+    log.push(`${provider.name}: found ${result.emails.length} emails (generic only)`);
+  }
+  const bestGeneric = allEmails[0];
+  if (bestGeneric) {
+    return {
+      email: bestGeneric.email,
+      type: "generic",
+      provider: bestGeneric.provider,
+      allEmails,
+      log
+    };
+  }
+  log.push("All enrichment providers exhausted \u2014 no emails found");
+  return { type: "none", provider: "none", allEmails: [], log };
+}
+
+// src/agents/prospector.ts
+var GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support)@/i;
+async function prospectAndEnrich(input, secrets) {
+  const maxResults = input.maxResults || 20;
+  console.log(`[Prospector] Discovering: "${input.query}" in "${input.location}"...`);
+  const rawVendors = await searchVendors(input.query, input.location, "google_maps");
+  console.log(`[Prospector] Discovered ${rawVendors.length} businesses.`);
+  const prospects = [];
+  const stats = {
+    discovered: rawVendors.length,
+    withPersonalEmail: 0,
+    withGenericEmail: 0,
+    noEmail: 0,
+    skippedNoWebsite: 0
+  };
+  const toProcess = rawVendors.slice(0, maxResults);
+  for (const vendor of toProcess) {
+    const prospect = await enrichSingleBusiness(vendor, secrets, input);
+    prospects.push(prospect);
+    if (prospect.contactEmail && !GENERIC_PREFIXES.test(prospect.contactEmail)) {
+      stats.withPersonalEmail++;
+    } else if (prospect.genericEmail || prospect.contactEmail) {
+      stats.withGenericEmail++;
+    } else {
+      stats.noEmail++;
+    }
+    if (!vendor.website) {
+      stats.skippedNoWebsite++;
+    }
+  }
+  prospects.sort((a, b) => {
+    const scoreA = a.contactEmail ? 2 : a.genericEmail ? 1 : 0;
+    const scoreB = b.contactEmail ? 2 : b.genericEmail ? 1 : 0;
+    return scoreB - scoreA;
+  });
+  console.log(`[Prospector] Done. Results: ${stats.withPersonalEmail} personal, ${stats.withGenericEmail} generic, ${stats.noEmail} none.`);
+  return { prospects, stats };
+}
+async function enrichSingleBusiness(vendor, secrets, input) {
+  const log = [];
+  const prospect = {
+    businessName: vendor.name,
+    address: vendor.location,
+    phone: vendor.phone,
+    website: vendor.website,
+    rating: vendor.rating,
+    userRatingsTotal: vendor.user_ratings_total,
+    emailSource: "none",
+    emailConfidence: "low",
+    enrichmentLog: log
+  };
+  log.push(`Starting enrichment for "${vendor.name}"`);
+  if (!vendor.website) {
+    log.push("No website available \u2014 skipping to Layer 2 (web search)");
+    await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log);
+    if (!prospect.contactEmail && !input.skipPaidApis) {
+      log.push("Skipping Layer 3 \u2014 no domain available for enrichment APIs");
+    }
+    return prospect;
+  }
+  log.push(`Layer 1: Scraping ${vendor.website}...`);
+  try {
+    const scrapeResult = await scrapeWebsite(vendor.website, secrets.geminiApiKey);
+    if (scrapeResult.success && scrapeResult.data) {
+      const data = scrapeResult.data;
+      if (data.ownerName) {
+        prospect.contactName = data.ownerName;
+        prospect.contactTitle = data.ownerTitle;
+        log.push(`AI found owner: ${data.ownerName} (${data.ownerTitle || "unknown title"})`);
+      }
+      if (data.socialMedia?.facebook) {
+        prospect.facebookUrl = data.socialMedia.facebook;
+      }
+      if (data.socialMedia?.linkedin) {
+        prospect.linkedinUrl = data.socialMedia.linkedin;
+      }
+      const bestEmail = data.ownerEmail || data.email;
+      if (bestEmail && !GENERIC_PREFIXES.test(bestEmail)) {
+        prospect.contactEmail = bestEmail;
+        prospect.emailSource = data.ownerEmail ? "ai_extraction" : "mailto";
+        prospect.emailConfidence = "high";
+        log.push(`Found personal email: ${bestEmail} (source: ${prospect.emailSource})`);
+        if (data.allEmails) {
+          const generic = data.allEmails.find((e) => e.type === "generic");
+          if (generic) prospect.genericEmail = generic.email;
+        }
+        return prospect;
+      }
+      if (bestEmail && GENERIC_PREFIXES.test(bestEmail)) {
+        prospect.genericEmail = bestEmail;
+        log.push(`Found generic email: ${bestEmail} \u2014 continuing search for personal...`);
+      }
+      if (data.allEmails) {
+        const personalFromMailto = data.allEmails.find((e) => e.type === "personal");
+        if (personalFromMailto) {
+          prospect.contactEmail = personalFromMailto.email;
+          prospect.emailSource = "mailto";
+          prospect.emailConfidence = "high";
+          log.push(`Found personal email from mailto scan: ${personalFromMailto.email}`);
+          return prospect;
+        }
+        const genericFromMailto = data.allEmails.find((e) => e.type === "generic");
+        if (genericFromMailto && !prospect.genericEmail) {
+          prospect.genericEmail = genericFromMailto.email;
+        }
+      }
+      prospect.phone = prospect.phone || data.phone;
+      prospect.address = prospect.address || data.address;
+    } else {
+      log.push(`Scraping failed: ${scrapeResult.error || "unknown error"}`);
+    }
+  } catch (error12) {
+    log.push(`Layer 1 error: ${error12.message}`);
+  }
+  await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log);
+  if (prospect.contactEmail) return prospect;
+  if (!input.skipPaidApis) {
+    const domain = extractDomain(vendor.website);
+    if (domain) {
+      log.push(`Layer 3: Running enrichment API waterfall for ${domain}...`);
+      const waterfallResult = await runEnrichmentWaterfall(domain, {
+        hunterApiKey: secrets.hunterApiKey,
+        snovUserId: secrets.snovUserId,
+        snovApiSecret: secrets.snovApiSecret
+      });
+      log.push(...waterfallResult.log);
+      if (waterfallResult.email) {
+        if (waterfallResult.type === "personal") {
+          prospect.contactEmail = waterfallResult.email;
+          prospect.contactName = prospect.contactName || (waterfallResult.firstName && waterfallResult.lastName ? `${waterfallResult.firstName} ${waterfallResult.lastName}` : void 0);
+          prospect.contactTitle = prospect.contactTitle || waterfallResult.position;
+          prospect.emailSource = waterfallResult.provider;
+          prospect.emailConfidence = "medium";
+          return prospect;
+        } else {
+          prospect.genericEmail = prospect.genericEmail || waterfallResult.email;
+        }
+      }
+    }
+  }
+  if (!prospect.contactEmail && prospect.genericEmail) {
+    prospect.contactEmail = prospect.genericEmail;
+    prospect.emailSource = "none";
+    prospect.emailConfidence = "low";
+    log.push(`No personal email found \u2014 using generic: ${prospect.genericEmail}`);
+  } else if (!prospect.contactEmail) {
+    log.push("No email found across all layers.");
+  }
+  return prospect;
+}
+async function trySerperSearch(prospect, vendor, serperApiKey, location, log) {
+  log.push("Layer 2: Searching web (Facebook, directories, person search)...");
+  try {
+    const domain = vendor.website ? extractDomain(vendor.website) : void 0;
+    const searchResult = await searchWebForEmail(
+      vendor.name,
+      location,
+      domain,
+      serperApiKey,
+      prospect.contactName
+      // If AI found an owner name, use it for targeted search
+    );
+    if (searchResult.facebookUrl && !prospect.facebookUrl) {
+      prospect.facebookUrl = searchResult.facebookUrl;
+      log.push(`Found Facebook: ${searchResult.facebookUrl}`);
+    }
+    if (searchResult.email) {
+      const isPersonal = !GENERIC_PREFIXES.test(searchResult.email);
+      if (isPersonal) {
+        prospect.contactEmail = searchResult.email;
+        prospect.emailSource = searchResult.source.includes("facebook") ? "serper_facebook" : "serper_search";
+        prospect.emailConfidence = "medium";
+        log.push(`Found personal email via web search: ${searchResult.email} (${searchResult.source})`);
+      } else {
+        prospect.genericEmail = prospect.genericEmail || searchResult.email;
+        log.push(`Found generic email via web search: ${searchResult.email} \u2014 continuing...`);
+      }
+    } else {
+      log.push(`No email found via web search (source: ${searchResult.source})`);
+    }
+    if (!prospect.phone && searchResult.phone) {
+      prospect.phone = searchResult.phone;
+    }
+  } catch (error12) {
+    log.push(`Layer 2 error: ${error12.message}`);
+  }
+}
+function extractDomain(url) {
+  try {
+    const parsed = new URL(url.startsWith("http") ? url : `https://${url}`);
+    return parsed.hostname.replace(/^www\./, "");
+  } catch {
+    return void 0;
+  }
+}
+
+// src/functions/prospecting.ts
+var runProspector = (0, import_https16.onCall)({
+  secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET"],
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 540,
+  // 9 minutes — some enrichment steps are slow
+  memory: "512MiB"
+}, async (request) => {
+  const data = request.data || {};
+  const query = data.query;
+  const location = data.location;
+  const maxResults = data.maxResults || 20;
+  const skipPaidApis = data.skipPaidApis || false;
+  if (!query || !location) {
+    throw new import_https16.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
+  }
+  try {
+    console.log(`[runProspector] query="${query}", location="${location}", max=${maxResults}, skipPaid=${skipPaidApis}`);
+    const result = await prospectAndEnrich(
+      { query, location, maxResults, skipPaidApis },
+      {
+        geminiApiKey: process.env.GEMINI_API_KEY,
+        serperApiKey: process.env.SERPER_API_KEY,
+        hunterApiKey: process.env.HUNTER_API_KEY,
+        snovUserId: process.env.SNOV_USER_ID,
+        snovApiSecret: process.env.SNOV_API_SECRET
+      }
+    );
+    return {
+      message: `Found ${result.prospects.length} prospects.`,
+      prospects: result.prospects,
+      stats: result.stats
+    };
+  } catch (error12) {
+    console.error("[runProspector] Error:", error12);
+    throw new import_https16.HttpsError("internal", error12.message || "Pipeline failed.");
+  }
+});
+var addProspectsToCrm = (0, import_https16.onCall)({
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 60
+}, async (request) => {
+  const { prospects } = request.data;
+  if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
+    throw new import_https16.HttpsError("invalid-argument", "No prospects provided.");
+  }
+  try {
+    const results = [];
+    const batch = db.batch();
+    for (const prospect of prospects) {
+      const companyRef = db.collection("companies").doc();
+      batch.set(companyRef, {
+        name: prospect.businessName,
+        address: prospect.address || null,
+        phone: prospect.phone || null,
+        website: prospect.website || null,
+        facebookUrl: prospect.facebookUrl || null,
+        linkedinUrl: prospect.linkedinUrl || null,
+        rating: prospect.rating || null,
+        source: "prospector",
+        emailSource: prospect.emailSource,
+        emailConfidence: prospect.emailConfidence,
+        createdAt: /* @__PURE__ */ new Date(),
+        updatedAt: /* @__PURE__ */ new Date()
+      });
+      const email = prospect.contactEmail || prospect.genericEmail;
+      let contactId;
+      if (email) {
+        const contactRef = db.collection("contacts").doc();
+        contactId = contactRef.id;
+        const isGeneric = !prospect.contactEmail || /^(info|contact|hello|office|admin|sales|team|service|services|marketing)@/i.test(prospect.contactEmail);
+        batch.set(contactRef, {
+          name: prospect.contactName || prospect.businessName,
+          email,
+          phone: prospect.phone || null,
+          title: prospect.contactTitle || null,
+          companyId: companyRef.id,
+          companyName: prospect.businessName,
+          isGenericEmail: isGeneric,
+          source: "prospector",
+          status: "new",
+          stage: "lead",
+          createdAt: /* @__PURE__ */ new Date(),
+          updatedAt: /* @__PURE__ */ new Date()
+        });
+      }
+      results.push({
+        companyId: companyRef.id,
+        contactId,
+        businessName: prospect.businessName
+      });
+    }
+    await batch.commit();
+    console.log(`[addProspectsToCrm] Created ${results.length} companies + contacts.`);
+    return {
+      message: `Successfully imported ${results.length} prospects to CRM.`,
+      imported: results.length,
+      results
+    };
+  } catch (error12) {
+    console.error("[addProspectsToCrm] Error:", error12);
+    throw new import_https16.HttpsError("internal", error12.message || "CRM import failed.");
+  }
+});
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  addProspectsToCrm,
   adminCreateUser,
   adminUpdateAuthUser,
   bookDiscoveryCall,
@@ -28841,6 +29461,7 @@ var getTidyCalBookings = (0, import_https15.onCall)({
   resendWebhook,
   respondToQuote,
   reviewSocialPost,
+  runProspector,
   runRecruiterAgent,
   runSocialContentGenerator,
   runSocialPublisher,
