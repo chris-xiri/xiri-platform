@@ -135,6 +135,9 @@ export interface Lead {
 
     // Contact-centric migration: FK to primary contact
     primaryContactId?: string;
+
+    // Service capabilities the company needs / offers
+    serviceCapabilities?: string[];
 }
 
 // ─── Contact-Centric CRM Types ──────────────────────────────────────────────

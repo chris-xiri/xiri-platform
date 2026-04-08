@@ -174,8 +174,8 @@ async function getTemplate(templateId) {
       return null;
     }
     return doc.data();
-  } catch (error12) {
-    console.error("Error fetching template:", error12);
+  } catch (error13) {
+    console.error("Error fetching template:", error13);
     return null;
   }
 }
@@ -227,8 +227,8 @@ BODY:
       subject: subjectMatch[1].trim(),
       body: bodyMatch[1].trim()
     };
-  } catch (error12) {
-    console.error("Error generating email:", error12);
+  } catch (error13) {
+    console.error("Error generating email:", error13);
     return null;
   }
 }
@@ -296,8 +296,8 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
       });
       resendId = data?.id;
       console.log(`\u2705 Email sent to ${vendor?.companyName}: ${email.subject} (Resend ID: ${data?.id})`);
-    } catch (error12) {
-      console.error("\u274C Resend API error:", error12);
+    } catch (error13) {
+      console.error("\u274C Resend API error:", error13);
       await db3.collection("vendor_activities").add({
         vendorId,
         type: "EMAIL_FAILED",
@@ -307,7 +307,7 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
           templateId,
           subject: email.subject,
           to: vendor?.email || "unknown",
-          error: String(error12)
+          error: String(error13)
         }
       });
       return;
@@ -328,8 +328,8 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
         // NEW: Track Resend email ID
       }
     });
-  } catch (error12) {
-    console.error("Error sending email:", error12);
+  } catch (error13) {
+    console.error("Error sending email:", error13);
   }
 }
 function buildEmailHeader() {
@@ -414,7 +414,7 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
       headers2["List-Unsubscribe"] = `<${unsubscribeUrl}>`;
       headers2["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
     }
-    const { data, error: error12 } = await resend.emails.send({
+    const { data, error: error13 } = await resend.emails.send({
       from: from || "XIRI Facility Solutions <onboarding@xiri.ai>",
       replyTo: "chris@xiri.ai",
       to,
@@ -424,8 +424,8 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
       headers: headers2,
       ...tags.length > 0 ? { tags } : {}
     });
-    if (error12) {
-      console.error("\u274C Resend API error:", error12);
+    if (error13) {
+      console.error("\u274C Resend API error:", error13);
       return { success: false };
     }
     console.log(`\u2705 Email sent to ${to}: ${subject} (ID: ${data?.id})`);
@@ -448,10 +448,10 @@ async function sendBatchEmails(emails) {
       subject: e.subject,
       html: header + e.html + signature
     }));
-    const { data, error: error12 } = await resend.batch.send(payload);
-    if (error12) {
-      console.error("\u274C Batch send error:", error12);
-      return { success: false, error: error12.message || String(error12) };
+    const { data, error: error13 } = await resend.batch.send(payload);
+    if (error13) {
+      console.error("\u274C Batch send error:", error13);
+      return { success: false, error: error13.message || String(error13) };
     }
     const ids = data?.data?.map((d) => d.id) || [];
     console.log(`\u2705 Batch sent ${emails.length} emails (IDs: ${ids.join(", ")})`);
@@ -545,12 +545,12 @@ async function publishPost(message, link, imageUrl, placeId) {
       success: true,
       postUrl: `https://facebook.com/${postId}`
     };
-  } catch (error12) {
-    console.error("Facebook publish error:", error12);
+  } catch (error13) {
+    console.error("Facebook publish error:", error13);
     return {
       id: "",
       success: false,
-      error: error12.message || "Failed to publish to Facebook"
+      error: error13.message || "Failed to publish to Facebook"
     };
   }
 }
@@ -620,12 +620,12 @@ async function publishReel(videoUrl, description, placeId) {
       success: true,
       postUrl: `https://facebook.com/reel/${finishData.id || videoId}`
     };
-  } catch (error12) {
-    console.error("[FB Reels] Publish error:", error12);
+  } catch (error13) {
+    console.error("[FB Reels] Publish error:", error13);
     return {
       id: "",
       success: false,
-      error: error12.message || "Failed to publish reel"
+      error: error13.message || "Failed to publish reel"
     };
   }
 }
@@ -643,8 +643,8 @@ async function searchFacebookPlaces(query, lat, lng) {
       return [];
     }
     return data.data || [];
-  } catch (error12) {
-    console.error("[FB Places] Search error:", error12);
+  } catch (error13) {
+    console.error("[FB Places] Search error:", error13);
     return [];
   }
 }
@@ -679,12 +679,12 @@ async function schedulePost(message, scheduledTime, link) {
       id: data.id,
       success: true
     };
-  } catch (error12) {
-    console.error("Facebook schedule error:", error12);
+  } catch (error13) {
+    console.error("Facebook schedule error:", error13);
     return {
       id: "",
       success: false,
-      error: error12.message || "Failed to schedule post"
+      error: error13.message || "Failed to schedule post"
     };
   }
 }
@@ -706,8 +706,8 @@ async function getRecentPosts(limit = 10) {
       return !url.includes("/reel/") && !url.includes("/videos/");
     });
     return posts.slice(0, limit);
-  } catch (error12) {
-    console.error("Facebook get posts error:", error12);
+  } catch (error13) {
+    console.error("Facebook get posts error:", error13);
     return [];
   }
 }
@@ -733,8 +733,8 @@ async function getRecentReels(limit = 10) {
       comments: reel.comments,
       duration: reel.length
     }));
-  } catch (error12) {
-    console.error("Facebook get reels error:", error12);
+  } catch (error13) {
+    console.error("Facebook get reels error:", error13);
     return [];
   }
 }
@@ -759,8 +759,8 @@ async function getPageInsights(period = "week") {
       }
     }
     return insights;
-  } catch (error12) {
-    console.error("Facebook insights error:", error12);
+  } catch (error13) {
+    console.error("Facebook insights error:", error13);
     return {};
   }
 }
@@ -773,8 +773,8 @@ async function deletePost(postId) {
     );
     const data = await response.json();
     return data.success === true;
-  } catch (error12) {
-    console.error("Facebook delete post error:", error12);
+  } catch (error13) {
+    console.error("Facebook delete post error:", error13);
     return false;
   }
 }
@@ -1149,21 +1149,21 @@ var require_tr46 = __commonJS({
         label = punycode.toUnicode(label);
         processing_option = PROCESSING_OPTIONS.NONTRANSITIONAL;
       }
-      var error12 = false;
+      var error13 = false;
       if (normalize(label) !== label || label[3] === "-" && label[4] === "-" || label[0] === "-" || label[label.length - 1] === "-" || label.indexOf(".") !== -1 || label.search(combiningMarksRegex) === 0) {
-        error12 = true;
+        error13 = true;
       }
       var len = countSymbols(label);
       for (var i = 0; i < len; ++i) {
         var status = findStatus(label.codePointAt(i));
         if (processing === PROCESSING_OPTIONS.TRANSITIONAL && status[1] !== "valid" || processing === PROCESSING_OPTIONS.NONTRANSITIONAL && status[1] !== "valid" && status[1] !== "deviation") {
-          error12 = true;
+          error13 = true;
           break;
         }
       }
       return {
         label,
-        error: error12
+        error: error13
       };
     }
     function processing(domain_name, useSTD3, processing_option) {
@@ -6380,8 +6380,8 @@ function Body(body) {
   this.timeout = timeout;
   if (body instanceof import_stream.default) {
     body.on("error", function(err) {
-      const error12 = err.name === "AbortError" ? err : new FetchError(`Invalid response body while trying to fetch ${_this.url}: ${err.message}`, "system", err);
-      _this[INTERNALS].error = error12;
+      const error13 = err.name === "AbortError" ? err : new FetchError(`Invalid response body while trying to fetch ${_this.url}: ${err.message}`, "system", err);
+      _this[INTERNALS].error = error13;
     });
   }
 }
@@ -6714,13 +6714,13 @@ function fetch2(url, opts) {
     const signal = request.signal;
     let response = null;
     const abort = function abort2() {
-      let error12 = new AbortError("The user aborted a request.");
-      reject(error12);
+      let error13 = new AbortError("The user aborted a request.");
+      reject(error13);
       if (request.body && request.body instanceof import_stream.default.Readable) {
-        destroyStream(request.body, error12);
+        destroyStream(request.body, error13);
       }
       if (!response || !response.body) return;
-      response.body.emit("error", error12);
+      response.body.emit("error", error13);
     };
     if (signal && signal.aborted) {
       abort();
@@ -7722,12 +7722,12 @@ var require_common = __commonJS({
         }
         return Function.prototype[Symbol.hasInstance].call(_GaxiosError, instance);
       }
-      constructor(message, config2, response, error12) {
+      constructor(message, config2, response, error13) {
         var _b;
         super(message);
         this.config = config2;
         this.response = response;
-        this.error = error12;
+        this.error = error13;
         this[_a] = util_1.pkg.version;
         this.config = (0, extend_1.default)(true, {}, config2);
         if (this.response) {
@@ -7740,8 +7740,8 @@ var require_common = __commonJS({
           }
           this.status = this.response.status;
         }
-        if (error12 && "code" in error12 && error12.code) {
-          this.code = error12.code;
+        if (error13 && "code" in error13 && error13.code) {
+          this.code = error13.code;
         }
         if (config2.errorRedactor) {
           config2.errorRedactor({
@@ -8386,14 +8386,14 @@ var require_browser = __commonJS({
         } else {
           exports2.storage.removeItem("debug");
         }
-      } catch (error12) {
+      } catch (error13) {
       }
     }
     function load2() {
       let r;
       try {
         r = exports2.storage.getItem("debug") || exports2.storage.getItem("DEBUG");
-      } catch (error12) {
+      } catch (error13) {
       }
       if (!r && typeof process !== "undefined" && "env" in process) {
         r = process.env.DEBUG;
@@ -8403,7 +8403,7 @@ var require_browser = __commonJS({
     function localstorage() {
       try {
         return localStorage;
-      } catch (error12) {
+      } catch (error13) {
       }
     }
     module2.exports = require_common2()(exports2);
@@ -8411,8 +8411,8 @@ var require_browser = __commonJS({
     formatters.j = function(v) {
       try {
         return JSON.stringify(v);
-      } catch (error12) {
-        return "[UnexpectedJSONParseError]: " + error12.message;
+      } catch (error13) {
+        return "[UnexpectedJSONParseError]: " + error13.message;
       }
     };
   }
@@ -8633,7 +8633,7 @@ var require_node = __commonJS({
           221
         ];
       }
-    } catch (error12) {
+    } catch (error13) {
     }
     exports2.inspectOpts = Object.keys(process.env).filter((key) => {
       return /^debug_/i.test(key);
@@ -11179,7 +11179,7 @@ var require_parse = __commonJS({
         n: "\n",
         r: "\r",
         t: "	"
-      }, text, error12 = function(m) {
+      }, text, error13 = function(m) {
         throw {
           name: "SyntaxError",
           message: m,
@@ -11188,7 +11188,7 @@ var require_parse = __commonJS({
         };
       }, next = function(c) {
         if (c && c !== ch) {
-          error12("Expected '" + c + "' instead of '" + ch + "'");
+          error13("Expected '" + c + "' instead of '" + ch + "'");
         }
         ch = text.charAt(at);
         at += 1;
@@ -11223,7 +11223,7 @@ var require_parse = __commonJS({
         }
         number2 = +string2;
         if (!isFinite(number2)) {
-          error12("Bad number");
+          error13("Bad number");
         } else {
           if (BigNumber == null) BigNumber = require_bignumber();
           if (string2.length > 15)
@@ -11263,7 +11263,7 @@ var require_parse = __commonJS({
             }
           }
         }
-        error12("Bad string");
+        error13("Bad string");
       }, white = function() {
         while (ch && ch <= " ") {
           next();
@@ -11290,7 +11290,7 @@ var require_parse = __commonJS({
             next("l");
             return null;
         }
-        error12("Unexpected '" + ch + "'");
+        error13("Unexpected '" + ch + "'");
       }, value, array = function() {
         var array2 = [];
         if (ch === "[") {
@@ -11311,7 +11311,7 @@ var require_parse = __commonJS({
             white();
           }
         }
-        error12("Bad array");
+        error13("Bad array");
       }, object = function() {
         var key, object2 = /* @__PURE__ */ Object.create(null);
         if (ch === "{") {
@@ -11326,11 +11326,11 @@ var require_parse = __commonJS({
             white();
             next(":");
             if (_options.strict === true && Object.hasOwnProperty.call(object2, key)) {
-              error12('Duplicate key "' + key + '"');
+              error13('Duplicate key "' + key + '"');
             }
             if (suspectProtoRx.test(key) === true) {
               if (_options.protoAction === "error") {
-                error12("Object contains forbidden prototype property");
+                error13("Object contains forbidden prototype property");
               } else if (_options.protoAction === "ignore") {
                 value();
               } else {
@@ -11338,7 +11338,7 @@ var require_parse = __commonJS({
               }
             } else if (suspectConstructorRx.test(key) === true) {
               if (_options.constructorAction === "error") {
-                error12("Object contains forbidden constructor property");
+                error13("Object contains forbidden constructor property");
               } else if (_options.constructorAction === "ignore") {
                 value();
               } else {
@@ -11356,7 +11356,7 @@ var require_parse = __commonJS({
             white();
           }
         }
-        error12("Bad object");
+        error13("Bad object");
       };
       value = function() {
         white();
@@ -11381,7 +11381,7 @@ var require_parse = __commonJS({
         result = value();
         white();
         if (ch) {
-          error12("Syntax error");
+          error13("Syntax error");
         }
         return typeof reviver === "function" ? (function walk(holder, key) {
           var k, v, value2 = holder[key];
@@ -11637,12 +11637,12 @@ var require_logging_utils = __commonJS({
             this.setFilters();
             this.filtersSet = true;
           }
-          let logger27 = this.cached.get(namespace);
-          if (!logger27) {
-            logger27 = this.makeLogger(namespace);
-            this.cached.set(namespace, logger27);
+          let logger28 = this.cached.get(namespace);
+          if (!logger28) {
+            logger28 = this.makeLogger(namespace);
+            this.cached.set(namespace, logger28);
           }
-          logger27(fields, ...args);
+          logger28(fields, ...args);
         } catch (e) {
           console.error(e);
         }
@@ -11779,7 +11779,7 @@ var require_logging_utils = __commonJS({
       } else if (cachedBackend === void 0) {
         cachedBackend = getNodeBackend();
       }
-      const logger27 = (() => {
+      const logger28 = (() => {
         let previousBackend = void 0;
         const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
           if (previousBackend !== cachedBackend) {
@@ -11794,8 +11794,8 @@ var require_logging_utils = __commonJS({
         });
         return newLogger;
       })();
-      loggerCache.set(namespace, logger27);
-      return logger27.func;
+      loggerCache.set(namespace, logger28);
+      return logger28.func;
     }
   }
 });
@@ -11859,14 +11859,14 @@ var require_src4 = __commonJS({
     var gaxios_1 = require_src2();
     var jsonBigint = require_json_bigint();
     var gcp_residency_1 = require_gcp_residency();
-    var logger27 = require_src3();
+    var logger28 = require_src3();
     exports2.BASE_PATH = "/computeMetadata/v1";
     exports2.HOST_ADDRESS = "http://169.254.169.254";
     exports2.SECONDARY_HOST_ADDRESS = "http://metadata.google.internal.";
     exports2.HEADER_NAME = "Metadata-Flavor";
     exports2.HEADER_VALUE = "Google";
     exports2.HEADERS = Object.freeze({ [exports2.HEADER_NAME]: exports2.HEADER_VALUE });
-    var log = logger27.log("gcp metadata");
+    var log = logger28.log("gcp metadata");
     exports2.METADATA_SERVER_DETECTION = Object.freeze({
       "assume-present": "don't try to ping the metadata server, but assume it's present",
       none: "don't try to ping the metadata server, but don't try to use it either",
@@ -13443,13 +13443,13 @@ var require_oauth2client = __commonJS({
           },
           url: this.endpoints.tokenInfoUrl.toString()
         });
-        const info21 = Object.assign({
+        const info22 = Object.assign({
           expiry_date: (/* @__PURE__ */ new Date()).getTime() + data.expires_in * 1e3,
           scopes: data.scope.split(" ")
         }, data);
-        delete info21.expires_in;
-        delete info21.scope;
-        return info21;
+        delete info22.expires_in;
+        delete info22.scope;
+        return info22;
       }
       getFederatedSignonCerts(callback) {
         if (callback) {
@@ -15338,21 +15338,21 @@ var require_impersonated = __commonJS({
             tokens: this.credentials,
             res
           };
-        } catch (error12) {
-          if (!(error12 instanceof Error))
-            throw error12;
+        } catch (error13) {
+          if (!(error13 instanceof Error))
+            throw error13;
           let status = 0;
           let message = "";
-          if (error12 instanceof gaxios_1.GaxiosError) {
-            status = (_c = (_b = (_a = error12 === null || error12 === void 0 ? void 0 : error12.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.error) === null || _c === void 0 ? void 0 : _c.status;
-            message = (_f = (_e = (_d = error12 === null || error12 === void 0 ? void 0 : error12.response) === null || _d === void 0 ? void 0 : _d.data) === null || _e === void 0 ? void 0 : _e.error) === null || _f === void 0 ? void 0 : _f.message;
+          if (error13 instanceof gaxios_1.GaxiosError) {
+            status = (_c = (_b = (_a = error13 === null || error13 === void 0 ? void 0 : error13.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.error) === null || _c === void 0 ? void 0 : _c.status;
+            message = (_f = (_e = (_d = error13 === null || error13 === void 0 ? void 0 : error13.response) === null || _d === void 0 ? void 0 : _d.data) === null || _e === void 0 ? void 0 : _e.error) === null || _f === void 0 ? void 0 : _f.message;
           }
           if (status && message) {
-            error12.message = `${status}: unable to impersonate: ${message}`;
-            throw error12;
+            error13.message = `${status}: unable to impersonate: ${message}`;
+            throw error13;
           } else {
-            error12.message = `unable to impersonate: ${error12}`;
-            throw error12;
+            error13.message = `unable to impersonate: ${error13}`;
+            throw error13;
           }
         }
       }
@@ -15615,15 +15615,15 @@ var require_stscredentials = __commonJS({
           const stsSuccessfulResponse = response.data;
           stsSuccessfulResponse.res = response;
           return stsSuccessfulResponse;
-        } catch (error12) {
-          if (error12 instanceof gaxios_1.GaxiosError && error12.response) {
+        } catch (error13) {
+          if (error13 instanceof gaxios_1.GaxiosError && error13.response) {
             throw (0, oauth2common_1.getErrorFromOAuthErrorResponse)(
-              error12.response.data,
+              error13.response.data,
               // Preserve other fields from the original error.
-              error12
+              error13
             );
           }
-          throw error12;
+          throw error13;
         }
       }
     };
@@ -16782,9 +16782,9 @@ var require_pluggable_auth_handler = __commonJS({
                 const responseJson = JSON.parse(output);
                 const response = new executable_response_1.ExecutableResponse(responseJson);
                 return resolve2(response);
-              } catch (error12) {
-                if (error12 instanceof executable_response_1.ExecutableResponseError) {
-                  return reject(error12);
+              } catch (error13) {
+                if (error13 instanceof executable_response_1.ExecutableResponseError) {
+                  return reject(error13);
                 }
                 return reject(new executable_response_1.ExecutableResponseError(`The executable returned an invalid response: ${output}`));
               }
@@ -16824,9 +16824,9 @@ var require_pluggable_auth_handler = __commonJS({
             return new executable_response_1.ExecutableResponse(responseJson);
           }
           return void 0;
-        } catch (error12) {
-          if (error12 instanceof executable_response_1.ExecutableResponseError) {
-            throw error12;
+        } catch (error13) {
+          if (error13 instanceof executable_response_1.ExecutableResponseError) {
+            throw error13;
           }
           throw new executable_response_1.ExecutableResponseError(`The output file contained an invalid response: ${responseString}`);
         }
@@ -17074,15 +17074,15 @@ var require_externalAccountAuthorizedUserClient = __commonJS({
           const tokenRefreshResponse = response.data;
           tokenRefreshResponse.res = response;
           return tokenRefreshResponse;
-        } catch (error12) {
-          if (error12 instanceof gaxios_1.GaxiosError && error12.response) {
+        } catch (error13) {
+          if (error13 instanceof gaxios_1.GaxiosError && error13.response) {
             throw (0, oauth2common_1.getErrorFromOAuthErrorResponse)(
-              error12.response.data,
+              error13.response.data,
               // Preserve other fields from the original error.
-              error12
+              error13
             );
           }
-          throw error12;
+          throw error13;
         }
       }
     };
@@ -18594,8 +18594,8 @@ async function searchNycDca(query, location, dcaCategory, limit = 50) {
       rating: void 0,
       user_ratings_total: void 0
     }));
-  } catch (error12) {
-    console.error("[SODA/NYC] Error:", error12.message);
+  } catch (error13) {
+    console.error("[SODA/NYC] Error:", error13.message);
     return [];
   }
 }
@@ -18630,8 +18630,8 @@ async function searchNyState(query, location, limit = 50) {
       rating: void 0,
       user_ratings_total: void 0
     }));
-  } catch (error12) {
-    console.error("[SODA/NYS] Error:", error12.message);
+  } catch (error13) {
+    console.error("[SODA/NYS] Error:", error13.message);
     return [];
   }
 }
@@ -18861,6 +18861,7 @@ __export(index_exports, {
   clearPipeline: () => clearPipeline,
   completeNfcSession: () => completeNfcSession,
   dailyClarityReport: () => dailyClarityReport,
+  dailyProspector: () => dailyProspector,
   deleteFacebookPost: () => deleteFacebookPost,
   enrichFromWebsite: () => enrichFromWebsite,
   generateLeads: () => generateLeads,
@@ -18872,6 +18873,7 @@ __export(index_exports, {
   getFacebookReels: () => getFacebookReels,
   getOnboardingTimeslots: () => getOnboardingTimeslots,
   getOutroPreview: () => getOutroPreview,
+  getProspectingConfig: () => getProspectingConfig,
   getTidyCalBookings: () => getTidyCalBookings,
   handleUnsubscribe: () => handleUnsubscribe,
   onAuditFailed: () => onAuditFailed,
@@ -18919,7 +18921,9 @@ __export(index_exports, {
   startLeadSequence: () => startLeadSequence,
   testSendEmail: () => testSendEmail,
   triggerClarityReport: () => triggerClarityReport,
+  triggerDailyProspector: () => triggerDailyProspector,
   triggerSocialContentGeneration: () => triggerSocialContentGeneration,
+  updateProspectingConfig: () => updateProspectingConfig,
   updateSocialConfig: () => updateSocialConfig,
   updateZoneScan: () => updateZoneScan,
   validateSiteKey: () => validateSiteKey,
@@ -18947,8 +18951,8 @@ if (!admin.apps.length) {
 var db = admin.firestore();
 try {
   db.settings({ ignoreUndefinedProperties: true });
-} catch (error12) {
-  console.log("Firestore settings usage note:", error12);
+} catch (error13) {
+  console.log("Firestore settings usage note:", error13);
 }
 
 // src/utils/websiteScraper.ts
@@ -19045,8 +19049,8 @@ async function scrapeWebsite(url, geminiApiKey) {
     }
     combinedData.confidence = determineConfidence(structuredData, patternData, mergedContact, linkData);
     return { success: true, data: combinedData };
-  } catch (error12) {
-    return { success: false, error: error12.message };
+  } catch (error13) {
+    return { success: false, error: error13.message };
   }
 }
 function extractMailtoAndTel($) {
@@ -19256,8 +19260,8 @@ Website content:
       };
     }
     return {};
-  } catch (error12) {
-    console.error("AI extraction error:", error12);
+  } catch (error13) {
+    console.error("AI extraction error:", error13);
     return {};
   }
 }
@@ -19329,8 +19333,8 @@ async function deepMailtoScan(baseUrl) {
       if (foundEmail) break;
     }
     return { email: foundEmail, phone: foundPhone, pagesScanned: visited.size };
-  } catch (error12) {
-    console.error("Deep mailto scan error:", error12);
+  } catch (error13) {
+    console.error("Deep mailto scan error:", error13);
     return { pagesScanned: visited.size };
   }
 }
@@ -19395,8 +19399,8 @@ async function searchWebForEmail(businessName, location, domain, serperApiKey, c
           return { phone: kg.phone, facebookUrl, source: "serper_knowledge_graph" };
         }
       }
-    } catch (error12) {
-      console.error(`Serper search error for query "${query}":`, error12);
+    } catch (error13) {
+      console.error(`Serper search error for query "${query}":`, error13);
     }
   }
   return { facebookUrl, source: "serper_exhausted" };
@@ -19416,7 +19420,7 @@ async function verifyEmail(email) {
     } else {
       return { valid: true, deliverable: false, reason: "No MX records found" };
     }
-  } catch (error12) {
+  } catch (error13) {
     return { valid: true, deliverable: false, reason: "Domain not found" };
   }
 }
@@ -19426,7 +19430,7 @@ async function resolveMX(domain) {
   const resolveMx = promisify(dns.resolveMx);
   try {
     return await resolveMx(domain);
-  } catch (error12) {
+  } catch (error13) {
     return [];
   }
 }
@@ -19758,8 +19762,8 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
       vendorId,
       vendorName ? "No email found \u2014 web search exhausted, no website on file" : "No email, no website, no business name \u2014 cannot enrich"
     );
-  } catch (error12) {
-    logger2.error("Error in enrich pipeline:", error12);
+  } catch (error13) {
+    logger2.error("Error in enrich pipeline:", error13);
   }
 }
 async function checkProfileCompleteness(vendorId, vendorData) {
@@ -19949,8 +19953,8 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
         }
       }
     }
-  } catch (error12) {
-    logger3.error("Fatal error in queue processor:", error12);
+  } catch (error13) {
+    logger3.error("Fatal error in queue processor:", error13);
   }
 });
 async function handleGenerate(task) {
@@ -20504,11 +20508,11 @@ Verify compliance and extract key data. Return JSON:
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON found in response");
     return JSON.parse(jsonMatch[0]);
-  } catch (error12) {
-    console.error("AI Verification Failed:", error12);
+  } catch (error13) {
+    console.error("AI Verification Failed:", error13);
     return {
       valid: false,
-      reasoning: "AI Verification Failed: " + error12,
+      reasoning: "AI Verification Failed: " + error13,
       extracted: {}
     };
   }
@@ -20640,11 +20644,11 @@ Return ONLY the extracted JSON \u2014 do NOT make pass/fail judgments.`;
       extracted,
       flags: validation.flags
     };
-  } catch (error12) {
-    logger4.error("ACORD 25 verification failed:", error12);
+  } catch (error13) {
+    logger4.error("ACORD 25 verification failed:", error13);
     return {
       valid: false,
-      reasoning: `AI verification failed: ${error12}`,
+      reasoning: `AI verification failed: ${error13}`,
       extracted: {},
       flags: ["AI_PROCESSING_ERROR"]
     };
@@ -20719,13 +20723,13 @@ var onDocumentUploaded = (0, import_firestore3.onDocumentUpdated)({
       if (status === "FLAGGED") {
         await sendFlagNotification(vendorId, vendorName, result.flags, result.reasoning);
       }
-    } catch (error12) {
-      logger5.error(`ACORD 25 verification failed for ${vendorId}:`, error12);
+    } catch (error13) {
+      logger5.error(`ACORD 25 verification failed for ${vendorId}:`, error13);
       await db5.doc(`vendors/${vendorId}`).update({
         "compliance.acord25.status": "FLAGGED",
         "compliance.acord25.aiAnalysis": {
           valid: false,
-          reasoning: `Verification error: ${error12}`,
+          reasoning: `Verification error: ${error13}`,
           extracted: {}
         },
         updatedAt: admin7.firestore.FieldValue.serverTimestamp()
@@ -20772,8 +20776,8 @@ async function runLegacyVerification(vendorId, docType, vendorData) {
         documentType: docType === "COI" ? "Certificate of Insurance" : "W-9 Form"
       });
     }
-  } catch (error12) {
-    logger5.error(`Verification failed for ${docType}:`, error12);
+  } catch (error13) {
+    logger5.error(`Verification failed for ${docType}:`, error13);
   }
 }
 async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
@@ -20812,8 +20816,8 @@ async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
             </div>`
     });
     logger5.info(`Flag notification sent for vendor ${vendorId}`);
-  } catch (error12) {
-    logger5.error("Failed to send flag notification:", error12);
+  } catch (error13) {
+    logger5.error("Failed to send flag notification:", error13);
   }
 }
 
@@ -21180,12 +21184,12 @@ var enrichFromWebsite = (0, import_https.onCall)({
         confidence: scrapedData.confidence
       }
     };
-  } catch (error12) {
-    console.error("Enrichment error:", error12);
-    if (error12 instanceof import_https.HttpsError) {
-      throw error12;
+  } catch (error13) {
+    console.error("Enrichment error:", error13);
+    if (error13 instanceof import_https.HttpsError) {
+      throw error13;
     }
-    throw new import_https.HttpsError("internal", `Enrichment failed: ${error12.message}`);
+    throw new import_https.HttpsError("internal", `Enrichment failed: ${error13.message}`);
   }
 });
 
@@ -21256,14 +21260,14 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
         ${buildSimpleFooter()}
     </div>`;
   try {
-    const { data, error: error12 } = await resend2.emails.send({
+    const { data, error: error13 } = await resend2.emails.send({
       from: "XIRI Facility Solutions <onboarding@xiri.ai>",
       to: "chris@xiri.ai",
       subject: `\u{1F3D7}\uFE0F Vendor Onboarded: ${businessName}`,
       html
     });
-    if (error12) {
-      logger7.error("Failed to send onboarding notification:", error12);
+    if (error13) {
+      logger7.error("Failed to send onboarding notification:", error13);
     } else {
       logger7.info(`Notification sent to chris@xiri.ai (Resend ID: ${data?.id})`);
     }
@@ -22192,11 +22196,11 @@ var processMailQueue = (0, import_firestore10.onDocumentCreated)({
       await docRef.update({ status: "failed", error: "Resend API returned failure" });
       console.error(`\u274C Mail failed: ${templateType} \u2192 ${to}`);
     }
-  } catch (error12) {
-    console.error("Error processing mail_queue:", error12);
+  } catch (error13) {
+    console.error("Error processing mail_queue:", error13);
     await docRef.update({
       status: "failed",
-      error: error12.message || "Unknown error",
+      error: error13.message || "Unknown error",
       failedAt: admin14.firestore.FieldValue.serverTimestamp()
     });
   }
@@ -22488,10 +22492,10 @@ async function generateST1201(vendorData, xiriData, projectData) {
       // ISO for storage
       expiryDate
     };
-  } catch (error12) {
+  } catch (error13) {
     return {
       success: false,
-      error: `Failed to generate ST-120.1: ${error12.message}`
+      error: `Failed to generate ST-120.1: ${error13.message}`
     };
   }
 }
@@ -24063,8 +24067,8 @@ var resendWebhook = (0, import_https4.onRequest)({
     }
     import_v22.logger.info(`Resend webhook: processed ${eventType} for ${entityType} ${entityId}`);
     res.status(200).json({ ok: true, processed: eventType });
-  } catch (error12) {
-    import_v22.logger.error("Resend webhook error:", error12);
+  } catch (error13) {
+    import_v22.logger.error("Resend webhook error:", error13);
     res.status(500).json({ error: "Internal error" });
   }
 });
@@ -24629,12 +24633,17 @@ var sendSingleLeadEmail = (0, import_https7.onCall)(
     if (!leadId || !templateId) {
       throw new import_https7.HttpsError("invalid-argument", "leadId and templateId are required");
     }
-    const leadDoc = await db22.collection("leads").doc(leadId).get();
+    let leadDoc = await db22.collection("companies").doc(leadId).get();
+    let leadCollection = "companies";
     if (!leadDoc.exists) {
-      throw new import_https7.HttpsError("not-found", `Lead ${leadId} not found`);
+      leadDoc = await db22.collection("leads").doc(leadId).get();
+      leadCollection = "leads";
+    }
+    if (!leadDoc.exists) {
+      throw new import_https7.HttpsError("not-found", `Lead/Company ${leadId} not found`);
     }
     const lead = leadDoc.data();
-    const businessName = lead.businessName || "Unknown";
+    const businessName = lead.businessName || lead.name || "Unknown";
     if (lead.unsubscribedAt || lead.status === "lost") {
       throw new import_https7.HttpsError(
         "failed-precondition",
@@ -24740,7 +24749,7 @@ var sendSingleLeadEmail = (0, import_https7.onCall)(
       }
     });
     if (lead.status === "new") {
-      await db22.collection("leads").doc(leadId).update({
+      await db22.collection(leadCollection).doc(leadId).update({
         status: "contacted"
       });
     }
@@ -25359,11 +25368,11 @@ async function publishScheduledPosts() {
         });
         console.error(`[SocialPublisher] Failed to publish ${doc.id}: ${result.error}`);
       }
-    } catch (error12) {
-      console.error(`[SocialPublisher] Error publishing ${doc.id}:`, error12);
+    } catch (error13) {
+      console.error(`[SocialPublisher] Error publishing ${doc.id}:`, error13);
       await doc.ref.update({
         status: "failed",
-        error: error12.message || "Unexpected error",
+        error: error13.message || "Unexpected error",
         failedAt: /* @__PURE__ */ new Date()
       });
     }
@@ -25426,9 +25435,9 @@ var adminUpdateAuthUser = (0, import_https9.onCall)({
   try {
     await (0, import_auth.getAuth)().updateUser(uid, updatePayload);
     return { success: true, message: `Auth updated for ${uid}` };
-  } catch (error12) {
-    console.error("adminUpdateAuthUser error:", error12);
-    throw new import_https9.HttpsError("internal", error12.message || "Failed to update Auth user");
+  } catch (error13) {
+    console.error("adminUpdateAuthUser error:", error13);
+    throw new import_https9.HttpsError("internal", error13.message || "Failed to update Auth user");
   }
 });
 var adminCreateUser = (0, import_https9.onCall)({
@@ -25524,12 +25533,12 @@ var adminCreateUser = (0, import_https9.onCall)({
       emailSent,
       message: emailSent ? `User ${email} created and invite email sent with login credentials.` : `User ${email} created. Email failed \u2014 share the temp password manually.`
     };
-  } catch (error12) {
-    console.error("adminCreateUser error:", error12);
-    if (error12.code === "auth/email-already-exists") {
+  } catch (error13) {
+    console.error("adminCreateUser error:", error13);
+    if (error13.code === "auth/email-already-exists") {
       throw new import_https9.HttpsError("already-exists", "A user with this email already exists");
     }
-    throw new import_https9.HttpsError("internal", error12.message || "Failed to create user");
+    throw new import_https9.HttpsError("internal", error13.message || "Failed to create user");
   }
 });
 var changeMyPassword = (0, import_https9.onCall)({
@@ -25543,9 +25552,9 @@ var changeMyPassword = (0, import_https9.onCall)({
   try {
     await (0, import_auth.getAuth)().updateUser(request.auth.uid, { password: newPassword });
     return { success: true, message: "Password updated" };
-  } catch (error12) {
-    console.error("changeMyPassword error:", error12);
-    throw new import_https9.HttpsError("internal", error12.message || "Failed to change password");
+  } catch (error13) {
+    console.error("changeMyPassword error:", error13);
+    throw new import_https9.HttpsError("internal", error13.message || "Failed to change password");
   }
 });
 
@@ -25940,10 +25949,10 @@ var searchVendors = async (query, location, provider = "google_maps", dcaCategor
     }));
     googleResults = rawVendors.filter((v) => v.rating === void 0 || v.rating >= 3.5);
     console.log(`Filtered ${rawVendors.length} -> ${googleResults.length} vendors (Rating >= 3.5 or N/A).`);
-  } catch (error12) {
-    console.error("Error searching vendors via Google:", error12.message);
+  } catch (error13) {
+    console.error("Error searching vendors via Google:", error13.message);
     if (provider !== "all") {
-      throw new Error(`Failed to source vendors: ${error12.message}`);
+      throw new Error(`Failed to source vendors: ${error13.message}`);
     }
   }
   if (provider === "all") {
@@ -26146,9 +26155,9 @@ var searchProperties = async (query, location, providerName = "mock") => {
     const singleTenant = properties.filter((p) => !p.tenantCount || p.tenantCount === 1);
     console.log(`[PropertySourcer] After single-tenant filter: ${singleTenant.length}`);
     return singleTenant;
-  } catch (error12) {
-    console.error(`[PropertySourcer] Error sourcing properties: ${error12.message}`);
-    throw new Error(`Failed to source properties: ${error12.message}`);
+  } catch (error13) {
+    console.error(`[PropertySourcer] Error sourcing properties: ${error13.message}`);
+    throw new Error(`Failed to source properties: ${error13.message}`);
   }
 };
 
@@ -26179,9 +26188,9 @@ var generateLeads = (0, import_https10.onCall)({
       analysis: result,
       vendors: previewOnly ? result.vendors : void 0
     };
-  } catch (error12) {
-    console.error("Error in generateLeads:", error12);
-    throw new import_https10.HttpsError("internal", error12.message || "An internal error occurred.");
+  } catch (error13) {
+    console.error("Error in generateLeads:", error13);
+    throw new import_https10.HttpsError("internal", error13.message || "An internal error occurred.");
   }
 });
 var clearPipeline = (0, import_https10.onCall)({
@@ -26206,8 +26215,8 @@ var clearPipeline = (0, import_https10.onCall)({
     chunks.push(currentBatch.commit());
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
-  } catch (error12) {
-    throw new import_https10.HttpsError("internal", error12.message);
+  } catch (error13) {
+    throw new import_https10.HttpsError("internal", error13.message);
   }
 });
 var runRecruiterAgent = (0, import_https10.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
@@ -26231,9 +26240,9 @@ var testSendEmail = (0, import_https10.onCall)({
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
-  } catch (error12) {
-    console.error("Error sending test email:", error12);
-    throw new import_https10.HttpsError("internal", error12.message || "Failed to send email");
+  } catch (error13) {
+    console.error("Error sending test email:", error13);
+    throw new import_https10.HttpsError("internal", error13.message || "Failed to send email");
   }
 });
 var sourceProperties = (0, import_https10.onCall)({
@@ -26255,9 +26264,9 @@ var sourceProperties = (0, import_https10.onCall)({
       sourced: properties.length,
       properties
     };
-  } catch (error12) {
-    console.error("[sourceProperties] Error:", error12);
-    throw new import_https10.HttpsError("internal", error12.message || "Failed to source properties.");
+  } catch (error13) {
+    console.error("[sourceProperties] Error:", error13);
+    throw new import_https10.HttpsError("internal", error13.message || "Failed to source properties.");
   }
 });
 
@@ -26297,9 +26306,9 @@ var publishFacebookPost = (0, import_https11.onCall)({
       createdAt: /* @__PURE__ */ new Date()
     });
     return result;
-  } catch (error12) {
-    console.error("[Facebook] Publish error:", error12);
-    throw new import_https11.HttpsError("internal", error12.message || "Failed to publish to Facebook");
+  } catch (error13) {
+    console.error("[Facebook] Publish error:", error13);
+    throw new import_https11.HttpsError("internal", error13.message || "Failed to publish to Facebook");
   }
 });
 var getFacebookPosts = (0, import_https11.onCall)({
@@ -26312,9 +26321,9 @@ var getFacebookPosts = (0, import_https11.onCall)({
     const posts = await getRecentPosts(limit || 10);
     const insights = await getPageInsights("week");
     return { posts, insights };
-  } catch (error12) {
-    console.error("[Facebook] Get posts error:", error12);
-    throw new import_https11.HttpsError("internal", error12.message || "Failed to get Facebook posts");
+  } catch (error13) {
+    console.error("[Facebook] Get posts error:", error13);
+    throw new import_https11.HttpsError("internal", error13.message || "Failed to get Facebook posts");
   }
 });
 var getFacebookReels = (0, import_https11.onCall)({
@@ -26327,9 +26336,9 @@ var getFacebookReels = (0, import_https11.onCall)({
     const { getRecentReels: getRecentReels2 } = await Promise.resolve().then(() => (init_facebookApi(), facebookApi_exports));
     const reels = await getRecentReels2(limit || 10);
     return { reels };
-  } catch (error12) {
-    console.error("[Facebook] Get reels error:", error12);
-    throw new import_https11.HttpsError("internal", error12.message || "Failed to get Facebook reels");
+  } catch (error13) {
+    console.error("[Facebook] Get reels error:", error13);
+    throw new import_https11.HttpsError("internal", error13.message || "Failed to get Facebook reels");
   }
 });
 var deleteFacebookPost = (0, import_https11.onCall)({
@@ -26350,9 +26359,9 @@ var deleteFacebookPost = (0, import_https11.onCall)({
       });
     }
     return { success };
-  } catch (error12) {
-    console.error("[Facebook] Delete error:", error12);
-    throw new import_https11.HttpsError("internal", error12.message || "Failed to delete Facebook post");
+  } catch (error13) {
+    console.error("[Facebook] Delete error:", error13);
+    throw new import_https11.HttpsError("internal", error13.message || "Failed to delete Facebook post");
   }
 });
 var triggerSocialContentGeneration = (0, import_https11.onCall)({
@@ -28757,9 +28766,9 @@ var getOnboardingTimeslots = (0, import_https15.onRequest)({
       timezone || "America/New_York"
     );
     res.json({ slots });
-  } catch (error12) {
-    console.error("getOnboardingTimeslots error:", error12);
-    res.status(500).json({ error: error12.message || "Failed to fetch timeslots" });
+  } catch (error13) {
+    console.error("getOnboardingTimeslots error:", error13);
+    res.status(500).json({ error: error13.message || "Failed to fetch timeslots" });
   }
 });
 var bookOnboardingCall = (0, import_https15.onRequest)({
@@ -28822,9 +28831,9 @@ var bookOnboardingCall = (0, import_https15.onRequest)({
         reschedule_url: booking.reschedule_url
       }
     });
-  } catch (error12) {
-    console.error("bookOnboardingCall error:", error12);
-    res.status(500).json({ error: error12.message || "Failed to book call" });
+  } catch (error13) {
+    console.error("bookOnboardingCall error:", error13);
+    res.status(500).json({ error: error13.message || "Failed to book call" });
   }
 });
 var getDashboardTimeslots = (0, import_https15.onCall)({
@@ -28955,9 +28964,9 @@ var HunterProvider = class {
         creditsUsed: hunterEmails.length,
         creditsRemaining: meta.available !== void 0 ? meta.available - meta.used : void 0
       };
-    } catch (error12) {
-      console.error(`[Hunter] Error searching ${domain}:`, error12.message);
-      return { emails: [], creditsUsed: 0, error: error12.message };
+    } catch (error13) {
+      console.error(`[Hunter] Error searching ${domain}:`, error13.message);
+      return { emails: [], creditsUsed: 0, error: error13.message };
     }
   }
 };
@@ -29038,9 +29047,9 @@ var SnovProvider = class {
         creditsUsed: 1
         // Snov charges 1 credit per domain search
       };
-    } catch (error12) {
-      console.error(`[Snov] Error searching ${domain}:`, error12.message);
-      return { emails: [], creditsUsed: 0, error: error12.message };
+    } catch (error13) {
+      console.error(`[Snov] Error searching ${domain}:`, error13.message);
+      return { emails: [], creditsUsed: 0, error: error13.message };
     }
   }
 };
@@ -29216,8 +29225,8 @@ async function enrichSingleBusiness(vendor, secrets, input) {
     } else {
       log.push(`Scraping failed: ${scrapeResult.error || "unknown error"}`);
     }
-  } catch (error12) {
-    log.push(`Layer 1 error: ${error12.message}`);
+  } catch (error13) {
+    log.push(`Layer 1 error: ${error13.message}`);
   }
   await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log);
   if (prospect.contactEmail) return prospect;
@@ -29288,8 +29297,8 @@ async function trySerperSearch(prospect, vendor, serperApiKey, location, log) {
     if (!prospect.phone && searchResult.phone) {
       prospect.phone = searchResult.phone;
     }
-  } catch (error12) {
-    log.push(`Layer 2 error: ${error12.message}`);
+  } catch (error13) {
+    log.push(`Layer 2 error: ${error13.message}`);
   }
 }
 function extractDomain(url) {
@@ -29334,9 +29343,9 @@ var runProspector = (0, import_https16.onCall)({
       prospects: result.prospects,
       stats: result.stats
     };
-  } catch (error12) {
-    console.error("[runProspector] Error:", error12);
-    throw new import_https16.HttpsError("internal", error12.message || "Pipeline failed.");
+  } catch (error13) {
+    console.error("[runProspector] Error:", error13);
+    throw new import_https16.HttpsError("internal", error13.message || "Pipeline failed.");
   }
 });
 var addProspectsToCrm = (0, import_https16.onCall)({
@@ -29400,10 +29409,206 @@ var addProspectsToCrm = (0, import_https16.onCall)({
       imported: results.length,
       results
     };
-  } catch (error12) {
-    console.error("[addProspectsToCrm] Error:", error12);
-    throw new import_https16.HttpsError("internal", error12.message || "CRM import failed.");
+  } catch (error13) {
+    console.error("[addProspectsToCrm] Error:", error13);
+    throw new import_https16.HttpsError("internal", error13.message || "CRM import failed.");
   }
+});
+
+// src/triggers/dailyProspector.ts
+var import_scheduler10 = require("firebase-functions/v2/scheduler");
+var import_https17 = require("firebase-functions/v2/https");
+var logger27 = __toESM(require("firebase-functions/logger"));
+function normalizeName(name) {
+  return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+}
+var DEFAULT_CONFIG = {
+  queries: [
+    "office building",
+    "dental office",
+    "veterinary clinic",
+    "gym fitness center",
+    "retail store",
+    "medical suite",
+    "urgent care center",
+    "car dealership",
+    "insurance office"
+  ],
+  locations: [
+    "Nassau County, NY",
+    "Suffolk County, NY",
+    "Queens, NY"
+  ],
+  dailyTarget: 100,
+  enabled: true,
+  excludePatterns: []
+};
+async function loadSeenSet() {
+  const seen = /* @__PURE__ */ new Set();
+  const queueSnap = await db.collection("prospect_queue").select("normalizedName", "phone").get();
+  for (const doc of queueSnap.docs) {
+    const d = doc.data();
+    if (d.normalizedName) seen.add(d.normalizedName);
+    if (d.phone) seen.add(d.phone);
+  }
+  const companiesSnap = await db.collection("companies").select("name", "phone").get();
+  for (const doc of companiesSnap.docs) {
+    const d = doc.data();
+    if (d.name) seen.add(normalizeName(d.name));
+    if (d.phone) seen.add(d.phone);
+  }
+  logger27.info(`[DailyProspector] Seen set loaded: ${seen.size} entries`);
+  return seen;
+}
+async function runDailyPipeline() {
+  const configDoc = await db.collection("prospecting_config").doc("default").get();
+  const config2 = configDoc.exists ? { ...DEFAULT_CONFIG, ...configDoc.data() } : DEFAULT_CONFIG;
+  if (!config2.enabled) {
+    logger27.info("[DailyProspector] Disabled via config. Skipping.");
+    return;
+  }
+  const secrets = {
+    geminiApiKey: process.env.GEMINI_API_KEY,
+    serperApiKey: process.env.SERPER_API_KEY,
+    hunterApiKey: process.env.HUNTER_API_KEY,
+    snovUserId: process.env.SNOV_USER_ID,
+    snovApiSecret: process.env.SNOV_API_SECRET
+  };
+  const seen = await loadSeenSet();
+  const batchDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+  const newProspects = [];
+  let totalDiscovered = 0;
+  let duplicatesSkipped = 0;
+  for (const location of config2.locations) {
+    if (newProspects.length >= config2.dailyTarget) break;
+    for (const queryTerm of config2.queries) {
+      if (newProspects.length >= config2.dailyTarget) break;
+      const remaining = config2.dailyTarget - newProspects.length;
+      const batchSize = Math.min(remaining + 10, 20);
+      logger27.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
+      try {
+        const result = await prospectAndEnrich(
+          { query: queryTerm, location, maxResults: batchSize, skipPaidApis: false },
+          secrets
+        );
+        totalDiscovered += result.prospects.length;
+        for (const prospect of result.prospects) {
+          if (newProspects.length >= config2.dailyTarget) break;
+          const normalized = normalizeName(prospect.businessName);
+          if (seen.has(normalized) || prospect.phone && seen.has(prospect.phone)) {
+            duplicatesSkipped++;
+            continue;
+          }
+          if (config2.excludePatterns.some(
+            (p) => normalized.includes(p.toLowerCase())
+          )) {
+            duplicatesSkipped++;
+            continue;
+          }
+          if (!prospect.contactEmail && !prospect.genericEmail) {
+            continue;
+          }
+          seen.add(normalized);
+          if (prospect.phone) seen.add(prospect.phone);
+          newProspects.push({ prospect, query: queryTerm, location });
+        }
+      } catch (err) {
+        logger27.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err.message);
+      }
+    }
+  }
+  const BATCH_LIMIT = 450;
+  for (let i = 0; i < newProspects.length; i += BATCH_LIMIT) {
+    const chunk = newProspects.slice(i, i + BATCH_LIMIT);
+    const batch = db.batch();
+    for (const { prospect, query, location } of chunk) {
+      const ref = db.collection("prospect_queue").doc();
+      batch.set(ref, {
+        businessName: prospect.businessName,
+        normalizedName: normalizeName(prospect.businessName),
+        address: prospect.address || null,
+        phone: prospect.phone || null,
+        website: prospect.website || null,
+        rating: prospect.rating || null,
+        contactEmail: prospect.contactEmail || null,
+        genericEmail: prospect.genericEmail || null,
+        contactName: prospect.contactName || null,
+        contactTitle: prospect.contactTitle || null,
+        emailSource: prospect.emailSource || "none",
+        emailConfidence: prospect.emailConfidence || "low",
+        facebookUrl: prospect.facebookUrl || null,
+        linkedinUrl: prospect.linkedinUrl || null,
+        enrichmentLog: prospect.enrichmentLog || [],
+        status: "pending_review",
+        batchDate,
+        searchQuery: query,
+        searchLocation: location,
+        createdAt: /* @__PURE__ */ new Date()
+      });
+    }
+    await batch.commit();
+    logger27.info(`[DailyProspector] Wrote batch of ${chunk.length} prospects.`);
+  }
+  const stats = {
+    discovered: totalDiscovered,
+    withEmail: newProspects.length,
+    added: newProspects.length,
+    duplicatesSkipped
+  };
+  await db.collection("prospecting_config").doc("default").set({
+    ...config2,
+    lastRunAt: /* @__PURE__ */ new Date(),
+    lastRunStats: stats
+  }, { merge: true });
+  logger27.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
+}
+var dailyProspector = (0, import_scheduler10.onSchedule)({
+  schedule: "0 10 * * *",
+  // 10:00 UTC = 6:00 AM ET
+  timeZone: "America/New_York",
+  secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET"],
+  timeoutSeconds: 540,
+  memory: "1GiB"
+}, async () => {
+  logger27.info("[DailyProspector] Starting scheduled run...");
+  await runDailyPipeline();
+});
+var triggerDailyProspector = (0, import_https17.onCall)({
+  cors: DASHBOARD_CORS,
+  secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET"],
+  timeoutSeconds: 540,
+  memory: "1GiB"
+}, async () => {
+  logger27.info("[DailyProspector] Manual trigger invoked.");
+  await runDailyPipeline();
+  return { message: "Daily prospector pipeline completed." };
+});
+var updateProspectingConfig = (0, import_https17.onCall)({
+  cors: DASHBOARD_CORS
+}, async (request) => {
+  const data = request.data;
+  const update = {};
+  if (data.queries) update.queries = data.queries;
+  if (data.locations) update.locations = data.locations;
+  if (data.dailyTarget !== void 0) update.dailyTarget = data.dailyTarget;
+  if (data.enabled !== void 0) update.enabled = data.enabled;
+  if (data.excludePatterns) update.excludePatterns = data.excludePatterns;
+  if (Object.keys(update).length === 0) {
+    throw new import_https17.HttpsError("invalid-argument", "No valid fields to update.");
+  }
+  await db.collection("prospecting_config").doc("default").set(update, { merge: true });
+  logger27.info("[updateProspectingConfig] Config updated:", update);
+  return { message: "Prospecting config updated.", updated: update };
+});
+var getProspectingConfig = (0, import_https17.onCall)({
+  cors: DASHBOARD_CORS
+}, async () => {
+  const doc = await db.collection("prospecting_config").doc("default").get();
+  if (doc.exists) {
+    return doc.data();
+  }
+  await db.collection("prospecting_config").doc("default").set(DEFAULT_CONFIG);
+  return DEFAULT_CONFIG;
 });
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
@@ -29418,6 +29623,7 @@ var addProspectsToCrm = (0, import_https16.onCall)({
   clearPipeline,
   completeNfcSession,
   dailyClarityReport,
+  dailyProspector,
   deleteFacebookPost,
   enrichFromWebsite,
   generateLeads,
@@ -29429,6 +29635,7 @@ var addProspectsToCrm = (0, import_https16.onCall)({
   getFacebookReels,
   getOnboardingTimeslots,
   getOutroPreview,
+  getProspectingConfig,
   getTidyCalBookings,
   handleUnsubscribe,
   onAuditFailed,
@@ -29476,7 +29683,9 @@ var addProspectsToCrm = (0, import_https16.onCall)({
   startLeadSequence,
   testSendEmail,
   triggerClarityReport,
+  triggerDailyProspector,
   triggerSocialContentGeneration,
+  updateProspectingConfig,
   updateSocialConfig,
   updateZoneScan,
   validateSiteKey,

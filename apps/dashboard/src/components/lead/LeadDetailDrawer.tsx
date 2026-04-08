@@ -15,12 +15,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
     Building2, User, Mail, Phone, MapPin, Calendar, Clock,
     Briefcase, TrendingUp, Pencil, Check, X, Save, Loader2,
-    FileText, ExternalLink, Plus, ChevronRight, Rocket, Send, Activity, LayoutDashboard, Calculator
+    FileText, ExternalLink, Plus, ChevronRight, Rocket, Send, Activity, LayoutDashboard, Calculator, Wrench
 } from 'lucide-react';
 import { format } from 'date-fns';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import LeadActivityFeed from './LeadActivityFeed';
 import BookCallDialog from './BookCallDialog';
+import {
+    VENDOR_CAPABILITIES,
+    CAPABILITY_GROUP_LABELS,
+    getCapabilityLabel,
+} from '@/lib/vendor-capabilities';
 
 function toDate(value: any): Date | null {
     if (!value) return null;
@@ -50,6 +55,97 @@ const LEAD_TYPE_LABELS: Record<string, string> = {
     'enterprise': 'Enterprise',
 };
 
+/* ─── Inline Capabilities Card for Drawer ─────────────────────── */
+
+function DrawerCapabilities({ capabilities, onSave }: { capabilities: string[]; onSave: (caps: string[]) => Promise<void> }) {
+    const [editing, setEditing] = useState(false);
+    const [selected, setSelected] = useState<string[]>(capabilities);
+    const [saving, setSaving] = useState(false);
+
+    // Sync when capabilities prop changes
+    useEffect(() => { setSelected(capabilities); }, [capabilities]);
+
+    const toggle = (val: string) => {
+        setSelected(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await onSave(selected);
+            setEditing(false);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const grouped = (['cleaning', 'facility', 'specialty'] as const).map(g => ({
+        group: g,
+        label: CAPABILITY_GROUP_LABELS[g],
+        items: VENDOR_CAPABILITIES.filter(c => c.group === g),
+    }));
+
+    return (
+        <Card>
+            <CardHeader className="py-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                    <Wrench className="w-4 h-4" /> Service Capabilities
+                </CardTitle>
+                {!editing && (
+                    <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={() => { setSelected(capabilities); setEditing(true); }}>
+                        <Pencil className="w-3 h-3" /> Edit
+                    </Button>
+                )}
+            </CardHeader>
+            <CardContent>
+                {editing ? (
+                    <div className="space-y-3">
+                        {grouped.map(({ group, label, items }) => (
+                            <div key={group}>
+                                <p className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground mb-1">{label}</p>
+                                <div className="flex flex-wrap gap-1">
+                                    {items.map(cap => {
+                                        const on = selected.includes(cap.value);
+                                        return (
+                                            <button
+                                                key={cap.value}
+                                                type="button"
+                                                onClick={() => toggle(cap.value)}
+                                                className={`px-2 py-0.5 rounded-full text-[11px] font-medium border transition-all ${
+                                                    on
+                                                        ? 'bg-primary text-primary-foreground border-primary'
+                                                        : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted hover:border-primary/30'
+                                                }`}
+                                            >
+                                                {cap.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                        <div className="flex gap-2 justify-end pt-1">
+                            <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setEditing(false)}>Cancel</Button>
+                            <Button size="sm" className="h-6 text-xs gap-1" onClick={handleSave} disabled={saving}>
+                                {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Save
+                            </Button>
+                        </div>
+                    </div>
+                ) : capabilities.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">No capabilities — click Edit to add</p>
+                ) : (
+                    <div className="flex flex-wrap gap-1">
+                        {capabilities.map(cap => (
+                            <Badge key={cap} variant="secondary" className="text-[11px]">
+                                {getCapabilityLabel(cap)}
+                            </Badge>
+                        ))}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
 
 
 interface LeadDetailDrawerProps {
@@ -57,6 +153,7 @@ interface LeadDetailDrawerProps {
     open: boolean;
     onClose: () => void;
 }
+
 
 const QUOTE_BADGE: Record<string, { color: string; label: string }> = {
     draft: { color: 'bg-gray-100 text-gray-700', label: 'Draft' },
@@ -686,6 +783,30 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                                             />
                                         </CardContent>
                                     </Card>
+                                    {/* Service Capabilities — Company-level */}
+                                    <DrawerCapabilities
+                                        capabilities={(company as any)?.serviceCapabilities || []}
+                                        onSave={async (caps: string[]) => {
+                                            if (!companyId) return;
+                                            await updateDoc(doc(db, 'companies', companyId), {
+                                                serviceCapabilities: caps,
+                                                updatedAt: new Date(),
+                                            });
+                                            // Re-fetch company
+                                            const compSnap = await getDoc(doc(db, 'companies', companyId));
+                                            if (compSnap.exists()) {
+                                                const compData = compSnap.data();
+                                                setCompany({
+                                                    id: compSnap.id,
+                                                    ...compData,
+                                                    createdAt: compData.createdAt?.toDate ? compData.createdAt.toDate() : new Date(compData.createdAt || Date.now()),
+                                                    preferredAuditTimes: compData.preferredAuditTimes?.map((t: any) =>
+                                                        t?.toDate ? t.toDate() : new Date(t)
+                                                    ),
+                                                } as Lead);
+                                            }
+                                        }}
+                                    />
 
                                     {/* Notes — Editable (stored on contact) */}
                                     <Card>

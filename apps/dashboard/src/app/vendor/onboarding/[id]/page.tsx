@@ -7,8 +7,14 @@ import { db } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Loader2, CheckCircle2, Upload, Calendar, ArrowRight, ShieldCheck, Building2, Phone, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, CheckCircle2, Upload, Calendar, ArrowRight, ShieldCheck, Building2, Phone, User, Wrench, SkipForward } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import {
+    VENDOR_CAPABILITIES,
+    CAPABILITY_GROUP_LABELS,
+    type CapabilityOption,
+} from "@/lib/vendor-capabilities";
 
 export default function OnboardingPage() {
     const params = useParams();
@@ -25,6 +31,9 @@ export default function OnboardingPage() {
 
     // Qualification States (Dynamic)
     const [answers, setAnswers] = useState<Record<string, boolean | null>>({});
+
+    // Capabilities State
+    const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>([]);
 
     // Dynamic Requirements Logic
     const getRequirements = (specialty: string) => {
@@ -58,6 +67,15 @@ export default function OnboardingPage() {
         setAnswers(prev => ({ ...prev, [reqId]: value }));
     };
 
+    // Capability toggle
+    const toggleCapability = (value: string) => {
+        setSelectedCapabilities(prev =>
+            prev.includes(value)
+                ? prev.filter(c => c !== value)
+                : [...prev, value]
+        );
+    };
+
     // Upload States (Speed Track)
     const [coiUploaded, setCoiUploaded] = useState(false);
     const [w9Uploaded, setW9Uploaded] = useState(false);
@@ -74,6 +92,10 @@ export default function OnboardingPage() {
                 setCompanyName(data.companyName || "");
                 setPhone(data.phone || "");
                 setSpecialty(data.specialty || "");
+                // Pre-fill capabilities if they were saved before
+                if (data.serviceCapabilities?.length) {
+                    setSelectedCapabilities(data.serviceCapabilities);
+                }
 
                 // Resume Logic & Analytics
                 let currentStep = 1;
@@ -118,6 +140,30 @@ export default function OnboardingPage() {
         }
     };
 
+    // Step 2: Service Capabilities
+    const handleCapabilitiesSubmit = async () => {
+        setLoading(true);
+        try {
+            await updateDoc(doc(db, "vendors", id), {
+                serviceCapabilities: selectedCapabilities,
+                updatedAt: serverTimestamp(),
+            });
+            await addDoc(collection(db, "vendor_activities"), {
+                vendorId: id,
+                type: 'CAPABILITIES_SET',
+                description: `Vendor selected ${selectedCapabilities.length} service capabilities.`,
+                createdAt: serverTimestamp(),
+                metadata: { capabilities: selectedCapabilities }
+            });
+            setStep(3);
+        } catch (e) {
+            console.error(e);
+            toast({ title: "Error", description: "Could not save capabilities." });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleQualification = async () => {
         // Check if all displayed requirements are answered
         const allAnswered = requirements.every(r => answers[r.id] !== undefined && answers[r.id] !== null);
@@ -128,9 +174,6 @@ export default function OnboardingPage() {
         }
 
         setLoading(true);
-
-        // Qualification Logic: Simple pass for now if they answered anything
-        // In real app, maybe strict check: const qualified = requirements.every(r => answers[r.id] === true);
 
         await updateDoc(doc(db, "vendors", id), {
             qualification: answers,
@@ -147,7 +190,7 @@ export default function OnboardingPage() {
         });
 
         setLoading(false);
-        setStep(3);
+        setStep(4);
     };
 
     const handleSpeedTrackUpload = async (type: 'COI' | 'W9') => {
@@ -179,15 +222,27 @@ export default function OnboardingPage() {
     };
 
     const finishSpeedTrack = async () => {
-        if (!coiUploaded || !w9Uploaded) {
-            toast({ title: "Incomplete", description: "Please upload both documents for Speed Track." });
-            return;
-        }
         await updateDoc(doc(db, "vendors", id), {
             status: 'COMPLIANCE_REVIEW',
             speedTrack: true
         });
-        setStep(4); // Success
+        setStep(5); // Success
+    };
+
+    const skipDocuments = async () => {
+        await updateDoc(doc(db, "vendors", id), {
+            status: 'ONBOARDING_SCHEDULED',
+            speedTrack: false,
+            documentsSkipped: true,
+            documentsSkippedAt: serverTimestamp(),
+        });
+        await addDoc(collection(db, "vendor_activities"), {
+            vendorId: id,
+            type: 'DOCS_SKIPPED',
+            description: `Vendor skipped document upload — will provide later.`,
+            createdAt: serverTimestamp(),
+        });
+        setStep(5); // Success
     };
 
     const finishRegularTrack = async () => {
@@ -202,11 +257,70 @@ export default function OnboardingPage() {
             description: `Vendor scheduled valid onboarding call.`,
             createdAt: serverTimestamp()
         });
-        setStep(4); // Success
+        setStep(5); // Success
     };
 
-    // Replace the Qualification Step UI
-    const Step2Content = () => (
+    // ─── Step 2: Service Capabilities ───────────────────────────────
+    const Step2Content = () => {
+        const grouped = (['cleaning', 'facility', 'specialty'] as const).map(group => ({
+            group,
+            label: CAPABILITY_GROUP_LABELS[group],
+            items: VENDOR_CAPABILITIES.filter(c => c.group === group),
+        }));
+
+        return (
+            <>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Wrench className="w-5 h-5" /> Service Capabilities
+                    </CardTitle>
+                    <CardDescription>
+                        Select all services your company provides. This helps us match you with the right jobs.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                    {grouped.map(({ group, label, items }) => (
+                        <div key={group}>
+                            <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground mb-2">{label}</p>
+                            <div className="flex flex-wrap gap-2">
+                                {items.map((cap) => {
+                                    const selected = selectedCapabilities.includes(cap.value);
+                                    return (
+                                        <button
+                                            key={cap.value}
+                                            type="button"
+                                            onClick={() => toggleCapability(cap.value)}
+                                            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                                                selected
+                                                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                                                    : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted hover:border-primary/30'
+                                            }`}
+                                        >
+                                            {cap.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                    {selectedCapabilities.length > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                            {selectedCapabilities.length} service{selectedCapabilities.length !== 1 ? 's' : ''} selected
+                        </p>
+                    )}
+                </CardContent>
+                <CardFooter className="flex gap-4">
+                    <Button variant="ghost" onClick={() => setStep(1)}>Back</Button>
+                    <Button className="flex-1" onClick={handleCapabilitiesSubmit} disabled={selectedCapabilities.length === 0}>
+                        Continue <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                </CardFooter>
+            </>
+        );
+    };
+
+    // ─── Step 3: Insurance Qualification ───────────────────────────────
+    const Step3Content = () => (
         <>
             <CardHeader>
                 <CardTitle>Insurance Requirements</CardTitle>
@@ -258,7 +372,7 @@ export default function OnboardingPage() {
 
             </CardContent>
             <CardFooter className="flex gap-4">
-                <Button variant="ghost" onClick={() => setStep(1)}>Back</Button>
+                <Button variant="ghost" onClick={() => setStep(2)}>Back</Button>
                 <Button className="flex-1" onClick={handleQualification} disabled={!requirements.every(r => answers[r.id] !== undefined) || answers['entity'] === undefined}>
                     Continue <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
@@ -273,17 +387,19 @@ export default function OnboardingPage() {
         <div className="space-y-8">
             <div className="text-center space-y-2">
                 <h1 className="text-3xl font-bold tracking-tight">Welcome, {companyName}</h1>
-                <p className="text-muted-foreground">{step < 4 ? "Let's get you set up." : "You're all set!"}</p>
+                <p className="text-muted-foreground">{step < 5 ? "Let's get you set up." : "You're all set!"}</p>
             </div>
 
             {/* Progress */}
             {step < 5 && (
-                <div className="flex justify-center gap-4 text-sm font-medium text-muted-foreground mb-8">
+                <div className="flex justify-center gap-3 text-sm font-medium text-muted-foreground mb-8 flex-wrap">
                     <span className={step >= 1 ? "text-primary font-bold" : ""}>1. Details</span>
                     <span>→</span>
-                    <span className={step >= 2 ? "text-primary font-bold" : ""}>2. Qualify</span>
+                    <span className={step >= 2 ? "text-primary font-bold" : ""}>2. Capabilities</span>
                     <span>→</span>
-                    <span className={step >= 3 ? "text-primary font-bold" : ""}>3. Next Steps</span>
+                    <span className={step >= 3 ? "text-primary font-bold" : ""}>3. Qualify</span>
+                    <span>→</span>
+                    <span className={step >= 4 ? "text-primary font-bold" : ""}>4. Next Steps</span>
                 </div>
             )}
 
@@ -316,7 +432,9 @@ export default function OnboardingPage() {
 
                 {step === 2 && <Step2Content />}
 
-                {step === 3 && (
+                {step === 3 && <Step3Content />}
+
+                {step === 4 && (
                     <>
                         <CardHeader>
                             <CardTitle>Choose Your Path</CardTitle>
@@ -344,7 +462,7 @@ export default function OnboardingPage() {
                                     <h3 className="font-bold flex items-center gap-2"><Upload className="w-5 h-5 text-green-600" /> Speed Track</h3>
                                     <Badge className="bg-green-600 hover:bg-green-700">Fastest</Badge>
                                 </div>
-                                <p className="text-sm text-muted-foreground">Skip the call. Upload your docs now to get approved immediately.</p>
+                                <p className="text-sm text-muted-foreground">Upload your docs now to get approved faster.</p>
 
                                 <div className="grid grid-cols-2 gap-2">
                                     <Button size="sm" variant={coiUploaded ? "default" : "secondary"} onClick={() => handleSpeedTrackUpload('COI')}>
@@ -354,25 +472,35 @@ export default function OnboardingPage() {
                                         {w9Uploaded ? "W9 ✓" : "Upload W9"}
                                     </Button>
                                 </div>
-                                <Button className="w-full mt-2" onClick={finishSpeedTrack} disabled={!coiUploaded || !w9Uploaded}>
+                                <Button className="w-full mt-2" onClick={finishSpeedTrack} disabled={!coiUploaded && !w9Uploaded}>
                                     Submit Documents
                                 </Button>
                             </div>
                         </CardContent>
-                        <CardFooter>
-                            <Button variant="ghost" className="w-full" onClick={() => setStep(2)}>Back to Qualification</Button>
+                        <CardFooter className="flex flex-col gap-2">
+                            <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => setStep(3)}>
+                                ← Back to Qualification
+                            </Button>
+                            <Button
+                                variant="link"
+                                className="w-full text-muted-foreground/60 text-xs gap-1"
+                                onClick={skipDocuments}
+                            >
+                                <SkipForward className="w-3 h-3" />
+                                I'll provide documents later
+                            </Button>
                         </CardFooter>
                     </>
                 )}
 
-                {step === 4 && (
+                {step === 5 && (
                     <div className="text-center py-12 px-6 space-y-4">
                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto animate-in zoom-in spin-in-3 duration-500">
                             <CheckCircle2 className="w-10 h-10 text-green-600" />
                         </div>
                         <h2 className="text-2xl font-bold">You're in the Pipeline!</h2>
                         <p className="text-muted-foreground">
-                            {w9Uploaded
+                            {coiUploaded || w9Uploaded
                                 ? "Thanks for fast-tracking. We'll review your docs within 24 hours."
                                 : "We look forward to speaking with you at your scheduled time."}
                         </p>
@@ -383,6 +511,3 @@ export default function OnboardingPage() {
         </div>
     );
 }
-
-// Helper component for Badges since I didn't import it at top (wait, I did check imports)
-import { Badge } from "@/components/ui/badge";

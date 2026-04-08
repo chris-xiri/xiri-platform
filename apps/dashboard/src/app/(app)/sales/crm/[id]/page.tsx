@@ -23,7 +23,13 @@ import {
     Check,
     X,
     FileText,
+    Wrench,
 } from 'lucide-react';
+import {
+    VENDOR_CAPABILITIES,
+    CAPABILITY_GROUP_LABELS,
+    getCapabilityLabel,
+} from '@/lib/vendor-capabilities';
 import { format } from 'date-fns';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -359,6 +365,95 @@ function EditableAddressField({
     );
 }
 
+/* ─── Service Capabilities Card (reusable) ────────────────────── */
+
+function ServiceCapabilitiesCard({ capabilities, onSave }: { capabilities: string[]; onSave: (caps: string[]) => Promise<void> }) {
+    const [editing, setEditing] = useState(false);
+    const [selected, setSelected] = useState<string[]>(capabilities);
+    const [saving, setSaving] = useState(false);
+
+    const toggle = (val: string) => {
+        setSelected(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await onSave(selected);
+            setEditing(false);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const grouped = (['cleaning', 'facility', 'specialty'] as const).map(g => ({
+        group: g,
+        label: CAPABILITY_GROUP_LABELS[g],
+        items: VENDOR_CAPABILITIES.filter(c => c.group === g),
+    }));
+
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between py-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                    <Wrench className="w-4 h-4" /> Service Capabilities
+                </CardTitle>
+                {!editing && (
+                    <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={() => { setSelected(capabilities); setEditing(true); }}>
+                        <Pencil className="w-3 h-3" /> Edit
+                    </Button>
+                )}
+            </CardHeader>
+            <CardContent>
+                {editing ? (
+                    <div className="space-y-4">
+                        {grouped.map(({ group, label, items }) => (
+                            <div key={group}>
+                                <p className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground mb-1.5">{label}</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {items.map(cap => {
+                                        const on = selected.includes(cap.value);
+                                        return (
+                                            <button
+                                                key={cap.value}
+                                                type="button"
+                                                onClick={() => toggle(cap.value)}
+                                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                                                    on
+                                                        ? 'bg-primary text-primary-foreground border-primary'
+                                                        : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted hover:border-primary/30'
+                                                }`}
+                                            >
+                                                {cap.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                        <div className="flex gap-2 justify-end pt-2">
+                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEditing(false)}>Cancel</Button>
+                            <Button size="sm" className="h-7 text-xs gap-1" onClick={handleSave} disabled={saving}>
+                                {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Save
+                            </Button>
+                        </div>
+                    </div>
+                ) : capabilities.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">No capabilities set — click Edit to add</p>
+                ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                        {capabilities.map(cap => (
+                            <Badge key={cap} variant="secondary" className="text-xs">
+                                {getCapabilityLabel(cap)}
+                            </Badge>
+                        ))}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function LeadDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -548,6 +643,13 @@ export default function LeadDetailPage() {
                             </CardContent>
                         </Card>
 
+                        {/* Service Capabilities */}
+                        <ServiceCapabilitiesCard
+                            capabilities={(lead as any).serviceCapabilities || []}
+                            onSave={async (caps) => {
+                                await updateField('serviceCapabilities', caps);
+                            }}
+                        />
 
 
                         {/* Attribution */}
