@@ -84,7 +84,7 @@ export function LeadCard({ lead, index, isSelected, onSelect }: LeadCardProps) {
                                 <Building2 className="w-3 h-3" />
                                 {lead.companyName}
                                 {lead._companyFacilityType && (
-                                    <span className="ml-1">· {FACILITY_TYPE_LABELS[lead._companyFacilityType] || lead._companyFacilityType}</span>
+                                    <span className="ml-1">· {FACILITY_TYPE_LABELS[lead._companyFacilityType as keyof typeof FACILITY_TYPE_LABELS] || lead._companyFacilityType}</span>
                                 )}
                             </div>
                         </div>

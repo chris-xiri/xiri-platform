@@ -90,6 +90,14 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
 
+    // ── Prospect Queue (auto-prospector) ──
+    match /prospect_queue/{prospectId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /prospecting_config/{configId} {
+      allow read, write: if isAuthenticated();
+    }
+
     // ── Notifications ──
     match /notifications/{notificationId} {
       allow read, write: if isAuthenticated();

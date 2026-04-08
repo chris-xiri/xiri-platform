@@ -80,5 +80,6 @@ export {
     getTidyCalBookings,
 } from "./functions/tidycal-api";
 
-// ── Lead Prospecting & Enrichment (onCall) ──
+// ── Lead Prospecting & Enrichment (onCall + scheduled) ──
 export { runProspector, addProspectsToCrm } from "./functions/prospecting";
+export { dailyProspector, triggerDailyProspector, updateProspectingConfig, getProspectingConfig } from "./triggers/dailyProspector";

@@ -1,19 +1,26 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+    DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent,
+    DropdownMenuSubTrigger, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { functions, db } from '@/lib/firebase';
 import {
     Search, Loader2, Download, Building2, Mail, Phone, Globe, User,
     MapPin, Star, Facebook, Linkedin, CheckCircle2, AlertCircle, XCircle,
-    ChevronDown, ChevronUp, Zap, Radar, X
+    ChevronDown, ChevronUp, Zap, Radar, X, SendHorizonal, ListPlus, Plus,
 } from 'lucide-react';
+
 // Inlined from shared package to avoid build-order dependency
 interface EnrichedProspect {
     businessName: string;
@@ -31,6 +38,21 @@ interface EnrichedProspect {
     emailSource: string;
     emailConfidence: string;
     enrichmentLog?: string[];
+}
+
+interface TemplateOption {
+    id: string;
+    name: string;
+    subject: string;
+    category?: string;
+}
+
+interface SequenceOption {
+    id: string;
+    name: string;
+    description?: string;
+    stepCount: number;
+    category?: string;
 }
 
 const BUSINESS_TYPES = [
@@ -66,6 +88,57 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
     const [importing, setImporting] = useState(false);
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
+    // Cached template & sequence lists (loaded once when dropdown opens)
+    const [templates, setTemplates] = useState<TemplateOption[]>([]);
+    const [sequences, setSequences] = useState<SequenceOption[]>([]);
+    const [loadedOptions, setLoadedOptions] = useState(false);
+
+    // ─── Load templates & sequences on first dropdown open ───
+    const loadOptions = useCallback(async () => {
+        if (loadedOptions) return;
+        try {
+            const [tplSnap, seqSnap] = await Promise.all([
+                getDocs(collection(db, 'templates')),
+                getDocs(collection(db, 'sequences')),
+            ]);
+
+            // Deduplicate templates: only pick the base (non-variant) ones
+            const tpls: TemplateOption[] = tplSnap.docs
+                .map(d => {
+                    const data = d.data();
+                    return {
+                        id: d.id,
+                        name: data.name || d.id,
+                        subject: data.subject || '',
+                        category: data.category || '',
+                        variant: data.variant || null,
+                    };
+                })
+                .filter(t => !t.variant) // Exclude cold/warm variants — only show base templates
+                .map(({ variant, ...rest }) => rest);
+
+            const LEAD_CATEGORIES = ['lead', 'referral', 'custom'];
+            const seqs: SequenceOption[] = seqSnap.docs
+                .map(d => {
+                    const data = d.data();
+                    return {
+                        id: d.id,
+                        name: data.name || d.id,
+                        description: data.description || '',
+                        stepCount: data.steps?.length || 0,
+                        category: data.category || '',
+                    };
+                })
+                .filter(s => !s.category || LEAD_CATEGORIES.includes(s.category));
+
+            setTemplates(tpls);
+            setSequences(seqs);
+            setLoadedOptions(true);
+        } catch (err) {
+            console.error('Error loading templates/sequences:', err);
+        }
+    }, [loadedOptions]);
+
     const handleSearch = useCallback(async () => {
         const query = customType || businessType;
         if (!query || !location) {
@@ -98,12 +171,9 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
         }
     }, [businessType, customType, location, maxResults, skipPaidApis, toast]);
 
-    const handleImport = useCallback(async () => {
-        if (selected.size === 0) {
-            toast({ title: 'No prospects selected', description: 'Check the boxes next to prospects you want to import.' });
-            return;
-        }
-
+    // ─── Import: Add Only ────────────────────────────────────
+    const handleAddOnly = useCallback(async () => {
+        if (selected.size === 0) return;
         setImporting(true);
         try {
             const selectedProspects = prospects.filter((_, i) => selected.has(i));
@@ -113,15 +183,104 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
 
             toast({
                 title: 'Imported to CRM',
-                description: `Successfully created ${data.imported} company + contact records.`,
+                description: `Created ${data.imported} company + contact records.`,
             });
 
-            // Remove imported prospects from the list
             setProspects(prev => prev.filter((_, i) => !selected.has(i)));
             setSelected(new Set());
         } catch (error: any) {
             console.error('CRM import error:', error);
             toast({ title: 'Import failed', description: error.message });
+        } finally {
+            setImporting(false);
+        }
+    }, [selected, prospects, toast]);
+
+    // ─── Import + Send Single Email ──────────────────────────
+    const handleSendEmail = useCallback(async (templateId: string, templateName: string) => {
+        if (selected.size === 0) return;
+        setImporting(true);
+        try {
+            // Step 1: Import to CRM
+            const selectedProspects = prospects.filter((_, i) => selected.has(i));
+            const addToCrm = httpsCallable(functions, 'addProspectsToCrm');
+            const importResult = await addToCrm({ prospects: selectedProspects });
+            const importData = importResult.data as { results: { companyId: string; contactId?: string; businessName: string }[]; imported: number };
+
+            // Step 2: Send email to each imported prospect that has a contact
+            const sendEmail = httpsCallable(functions, 'sendSingleLeadEmail');
+            let sentCount = 0;
+            let failCount = 0;
+
+            for (const rec of importData.results) {
+                if (!rec.contactId) {
+                    failCount++;
+                    continue;
+                }
+                try {
+                    await sendEmail({ leadId: rec.companyId, contactId: rec.contactId, templateId });
+                    sentCount++;
+                } catch (err: any) {
+                    console.error(`Failed to send email for ${rec.businessName}:`, err);
+                    failCount++;
+                }
+            }
+
+            toast({
+                title: 'Imported & emailed',
+                description: `Imported ${importData.imported} records. Sent "${templateName}" to ${sentCount}${failCount > 0 ? ` (${failCount} failed)` : ''}.`,
+            });
+
+            setProspects(prev => prev.filter((_, i) => !selected.has(i)));
+            setSelected(new Set());
+        } catch (error: any) {
+            console.error('Import + email error:', error);
+            toast({ title: 'Error', description: error.message });
+        } finally {
+            setImporting(false);
+        }
+    }, [selected, prospects, toast]);
+
+    // ─── Import + Start Sequence ─────────────────────────────
+    const handleStartSequence = useCallback(async (sequenceId: string, sequenceName: string) => {
+        if (selected.size === 0) return;
+        setImporting(true);
+        try {
+            // Step 1: Import to CRM
+            const selectedProspects = prospects.filter((_, i) => selected.has(i));
+            const addToCrm = httpsCallable(functions, 'addProspectsToCrm');
+            const importResult = await addToCrm({ prospects: selectedProspects });
+            const importData = importResult.data as { results: { companyId: string; contactId?: string; businessName: string }[]; imported: number };
+
+            // Step 2: Start sequence for each imported prospect that has a contact
+            const startSequence = httpsCallable(functions, 'startLeadSequence');
+            let enrolledCount = 0;
+            let failCount = 0;
+
+            for (const rec of importData.results) {
+                if (!rec.contactId) {
+                    failCount++;
+                    continue;
+                }
+                try {
+                    await startSequence({ leadId: rec.companyId, contactId: rec.contactId, sequenceId });
+                    enrolledCount++;
+                } catch (err: any) {
+                    console.error(`Failed to enroll ${rec.businessName} in sequence:`, err);
+                    failCount++;
+                }
+            }
+
+            toast({
+                title: 'Imported & enrolled',
+                description: `Imported ${importData.imported} records. Enrolled ${enrolledCount} in "${sequenceName}"${failCount > 0 ? ` (${failCount} failed)` : ''}.`,
+            });
+
+            setProspects(prev => prev.filter((_, i) => !selected.has(i)));
+            setSelected(new Set());
+        } catch (error: any) {
+            console.error('Import + sequence error:', error);
+            toast({ title: 'Error', description: error.message });
         } finally {
             setImporting(false);
         }
@@ -165,20 +324,107 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
                     </div>
                     <div>
                         <h3 className="text-sm font-semibold">Lead Prospector</h3>
-                        <p className="text-xs text-muted-foreground">Discover businesses & find decision-maker emails</p>
+                        <p className="text-xs text-muted-foreground">Discover businesses &amp; find decision-maker emails</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     {selected.size > 0 && (
-                        <Button
-                            onClick={handleImport}
-                            disabled={importing}
-                            size="sm"
-                            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-8 text-xs"
-                        >
-                            {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                            Add {selected.size} to CRM
-                        </Button>
+                        <DropdownMenu onOpenChange={(open: boolean) => { if (open) loadOptions(); }}>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    disabled={importing}
+                                    size="sm"
+                                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-8 text-xs"
+                                >
+                                    {importing ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                        <Download className="w-3.5 h-3.5" />
+                                    )}
+                                    Add {selected.size} to CRM
+                                    <ChevronDown className="w-3 h-3 ml-0.5 opacity-70" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64">
+                                {/* Option 1: Add Only */}
+                                <DropdownMenuItem
+                                    onClick={handleAddOnly}
+                                    className="gap-2 cursor-pointer"
+                                >
+                                    <Plus className="w-4 h-4 text-emerald-600" />
+                                    <div>
+                                        <div className="font-medium text-xs">Add Only</div>
+                                        <div className="text-[10px] text-muted-foreground">Import to CRM without emailing</div>
+                                    </div>
+                                </DropdownMenuItem>
+
+                                <DropdownMenuSeparator />
+
+                                {/* Option 2: Send Single Email → submenu with templates */}
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger className="gap-2 cursor-pointer">
+                                        <SendHorizonal className="w-4 h-4 text-blue-600" />
+                                        <div>
+                                            <div className="font-medium text-xs">Send Email</div>
+                                            <div className="text-[10px] text-muted-foreground">Import + send a single template</div>
+                                        </div>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent className="w-72 max-h-64 overflow-auto">
+                                        {templates.length === 0 ? (
+                                            <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                                                <Loader2 className="w-3 h-3 animate-spin mr-2" />
+                                                Loading templates...
+                                            </DropdownMenuItem>
+                                        ) : (
+                                            templates.map(t => (
+                                                <DropdownMenuItem
+                                                    key={t.id}
+                                                    onClick={() => handleSendEmail(t.id, t.name)}
+                                                    className="flex-col items-start gap-0.5 cursor-pointer"
+                                                >
+                                                    <div className="font-medium text-xs">{t.name}</div>
+                                                    <div className="text-[10px] text-muted-foreground truncate w-full">
+                                                        {t.subject}
+                                                    </div>
+                                                </DropdownMenuItem>
+                                            ))
+                                        )}
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+
+                                {/* Option 3: Add to Sequence → submenu with sequences */}
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger className="gap-2 cursor-pointer">
+                                        <ListPlus className="w-4 h-4 text-violet-600" />
+                                        <div>
+                                            <div className="font-medium text-xs">Add to Sequence</div>
+                                            <div className="text-[10px] text-muted-foreground">Import + start a drip campaign</div>
+                                        </div>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent className="w-72 max-h-64 overflow-auto">
+                                        {sequences.length === 0 ? (
+                                            <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                                                <Loader2 className="w-3 h-3 animate-spin mr-2" />
+                                                Loading sequences...
+                                            </DropdownMenuItem>
+                                        ) : (
+                                            sequences.map(s => (
+                                                <DropdownMenuItem
+                                                    key={s.id}
+                                                    onClick={() => handleStartSequence(s.id, s.name)}
+                                                    className="flex-col items-start gap-0.5 cursor-pointer"
+                                                >
+                                                    <div className="font-medium text-xs">{s.name}</div>
+                                                    <div className="text-[10px] text-muted-foreground">
+                                                        {s.stepCount} emails · {s.description}
+                                                    </div>
+                                                </DropdownMenuItem>
+                                            ))
+                                        )}
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     )}
                     <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
                         <X className="w-4 h-4" />
@@ -279,6 +525,19 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
                 </div>
             )}
 
+            {/* Importing overlay */}
+            {importing && (
+                <div className="flex items-center justify-center py-8 gap-3 bg-emerald-50/50 dark:bg-emerald-950/20 border-b">
+                    <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
+                    <div>
+                        <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">Importing & processing...</p>
+                        <p className="text-xs text-muted-foreground">
+                            Creating CRM records and sending outreach. This may take a moment.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Results */}
             {!loading && prospects.length > 0 && (
                 <div className="max-h-[50vh] overflow-auto">
@@ -320,7 +579,7 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
             {!loading && prospects.length === 0 && !stats && (
                 <div className="flex items-center justify-center py-8 text-muted-foreground gap-3">
                     <Search className="w-5 h-5 opacity-30" />
-                    <p className="text-sm">Select a business type and location, then click <strong>Find & Enrich</strong></p>
+                    <p className="text-sm">Select a business type and location, then click <strong>Find &amp; Enrich</strong></p>
                 </div>
             )}
         </div>

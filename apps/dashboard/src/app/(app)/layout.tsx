@@ -9,7 +9,7 @@ import {
     ClipboardList, FileText, Sun, Moon, Monitor, Shield, Receipt,
     MapPin, ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, Menu, X,
     Building2, LayoutDashboard, Search, HardHat, Bot, BarChart3, Mail, Scale,
-    Share2,
+    Share2, Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -188,6 +188,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             icon: <Building2 className="w-3.5 h-3.5" />,
             show: showClientsNav,
             items: [
+                ...(canAccess('sales/crm', profile.roles) ? [{ label: 'Prospects', href: '/sales/prospects', icon: <Target className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/crm', profile.roles) ? [{ label: 'Contacts', href: '/sales/crm', icon: <Users className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/crm', profile.roles) ? [{ label: 'Companies', href: '/sales/companies', icon: <Building2 className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/crm', profile.roles) ? [{ label: 'Referral Partners', href: '/sales/referrals', icon: <Share2 className="w-4 h-4" /> }] : []),

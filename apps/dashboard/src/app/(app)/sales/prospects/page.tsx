@@ -1,0 +1,882 @@
+'use client';
+
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/components/ui/use-toast';
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+    DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent,
+    DropdownMenuSubTrigger, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    Dialog, DialogContent, DialogDescription, DialogFooter,
+    DialogHeader, DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog';
+import { httpsCallable } from 'firebase/functions';
+import { collection, onSnapshot, query, orderBy, where, getDocs, doc, updateDoc, writeBatch, getDoc, setDoc } from 'firebase/firestore';
+import { functions, db } from '@/lib/firebase';
+import {
+    Search, Loader2, Building2, Mail, Phone, Globe, User,
+    MapPin, Star, CheckCircle2, AlertCircle, XCircle,
+    ChevronDown, Target, SendHorizonal, ListPlus, Plus,
+    Settings, Play, SkipForward, ExternalLink, X,
+    Calendar, TrendingUp, Zap, Filter, RefreshCw,
+} from 'lucide-react';
+
+// ── Types ───────────────────────────────────────────────────────────
+
+interface QueuedProspect {
+    id: string;
+    businessName: string;
+    address?: string;
+    phone?: string;
+    website?: string;
+    rating?: number;
+    contactEmail?: string;
+    genericEmail?: string;
+    contactName?: string;
+    contactTitle?: string;
+    emailSource?: string;
+    emailConfidence?: string;
+    facebookUrl?: string;
+    linkedinUrl?: string;
+    enrichmentLog?: string[];
+    status: string;
+    batchDate: string;
+    searchQuery: string;
+    searchLocation: string;
+    companyId?: string;
+    contactId?: string;
+    actionedAt?: any;
+    createdAt?: any;
+}
+
+interface TemplateOption {
+    id: string;
+    name: string;
+    subject: string;
+    category?: string;
+}
+
+interface SequenceOption {
+    id: string;
+    name: string;
+    description?: string;
+    stepCount: number;
+    category?: string;
+}
+
+interface ProspectingConfig {
+    queries: string[];
+    locations: string[];
+    dailyTarget: number;
+    enabled: boolean;
+    excludePatterns: string[];
+    lastRunAt?: any;
+    lastRunStats?: {
+        discovered: number;
+        withEmail: number;
+        added: number;
+        duplicatesSkipped: number;
+    };
+}
+
+// ── Confidence badge helper ─────────────────────────────────────────
+
+function ConfidenceBadge({ confidence }: { confidence?: string }) {
+    switch (confidence) {
+        case 'high':
+            return <Badge className="bg-green-100 text-green-700 text-[10px] px-1.5"><CheckCircle2 className="w-3 h-3 mr-0.5" />High</Badge>;
+        case 'medium':
+            return <Badge className="bg-yellow-100 text-yellow-700 text-[10px] px-1.5"><AlertCircle className="w-3 h-3 mr-0.5" />Med</Badge>;
+        default:
+            return <Badge className="bg-gray-100 text-gray-500 text-[10px] px-1.5"><XCircle className="w-3 h-3 mr-0.5" />Low</Badge>;
+    }
+}
+
+// ── Main Page ───────────────────────────────────────────────────────
+
+export default function ProspectsPage() {
+    const { toast } = useToast();
+    const [prospects, setProspects] = useState<QueuedProspect[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('pending_review');
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [acting, setActing] = useState(false);
+    const [triggering, setTriggering] = useState(false);
+
+    // Config state
+    const [config, setConfig] = useState<ProspectingConfig | null>(null);
+    const [configOpen, setConfigOpen] = useState(false);
+    const [configSaving, setConfigSaving] = useState(false);
+    const [editQueries, setEditQueries] = useState('');
+    const [editLocations, setEditLocations] = useState('');
+    const [editTarget, setEditTarget] = useState(100);
+    const [editEnabled, setEditEnabled] = useState(true);
+    const [editExclude, setEditExclude] = useState('');
+
+    // Template/sequence options for the action dropdown
+    const [templates, setTemplates] = useState<TemplateOption[]>([]);
+    const [sequences, setSequences] = useState<SequenceOption[]>([]);
+
+    // ── Load prospects from Firestore ────────────────────────────────
+
+    useEffect(() => {
+        const q = query(
+            collection(db, 'prospect_queue'),
+            orderBy('createdAt', 'desc')
+        );
+        const unsub = onSnapshot(q, (snap) => {
+            const list: QueuedProspect[] = [];
+            snap.forEach((d) => {
+                list.push({ id: d.id, ...d.data() } as QueuedProspect);
+            });
+            setProspects(list);
+            setLoading(false);
+        });
+        return () => unsub();
+    }, []);
+
+    // ── Load config ─────────────────────────────────────────────────
+
+    useEffect(() => {
+        const loadConfig = async () => {
+            try {
+                const snap = await getDoc(doc(db, 'prospecting_config', 'default'));
+                if (snap.exists()) {
+                    const data = snap.data() as ProspectingConfig;
+                    setConfig(data);
+                    setEditQueries(data.queries?.join('\n') || '');
+                    setEditLocations(data.locations?.join('\n') || '');
+                    setEditTarget(data.dailyTarget || 100);
+                    setEditEnabled(data.enabled !== false);
+                    setEditExclude(data.excludePatterns?.join('\n') || '');
+                }
+            } catch (err) {
+                console.error('Failed to load prospecting config:', err);
+            }
+        };
+        loadConfig();
+    }, []);
+
+    // ── Load template & sequence options ─────────────────────────────
+
+    const loadOptions = useCallback(async () => {
+        if (templates.length > 0 && sequences.length > 0) return;
+        try {
+            const [tSnap, sSnap] = await Promise.all([
+                getDocs(query(collection(db, 'templates'), where('category', '==', 'lead_outreach'))),
+                getDocs(collection(db, 'sequences')),
+            ]);
+            setTemplates(tSnap.docs.map(d => ({
+                id: d.id,
+                name: d.data().name || d.id,
+                subject: d.data().subject || '',
+                category: d.data().category,
+            })));
+            setSequences(sSnap.docs.map(d => ({
+                id: d.id,
+                name: d.data().name || d.id,
+                description: d.data().description,
+                stepCount: d.data().steps?.length || 0,
+                category: d.data().category,
+            })));
+        } catch (err) {
+            console.error('Failed to load templates/sequences:', err);
+        }
+    }, [templates.length, sequences.length]);
+
+    // ── Filtering ───────────────────────────────────────────────────
+
+    const filtered = useMemo(() => {
+        let list = prospects;
+
+        if (statusFilter !== 'all') {
+            list = list.filter(p => p.status === statusFilter);
+        }
+
+        if (search.trim()) {
+            const q = search.toLowerCase();
+            list = list.filter(p =>
+                p.businessName?.toLowerCase().includes(q) ||
+                p.address?.toLowerCase().includes(q) ||
+                p.contactEmail?.toLowerCase().includes(q) ||
+                p.contactName?.toLowerCase().includes(q) ||
+                p.searchLocation?.toLowerCase().includes(q)
+            );
+        }
+
+        return list;
+    }, [prospects, statusFilter, search]);
+
+    // ── Stats ───────────────────────────────────────────────────────
+
+    const stats = useMemo(() => {
+        const today = new Date().toISOString().split('T')[0];
+        return {
+            total: prospects.length,
+            pending: prospects.filter(p => p.status === 'pending_review').length,
+            todayBatch: prospects.filter(p => p.batchDate === today).length,
+            imported: prospects.filter(p => p.status === 'imported' || p.status === 'emailed' || p.status === 'sequenced').length,
+            skipped: prospects.filter(p => p.status === 'skipped').length,
+        };
+    }, [prospects]);
+
+    // ── Actions ──────────────────────────────────────────────────────
+
+    const selectedProspects = useMemo(() =>
+        filtered.filter(p => selected.has(p.id)),
+        [filtered, selected]
+    );
+
+    const handleSkip = async (ids: string[]) => {
+        setActing(true);
+        try {
+            const batch = writeBatch(db);
+            for (const id of ids) {
+                batch.update(doc(db, 'prospect_queue', id), {
+                    status: 'skipped',
+                    actionedAt: new Date(),
+                });
+            }
+            await batch.commit();
+            setSelected(prev => {
+                const next = new Set(prev);
+                ids.forEach(id => next.delete(id));
+                return next;
+            });
+            toast({ title: `Skipped ${ids.length} prospect(s)` });
+        } catch (err) {
+            toast({ title: 'Error skipping', description: String(err) });
+        }
+        setActing(false);
+    };
+
+    const handleImportOnly = async (ids: string[]) => {
+        setActing(true);
+        try {
+            const prospectsToImport = prospects.filter(p => ids.includes(p.id));
+            const addFn = httpsCallable(functions, 'addProspectsToCrm');
+            const result = await addFn({
+                prospects: prospectsToImport.map(p => ({
+                    businessName: p.businessName,
+                    address: p.address,
+                    phone: p.phone,
+                    website: p.website,
+                    rating: p.rating,
+                    contactEmail: p.contactEmail,
+                    genericEmail: p.genericEmail,
+                    contactName: p.contactName,
+                    contactTitle: p.contactTitle,
+                    emailSource: p.emailSource,
+                    emailConfidence: p.emailConfidence,
+                    facebookUrl: p.facebookUrl,
+                    linkedinUrl: p.linkedinUrl,
+                })),
+            });
+
+            const data = result.data as any;
+            const batch = writeBatch(db);
+            for (let i = 0; i < ids.length; i++) {
+                const imported = data.results?.[i];
+                batch.update(doc(db, 'prospect_queue', ids[i]), {
+                    status: 'imported',
+                    companyId: imported?.companyId || null,
+                    contactId: imported?.contactId || null,
+                    actionedAt: new Date(),
+                });
+            }
+            await batch.commit();
+
+            setSelected(prev => {
+                const next = new Set(prev);
+                ids.forEach(id => next.delete(id));
+                return next;
+            });
+            toast({ title: `Imported ${data.imported || ids.length} prospects to CRM` });
+        } catch (err) {
+            toast({ title: 'Import failed', description: String(err) });
+        }
+        setActing(false);
+    };
+
+    const handleImportAndEmail = async (ids: string[], templateId: string) => {
+        setActing(true);
+        try {
+            const prospectsToImport = prospects.filter(p => ids.includes(p.id));
+            const addFn = httpsCallable(functions, 'addProspectsToCrm');
+            const result = await addFn({
+                prospects: prospectsToImport.map(p => ({
+                    businessName: p.businessName, address: p.address, phone: p.phone,
+                    website: p.website, rating: p.rating, contactEmail: p.contactEmail,
+                    genericEmail: p.genericEmail, contactName: p.contactName,
+                    contactTitle: p.contactTitle, emailSource: p.emailSource,
+                    emailConfidence: p.emailConfidence, facebookUrl: p.facebookUrl,
+                    linkedinUrl: p.linkedinUrl,
+                })),
+            });
+
+            const data = result.data as any;
+            const emailFn = httpsCallable(functions, 'sendSingleLeadEmail');
+            let emailsSent = 0;
+
+            for (let i = 0; i < ids.length; i++) {
+                const imported = data.results?.[i];
+                if (imported?.companyId && imported?.contactId) {
+                    try {
+                        await emailFn({
+                            leadId: imported.companyId,
+                            contactId: imported.contactId,
+                            templateId,
+                        });
+                        emailsSent++;
+                    } catch { /* skip failed emails */ }
+                }
+            }
+
+            const batch = writeBatch(db);
+            for (let i = 0; i < ids.length; i++) {
+                const imported = data.results?.[i];
+                batch.update(doc(db, 'prospect_queue', ids[i]), {
+                    status: 'emailed',
+                    companyId: imported?.companyId || null,
+                    contactId: imported?.contactId || null,
+                    actionedAt: new Date(),
+                });
+            }
+            await batch.commit();
+
+            setSelected(prev => {
+                const next = new Set(prev);
+                ids.forEach(id => next.delete(id));
+                return next;
+            });
+            toast({ title: `Imported ${ids.length} · Emailed ${emailsSent}` });
+        } catch (err) {
+            toast({ title: 'Error', description: String(err) });
+        }
+        setActing(false);
+    };
+
+    const handleImportAndSequence = async (ids: string[], sequenceId: string) => {
+        setActing(true);
+        try {
+            const prospectsToImport = prospects.filter(p => ids.includes(p.id));
+            const addFn = httpsCallable(functions, 'addProspectsToCrm');
+            const result = await addFn({
+                prospects: prospectsToImport.map(p => ({
+                    businessName: p.businessName, address: p.address, phone: p.phone,
+                    website: p.website, rating: p.rating, contactEmail: p.contactEmail,
+                    genericEmail: p.genericEmail, contactName: p.contactName,
+                    contactTitle: p.contactTitle, emailSource: p.emailSource,
+                    emailConfidence: p.emailConfidence, facebookUrl: p.facebookUrl,
+                    linkedinUrl: p.linkedinUrl,
+                })),
+            });
+
+            const data = result.data as any;
+            const seqFn = httpsCallable(functions, 'startLeadSequence');
+            let started = 0;
+
+            for (let i = 0; i < ids.length; i++) {
+                const imported = data.results?.[i];
+                if (imported?.companyId && imported?.contactId) {
+                    try {
+                        await seqFn({
+                            leadId: imported.companyId,
+                            contactId: imported.contactId,
+                            sequenceId,
+                        });
+                        started++;
+                    } catch { /* skip failed */ }
+                }
+            }
+
+            const batch = writeBatch(db);
+            for (let i = 0; i < ids.length; i++) {
+                const imported = data.results?.[i];
+                batch.update(doc(db, 'prospect_queue', ids[i]), {
+                    status: 'sequenced',
+                    companyId: imported?.companyId || null,
+                    contactId: imported?.contactId || null,
+                    actionedAt: new Date(),
+                });
+            }
+            await batch.commit();
+
+            setSelected(prev => {
+                const next = new Set(prev);
+                ids.forEach(id => next.delete(id));
+                return next;
+            });
+            toast({ title: `Imported ${ids.length} · Started ${started} sequences` });
+        } catch (err) {
+            toast({ title: 'Error', description: String(err) });
+        }
+        setActing(false);
+    };
+
+    // ── Trigger pipeline manually ───────────────────────────────────
+
+    const handleTriggerRun = async () => {
+        setTriggering(true);
+        try {
+            const fn = httpsCallable(functions, 'triggerDailyProspector');
+            await fn();
+            toast({ title: 'Prospector pipeline started', description: 'New prospects will appear in a few minutes.' });
+        } catch (err) {
+            toast({ title: 'Trigger failed', description: String(err) });
+        }
+        setTriggering(false);
+    };
+
+    // ── Save config ─────────────────────────────────────────────────
+
+    const handleSaveConfig = async () => {
+        setConfigSaving(true);
+        try {
+            const newConfig = {
+                queries: editQueries.split('\n').map(s => s.trim()).filter(Boolean),
+                locations: editLocations.split('\n').map(s => s.trim()).filter(Boolean),
+                dailyTarget: editTarget,
+                enabled: editEnabled,
+                excludePatterns: editExclude.split('\n').map(s => s.trim()).filter(Boolean),
+            };
+            await setDoc(doc(db, 'prospecting_config', 'default'), newConfig, { merge: true });
+            setConfig(prev => prev ? { ...prev, ...newConfig } : newConfig as ProspectingConfig);
+            setConfigOpen(false);
+            toast({ title: 'Config saved' });
+        } catch (err) {
+            toast({ title: 'Save failed', description: String(err) });
+        }
+        setConfigSaving(false);
+    };
+
+    // ── Select helpers ──────────────────────────────────────────────
+
+    const toggleSelect = (id: string) => {
+        setSelected(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const toggleAll = () => {
+        if (selected.size === filtered.length) {
+            setSelected(new Set());
+        } else {
+            setSelected(new Set(filtered.map(p => p.id)));
+        }
+    };
+
+    // ── Render ───────────────────────────────────────────────────────
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <Target className="w-6 h-6 text-primary" />
+                        Prospect Queue
+                    </h1>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Auto-discovered prospects ready for your review. Take action or skip.
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Dialog open={configOpen} onOpenChange={setConfigOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <Settings className="w-4 h-4 mr-1" />
+                                Config
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-lg">
+                            <DialogHeader>
+                                <DialogTitle>Prospecting Configuration</DialogTitle>
+                                <DialogDescription>
+                                    Configure what the daily prospector searches for.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium">Search Queries (one per line)</label>
+                                    <textarea
+                                        className="w-full mt-1 rounded-md border p-2 text-sm font-mono min-h-[120px] bg-background"
+                                        value={editQueries}
+                                        onChange={e => setEditQueries(e.target.value)}
+                                        placeholder="office building&#10;dental office&#10;gym fitness center"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium">Locations (one per line)</label>
+                                    <textarea
+                                        className="w-full mt-1 rounded-md border p-2 text-sm font-mono min-h-[80px] bg-background"
+                                        value={editLocations}
+                                        onChange={e => setEditLocations(e.target.value)}
+                                        placeholder="Nassau County, NY&#10;Suffolk County, NY"
+                                    />
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="flex-1">
+                                        <label className="text-sm font-medium">Daily Target</label>
+                                        <Input
+                                            type="number"
+                                            className="mt-1"
+                                            value={editTarget}
+                                            onChange={e => setEditTarget(Number(e.target.value))}
+                                            min={10}
+                                            max={500}
+                                        />
+                                    </div>
+                                    <div className="flex-1 flex items-end">
+                                        <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                                            <Checkbox
+                                                checked={editEnabled}
+                                                onCheckedChange={(v: boolean) => setEditEnabled(v)}
+                                            />
+                                            Pipeline Enabled
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium">Exclude Patterns (one per line)</label>
+                                    <textarea
+                                        className="w-full mt-1 rounded-md border p-2 text-sm font-mono min-h-[60px] bg-background"
+                                        value={editExclude}
+                                        onChange={e => setEditExclude(e.target.value)}
+                                        placeholder="franchise&#10;chain"
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setConfigOpen(false)}>Cancel</Button>
+                                <Button onClick={handleSaveConfig} disabled={configSaving}>
+                                    {configSaving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                                    Save
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleTriggerRun}
+                        disabled={triggering}
+                    >
+                        {triggering
+                            ? <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                            : <Play className="w-4 h-4 mr-1" />
+                        }
+                        Run Now
+                    </Button>
+                </div>
+            </div>
+
+            {/* Stats bar */}
+            <div className="grid grid-cols-5 gap-3">
+                {[
+                    { label: 'Pending Review', value: stats.pending, icon: Target, color: 'text-blue-600' },
+                    { label: "Today's Batch", value: stats.todayBatch, icon: Calendar, color: 'text-indigo-600' },
+                    { label: 'Imported', value: stats.imported, icon: CheckCircle2, color: 'text-green-600' },
+                    { label: 'Skipped', value: stats.skipped, icon: SkipForward, color: 'text-gray-500' },
+                    { label: 'Total Queued', value: stats.total, icon: TrendingUp, color: 'text-primary' },
+                ].map(s => (
+                    <div key={s.label} className="rounded-lg border bg-card p-3 flex items-center gap-3">
+                        <s.icon className={`w-5 h-5 ${s.color}`} />
+                        <div>
+                            <div className="text-xl font-bold">{s.value}</div>
+                            <div className="text-xs text-muted-foreground">{s.label}</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Last run info */}
+            {config?.lastRunStats && (
+                <div className="text-xs text-muted-foreground flex items-center gap-4 bg-muted/50 rounded-lg px-3 py-2">
+                    <span>Last run: {config.lastRunAt?.toDate ? config.lastRunAt.toDate().toLocaleString() : 'Unknown'}</span>
+                    <span>·</span>
+                    <span>Discovered {config.lastRunStats.discovered}</span>
+                    <span>·</span>
+                    <span>Added {config.lastRunStats.added} with email</span>
+                    <span>·</span>
+                    <span>{config.lastRunStats.duplicatesSkipped} duplicates skipped</span>
+                </div>
+            )}
+
+            {/* Toolbar */}
+            <div className="flex items-center gap-3">
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search by name, address, email..."
+                        className="pl-9"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
+                </div>
+
+                {/* Status filter tabs */}
+                <div className="flex rounded-lg border overflow-hidden text-sm">
+                    {[
+                        { key: 'pending_review', label: 'Pending' },
+                        { key: 'imported', label: 'Imported' },
+                        { key: 'skipped', label: 'Skipped' },
+                        { key: 'all', label: 'All' },
+                    ].map(tab => (
+                        <button
+                            key={tab.key}
+                            className={`px-3 py-1.5 transition-colors ${statusFilter === tab.key
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-muted'
+                                }`}
+                            onClick={() => setStatusFilter(tab.key)}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Bulk actions */}
+                {selected.size > 0 && (
+                    <div className="flex items-center gap-2 ml-auto">
+                        <span className="text-sm text-muted-foreground">{selected.size} selected</span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSkip(Array.from(selected))}
+                            disabled={acting}
+                        >
+                            <SkipForward className="w-4 h-4 mr-1" />
+                            Skip
+                        </Button>
+                        <DropdownMenu onOpenChange={(open: boolean) => { if (open) loadOptions(); }}>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="sm" disabled={acting}>
+                                    {acting
+                                        ? <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                                        : <Zap className="w-4 h-4 mr-1" />
+                                    }
+                                    Action ({selected.size})
+                                    <ChevronDown className="w-3 h-3 ml-1" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuItem onClick={() => handleImportOnly(Array.from(selected))}>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add to CRM Only
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <SendHorizonal className="w-4 h-4 mr-2" />
+                                        Import + Send Email
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent>
+                                        {templates.length === 0 && (
+                                            <DropdownMenuItem disabled>No templates found</DropdownMenuItem>
+                                        )}
+                                        {templates.map(t => (
+                                            <DropdownMenuItem
+                                                key={t.id}
+                                                onClick={() => handleImportAndEmail(Array.from(selected), t.id)}
+                                            >
+                                                <Mail className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                                                {t.name}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <ListPlus className="w-4 h-4 mr-2" />
+                                        Import + Add to Sequence
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent>
+                                        {sequences.length === 0 && (
+                                            <DropdownMenuItem disabled>No sequences found</DropdownMenuItem>
+                                        )}
+                                        {sequences.map(s => (
+                                            <DropdownMenuItem
+                                                key={s.id}
+                                                onClick={() => handleImportAndSequence(Array.from(selected), s.id)}
+                                            >
+                                                <ListPlus className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                                                {s.name} ({s.stepCount} steps)
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                )}
+            </div>
+
+            {/* Table */}
+            {loading ? (
+                <div className="flex items-center justify-center py-20 text-muted-foreground">
+                    <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                    Loading prospects...
+                </div>
+            ) : filtered.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                    <Target className="w-12 h-12 mb-3 opacity-30" />
+                    <p className="text-lg font-medium">No prospects yet</p>
+                    <p className="text-sm mt-1">
+                        {statusFilter === 'pending_review'
+                            ? 'Click "Run Now" to trigger the prospector or wait for the daily 6 AM run.'
+                            : 'No prospects match the current filter.'}
+                    </p>
+                </div>
+            ) : (
+                <div className="border rounded-lg overflow-hidden">
+                    {/* Table header */}
+                    <div className="grid grid-cols-[40px_1fr_200px_180px_100px_80px_120px] gap-2 px-3 py-2 bg-muted/50 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <div className="flex items-center justify-center">
+                            <Checkbox
+                                checked={selected.size === filtered.length && filtered.length > 0}
+                                onCheckedChange={toggleAll}
+                            />
+                        </div>
+                        <div>Business</div>
+                        <div>Location</div>
+                        <div>Contact</div>
+                        <div>Confidence</div>
+                        <div>Rating</div>
+                        <div>Actions</div>
+                    </div>
+
+                    {/* Rows */}
+                    <div className="divide-y max-h-[calc(100vh-400px)] overflow-y-auto">
+                        {filtered.map(prospect => (
+                            <div
+                                key={prospect.id}
+                                className={`grid grid-cols-[40px_1fr_200px_180px_100px_80px_120px] gap-2 px-3 py-2.5 items-center text-sm hover:bg-muted/30 transition-colors ${selected.has(prospect.id) ? 'bg-primary/5' : ''}`}
+                            >
+                                {/* Checkbox */}
+                                <div className="flex items-center justify-center">
+                                    <Checkbox
+                                        checked={selected.has(prospect.id)}
+                                        onCheckedChange={() => toggleSelect(prospect.id)}
+                                    />
+                                </div>
+
+                                {/* Business */}
+                                <div className="min-w-0">
+                                    <div className="font-medium truncate flex items-center gap-1.5">
+                                        <Building2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                        {prospect.businessName}
+                                        {prospect.website && (
+                                            <a
+                                                href={prospect.website.startsWith('http') ? prospect.website : `https://${prospect.website}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-muted-foreground hover:text-primary"
+                                                onClick={e => e.stopPropagation()}
+                                            >
+                                                <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        )}
+                                    </div>
+                                    {prospect.phone && (
+                                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                            <Phone className="w-3 h-3" />
+                                            {prospect.phone}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Location */}
+                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                    <MapPin className="w-3 h-3 shrink-0" />
+                                    {prospect.address || prospect.searchLocation}
+                                </div>
+
+                                {/* Contact */}
+                                <div className="min-w-0">
+                                    {prospect.contactEmail ? (
+                                        <div className="text-xs truncate flex items-center gap-1">
+                                            <Mail className="w-3 h-3 text-muted-foreground shrink-0" />
+                                            <span className="truncate">{prospect.contactEmail}</span>
+                                        </div>
+                                    ) : prospect.genericEmail ? (
+                                        <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                            <Mail className="w-3 h-3 shrink-0" />
+                                            <span className="truncate">{prospect.genericEmail}</span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-xs text-muted-foreground">No email</span>
+                                    )}
+                                    {prospect.contactName && (
+                                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                            <User className="w-3 h-3" />
+                                            {prospect.contactName}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Confidence */}
+                                <div>
+                                    <ConfidenceBadge confidence={prospect.emailConfidence} />
+                                </div>
+
+                                {/* Rating */}
+                                <div className="text-xs text-muted-foreground">
+                                    {prospect.rating ? (
+                                        <span className="flex items-center gap-0.5">
+                                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                            {prospect.rating}
+                                        </span>
+                                    ) : '—'}
+                                </div>
+
+                                {/* Row actions */}
+                                <div className="flex items-center gap-1">
+                                    {prospect.status === 'pending_review' ? (
+                                        <>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7 w-7 p-0"
+                                                title="Import to CRM"
+                                                onClick={() => handleImportOnly([prospect.id])}
+                                            >
+                                                <Plus className="w-3.5 h-3.5" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7 w-7 p-0"
+                                                title="Skip"
+                                                onClick={() => handleSkip([prospect.id])}
+                                            >
+                                                <SkipForward className="w-3.5 h-3.5 text-muted-foreground" />
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <Badge variant="outline" className="text-[10px]">
+                                            {prospect.status === 'imported' && '✓ Imported'}
+                                            {prospect.status === 'emailed' && '✉ Emailed'}
+                                            {prospect.status === 'sequenced' && '📋 Sequenced'}
+                                            {prospect.status === 'skipped' && '⏭ Skipped'}
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
