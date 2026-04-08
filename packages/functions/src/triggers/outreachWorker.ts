@@ -587,13 +587,21 @@ async function handleFollowUp(task: QueueItem) {
 async function handleLeadSend(task: QueueItem) {
     logger.info(`[LeadOutreach] Sending template email for lead ${task.leadId}`);
 
-    // ── Suppression check: skip deleted / lost / unsubscribed leads ──
-    const leadDoc = await db.collection("leads").doc(task.leadId!).get();
+    // ── Resolve lead document from companies OR leads (match startLeadSequence logic) ──
+    let leadDoc = await db.collection("companies").doc(task.leadId!).get();
+    let leadCollection = 'companies';
     if (!leadDoc.exists) {
-        logger.info(`[Suppression] Lead ${task.leadId} was deleted — cancelling task.`);
+        leadDoc = await db.collection("leads").doc(task.leadId!).get();
+        leadCollection = 'leads';
+    }
+    if (!leadDoc.exists) {
+        logger.info(`[Suppression] Lead ${task.leadId} not found in companies or leads — cancelling task.`);
         await updateTaskStatus(db, task.id!, 'CANCELLED');
         return;
     }
+    logger.info(`[LeadOutreach] Resolved lead ${task.leadId} from '${leadCollection}' collection.`);
+
+    // ── Suppression check: skip lost / unsubscribed leads ──
     const leadData = leadDoc.data()!;
     if (leadData.status === 'lost' || leadData.unsubscribedAt) {
         logger.info(`[Suppression] Lead ${task.leadId} is ${leadData.status}/unsubscribed — skipping send.`);
@@ -727,7 +735,7 @@ async function handleLeadSend(task: QueueItem) {
     await updateTaskStatus(db, task.id!, sendResult.success ? 'COMPLETED' : 'FAILED');
 
     if (sendResult.success) {
-        await db.collection("leads").doc(task.leadId!).update({
+        await db.collection(leadCollection).doc(task.leadId!).update({
             outreachStatus: 'SENT',
             outreachSentAt: new Date(),
         });

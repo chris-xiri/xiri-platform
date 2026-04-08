@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "See Verified Facility Management | XIRI",
+    title: "What Frustrates You Most About Your Cleaning Service? | XIRI",
     description: "Tap to see what verified cleaning and facility management looks like. Zone-by-zone compliance logs, real-time accountability, one partner for everything.",
     robots: { index: false, follow: false },
 };
@@ -18,7 +18,7 @@ export default function DemoLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="min-h-screen flex flex-col bg-white">
+        <div className="flex flex-col bg-white">
             <main className="flex-1">
                 {children}
             </main>

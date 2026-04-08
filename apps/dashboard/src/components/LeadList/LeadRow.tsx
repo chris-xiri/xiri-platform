@@ -321,7 +321,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                             className="font-medium text-sm flex items-center gap-1 cursor-pointer hover:underline text-primary"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (lead.companyId) router.push(`/sales/dashboard/${lead.companyId}`);
+                                if (lead.companyId) router.push(`/sales/crm/${lead.companyId}`);
                             }}
                         >
                             <Building2 className="w-3 h-3 text-muted-foreground" />

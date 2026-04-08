@@ -34,6 +34,7 @@ export const VENDOR_CAPABILITIES: CapabilityOption[] = [
   { value: 'snow_removal',         label: 'Snow & Ice Removal',     group: 'facility' },
   { value: 'pest_control',         label: 'Pest Control',           group: 'facility' },
   { value: 'waste_management',     label: 'Waste Management',       group: 'facility' },
+  { value: 'indoor_plant_watering', label: 'Indoor Plant Watering', group: 'facility' },
 
   // ── Specialty ──
   { value: 'painting',             label: 'Painting',               group: 'specialty' },
@@ -110,6 +111,11 @@ const NORMALIZE_MAP: Record<string, string> = {
   'pest-control':           'pest_control',
   'waste management':       'waste_management',
   'waste-management':       'waste_management',
+  // Indoor Plant Watering
+  'indoor plant watering':  'indoor_plant_watering',
+  'indoor-plant-watering':  'indoor_plant_watering',
+  'plant watering':         'indoor_plant_watering',
+  'plant care':             'indoor_plant_watering',
   // Specialty
   'painting':               'painting',
   'roofing':                'roofing',

@@ -58,6 +58,7 @@ import {
 import { format } from 'date-fns';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import CompanyHub from './CompanyHub';
 
 // ─── Targeted template interface ──────────────────────────
 interface TargetedTemplate {
@@ -743,133 +744,58 @@ export default function LeadDetailPage() {
                     </div>
                 )}
 
-                {/* Content Grid */}
+                {/* ═══ Company Dashboard Hub ═══ */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 overflow-auto">
-                    {/* Left Column - Main Info */}
-                    <div className="lg:col-span-2 space-y-4">
-                        {/* Contact Information */}
+                    {/* Left Column — Hub: Contacts, Work Orders, Quotes, Contracts, Timeline */}
+                    <div className="lg:col-span-2">
+                        <CompanyHub companyId={leadId} activities={activities} />
+                    </div>
+
+                    {/* Right Column — Company Details & Attribution */}
+                    <div className="space-y-4">
+                        {/* Company Info */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <User className="w-5 h-5" />
-                                    Contact Information
+                                <CardTitle className="flex items-center gap-2 text-base">
+                                    <Building2 className="w-4 h-4" /> Company Details
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Name</label>
-                                        <EditableField
-                                            label="Contact name"
-                                            value={lead.contactName || ''}
-                                            icon={User}
-                                            onSave={(v) => updateField('contactName', v)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Email</label>
-                                        <EditableField
-                                            label="Email"
-                                            value={lead.email || ''}
-                                            icon={Mail}
-                                            type="email"
-                                            linkPrefix="mailto:"
-                                            onSave={(v) => updateField('email', v)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                                        <EditableField
-                                            label="Phone"
-                                            value={lead.contactPhone || ''}
-                                            icon={Phone}
-                                            type="tel"
-                                            linkPrefix="tel:"
-                                            onSave={(v) => updateField('contactPhone', v)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Square Footage</label>
-                                        <EditableField
-                                            label="Square footage"
-                                            value={String((lead as any).squareFootage || '')}
-                                            icon={Building2}
-                                            onSave={(v) => updateField('squareFootage', v ? Number(v) : '')}
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="text-sm font-medium text-muted-foreground">Address</label>
-                                        <EditableAddressField
-                                            address={lead.address || ''}
-                                            city={(lead as any).city || ''}
-                                            state={(lead as any).state || ''}
-                                            zip={lead.zipCode || ''}
-                                            onSave={async (fields) => {
-                                                await updateDoc(doc(db, 'companies', leadId), {
-                                                    address: fields.address,
-                                                    city: fields.city,
-                                                    state: fields.state,
-                                                    zipCode: fields.zip,
-                                                    updatedAt: new Date(),
-                                                });
-                                                await fetchLead();
-                                            }}
-                                        />
-                                    </div>
+                            <CardContent className="space-y-3">
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Contact</label>
+                                    <EditableField label="Contact name" value={lead.contactName || ''} icon={User} onSave={(v) => updateField('contactName', v)} />
                                 </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Audit Booking Details */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Calendar className="w-5 h-5" />
-                                    Audit Booking Details
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {lead.preferredAuditTimes && lead.preferredAuditTimes.length > 0 ? (
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                                            Preferred Times
-                                        </label>
-                                        <div className="space-y-2">
-                                            {lead.preferredAuditTimes.map((time, idx) => {
-                                                const timeDate = toDate(time);
-                                                return timeDate ? (
-                                                    <div key={idx} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                                                        <Clock className="w-4 h-4 text-muted-foreground" />
-                                                        <div>
-                                                            <p className="font-medium">
-                                                                {format(timeDate, 'EEEE, MMMM d, yyyy')}
-                                                            </p>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                {format(timeDate, 'h:mm a')}
-                                                            </p>
-                                                        </div>
-                                                        {idx === 0 && (
-                                                            <Badge variant="secondary" className="ml-auto">Primary</Badge>
-                                                        )}
-                                                    </div>
-                                                ) : null;
-                                            })}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground">No audit times scheduled</p>
-                                )}
-
-                                {lead.serviceInterest && (
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Service Interest</label>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <Briefcase className="w-4 h-4 text-muted-foreground" />
-                                            <p className="text-base capitalize">{lead.serviceInterest.replace(/_/g, ' ')}</p>
-                                        </div>
-                                    </div>
-                                )}
-
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Email</label>
+                                    <EditableField label="Email" value={lead.email || ''} icon={Mail} type="email" linkPrefix="mailto:" onSave={(v) => updateField('email', v)} />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                                    <EditableField label="Phone" value={lead.contactPhone || ''} icon={Phone} type="tel" linkPrefix="tel:" onSave={(v) => updateField('contactPhone', v)} />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Sq Ft</label>
+                                    <EditableField label="Square footage" value={String((lead as any).squareFootage || '')} icon={Building2} onSave={(v) => updateField('squareFootage', v ? Number(v) : '')} />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Address</label>
+                                    <EditableAddressField
+                                        address={lead.address || ''}
+                                        city={(lead as any).city || ''}
+                                        state={(lead as any).state || ''}
+                                        zip={lead.zipCode || ''}
+                                        onSave={async (fields) => {
+                                            await updateDoc(doc(db, 'companies', leadId), {
+                                                address: fields.address,
+                                                city: fields.city,
+                                                state: fields.state,
+                                                zipCode: fields.zip,
+                                                updatedAt: new Date(),
+                                            });
+                                            await fetchLead();
+                                        }}
+                                    />
+                                </div>
                                 <div>
                                     <label className="text-sm font-medium text-muted-foreground">Notes</label>
                                     <EditableField
@@ -879,7 +805,7 @@ export default function LeadDetailPage() {
                                         multiline
                                         onSave={(v) => updateField('notes', v)}
                                         renderDisplay={(val) => (
-                                            <span className={val ? 'text-base' : 'text-muted-foreground italic text-base'}>
+                                            <span className={val ? 'text-sm' : 'text-muted-foreground italic text-sm'}>
                                                 {val || 'Add notes'}
                                             </span>
                                         )}
@@ -887,16 +813,12 @@ export default function LeadDetailPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                    </div>
 
-                    {/* Right Column */}
-                    <div className="space-y-4">
                         {/* Lead Type */}
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
-                                    <Tag className="w-4 h-4" />
-                                    Lead Type
+                                    <Tag className="w-4 h-4" /> Lead Type
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
@@ -911,43 +833,40 @@ export default function LeadDetailPage() {
                                         <SelectItem value="enterprise">Enterprise</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <p className="text-xs text-muted-foreground">
-                                    Sequence: {typeConfig.sequence}
-                                </p>
+                                <p className="text-xs text-muted-foreground">Sequence: {typeConfig.sequence}</p>
                             </CardContent>
                         </Card>
 
                         {/* Attribution */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <TrendingUp className="w-5 h-5" />
-                                    Attribution
+                                <CardTitle className="flex items-center gap-2 text-base">
+                                    <TrendingUp className="w-4 h-4" /> Attribution
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 {lead.attribution?.source && (
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Source</label>
-                                        <p className="text-base font-medium capitalize">{lead.attribution.source}</p>
+                                        <p className="text-sm font-medium capitalize">{lead.attribution.source}</p>
                                     </div>
                                 )}
                                 {lead.attribution?.medium && (
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Medium</label>
-                                        <p className="text-base capitalize">{lead.attribution.medium}</p>
+                                        <p className="text-sm capitalize">{lead.attribution.medium}</p>
                                     </div>
                                 )}
                                 {lead.attribution?.campaign && (
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Campaign</label>
-                                        <p className="text-base">{lead.attribution.campaign}</p>
+                                        <p className="text-sm">{lead.attribution.campaign}</p>
                                     </div>
                                 )}
                                 {lead.attribution?.landingPage && (
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Landing Page</label>
-                                        <p className="text-sm text-blue-600 break-all">{lead.attribution.landingPage}</p>
+                                        <p className="text-xs text-blue-600 break-all">{lead.attribution.landingPage}</p>
                                     </div>
                                 )}
                             </CardContent>
@@ -956,74 +875,23 @@ export default function LeadDetailPage() {
                         {/* Metadata */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-base">Lead Information</CardTitle>
+                                <CardTitle className="text-base">Company Info</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div>
-                                    <label className="text-sm font-medium text-muted-foreground">Lead ID</label>
+                                    <label className="text-sm font-medium text-muted-foreground">ID</label>
                                     <p className="text-xs font-mono bg-muted/50 p-2 rounded">{lead.id}</p>
                                 </div>
                                 {createdDate && (
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Created</label>
-                                        <p className="text-base">{format(createdDate, 'MMM d, yyyy h:mm a')}</p>
+                                        <p className="text-sm">{format(createdDate, 'MMM d, yyyy h:mm a')}</p>
                                     </div>
                                 )}
                             </CardContent>
                         </Card>
                     </div>
                 </div>
-
-                {/* ── Activity Timeline ── */}
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                            <Activity className="w-4 h-4" /> Activity Timeline
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {activities.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-6">No activity yet</p>
-                        ) : (
-                            <div className="space-y-0">
-                                {activities.map((act, i) => {
-                                    const date = toDate(act.createdAt);
-                                    const isLast = i === activities.length - 1;
-                                    return (
-                                        <div key={act.id} className="flex gap-3">
-                                            <div className="flex flex-col items-center">
-                                                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${act.type === 'OUTREACH_SENT' ? 'bg-green-100 text-green-600' :
-                                                    act.type === 'OUTREACH_FAILED' ? 'bg-red-100 text-red-600' :
-                                                        act.type === 'SEQUENCE_STARTED' ? 'bg-blue-100 text-blue-600' :
-                                                            act.type === 'OUTREACH_QUEUED' ? 'bg-amber-100 text-amber-600' :
-                                                                'bg-muted text-muted-foreground'
-                                                    }`}>
-                                                    {act.type === 'OUTREACH_SENT' ? <Send className="w-3.5 h-3.5" /> :
-                                                        act.type === 'OUTREACH_FAILED' ? <XCircle className="w-3.5 h-3.5" /> :
-                                                            act.type === 'SEQUENCE_STARTED' ? <Rocket className="w-3.5 h-3.5" /> :
-                                                                act.type === 'OUTREACH_QUEUED' ? <Clock className="w-3.5 h-3.5" /> :
-                                                                    <Activity className="w-3.5 h-3.5" />}
-                                                </div>
-                                                {!isLast && <div className="w-px flex-1 bg-border min-h-[24px]" />}
-                                            </div>
-                                            <div className={`pb-4 ${isLast ? '' : ''}`}>
-                                                <p className="text-sm font-medium leading-tight">
-                                                    {act.type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground mt-0.5">{act.description}</p>
-                                                {date && (
-                                                    <p className="text-[10px] text-muted-foreground mt-1">
-                                                        {format(date, 'MMM d, yyyy h:mm a')}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
             </div>
 
             {/* Start Sequence Confirmation Dialog */}

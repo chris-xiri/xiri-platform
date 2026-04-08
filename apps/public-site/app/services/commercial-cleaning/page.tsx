@@ -240,7 +240,7 @@ export default function CommercialCleaningPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-4 gap-8">
                         {[
-                            { icon: ShieldCheck, title: '$1M Insured', desc: 'Every team carries a $1M liability policy and is fully bonded.' },
+                            { icon: ShieldCheck, title: '$1M Insured', desc: 'Every team carries a $1M liability policy and is fully insured.' },
                             { icon: Clock, title: 'Nightly Audits', desc: 'Our Night Manager physically verifies cleaning quality every night.' },
                             { icon: DollarSign, title: 'One Invoice', desc: 'Consolidate all cleaning services into one monthly bill.' },
                             { icon: CheckCircle2, title: 'JCAHO Ready', desc: 'Clinical-grade protocols that keep your facility survey-ready 24/7.' },

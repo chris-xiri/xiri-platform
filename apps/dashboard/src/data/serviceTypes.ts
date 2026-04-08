@@ -17,6 +17,7 @@ export const XIRI_SERVICES = [
     { value: 'pressure_washing', label: 'Pressure Washing', category: 'specialized' as const },
     { value: 'hvac_filter', label: 'HVAC Filter Replacement', category: 'specialized' as const },
     { value: 'deep_clean', label: 'Deep Clean / Turnover', category: 'specialized' as const },
+    { value: 'indoor_plant_watering', label: 'Indoor Plant Watering', category: 'specialized' as const },
 
     // ── Consumables ─────────────────────────────────────────────────
     { value: 'consumable_procurement', label: 'Consumable Procurement', category: 'consumables' as const },

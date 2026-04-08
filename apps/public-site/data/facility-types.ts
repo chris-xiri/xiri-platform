@@ -81,6 +81,7 @@ export const SERVICE_GROUPS: Record<string, { label: string; href: string; servi
             { label: 'Pest Control', slug: 'pest-control' },
             { label: 'Snow & Ice Removal', slug: 'snow-ice-removal' },
             { label: 'Handyman Services', slug: 'handyman-services' },
+            { label: 'Indoor Plant Watering', slug: 'indoor-plant-watering' },
         ],
     },
     'Preventive Maintenance': {

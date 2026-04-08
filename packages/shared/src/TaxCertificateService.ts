@@ -2,15 +2,14 @@
  * TaxCertificateService
  *
  * Fills the official NY State ST-120.1 (Contractor Exempt Purchase Certificate)
- * fillable PDF template for a specific project/address when a vendor is assigned
- * to a Work Order.
+ * as a BLANKET certificate covering all purchases from a given vendor.
  *
- * One ST-120.1 per project/address. XIRI holds the certificate.
- * The vendor's Certificate of Authority sales tax ID is required.
+ * One ST-120.1 per vendor (blanket). XIRI retains the certificate; vendor
+ * receives a copy for their records. Vendor sales tax ID is optional.
  *
  * Flow:
- * 1. Vendor assigned to WO → pull client address + vendor info
- * 2. Fill official ST-120.1 template (Line 2 = project/address/owner)
+ * 1. Vendor assigned to first WO → pull vendor info
+ * 2. Fill official ST-120.1 template (Line 2 = blanket / all projects)
  * 3. Check Box M (services purchased for resale)
  * 4. Embed XIRI's authorized digital signature
  * 5. Upload to Storage, email to vendor
@@ -42,7 +41,7 @@ export interface VendorCertData {
     state?: string;
     zip?: string;
     email: string;                        // verified vendor email for distribution
-    salesTaxId: string;                   // Certificate of Authority / sales tax ID
+    salesTaxId?: string;                  // Certificate of Authority / sales tax ID (optional)
 }
 
 export interface ProjectData {
@@ -77,14 +76,14 @@ const CERT_VALIDITY_YEARS = 3;
  * Section 2 — Purchaser (XIRI buying for resale):
  *   "name of purchasing contractor", "street address2", "city2", "state2", "zip code 2"
  *
- * Vendor's sales tax ID:
+ * Vendor's sales tax ID (optional):
  *   "enter your sales tax vendor id number"
  *
- * Line 2 — Project details (one ST-120.1 per project):
- *   "line 2 1" = project name
- *   "line 2 2" = project address
- *   "line 2 3" = owner name
- *   "line 2 4" = owner address
+ * Line 2 — Blanket certificate (covers all projects):
+ *   "line 2 1" = "All facilities serviced by vendor"
+ *   "line 2 2" = "Blanket — all project locations"
+ *   "line 2 3" = XIRI business name
+ *   "line 2 4" = XIRI address
  *
  * Signature:
  *   "type or print name and title of owner"
@@ -93,6 +92,22 @@ const CERT_VALIDITY_YEARS = 3;
  * Checkboxes (a-s):
  *   "box m" = services purchased for resale ← always checked
  */
+
+// ─── Helpers ──────────────────────────────────────────────────
+
+/**
+ * Safely set a PDF text field, truncating at the field's maxLength (if any)
+ * to prevent pdf-lib from throwing on overflow.
+ */
+function safeSetText(
+    form: ReturnType<PDFDocument['getForm']>,
+    fieldName: string,
+    value: string,
+): void {
+    const field = form.getTextField(fieldName);
+    const max = (field as any).acroField?.getMaxLength?.();
+    field.setText(max ? value.slice(0, max) : value);
+}
 
 // ─── Service ──────────────────────────────────────────────────
 
@@ -107,15 +122,8 @@ const CERT_VALIDITY_YEARS = 3;
 export async function generateST1201(
     vendorData: VendorCertData,
     xiriData: XiriCorporateData,
-    projectData: ProjectData,
+    projectData?: ProjectData,
 ): Promise<CertificateResult> {
-    // ── Validate vendor has a sales tax ID ──
-    if (!vendorData.salesTaxId || vendorData.salesTaxId.trim().length === 0) {
-        return {
-            success: false,
-            error: 'Vendor does not have a valid Sales Tax ID (Certificate of Authority). Cannot generate ST-120.1.',
-        };
-    }
 
     try {
         // ── Calculate dates ──
@@ -132,42 +140,46 @@ export async function generateST1201(
         const form = pdfDoc.getForm();
 
         // ── Section 1: Vendor (seller) ──
-        form.getTextField('name of vendor').setText(vendorData.businessName);
-        form.getTextField('street address1').setText(vendorData.address || '');
-        form.getTextField('city1').setText(vendorData.city || '');
-        form.getTextField('state1').setText(vendorData.state || '');
-        form.getTextField('zip code 1').setText(vendorData.zip || '');
+        safeSetText(form, 'name of vendor', vendorData.businessName);
+        safeSetText(form, 'street address1', vendorData.address ?? '');
+        safeSetText(form, 'city1', vendorData.city ?? '');
+        safeSetText(form, 'state1', vendorData.state ?? '');
+        safeSetText(form, 'zip code 1', vendorData.zip ?? '');
 
-        // ── Vendor's sales tax ID ──
-        form.getTextField('enter your sales tax vendor id number').setText(vendorData.salesTaxId);
+        // ── Purchaser's sales tax ID (XIRI's Certificate of Authority) ──
+        safeSetText(form, 'enter your sales tax vendor id number', xiriData.salesTaxId);
 
         // ── Section 2: Purchaser (XIRI) ──
-        form.getTextField('name of purchasing contractor').setText(xiriData.businessName);
-        form.getTextField('street address2').setText(xiriData.address);
-        form.getTextField('city2').setText(xiriData.city);
-        form.getTextField('state2').setText(xiriData.state);
-        form.getTextField('zip code 2').setText(xiriData.zip);
+        safeSetText(form, 'name of purchasing contractor', xiriData.businessName);
+        safeSetText(form, 'street address2', xiriData.address);
+        safeSetText(form, 'city2', xiriData.city);
+        safeSetText(form, 'state2', xiriData.state);
+        safeSetText(form, 'zip code 2', xiriData.zip);
 
-        // ── Line 2: Project details ──
-        form.getTextField('line 2 1').setText(projectData.projectName);
-        const fullProjectAddress = [
-            projectData.projectAddress,
-            projectData.projectCity,
-            projectData.projectState,
-            projectData.projectZip,
-        ].filter(Boolean).join(', ');
-        form.getTextField('line 2 2').setText(fullProjectAddress);
-        form.getTextField('line 2 3').setText(projectData.ownerName);
-        form.getTextField('line 2 4').setText(projectData.ownerAddress);
+        // ── Line 2: Blanket certificate — covers all projects ──
+        // Line 2 has four small cells on the ST-120.1 form with maxLength limits.
+        // For blanket certs: 1=description, 2=coverage, 3=company, 4=city/state
+        safeSetText(form, 'line 2 1',
+            projectData?.projectName || 'All vendor facilities'
+        );
+        safeSetText(form, 'line 2 2',
+            projectData?.projectAddress || 'Blanket certificate'
+        );
+        safeSetText(form, 'line 2 3',
+            projectData?.ownerName || xiriData.businessName
+        );
+        safeSetText(form, 'line 2 4',
+            projectData?.ownerAddress || issueDate
+        );
 
         // ── Box M: Services purchased for resale ──
         form.getCheckBox('box m').check();
 
         // ── Signature block ──
-        form.getTextField('type or print name and title of owner').setText(
+        safeSetText(form, 'type or print name and title of owner',
             `${xiriData.signerName}, ${xiriData.signerTitle}`
         );
-        form.getTextField('date prepared').setText(issueDate);
+        safeSetText(form, 'date prepared', issueDate);
 
         // ── Embed digital signature image ──
         if (xiriData.signatureImageBase64) {
@@ -180,13 +192,13 @@ export async function generateST1201(
                     sigImage = await pdfDoc.embedJpg(sigBytes);
                 }
 
-                // Draw signature on the last page near the signature line
+                // Draw signature on page 2 (the page with the certification/signature line)
                 const pages = pdfDoc.getPages();
-                const lastPage = pages[pages.length - 1];
-                const { height } = lastPage.getSize();
+                const sigPage = pages[1];
+                const { height } = sigPage.getSize();
 
-                // Position near bottom of last page — signature area
-                lastPage.drawImage(sigImage, {
+                // Position near bottom of page 2 — signature area
+                sigPage.drawImage(sigImage, {
                     x: 72,
                     y: height - 720,  // near bottom of form
                     width: 150,

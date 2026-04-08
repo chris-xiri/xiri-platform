@@ -32,6 +32,7 @@ const SERVICE_TYPES = [
     "Pest Control",
     "Snow Removal",
     "Painting",
+    "Indoor Plant Watering",
     "Other",
 ];
 

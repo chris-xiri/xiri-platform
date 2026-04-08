@@ -145,7 +145,107 @@ Verify compliance and extract key data. Return JSON:
     }
 }
 
-// ─── NEW: ACORD 25 Real PDF Verification ───
+// ─── Coverage Minimum Thresholds ───
+const COVERAGE_MINIMUMS = {
+    glPerOccurrence: 1_000_000,  // $1M
+    glAggregate: 2_000_000,      // $2M
+    wcEachAccident: 500_000,     // $500K
+};
+
+// ─── Deterministic Validation (no AI) ───
+// Runs threshold checks on already-extracted data so number
+// comparisons are never delegated to the LLM.
+function validateExtracted(
+    extracted: AcordExtracted,
+    vendorName: string,
+    attestations: { hasGL: boolean; hasWC: boolean; hasAuto: boolean; hasEntity: boolean },
+    today: string
+): { valid: boolean; reasoning: string; flags: string[] } {
+    const flags: string[] = [];
+    let valid = true;
+
+    // CHECK 1 — CGL required
+    if (!extracted.glActive) {
+        valid = false;
+        flags.push('No active Commercial General Liability coverage found — CGL is required');
+    }
+
+    // CHECK 2 — WC required
+    if (!extracted.wcActive) {
+        valid = false;
+        flags.push('No active Workers\' Compensation coverage found — WC is required');
+    }
+
+    // CHECK 3 — CGL minimum limits
+    if (extracted.glActive) {
+        if (extracted.glPerOccurrence != null && extracted.glPerOccurrence < COVERAGE_MINIMUMS.glPerOccurrence) {
+            valid = false;
+            flags.push(`CGL Per Occurrence $${extracted.glPerOccurrence.toLocaleString()} is below required minimum $${COVERAGE_MINIMUMS.glPerOccurrence.toLocaleString()}`);
+        }
+        if (extracted.glAggregate != null && extracted.glAggregate < COVERAGE_MINIMUMS.glAggregate) {
+            valid = false;
+            flags.push(`CGL General Aggregate $${extracted.glAggregate.toLocaleString()} is below required minimum $${COVERAGE_MINIMUMS.glAggregate.toLocaleString()}`);
+        }
+    }
+
+    // CHECK 4 — WC minimum limits
+    if (extracted.wcActive) {
+        if (extracted.wcEachAccident != null && extracted.wcEachAccident < COVERAGE_MINIMUMS.wcEachAccident) {
+            valid = false;
+            flags.push(`WC E.L. Each Accident $${extracted.wcEachAccident.toLocaleString()} is below required minimum $${COVERAGE_MINIMUMS.wcEachAccident.toLocaleString()}`);
+        }
+    }
+
+    // CHECK 5 — Expiration dates
+    if (extracted.expirationDates) {
+        for (const entry of extracted.expirationDates) {
+            if (entry.expires && entry.expires < today) {
+                valid = false;
+                flags.push(`${entry.policy} policy expired on ${entry.expires}`);
+            }
+        }
+    }
+
+    // CHECK 6 — Name match (basic)
+    if (extracted.insuredName && vendorName) {
+        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const extractedNorm = normalize(extracted.insuredName);
+        const vendorNorm = normalize(vendorName);
+        // Check if one contains the other (handles LLC/Inc suffixes, abbreviations)
+        if (!extractedNorm.includes(vendorNorm) && !vendorNorm.includes(extractedNorm)) {
+            flags.push(`Insured name "${extracted.insuredName}" may not match vendor "${vendorName}" — manual review recommended`);
+        }
+    }
+
+    // Attestation cross-reference
+    const allNo = !attestations.hasGL && !attestations.hasWC && !attestations.hasAuto;
+    if (!allNo) {
+        if (attestations.hasGL && !extracted.glActive) {
+            flags.push('Vendor attested to having General Liability but ACORD shows no active CGL policy');
+        }
+        if (attestations.hasWC && !extracted.wcActive) {
+            flags.push('Vendor attested to having Workers\' Comp but ACORD shows no active WC policy');
+        }
+        if (attestations.hasAuto && !extracted.autoActive) {
+            flags.push('Vendor attested to having Auto Insurance but ACORD shows no active auto policy');
+        }
+    }
+
+    // Build reasoning summary
+    const parts: string[] = [];
+    if (extracted.glActive) parts.push(`CGL active ($${(extracted.glPerOccurrence || 0).toLocaleString()} occ / $${(extracted.glAggregate || 0).toLocaleString()} agg)`);
+    if (extracted.wcActive) parts.push(`WC active ($${(extracted.wcEachAccident || 0).toLocaleString()} ea accident)`);
+    if (extracted.autoActive) parts.push('Auto active');
+    if (extracted.umbrellaActive) parts.push('Umbrella active');
+
+    const reasoning = valid
+        ? `All required coverages present and meet minimums. ${parts.join(', ')}.`
+        : `Verification failed. ${flags.join('. ')}.`;
+
+    return { valid, reasoning, flags };
+}
+
+// ─── ACORD 25 Real PDF Verification ───
 export async function verifyAcord25(
     fileUrl: string,
     vendorName: string,
@@ -163,22 +263,20 @@ export async function verifyAcord25(
         logger.info(`Downloading ACORD 25 from: ${fileUrl}`);
 
         const buffer = await downloadFileAsBuffer(fileUrl);
-        // Detect content type from URL or default to PDF
         const isPdf = fileUrl.toLowerCase().includes('.pdf');
         const isJpg = fileUrl.toLowerCase().includes('.jpg') || fileUrl.toLowerCase().includes('.jpeg');
         const isPng = fileUrl.toLowerCase().includes('.png');
         const contentType = isPdf ? 'application/pdf' : isJpg ? 'image/jpeg' : isPng ? 'image/png' : 'application/pdf';
         const base64Data = buffer.toString('base64');
 
-        // 2. Build the structured extraction prompt
-        const ACORD_FALLBACK = `You are an insurance compliance verification agent for XIRI Facility Solutions.
+        // 2. Build the extraction-only prompt (AI extracts, code validates)
+        const ACORD_FALLBACK = `You are an insurance document data extraction agent for XIRI Facility Solutions.
 
-Analyze this ACORD 25 Certificate of Liability Insurance and extract data in JSON format.
+Analyze this ACORD 25 Certificate of Liability Insurance and extract all data into JSON.
 Vendor: "{{vendorName}}"
-GL: {{hasGL}}, WC: {{hasWC}}, Auto: {{hasAuto}}, Entity: {{hasEntity}}
 Today: {{todayDate}}
 
-Return JSON with valid, reasoning, flags, and extracted fields.`;
+Return ONLY the extracted JSON — do NOT make pass/fail judgments.`;
 
         const prompt = await getPrompt('acord25_verifier', ACORD_FALLBACK, {
             vendorName,
@@ -208,21 +306,27 @@ Return JSON with valid, reasoning, flags, and extracted fields.`;
         const responseText = result.response.text();
         logger.info(`Gemini ACORD 25 response length: ${responseText.length}`);
 
-        // 4. Parse the structured response
+        // 4. Parse the AI extraction
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
             throw new Error("No JSON found in Gemini response");
         }
 
-        const parsed = JSON.parse(jsonMatch[0]) as Acord25VerificationResult;
+        const aiResult = JSON.parse(jsonMatch[0]);
+        const extracted: AcordExtracted = aiResult.extracted || aiResult;
 
-        // Ensure flags array exists
-        if (!parsed.flags) {
-            parsed.flags = [];
-        }
+        // 5. Run deterministic validation (code, not AI)
+        const today = new Date().toISOString().split('T')[0];
+        const validation = validateExtracted(extracted, vendorName, attestations, today);
 
-        logger.info(`ACORD 25 verification result: valid=${parsed.valid}, flags=${parsed.flags.length}`);
-        return parsed;
+        logger.info(`ACORD 25 verification: valid=${validation.valid}, flags=${validation.flags.length} (deterministic)`);
+
+        return {
+            valid: validation.valid,
+            reasoning: validation.reasoning,
+            extracted,
+            flags: validation.flags,
+        };
 
     } catch (error) {
         logger.error("ACORD 25 verification failed:", error);

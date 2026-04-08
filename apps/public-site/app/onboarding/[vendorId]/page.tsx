@@ -188,7 +188,42 @@ export default function OnboardingPage() {
         );
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
+        // Validate current step before allowing advancement
+        if (currentStep === 1 && !isStep1Valid()) return;
+        if (currentStep === 2 && !isStep2Valid()) return;
+        if (currentStep === 3 && !isStep3Valid()) return;
+
+        // Persist contact info when leaving Step 3 → Step 4 (FAST_TRACK)
+        // This ensures contact data is saved before ACORD upload triggers verification
+        if (currentStep === 3 && currentTrack === 'FAST_TRACK' && vendor?.id) {
+            const nameParts = contactName.trim().split(/\s+/);
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            try {
+                await updateDoc(doc(db, "vendors", vendor.id), {
+                    contactName,
+                    email,
+                    phone,
+                    businessName: businessName || vendor.businessName,
+                    contacts: [{
+                        id: crypto.randomUUID(),
+                        firstName,
+                        lastName,
+                        role: contactRole,
+                        phone,
+                        email,
+                        isPrimary: true,
+                    }],
+                    preferredLanguage: language,
+                    updatedAt: serverTimestamp(),
+                });
+            } catch (error) {
+                console.error("Error saving contact info:", error);
+            }
+        }
+
         // Skip Step 4 for Partner Network
         if (currentStep === 3 && currentTrack === 'STANDARD') {
             handleSubmit();

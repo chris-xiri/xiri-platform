@@ -30,7 +30,7 @@ const CATEGORIES: Record<string, { label: string; href: string; slugs: string[] 
     'Facility': {
         label: 'Facility Management',
         href: '/services/facility-management',
-        slugs: ['hvac-maintenance', 'pest-control', 'waste-management', 'parking-lot-maintenance', 'handyman-services', 'pressure-washing', 'snow-ice-removal'],
+        slugs: ['hvac-maintenance', 'pest-control', 'waste-management', 'parking-lot-maintenance', 'handyman-services', 'pressure-washing', 'snow-ice-removal', 'indoor-plant-watering'],
     },
 };
 

@@ -536,7 +536,7 @@ export default async function ServicePage({ params }: Props) {
                         </div>
                         <div>
                             <div className="text-2xl font-bold text-sky-400">100%</div>
-                            <div className="text-sm text-slate-300 mt-1">Insured & Bonded</div>
+                            <div className="text-sm text-slate-300 mt-1">Fully Insured</div>
                         </div>
                         <div>
                             <div className="text-2xl font-bold text-sky-400">1</div>

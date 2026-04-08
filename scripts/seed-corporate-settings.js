@@ -26,16 +26,16 @@ const db = admin.firestore();
 const corporateSettings = {
     // ── Business Identity ──
     businessName: 'XIRI Facility Solutions LLC',
-    address: '123 Corporate Blvd',          // TODO: Replace with real address
-    city: 'New York',
+    address: '9 Lahey Street',
+    city: 'New Hyde Park',
     state: 'NY',
-    zip: '10001',
+    zip: '11040',
 
     // ── Tax ──
-    salesTaxId: '',                          // TODO: XIRI's Certificate of Authority ID
+    salesTaxId: '41-1511214',                // XIRI's Certificate of Authority ID
 
     // ── Authorized Signer ──
-    signerName: '',                          // TODO: Full name of authorized signer
+    signerName: 'Christopher Leung',          // Authorized signer
     signerTitle: 'VP of Facility Solutions',
 
     // ── Digital Signature ──
@@ -56,10 +56,7 @@ async function seedCorporateSettings() {
     console.log('✅ settings/corporate seeded successfully.');
     console.log('');
     console.log('⚠️  TODOs remaining:');
-    console.log('   1. Set salesTaxId (Certificate of Authority ID)');
-    console.log('   2. Set signerName (authorized representative)');
-    console.log('   3. Set signatureImageBase64 (base64-encoded signature image)');
-    console.log('   4. Set real business address');
+    console.log('   1. Set signatureImageBase64 (base64-encoded signature image)');
 }
 
 seedCorporateSettings().catch(console.error);

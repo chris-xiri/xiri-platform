@@ -5,7 +5,6 @@ import {
     generateST1201,
     XiriCorporateData,
     VendorCertData,
-    ProjectData,
 } from "@xiri/shared/src/TaxCertificateService";
 
 if (!admin.apps.length) {
@@ -17,8 +16,7 @@ const STORAGE_PATH = 'tax-certificates/st-120-1';
 /**
  * Fires when a Work Order is updated.
  * If a vendor was just assigned (vendorId changed from empty to a value),
- * and the vendor has a valid salesTaxId, generate a per-project ST-120.1
- * and email it to the vendor.
+ * generate a blanket ST-120.1 and email it to the vendor.
  */
 export const onWorkOrderAssigned = onDocumentUpdated({
     document: "work_orders/{workOrderId}",
@@ -52,20 +50,8 @@ export const onWorkOrderAssigned = onDocumentUpdated({
         return;
     }
 
-    // ── Guard: vendor must have salesTaxId ──
-    const salesTaxId = vendorData.compliance?.salesTaxId?.trim();
-    if (!salesTaxId) {
-        logger.info(`[ST-120.1] Vendor ${newVendorId} has no salesTaxId — skipping certificate.`);
-
-        await db.collection('vendor_activities').add({
-            vendorId: newVendorId,
-            type: 'TAX_CERTIFICATE_SKIPPED',
-            description: `ST-120.1 not generated for WO ${workOrderId} — vendor has no Sales Tax ID on file.`,
-            createdAt: new Date(),
-            metadata: { workOrderId },
-        });
-        return;
-    }
+    // ── Vendor salesTaxId is optional (XIRI's ID is what matters) ──
+    const vendorSalesTaxId = vendorData.compliance?.salesTaxId?.trim() || '';
 
     // ── Load client/lead data for project owner info ──
     let leadData: any = {};
@@ -112,29 +98,17 @@ export const onWorkOrderAssigned = onDocumentUpdated({
         vendorId: newVendorId,
         businessName: vendorData.businessName || 'Unknown Vendor',
         address: vendorData.address || vendorData.streetAddress || '',
-        city: vendorData.city,
-        state: vendorData.state,
-        zip: vendorData.zip,
+        city: vendorData.city ?? '',
+        state: vendorData.state ?? '',
+        zip: vendorData.zip ?? '',
         email: vendorData.email || '',
-        salesTaxId,
+        salesTaxId: vendorSalesTaxId || undefined,
     };
 
-    const ownerName = leadData.businessName || after.locationName || 'Project Owner';
-    const ownerAddress = leadData.address || '';
-
-    const projectDataInput: ProjectData = {
-        workOrderId,
-        projectName: after.locationName || leadData.businessName || 'Project',
-        projectAddress: after.locationAddress || '',
-        projectCity: after.locationCity,
-        projectState: after.locationState,
-        projectZip: after.locationZip,
-        ownerName,
-        ownerAddress,
-    };
-
-    // ── Generate the ST-120.1 ──
-    const result = await generateST1201(vendorCertData, xiriData, projectDataInput);
+    // ── Generate the ST-120.1 as a BLANKET certificate ──
+    // Pass undefined for projectData so the service uses blanket defaults
+    // ("All vendor facilities" / "Blanket certificate")
+    const result = await generateST1201(vendorCertData, xiriData, undefined);
 
     if (!result.success || !result.pdfBytes) {
         logger.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
@@ -149,7 +123,7 @@ export const onWorkOrderAssigned = onDocumentUpdated({
     }
 
     // ── Upload to Firebase Storage ──
-    let pdfUrl: string;
+    let storagePath: string;
     try {
         const bucket = admin.storage().bucket();
         const fileName = `${STORAGE_PATH}/${workOrderId}_${newVendorId}_${result.issueDate}.pdf`;
@@ -167,19 +141,16 @@ export const onWorkOrderAssigned = onDocumentUpdated({
             },
         });
 
-        const [signedUrl] = await file.getSignedUrl({
-            action: 'read',
-            expires: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000),
-        });
-        pdfUrl = signedUrl;
+        storagePath = `gs://${bucket.name}/${fileName}`;
+        logger.info(`[ST-120.1] PDF uploaded to ${storagePath}`);
     } catch (err) {
         logger.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err);
         return;
     }
 
-    // ── Update work order with certificate URL ──
+    // ── Update work order with certificate path ──
     await db.collection('work_orders').doc(workOrderId).update({
-        st1201CertificateUrl: pdfUrl,
+        st1201CertificatePath: storagePath,
         st1201IssueDate: result.issueDate,
         st1201ExpiryDate: result.expiryDate,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -188,23 +159,26 @@ export const onWorkOrderAssigned = onDocumentUpdated({
     // ── Email to vendor ──
     if (vendorCertData.email) {
         const vendorName = vendorCertData.businessName;
-        const projectName = projectDataInput.projectName;
+
+        // Attach PDF as base64 content (avoids needing signed URLs)
+        const pdfBase64 = Buffer.from(result.pdfBytes).toString('base64');
 
         await db.collection('mail_queue').add({
             to: vendorCertData.email,
-            subject: `ST-120.1 Exempt Purchase Certificate — ${projectName}`,
+            subject: `ST-120.1 Exempt Purchase Certificate — ${xiriData.businessName}`,
             templateType: 'st_120_1_certificate',
             templateData: {
                 vendorName,
                 purchaserName: xiriData.businessName,
-                projectName,
-                projectAddress: projectDataInput.projectAddress,
+                projectName: 'All Projects (Blanket)',
                 issueDate: result.issueDate,
                 expiryDate: result.expiryDate,
             },
             attachments: [{
-                filename: `ST-120.1_${projectName.replace(/\s+/g, '_')}.pdf`,
-                path: pdfUrl,
+                filename: `ST-120.1_Blanket_${vendorName.replace(/\s+/g, '_')}.pdf`,
+                content: pdfBase64,
+                encoding: 'base64',
+                contentType: 'application/pdf',
             }],
             status: 'pending',
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -215,16 +189,15 @@ export const onWorkOrderAssigned = onDocumentUpdated({
     await db.collection('vendor_activities').add({
         vendorId: newVendorId,
         type: 'TAX_CERTIFICATE_ISSUED',
-        description: `ST-120.1 generated for project "${projectDataInput.projectName}" (WO ${workOrderId}) and emailed to ${vendorCertData.email || 'vendor'}.`,
+        description: `ST-120.1 blanket certificate generated (WO ${workOrderId}) and emailed to ${vendorCertData.email || 'vendor'}.`,
         createdAt: new Date(),
         metadata: {
             workOrderId,
             certificateType: 'ST-120.1',
+            certificateScope: 'blanket',
             issueDate: result.issueDate,
             expiryDate: result.expiryDate,
-            projectName: projectDataInput.projectName,
-            projectAddress: projectDataInput.projectAddress,
-            pdfUrl,
+            storagePath,
         },
     });
 

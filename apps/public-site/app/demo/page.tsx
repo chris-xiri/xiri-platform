@@ -441,7 +441,7 @@ export default function DemoPage() {
                 <div
                     id="sim-section"
                     ref={liveSection.ref}
-                    className={`transition-all duration-700 delay-100 ${(emailPhase === 'simulation' && sim.activeZone < 0) ? 'hidden' : liveSection.inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                    className={`transition-all duration-700 ${(emailPhase === 'simulation' && sim.activeZone < 0) ? 'hidden' : 'animate-fadeIn'}`}
                 >
                     {emailPhase === 'email' ? (
                         /* ── Email Preview (replaces live view) ── */

@@ -35,7 +35,7 @@ export const processMailQueue = onDocumentCreated({
     // Mark as processing
     await docRef.update({ status: "processing", processedAt: admin.firestore.FieldValue.serverTimestamp() });
 
-    const { to, subject, templateType, templateData } = data;
+    const { to, subject, templateType, templateData, attachments } = data;
 
     if (!to || !subject) {
       throw new Error("Missing 'to' or 'subject' in mail_queue document");
@@ -51,18 +51,21 @@ export const processMailQueue = onDocumentCreated({
       case "vendor_remittance":
         html = buildVendorRemittanceEmail(templateData);
         break;
+      case "st_120_1_certificate":
+        html = buildST1201CertificateEmail(templateData);
+        break;
       default:
         // Generic email — use subject and any provided HTML body
         html = templateData?.html || `<p>${subject}</p>`;
         break;
     }
 
-    // Send via Resend
+    // Send via Resend (pass through attachments if present)
     const success = await sendEmail(
       to,
       subject,
       html,
-      undefined, // attachments
+      attachments || undefined,
       "XIRI Facility Solutions <billing@xiri.ai>"
     );
 
@@ -84,8 +87,73 @@ export const processMailQueue = onDocumentCreated({
   }
 });
 
-
 // ─── Email Template Builders ──────────────────────────────────────────
+
+function buildST1201CertificateEmail(data: any): string {
+  const { vendorName, purchaserName, projectName, issueDate, expiryDate } = data || {};
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f6f8;">
+  <div style="max-width: 560px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #0369a1, #0284c7); padding: 32px 24px; text-align: center;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">XIRI</h1>
+      <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Tax Exempt Certificate</p>
+    </div>
+
+    <!-- Content -->
+    <div style="padding: 32px 24px;">
+      <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+        Hi ${vendorName || "there"},
+      </p>
+      <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+        Please find attached your <strong>ST-120.1 Contractor Exempt Purchase Certificate</strong> from <strong>${purchaserName || "XIRI Facility Solutions"}</strong>.
+      </p>
+
+      <!-- Certificate Details -->
+      <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 24px 0;">
+        <table style="width: 100%; font-size: 14px; color: #374151;">
+          <tr>
+            <td style="padding: 4px 0; color: #64748b;">Certificate Type:</td>
+            <td style="padding: 4px 0; font-weight: 500;">ST-120.1 (Blanket)</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #64748b;">Project:</td>
+            <td style="padding: 4px 0; font-weight: 500;">${projectName || "All Projects"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #64748b;">Issue Date:</td>
+            <td style="padding: 4px 0; font-weight: 500;">${issueDate || "—"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #64748b;">Valid Through:</td>
+            <td style="padding: 4px 0; font-weight: 500;">${expiryDate || "—"}</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 24px 0 0;">
+        This certificate covers all services purchased by ${purchaserName || "XIRI"} for resale. Please retain this document for your tax records. If you have any questions, please reply to this email.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px; background: #f9fafb;">
+      <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">
+        XIRI Facility Solutions • <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 
 function buildClientInvoiceEmail(data: any): string {
   const { clientBusinessName, clientContactName, totalAmount, paymentLink, billingPeriod } = data || {};

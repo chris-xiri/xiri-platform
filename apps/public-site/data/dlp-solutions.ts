@@ -50,7 +50,7 @@ export const SPOKE_HUBS: Record<string, SpokeHub> = {
         title: 'Professional Suites',
         heroTitle: 'High-Security Cleaning for Professional & Financial Environments',
         heroSubtitle: 'Vault-grade sanitization, cash room protocols, and access-restricted cleaning — with full chain-of-custody documentation.',
-        metaDescription: 'Specialized cleaning for bank vaults, cash rooms, and high-security professional suites. Bonded, insured, and access-controlled.',
+        metaDescription: 'Specialized cleaning for bank vaults, cash rooms, and high-security professional suites. Fully insured and access-controlled.',
         dlpSlugs: [
             'bank-vault-micro-climate-sanitization', 'high-security-cash-room-protocols',
         ],
@@ -338,19 +338,19 @@ export const DLP_SOLUTIONS: Record<string, DLPSolution> = {
         ],
         sections: [
             { title: 'Why Vaults Need Specialized Cleaning', content: 'Bank vaults maintain precise micro-climates for document and currency preservation. Standard cleaning products can outgas VOCs that damage sensitive materials. Standard procedures can disrupt temperature and humidity levels. XIRI uses vault-specific protocols that clean without compromising the controlled environment.' },
-            { title: 'Security-First Cleaning', content: 'Every vault clean follows dual-control entry procedures, chain-of-custody documentation, and security camera coordination. Our bonded, background-checked teams are trained on financial institution security requirements.' },
+            { title: 'Security-First Cleaning', content: 'Every vault clean follows dual-control entry procedures, chain-of-custody documentation, and security camera coordination. Our insured, background-checked teams are trained on financial institution security requirements.' },
         ],
         faqs: [
             { question: 'How do you maintain vault climate during cleaning?', answer: 'We use non-outgassing products, minimize door-open time through pre-staged equipment, and monitor temperature/humidity readings before and after service. Deviations are documented and reported.' },
-            { question: 'Are your teams cleared for vault access?', answer: 'Yes. All vault-assigned personnel undergo enhanced background checks, are fully bonded, and follow dual-control entry procedures with chain-of-custody documentation.' },
+            { question: 'Are your teams cleared for vault access?', answer: 'Yes. All vault-assigned personnel undergo enhanced background checks, are fully insured, and follow dual-control entry procedures with chain-of-custody documentation.' },
         ],
         relevantServices: ['commercial-cleaning'],
     },
     'high-security-cash-room-protocols': {
         title: 'High-Security Cash Room Protocols',
         heroTitle: 'High-Security Cash Room Cleaning Protocols',
-        heroSubtitle: 'Bonded, background-checked teams with dual-control access, camera coordination, and documented chain-of-custody for every cleaning visit.',
-        metaDescription: 'High-security cash room cleaning with dual-control access, bonded personnel, and chain-of-custody documentation for financial institutions.',
+        heroSubtitle: 'Insured, background-checked teams with dual-control access, camera coordination, and documented chain-of-custody for every cleaning visit.',
+        metaDescription: 'High-security cash room cleaning with dual-control access, insured personnel, and chain-of-custody documentation for financial institutions.',
         sidebarCategory: 'institutional',
         complianceChecklist: [
             { item: 'Dual-control access with witness sign-off', standard: 'FFIEC/BSA' },
@@ -363,7 +363,7 @@ export const DLP_SOLUTIONS: Record<string, DLPSolution> = {
             { title: 'Our Security Protocol', content: 'Pre-entry camera coordination with security. Dual-control entry with witness sign-off. No personal items past the threshold. Cleaning performed with institution-approved products only. Post-clean room seal verification. Full documentation provided to your security team.' },
         ],
         faqs: [
-            { question: 'What security clearance do your teams have?', answer: 'Cash room teams undergo enhanced background screening, are fully bonded and insured, and sign confidentiality agreements. We coordinate all scheduling with your security department.' },
+            { question: 'What security clearance do your teams have?', answer: 'Cash room teams undergo enhanced background screening, are fully insured and sign confidentiality agreements. We coordinate all scheduling with your security department.' },
             { question: 'How do you handle cash room documentation?', answer: 'Every entry is logged with dual-control sign-off, timestamps, camera coordination confirmation, and post-clean verification. Reports are provided to your security team after each service.' },
         ],
         relevantServices: ['commercial-cleaning'],

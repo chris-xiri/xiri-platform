@@ -20230,12 +20230,18 @@ async function handleFollowUp(task) {
 }
 async function handleLeadSend(task) {
   logger3.info(`[LeadOutreach] Sending template email for lead ${task.leadId}`);
-  const leadDoc = await db4.collection("leads").doc(task.leadId).get();
+  let leadDoc = await db4.collection("companies").doc(task.leadId).get();
+  let leadCollection = "companies";
   if (!leadDoc.exists) {
-    logger3.info(`[Suppression] Lead ${task.leadId} was deleted \u2014 cancelling task.`);
+    leadDoc = await db4.collection("leads").doc(task.leadId).get();
+    leadCollection = "leads";
+  }
+  if (!leadDoc.exists) {
+    logger3.info(`[Suppression] Lead ${task.leadId} not found in companies or leads \u2014 cancelling task.`);
     await updateTaskStatus(db4, task.id, "CANCELLED");
     return;
   }
+  logger3.info(`[LeadOutreach] Resolved lead ${task.leadId} from '${leadCollection}' collection.`);
   const leadData = leadDoc.data();
   if (leadData.status === "lost" || leadData.unsubscribedAt) {
     logger3.info(`[Suppression] Lead ${task.leadId} is ${leadData.status}/unsubscribed \u2014 skipping send.`);
@@ -20341,7 +20347,7 @@ async function handleLeadSend(task) {
   });
   await updateTaskStatus(db4, task.id, sendResult.success ? "COMPLETED" : "FAILED");
   if (sendResult.success) {
-    await db4.collection("leads").doc(task.leadId).update({
+    await db4.collection(leadCollection).doc(task.leadId).update({
       outreachStatus: "SENT",
       outreachSentAt: /* @__PURE__ */ new Date()
     });
@@ -22029,7 +22035,7 @@ var processMailQueue = (0, import_firestore10.onDocumentCreated)({
   const docRef = snap.ref;
   try {
     await docRef.update({ status: "processing", processedAt: admin14.firestore.FieldValue.serverTimestamp() });
-    const { to, subject, templateType, templateData } = data;
+    const { to, subject, templateType, templateData, attachments } = data;
     if (!to || !subject) {
       throw new Error("Missing 'to' or 'subject' in mail_queue document");
     }
@@ -22041,6 +22047,9 @@ var processMailQueue = (0, import_firestore10.onDocumentCreated)({
       case "vendor_remittance":
         html = buildVendorRemittanceEmail(templateData);
         break;
+      case "st_120_1_certificate":
+        html = buildST1201CertificateEmail(templateData);
+        break;
       default:
         html = templateData?.html || `<p>${subject}</p>`;
         break;
@@ -22049,8 +22058,7 @@ var processMailQueue = (0, import_firestore10.onDocumentCreated)({
       to,
       subject,
       html,
-      void 0,
-      // attachments
+      attachments || void 0,
       "XIRI Facility Solutions <billing@xiri.ai>"
     );
     if (success) {
@@ -22069,6 +22077,69 @@ var processMailQueue = (0, import_firestore10.onDocumentCreated)({
     });
   }
 });
+function buildST1201CertificateEmail(data) {
+  const { vendorName, purchaserName, projectName, issueDate, expiryDate } = data || {};
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f6f8;">
+  <div style="max-width: 560px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #0369a1, #0284c7); padding: 32px 24px; text-align: center;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">XIRI</h1>
+      <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Tax Exempt Certificate</p>
+    </div>
+
+    <!-- Content -->
+    <div style="padding: 32px 24px;">
+      <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+        Hi ${vendorName || "there"},
+      </p>
+      <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+        Please find attached your <strong>ST-120.1 Contractor Exempt Purchase Certificate</strong> from <strong>${purchaserName || "XIRI Facility Solutions"}</strong>.
+      </p>
+
+      <!-- Certificate Details -->
+      <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 24px 0;">
+        <table style="width: 100%; font-size: 14px; color: #374151;">
+          <tr>
+            <td style="padding: 4px 0; color: #64748b;">Certificate Type:</td>
+            <td style="padding: 4px 0; font-weight: 500;">ST-120.1 (Blanket)</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #64748b;">Project:</td>
+            <td style="padding: 4px 0; font-weight: 500;">${projectName || "All Projects"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #64748b;">Issue Date:</td>
+            <td style="padding: 4px 0; font-weight: 500;">${issueDate || "\u2014"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #64748b;">Valid Through:</td>
+            <td style="padding: 4px 0; font-weight: 500;">${expiryDate || "\u2014"}</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 24px 0 0;">
+        This certificate covers all services purchased by ${purchaserName || "XIRI"} for resale. Please retain this document for your tax records. If you have any questions, please reply to this email.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px; background: #f9fafb;">
+      <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">
+        XIRI Facility Solutions \u2022 <a href="https://xiri.ai" style="color: #0369a1; text-decoration: none;">xiri.ai</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
 function buildClientInvoiceEmail(data) {
   const { clientBusinessName, clientContactName, totalAmount, paymentLink, billingPeriod } = data || {};
   const formattedAmount = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(totalAmount || 0);
@@ -22207,13 +22278,12 @@ var import_pdf_lib = require("pdf-lib");
 var fs = __toESM(require("fs"));
 var path = __toESM(require("path"));
 var CERT_VALIDITY_YEARS = 3;
+function safeSetText(form, fieldName, value) {
+  const field = form.getTextField(fieldName);
+  const max = field.acroField?.getMaxLength?.();
+  field.setText(max ? value.slice(0, max) : value);
+}
 async function generateST1201(vendorData, xiriData, projectData) {
-  if (!vendorData.salesTaxId || vendorData.salesTaxId.trim().length === 0) {
-    return {
-      success: false,
-      error: "Vendor does not have a valid Sales Tax ID (Certificate of Authority). Cannot generate ST-120.1."
-    };
-  }
   try {
     const now = /* @__PURE__ */ new Date();
     const issueDate = now.toLocaleDateString("en-US");
@@ -22224,32 +22294,44 @@ async function generateST1201(vendorData, xiriData, projectData) {
     const templateBytes = fs.readFileSync(templatePath);
     const pdfDoc = await import_pdf_lib.PDFDocument.load(templateBytes);
     const form = pdfDoc.getForm();
-    form.getTextField("name of vendor").setText(vendorData.businessName);
-    form.getTextField("street address1").setText(vendorData.address || "");
-    form.getTextField("city1").setText(vendorData.city || "");
-    form.getTextField("state1").setText(vendorData.state || "");
-    form.getTextField("zip code 1").setText(vendorData.zip || "");
-    form.getTextField("enter your sales tax vendor id number").setText(vendorData.salesTaxId);
-    form.getTextField("name of purchasing contractor").setText(xiriData.businessName);
-    form.getTextField("street address2").setText(xiriData.address);
-    form.getTextField("city2").setText(xiriData.city);
-    form.getTextField("state2").setText(xiriData.state);
-    form.getTextField("zip code 2").setText(xiriData.zip);
-    form.getTextField("line 2 1").setText(projectData.projectName);
-    const fullProjectAddress = [
-      projectData.projectAddress,
-      projectData.projectCity,
-      projectData.projectState,
-      projectData.projectZip
-    ].filter(Boolean).join(", ");
-    form.getTextField("line 2 2").setText(fullProjectAddress);
-    form.getTextField("line 2 3").setText(projectData.ownerName);
-    form.getTextField("line 2 4").setText(projectData.ownerAddress);
+    safeSetText(form, "name of vendor", vendorData.businessName);
+    safeSetText(form, "street address1", vendorData.address ?? "");
+    safeSetText(form, "city1", vendorData.city ?? "");
+    safeSetText(form, "state1", vendorData.state ?? "");
+    safeSetText(form, "zip code 1", vendorData.zip ?? "");
+    safeSetText(form, "enter your sales tax vendor id number", xiriData.salesTaxId);
+    safeSetText(form, "name of purchasing contractor", xiriData.businessName);
+    safeSetText(form, "street address2", xiriData.address);
+    safeSetText(form, "city2", xiriData.city);
+    safeSetText(form, "state2", xiriData.state);
+    safeSetText(form, "zip code 2", xiriData.zip);
+    safeSetText(
+      form,
+      "line 2 1",
+      projectData?.projectName || "All vendor facilities"
+    );
+    safeSetText(
+      form,
+      "line 2 2",
+      projectData?.projectAddress || "Blanket certificate"
+    );
+    safeSetText(
+      form,
+      "line 2 3",
+      projectData?.ownerName || xiriData.businessName
+    );
+    safeSetText(
+      form,
+      "line 2 4",
+      projectData?.ownerAddress || issueDate
+    );
     form.getCheckBox("box m").check();
-    form.getTextField("type or print name and title of owner").setText(
+    safeSetText(
+      form,
+      "type or print name and title of owner",
       `${xiriData.signerName}, ${xiriData.signerTitle}`
     );
-    form.getTextField("date prepared").setText(issueDate);
+    safeSetText(form, "date prepared", issueDate);
     if (xiriData.signatureImageBase64) {
       try {
         const sigBytes = Buffer.from(xiriData.signatureImageBase64, "base64");
@@ -22260,9 +22342,9 @@ async function generateST1201(vendorData, xiriData, projectData) {
           sigImage = await pdfDoc.embedJpg(sigBytes);
         }
         const pages = pdfDoc.getPages();
-        const lastPage = pages[pages.length - 1];
-        const { height } = lastPage.getSize();
-        lastPage.drawImage(sigImage, {
+        const sigPage = pages[1];
+        const { height } = sigPage.getSize();
+        sigPage.drawImage(sigImage, {
           x: 72,
           y: height - 720,
           // near bottom of form
@@ -22319,18 +22401,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     logger11.error(`[ST-120.1] Error loading vendor ${newVendorId}:`, err);
     return;
   }
-  const salesTaxId = vendorData.compliance?.salesTaxId?.trim();
-  if (!salesTaxId) {
-    logger11.info(`[ST-120.1] Vendor ${newVendorId} has no salesTaxId \u2014 skipping certificate.`);
-    await db24.collection("vendor_activities").add({
-      vendorId: newVendorId,
-      type: "TAX_CERTIFICATE_SKIPPED",
-      description: `ST-120.1 not generated for WO ${workOrderId} \u2014 vendor has no Sales Tax ID on file.`,
-      createdAt: /* @__PURE__ */ new Date(),
-      metadata: { workOrderId }
-    });
-    return;
-  }
+  const vendorSalesTaxId = vendorData.compliance?.salesTaxId?.trim() || "";
   let leadData = {};
   if (after.leadId) {
     try {
@@ -22369,25 +22440,13 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     vendorId: newVendorId,
     businessName: vendorData.businessName || "Unknown Vendor",
     address: vendorData.address || vendorData.streetAddress || "",
-    city: vendorData.city,
-    state: vendorData.state,
-    zip: vendorData.zip,
+    city: vendorData.city ?? "",
+    state: vendorData.state ?? "",
+    zip: vendorData.zip ?? "",
     email: vendorData.email || "",
-    salesTaxId
+    salesTaxId: vendorSalesTaxId || void 0
   };
-  const ownerName = leadData.businessName || after.locationName || "Project Owner";
-  const ownerAddress = leadData.address || "";
-  const projectDataInput = {
-    workOrderId,
-    projectName: after.locationName || leadData.businessName || "Project",
-    projectAddress: after.locationAddress || "",
-    projectCity: after.locationCity,
-    projectState: after.locationState,
-    projectZip: after.locationZip,
-    ownerName,
-    ownerAddress
-  };
-  const result = await generateST1201(vendorCertData, xiriData, projectDataInput);
+  const result = await generateST1201(vendorCertData, xiriData, void 0);
   if (!result.success || !result.pdfBytes) {
     logger11.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
     await db24.collection("vendor_activities").add({
@@ -22399,7 +22458,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     });
     return;
   }
-  let pdfUrl;
+  let storagePath;
   try {
     const bucket = admin15.storage().bucket();
     const fileName = `${STORAGE_PATH}/${workOrderId}_${newVendorId}_${result.issueDate}.pdf`;
@@ -22415,39 +22474,37 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
         }
       }
     });
-    const [signedUrl] = await file.getSignedUrl({
-      action: "read",
-      expires: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1e3)
-    });
-    pdfUrl = signedUrl;
+    storagePath = `gs://${bucket.name}/${fileName}`;
+    logger11.info(`[ST-120.1] PDF uploaded to ${storagePath}`);
   } catch (err) {
     logger11.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err);
     return;
   }
   await db24.collection("work_orders").doc(workOrderId).update({
-    st1201CertificateUrl: pdfUrl,
+    st1201CertificatePath: storagePath,
     st1201IssueDate: result.issueDate,
     st1201ExpiryDate: result.expiryDate,
     updatedAt: admin15.firestore.FieldValue.serverTimestamp()
   });
   if (vendorCertData.email) {
     const vendorName = vendorCertData.businessName;
-    const projectName = projectDataInput.projectName;
+    const pdfBase64 = Buffer.from(result.pdfBytes).toString("base64");
     await db24.collection("mail_queue").add({
       to: vendorCertData.email,
-      subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${projectName}`,
+      subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${xiriData.businessName}`,
       templateType: "st_120_1_certificate",
       templateData: {
         vendorName,
         purchaserName: xiriData.businessName,
-        projectName,
-        projectAddress: projectDataInput.projectAddress,
+        projectName: "All Projects (Blanket)",
         issueDate: result.issueDate,
         expiryDate: result.expiryDate
       },
       attachments: [{
-        filename: `ST-120.1_${projectName.replace(/\s+/g, "_")}.pdf`,
-        path: pdfUrl
+        filename: `ST-120.1_Blanket_${vendorName.replace(/\s+/g, "_")}.pdf`,
+        content: pdfBase64,
+        encoding: "base64",
+        contentType: "application/pdf"
       }],
       status: "pending",
       createdAt: admin15.firestore.FieldValue.serverTimestamp()
@@ -22456,16 +22513,15 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   await db24.collection("vendor_activities").add({
     vendorId: newVendorId,
     type: "TAX_CERTIFICATE_ISSUED",
-    description: `ST-120.1 generated for project "${projectDataInput.projectName}" (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
+    description: `ST-120.1 blanket certificate generated (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
     createdAt: /* @__PURE__ */ new Date(),
     metadata: {
       workOrderId,
       certificateType: "ST-120.1",
+      certificateScope: "blanket",
       issueDate: result.issueDate,
       expiryDate: result.expiryDate,
-      projectName: projectDataInput.projectName,
-      projectAddress: projectDataInput.projectAddress,
-      pdfUrl
+      storagePath
     }
   });
   logger11.info(`[ST-120.1] Certificate generated and emailed for WO ${workOrderId}, vendor ${newVendorId}.`);

@@ -25,6 +25,7 @@ const FACILITY_MGMT_SLUGS = new Set([
     'handyman-services',
     'pressure-washing',
     'snow-ice-removal',
+    'indoor-plant-watering',
 ]);
 
 // Services that belong under the Preventive Maintenance pillar

@@ -3,6 +3,6 @@
   <!-- XIRI — Vertical Stacked Logo -->
   <text x="80" y="60" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="800" fill="#0369a1" text-anchor="middle" letter-spacing="-1">XIRI</text>
   <line x1="30" y1="72" x2="130" y2="72" stroke="#e5e7eb" stroke-width="1"/>
-  <text x="80" y="90" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="#6b7280" text-anchor="middle" letter-spacing="3.5">FACILITY</text>
-  <text x="80" y="106" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="10" font-weight="500" fill="#6b7280" text-anchor="middle" letter-spacing="3.5">SOLUTIONS</text>
+  <text x="80" y="92" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="14" font-weight="600" fill="#1e3a5f" text-anchor="middle" letter-spacing="1.5">FACILITY</text>
+  <text x="80" y="110" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="14" font-weight="600" fill="#1e3a5f" text-anchor="middle" letter-spacing="1.5">SOLUTIONS</text>
 </svg>

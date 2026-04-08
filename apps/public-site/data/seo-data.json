@@ -1078,7 +1078,7 @@
       "faqs": [
         {
           "question": "How do you handle security and keys for after-hours access?",
-          "answer": "We work with your property management to establish secure key protocols, alarm procedures, and check-in/check-out logs. Every contractor is background-checked and bonded."
+          "answer": "We work with your property management to establish secure key protocols, alarm procedures, and check-in/check-out logs. Every contractor is background-checked and insured."
         },
         {
           "question": "What happens if a cleaning issue is missed?",
@@ -1835,6 +1835,63 @@
         }
       ],
       "heroTitle": "Preventive Maintenance Programs for Commercial Buildings"
+    },
+    {
+      "slug": "indoor-plant-watering",
+      "targetFacilityType": "other",
+      "name": "Indoor Plant Watering",
+      "shortDescription": "Scheduled indoor plant watering, health monitoring, and greenery maintenance for lobbies, offices, and common areas.",
+      "longDescription": "Indoor plants improve air quality, reduce stress, and elevate the look of any commercial space — but only if they're alive and thriving. Wilting leaves in the lobby, dead plants in the conference room, and overwatered soil breeding fungus gnats send the wrong message. Our plant watering contractors follow customized care schedules for every plant in your facility — watering, pruning, leaf cleaning, and soil health checks — so your greenery always looks its best. It's all managed by your FSM and billed on your single monthly XIRI invoice.",
+      "valueProps": [
+        {
+          "icon": "🌿",
+          "title": "Green & Thriving",
+          "description": "Professional care."
+        }
+      ],
+      "benefits": [
+        "Scheduled Watering",
+        "Plant Health Monitoring",
+        "Leaf & Dust Cleaning",
+        "Replacement Coordination"
+      ],
+      "features": [
+        {
+          "title": "Customized Watering Schedules",
+          "description": "Each plant gets a tailored watering schedule based on species, pot size, light exposure, and seasonal needs — tracked and documented by your care team.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Plant Health Monitoring",
+          "description": "Weekly inspections for pests, disease, yellowing, root rot, and soil compaction. Problems are caught early and addressed before plants decline visibly.",
+          "icon": "shield"
+        },
+        {
+          "title": "Leaf Cleaning & Pruning",
+          "description": "Dust removal from leaves to maintain photosynthesis efficiency and appearance. Dead leaves, spent flowers, and overgrowth are pruned to keep plants looking sharp.",
+          "icon": "sparkles"
+        },
+        {
+          "title": "Replacement & Rotation",
+          "description": "When a plant reaches end-of-life or outgrows its space, your FSM coordinates replacement or rotation so your greenery program never has gaps.",
+          "icon": "shield"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How often will our plants be watered?",
+          "answer": "Frequency depends on plant species and placement. Most office plants are watered 1–2 times per week. High-light lobby plants or large tropicals may need more frequent attention. Your care team sets the schedule based on each plant's specific needs."
+        },
+        {
+          "question": "Do you provide the plants as well?",
+          "answer": "We focus on care and maintenance. If you need new plants, your FSM can coordinate sourcing and installation through our vendor network — including recommending low-maintenance species suited to your facility's lighting conditions."
+        },
+        {
+          "question": "What happens if a plant dies?",
+          "answer": "Our proactive monitoring catches most issues before a plant dies. If replacement is needed, your FSM coordinates sourcing and replanting so there's no gap in your greenery. Replacement plants are billed as a line item on your regular invoice."
+        }
+      ],
+      "heroTitle": "Indoor Plant Watering & Care Services"
     }
   ],
   "locations": [
