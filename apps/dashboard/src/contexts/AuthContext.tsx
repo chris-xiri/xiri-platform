@@ -7,7 +7,9 @@ import {
     signInWithPopup,
     GoogleAuthProvider,
     signOut as firebaseSignOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    browserLocalPersistence,
+    setPersistence,
 } from 'firebase/auth';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
@@ -215,6 +217,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen to auth state changes
     useEffect(() => {
+        // Ensure auth persists in localStorage/IndexedDB across sessions
+        setPersistence(auth, browserLocalPersistence).catch(console.error);
+
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             setUser(firebaseUser);
 
@@ -231,7 +236,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(false);
         });
 
-        return unsubscribe;
+        // Proactive token refresh every 30 minutes to prevent the 1-hour
+        // ID token from silently expiring while the user is working.
+        const tokenRefreshInterval = setInterval(async () => {
+            const currentUser = auth.currentUser;
+            if (currentUser) {
+                try {
+                    await currentUser.getIdToken(true); // force refresh
+                } catch (err) {
+                    console.warn('[Auth] Token refresh failed:', err);
+                }
+            }
+        }, 30 * 60 * 1000); // 30 min
+
+        // Also refresh when the tab regains focus (user comes back after break)
+        const handleVisibilityChange = async () => {
+            if (document.visibilityState === 'visible' && auth.currentUser) {
+                try {
+                    await auth.currentUser.getIdToken(true);
+                } catch (err) {
+                    console.warn('[Auth] Visibility token refresh failed:', err);
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            unsubscribe();
+            clearInterval(tokenRefreshInterval);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, []);
 
     return (
