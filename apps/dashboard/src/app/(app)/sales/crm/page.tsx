@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import LeadList from '@/components/LeadList';
 import { AddLeadDialog } from '@/components/AddLeadDialog';
+import LeadDetailDrawer from '@/components/lead/LeadDetailDrawer';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
 export default function SalesCRMPage() {
     const [showAddLead, setShowAddLead] = useState(false);
+    const [drawerContactId, setDrawerContactId] = useState<string | null>(null);
 
     return (
         <ProtectedRoute resource="sales/crm">
@@ -25,11 +27,20 @@ export default function SalesCRMPage() {
                 </div>
 
                 <div className="flex-1 min-h-0">
-                    <LeadList title="Sales Pipeline" />
+                    <LeadList
+                        title="Sales Pipeline"
+                        onRowClick={(contactId) => setDrawerContactId(contactId)}
+                    />
                 </div>
             </div>
 
             <AddLeadDialog open={showAddLead} onOpenChange={setShowAddLead} />
+
+            <LeadDetailDrawer
+                leadId={drawerContactId}
+                open={!!drawerContactId}
+                onClose={() => setDrawerContactId(null)}
+            />
         </ProtectedRoute>
     );
 }

@@ -14,8 +14,6 @@ import { Input } from '@/components/ui/input';
 import {
     ArrowLeft,
     Building2,
-    User,
-    Mail,
     Phone,
     MapPin,
     TrendingUp,
@@ -505,14 +503,6 @@ export default function LeadDetailPage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <div>
-                                    <label className="text-sm font-medium text-muted-foreground">Contact</label>
-                                    <EditableField label="Contact name" value={lead.contactName || ''} icon={User} onSave={(v) => updateField('contactName', v)} />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-muted-foreground">Email</label>
-                                    <EditableField label="Email" value={lead.email || ''} icon={Mail} type="email" linkPrefix="mailto:" onSave={(v) => updateField('email', v)} />
-                                </div>
                                 <div>
                                     <label className="text-sm font-medium text-muted-foreground">Phone</label>
                                     <EditableField label="Phone" value={lead.contactPhone || ''} icon={Phone} type="tel" linkPrefix="tel:" onSave={(v) => updateField('contactPhone', v)} />

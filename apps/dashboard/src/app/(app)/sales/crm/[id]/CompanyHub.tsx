@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
+import LeadDetailDrawer from '@/components/lead/LeadDetailDrawer';
 import {
     Users,
     Mail,
@@ -55,6 +56,7 @@ export default function CompanyHub({ companyId, activities }: CompanyHubProps) {
     const [quotes, setQuotes] = useState<any[]>([]);
     const [contracts, setContracts] = useState<any[]>([]);
     const [showTimeline, setShowTimeline] = useState(false);
+    const [drawerContactId, setDrawerContactId] = useState<string | null>(null);
 
     const fetchData = useCallback(async () => {
         try {
@@ -127,7 +129,10 @@ export default function CompanyHub({ companyId, activities }: CompanyHubProps) {
                                             {(c.firstName?.[0] || c.contactName?.[0] || c.name?.[0] || '?').toUpperCase()}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-sm font-medium truncate">
+                                            <p
+                                                className="text-sm font-medium truncate cursor-pointer hover:text-primary hover:underline transition-colors"
+                                                onClick={() => setDrawerContactId(c.id)}
+                                            >
                                                 {c.firstName || c.lastName
                                                     ? [c.firstName, c.lastName].filter(Boolean).join(' ')
                                                     : c.contactName || c.name || 'Unnamed'}
@@ -300,6 +305,11 @@ export default function CompanyHub({ companyId, activities }: CompanyHubProps) {
                     </CardContent>
                 )}
             </Card>
+            <LeadDetailDrawer
+                leadId={drawerContactId}
+                open={!!drawerContactId}
+                onClose={() => setDrawerContactId(null)}
+            />
         </div>
     );
 }
