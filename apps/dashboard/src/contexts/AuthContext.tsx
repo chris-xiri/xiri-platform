@@ -56,11 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Smart redirect — land each role on their highest-use page
     const redirectByRole = (roles: UserRole[]) => {
         if (roles.includes('admin')) {
-            router.push('/sales/dashboard');
+            router.push('/sales/crm');
         } else if (roles.includes('sales') || roles.includes('sales_exec') || roles.includes('sales_mgr')) {
-            router.push('/sales/dashboard');
+            router.push('/sales/crm');
         } else if (roles.includes('fsm')) {
-            router.push('/sales/dashboard');
+            router.push('/sales/crm');
         } else if (roles.includes('recruiter')) {
             router.push('/supply/dashboard');
         } else if (roles.includes('night_manager')) {
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (roles.includes('accounting')) {
             router.push('/accounting/invoices');
         } else {
-            router.push('/sales/dashboard');
+            router.push('/sales/crm');
         }
     };
 

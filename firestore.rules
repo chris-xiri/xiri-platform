@@ -2,21 +2,110 @@ rules_version='2'
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 4, 6);
+
+    // ════════════════════════════════════════════════════
+    // HELPER FUNCTIONS
+    // ════════════════════════════════════════════════════
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
+    // ════════════════════════════════════════════════════
+    // DASHBOARD COLLECTIONS (require authentication)
+    // All dashboard users are @xiri.ai — auth is enforced
+    // at sign-in. No per-role Firestore rules needed since
+    // the dashboard already gates UI by role.
+    // ════════════════════════════════════════════════════
+
+    // ── Users (own profile read always; admin can list) ──
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // ── Companies / Leads (CRM core) ──
+    match /companies/{companyId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /leads/{leadId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /contacts/{contactId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ── Sales pipeline ──
+    match /quotes/{quoteId} {
+      // Public read needed for quote review page (via reviewToken)
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    match /contracts/{contractId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ── Operations ──
+    match /work_orders/{workOrderId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /invoices/{invoiceId} {
+      // Public read needed for invoice payment page (via paymentToken)
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    match /commissions/{commissionId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /commission_ledger/{entryId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /vendor_remittances/{remittanceId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ── Activity / Logging ──
+    match /lead_activities/{activityId} {
+      // Public create for PublicCalculator events
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
+    }
+    match /activity_logs/{logId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /vendor_activities/{activityId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /scheduled_activities/{activityId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ── Outreach / Sequences / Templates ──
+    match /outreach_queue/{outreachId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /sequences/{sequenceId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /templates/{templateId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ── Notifications ──
+    match /notifications/{notificationId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ── Guides (public read for the public site) ──
+    match /guides/{guideId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // ════════════════════════════════════════════════════
+    // PUBLIC COLLECTIONS (limited access for public site)
+    // ════════════════════════════════════════════════════
+
     // ── Referral leads (public form + payment info page) ──
-    // These rules will take effect when the blanket rule above expires.
     match /referral_leads/{referralId} {
       // Anyone can create a new referral (public form)
       allow create: if true;
@@ -25,35 +114,49 @@ service cloud.firestore {
       // Payment info page can update only payment fields
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['paymentInfo', 'paymentInfoUpdatedAt']);
+      // Dashboard users can do anything
+      allow update, delete: if isAuthenticated();
     }
 
     // ── NFC Sites (public read for location info, admin write) ──
     match /nfc_sites/{locationId} {
-      // Public can read location name + vendor name (needed for clock-in page)
-      // Note: siteKeyHash is in this doc but is harmless to read — it's a hash
       allow read: if true;
-      // Only authenticated admins (dashboard) can write
-      allow write: if request.auth != null;
+      allow write: if isAuthenticated();
     }
 
-    // ── NFC Sessions (Cloud Functions only) ──
-    // Sessions are created/updated by Cloud Functions using Admin SDK,
-    // which bypasses these rules. Public clients cannot read/write.
+    // ── NFC Sessions (auth read, Cloud Functions write) ──
     match /nfc_sessions/{sessionId} {
-      allow read: if request.auth != null;
+      allow read: if isAuthenticated();
       allow write: if false; // Only admin SDK (Cloud Functions)
     }
 
     // ── Vendors (public onboarding flow) ──
-    // Vendors are created/updated during the unauthenticated onboarding process.
-    // The onboarding page reads vendor info and writes profile + compliance data.
     match /vendors/{vendorId} {
-      // Public can read vendor info (needed for onboarding page load)
       allow read: if true;
-      // Public can create new vendor entries (start onboarding page)
       allow create: if true;
-      // Public can update vendor profile, compliance, and onboarding fields
       allow update: if true;
+      // Only dashboard users can delete
+      allow delete: if isAuthenticated();
+    }
+
+    // ── Lead Magnet Downloads (public create) ──
+    match /lead_magnet_downloads/{downloadId} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
+    }
+
+    // ── Demo Clicks (public create, admin read) ──
+    match /demo_clicks/{clickId} {
+      allow create: if true;
+      allow read: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+
+    // ── AI Bot Visits (public create, admin read) ──
+    match /aiBotVisits/{visitId} {
+      allow create: if true;
+      allow read: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
     }
   }
 }

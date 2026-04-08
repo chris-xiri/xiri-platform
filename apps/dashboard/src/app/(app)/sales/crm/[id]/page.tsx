@@ -3,31 +3,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
 import { db } from '@/lib/firebase';
-import { functions } from '@/lib/firebase';
 import { Lead, LeadType } from '@xiri-facility-solutions/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+
+
 import {
     ArrowLeft,
     Building2,
@@ -35,21 +18,9 @@ import {
     Mail,
     Phone,
     MapPin,
-    Calendar,
-    Clock,
-    Briefcase,
     TrendingUp,
     Loader2,
-    Play,
     Tag,
-    CheckCircle2,
-    AlertTriangle,
-    Send,
-    Rocket,
-    XCircle,
-    Activity,
-    Target,
-    Eye,
     Pencil,
     Check,
     X,
@@ -60,15 +31,7 @@ import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import CompanyHub from './CompanyHub';
 
-// ─── Targeted template interface ──────────────────────────
-interface TargetedTemplate {
-    id: string;
-    name: string;
-    description?: string;
-    subject: string;
-    body: string;
-    category?: string;
-}
+
 
 // Helper to safely convert Firestore Timestamp to Date
 function toDate(value: any): Date | null {
@@ -108,18 +71,11 @@ const FACILITY_TYPE_LABELS: Record<string, string> = {
     'other': 'Other'
 };
 
-const LEAD_TYPE_CONFIG: Record<string, { color: string; label: string; sequence: string }> = {
-    'direct': { color: 'bg-slate-100 text-slate-700 border-slate-200', label: 'Direct', sequence: '4 emails over 14 days (Day 0, 3, 7, 14)' },
-    'tenant': { color: 'bg-indigo-100 text-indigo-700 border-indigo-200', label: 'Tenant', sequence: '4 emails over 14 days (Day 0, 3, 7, 14)' },
-    'referral_partnership': { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Referral Partnership', sequence: '3 emails over 10 days (Day 0, 4, 10)' },
-    'enterprise': { color: 'bg-violet-100 text-violet-700 border-violet-200', label: 'Enterprise', sequence: '5 emails over 21 days (Day 0, 4, 8, 14, 21)' },
-};
-
-const OUTREACH_STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-    'PENDING': { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', label: 'Sequence Pending' },
-    'IN_PROGRESS': { color: 'bg-blue-100 text-blue-700 border-blue-200', label: 'Sequence Active' },
-    'COMPLETED': { color: 'bg-green-100 text-green-700 border-green-200', label: 'Sequence Completed' },
-    'NEEDS_MANUAL': { color: 'bg-red-100 text-red-700 border-red-200', label: 'Needs Manual Outreach' },
+const LEAD_TYPE_CONFIG: Record<string, { color: string; label: string }> = {
+    'direct': { color: 'bg-slate-100 text-slate-700 border-slate-200', label: 'Direct' },
+    'tenant': { color: 'bg-indigo-100 text-indigo-700 border-indigo-200', label: 'Tenant' },
+    'referral_partnership': { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Referral Partnership' },
+    'enterprise': { color: 'bg-violet-100 text-violet-700 border-violet-200', label: 'Enterprise' },
 };
 
 /* ─── Inline Editable Field ─────────────────────────────────────── */
@@ -412,26 +368,7 @@ export default function LeadDetailPage() {
 
     const [lead, setLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
-    const [showSequenceDialog, setShowSequenceDialog] = useState(false);
-    const [startingSequence, setStartingSequence] = useState(false);
-    const [sequenceMessage, setSequenceMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-    const [updatingStatus, setUpdatingStatus] = useState(false);
     const [activities, setActivities] = useState<{ id: string; type: string; description: string; createdAt: any; metadata?: any }[]>([]);
-
-    // ─── Sequence picker state ──────────────────────────────
-    const [availableSequences, setAvailableSequences] = useState<{ id: string; name: string; description?: string; steps: any[]; leadTypes?: string[] }[]>([]);
-    const [selectedSequenceId, setSelectedSequenceId] = useState<string>('');
-    const [contactSequenceHistory, setContactSequenceHistory] = useState<Record<string, any>>({});
-    const [loadingSequences, setLoadingSequences] = useState(false);
-    const [primaryContactId, setPrimaryContactId] = useState<string | null>(null);
-
-    // ─── Targeted email send state ──────────────────────────
-    const [showSendDialog, setShowSendDialog] = useState(false);
-    const [targetedTemplates, setTargetedTemplates] = useState<TargetedTemplate[]>([]);
-    const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
-    const [sendingEmail, setSendingEmail] = useState(false);
-    const [previewingEmail, setPreviewingEmail] = useState(false);
-    const [loadingTemplates, setLoadingTemplates] = useState(false);
 
     const fetchLead = async () => {
         try {
@@ -470,73 +407,9 @@ export default function LeadDetailPage() {
         }
     };
 
-    // ─── Fetch targeted templates ────────────────────────────
-    const fetchTargetedTemplates = useCallback(async () => {
-        setLoadingTemplates(true);
-        try {
-            const snap = await getDocs(collection(db, 'templates'));
-            const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as TargetedTemplate));
-            setTargetedTemplates(all.filter(t => t.category === 'lead_targeted'));
-        } catch (err) {
-            console.error('Error fetching targeted templates:', err);
-        } finally {
-            setLoadingTemplates(false);
-        }
-    }, []);
 
-    // ─── Fetch available sequences + contact history ─────────
-    const fetchSequencesAndHistory = useCallback(async () => {
-        setLoadingSequences(true);
-        try {
-            // Fetch all sequences
-            const seqSnap = await getDocs(collection(db, 'sequences'));
-            const seqs = seqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-            setAvailableSequences(seqs);
 
-            // Fetch primary contact to get sequenceHistory
-            const contactsQ = query(
-                collection(db, 'contacts'),
-                where('companyId', '==', leadId),
-                where('isPrimary', '==', true)
-            );
-            const contactSnap = await getDocs(contactsQ);
-            if (!contactSnap.empty) {
-                const contactData = contactSnap.docs[0].data();
-                setPrimaryContactId(contactSnap.docs[0].id);
-                setContactSequenceHistory(contactData.sequenceHistory || {});
-            } else {
-                // Fall back: no primary contact, no history
-                setContactSequenceHistory({});
-            }
-        } catch (err) {
-            console.error('Error fetching sequences:', err);
-        } finally {
-            setLoadingSequences(false);
-        }
-    }, [leadId]);
 
-    // ─── Send targeted email handler ────────────────────────
-    const handleSendTargetedEmail = async () => {
-        if (!selectedTemplateId || !lead) return;
-        setSendingEmail(true);
-        setSequenceMessage(null);
-        try {
-            const sendSingle = httpsCallable(functions, 'sendSingleLeadEmail');
-            const result = await sendSingle({ leadId, templateId: selectedTemplateId });
-            const data = result.data as any;
-            setSequenceMessage({ type: 'success', text: data.message || 'Email sent successfully' });
-            setShowSendDialog(false);
-            setSelectedTemplateId('');
-            setPreviewingEmail(false);
-            await fetchLead();
-            await fetchActivities();
-        } catch (error: any) {
-            const message = error?.message || 'Failed to send email';
-            setSequenceMessage({ type: 'error', text: message });
-        } finally {
-            setSendingEmail(false);
-        }
-    };
 
     useEffect(() => {
         fetchLead();
@@ -551,59 +424,9 @@ export default function LeadDetailPage() {
         await fetchLead();
     }, [leadId]);
 
-    const handleStatusChange = async (newStatus: string) => {
-        if (!lead) return;
-        setUpdatingStatus(true);
-        try {
-            await updateDoc(doc(db, 'leads', leadId), { status: newStatus });
-            setLead({ ...lead, status: newStatus as any });
-        } catch (error) {
-            console.error('Error updating status:', error);
-        } finally {
-            setUpdatingStatus(false);
-        }
-    };
 
-    const handleLeadTypeChange = async (newType: string) => {
-        if (!lead) return;
-        try {
-            await updateDoc(doc(db, 'leads', leadId), { leadType: newType });
-            setLead({ ...lead, leadType: newType as LeadType });
-        } catch (error) {
-            console.error('Error updating lead type:', error);
-        }
-    };
 
-    const handleStartSequence = async () => {
-        if (!selectedSequenceId) return;
-        setStartingSequence(true);
-        setSequenceMessage(null);
-        try {
-            // If not already qualified, qualify first
-            if (lead?.status !== 'qualified') {
-                await updateDoc(doc(db, 'leads', leadId), { status: 'qualified' });
-            }
 
-            const startSequence = httpsCallable(functions, 'startLeadSequence');
-            const result = await startSequence({
-                leadId,
-                contactId: primaryContactId || undefined,
-                sequenceId: selectedSequenceId,
-            });
-            const data = result.data as any;
-
-            setSequenceMessage({ type: 'success', text: data.message });
-            setShowSequenceDialog(false);
-            setSelectedSequenceId('');
-            await fetchLead(); // Refresh lead data
-            await fetchActivities();
-        } catch (error: any) {
-            const message = error?.message || 'Failed to start sequence';
-            setSequenceMessage({ type: 'error', text: message });
-        } finally {
-            setStartingSequence(false);
-        }
-    };
 
     if (loading) {
         return (
@@ -623,10 +446,6 @@ export default function LeadDetailPage() {
     const createdDate = toDate(lead.createdAt);
     const leadType = (lead as any).leadType || 'direct';
     const typeConfig = LEAD_TYPE_CONFIG[leadType] || LEAD_TYPE_CONFIG['direct'];
-    const outreachStatus = (lead as any).outreachStatus;
-    const outreachConfig = outreachStatus ? OUTREACH_STATUS_CONFIG[outreachStatus] : null;
-    const canStartSequence = !outreachStatus || outreachStatus === 'COMPLETED' || outreachStatus === 'NEEDS_MANUAL';
-    const hasEmail = lead.email && lead.email.trim().length > 0;
 
     return (
         <ProtectedRoute resource="sales/crm">
@@ -637,7 +456,7 @@ export default function LeadDetailPage() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => router.push('/sales/dashboard')}
+                            onClick={() => router.push('/sales/crm')}
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Back to CRM
@@ -659,90 +478,15 @@ export default function LeadDetailPage() {
                                 <Badge variant="outline" className={`text-xs ${typeConfig.color}`}>
                                     {typeConfig.label}
                                 </Badge>
-                                {outreachConfig && (
-                                    <Badge variant="outline" className={`text-xs ${outreachConfig.color}`}>
-                                        <Send className="w-3 h-3 mr-1" />
-                                        {outreachConfig.label}
-                                    </Badge>
-                                )}
                             </div>
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center gap-3">
-                        {/* Status Selector */}
-                        <Select value={lead.status} onValueChange={handleStatusChange} disabled={updatingStatus}>
-                            <SelectTrigger className="w-[150px] h-9">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="new">New</SelectItem>
-                                <SelectItem value="contacted">Contacted</SelectItem>
-                                <SelectItem value="qualified">Qualified</SelectItem>
-                                <SelectItem value="walkthrough">Walkthrough</SelectItem>
-                                <SelectItem value="proposal">Proposal</SelectItem>
-                                <SelectItem value="quoted">Quoted</SelectItem>
-                                <SelectItem value="won">Won</SelectItem>
-                                <SelectItem value="lost">Lost</SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        {/* Send Email (one-off) */}
-                        <Button
-                            variant="outline"
-                            className="gap-2"
-                            disabled={!hasEmail}
-                            onClick={() => {
-                                fetchTargetedTemplates();
-                                setShowSendDialog(true);
-                            }}
-                        >
-                            <Mail className="w-4 h-4" />
-                            Email
-                        </Button>
-
-                        {/* Start Sequence CTA */}
-                        <Button
-                            onClick={() => {
-                                fetchSequencesAndHistory();
-                                setShowSequenceDialog(true);
-                            }}
-                            disabled={!canStartSequence || !hasEmail}
-                            className="gap-2"
-                            variant={canStartSequence && hasEmail ? "default" : "outline"}
-                        >
-                            <Play className="w-4 h-4" />
-                            {lead.status === 'qualified' ? 'Start Sequence' : 'Qualify & Start Sequence'}
-                        </Button>
-                    </div>
+                    {/* Status Badge */}
+                    <Badge variant="outline" className={`text-sm ${STATUS_COLORS[lead.status] || ''}`}>
+                        {lead.status?.charAt(0).toUpperCase() + lead.status?.slice(1)}
+                    </Badge>
                 </div>
-
-                {/* Feedback Messages */}
-                {sequenceMessage && (
-                    <div className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm ${sequenceMessage.type === 'success'
-                        ? 'bg-green-50 text-green-700 border border-green-200'
-                        : 'bg-red-50 text-red-700 border border-red-200'
-                        }`}>
-                        {sequenceMessage.type === 'success' ? (
-                            <CheckCircle2 className="w-4 h-4" />
-                        ) : (
-                            <AlertTriangle className="w-4 h-4" />
-                        )}
-                        {sequenceMessage.text}
-                        <button className="ml-auto text-xs hover:underline" onClick={() => setSequenceMessage(null)}>
-                            Dismiss
-                        </button>
-                    </div>
-                )}
-
-                {/* No email warning */}
-                {!hasEmail && (
-                    <div className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm bg-amber-50 text-amber-700 border border-amber-200">
-                        <AlertTriangle className="w-4 h-4" />
-                        No email on file — email sequences cannot be started until an email is added.
-                    </div>
-                )}
 
                 {/* ═══ Company Dashboard Hub ═══ */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 overflow-auto">
@@ -814,28 +558,7 @@ export default function LeadDetailPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Lead Type */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-base">
-                                    <Tag className="w-4 h-4" /> Lead Type
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <Select value={leadType} onValueChange={handleLeadTypeChange}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="direct">Direct</SelectItem>
-                                        <SelectItem value="tenant">Tenant</SelectItem>
-                                        <SelectItem value="referral_partnership">Referral Partnership</SelectItem>
-                                        <SelectItem value="enterprise">Enterprise</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <p className="text-xs text-muted-foreground">Sequence: {typeConfig.sequence}</p>
-                            </CardContent>
-                        </Card>
+
 
                         {/* Attribution */}
                         <Card>
@@ -894,255 +617,7 @@ export default function LeadDetailPage() {
                 </div>
             </div>
 
-            {/* Start Sequence Confirmation Dialog */}
-            <AlertDialog open={showSequenceDialog} onOpenChange={(open: boolean) => { setShowSequenceDialog(open); if (!open) setSelectedSequenceId(''); }}>
-                <AlertDialogContent className="max-w-lg">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="flex items-center gap-2">
-                            <Play className="w-5 h-5" />
-                            Start Email Sequence
-                        </AlertDialogTitle>
-                        <AlertDialogDescription asChild>
-                            <div className="space-y-4">
-                                <p>
-                                    Choose a sequence to start an automated email drip campaign for <strong>{lead.businessName}</strong>.
-                                </p>
 
-                                {loadingSequences ? (
-                                    <div className="flex items-center justify-center py-6">
-                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                                    </div>
-                                ) : availableSequences.length === 0 ? (
-                                    <div className="text-center py-6 text-sm text-muted-foreground">
-                                        <Rocket className="w-7 h-7 mx-auto mb-2 opacity-30" />
-                                        No sequences found. Create one in{' '}
-                                        <a href="/admin/email-templates" className="text-primary hover:underline font-medium">Email Templates → Sequences</a>.
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div>
-                                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Select Sequence</label>
-                                            <Select value={selectedSequenceId} onValueChange={setSelectedSequenceId}>
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Choose a sequence..." />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {availableSequences.map(seq => {
-                                                        const alreadyEnrolled = !!contactSequenceHistory[seq.id];
-                                                        return (
-                                                            <SelectItem
-                                                                key={seq.id}
-                                                                value={seq.id}
-                                                                disabled={alreadyEnrolled}
-                                                            >
-                                                                <div className="flex items-center gap-2">
-                                                                    <span>{seq.name}</span>
-                                                                    <span className="text-[10px] text-muted-foreground">
-                                                                        ({seq.steps?.length || 0} emails)
-                                                                    </span>
-                                                                    {alreadyEnrolled && (
-                                                                        <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-600 border-amber-200 ml-1">
-                                                                            Already enrolled
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                            </SelectItem>
-                                                        );
-                                                    })}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        {/* Selected sequence details */}
-                                        {selectedSequenceId && (() => {
-                                            const seq = availableSequences.find(s => s.id === selectedSequenceId);
-                                            if (!seq) return null;
-                                            const dayList = seq.steps?.map((s: any) => `Day ${s.dayOffset}`).join(', ') || '';
-                                            return (
-                                                <div className="bg-muted p-3 rounded-lg space-y-2 text-sm">
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Sequence:</span>
-                                                        <span className="font-medium">{seq.name}</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Steps:</span>
-                                                        <span className="font-medium">{seq.steps?.length || 0} emails</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Schedule:</span>
-                                                        <span className="font-medium">{dayList}</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Recipient:</span>
-                                                        <span className="font-medium">{lead.email}</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()}
-
-                                        {lead.status !== 'qualified' && (
-                                            <p className="text-xs text-amber-600">
-                                                This will also update the lead status to <strong>Qualified</strong>.
-                                            </p>
-                                        )}
-
-                                        {/* Enrollment history */}
-                                        {Object.keys(contactSequenceHistory).length > 0 && (
-                                            <div className="border-t pt-3">
-                                                <p className="text-xs font-medium text-muted-foreground mb-2">Previous Enrollments</p>
-                                                <div className="space-y-1">
-                                                    {Object.entries(contactSequenceHistory).map(([seqId, entry]: [string, any]) => (
-                                                        <div key={seqId} className="flex items-center justify-between text-xs bg-muted/50 px-2 py-1.5 rounded">
-                                                            <span className="font-medium">{entry.sequenceName || seqId}</span>
-                                                            <Badge variant="outline" className="text-[9px]">
-                                                                {entry.status === 'in_progress' ? 'Active' : entry.status || 'Enrolled'}
-                                                            </Badge>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={startingSequence}>Cancel</AlertDialogCancel>
-                        <Button onClick={handleStartSequence} disabled={startingSequence || !selectedSequenceId} className="gap-2">
-                            {startingSequence ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <Play className="w-4 h-4" />
-                            )}
-                            {startingSequence ? 'Starting...' : 'Start Sequence'}
-                        </Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            {/* ─── Send Targeted Email Dialog ─── */}
-            <AlertDialog open={showSendDialog} onOpenChange={(open: boolean) => { setShowSendDialog(open); if (!open) { setSelectedTemplateId(''); setPreviewingEmail(false); } }}>
-                <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="flex items-center gap-2">
-                            <Target className="w-5 h-5" />
-                            Send Targeted Email
-                        </AlertDialogTitle>
-                        <AlertDialogDescription asChild>
-                            <div className="space-y-4">
-                                <p>
-                                    Choose a template to send a one-off email to <strong>{lead.businessName}</strong> ({lead.email}).
-                                </p>
-
-                                {loadingTemplates ? (
-                                    <div className="flex items-center justify-center py-8">
-                                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                                    </div>
-                                ) : targetedTemplates.length === 0 ? (
-                                    <div className="text-center py-8 text-sm text-muted-foreground">
-                                        <Mail className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                                        No targeted templates found. Create one in{' '}
-                                        <a href="/admin/email-templates" className="text-primary hover:underline font-medium">Settings → Email Templates</a>.
-                                    </div>
-                                ) : (
-                                    <>
-                                        {/* Template selector */}
-                                        <div>
-                                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Select Template</label>
-                                            <Select value={selectedTemplateId} onValueChange={(v: string) => { setSelectedTemplateId(v); setPreviewingEmail(false); }}>
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Choose a template..." />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {targetedTemplates.map(t => (
-                                                        <SelectItem key={t.id} value={t.id}>
-                                                            <div className="flex flex-col">
-                                                                <span>{t.name}</span>
-                                                                {t.description && <span className="text-[10px] text-muted-foreground">{t.description}</span>}
-                                                            </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        {/* Preview */}
-                                        {selectedTemplateId && (() => {
-                                            const tpl = targetedTemplates.find(t => t.id === selectedTemplateId);
-                                            if (!tpl) return null;
-
-                                            // Simple preview merge
-                                            const mergeVars: Record<string, string> = {
-                                                businessName: lead.businessName || '',
-                                                contactName: lead.contactName || '',
-                                                facilityType: lead.facilityType || '',
-                                                address: lead.address || '',
-                                                squareFootage: (lead as any).squareFootage || '',
-                                            };
-                                            const previewSubject = tpl.subject.replace(/\{\{(\w+)\}\}/g, (_, k) => mergeVars[k] || `{{${k}}}`);
-                                            const previewBody = tpl.body.replace(/\{\{(\w+)\}\}/g, (_, k) => mergeVars[k] || `{{${k}}}`);
-
-                                            return (
-                                                <div className="space-y-3">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="h-7 text-xs gap-1.5"
-                                                        onClick={() => setPreviewingEmail(!previewingEmail)}
-                                                    >
-                                                        <Eye className="w-3 h-3" />
-                                                        {previewingEmail ? 'Hide Preview' : 'Preview Email'}
-                                                    </Button>
-
-                                                    {previewingEmail && (
-                                                        <div className="border rounded-lg bg-white dark:bg-background overflow-hidden">
-                                                            <div className="px-4 py-2.5 bg-muted/30 border-b text-[11px] space-y-0.5">
-                                                                <div>From: <span className="font-medium">XIRI Facility Solutions &lt;chris@xiri.ai&gt;</span></div>
-                                                                <div>To: <span className="font-medium">{lead.contactName} &lt;{lead.email}&gt;</span></div>
-                                                                <div>Subject: <span className="font-semibold text-xs">{previewSubject}</span></div>
-                                                            </div>
-                                                            <div className="px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed max-h-64 overflow-auto">
-                                                                {previewBody}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="bg-muted/30 p-3 rounded-lg text-xs space-y-1">
-                                                        <div className="flex justify-between">
-                                                            <span className="text-muted-foreground">Template:</span>
-                                                            <span className="font-medium">{tpl.name}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-muted-foreground">Subject:</span>
-                                                            <span className="font-medium">{previewSubject}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-muted-foreground">Recipient:</span>
-                                                            <span className="font-medium">{lead.email}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()}
-                                    </>
-                                )}
-                            </div>
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={sendingEmail}>Cancel</AlertDialogCancel>
-                        <Button
-                            onClick={handleSendTargetedEmail}
-                            disabled={sendingEmail || !selectedTemplateId}
-                            className="gap-2"
-                        >
-                            {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                            {sendingEmail ? 'Sending...' : 'Send Email'}
-                        </Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </ProtectedRoute>
     );
 }

@@ -179,7 +179,7 @@ export default function CompaniesPage() {
     ];
 
     return (
-        <ProtectedRoute resource="sales/dashboard">
+        <ProtectedRoute resource="sales/crm">
             <div className="h-full flex flex-col space-y-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -245,7 +245,7 @@ export default function CompaniesPage() {
                     ) : (
                         <div className="grid gap-3">
                             {filtered.map((company) => (
-                                <Link key={company.id} href={`/sales/dashboard/${company.id}`}>
+                                <Link key={company.id} href={`/sales/crm/${company.id}`}>
                                     <CompanyCard
                                         company={company}
                                         contactCount={contactCounts[company.id] || 0}

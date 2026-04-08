@@ -10,7 +10,6 @@ export function canAccess(path: string, roles: string[]): boolean {
 
 const ACCESS_MAP: Record<string, string[]> = {
     // Sales
-    'sales/dashboard': ['admin', 'sales', 'sales_exec', 'sales_mgr', 'qa'],
     'sales/crm': ['admin', 'sales', 'sales_exec', 'sales_mgr', 'qa'],
     'sales/quotes': ['admin', 'sales', 'sales_exec', 'sales_mgr', 'fsm', 'qa'],
     'sales/sourcing': ['admin', 'sales', 'sales_exec', 'sales_mgr', 'qa'],

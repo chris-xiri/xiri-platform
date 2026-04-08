@@ -16,7 +16,7 @@ export default function UnauthorizedPage() {
         } else if (profile?.roles.includes('recruiter')) {
             router.push('/supply/dashboard');
         } else if (profile?.roles.includes('sales')) {
-            router.push('/sales/dashboard');
+            router.push('/sales/crm');
         } else {
             router.push('/login');
         }

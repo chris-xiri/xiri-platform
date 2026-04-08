@@ -26,14 +26,14 @@ export function MobileBottomNav({ onMorePress }: { onMorePress: () => void }) {
 
     // Role-based home route
     const isSupply = profile.roles?.some((r: string) => ['recruiter'].includes(r)) && !profile.roles?.includes('admin');
-    const homeHref = isSupply ? '/supply/dashboard' : '/sales/dashboard';
+    const homeHref = isSupply ? '/supply/dashboard' : '/sales/crm';
 
     const tabs: BottomTab[] = [
         {
             label: 'Home',
             href: homeHref,
             icon: <LayoutDashboard className="w-5 h-5" />,
-            match: ['/sales/dashboard', '/supply/dashboard'],
+            match: ['/sales/crm', '/supply/dashboard'],
         },
         {
             label: 'Orders',

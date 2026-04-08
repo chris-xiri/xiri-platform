@@ -176,7 +176,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         return null;
     }
 
-    const showClientsNav = canAccess('sales/dashboard', profile.roles) || canAccess('operations/contracts', profile.roles);
+    const showClientsNav = canAccess('sales/crm', profile.roles) || canAccess('operations/contracts', profile.roles);
     const showContractorsNav = canAccess('supply/recruitment', profile.roles);
     const showOpsNav = canAccess('operations/work-orders', profile.roles) || canAccess('operations/nfc-zones', profile.roles);
     const showFinanceNav = canAccess('accounting/invoices', profile.roles);
@@ -188,9 +188,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             icon: <Building2 className="w-3.5 h-3.5" />,
             show: showClientsNav,
             items: [
-                ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Contacts', href: '/sales/crm', icon: <Users className="w-4 h-4" /> }] : []),
-                ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Companies', href: '/sales/companies', icon: <Building2 className="w-4 h-4" /> }] : []),
-                ...(canAccess('sales/dashboard', profile.roles) ? [{ label: 'Referral Partners', href: '/sales/referrals', icon: <Share2 className="w-4 h-4" /> }] : []),
+                ...(canAccess('sales/crm', profile.roles) ? [{ label: 'Contacts', href: '/sales/crm', icon: <Users className="w-4 h-4" /> }] : []),
+                ...(canAccess('sales/crm', profile.roles) ? [{ label: 'Companies', href: '/sales/companies', icon: <Building2 className="w-4 h-4" /> }] : []),
+                ...(canAccess('sales/crm', profile.roles) ? [{ label: 'Referral Partners', href: '/sales/referrals', icon: <Share2 className="w-4 h-4" /> }] : []),
                 ...(canAccess('sales/quotes', profile.roles) ? [{ label: 'Quotes & Contracts', href: '/sales/quotes', icon: <FileText className="w-4 h-4" /> }] : []),
             ],
         },

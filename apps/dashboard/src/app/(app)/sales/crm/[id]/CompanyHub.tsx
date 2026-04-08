@@ -124,13 +124,15 @@ export default function CompanyHub({ companyId, activities }: CompanyHubProps) {
                                 <div key={c.id} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
                                     <div className="flex items-center gap-3 min-w-0">
                                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary flex-shrink-0">
-                                            {(c.firstName?.[0] || c.name?.[0] || '?').toUpperCase()}
+                                            {(c.firstName?.[0] || c.contactName?.[0] || c.name?.[0] || '?').toUpperCase()}
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-sm font-medium truncate">
-                                                {c.firstName && c.lastName ? `${c.firstName} ${c.lastName}` : c.name || 'Unnamed'}
+                                                {c.firstName || c.lastName
+                                                    ? [c.firstName, c.lastName].filter(Boolean).join(' ')
+                                                    : c.contactName || c.name || 'Unnamed'}
                                             </p>
-                                            {c.title && <p className="text-xs text-muted-foreground truncate">{c.title}</p>}
+                                            {(c.role || c.title) && <p className="text-xs text-muted-foreground truncate">{c.role || c.title}</p>}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
