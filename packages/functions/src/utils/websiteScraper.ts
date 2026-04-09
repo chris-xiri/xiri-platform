@@ -274,9 +274,13 @@ function extractStructuredData($: cheerio.CheerioAPI): Partial<ScrapedData> {
 function extractFromPatterns($: cheerio.CheerioAPI, html: string): Partial<ScrapedData> {
     const data: Partial<ScrapedData> = { socialMedia: {} };
 
+    // Strip non-visible content (scripts, styles, comments) to avoid scraping
+    // emails from font licenses, JS library credits, and CSS metadata
+    const visibleHtml = stripNonVisibleContent(html);
+
     // Email regex — exclude common junk but keep business-relevant emails
     const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-    const emails = html.match(emailRegex) || [];
+    const emails = visibleHtml.match(emailRegex) || [];
     const personalEmails = emails.filter(email =>
         !email.match(/^(info|admin|noreply|no-reply|support|hello|contact|webmaster|sales|marketing)@/i) &&
         !email.includes('example.com') &&
@@ -366,7 +370,8 @@ function findAdditionalPages($: cheerio.CheerioAPI, baseUrl: string): string[] {
  * Find generic emails (info@, contact@) as fallback when no personal email found
  */
 function findGenericEmail(...htmlSources: string[]): string | undefined {
-    const combined = htmlSources.join(' ');
+    // Strip non-visible content before scanning for emails
+    const combined = htmlSources.map(stripNonVisibleContent).join(' ');
     const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
     const allEmails = combined.match(emailRegex) || [];
 
@@ -467,6 +472,19 @@ Website content:
 // ═══════════════════════════════════════════════════════
 
 /**
+ * Strip non-visible HTML content (scripts, styles, comments, noscript)
+ * so that email regex doesn't pick up addresses from font licenses,
+ * JS library credits, or CSS metadata.
+ */
+function stripNonVisibleContent(html: string): string {
+    return html
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<noscript[\s\S]*?<\/noscript>/gi, '')
+        .replace(/<!--[\s\S]*?-->/g, '');
+}
+
+/**
  * Determine confidence level based on data sources
  */
 function determineConfidence(
@@ -486,6 +504,11 @@ function determineConfidence(
  * Validate email format
  */
 function validateEmail(email: string): string | undefined {
+    // Strip display name format: "Name <email@domain.com>" → "email@domain.com"
+    const angleMatch = email.match(/<([^>]+)>/);
+    if (angleMatch) email = angleMatch[1];
+    email = email.trim();
+
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) return undefined;
 

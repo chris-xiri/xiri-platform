@@ -94,6 +94,8 @@ interface ProspectingConfig {
         withEmail: number;
         added: number;
         duplicatesSkipped: number;
+        queryYield?: Record<string, { discovered: number; qualified: number }>;
+        locationYield?: Record<string, { discovered: number; qualified: number }>;
     };
 }
 
@@ -141,11 +143,14 @@ export default function ProspectsPage() {
     const [config, setConfig] = useState<ProspectingConfig | null>(null);
     const [configOpen, setConfigOpen] = useState(false);
     const [configSaving, setConfigSaving] = useState(false);
-    const [editQueries, setEditQueries] = useState('');
-    const [editLocations, setEditLocations] = useState('');
+    const [editQueries, setEditQueries] = useState<string[]>([]);
+    const [newQuery, setNewQuery] = useState('');
+    const [editLocations, setEditLocations] = useState<string[]>([]);
+    const [newLocation, setNewLocation] = useState('');
     const [editTarget, setEditTarget] = useState(100);
     const [editEnabled, setEditEnabled] = useState(true);
-    const [editExclude, setEditExclude] = useState('');
+    const [editExclude, setEditExclude] = useState<string[]>([]);
+    const [newExclude, setNewExclude] = useState('');
 
     // Template/sequence options for the action dropdown
     const [templates, setTemplates] = useState<TemplateOption[]>([]);
@@ -178,11 +183,11 @@ export default function ProspectsPage() {
                 if (snap.exists()) {
                     const data = snap.data() as ProspectingConfig;
                     setConfig(data);
-                    setEditQueries(data.queries?.join('\n') || '');
-                    setEditLocations(data.locations?.join('\n') || '');
+                    setEditQueries(data.queries || []);
+                    setEditLocations(data.locations || []);
                     setEditTarget(data.dailyTarget || 100);
                     setEditEnabled(data.enabled !== false);
-                    setEditExclude(data.excludePatterns?.join('\n') || '');
+                    setEditExclude(data.excludePatterns || []);
                 }
             } catch (err) {
                 console.error('Failed to load prospecting config:', err);
@@ -577,17 +582,36 @@ export default function ProspectsPage() {
     const handleSaveConfig = async () => {
         setConfigSaving(true);
         try {
+            // Process inputs separately
+            const getUniqueArray = (items: string[], pending?: string) => {
+                const map = new Map<string, string>();
+                const list = [...items];
+                if (pending && pending.trim()) list.push(pending.trim());
+                list.forEach(line => {
+                    const trimmed = line.trim();
+                    if (trimmed) map.set(trimmed.toLowerCase(), trimmed);
+                });
+                return Array.from(map.values());
+            }
+
             const newConfig = {
-                queries: editQueries.split('\n').map(s => s.trim()).filter(Boolean),
-                locations: editLocations.split('\n').map(s => s.trim()).filter(Boolean),
+                queries: getUniqueArray(editQueries, newQuery),
+                locations: getUniqueArray(editLocations, newLocation),
                 dailyTarget: editTarget,
                 enabled: editEnabled,
-                excludePatterns: editExclude.split('\n').map(s => s.trim()).filter(Boolean),
+                excludePatterns: getUniqueArray(editExclude, newExclude),
             };
             await setDoc(doc(db, 'prospecting_config', 'default'), newConfig, { merge: true });
             setConfig(prev => prev ? { ...prev, ...newConfig } : newConfig as ProspectingConfig);
+            
+            setEditQueries(newConfig.queries);
+            setEditLocations(newConfig.locations);
+            setEditExclude(newConfig.excludePatterns);
+            setNewQuery('');
+            setNewLocation('');
+            setNewExclude('');
             setConfigOpen(false);
-            toast({ title: 'Config saved' });
+            toast({ title: 'Config saved', description: 'Duplicates automatically removed.' });
         } catch (err) {
             toast({ title: 'Save failed', description: String(err) });
         }
@@ -645,22 +669,152 @@ export default function ProspectsPage() {
                             </DialogHeader>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-sm font-medium">Search Queries (one per line)</label>
-                                    <textarea
-                                        className="w-full mt-1 rounded-md border p-2 text-sm font-mono min-h-[120px] bg-background"
-                                        value={editQueries}
-                                        onChange={e => setEditQueries(e.target.value)}
-                                        placeholder="office building&#10;dental office&#10;gym fitness center"
+                                <div>
+                                    <label className="text-sm font-medium">Search Queries</label>
+                                    <div className="flex flex-wrap gap-2 mt-1 mb-2">
+                                        {editQueries.map(q => (
+                                            <Badge key={q} variant="secondary" className="flex items-center gap-1 group">
+                                                {q}
+                                                <X
+                                                    className="w-3 h-3 cursor-pointer opacity-50 hover:opacity-100"
+                                                    onClick={() => setEditQueries(prev => prev.filter(x => x !== q))}
+                                                />
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                    <Input
+                                        placeholder="Add query (press Enter)..."
+                                        value={newQuery}
+                                        onChange={e => setNewQuery(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter' && newQuery.trim()) {
+                                                e.preventDefault();
+                                                if (!editQueries.some(q => q.toLowerCase() === newQuery.trim().toLowerCase())) {
+                                                    setEditQueries(prev => [...prev, newQuery.trim()]);
+                                                }
+                                                setNewQuery('');
+                                            }
+                                        }}
+                                        className="mb-2"
                                     />
+                                    {Object.values(FACILITY_TYPE_LABELS).filter(label => !editQueries.some(q => q.toLowerCase() === label.toLowerCase())).length > 0 && (
+                                        <div className="mt-2">
+                                            <span className="text-xs text-muted-foreground mb-2 block font-medium">Expand your search:</span>
+                                            <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1 pb-1">
+                                                {Object.values(FACILITY_TYPE_LABELS)
+                                                    .filter(label => !editQueries.some(q => q.toLowerCase() === label.toLowerCase()))
+                                                    .map(label => (
+                                                        <Badge
+                                                            key={label}
+                                                            variant="secondary"
+                                                            className="text-[10px] cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors font-normal py-0 h-5"
+                                                            onClick={() => {
+                                                                if (!editQueries.some(q => q.toLowerCase() === label.toLowerCase())) {
+                                                                    setEditQueries(prev => [...prev, label]);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Plus className="w-3 h-3 mr-0.5 inline" />
+                                                            {label}
+                                                        </Badge>
+                                                    ))
+                                                }
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium">Locations (one per line)</label>
-                                    <textarea
-                                        className="w-full mt-1 rounded-md border p-2 text-sm font-mono min-h-[80px] bg-background"
-                                        value={editLocations}
-                                        onChange={e => setEditLocations(e.target.value)}
-                                        placeholder="Nassau County, NY&#10;Suffolk County, NY"
+                                    <div className="flex justify-between items-end mb-1">
+                                    <div className="flex justify-between items-end mb-1">
+                                        <label className="text-sm font-medium">Locations</label>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="h-6 text-xs text-blue-600 hover:text-blue-700 px-1 py-0 hover:bg-blue-50 dark:hover:bg-blue-900/40"
+                                            onClick={async (e) => {
+                                                e.preventDefault();
+                                                const lines = [...editLocations];
+                                                const countyLineIndex = lines.findIndex(l => l.toLowerCase().includes('county') || l.toLowerCase().includes('region') || l.toLowerCase().includes('area'));
+                                                
+                                                if (countyLineIndex === -1 && lines.length > 0) {
+                                                    toast({ title: "Using first location...", description: `Expanding: ${lines[0]}...` });
+                                                } else if (lines.length === 0 && !newLocation.trim()) {
+                                                    toast({ title: "No location found", description: "Please type a county (e.g. 'Nassau County, NY') and press enter to add it before expanding.", variant: "destructive" });
+                                                    return;
+                                                }
+
+                                                let targetLineIndex = countyLineIndex !== -1 ? countyLineIndex : 0;
+                                                let targetLine = lines[targetLineIndex];
+
+                                                if (lines.length === 0 && newLocation.trim()) {
+                                                    targetLine = newLocation.trim();
+                                                }
+
+                                                toast({ title: "Expanding...", description: `Using AI to expand ${targetLine} into towns...` });
+                                                try {
+                                                    const expandFn = httpsCallable(functions, 'expandLocation');
+                                                    const res = await expandFn({ location: targetLine });
+                                                    const towns = (res.data as any).towns as string[];
+                                                    
+                                                    // replace the line with the towns
+                                                    const newLines = [...lines];
+                                                    if (lines.length > 0) {
+                                                      newLines.splice(targetLineIndex, 1, ...towns);
+                                                    } else {
+                                                      newLines.push(...towns);
+                                                      setNewLocation('');
+                                                    }
+                                                    
+                                                    // Deduplicate towns before setting
+                                                    const uniqueSet = new Set(newLines.map(t => t.toLowerCase()));
+                                                    const deduplicated = newLines.filter(t => {
+                                                        if (uniqueSet.has(t.toLowerCase())) {
+                                                            uniqueSet.delete(t.toLowerCase());
+                                                            return true;
+                                                        }
+                                                        return false;
+                                                    });
+                                                    
+                                                    setEditLocations(deduplicated);
+                                                    toast({ title: "Expanded successfully!", description: `Added ${towns.length} towns.` });
+                                                } catch (err: any) {
+                                                    toast({ title: "Error", description: err.message, variant: "destructive" });
+                                                }
+                                            }}
+                                        >
+                                            <Zap className="w-3 h-3 mr-1" />
+                                            Auto-Expand Location
+                                        </Button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {editLocations.map(l => (
+                                            <Badge key={l} variant="secondary" className="flex items-center gap-1 group">
+                                                {l}
+                                                <X
+                                                    className="w-3 h-3 cursor-pointer opacity-50 hover:opacity-100"
+                                                    onClick={() => setEditLocations(prev => prev.filter(x => x !== l))}
+                                                />
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                    <Input
+                                        placeholder="Add location (press Enter)..."
+                                        value={newLocation}
+                                        onChange={e => setNewLocation(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter' && newLocation.trim()) {
+                                                e.preventDefault();
+                                                if (!editLocations.some(l => l.toLowerCase() === newLocation.trim().toLowerCase())) {
+                                                    setEditLocations(prev => [...prev, newLocation.trim()]);
+                                                }
+                                                setNewLocation('');
+                                            }
+                                        }}
                                     />
+                                    <p className="text-[10px] text-muted-foreground mt-1">
+                                        For best results, use specific towns or cities rather than whole counties. 
+                                        Type a county and click the AI button above to automatically generate a town list.
+                                    </p>
                                 </div>
                                 <div className="flex gap-4">
                                     <div className="flex-1">
@@ -685,12 +839,32 @@ export default function ProspectsPage() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium">Exclude Patterns (one per line)</label>
-                                    <textarea
-                                        className="w-full mt-1 rounded-md border p-2 text-sm font-mono min-h-[60px] bg-background"
-                                        value={editExclude}
-                                        onChange={e => setEditExclude(e.target.value)}
-                                        placeholder="franchise&#10;chain"
+                                <div>
+                                    <label className="text-sm font-medium">Exclude Patterns</label>
+                                    <div className="flex flex-wrap gap-2 mt-1 mb-2">
+                                        {editExclude.map(p => (
+                                            <Badge key={p} variant="secondary" className="flex items-center gap-1 group">
+                                                {p}
+                                                <X
+                                                    className="w-3 h-3 cursor-pointer opacity-50 hover:opacity-100"
+                                                    onClick={() => setEditExclude(prev => prev.filter(x => x !== p))}
+                                                />
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                    <Input
+                                        placeholder="Add exclude pattern (press Enter)..."
+                                        value={newExclude}
+                                        onChange={e => setNewExclude(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter' && newExclude.trim()) {
+                                                e.preventDefault();
+                                                if (!editExclude.some(p => p.toLowerCase() === newExclude.trim().toLowerCase())) {
+                                                    setEditExclude(prev => [...prev, newExclude.trim()]);
+                                                }
+                                                setNewExclude('');
+                                            }
+                                        }}
                                     />
                                 </div>
                             </div>

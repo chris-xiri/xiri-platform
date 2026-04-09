@@ -58228,6 +58228,7 @@ __export(index_exports, {
   dailyProspector: () => dailyProspector,
   deleteFacebookPost: () => deleteFacebookPost,
   enrichFromWebsite: () => enrichFromWebsite,
+  expandLocation: () => expandLocation,
   generateAISequence: () => generateAISequence,
   generateLeads: () => generateLeads,
   generateMonthlyInvoices: () => generateMonthlyInvoices,
@@ -58352,9 +58353,11 @@ async function scrapeWebsite(url, geminiApiKey) {
     const additionalPages = findAdditionalPages(homepage.$, url);
     const contactPageResults = [];
     let allAdditionalHtml = "";
+    const additionalPageCache = [];
     for (const pageUrl of additionalPages.slice(0, 3)) {
       const page = await fetchPage(pageUrl);
       if (!page) continue;
+      additionalPageCache.push({ url: pageUrl, $: page.$ });
       const pagePatterns = extractFromPatterns(page.$, page.html);
       const pageLinks = extractMailtoAndTel(page.$);
       const hasForm = page.$("form").length > 0;
@@ -58382,9 +58385,8 @@ async function scrapeWebsite(url, geminiApiKey) {
       source: "web-scraper"
     };
     const allEmailsFromLinks = extractAllMailtoEmails(homepage.$);
-    for (const pageUrl of additionalPages.slice(0, 3)) {
-      const page = await fetchPage(pageUrl);
-      if (page) allEmailsFromLinks.push(...extractAllMailtoEmails(page.$));
+    for (const cached of additionalPageCache) {
+      allEmailsFromLinks.push(...extractAllMailtoEmails(cached.$));
     }
     const seenEmails = /* @__PURE__ */ new Set();
     combinedData.allEmails = allEmailsFromLinks.filter((e2) => {
@@ -58491,8 +58493,9 @@ function extractStructuredData($) {
 }
 function extractFromPatterns($, html) {
   const data = { socialMedia: {} };
+  const visibleHtml = stripNonVisibleContent(html);
   const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-  const emails = html.match(emailRegex) || [];
+  const emails = visibleHtml.match(emailRegex) || [];
   const personalEmails = emails.filter(
     (email) => !email.match(/^(info|admin|noreply|no-reply|support|hello|contact|webmaster|sales|marketing)@/i) && !email.includes("example.com") && !email.includes("domain.com") && !email.includes("sentry.io") && !email.includes("wixpress.com") && !email.includes("wordpress.") && !email.includes("@e.")
     // tracking pixels
@@ -58561,7 +58564,7 @@ function findAdditionalPages($, baseUrl) {
   return Array.from(found);
 }
 function findGenericEmail(...htmlSources) {
-  const combined = htmlSources.join(" ");
+  const combined = htmlSources.map(stripNonVisibleContent).join(" ");
   const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
   const allEmails = combined.match(emailRegex) || [];
   const genericEmails = allEmails.filter(
@@ -58631,6 +58634,9 @@ Website content:
     return {};
   }
 }
+function stripNonVisibleContent(html) {
+  return html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<noscript[\s\S]*?<\/noscript>/gi, "").replace(/<!--[\s\S]*?-->/g, "");
+}
 function determineConfidence(structured, pattern, contact, links) {
   if (structured.email || structured.phone) return "high";
   if (links.email || links.phone) return "high";
@@ -58639,6 +58645,9 @@ function determineConfidence(structured, pattern, contact, links) {
   return "low";
 }
 function validateEmail(email) {
+  const angleMatch = email.match(/<([^>]+)>/);
+  if (angleMatch) email = angleMatch[1];
+  email = email.trim();
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(email)) return void 0;
   if (email.match(/^(noreply|no-reply|donotreply|bounce|mailer-daemon|postmaster)@/i)) {
@@ -58719,9 +58728,9 @@ async function searchWebForEmail(businessName, location, domain, serperApiKey, c
   queries.push(`site:facebook.com "${businessName}" ${location} email`);
   if (contactName) {
     queries.push(`"${contactName}" "${businessName}" email`);
+  } else if (!domain) {
+    queries.push(`"${businessName}" ${location} email contact`);
   }
-  queries.push(`"${businessName}" ${location} email contact`);
-  queries.push(`"${businessName}" ${location} email site:bbb.org OR site:chamberofcommerce.com OR site:yelp.com`);
   let facebookUrl;
   for (const query of queries) {
     try {
@@ -68355,9 +68364,13 @@ var import_https17 = require("firebase-functions/v2/https");
 var HunterProvider = class {
   constructor(apiKey) {
     this.name = "hunter";
+    this.exhausted = false;
     this.apiKey = apiKey;
   }
   async findEmailsByDomain(domain) {
+    if (this.exhausted) {
+      return { emails: [], creditsUsed: 0, error: "credits_exhausted" };
+    }
     try {
       const url = `https://api.hunter.io/v2/domain-search?domain=${encodeURIComponent(domain)}&api_key=${this.apiKey}`;
       const response = await fetch(url, {
@@ -68366,6 +68379,7 @@ var HunterProvider = class {
       if (!response.ok) {
         const errorBody = await response.text();
         if (response.status === 429 || response.status === 402) {
+          this.exhausted = true;
           return { emails: [], creditsUsed: 0, error: "credits_exhausted" };
         }
         return { emails: [], creditsUsed: 0, error: `HTTP ${response.status}: ${errorBody}` };
@@ -68398,120 +68412,11 @@ var HunterProvider = class {
     }
   }
 };
-var SnovProvider = class {
-  constructor(userId, apiSecret) {
-    this.name = "snov";
-    this.accessToken = null;
-    this.tokenExpiry = 0;
-    this.userId = userId;
-    this.apiSecret = apiSecret;
-  }
-  async getAccessToken() {
-    if (this.accessToken && Date.now() < this.tokenExpiry) {
-      return this.accessToken;
-    }
-    const response = await fetch("https://api.snov.io/v1/oauth/access_token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        grant_type: "client_credentials",
-        client_id: this.userId,
-        client_secret: this.apiSecret
-      }),
-      signal: AbortSignal.timeout(1e4)
-    });
-    if (!response.ok) {
-      throw new Error(`Snov auth failed: HTTP ${response.status}`);
-    }
-    const data = await response.json();
-    this.accessToken = data.access_token;
-    this.tokenExpiry = Date.now() + 50 * 60 * 1e3;
-    return this.accessToken;
-  }
-  /** Poll a Snov v2 task until it returns status:"completed" or we give up */
-  async pollResult(url, token, maxAttempts = 5) {
-    for (let i = 0; i < maxAttempts; i++) {
-      if (i > 0) await new Promise((r) => setTimeout(r, 2e3));
-      const res = await fetch(url, {
-        headers: { "Authorization": `Bearer ${token}` },
-        signal: AbortSignal.timeout(1e4)
-      });
-      if (!res.ok) throw new Error(`Snov poll failed: HTTP ${res.status}`);
-      const data = await res.json();
-      if (data.status === "completed") return data;
-    }
-    throw new Error("Snov task timed out after polling");
-  }
-  async findEmailsByDomain(domain) {
-    try {
-      const token = await this.getAccessToken();
-      const startRes = await fetch("https://api.snov.io/v2/domain-search/domain-emails/start", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ domain }),
-        signal: AbortSignal.timeout(1e4)
-      });
-      if (!startRes.ok) {
-        const errorBody = await startRes.text();
-        if (startRes.status === 402 || startRes.status === 429) {
-          return { emails: [], creditsUsed: 0, error: "credits_exhausted" };
-        }
-        return { emails: [], creditsUsed: 0, error: `HTTP ${startRes.status}: ${errorBody}` };
-      }
-      const startData = await startRes.json();
-      const taskHash = startData?.meta?.task_hash || startData?.data?.task_hash;
-      if (!taskHash) {
-        const directEmails = startData?.data || startData?.emails || [];
-        if (Array.isArray(directEmails) && directEmails.length > 0) {
-          return this.parseEmails(directEmails);
-        }
-        return { emails: [], creditsUsed: 0, error: "No task_hash returned" };
-      }
-      const resultUrl = `https://api.snov.io/v2/domain-search/domain-emails/result/${taskHash}`;
-      const resultData = await this.pollResult(resultUrl, token);
-      const snovEmails = resultData?.data || [];
-      return this.parseEmails(snovEmails);
-    } catch (error13) {
-      console.error(`[Snov] Error searching ${domain}:`, error13.message);
-      return { emails: [], creditsUsed: 0, error: error13.message };
-    }
-  }
-  parseEmails(snovEmails) {
-    const emails = snovEmails.filter((e2) => e2.email).map((e2) => {
-      const isGeneric = /^(info|contact|hello|office|admin|support|sales|team|service|services)@/i.test(e2.email || "");
-      return {
-        email: (e2.email || "").toLowerCase(),
-        firstName: e2.firstName || e2.first_name || void 0,
-        lastName: e2.lastName || e2.last_name || void 0,
-        position: e2.position || void 0,
-        confidence: e2.score || 0,
-        type: isGeneric ? "generic" : "personal",
-        provider: "snov"
-      };
-    });
-    emails.sort((a2, b) => {
-      if (a2.type === "personal" && b.type !== "personal") return -1;
-      if (a2.type !== "personal" && b.type === "personal") return 1;
-      return (b.confidence || 0) - (a2.confidence || 0);
-    });
-    return {
-      emails,
-      creditsUsed: 1
-      // Snov charges 1 credit per domain search
-    };
-  }
-};
 async function runEnrichmentWaterfall(domain, secrets) {
   const providers2 = [];
   const log = [];
   if (secrets.hunterApiKey) {
     providers2.push(new HunterProvider(secrets.hunterApiKey));
-  }
-  if (secrets.snovUserId && secrets.snovApiSecret) {
-    providers2.push(new SnovProvider(secrets.snovUserId, secrets.snovApiSecret));
   }
   if (providers2.length === 0) {
     log.push("No enrichment providers configured \u2014 skipping API waterfall");
@@ -68686,8 +68591,37 @@ async function prospectAndEnrich(input, secrets) {
     skippedNoWebsite: 0
   };
   const toProcess = rawVendors.slice(0, maxResults);
+  const PIPELINE_TIME_BUDGET_MS = 7 * 60 * 1e3;
+  const PER_BUSINESS_TIMEOUT_MS = 3e4;
+  const pipelineStart = Date.now();
   for (const vendor of toProcess) {
-    const prospect = await enrichSingleBusiness(vendor, secrets, input);
+    const elapsed = Date.now() - pipelineStart;
+    if (elapsed > PIPELINE_TIME_BUDGET_MS) {
+      console.log(`[Prospector] \u23F1\uFE0F Pipeline time budget exhausted (${Math.round(elapsed / 1e3)}s). Processed ${prospects.length}/${toProcess.length} businesses.`);
+      break;
+    }
+    let prospect;
+    try {
+      prospect = await Promise.race([
+        enrichSingleBusiness(vendor, secrets, input),
+        new Promise(
+          (_, reject) => setTimeout(() => reject(new Error(`Enrichment timed out after ${PER_BUSINESS_TIMEOUT_MS / 1e3}s`)), PER_BUSINESS_TIMEOUT_MS)
+        )
+      ]);
+    } catch (error13) {
+      console.warn(`[Prospector] \u26A0\uFE0F Skipping "${vendor.name}": ${error13.message}`);
+      prospect = {
+        businessName: vendor.name,
+        address: vendor.location,
+        phone: vendor.phone,
+        website: vendor.website,
+        rating: vendor.rating,
+        userRatingsTotal: vendor.user_ratings_total,
+        emailSource: "none",
+        emailConfidence: "low",
+        enrichmentLog: [`Skipped: ${error13.message}`]
+      };
+    }
     prospects.push(prospect);
     if (prospect.contactEmail && !GENERIC_PREFIXES.test(prospect.contactEmail)) {
       stats.withPersonalEmail++;
@@ -68814,9 +68748,7 @@ async function enrichSingleBusiness(vendor, secrets, input) {
     if (domain) {
       log.push(`Layer 3: Running enrichment API waterfall for ${domain}...`);
       const waterfallResult = await runEnrichmentWaterfall(domain, {
-        hunterApiKey: secrets.hunterApiKey,
-        snovUserId: secrets.snovUserId,
-        snovApiSecret: secrets.snovApiSecret
+        hunterApiKey: secrets.hunterApiKey
       });
       log.push(...waterfallResult.log);
       if (waterfallResult.allEmails.length > 0) {
@@ -68912,7 +68844,7 @@ function extractDomain(url) {
 // src/functions/prospecting.ts
 init_src();
 var runProspector = (0, import_https17.onCall)({
-  secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET"],
+  secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
   // 9 minutes — some enrichment steps are slow
@@ -68933,9 +68865,7 @@ var runProspector = (0, import_https17.onCall)({
       {
         geminiApiKey: process.env.GEMINI_API_KEY,
         serperApiKey: process.env.SERPER_API_KEY,
-        hunterApiKey: process.env.HUNTER_API_KEY,
-        snovUserId: process.env.SNOV_USER_ID,
-        snovApiSecret: process.env.SNOV_API_SECRET
+        hunterApiKey: process.env.HUNTER_API_KEY
       }
     );
     return {
@@ -68963,7 +68893,6 @@ var addProspectsToCrm = (0, import_https17.onCall)({
       const facilityType = inferFacilityType(prospect.searchQuery || batchSearchQuery) || null;
       const companyRef = db.collection("companies").doc();
       batch.set(companyRef, {
-        name: prospect.businessName,
         businessName: prospect.businessName,
         address: prospect.address || null,
         phone: prospect.phone || null,
@@ -69047,6 +68976,39 @@ var addProspectsToCrm = (0, import_https17.onCall)({
   } catch (error13) {
     console.error("[addProspectsToCrm] Error:", error13);
     throw new import_https17.HttpsError("internal", error13.message || "CRM import failed.");
+  }
+});
+var expandLocation = (0, import_https17.onCall)({
+  secrets: ["GEMINI_API_KEY"],
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 30
+}, async (request) => {
+  const data = request.data || {};
+  const location = data.location;
+  if (!location) {
+    throw new import_https17.HttpsError("invalid-argument", "Missing 'location'.");
+  }
+  try {
+    console.log(`[expandLocation] Bursting location: "${location}"...`);
+    const prompt = `List the 25 most prominent and populated towns or cities inside: ${location}. Return ONLY a JSON array of strings formatted exactly like ["Mineola, NY", "Garden City, NY"]. Do not return markdown, do not return backticks. Just the raw array. Ensure the state abbreviation is included.`;
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
+    });
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.statusText}`);
+    }
+    const resData = await response.json();
+    let textResponse = resData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "[]";
+    textResponse = textResponse.replace(/^```json/g, "").replace(/^```/g, "").replace(/```$/g, "").trim();
+    const towns = JSON.parse(textResponse);
+    return { towns };
+  } catch (error13) {
+    console.error("[expandLocation] Error:", error13);
+    throw new import_https17.HttpsError("internal", error13.message || "Failed to expand location.");
   }
 });
 
@@ -69134,9 +69096,7 @@ async function runDailyPipeline() {
   const secrets = {
     geminiApiKey: process.env.GEMINI_API_KEY,
     serperApiKey: process.env.SERPER_API_KEY,
-    hunterApiKey: process.env.HUNTER_API_KEY,
-    snovUserId: process.env.SNOV_USER_ID,
-    snovApiSecret: process.env.SNOV_API_SECRET
+    hunterApiKey: process.env.HUNTER_API_KEY
   };
   const seen = await loadSeenSet();
   const batchDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
@@ -69173,6 +69133,8 @@ async function runDailyPipeline() {
             secrets
           );
           totalDiscovered += result.prospects.length;
+          let batchCount = 0;
+          const batch = db.batch();
           for (const prospect of result.prospects) {
             if (newProspects.length >= config2.dailyTarget) break;
             const normalized = normalizeName(prospect.businessName);
@@ -69200,47 +69162,51 @@ async function runDailyPipeline() {
             if (genericLower) seen.add(`email:${genericLower}`);
             if (websiteDomain) seen.add(`domain:${websiteDomain}`);
             if (addressNorm && addressNorm.length >= 10) seen.add(`addr:${addressNorm}`);
+            const ref = db.collection("prospect_queue").doc();
+            batch.set(ref, {
+              businessName: prospect.businessName,
+              normalizedName: normalizeName(prospect.businessName),
+              address: prospect.address || null,
+              phone: prospect.phone || null,
+              website: prospect.website || null,
+              rating: prospect.rating || null,
+              contactEmail: prospect.contactEmail || null,
+              genericEmail: prospect.genericEmail || null,
+              contactName: prospect.contactName || null,
+              contactTitle: prospect.contactTitle || null,
+              emailSource: prospect.emailSource || "none",
+              emailConfidence: prospect.emailConfidence || "low",
+              facebookUrl: prospect.facebookUrl || null,
+              linkedinUrl: prospect.linkedinUrl || null,
+              enrichmentLog: prospect.enrichmentLog || [],
+              allContacts: prospect.allContacts || [],
+              status: "pending_review",
+              batchDate,
+              searchQuery: queryTerm,
+              searchLocation: location,
+              createdAt: /* @__PURE__ */ new Date()
+            });
             newProspects.push({ prospect, query: queryTerm, location });
+            batchCount++;
+          }
+          if (batchCount > 0) {
+            await batch.commit();
+            logger28.info(`[DailyProspector] Wrote incremental batch of ${batchCount} prospects.`);
           }
           await updateProgress(`${queryTerm} in ${location}`);
+          const elapsedSecs2 = (Date.now() - startedAt.getTime()) / 1e3;
+          if (elapsedSecs2 > 480) {
+            logger28.warn("[DailyProspector] Approaching 9-minute execution limit. Stopping early to save state.");
+            break;
+          }
         } catch (err2) {
           logger28.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
         }
       }
-    }
-    const BATCH_LIMIT = 450;
-    for (let i = 0; i < newProspects.length; i += BATCH_LIMIT) {
-      const chunk = newProspects.slice(i, i + BATCH_LIMIT);
-      const batch = db.batch();
-      for (const { prospect, query, location } of chunk) {
-        const ref = db.collection("prospect_queue").doc();
-        batch.set(ref, {
-          businessName: prospect.businessName,
-          normalizedName: normalizeName(prospect.businessName),
-          address: prospect.address || null,
-          phone: prospect.phone || null,
-          website: prospect.website || null,
-          rating: prospect.rating || null,
-          contactEmail: prospect.contactEmail || null,
-          genericEmail: prospect.genericEmail || null,
-          contactName: prospect.contactName || null,
-          contactTitle: prospect.contactTitle || null,
-          emailSource: prospect.emailSource || "none",
-          emailConfidence: prospect.emailConfidence || "low",
-          facebookUrl: prospect.facebookUrl || null,
-          linkedinUrl: prospect.linkedinUrl || null,
-          enrichmentLog: prospect.enrichmentLog || [],
-          // All contacts discovered via Hunter/Snov (up to 10 per domain search credit)
-          allContacts: prospect.allContacts || [],
-          status: "pending_review",
-          batchDate,
-          searchQuery: query,
-          searchLocation: location,
-          createdAt: /* @__PURE__ */ new Date()
-        });
+      const elapsedSecs = (Date.now() - startedAt.getTime()) / 1e3;
+      if (elapsedSecs > 480) {
+        break;
       }
-      await batch.commit();
-      logger28.info(`[DailyProspector] Wrote batch of ${chunk.length} prospects.`);
     }
     const stats = {
       discovered: totalDiscovered,
@@ -69284,7 +69250,7 @@ var dailyProspector = (0, import_scheduler10.onSchedule)({
   schedule: "0 6 * * *",
   // 6:00 AM ET daily
   timeZone: "America/New_York",
-  secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET"],
+  secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
@@ -69293,7 +69259,7 @@ var dailyProspector = (0, import_scheduler10.onSchedule)({
 });
 var triggerDailyProspector = (0, import_https18.onCall)({
   cors: DASHBOARD_CORS,
-  secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET"],
+  secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
@@ -69460,6 +69426,7 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
   dailyProspector,
   deleteFacebookPost,
   enrichFromWebsite,
+  expandLocation,
   generateAISequence,
   generateLeads,
   generateMonthlyInvoices,

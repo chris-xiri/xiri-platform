@@ -182,3 +182,48 @@ export const addProspectsToCrm = onCall({
         throw new HttpsError("internal", error.message || "CRM import failed.");
     }
 });
+
+// ── Auto-Expand County to Towns ──
+// Uses Gemini to break a county or region into a list of specific towns/cities.
+export const expandLocation = onCall({
+    secrets: ["GEMINI_API_KEY"],
+    cors: DASHBOARD_CORS,
+    timeoutSeconds: 30,
+}, async (request) => {
+    const data = request.data || {};
+    const location = data.location as string;
+
+    if (!location) {
+        throw new HttpsError("invalid-argument", "Missing 'location'.");
+    }
+
+    try {
+        console.log(`[expandLocation] Bursting location: "${location}"...`);
+
+        const prompt = `List the 25 most prominent and populated towns or cities inside: ${location}. Return ONLY a JSON array of strings formatted exactly like ["Mineola, NY", "Garden City, NY"]. Do not return markdown, do not return backticks. Just the raw array. Ensure the state abbreviation is included.`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Gemini API error: ${response.statusText}`);
+        }
+
+        const resData = await response.json();
+        let textResponse = resData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "[]";
+        
+        // Strip markdown backticks if any
+        textResponse = textResponse.replace(/^```json/g, '').replace(/^```/g, '').replace(/```$/g, '').trim();
+
+        const towns = JSON.parse(textResponse);
+        return { towns };
+    } catch (error: any) {
+        console.error("[expandLocation] Error:", error);
+        throw new HttpsError("internal", error.message || "Failed to expand location.");
+    }
+});

@@ -40,6 +40,8 @@ interface ProspectingConfig {
         withEmail: number;
         added: number;
         duplicatesSkipped: number;
+        queryYield?: Record<string, { discovered: number; qualified: number }>;
+        locationYield?: Record<string, { discovered: number; qualified: number }>;
     };
 }
 
@@ -147,6 +149,9 @@ async function runDailyPipeline() {
     const newProspects: Array<{ prospect: EnrichedProspect; query: string; location: string }> = [];
     let totalDiscovered = 0;
     let duplicatesSkipped = 0;
+    
+    const queryYield: Record<string, { discovered: number; qualified: number }> = {};
+    const locationYield: Record<string, { discovered: number; qualified: number }> = {};
 
     // Progress doc for live UI updates
     const statusRef = db.collection("prospecting_config").doc("run_status");
@@ -188,6 +193,15 @@ async function runDailyPipeline() {
                     );
 
                     totalDiscovered += result.prospects.length;
+
+                    queryYield[queryTerm] = queryYield[queryTerm] || { discovered: 0, qualified: 0 };
+                    queryYield[queryTerm].discovered += result.prospects.length;
+                    
+                    locationYield[location] = locationYield[location] || { discovered: 0, qualified: 0 };
+                    locationYield[location].discovered += result.prospects.length;
+
+                    let batchCount = 0;
+                    const batch = db.batch();
 
                     for (const prospect of result.prospects) {
                         if (newProspects.length >= config.dailyTarget) break;
@@ -237,59 +251,69 @@ async function runDailyPipeline() {
                         if (websiteDomain) seen.add(`domain:${websiteDomain}`);
                         if (addressNorm && addressNorm.length >= 10) seen.add(`addr:${addressNorm}`);
 
+                        // Incrementally add to batch
+                        const ref = db.collection("prospect_queue").doc();
+                        batch.set(ref, {
+                            businessName: prospect.businessName,
+                            normalizedName: normalizeName(prospect.businessName),
+                            address: prospect.address || null,
+                            phone: prospect.phone || null,
+                            website: prospect.website || null,
+                            rating: prospect.rating || null,
+
+                            contactEmail: prospect.contactEmail || null,
+                            genericEmail: prospect.genericEmail || null,
+                            contactName: prospect.contactName || null,
+                            contactTitle: prospect.contactTitle || null,
+                            emailSource: prospect.emailSource || 'none',
+                            emailConfidence: prospect.emailConfidence || 'low',
+                            facebookUrl: prospect.facebookUrl || null,
+                            linkedinUrl: prospect.linkedinUrl || null,
+                            enrichmentLog: prospect.enrichmentLog || [],
+
+                            allContacts: prospect.allContacts || [],
+
+                            status: "pending_review",
+                            batchDate,
+                            searchQuery: queryTerm,
+                            searchLocation: location,
+
+                            createdAt: new Date(),
+                        });
+
                         newProspects.push({ prospect, query: queryTerm, location });
+                        batchCount++;
+
+                        queryYield[queryTerm].qualified++;
+                        locationYield[location].qualified++;
+                    }
+
+                    if (batchCount > 0) {
+                        await batch.commit();
+                        logger.info(`[DailyProspector] Wrote incremental batch of ${batchCount} prospects.`);
                     }
 
                     // Update progress after each query batch
                     await updateProgress(`${queryTerm} in ${location}`);
+                    
+                    const elapsedSecs = (Date.now() - startedAt.getTime()) / 1000;
+                    if (elapsedSecs > 480) { // 8 minutes
+                        logger.warn("[DailyProspector] Approaching 9-minute execution limit. Stopping early to save state.");
+                        break; 
+                    }
                 } catch (err: any) {
                     logger.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err.message);
                     // Continue with next query
                 }
             }
-        }
-
-        // Write to prospect_queue in batches of 500 (Firestore limit)
-        const BATCH_LIMIT = 450;
-        for (let i = 0; i < newProspects.length; i += BATCH_LIMIT) {
-            const chunk = newProspects.slice(i, i + BATCH_LIMIT);
-            const batch = db.batch();
-
-            for (const { prospect, query, location } of chunk) {
-                const ref = db.collection("prospect_queue").doc();
-                batch.set(ref, {
-                    businessName: prospect.businessName,
-                    normalizedName: normalizeName(prospect.businessName),
-                    address: prospect.address || null,
-                    phone: prospect.phone || null,
-                    website: prospect.website || null,
-                    rating: prospect.rating || null,
-
-                    contactEmail: prospect.contactEmail || null,
-                    genericEmail: prospect.genericEmail || null,
-                    contactName: prospect.contactName || null,
-                    contactTitle: prospect.contactTitle || null,
-                    emailSource: prospect.emailSource || 'none',
-                    emailConfidence: prospect.emailConfidence || 'low',
-                    facebookUrl: prospect.facebookUrl || null,
-                    linkedinUrl: prospect.linkedinUrl || null,
-                    enrichmentLog: prospect.enrichmentLog || [],
-
-                    // All contacts discovered via Hunter enrichment
-                    allContacts: prospect.allContacts || [],
-
-                    status: "pending_review",
-                    batchDate,
-                    searchQuery: query,
-                    searchLocation: location,
-
-                    createdAt: new Date(),
-                });
+            
+            const elapsedSecs = (Date.now() - startedAt.getTime()) / 1000;
+            if (elapsedSecs > 480) {
+                break; 
             }
-
-            await batch.commit();
-            logger.info(`[DailyProspector] Wrote batch of ${chunk.length} prospects.`);
         }
+
+        // Prospects are now incrementally saved during the loops, so we don't need a final batch write here!
 
         // Update config with run stats
         const stats = {
@@ -297,6 +321,8 @@ async function runDailyPipeline() {
             withEmail: newProspects.length,
             added: newProspects.length,
             duplicatesSkipped,
+            queryYield,
+            locationYield
         };
 
         await db.collection("prospecting_config").doc("default").set({
