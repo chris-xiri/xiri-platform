@@ -79,6 +79,129 @@ export interface FacilityPhrases {
 }
 
 /**
+ * Runtime-accessible list of all FacilityPhrases keys.
+ * Used by the email template editor to auto-generate "Insert Variable" buttons.
+ */
+export const FACILITY_PHRASE_KEYS = [
+    'spaceNoun',
+    'cadencePhrase',
+    'facilityCategory',
+    'serviceHook',
+    'coreOpsPhrase',
+] as const satisfies readonly (keyof FacilityPhrases)[];
+
+/** Fallback values when a lead has no matched facility type. */
+export const FACILITY_PHRASE_DEFAULTS: Readonly<FacilityPhrases> = {
+    spaceNoun: 'facility',
+    cadencePhrase: 'regular professional cleaning',
+    facilityCategory: 'commercial facilities',
+    serviceHook: 'reliable, transparent facility maintenance',
+    coreOpsPhrase: 'core operations',
+};
+
+// ── Email Merge Variables (canonical source of truth) ─────────────
+
+/**
+ * Typed interfaces for each email category's merge variables.
+ * Adding a key here without updating EMAIL_MERGE_VARIABLES (or vice versa)
+ * will cause a TypeScript build error via `satisfies`.
+ */
+export interface LeadMergeVars extends FacilityPhrases {
+    businessName: string;
+    contactName: string;
+    contactFirstName: string;
+    contactEmail: string;
+    facilityType: string;
+    address: string;
+    squareFootage: string;
+}
+
+export interface ContractorMergeVars {
+    vendorName: string;
+    contactName: string;
+    city: string;
+    state: string;
+    services: string;
+    specialty: string;
+    onboardingUrl: string;
+}
+
+export interface ReferralMergeVars {
+    contactName: string;
+    contactFirstName: string;
+    contactEmail: string;
+    businessName: string;
+}
+
+/**
+ * All available merge-tag variables per email category.
+ * The keys become the {{variable}} names; values are sample text for the editor.
+ *
+ * ⚠️  Adding a field to the interface above without a sample value here
+ *     (or vice versa) will produce a TypeScript build error.
+ */
+export const EMAIL_MERGE_VARIABLES = {
+    lead: {
+        businessName: 'Garden City Medical Associates',
+        contactName: 'Dr. Smith',
+        contactFirstName: 'Dr.',
+        contactEmail: 'dr.smith@gcmedical.com',
+        facilityType: 'Medical Urgent Care',
+        address: '123 Main St, Garden City, NY 11530',
+        squareFootage: '3,200 sq ft',
+        // Facility-phrase sample values — satisfies will error if a key is missing
+        spaceNoun: 'clinic',
+        cadencePhrase: 'nightly clinical-grade sanitation',
+        facilityCategory: 'healthcare facilities',
+        serviceHook: 'infection-control cleaning that keeps your clinic audit-ready',
+        coreOpsPhrase: 'patient care',
+    } satisfies LeadMergeVars,
+    contractor: {
+        vendorName: 'Bright Shine Cleaning Co.',
+        contactName: 'Maria',
+        city: 'Queens',
+        state: 'NY',
+        services: 'Janitorial, Floor Care, Post-Construction',
+        specialty: 'Janitorial',
+        onboardingUrl: 'https://xiri.ai/contractor?vid=DEMO123',
+    } satisfies ContractorMergeVars,
+    referral: {
+        contactName: 'Harvey',
+        contactFirstName: 'Jessica',
+        contactEmail: 'harvey@nassaurealty.com',
+        businessName: 'Nassau Commercial Realty',
+    } satisfies ReferralMergeVars,
+} satisfies Record<string, Record<string, string>>;
+
+/**
+ * Variable groups for the template editor's 2-step "Insert Variable" UI.
+ * Step 1: user picks a group (e.g. "Contact", "Facility")
+ * Step 2: user sees only variables in that group
+ */
+export interface VariableGroup {
+    label: string;
+    icon?: string;  // lucide icon name for the UI
+    vars: string[];
+}
+
+export const EMAIL_VARIABLE_GROUPS: Record<string, VariableGroup[]> = {
+    lead: [
+        { label: 'Contact', icon: 'user', vars: ['contactName', 'contactFirstName', 'contactEmail'] },
+        { label: 'Company', icon: 'building-2', vars: ['businessName', 'facilityType', 'address', 'squareFootage'] },
+        { label: 'Facility', icon: 'sparkles', vars: ['spaceNoun', 'cadencePhrase', 'facilityCategory', 'serviceHook', 'coreOpsPhrase'] },
+    ],
+    contractor: [
+        { label: 'Contact', icon: 'user', vars: ['contactName'] },
+        { label: 'Business', icon: 'hard-hat', vars: ['vendorName', 'city', 'state', 'services', 'specialty'] },
+        { label: 'Onboarding', icon: 'link', vars: ['onboardingUrl'] },
+    ],
+    referral: [
+        { label: 'Contact', icon: 'user', vars: ['contactName', 'contactFirstName', 'contactEmail'] },
+        { label: 'Company', icon: 'building-2', vars: ['businessName'] },
+    ],
+};
+
+/**
  * Static phrase map keyed by canonical FacilityType.
  * Used during email merge to inject facility-aware copy via {{spaceNoun}},
  * {{cadencePhrase}}, {{facilityCategory}}, {{serviceHook}}, {{coreOpsPhrase}}.

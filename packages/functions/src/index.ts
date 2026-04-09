@@ -31,6 +31,7 @@ export { onLeadUpdated, onVendorUpdated, onStaffUpdated } from "./triggers/onLea
 export { weeklyTemplateOptimizer, optimizeTemplate } from "./triggers/aiTemplateOptimizer";
 export { startLeadSequence } from "./triggers/startLeadSequence";
 export { sendSingleLeadEmail } from "./triggers/sendSingleLeadEmail";
+export { sendPreviewEmail } from "./triggers/sendPreviewEmail";
 export { onContactDeleted } from "./triggers/onContactDeleted";
 
 // ── Social AI Engine (scheduled) ──

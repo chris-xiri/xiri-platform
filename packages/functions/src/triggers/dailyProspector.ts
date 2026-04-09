@@ -2,7 +2,7 @@
  * Daily Prospector — Automated Lead Discovery Pipeline
  *
  * Runs daily at 6 AM ET. Discovers commercial prospects via Serper Places,
- * enriches them with the full waterfall (scrape → web search → Hunter/Snov),
+ * enriches them with the full waterfall (scrape → web search → Hunter),
  * and writes them to `prospect_queue` for human review.
  *
  * Deduplicates against:
@@ -140,8 +140,6 @@ async function runDailyPipeline() {
         geminiApiKey: process.env.GEMINI_API_KEY!,
         serperApiKey: process.env.SERPER_API_KEY!,
         hunterApiKey: process.env.HUNTER_API_KEY,
-        snovUserId: process.env.SNOV_USER_ID,
-        snovApiSecret: process.env.SNOV_API_SECRET,
     };
 
     const seen = await loadSeenSet();
@@ -152,10 +150,11 @@ async function runDailyPipeline() {
 
     // Progress doc for live UI updates
     const statusRef = db.collection("prospecting_config").doc("run_status");
+    const startedAt = new Date();
     const updateProgress = async (currentQuery?: string) => {
         await statusRef.set({
             running: true,
-            startedAt: new Date(),
+            startedAt,
             discovered: totalDiscovered,
             qualified: newProspects.length,
             duplicatesSkipped,
@@ -168,156 +167,175 @@ async function runDailyPipeline() {
     // Mark as running
     await updateProgress("Initializing...");
 
-    // Iterate queries × locations until we hit dailyTarget
-    for (const location of config.locations) {
-        if (newProspects.length >= config.dailyTarget) break;
-
-        for (const queryTerm of config.queries) {
+    try {
+        // Iterate queries × locations until we hit dailyTarget
+        for (const location of config.locations) {
             if (newProspects.length >= config.dailyTarget) break;
 
-            const remaining = config.dailyTarget - newProspects.length;
-            const batchSize = Math.min(remaining + 10, 20); // request a few extra to account for dedup
+            for (const queryTerm of config.queries) {
+                if (newProspects.length >= config.dailyTarget) break;
 
-            logger.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
-            await updateProgress(`${queryTerm} in ${location}`);
+                const remaining = config.dailyTarget - newProspects.length;
+                const batchSize = Math.min(remaining + 10, 20); // request a few extra to account for dedup
 
-            try {
-                const result = await prospectAndEnrich(
-                    { query: queryTerm, location, maxResults: batchSize, skipPaidApis: false },
-                    secrets
-                );
-
-                totalDiscovered += result.prospects.length;
-
-                for (const prospect of result.prospects) {
-                    if (newProspects.length >= config.dailyTarget) break;
-
-                    const normalized = normalizeName(prospect.businessName);
-                    const emailLower = prospect.contactEmail?.toLowerCase();
-                    const genericLower = prospect.genericEmail?.toLowerCase();
-                    const phoneCleaned = prospect.phone?.replace(/[^0-9]/g, '');
-                    const addressNorm = prospect.address
-                        ? prospect.address.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
-                        : undefined;
-                    const websiteDomain = prospect.website
-                        ? prospect.website.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase()
-                        : undefined;
-
-                    // Dedup check: name, phone, email, address, or website domain
-                    if (
-                        seen.has(normalized) ||
-                        (phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`)) ||
-                        (emailLower && seen.has(`email:${emailLower}`)) ||
-                        (genericLower && seen.has(`email:${genericLower}`)) ||
-                        (websiteDomain && seen.has(`domain:${websiteDomain}`)) ||
-                        (addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`))
-                    ) {
-                        duplicatesSkipped++;
-                        continue;
-                    }
-
-                    // Exclude patterns check
-                    if (config.excludePatterns.some(p =>
-                        normalized.includes(p.toLowerCase())
-                    )) {
-                        duplicatesSkipped++;
-                        continue;
-                    }
-
-                    // Only add prospects that have at least some email
-                    if (!prospect.contactEmail && !prospect.genericEmail) {
-                        continue;
-                    }
-
-                    // Add ALL identifiers to seen set to prevent within-batch dupes
-                    seen.add(normalized);
-                    if (phoneCleaned && phoneCleaned.length >= 7) seen.add(`phone:${phoneCleaned}`);
-                    if (emailLower) seen.add(`email:${emailLower}`);
-                    if (genericLower) seen.add(`email:${genericLower}`);
-                    if (websiteDomain) seen.add(`domain:${websiteDomain}`);
-                    if (addressNorm && addressNorm.length >= 10) seen.add(`addr:${addressNorm}`);
-
-                    newProspects.push({ prospect, query: queryTerm, location });
-                }
-
-                // Update progress after each query batch
+                logger.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
                 await updateProgress(`${queryTerm} in ${location}`);
-            } catch (err: any) {
-                logger.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err.message);
-                // Continue with next query
+
+                try {
+                    const result = await prospectAndEnrich(
+                        { query: queryTerm, location, maxResults: batchSize, skipPaidApis: false },
+                        secrets
+                    );
+
+                    totalDiscovered += result.prospects.length;
+
+                    for (const prospect of result.prospects) {
+                        if (newProspects.length >= config.dailyTarget) break;
+
+                        const normalized = normalizeName(prospect.businessName);
+                        const emailLower = prospect.contactEmail?.toLowerCase();
+                        const genericLower = prospect.genericEmail?.toLowerCase();
+                        const phoneCleaned = prospect.phone?.replace(/[^0-9]/g, '');
+                        const addressNorm = prospect.address
+                            ? prospect.address.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
+                            : undefined;
+                        const websiteDomain = prospect.website
+                            ? prospect.website.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase()
+                            : undefined;
+
+                        // Dedup check: name, phone, email, address, or website domain
+                        if (
+                            seen.has(normalized) ||
+                            (phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`)) ||
+                            (emailLower && seen.has(`email:${emailLower}`)) ||
+                            (genericLower && seen.has(`email:${genericLower}`)) ||
+                            (websiteDomain && seen.has(`domain:${websiteDomain}`)) ||
+                            (addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`))
+                        ) {
+                            duplicatesSkipped++;
+                            continue;
+                        }
+
+                        // Exclude patterns check
+                        if (config.excludePatterns.some(p =>
+                            normalized.includes(p.toLowerCase())
+                        )) {
+                            duplicatesSkipped++;
+                            continue;
+                        }
+
+                        // Only add prospects that have at least some email
+                        if (!prospect.contactEmail && !prospect.genericEmail) {
+                            continue;
+                        }
+
+                        // Add ALL identifiers to seen set to prevent within-batch dupes
+                        seen.add(normalized);
+                        if (phoneCleaned && phoneCleaned.length >= 7) seen.add(`phone:${phoneCleaned}`);
+                        if (emailLower) seen.add(`email:${emailLower}`);
+                        if (genericLower) seen.add(`email:${genericLower}`);
+                        if (websiteDomain) seen.add(`domain:${websiteDomain}`);
+                        if (addressNorm && addressNorm.length >= 10) seen.add(`addr:${addressNorm}`);
+
+                        newProspects.push({ prospect, query: queryTerm, location });
+                    }
+
+                    // Update progress after each query batch
+                    await updateProgress(`${queryTerm} in ${location}`);
+                } catch (err: any) {
+                    logger.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err.message);
+                    // Continue with next query
+                }
             }
         }
-    }
 
-    // Write to prospect_queue in batches of 500 (Firestore limit)
-    const BATCH_LIMIT = 450;
-    for (let i = 0; i < newProspects.length; i += BATCH_LIMIT) {
-        const chunk = newProspects.slice(i, i + BATCH_LIMIT);
-        const batch = db.batch();
+        // Write to prospect_queue in batches of 500 (Firestore limit)
+        const BATCH_LIMIT = 450;
+        for (let i = 0; i < newProspects.length; i += BATCH_LIMIT) {
+            const chunk = newProspects.slice(i, i + BATCH_LIMIT);
+            const batch = db.batch();
 
-        for (const { prospect, query, location } of chunk) {
-            const ref = db.collection("prospect_queue").doc();
-            batch.set(ref, {
-                businessName: prospect.businessName,
-                normalizedName: normalizeName(prospect.businessName),
-                address: prospect.address || null,
-                phone: prospect.phone || null,
-                website: prospect.website || null,
-                rating: prospect.rating || null,
+            for (const { prospect, query, location } of chunk) {
+                const ref = db.collection("prospect_queue").doc();
+                batch.set(ref, {
+                    businessName: prospect.businessName,
+                    normalizedName: normalizeName(prospect.businessName),
+                    address: prospect.address || null,
+                    phone: prospect.phone || null,
+                    website: prospect.website || null,
+                    rating: prospect.rating || null,
 
-                contactEmail: prospect.contactEmail || null,
-                genericEmail: prospect.genericEmail || null,
-                contactName: prospect.contactName || null,
-                contactTitle: prospect.contactTitle || null,
-                emailSource: prospect.emailSource || 'none',
-                emailConfidence: prospect.emailConfidence || 'low',
-                facebookUrl: prospect.facebookUrl || null,
-                linkedinUrl: prospect.linkedinUrl || null,
-                enrichmentLog: prospect.enrichmentLog || [],
+                    contactEmail: prospect.contactEmail || null,
+                    genericEmail: prospect.genericEmail || null,
+                    contactName: prospect.contactName || null,
+                    contactTitle: prospect.contactTitle || null,
+                    emailSource: prospect.emailSource || 'none',
+                    emailConfidence: prospect.emailConfidence || 'low',
+                    facebookUrl: prospect.facebookUrl || null,
+                    linkedinUrl: prospect.linkedinUrl || null,
+                    enrichmentLog: prospect.enrichmentLog || [],
 
-                // All contacts discovered via Hunter/Snov (up to 10 per domain search credit)
-                allContacts: prospect.allContacts || [],
+                    // All contacts discovered via Hunter enrichment
+                    allContacts: prospect.allContacts || [],
 
-                status: "pending_review",
-                batchDate,
-                searchQuery: query,
-                searchLocation: location,
+                    status: "pending_review",
+                    batchDate,
+                    searchQuery: query,
+                    searchLocation: location,
 
-                createdAt: new Date(),
-            });
+                    createdAt: new Date(),
+                });
+            }
+
+            await batch.commit();
+            logger.info(`[DailyProspector] Wrote batch of ${chunk.length} prospects.`);
         }
 
-        await batch.commit();
-        logger.info(`[DailyProspector] Wrote batch of ${chunk.length} prospects.`);
+        // Update config with run stats
+        const stats = {
+            discovered: totalDiscovered,
+            withEmail: newProspects.length,
+            added: newProspects.length,
+            duplicatesSkipped,
+        };
+
+        await db.collection("prospecting_config").doc("default").set({
+            ...config,
+            lastRunAt: new Date(),
+            lastRunStats: stats,
+        }, { merge: true });
+
+        // Mark run as complete for UI
+        await statusRef.set({
+            running: false,
+            discovered: totalDiscovered,
+            qualified: newProspects.length,
+            duplicatesSkipped,
+            target: config.dailyTarget,
+            currentQuery: null,
+            completedAt: new Date(),
+            updatedAt: new Date(),
+        });
+
+        logger.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
+    } catch (err: any) {
+        // Pipeline crashed — log the error and mark as failed
+        logger.error(`[DailyProspector] Pipeline crashed:`, err.message || err);
+
+        await statusRef.set({
+            running: false,
+            discovered: totalDiscovered,
+            qualified: newProspects.length,
+            duplicatesSkipped,
+            target: config.dailyTarget,
+            currentQuery: null,
+            error: err.message || "Unknown error",
+            failedAt: new Date(),
+            updatedAt: new Date(),
+        }).catch((e: any) => logger.error("[DailyProspector] Failed to write error status:", e.message));
+
+        throw err; // Re-throw so Cloud Functions marks the invocation as failed
     }
-
-    // Update config with run stats
-    const stats = {
-        discovered: totalDiscovered,
-        withEmail: newProspects.length,
-        added: newProspects.length,
-        duplicatesSkipped,
-    };
-
-    await db.collection("prospecting_config").doc("default").set({
-        ...config,
-        lastRunAt: new Date(),
-        lastRunStats: stats,
-    }, { merge: true });
-
-    // Mark run as complete for UI
-    await statusRef.set({
-        running: false,
-        discovered: totalDiscovered,
-        qualified: newProspects.length,
-        duplicatesSkipped,
-        target: config.dailyTarget,
-        currentQuery: null,
-        completedAt: new Date(),
-        updatedAt: new Date(),
-    });
-
-    logger.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
 }
 
 // ── Scheduled trigger: 6 AM ET daily ────────────────────────────────
@@ -325,7 +343,7 @@ async function runDailyPipeline() {
 export const dailyProspector = onSchedule({
     schedule: "0 6 * * *",  // 6:00 AM ET daily
     timeZone: "America/New_York",
-    secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET"],
+    secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
     timeoutSeconds: 540,
     memory: "1GiB",
 }, async () => {
@@ -337,7 +355,7 @@ export const dailyProspector = onSchedule({
 
 export const triggerDailyProspector = onCall({
     cors: DASHBOARD_CORS,
-    secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET"],
+    secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
     timeoutSeconds: 540,
     memory: "1GiB",
 }, async () => {

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Lead, LeadType, FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
+import { Lead, LeadType, FACILITY_TYPE_LABELS, FACILITY_TYPE_OPTIONS } from '@xiri-facility-solutions/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -553,9 +553,17 @@ export default function LeadDetailPage() {
                                 )}
                             />
                             <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-muted-foreground">
-                                    {FACILITY_TYPE_LABELS[lead.facilityType] || lead.facilityType}
-                                </span>
+                                <select
+                                    value={lead.facilityType || 'other'}
+                                    onChange={async (e) => {
+                                        await updateField('facilityType', e.target.value);
+                                    }}
+                                    className="text-sm text-muted-foreground bg-transparent border border-transparent hover:border-border focus:border-primary rounded px-1 py-0.5 cursor-pointer transition-colors outline-none focus:ring-1 focus:ring-primary/30"
+                                >
+                                    {FACILITY_TYPE_OPTIONS.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
                                 <Badge variant="outline" className={`text-xs ${typeConfig.color}`}>
                                     {typeConfig.label}
                                 </Badge>
@@ -631,13 +639,15 @@ export default function LeadDetailPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Service Capabilities */}
-                        <ServiceCapabilitiesCard
-                            capabilities={(lead as any).serviceCapabilities || []}
-                            onSave={async (caps) => {
-                                await updateField('serviceCapabilities', caps);
-                            }}
-                        />
+                        {/* Service Capabilities — only for vendor/subcontractor companies, not leads */}
+                        {leadType === 'vendor' && (
+                            <ServiceCapabilitiesCard
+                                capabilities={(lead as any).serviceCapabilities || []}
+                                onSave={async (caps) => {
+                                    await updateField('serviceCapabilities', caps);
+                                }}
+                            />
+                        )}
 
 
                         {/* Attribution */}

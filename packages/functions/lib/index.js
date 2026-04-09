@@ -80,23 +80,23 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db24, task) {
-  return db24.collection(COLLECTION).add({
+async function enqueueTask(db25, task) {
+  return db25.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db24) {
+async function fetchPendingTasks(db25) {
   const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db24.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db25.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function claimTask(db24, taskId) {
-  const ref = db24.collection(COLLECTION).doc(taskId);
+async function claimTask(db25, taskId) {
+  const ref = db25.collection(COLLECTION).doc(taskId);
   try {
-    return await db24.runTransaction(async (txn) => {
+    return await db25.runTransaction(async (txn) => {
       const snap = await txn.get(ref);
       if (!snap.exists) return false;
       const current = snap.data();
@@ -113,24 +113,24 @@ async function claimTask(db24, taskId) {
     return false;
   }
 }
-async function updateTaskStatus(db24, taskId, status, updates = {}) {
-  await db24.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db25, taskId, status, updates = {}) {
+  await db25.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db24, vendorId) {
-  const snapshot = await db24.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db24.batch();
+async function cancelVendorTasks(db25, vendorId) {
+  const snapshot = await db25.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db25.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadTasks(db24, leadId) {
-  const snapshot = await db24.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db24.batch();
+async function cancelLeadTasks(db25, leadId) {
+  const snapshot = await db25.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db25.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
@@ -46074,7 +46074,7 @@ function fetch2(url, opts) {
   return new fetch2.Promise(function(resolve2, reject) {
     const request = new Request(url, opts);
     const options = getNodeRequestOptions(request);
-    const send = (options.protocol === "https:" ? import_https8.default : import_http.default).request;
+    const send = (options.protocol === "https:" ? import_https9.default : import_http.default).request;
     const signal = request.signal;
     let response = null;
     const abort = function abort2() {
@@ -46296,7 +46296,7 @@ function destroyStream(stream, err2) {
     stream.end();
   }
 }
-var import_stream, import_http, import_url, import_whatwg_url, import_https8, import_zlib, Readable, BUFFER, TYPE2, Blob2, convert, INTERNALS, PassThrough, invalidTokenRegex, invalidHeaderCharRegex, MAP, Headers, INTERNAL, HeadersIteratorPrototype, INTERNALS$1, STATUS_CODES, Response, INTERNALS$2, URL2, parse_url, format_url, streamDestructionSupported, Request, URL$1, PassThrough$1, isDomainOrSubdomain, isSameProtocol, lib_default;
+var import_stream, import_http, import_url, import_whatwg_url, import_https9, import_zlib, Readable, BUFFER, TYPE2, Blob2, convert, INTERNALS, PassThrough, invalidTokenRegex, invalidHeaderCharRegex, MAP, Headers, INTERNAL, HeadersIteratorPrototype, INTERNALS$1, STATUS_CODES, Response, INTERNALS$2, URL2, parse_url, format_url, streamDestructionSupported, Request, URL$1, PassThrough$1, isDomainOrSubdomain, isSameProtocol, lib_default;
 var init_lib = __esm({
   "../../node_modules/node-fetch/lib/index.mjs"() {
     "use strict";
@@ -46304,7 +46304,7 @@ var init_lib = __esm({
     import_http = __toESM(require("http"), 1);
     import_url = __toESM(require("url"), 1);
     import_whatwg_url = __toESM(require_public_api(), 1);
-    import_https8 = __toESM(require("https"), 1);
+    import_https9 = __toESM(require("https"), 1);
     import_zlib = __toESM(require("zlib"), 1);
     Readable = import_stream.default.Readable;
     BUFFER = /* @__PURE__ */ Symbol("buffer");
@@ -51001,12 +51001,12 @@ var require_logging_utils = __commonJS({
             this.setFilters();
             this.filtersSet = true;
           }
-          let logger28 = this.cached.get(namespace);
-          if (!logger28) {
-            logger28 = this.makeLogger(namespace);
-            this.cached.set(namespace, logger28);
+          let logger29 = this.cached.get(namespace);
+          if (!logger29) {
+            logger29 = this.makeLogger(namespace);
+            this.cached.set(namespace, logger29);
           }
-          logger28(fields, ...args);
+          logger29(fields, ...args);
         } catch (e2) {
           console.error(e2);
         }
@@ -51143,7 +51143,7 @@ var require_logging_utils = __commonJS({
       } else if (cachedBackend === void 0) {
         cachedBackend = getNodeBackend();
       }
-      const logger28 = (() => {
+      const logger29 = (() => {
         let previousBackend = void 0;
         const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
           if (previousBackend !== cachedBackend) {
@@ -51158,8 +51158,8 @@ var require_logging_utils = __commonJS({
         });
         return newLogger;
       })();
-      loggerCache.set(namespace, logger28);
-      return logger28.func;
+      loggerCache.set(namespace, logger29);
+      return logger29.func;
     }
   }
 });
@@ -51223,14 +51223,14 @@ var require_src4 = __commonJS({
     var gaxios_1 = require_src2();
     var jsonBigint = require_json_bigint();
     var gcp_residency_1 = require_gcp_residency();
-    var logger28 = require_src3();
+    var logger29 = require_src3();
     exports2.BASE_PATH = "/computeMetadata/v1";
     exports2.HOST_ADDRESS = "http://169.254.169.254";
     exports2.SECONDARY_HOST_ADDRESS = "http://metadata.google.internal.";
     exports2.HEADER_NAME = "Metadata-Flavor";
     exports2.HEADER_VALUE = "Google";
     exports2.HEADERS = Object.freeze({ [exports2.HEADER_NAME]: exports2.HEADER_VALUE });
-    var log = logger28.log("gcp metadata");
+    var log = logger29.log("gcp metadata");
     exports2.METADATA_SERVER_DETECTION = Object.freeze({
       "assume-present": "don't try to ping the metadata server, but assume it's present",
       none: "don't try to ping the metadata server, but don't try to use it either",
@@ -52807,13 +52807,13 @@ var require_oauth2client = __commonJS({
           },
           url: this.endpoints.tokenInfoUrl.toString()
         });
-        const info22 = Object.assign({
+        const info23 = Object.assign({
           expiry_date: (/* @__PURE__ */ new Date()).getTime() + data.expires_in * 1e3,
           scopes: data.scope.split(" ")
         }, data);
-        delete info22.expires_in;
-        delete info22.scope;
-        return info22;
+        delete info23.expires_in;
+        delete info23.scope;
+        return info23;
       }
       getFederatedSignonCerts(callback) {
         if (callback) {
@@ -58278,6 +58278,7 @@ __export(index_exports, {
   searchPlaces: () => searchPlaces,
   sendBookingConfirmation: () => sendBookingConfirmation,
   sendOnboardingInvite: () => sendOnboardingInvite,
+  sendPreviewEmail: () => sendPreviewEmail,
   sendQuoteEmail: () => sendQuoteEmail,
   sendSingleLeadEmail: () => sendSingleLeadEmail,
   sendTestMorningReport: () => sendTestMorningReport,
@@ -60485,8 +60486,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db24 = (0, import_firestore6.getFirestore)();
-    const docRef = db24.collection(collection).doc(documentId);
+    const db25 = (0, import_firestore6.getFirestore)();
+    const docRef = db25.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -60833,7 +60834,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger7.error("Error sending vendor confirmation:", err2);
     }
   }
-  const db24 = admin9.firestore();
+  const db25 = admin9.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -60860,9 +60861,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db24.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db25.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger7.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db24.collection("vendor_activities").add({
+  await db25.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -61887,10 +61888,10 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
   logger11.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
-  const db24 = admin15.firestore();
+  const db25 = admin15.firestore();
   let vendorData;
   try {
-    const vendorSnap = await db24.collection("vendors").doc(newVendorId).get();
+    const vendorSnap = await db25.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
       logger11.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
@@ -61904,7 +61905,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   let leadData = {};
   if (after.leadId) {
     try {
-      const leadSnap = await db24.collection("leads").doc(after.leadId).get();
+      const leadSnap = await db25.collection("leads").doc(after.leadId).get();
       if (leadSnap.exists) {
         leadData = leadSnap.data();
       }
@@ -61914,7 +61915,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   }
   let xiriData;
   try {
-    const settingsSnap = await db24.collection("settings").doc("corporate").get();
+    const settingsSnap = await db25.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
       logger11.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
@@ -61948,7 +61949,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const result = await generateST1201(vendorCertData, xiriData, void 0);
   if (!result.success || !result.pdfBytes) {
     logger11.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
-    await db24.collection("vendor_activities").add({
+    await db25.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
       description: `ST-120.1 generation failed for WO ${workOrderId}: ${result.error}`,
@@ -61979,7 +61980,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     logger11.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err2);
     return;
   }
-  await db24.collection("work_orders").doc(workOrderId).update({
+  await db25.collection("work_orders").doc(workOrderId).update({
     st1201CertificatePath: storagePath,
     st1201IssueDate: result.issueDate,
     st1201ExpiryDate: result.expiryDate,
@@ -61988,7 +61989,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (vendorCertData.email) {
     const vendorName = vendorCertData.businessName;
     const pdfBase64 = Buffer.from(result.pdfBytes).toString("base64");
-    await db24.collection("mail_queue").add({
+    await db25.collection("mail_queue").add({
       to: vendorCertData.email,
       subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${xiriData.businessName}`,
       templateType: "st_120_1_certificate",
@@ -62009,7 +62010,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
       createdAt: admin15.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db24.collection("vendor_activities").add({
+  await db25.collection("vendor_activities").add({
     vendorId: newVendorId,
     type: "TAX_CERTIFICATE_ISSUED",
     description: `ST-120.1 blanket certificate generated (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
@@ -64135,26 +64136,81 @@ var sendSingleLeadEmail = (0, import_https7.onCall)(
   }
 );
 
-// src/triggers/onContactDeleted.ts
-var import_firestore18 = require("firebase-functions/v2/firestore");
+// src/triggers/sendPreviewEmail.ts
+var import_https8 = require("firebase-functions/v2/https");
 var admin27 = __toESM(require("firebase-admin"));
 var logger24 = __toESM(require("firebase-functions/logger"));
+init_emailUtils();
 if (!admin27.apps.length) {
   admin27.initializeApp();
 }
 var db23 = admin27.firestore();
+var sendPreviewEmail = (0, import_https8.onCall)(
+  { secrets: ["RESEND_API_KEY"] },
+  async (request) => {
+    if (!request.auth) {
+      throw new import_https8.HttpsError("unauthenticated", "Must be signed in");
+    }
+    const { to, subject, body, sampleData } = request.data;
+    if (!to || !subject || !body) {
+      throw new import_https8.HttpsError("invalid-argument", "to, subject, and body are required");
+    }
+    const variables = { ...sampleData };
+    if (variables.facilityType) {
+      injectFacilityPhrases(variables);
+    }
+    const mergedSubject = `[PREVIEW] ${replaceVariables(subject, variables)}`;
+    let mergedBody = replaceVariables(body, variables);
+    if (!mergedBody.includes("<p>") && !mergedBody.includes("<br")) {
+      mergedBody = mergedBody.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+    }
+    logger24.info(`[SendPreview] Sending test email to ${to}: "${mergedSubject}"`);
+    const result = await sendEmail(
+      to,
+      mergedSubject,
+      mergedBody,
+      void 0,
+      // no attachments
+      "XIRI Facility Solutions <chris@xiri.ai>",
+      void 0,
+      // no entity ID
+      void 0,
+      // no template ID
+      void 0
+      // no entity type (skip unsubscribe footer)
+    );
+    if (!result.success) {
+      throw new import_https8.HttpsError("internal", "Failed to send preview email");
+    }
+    logger24.info(`[SendPreview] \u2705 Preview sent to ${to} (Resend: ${result.resendId})`);
+    return {
+      success: true,
+      message: `Preview sent to ${to}`,
+      resendId: result.resendId
+    };
+  }
+);
+
+// src/triggers/onContactDeleted.ts
+var import_firestore18 = require("firebase-functions/v2/firestore");
+var admin28 = __toESM(require("firebase-admin"));
+var logger25 = __toESM(require("firebase-functions/logger"));
+if (!admin28.apps.length) {
+  admin28.initializeApp();
+}
+var db24 = admin28.firestore();
 var onContactDeleted = (0, import_firestore18.onDocumentDeleted)("contacts/{contactId}", async (event) => {
   const contactId = event.params.contactId;
   const deletedData = event.data?.data();
   const email = deletedData?.email || "unknown";
   const companyId = deletedData?.companyId || null;
-  logger24.info(`[ContactCleanup] Contact ${contactId} (${email}) deleted. Cancelling pending tasks.`);
-  const contactTasks = await db23.collection("outreach_queue").where("contactId", "==", contactId).where("status", "in", ["PENDING", "RETRY"]).get();
+  logger25.info(`[ContactCleanup] Contact ${contactId} (${email}) deleted. Cancelling pending tasks.`);
+  const contactTasks = await db24.collection("outreach_queue").where("contactId", "==", contactId).where("status", "in", ["PENDING", "RETRY"]).get();
   let leadTasks = null;
   if (companyId) {
-    leadTasks = await db23.collection("outreach_queue").where("leadId", "==", companyId).where("status", "in", ["PENDING", "RETRY"]).get();
+    leadTasks = await db24.collection("outreach_queue").where("leadId", "==", companyId).where("status", "in", ["PENDING", "RETRY"]).get();
   }
-  const batch = db23.batch();
+  const batch = db24.batch();
   let count = 0;
   const seen = /* @__PURE__ */ new Set();
   for (const doc of contactTasks.docs) {
@@ -64176,7 +64232,7 @@ var onContactDeleted = (0, import_firestore18.onDocumentDeleted)("contacts/{cont
   if (count > 0) {
     await batch.commit();
   }
-  logger24.info(`[ContactCleanup] Cancelled ${count} pending task(s) for deleted contact ${contactId} (${email}).`);
+  logger25.info(`[ContactCleanup] Cancelled ${count} pending task(s) for deleted contact ${contactId} (${email}).`);
 });
 
 // src/triggers/socialContentGenerator.ts
@@ -64758,7 +64814,7 @@ var runSocialPublisher = (0, import_scheduler6.onSchedule)({
 });
 
 // src/functions/auth.ts
-var import_https9 = require("firebase-functions/v2/https");
+var import_https10 = require("firebase-functions/v2/https");
 var import_auth = require("firebase-admin/auth");
 
 // src/utils/cors.ts
@@ -64788,43 +64844,43 @@ var DASHBOARD_CORS = [
 
 // src/functions/auth.ts
 init_emailUtils();
-var adminUpdateAuthUser = (0, import_https9.onCall)({
+var adminUpdateAuthUser = (0, import_https10.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https9.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const callerDoc = await db.collection("users").doc(request.auth.uid).get();
   const callerRoles = callerDoc.data()?.roles || [];
-  if (!callerRoles.includes("admin")) throw new import_https9.HttpsError("permission-denied", "Admin only");
+  if (!callerRoles.includes("admin")) throw new import_https10.HttpsError("permission-denied", "Admin only");
   const { uid, email, password, displayName } = request.data;
-  if (!uid) throw new import_https9.HttpsError("invalid-argument", "uid is required");
+  if (!uid) throw new import_https10.HttpsError("invalid-argument", "uid is required");
   const updatePayload = {};
   if (email) updatePayload.email = email;
   if (password) updatePayload.password = password;
   if (displayName) updatePayload.displayName = displayName;
   if (Object.keys(updatePayload).length === 0) {
-    throw new import_https9.HttpsError("invalid-argument", "Nothing to update");
+    throw new import_https10.HttpsError("invalid-argument", "Nothing to update");
   }
   try {
     await (0, import_auth.getAuth)().updateUser(uid, updatePayload);
     return { success: true, message: `Auth updated for ${uid}` };
   } catch (error13) {
     console.error("adminUpdateAuthUser error:", error13);
-    throw new import_https9.HttpsError("internal", error13.message || "Failed to update Auth user");
+    throw new import_https10.HttpsError("internal", error13.message || "Failed to update Auth user");
   }
 });
-var adminCreateUser = (0, import_https9.onCall)({
+var adminCreateUser = (0, import_https10.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["RESEND_API_KEY"]
 }, async (request) => {
-  if (!request.auth) throw new import_https9.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const callerDoc = await db.collection("users").doc(request.auth.uid).get();
   const callerRoles = callerDoc.data()?.roles || [];
-  if (!callerRoles.includes("admin")) throw new import_https9.HttpsError("permission-denied", "Admin only");
+  if (!callerRoles.includes("admin")) throw new import_https10.HttpsError("permission-denied", "Admin only");
   const { email, displayName, roles } = request.data;
-  if (!email) throw new import_https9.HttpsError("invalid-argument", "email is required");
-  if (!displayName) throw new import_https9.HttpsError("invalid-argument", "displayName is required");
+  if (!email) throw new import_https10.HttpsError("invalid-argument", "email is required");
+  if (!displayName) throw new import_https10.HttpsError("invalid-argument", "displayName is required");
   if (!roles || !Array.isArray(roles) || roles.length === 0) {
-    throw new import_https9.HttpsError("invalid-argument", "At least one role is required");
+    throw new import_https10.HttpsError("invalid-argument", "At least one role is required");
   }
   const chars2 = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
   const tempPassword = "Xiri-" + Array.from({ length: 10 }, () => chars2[Math.floor(Math.random() * chars2.length)]).join("") + "!";
@@ -64908,30 +64964,30 @@ var adminCreateUser = (0, import_https9.onCall)({
   } catch (error13) {
     console.error("adminCreateUser error:", error13);
     if (error13.code === "auth/email-already-exists") {
-      throw new import_https9.HttpsError("already-exists", "A user with this email already exists");
+      throw new import_https10.HttpsError("already-exists", "A user with this email already exists");
     }
-    throw new import_https9.HttpsError("internal", error13.message || "Failed to create user");
+    throw new import_https10.HttpsError("internal", error13.message || "Failed to create user");
   }
 });
-var changeMyPassword = (0, import_https9.onCall)({
+var changeMyPassword = (0, import_https10.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https9.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
   const { newPassword } = request.data;
   if (!newPassword || newPassword.length < 6) {
-    throw new import_https9.HttpsError("invalid-argument", "Password must be at least 6 characters");
+    throw new import_https10.HttpsError("invalid-argument", "Password must be at least 6 characters");
   }
   try {
     await (0, import_auth.getAuth)().updateUser(request.auth.uid, { password: newPassword });
     return { success: true, message: "Password updated" };
   } catch (error13) {
     console.error("changeMyPassword error:", error13);
-    throw new import_https9.HttpsError("internal", error13.message || "Failed to change password");
+    throw new import_https10.HttpsError("internal", error13.message || "Failed to change password");
   }
 });
 
 // src/functions/leads.ts
-var import_https10 = require("firebase-functions/v2/https");
+var import_https11 = require("firebase-functions/v2/https");
 
 // src/agents/recruiter.ts
 var import_generative_ai5 = require("@google/generative-ai");
@@ -65534,7 +65590,7 @@ var searchProperties = async (query, location, providerName = "mock") => {
 };
 
 // src/functions/leads.ts
-var generateLeads = (0, import_https10.onCall)({
+var generateLeads = (0, import_https11.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540
@@ -65547,7 +65603,7 @@ var generateLeads = (0, import_https10.onCall)({
   const provider = data.provider || "google_maps";
   const dcaCategory = data.dcaCategory;
   if (provider === "google_maps" && !query || !location) {
-    throw new import_https10.HttpsError("invalid-argument", "Missing required fields in request.");
+    throw new import_https11.HttpsError("invalid-argument", "Missing required fields in request.");
   }
   try {
     console.log(`Analyzing leads for query: ${query}, location: ${location}, provider: ${provider}, category: ${dcaCategory}${previewOnly ? " (PREVIEW MODE)" : ""}`);
@@ -65562,10 +65618,10 @@ var generateLeads = (0, import_https10.onCall)({
     };
   } catch (error13) {
     console.error("Error in generateLeads:", error13);
-    throw new import_https10.HttpsError("internal", error13.message || "An internal error occurred.");
+    throw new import_https11.HttpsError("internal", error13.message || "An internal error occurred.");
   }
 });
-var clearPipeline = (0, import_https10.onCall)({
+var clearPipeline = (0, import_https11.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   try {
@@ -65588,10 +65644,10 @@ var clearPipeline = (0, import_https10.onCall)({
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
   } catch (error13) {
-    throw new import_https10.HttpsError("internal", error13.message);
+    throw new import_https11.HttpsError("internal", error13.message);
   }
 });
-var runRecruiterAgent = (0, import_https10.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
+var runRecruiterAgent = (0, import_https11.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
   const rawVendors = req.body.vendors || [
     { name: "ABC Cleaning", services: "We do medical office cleaning and terminal cleaning." },
     { name: "Joe's Pizza", services: "Best pizza in town" },
@@ -65600,24 +65656,24 @@ var runRecruiterAgent = (0, import_https10.onRequest)({ secrets: ["GEMINI_API_KE
   const result = await analyzeVendorLeads(rawVendors, "Commercial Cleaning");
   res.json(result);
 });
-var testSendEmail = (0, import_https10.onCall)({
+var testSendEmail = (0, import_https11.onCall)({
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
   cors: DASHBOARD_CORS
 }, async (request) => {
   const { sendTemplatedEmail: sendTemplatedEmail2 } = await Promise.resolve().then(() => (init_emailUtils(), emailUtils_exports));
   const { vendorId, templateId } = request.data;
   if (!vendorId || !templateId) {
-    throw new import_https10.HttpsError("invalid-argument", "Missing vendorId or templateId");
+    throw new import_https11.HttpsError("invalid-argument", "Missing vendorId or templateId");
   }
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
   } catch (error13) {
     console.error("Error sending test email:", error13);
-    throw new import_https10.HttpsError("internal", error13.message || "Failed to send email");
+    throw new import_https11.HttpsError("internal", error13.message || "Failed to send email");
   }
 });
-var sourceProperties = (0, import_https10.onCall)({
+var sourceProperties = (0, import_https11.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 120
 }, async (request) => {
@@ -65626,7 +65682,7 @@ var sourceProperties = (0, import_https10.onCall)({
   const location = data.location;
   const providerName = data.provider || "mock";
   if (!query || !location) {
-    throw new import_https10.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https11.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`[sourceProperties] query="${query}", location="${location}", provider=${providerName}`);
@@ -65638,22 +65694,22 @@ var sourceProperties = (0, import_https10.onCall)({
     };
   } catch (error13) {
     console.error("[sourceProperties] Error:", error13);
-    throw new import_https10.HttpsError("internal", error13.message || "Failed to source properties.");
+    throw new import_https11.HttpsError("internal", error13.message || "Failed to source properties.");
   }
 });
 
 // src/functions/social.ts
-var import_https11 = require("firebase-functions/v2/https");
+var import_https12 = require("firebase-functions/v2/https");
 init_promptUtils();
 init_facebookApi();
-var publishFacebookPost = (0, import_https11.onCall)({
+var publishFacebookPost = (0, import_https12.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const { message, link, imageUrl, scheduledTime } = request.data;
   if (!message) {
-    throw new import_https11.HttpsError("invalid-argument", "Message is required");
+    throw new import_https12.HttpsError("invalid-argument", "Message is required");
   }
   try {
     let result;
@@ -65680,14 +65736,14 @@ var publishFacebookPost = (0, import_https11.onCall)({
     return result;
   } catch (error13) {
     console.error("[Facebook] Publish error:", error13);
-    throw new import_https11.HttpsError("internal", error13.message || "Failed to publish to Facebook");
+    throw new import_https12.HttpsError("internal", error13.message || "Failed to publish to Facebook");
   }
 });
-var getFacebookPosts = (0, import_https11.onCall)({
+var getFacebookPosts = (0, import_https12.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const posts = await getRecentPosts(limit || 10);
@@ -65695,14 +65751,14 @@ var getFacebookPosts = (0, import_https11.onCall)({
     return { posts, insights };
   } catch (error13) {
     console.error("[Facebook] Get posts error:", error13);
-    throw new import_https11.HttpsError("internal", error13.message || "Failed to get Facebook posts");
+    throw new import_https12.HttpsError("internal", error13.message || "Failed to get Facebook posts");
   }
 });
-var getFacebookReels = (0, import_https11.onCall)({
+var getFacebookReels = (0, import_https12.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const { getRecentReels: getRecentReels2 } = await Promise.resolve().then(() => (init_facebookApi(), facebookApi_exports));
@@ -65710,16 +65766,16 @@ var getFacebookReels = (0, import_https11.onCall)({
     return { reels };
   } catch (error13) {
     console.error("[Facebook] Get reels error:", error13);
-    throw new import_https11.HttpsError("internal", error13.message || "Failed to get Facebook reels");
+    throw new import_https12.HttpsError("internal", error13.message || "Failed to get Facebook reels");
   }
 });
-var deleteFacebookPost = (0, import_https11.onCall)({
+var deleteFacebookPost = (0, import_https12.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https11.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https12.HttpsError("invalid-argument", "postId is required");
   try {
     const success = await deletePost(postId);
     const snapshot = await db.collection("social_posts").where("facebookPostId", "==", postId).limit(1).get();
@@ -65733,24 +65789,24 @@ var deleteFacebookPost = (0, import_https11.onCall)({
     return { success };
   } catch (error13) {
     console.error("[Facebook] Delete error:", error13);
-    throw new import_https11.HttpsError("internal", error13.message || "Failed to delete Facebook post");
+    throw new import_https12.HttpsError("internal", error13.message || "Failed to delete Facebook post");
   }
 });
-var triggerSocialContentGeneration = (0, import_https11.onCall)({
+var triggerSocialContentGeneration = (0, import_https12.onCall)({
   secrets: ["GEMINI_API_KEY", "FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const channel = request.data?.channel || "facebook_posts";
   await generateSocialContent(channel);
   return { success: true };
 });
-var updateSocialConfig = (0, import_https11.onCall)({
+var updateSocialConfig = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const { channel, cadence, preferredDays, preferredTime, tone, topics, hashtagSets, enabled, audienceMix } = request.data;
   const channelId = channel || "facebook_posts";
   const config2 = { updatedAt: /* @__PURE__ */ new Date() };
@@ -65767,18 +65823,18 @@ var updateSocialConfig = (0, import_https11.onCall)({
   console.log(`[Social] Config updated for ${channelId}:`, config2);
   return { success: true };
 });
-var reviewSocialPost = (0, import_https11.onCall)({
+var reviewSocialPost = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const { postId, action, editedMessage, rejectionReason, scheduledFor } = request.data;
   if (!postId || !action) {
-    throw new import_https11.HttpsError("invalid-argument", "postId and action are required");
+    throw new import_https12.HttpsError("invalid-argument", "postId and action are required");
   }
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
   if (!postDoc.exists) {
-    throw new import_https11.HttpsError("not-found", "Post not found");
+    throw new import_https12.HttpsError("not-found", "Post not found");
   }
   const update = {
     reviewedBy: request.auth.uid,
@@ -65795,24 +65851,24 @@ var reviewSocialPost = (0, import_https11.onCall)({
       update.rejectionReason = rejectionReason || null;
       break;
     default:
-      throw new import_https11.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
+      throw new import_https12.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
   }
   await postRef.update(update);
   console.log(`[Social] Post ${postId} ${action}ed by ${request.auth.uid}`);
   return { success: true, status: update.status };
 });
-var publishPostNow = (0, import_https11.onCall)({
+var publishPostNow = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   timeoutSeconds: 180,
   memory: "512MiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https11.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https12.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https11.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https12.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   try {
     let result;
@@ -65900,7 +65956,7 @@ file '${outroMp4}'
         error: result.error || "Publishing failed",
         failedAt: /* @__PURE__ */ new Date()
       });
-      throw new import_https11.HttpsError("internal", result.error || "Publishing failed");
+      throw new import_https12.HttpsError("internal", result.error || "Publishing failed");
     }
   } catch (err2) {
     const errorMsg = err2.message || "Publishing failed";
@@ -65911,37 +65967,37 @@ file '${outroMp4}'
       failedAt: /* @__PURE__ */ new Date()
     }).catch(() => {
     });
-    throw new import_https11.HttpsError("internal", errorMsg);
+    throw new import_https12.HttpsError("internal", errorMsg);
   }
 });
-var searchPlaces = (0, import_https11.onCall)({
+var searchPlaces = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"]
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const { query } = request.data;
-  if (!query) throw new import_https11.HttpsError("invalid-argument", "query is required");
+  if (!query) throw new import_https12.HttpsError("invalid-argument", "query is required");
   const results = await searchFacebookPlaces(query);
   return { places: results };
 });
-var regeneratePostImage = (0, import_https11.onCall)({
+var regeneratePostImage = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 300,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https11.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https12.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https11.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https12.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience || "contractor";
   console.log(`[RegenImage] Regenerating image for post ${postId} with feedback: "${feedback || "none"}"`);
   const { generatePostImage: generatePostImage2 } = await Promise.resolve().then(() => (init_imagenApi(), imagenApi_exports));
   const result = await generatePostImage2(post.message, audience, feedback || void 0);
   if (!result) {
-    throw new import_https11.HttpsError("internal", "Image generation failed");
+    throw new import_https12.HttpsError("internal", "Image generation failed");
   }
   await postRef.update({
     imageUrl: result.imageUrl,
@@ -65951,17 +66007,17 @@ var regeneratePostImage = (0, import_https11.onCall)({
   console.log(`[RegenImage] New image: ${result.imageUrl}`);
   return { success: true, imageUrl: result.imageUrl };
 });
-var regeneratePostCaption = (0, import_https11.onCall)({
+var regeneratePostCaption = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["GEMINI_API_KEY"],
   timeoutSeconds: 120
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https11.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https12.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https11.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https12.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
   console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
@@ -65997,7 +66053,7 @@ Respond with ONLY the post text. No introductions.`;
   const result = await model2.generateContent(prompt);
   const newCaption = result.response.text().trim();
   if (!newCaption) {
-    throw new import_https11.HttpsError("internal", "Caption generation returned empty");
+    throw new import_https12.HttpsError("internal", "Caption generation returned empty");
   }
   await postRef.update({
     message: newCaption,
@@ -66007,19 +66063,19 @@ Respond with ONLY the post text. No introductions.`;
   console.log(`[RegenCaption] New caption generated (${newCaption.length} chars)`);
   return { success: true, message: newCaption };
 });
-var getOutroPreview = (0, import_https11.onCall)({
+var getOutroPreview = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const { presetId } = request.data;
-  if (!presetId) throw new import_https11.HttpsError("invalid-argument", "presetId is required");
+  if (!presetId) throw new import_https12.HttpsError("invalid-argument", "presetId is required");
   const { getOrCreateOutroFrameUrl: getOrCreateOutroFrameUrl2 } = await Promise.resolve().then(() => (init_reelOutroGenerator(), reelOutroGenerator_exports));
   const url = await getOrCreateOutroFrameUrl2(presetId);
   return { url };
 });
 
 // src/functions/nfc.ts
-var import_https12 = require("firebase-functions/v2/https");
+var import_https13 = require("firebase-functions/v2/https");
 var crypto2 = __toESM(require("crypto"));
 
 // src/utils/googleChatUtils.ts
@@ -66404,27 +66460,27 @@ function hashSiteKey(plainKey) {
 function generateSessionToken() {
   return crypto2.randomUUID();
 }
-var validateSiteKey = (0, import_https12.onCall)({
+var validateSiteKey = (0, import_https13.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { locationId, siteKey, personName, personPhone } = request.data;
   if (!locationId || typeof locationId !== "string") {
-    throw new import_https12.HttpsError("invalid-argument", "locationId is required");
+    throw new import_https13.HttpsError("invalid-argument", "locationId is required");
   }
   if (!siteKey || typeof siteKey !== "string") {
-    throw new import_https12.HttpsError("invalid-argument", "Site key is required");
+    throw new import_https13.HttpsError("invalid-argument", "Site key is required");
   }
   if (!personName || typeof personName !== "string" || personName.trim().length === 0) {
-    throw new import_https12.HttpsError("invalid-argument", "Name is required");
+    throw new import_https13.HttpsError("invalid-argument", "Name is required");
   }
   const siteDoc = await db.collection("nfc_sites").doc(locationId).get();
   if (!siteDoc.exists) {
-    throw new import_https12.HttpsError("not-found", "Location not found. Check with your supervisor.");
+    throw new import_https13.HttpsError("not-found", "Location not found. Check with your supervisor.");
   }
   const siteData = siteDoc.data();
   if (siteData.revokedAt) {
-    throw new import_https12.HttpsError("permission-denied", "Access has been revoked. Contact your supervisor for a new site key.");
+    throw new import_https13.HttpsError("permission-denied", "Access has been revoked. Contact your supervisor for a new site key.");
   }
   const hashedInput = hashSiteKey(siteKey.trim());
   let personRole;
@@ -66433,7 +66489,7 @@ var validateSiteKey = (0, import_https12.onCall)({
   } else if (siteData.managerKeyHash && hashedInput === siteData.managerKeyHash) {
     personRole = "night_manager";
   } else {
-    throw new import_https12.HttpsError("permission-denied", "Invalid site key. Please check and try again.");
+    throw new import_https13.HttpsError("permission-denied", "Invalid site key. Please check and try again.");
   }
   const sessionId = generateSessionToken();
   const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1e3);
@@ -66487,25 +66543,25 @@ var validateSiteKey = (0, import_https12.onCall)({
     expiresAt: expiresAt.toISOString()
   };
 });
-var updateZoneScan = (0, import_https12.onCall)({
+var updateZoneScan = (0, import_https13.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { sessionId, zoneId, zoneName, tasksCompleted } = request.data;
   if (!sessionId || typeof sessionId !== "string") {
-    throw new import_https12.HttpsError("invalid-argument", "sessionId is required");
+    throw new import_https13.HttpsError("invalid-argument", "sessionId is required");
   }
   if (!zoneId || typeof zoneId !== "string") {
-    throw new import_https12.HttpsError("invalid-argument", "zoneId is required");
+    throw new import_https13.HttpsError("invalid-argument", "zoneId is required");
   }
   const sessionDoc = await db.collection("nfc_sessions").doc(sessionId).get();
   if (!sessionDoc.exists) {
-    throw new import_https12.HttpsError("not-found", "Session not found. Please tap the Start tag again.");
+    throw new import_https13.HttpsError("not-found", "Session not found. Please tap the Start tag again.");
   }
   const sessionData = sessionDoc.data();
   const expiresAt = sessionData.expiresAt?.toDate?.() || sessionData.expiresAt;
   if (expiresAt && /* @__PURE__ */ new Date() > new Date(expiresAt)) {
-    throw new import_https12.HttpsError("permission-denied", "Session expired. Please tap the Start tag to clock in again.");
+    throw new import_https13.HttpsError("permission-denied", "Session expired. Please tap the Start tag to clock in again.");
   }
   const scanResult = {
     zoneId,
@@ -66580,17 +66636,17 @@ var updateZoneScan = (0, import_https12.onCall)({
     allZonesDone: scannedZones >= totalZones
   };
 });
-var completeNfcSession = (0, import_https12.onCall)({
+var completeNfcSession = (0, import_https13.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { sessionId, auditScore, auditNotes } = request.data;
   if (!sessionId) {
-    throw new import_https12.HttpsError("invalid-argument", "sessionId is required");
+    throw new import_https13.HttpsError("invalid-argument", "sessionId is required");
   }
   const sessionDoc = await db.collection("nfc_sessions").doc(sessionId).get();
   if (!sessionDoc.exists) {
-    throw new import_https12.HttpsError("not-found", "Session not found.");
+    throw new import_https13.HttpsError("not-found", "Session not found.");
   }
   await db.collection("nfc_sessions").doc(sessionId).update({
     clockOutAt: /* @__PURE__ */ new Date(),
@@ -66620,16 +66676,16 @@ var completeNfcSession = (0, import_https12.onCall)({
 function getInitials(name) {
   return name.split(/\s+/).map((w) => w.charAt(0).toUpperCase()).join("").slice(0, 2) || "?";
 }
-var getComplianceLog = (0, import_https12.onCall)({
+var getComplianceLog = (0, import_https13.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const { locationId } = request.data;
   if (!locationId || typeof locationId !== "string") {
-    throw new import_https12.HttpsError("invalid-argument", "locationId is required");
+    throw new import_https13.HttpsError("invalid-argument", "locationId is required");
   }
   const siteDoc = await db.collection("nfc_sites").doc(locationId).get();
   if (!siteDoc.exists) {
-    throw new import_https12.HttpsError("not-found", "Location not found.");
+    throw new import_https13.HttpsError("not-found", "Location not found.");
   }
   const siteData = siteDoc.data();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3);
@@ -66678,7 +66734,7 @@ var getComplianceLog = (0, import_https12.onCall)({
 
 // src/functions/monitoring.ts
 var import_scheduler7 = require("firebase-functions/v2/scheduler");
-var import_https13 = require("firebase-functions/v2/https");
+var import_https14 = require("firebase-functions/v2/https");
 init_emailUtils();
 
 // src/utils/morningReportEmail.ts
@@ -67255,20 +67311,20 @@ async function buildReportData(wo, dateRef, graceMin) {
     complianceLogUrl: `https://xiri.ai/c/${wo.buildingId}`
   };
 }
-var sendTestMorningReport = (0, import_https13.onCall)({
+var sendTestMorningReport = (0, import_https14.onCall)({
   cors: true
 }, async (request) => {
   const { workOrderId, recipientEmail, scenario } = request.data;
   if (!workOrderId) {
-    throw new import_https13.HttpsError("invalid-argument", "workOrderId is required");
+    throw new import_https14.HttpsError("invalid-argument", "workOrderId is required");
   }
   const woDoc = await db.collection("work_orders").doc(workOrderId).get();
   if (!woDoc.exists) {
-    throw new import_https13.HttpsError("not-found", "Work order not found");
+    throw new import_https14.HttpsError("not-found", "Work order not found");
   }
   const wo = await resolveWorkOrder(woDoc);
   if (!wo) {
-    throw new import_https13.HttpsError("failed-precondition", "Work order is not active");
+    throw new import_https14.HttpsError("failed-precondition", "Work order is not active");
   }
   const config2 = await loadMonitoringConfig();
   const graceMin = wo.graceMinutes || config2.graceMinutes;
@@ -67425,7 +67481,7 @@ var weeklyAIBotDigest = (0, import_scheduler8.onSchedule)({
 
 // src/triggers/clarityAnalysis.ts
 var import_scheduler9 = require("firebase-functions/v2/scheduler");
-var import_https14 = require("firebase-functions/v2/https");
+var import_https15 = require("firebase-functions/v2/https");
 var import_params5 = require("firebase-functions/params");
 var import_v25 = require("firebase-functions/v2");
 
@@ -67941,7 +67997,7 @@ var dailyClarityReport = (0, import_scheduler9.onSchedule)({
     throw err2;
   }
 });
-var triggerClarityReport = (0, import_https14.onCall)({
+var triggerClarityReport = (0, import_https15.onCall)({
   cors: true,
   secrets: [CLARITY_API_TOKEN, CLARITY_CHAT_WEBHOOK, GEMINI_API_KEY3],
   timeoutSeconds: 120,
@@ -68000,7 +68056,7 @@ var triggerClarityReport = (0, import_https14.onCall)({
     };
   } catch (err2) {
     import_v25.logger.error("\u274C Manual Clarity report failed:", err2);
-    throw new import_https14.HttpsError("internal", err2.message || "Clarity report failed");
+    throw new import_https15.HttpsError("internal", err2.message || "Clarity report failed");
   }
 });
 async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
@@ -68034,7 +68090,7 @@ async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
 }
 
 // src/functions/tidycal-api.ts
-var import_https15 = require("firebase-functions/v2/https");
+var import_https16 = require("firebase-functions/v2/https");
 var import_params6 = require("firebase-functions/params");
 var import_firestore19 = require("firebase-admin/firestore");
 
@@ -68120,7 +68176,7 @@ async function listBookings(options) {
 
 // src/functions/tidycal-api.ts
 var TIDYCAL_API_KEY = (0, import_params6.defineSecret)("TIDYCAL_API_KEY");
-var getOnboardingTimeslots = (0, import_https15.onRequest)({
+var getOnboardingTimeslots = (0, import_https16.onRequest)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (req, res) => {
@@ -68143,7 +68199,7 @@ var getOnboardingTimeslots = (0, import_https15.onRequest)({
     res.status(500).json({ error: error13.message || "Failed to fetch timeslots" });
   }
 });
-var bookOnboardingCall = (0, import_https15.onRequest)({
+var bookOnboardingCall = (0, import_https16.onRequest)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (req, res) => {
@@ -68208,14 +68264,14 @@ var bookOnboardingCall = (0, import_https15.onRequest)({
     res.status(500).json({ error: error13.message || "Failed to book call" });
   }
 });
-var getDashboardTimeslots = (0, import_https15.onCall)({
+var getDashboardTimeslots = (0, import_https16.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https16.HttpsError("unauthenticated", "Must be logged in");
   const { startDate, endDate, timezone, bookingTypeId } = request.data;
   if (!startDate || !endDate) {
-    throw new import_https15.HttpsError("invalid-argument", "startDate and endDate are required");
+    throw new import_https16.HttpsError("invalid-argument", "startDate and endDate are required");
   }
   const typeId = bookingTypeId || TIDYCAL_BOOKING_TYPES.DISCOVERY_CALL;
   const slots = await getTimeslots(
@@ -68226,19 +68282,19 @@ var getDashboardTimeslots = (0, import_https15.onCall)({
   );
   return { slots };
 });
-var bookDiscoveryCall = (0, import_https15.onCall)({
+var bookDiscoveryCall = (0, import_https16.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https16.HttpsError("unauthenticated", "Must be logged in");
   const { leadId, name, email, starts_at, timezone, bookingTypeId } = request.data;
   if (!leadId || !name || !email || !starts_at) {
-    throw new import_https15.HttpsError("invalid-argument", "leadId, name, email, starts_at are required");
+    throw new import_https16.HttpsError("invalid-argument", "leadId, name, email, starts_at are required");
   }
   const leadRef = db.collection("leads").doc(leadId);
   const leadDoc = await leadRef.get();
   if (!leadDoc.exists) {
-    throw new import_https15.HttpsError("not-found", "Lead not found");
+    throw new import_https16.HttpsError("not-found", "Lead not found");
   }
   const typeId = bookingTypeId || TIDYCAL_BOOKING_TYPES.DISCOVERY_CALL;
   const booking = await createBooking(typeId, {
@@ -68279,11 +68335,11 @@ var bookDiscoveryCall = (0, import_https15.onCall)({
     }
   };
 });
-var getTidyCalBookings = (0, import_https15.onCall)({
+var getTidyCalBookings = (0, import_https16.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https16.HttpsError("unauthenticated", "Must be logged in");
   const { bookingTypeId, page } = request.data || {};
   const result = await listBookings({
     bookingTypeId,
@@ -68293,7 +68349,7 @@ var getTidyCalBookings = (0, import_https15.onCall)({
 });
 
 // src/functions/prospecting.ts
-var import_https16 = require("firebase-functions/v2/https");
+var import_https17 = require("firebase-functions/v2/https");
 
 // src/utils/enrichmentProviders.ts
 var HunterProvider = class {
@@ -68582,6 +68638,9 @@ var FREE_EMAIL_PROVIDERS = /* @__PURE__ */ new Set([
   "atlanticbbn.net"
   // regional ISP
 ]);
+function stripDomainNoise(root) {
+  return root.replace(/[-_]/g, "").replace(/(mail|email|web|site|online|center|centres?|ny|li|usa|inc|llc|corp|org|hq|app|the)$/gi, "").replace(/(mail|email|web|site|online|center|centres?|ny|li|usa|inc|llc|corp|org|hq|app|the)$/gi, "");
+}
 function validateEmailForBusiness(email, businessWebsite) {
   const emailDomain = email.split("@")[1]?.toLowerCase();
   if (!emailDomain) return "junk";
@@ -68595,7 +68654,17 @@ function validateEmailForBusiness(email, businessWebsite) {
       }
       const bizRoot = bizDomain.split(".")[0].replace(/[-_]/g, "");
       const emailRoot = emailDomain.split(".")[0].replace(/[-_]/g, "");
-      if (bizRoot.length > 3 && emailRoot.length > 3 && (bizRoot.includes(emailRoot) || emailRoot.includes(bizRoot))) {
+      if (bizRoot.length > 2 && emailRoot.length > 2 && (bizRoot.includes(emailRoot) || emailRoot.includes(bizRoot))) {
+        return "domain_match";
+      }
+      const bizStripped = stripDomainNoise(bizRoot);
+      const emailStripped = stripDomainNoise(emailRoot);
+      if (bizStripped.length > 2 && emailStripped.length > 2 && (bizStripped.includes(emailStripped) || emailStripped.includes(bizStripped))) {
+        return "domain_match";
+      }
+      const bizBase = bizDomain.split(".").slice(0, -1).join(".");
+      const emailBase = emailDomain.split(".").slice(0, -1).join(".");
+      if (bizBase === emailBase) {
         return "domain_match";
       }
       return "mismatch";
@@ -68842,7 +68911,7 @@ function extractDomain(url) {
 
 // src/functions/prospecting.ts
 init_src();
-var runProspector = (0, import_https16.onCall)({
+var runProspector = (0, import_https17.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
@@ -68855,7 +68924,7 @@ var runProspector = (0, import_https16.onCall)({
   const maxResults = data.maxResults || 20;
   const skipPaidApis = data.skipPaidApis || false;
   if (!query || !location) {
-    throw new import_https16.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
+    throw new import_https17.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
   }
   try {
     console.log(`[runProspector] query="${query}", location="${location}", max=${maxResults}, skipPaid=${skipPaidApis}`);
@@ -68876,16 +68945,16 @@ var runProspector = (0, import_https16.onCall)({
     };
   } catch (error13) {
     console.error("[runProspector] Error:", error13);
-    throw new import_https16.HttpsError("internal", error13.message || "Pipeline failed.");
+    throw new import_https17.HttpsError("internal", error13.message || "Pipeline failed.");
   }
 });
-var addProspectsToCrm = (0, import_https16.onCall)({
+var addProspectsToCrm = (0, import_https17.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 60
 }, async (request) => {
   const { prospects, searchQuery: batchSearchQuery } = request.data;
   if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
-    throw new import_https16.HttpsError("invalid-argument", "No prospects provided.");
+    throw new import_https17.HttpsError("invalid-argument", "No prospects provided.");
   }
   try {
     const results = [];
@@ -68977,14 +69046,14 @@ var addProspectsToCrm = (0, import_https16.onCall)({
     };
   } catch (error13) {
     console.error("[addProspectsToCrm] Error:", error13);
-    throw new import_https16.HttpsError("internal", error13.message || "CRM import failed.");
+    throw new import_https17.HttpsError("internal", error13.message || "CRM import failed.");
   }
 });
 
 // src/triggers/dailyProspector.ts
 var import_scheduler10 = require("firebase-functions/v2/scheduler");
-var import_https17 = require("firebase-functions/v2/https");
-var logger27 = __toESM(require("firebase-functions/logger"));
+var import_https18 = require("firebase-functions/v2/https");
+var logger28 = __toESM(require("firebase-functions/logger"));
 function normalizeName(name) {
   return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
 }
@@ -69052,14 +69121,14 @@ async function loadSeenSet() {
     const d = doc.data();
     if (d.email) seen.add(`email:${d.email.toLowerCase()}`);
   }
-  logger27.info(`[DailyProspector] Seen set loaded: ${seen.size} entries (queue + companies + contacts)`);
+  logger28.info(`[DailyProspector] Seen set loaded: ${seen.size} entries (queue + companies + contacts)`);
   return seen;
 }
 async function runDailyPipeline() {
   const configDoc = await db.collection("prospecting_config").doc("default").get();
   const config2 = configDoc.exists ? { ...DEFAULT_CONFIG, ...configDoc.data() } : DEFAULT_CONFIG;
   if (!config2.enabled) {
-    logger27.info("[DailyProspector] Disabled via config. Skipping.");
+    logger28.info("[DailyProspector] Disabled via config. Skipping.");
     return;
   }
   const secrets = {
@@ -69075,10 +69144,11 @@ async function runDailyPipeline() {
   let totalDiscovered = 0;
   let duplicatesSkipped = 0;
   const statusRef = db.collection("prospecting_config").doc("run_status");
+  const startedAt = /* @__PURE__ */ new Date();
   const updateProgress = async (currentQuery) => {
     await statusRef.set({
       running: true,
-      startedAt: /* @__PURE__ */ new Date(),
+      startedAt,
       discovered: totalDiscovered,
       qualified: newProspects.length,
       duplicatesSkipped,
@@ -69088,111 +69158,127 @@ async function runDailyPipeline() {
     }, { merge: true });
   };
   await updateProgress("Initializing...");
-  for (const location of config2.locations) {
-    if (newProspects.length >= config2.dailyTarget) break;
-    for (const queryTerm of config2.queries) {
+  try {
+    for (const location of config2.locations) {
       if (newProspects.length >= config2.dailyTarget) break;
-      const remaining = config2.dailyTarget - newProspects.length;
-      const batchSize = Math.min(remaining + 10, 20);
-      logger27.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
-      await updateProgress(`${queryTerm} in ${location}`);
-      try {
-        const result = await prospectAndEnrich(
-          { query: queryTerm, location, maxResults: batchSize, skipPaidApis: false },
-          secrets
-        );
-        totalDiscovered += result.prospects.length;
-        for (const prospect of result.prospects) {
-          if (newProspects.length >= config2.dailyTarget) break;
-          const normalized = normalizeName(prospect.businessName);
-          const emailLower = prospect.contactEmail?.toLowerCase();
-          const genericLower = prospect.genericEmail?.toLowerCase();
-          const phoneCleaned = prospect.phone?.replace(/[^0-9]/g, "");
-          const addressNorm = prospect.address ? prospect.address.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30) : void 0;
-          const websiteDomain = prospect.website ? prospect.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase() : void 0;
-          if (seen.has(normalized) || phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`) || emailLower && seen.has(`email:${emailLower}`) || genericLower && seen.has(`email:${genericLower}`) || websiteDomain && seen.has(`domain:${websiteDomain}`) || addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`)) {
-            duplicatesSkipped++;
-            continue;
-          }
-          if (config2.excludePatterns.some(
-            (p) => normalized.includes(p.toLowerCase())
-          )) {
-            duplicatesSkipped++;
-            continue;
-          }
-          if (!prospect.contactEmail && !prospect.genericEmail) {
-            continue;
-          }
-          seen.add(normalized);
-          if (phoneCleaned && phoneCleaned.length >= 7) seen.add(`phone:${phoneCleaned}`);
-          if (emailLower) seen.add(`email:${emailLower}`);
-          if (genericLower) seen.add(`email:${genericLower}`);
-          if (websiteDomain) seen.add(`domain:${websiteDomain}`);
-          if (addressNorm && addressNorm.length >= 10) seen.add(`addr:${addressNorm}`);
-          newProspects.push({ prospect, query: queryTerm, location });
-        }
+      for (const queryTerm of config2.queries) {
+        if (newProspects.length >= config2.dailyTarget) break;
+        const remaining = config2.dailyTarget - newProspects.length;
+        const batchSize = Math.min(remaining + 10, 20);
+        logger28.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
         await updateProgress(`${queryTerm} in ${location}`);
-      } catch (err2) {
-        logger27.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
+        try {
+          const result = await prospectAndEnrich(
+            { query: queryTerm, location, maxResults: batchSize, skipPaidApis: false },
+            secrets
+          );
+          totalDiscovered += result.prospects.length;
+          for (const prospect of result.prospects) {
+            if (newProspects.length >= config2.dailyTarget) break;
+            const normalized = normalizeName(prospect.businessName);
+            const emailLower = prospect.contactEmail?.toLowerCase();
+            const genericLower = prospect.genericEmail?.toLowerCase();
+            const phoneCleaned = prospect.phone?.replace(/[^0-9]/g, "");
+            const addressNorm = prospect.address ? prospect.address.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30) : void 0;
+            const websiteDomain = prospect.website ? prospect.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase() : void 0;
+            if (seen.has(normalized) || phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`) || emailLower && seen.has(`email:${emailLower}`) || genericLower && seen.has(`email:${genericLower}`) || websiteDomain && seen.has(`domain:${websiteDomain}`) || addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`)) {
+              duplicatesSkipped++;
+              continue;
+            }
+            if (config2.excludePatterns.some(
+              (p) => normalized.includes(p.toLowerCase())
+            )) {
+              duplicatesSkipped++;
+              continue;
+            }
+            if (!prospect.contactEmail && !prospect.genericEmail) {
+              continue;
+            }
+            seen.add(normalized);
+            if (phoneCleaned && phoneCleaned.length >= 7) seen.add(`phone:${phoneCleaned}`);
+            if (emailLower) seen.add(`email:${emailLower}`);
+            if (genericLower) seen.add(`email:${genericLower}`);
+            if (websiteDomain) seen.add(`domain:${websiteDomain}`);
+            if (addressNorm && addressNorm.length >= 10) seen.add(`addr:${addressNorm}`);
+            newProspects.push({ prospect, query: queryTerm, location });
+          }
+          await updateProgress(`${queryTerm} in ${location}`);
+        } catch (err2) {
+          logger28.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
+        }
       }
     }
-  }
-  const BATCH_LIMIT = 450;
-  for (let i = 0; i < newProspects.length; i += BATCH_LIMIT) {
-    const chunk = newProspects.slice(i, i + BATCH_LIMIT);
-    const batch = db.batch();
-    for (const { prospect, query, location } of chunk) {
-      const ref = db.collection("prospect_queue").doc();
-      batch.set(ref, {
-        businessName: prospect.businessName,
-        normalizedName: normalizeName(prospect.businessName),
-        address: prospect.address || null,
-        phone: prospect.phone || null,
-        website: prospect.website || null,
-        rating: prospect.rating || null,
-        contactEmail: prospect.contactEmail || null,
-        genericEmail: prospect.genericEmail || null,
-        contactName: prospect.contactName || null,
-        contactTitle: prospect.contactTitle || null,
-        emailSource: prospect.emailSource || "none",
-        emailConfidence: prospect.emailConfidence || "low",
-        facebookUrl: prospect.facebookUrl || null,
-        linkedinUrl: prospect.linkedinUrl || null,
-        enrichmentLog: prospect.enrichmentLog || [],
-        // All contacts discovered via Hunter/Snov (up to 10 per domain search credit)
-        allContacts: prospect.allContacts || [],
-        status: "pending_review",
-        batchDate,
-        searchQuery: query,
-        searchLocation: location,
-        createdAt: /* @__PURE__ */ new Date()
-      });
+    const BATCH_LIMIT = 450;
+    for (let i = 0; i < newProspects.length; i += BATCH_LIMIT) {
+      const chunk = newProspects.slice(i, i + BATCH_LIMIT);
+      const batch = db.batch();
+      for (const { prospect, query, location } of chunk) {
+        const ref = db.collection("prospect_queue").doc();
+        batch.set(ref, {
+          businessName: prospect.businessName,
+          normalizedName: normalizeName(prospect.businessName),
+          address: prospect.address || null,
+          phone: prospect.phone || null,
+          website: prospect.website || null,
+          rating: prospect.rating || null,
+          contactEmail: prospect.contactEmail || null,
+          genericEmail: prospect.genericEmail || null,
+          contactName: prospect.contactName || null,
+          contactTitle: prospect.contactTitle || null,
+          emailSource: prospect.emailSource || "none",
+          emailConfidence: prospect.emailConfidence || "low",
+          facebookUrl: prospect.facebookUrl || null,
+          linkedinUrl: prospect.linkedinUrl || null,
+          enrichmentLog: prospect.enrichmentLog || [],
+          // All contacts discovered via Hunter/Snov (up to 10 per domain search credit)
+          allContacts: prospect.allContacts || [],
+          status: "pending_review",
+          batchDate,
+          searchQuery: query,
+          searchLocation: location,
+          createdAt: /* @__PURE__ */ new Date()
+        });
+      }
+      await batch.commit();
+      logger28.info(`[DailyProspector] Wrote batch of ${chunk.length} prospects.`);
     }
-    await batch.commit();
-    logger27.info(`[DailyProspector] Wrote batch of ${chunk.length} prospects.`);
+    const stats = {
+      discovered: totalDiscovered,
+      withEmail: newProspects.length,
+      added: newProspects.length,
+      duplicatesSkipped
+    };
+    await db.collection("prospecting_config").doc("default").set({
+      ...config2,
+      lastRunAt: /* @__PURE__ */ new Date(),
+      lastRunStats: stats
+    }, { merge: true });
+    await statusRef.set({
+      running: false,
+      discovered: totalDiscovered,
+      qualified: newProspects.length,
+      duplicatesSkipped,
+      target: config2.dailyTarget,
+      currentQuery: null,
+      completedAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    });
+    logger28.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
+  } catch (err2) {
+    logger28.error(`[DailyProspector] Pipeline crashed:`, err2.message || err2);
+    await statusRef.set({
+      running: false,
+      discovered: totalDiscovered,
+      qualified: newProspects.length,
+      duplicatesSkipped,
+      target: config2.dailyTarget,
+      currentQuery: null,
+      error: err2.message || "Unknown error",
+      failedAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    }).catch((e2) => logger28.error("[DailyProspector] Failed to write error status:", e2.message));
+    throw err2;
   }
-  const stats = {
-    discovered: totalDiscovered,
-    withEmail: newProspects.length,
-    added: newProspects.length,
-    duplicatesSkipped
-  };
-  await db.collection("prospecting_config").doc("default").set({
-    ...config2,
-    lastRunAt: /* @__PURE__ */ new Date(),
-    lastRunStats: stats
-  }, { merge: true });
-  await statusRef.set({
-    running: false,
-    discovered: totalDiscovered,
-    qualified: newProspects.length,
-    duplicatesSkipped,
-    target: config2.dailyTarget,
-    currentQuery: null,
-    completedAt: /* @__PURE__ */ new Date(),
-    updatedAt: /* @__PURE__ */ new Date()
-  });
-  logger27.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
 }
 var dailyProspector = (0, import_scheduler10.onSchedule)({
   schedule: "0 6 * * *",
@@ -69202,20 +69288,20 @@ var dailyProspector = (0, import_scheduler10.onSchedule)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger27.info("[DailyProspector] Starting scheduled run...");
+  logger28.info("[DailyProspector] Starting scheduled run...");
   await runDailyPipeline();
 });
-var triggerDailyProspector = (0, import_https17.onCall)({
+var triggerDailyProspector = (0, import_https18.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET"],
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger27.info("[DailyProspector] Manual trigger invoked.");
+  logger28.info("[DailyProspector] Manual trigger invoked.");
   await runDailyPipeline();
   return { message: "Daily prospector pipeline completed." };
 });
-var updateProspectingConfig = (0, import_https17.onCall)({
+var updateProspectingConfig = (0, import_https18.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const data = request.data;
@@ -69226,13 +69312,13 @@ var updateProspectingConfig = (0, import_https17.onCall)({
   if (data.enabled !== void 0) update.enabled = data.enabled;
   if (data.excludePatterns) update.excludePatterns = data.excludePatterns;
   if (Object.keys(update).length === 0) {
-    throw new import_https17.HttpsError("invalid-argument", "No valid fields to update.");
+    throw new import_https18.HttpsError("invalid-argument", "No valid fields to update.");
   }
   await db.collection("prospecting_config").doc("default").set(update, { merge: true });
-  logger27.info("[updateProspectingConfig] Config updated:", update);
+  logger28.info("[updateProspectingConfig] Config updated:", update);
   return { message: "Prospecting config updated.", updated: update };
 });
-var getProspectingConfig = (0, import_https17.onCall)({
+var getProspectingConfig = (0, import_https18.onCall)({
   cors: DASHBOARD_CORS
 }, async () => {
   const doc = await db.collection("prospecting_config").doc("default").get();
@@ -69244,7 +69330,7 @@ var getProspectingConfig = (0, import_https17.onCall)({
 });
 
 // src/functions/sequenceGenerator.ts
-var import_https18 = require("firebase-functions/v2/https");
+var import_https19 = require("firebase-functions/v2/https");
 var import_generative_ai7 = require("@google/generative-ai");
 init_promptUtils();
 var FALLBACK_SYSTEM_PROMPT = `You are an expert B2B email copywriter for XIRI Facility Solutions, a commercial cleaning and facility management platform based in New York.
@@ -69288,14 +69374,14 @@ Return your response as valid JSON with this exact structure:
 }
 
 IMPORTANT: Return ONLY the JSON object. No markdown, no code fences, no explanation.`;
-var generateAISequence = (0, import_https18.onCall)({
+var generateAISequence = (0, import_https19.onCall)({
   secrets: ["GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 120
 }, async (request) => {
   const data = request.data;
   if (!data.prompt || !data.prompt.trim()) {
-    throw new import_https18.HttpsError("invalid-argument", "A prompt describing the target segment is required.");
+    throw new import_https19.HttpsError("invalid-argument", "A prompt describing the target segment is required.");
   }
   const numSteps = data.numSteps || 4;
   const tone = data.tone || "professional";
@@ -69332,11 +69418,11 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
         parsed = JSON.parse(jsonMatch[1].trim());
       } else {
         console.error("[generateAISequence] Failed to parse response:", responseText.slice(0, 500));
-        throw new import_https18.HttpsError("internal", "AI returned invalid JSON. Please try again.");
+        throw new import_https19.HttpsError("internal", "AI returned invalid JSON. Please try again.");
       }
     }
     if (!parsed.name || !Array.isArray(parsed.steps) || parsed.steps.length === 0) {
-      throw new import_https18.HttpsError("internal", "AI returned incomplete sequence data. Please try again.");
+      throw new import_https19.HttpsError("internal", "AI returned incomplete sequence data. Please try again.");
     }
     parsed.steps = parsed.steps.map((step, idx) => ({
       label: step.label || `Step ${idx + 1}`,
@@ -69353,9 +69439,9 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
       }
     };
   } catch (error13) {
-    if (error13 instanceof import_https18.HttpsError) throw error13;
+    if (error13 instanceof import_https19.HttpsError) throw error13;
     console.error("[generateAISequence] Error:", error13);
-    throw new import_https18.HttpsError("internal", error13.message || "Failed to generate sequence.");
+    throw new import_https19.HttpsError("internal", error13.message || "Failed to generate sequence.");
   }
 });
 // Annotate the CommonJS export names for ESM import in node:
@@ -69424,6 +69510,7 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
   searchPlaces,
   sendBookingConfirmation,
   sendOnboardingInvite,
+  sendPreviewEmail,
   sendQuoteEmail,
   sendSingleLeadEmail,
   sendTestMorningReport,

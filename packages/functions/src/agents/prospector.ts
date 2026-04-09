@@ -6,7 +6,7 @@
  *
  *   Layer 1: Website scraping (mailto, structured data, AI owner extraction)
  *   Layer 2: Serper web search (Facebook, person+business, directories)
- *   Layer 3: Paid API waterfall (Hunter.io → Snov.io)
+ *   Layer 3: Paid API waterfall (Hunter.io)
  *
  * Each layer stops early if a personal email is found.
  */
@@ -44,8 +44,19 @@ const FREE_EMAIL_PROVIDERS = new Set([
 ]);
 
 /**
+ * Strip common suffixes/noise words from a domain root for better matching.
+ * e.g. "exceedlearningcenterny" → "exceedlearning"
+ */
+function stripDomainNoise(root: string): string {
+    return root
+        .replace(/[-_]/g, '')
+        .replace(/(mail|email|web|site|online|center|centres?|ny|li|usa|inc|llc|corp|org|hq|app|the)$/gi, '')
+        .replace(/(mail|email|web|site|online|center|centres?|ny|li|usa|inc|llc|corp|org|hq|app|the)$/gi, ''); // run twice for stacked suffixes
+}
+
+/**
  * Validate whether an email plausibly belongs to a business.
- * Returns 'valid' | 'free_provider' | 'domain_match' | 'junk' | 'mismatch'
+ * Returns 'domain_match' | 'free_provider' | 'junk' | 'mismatch'
  */
 function validateEmailForBusiness(
     email: string,
@@ -64,17 +75,35 @@ function validateEmailForBusiness(
     if (businessWebsite) {
         const bizDomain = extractDomain(businessWebsite);
         if (bizDomain) {
-            // Exact match or subdomain match
+            // 1. Exact match or subdomain match
             if (emailDomain === bizDomain || emailDomain.endsWith('.' + bizDomain)) {
                 return 'domain_match';
             }
-            // Check if root domains are similar (e.g., "smithdental.com" vs "smith-dental.com")
+
             const bizRoot = bizDomain.split('.')[0].replace(/[-_]/g, '');
             const emailRoot = emailDomain.split('.')[0].replace(/[-_]/g, '');
-            if (bizRoot.length > 3 && emailRoot.length > 3 &&
+
+            // 2. Simple substring match (one contains the other)
+            if (bizRoot.length > 2 && emailRoot.length > 2 &&
                 (bizRoot.includes(emailRoot) || emailRoot.includes(bizRoot))) {
                 return 'domain_match';
             }
+
+            // 3. Stripped match (remove common suffixes like 'center', 'ny', 'mail')
+            const bizStripped = stripDomainNoise(bizRoot);
+            const emailStripped = stripDomainNoise(emailRoot);
+            if (bizStripped.length > 2 && emailStripped.length > 2 &&
+                (bizStripped.includes(emailStripped) || emailStripped.includes(bizStripped))) {
+                return 'domain_match';
+            }
+
+            // 4. TLD-swapped check (same root, different TLD)
+            const bizBase = bizDomain.split('.').slice(0, -1).join('.');
+            const emailBase = emailDomain.split('.').slice(0, -1).join('.');
+            if (bizBase === emailBase) {
+                return 'domain_match';
+            }
+
             // Email domain doesn't match website — suspicious
             return 'mismatch';
         }
@@ -111,8 +140,6 @@ export async function prospectAndEnrich(
         geminiApiKey: string;
         serperApiKey: string;
         hunterApiKey?: string;
-        snovUserId?: string;
-        snovApiSecret?: string;
     }
 ): Promise<ProspectorOutput> {
     const maxResults = input.maxResults || 20;
@@ -136,8 +163,42 @@ export async function prospectAndEnrich(
     // Process up to maxResults businesses
     const toProcess = rawVendors.slice(0, maxResults);
 
+    // Pipeline-level time guard — stop at 7 min to leave 2 min for cleanup/writes
+    const PIPELINE_TIME_BUDGET_MS = 7 * 60 * 1000; // 420s
+    const PER_BUSINESS_TIMEOUT_MS = 30_000; // 30s max per business
+    const pipelineStart = Date.now();
+
     for (const vendor of toProcess) {
-        const prospect = await enrichSingleBusiness(vendor, secrets, input);
+        // ── Pipeline time guard ──
+        const elapsed = Date.now() - pipelineStart;
+        if (elapsed > PIPELINE_TIME_BUDGET_MS) {
+            console.log(`[Prospector] ⏱️ Pipeline time budget exhausted (${Math.round(elapsed / 1000)}s). Processed ${prospects.length}/${toProcess.length} businesses.`);
+            break;
+        }
+
+        // ── Per-business timeout wrapper ──
+        let prospect: EnrichedProspect;
+        try {
+            prospect = await Promise.race([
+                enrichSingleBusiness(vendor, secrets, input),
+                new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error(`Enrichment timed out after ${PER_BUSINESS_TIMEOUT_MS / 1000}s`)), PER_BUSINESS_TIMEOUT_MS)
+                ),
+            ]);
+        } catch (error: any) {
+            console.warn(`[Prospector] ⚠️ Skipping "${vendor.name}": ${error.message}`);
+            prospect = {
+                businessName: vendor.name,
+                address: vendor.location,
+                phone: vendor.phone,
+                website: vendor.website,
+                rating: vendor.rating,
+                userRatingsTotal: vendor.user_ratings_total,
+                emailSource: 'none' as EmailSource,
+                emailConfidence: 'low' as const,
+                enrichmentLog: [`Skipped: ${error.message}`],
+            };
+        }
         prospects.push(prospect);
 
         if (prospect.contactEmail && !GENERIC_PREFIXES.test(prospect.contactEmail)) {
@@ -173,8 +234,6 @@ async function enrichSingleBusiness(
         geminiApiKey: string;
         serperApiKey: string;
         hunterApiKey?: string;
-        snovUserId?: string;
-        snovApiSecret?: string;
     },
     input: ProspectorInput
 ): Promise<EnrichedProspect> {
@@ -326,13 +385,11 @@ async function enrichSingleBusiness(
 
             const waterfallResult = await runEnrichmentWaterfall(domain, {
                 hunterApiKey: secrets.hunterApiKey,
-                snovUserId: secrets.snovUserId,
-                snovApiSecret: secrets.snovApiSecret,
             });
 
             log.push(...waterfallResult.log);
 
-            // Persist ALL discovered contacts (Hunter/Snov return up to 10 per credit)
+            // Persist ALL discovered contacts (Hunter returns up to 10 per credit)
             if (waterfallResult.allEmails.length > 0) {
                 const apiContacts: ProspectContact[] = waterfallResult.allEmails.map(e => ({
                     email: e.email,

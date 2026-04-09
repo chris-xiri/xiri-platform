@@ -67,10 +67,13 @@ export async function scrapeWebsite(url: string, geminiApiKey: string): Promise<
         const additionalPages = findAdditionalPages(homepage.$, url);
         const contactPageResults: Partial<ScrapedData>[] = [];
         let allAdditionalHtml = '';
+        const additionalPageCache: { url: string; $: cheerio.CheerioAPI }[] = []; // Cache for reuse in Step 3b
 
         for (const pageUrl of additionalPages.slice(0, 3)) { // max 3 extra pages
             const page = await fetchPage(pageUrl);
             if (!page) continue;
+
+            additionalPageCache.push({ url: pageUrl, $: page.$ }); // Cache the result
 
             const pagePatterns = extractFromPatterns(page.$, page.html);
             const pageLinks = extractMailtoAndTel(page.$);
@@ -106,11 +109,10 @@ export async function scrapeWebsite(url: string, geminiApiKey: string): Promise<
             source: 'web-scraper',
         };
 
-        // ─── Step 3b: Collect ALL emails for categorization ───
+        // ─── Step 3b: Collect ALL emails for categorization (reuse cached pages) ───
         const allEmailsFromLinks = extractAllMailtoEmails(homepage.$);
-        for (const pageUrl of additionalPages.slice(0, 3)) {
-            const page = await fetchPage(pageUrl);
-            if (page) allEmailsFromLinks.push(...extractAllMailtoEmails(page.$));
+        for (const cached of additionalPageCache) {
+            allEmailsFromLinks.push(...extractAllMailtoEmails(cached.$));
         }
         // De-duplicate and categorize
         const seenEmails = new Set<string>();
@@ -616,7 +618,7 @@ export async function searchWebForEmail(
 
     const queries: string[] = [];
 
-    // Strategy 1: site-specific search (most targeted)
+    // Strategy 1: site-specific search (most targeted) — only if we have a domain
     if (domain) {
         queries.push(`site:${domain} email OR contact`);
     }
@@ -627,13 +629,10 @@ export async function searchWebForEmail(
     // Strategy 3: Named person search (if we found an owner via AI)
     if (contactName) {
         queries.push(`"${contactName}" "${businessName}" email`);
+    } else if (!domain) {
+        // Fallback: General business + location search (only if no domain-specific search ran)
+        queries.push(`"${businessName}" ${location} email contact`);
     }
-
-    // Strategy 4: General business + location search
-    queries.push(`"${businessName}" ${location} email contact`);
-
-    // Strategy 5: Chamber of commerce / directory search
-    queries.push(`"${businessName}" ${location} email site:bbb.org OR site:chamberofcommerce.com OR site:yelp.com`);
 
     let facebookUrl: string | undefined;
 

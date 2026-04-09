@@ -9,7 +9,7 @@ import { inferFacilityType } from "@xiri/shared";
 // Runs the full multi-source enrichment pipeline:
 //   Discovery → Scraping → Web Search → Paid API Waterfall
 export const runProspector = onCall({
-    secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET"],
+    secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
     cors: DASHBOARD_CORS,
     timeoutSeconds: 540,  // 9 minutes — some enrichment steps are slow
     memory: "512MiB",
@@ -33,8 +33,6 @@ export const runProspector = onCall({
                 geminiApiKey: process.env.GEMINI_API_KEY!,
                 serperApiKey: process.env.SERPER_API_KEY!,
                 hunterApiKey: process.env.HUNTER_API_KEY,
-                snovUserId: process.env.SNOV_USER_ID,
-                snovApiSecret: process.env.SNOV_API_SECRET,
             }
         );
 
@@ -51,7 +49,7 @@ export const runProspector = onCall({
 
 // ── Add Prospects to CRM ──
 // Creates Company + Contact records for selected prospects.
-// Now creates multiple contacts per company from allContacts (Hunter/Snov).
+// Now creates multiple contacts per company from allContacts (Hunter).
 export const addProspectsToCrm = onCall({
     cors: DASHBOARD_CORS,
     timeoutSeconds: 60,
@@ -73,7 +71,6 @@ export const addProspectsToCrm = onCall({
             // 1. Create Company
             const companyRef = db.collection("companies").doc();
             batch.set(companyRef, {
-                name: prospect.businessName,
                 businessName: prospect.businessName,
                 address: prospect.address || null,
                 phone: prospect.phone || null,
@@ -117,7 +114,7 @@ export const addProspectsToCrm = onCall({
                 seenEmails.add(primaryEmail.toLowerCase());
             }
 
-            // Additional contacts from Hunter/Snov enrichment
+            // Additional contacts from Hunter enrichment
             if (prospect.allContacts && Array.isArray(prospect.allContacts)) {
                 for (const c of prospect.allContacts) {
                     if (!c.email || seenEmails.has(c.email.toLowerCase())) continue;

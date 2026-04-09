@@ -521,18 +521,42 @@ export default function ProspectsPage() {
         const statusDocRef = doc(db, 'prospecting_config', 'run_status');
         let interval: ReturnType<typeof setInterval>;
 
+        const STALE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+
         const pollStatus = async () => {
             try {
                 const snap = await getDoc(statusDocRef);
                 if (snap.exists()) {
                     const data = snap.data() as RunStatus;
                     setRunStatus(data);
+
                     if (!data.running) {
                         // Pipeline finished — stop polling
                         setPolling(false);
+                        if (data.error) {
+                            toast({
+                                title: 'Pipeline failed',
+                                description: data.error,
+                                variant: 'destructive',
+                            });
+                        } else {
+                            toast({
+                                title: 'Prospector complete!',
+                                description: `Added ${data.qualified} prospects (${data.duplicatesSkipped} duplicates skipped).`,
+                            });
+                        }
+                        return;
+                    }
+
+                    // Stale-run detection: if updatedAt is older than 10 min, auto-reset
+                    const updatedAt = data.updatedAt?.toDate?.() ?? (data.updatedAt ? new Date(data.updatedAt) : null);
+                    if (updatedAt && Date.now() - updatedAt.getTime() > STALE_TIMEOUT_MS) {
+                        setPolling(false);
+                        setRunStatus({ ...data, running: false });
                         toast({
-                            title: 'Prospector complete!',
-                            description: `Added ${data.qualified} prospects (${data.duplicatesSkipped} duplicates skipped).`,
+                            title: 'Pipeline timed out',
+                            description: `No progress for 10+ minutes. The pipeline may have crashed. You can re-run it.`,
+                            variant: 'destructive',
                         });
                     }
                 }

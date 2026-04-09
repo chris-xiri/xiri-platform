@@ -167,6 +167,7 @@ export default function EditVendorDialog({ vendor, trigger, onUpdate }: EditVend
 
             await updateDoc(doc(db, 'vendors', vendor.id!), {
                 businessName: formData.businessName,
+                name: formData.businessName,  // Keep legacy field in sync
                 contactName: formData.contactName || null,
                 email: formData.email || null,
                 phone: formData.phone || null,

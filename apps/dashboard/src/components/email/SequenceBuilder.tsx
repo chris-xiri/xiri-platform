@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, limit, orderBy, addDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
+import { FACILITY_PHRASE_MAP, FACILITY_PHRASE_KEYS, FACILITY_PHRASE_DEFAULTS, EMAIL_MERGE_VARIABLES, EMAIL_VARIABLE_GROUPS, type FacilityType } from "@xiri-facility-solutions/shared";
+import RichTextEditor, { type RichTextEditorRef } from "@/components/email/RichTextEditor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +34,7 @@ import {
     ArrowRight, Mail, Rocket, Building2, HardHat,
     Handshake, Star, Clock, Eye, EyeOff, Save, Check,
     Flame, Snowflake, Database, X, Sparkles, Wand2,
+    User, Link, ChevronRight, Send,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -69,29 +73,8 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ReactNode; co
     custom: { label: 'Custom', icon: <Star className="w-4 h-4" />, color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300', sampleGroup: 'lead' },
 };
 
-// ─── Merge field sample data (fallback) ───────────────────────────
-const SAMPLE_DATA: Record<string, Record<string, string>> = {
-    contractor: {
-        vendorName: "Bright Shine Cleaning Co.",
-        contactName: "Maria",
-        city: "Queens",
-        state: "NY",
-        services: "Janitorial, Floor Care, Post-Construction",
-        specialty: "Janitorial",
-        onboardingUrl: "https://xiri.ai/contractor?vid=DEMO123",
-    },
-    lead: {
-        businessName: "Garden City Medical Associates",
-        contactName: "Dr. Smith",
-        facilityType: "Medical Urgent Care",
-        address: "123 Main St, Garden City, NY 11530",
-        squareFootage: "3,200 sq ft",
-    },
-    referral: {
-        contactName: "Harvey",
-        businessName: "Nassau Commercial Realty",
-    },
-};
+// ─── Merge field sample data — imported from @xiri/shared ────────
+const SAMPLE_DATA: Record<string, Record<string, string>> = EMAIL_MERGE_VARIABLES;
 
 // ─── Live data config ─────────────────────────────────────────────
 interface LiveDataConfig {
@@ -129,17 +112,25 @@ const LIVE_DATA_CONFIG: Record<string, LiveDataConfig> = {
             if (email) return `${email}  —  ${company}`;
             return company || c._id || 'Unknown';
         },
-        toMergeVars: (c: any) => ({
-            contactName: `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.companyName || 'there',
-            contactFirstName: c.firstName || '',
-            contactEmail: c.email || '',
-            businessName: c.companyName || c._companyData?.businessName || 'Unknown',
-            facilityType: c._companyData?.facilityType || '',
-            address: c._companyData?.address || `${c._companyData?.city || ''}, ${c._companyData?.state || ''}`.replace(/^,\s*$/, ''),
-            squareFootage: c._companyData?.propertySourcing?.squareFootage
-                ? `${Number(c._companyData.propertySourcing.squareFootage).toLocaleString()} sq ft`
-                : c._companyData?.squareFootage || '',
-        }),
+        toMergeVars: (c: any) => {
+            const ft = (c._companyData?.facilityType || '') as FacilityType;
+            const phrases = FACILITY_PHRASE_MAP[ft] || null;
+            return {
+                contactName: `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.companyName || 'there',
+                contactFirstName: c.firstName || '',
+                contactEmail: c.email || '',
+                businessName: c.companyName || c._companyData?.businessName || 'Unknown',
+                facilityType: c._companyData?.facilityType || '',
+                address: c._companyData?.address || `${c._companyData?.city || ''}, ${c._companyData?.state || ''}`.replace(/^,\s*$/, ''),
+                squareFootage: c._companyData?.propertySourcing?.squareFootage
+                    ? `${Number(c._companyData.propertySourcing.squareFootage).toLocaleString()} sq ft`
+                    : c._companyData?.squareFootage || '',
+                // Dynamically spread all facility-phrase keys with shared defaults
+                ...Object.fromEntries(
+                    FACILITY_PHRASE_KEYS.map((k) => [k, phrases?.[k] || FACILITY_PHRASE_DEFAULTS[k]])
+                ),
+            };
+        },
     },
     referral: {
         collection: 'contacts',
@@ -201,14 +192,20 @@ export default function SequenceBuilder() {
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
     const [activeEditField, setActiveEditField] = useState<'subject' | 'body'>('body');
+    const [activeVarGroup, setActiveVarGroup] = useState<string | null>(null);
     const editSubjectRef = useRef<HTMLInputElement>(null);
-    const editBodyRef = useRef<HTMLTextAreaElement>(null);
+    const editBodyRef = useRef<RichTextEditorRef>(null);
 
     // Live preview state
     const [useLivePreview, setUseLivePreview] = useState(false);
     const [liveRecords, setLiveRecords] = useState<Record<string, any[]>>({});
     const [selectedRecordIdx, setSelectedRecordIdx] = useState<Record<string, number>>({});
     const [loadingLiveData, setLoadingLiveData] = useState(false);
+
+    // Send test email state
+    const [sendingPreview, setSendingPreview] = useState(false);
+    const [previewSent, setPreviewSent] = useState(false);
+    const { user } = useAuth();
 
     // Create / Edit sequence state
     const [showEditor, setShowEditor] = useState(false);
@@ -342,7 +339,10 @@ export default function SequenceBuilder() {
     const openTemplateEditor = (template: FullTemplate, variant: 'base' | 'warm' | 'cold') => {
         setEditingTemplateId(template.id);
         setEditSubject(template.subject);
-        setEditBody(template.body);
+        // Convert legacy plain-text bodies to HTML for TipTap
+        const bodyHtml = template.body.includes('<') ? template.body
+            : template.body.split('\n').map(line => `<p>${line || '<br>'}</p>`).join('');
+        setEditBody(bodyHtml);
         setActiveVariant(variant);
         setPreviewMode(false);
     };
@@ -366,21 +366,26 @@ export default function SequenceBuilder() {
     };
 
     const insertVariable = (fieldType: 'subject' | 'body', variable: string) => {
-        const token = `{{${variable}}}`;
-        const ref = fieldType === 'subject' ? editSubjectRef.current : editBodyRef.current;
-        const setter = fieldType === 'subject' ? setEditSubject : setEditBody;
-        const value = fieldType === 'subject' ? editSubject : editBody;
-        if (ref) {
-            const start = ref.selectionStart ?? value.length;
-            const end = ref.selectionEnd ?? value.length;
-            const newValue = value.slice(0, start) + token + value.slice(end);
-            setter(newValue);
-            requestAnimationFrame(() => {
-                ref.focus();
-                ref.setSelectionRange(start + token.length, start + token.length);
-            });
+        if (fieldType === 'body') {
+            // Rich text editor — use its insertVariable API
+            editBodyRef.current?.insertVariable(variable);
         } else {
-            setter(value + token);
+            // Subject — plain text input
+            const token = `{{${variable}}}`;
+            const ref = editSubjectRef.current;
+            const value = editSubject;
+            if (ref) {
+                const start = ref.selectionStart ?? value.length;
+                const end = ref.selectionEnd ?? value.length;
+                const newValue = value.slice(0, start) + token + value.slice(end);
+                setEditSubject(newValue);
+                requestAnimationFrame(() => {
+                    ref.focus();
+                    ref.setSelectionRange(start + token.length, start + token.length);
+                });
+            } else {
+                setEditSubject(value + token);
+            }
         }
     };
 
@@ -837,6 +842,45 @@ export default function SequenceBuilder() {
                                                                                     <Save className="w-3 h-3 mr-1" />}
                                                                             {isSaved ? "Saved!" : "Save"}
                                                                         </Button>
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            className="h-7 text-xs"
+                                                                            disabled={sendingPreview || !user?.email}
+                                                                            onClick={async () => {
+                                                                                if (!user?.email) return;
+                                                                                setSendingPreview(true);
+                                                                                setPreviewSent(false);
+                                                                                try {
+                                                                                    const fn = httpsCallable(functions, 'sendPreviewEmail');
+                                                                                    await fn({
+                                                                                        to: user.email,
+                                                                                        subject: editSubject,
+                                                                                        body: editBody,
+                                                                                        sampleData: (() => {
+                                                                                            // Build sample merge data from the current preview context
+                                                                                            const vars: Record<string, string> = {};
+                                                                                            Object.entries(EMAIL_MERGE_VARIABLES).forEach(([key, meta]) => {
+                                                                                                vars[key] = (meta as any).sample || key;
+                                                                                            });
+                                                                                            return vars;
+                                                                                        })(),
+                                                                                    });
+                                                                                    setPreviewSent(true);
+                                                                                    setTimeout(() => setPreviewSent(false), 3000);
+                                                                                } catch (err) {
+                                                                                    console.error('Failed to send preview email:', err);
+                                                                                    alert('Failed to send preview email. Check console for details.');
+                                                                                } finally {
+                                                                                    setSendingPreview(false);
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            {sendingPreview ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> :
+                                                                                previewSent ? <Check className="w-3 h-3 mr-1" /> :
+                                                                                    <Send className="w-3 h-3 mr-1" />}
+                                                                            {previewSent ? "Sent!" : "Send Test"}
+                                                                        </Button>
                                                                     </div>
                                                                 </div>
 
@@ -876,27 +920,65 @@ export default function SequenceBuilder() {
                                                                     </div>
                                                                 )}
 
-                                                                {/* Insert Variable Buttons */}
+                                                                {/* Insert Variable — 2-step grouped UI */}
                                                                 {!previewMode && (() => {
-                                                                    const sampleKeys = Object.keys(SAMPLE_DATA[sampleGroup] || {});
-                                                                    return sampleKeys.length > 0 && (
-                                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Insert Variable:</span>
-                                                                            {sampleKeys.map(v => (
-                                                                                <Button
-                                                                                    key={v}
-                                                                                    size="sm"
-                                                                                    variant="outline"
-                                                                                    className="h-6 text-[10px] font-mono px-2 gap-1 hover:bg-primary/10 hover:border-primary/40"
-                                                                                    onClick={() => insertVariable(activeEditField, v)}
-                                                                                >
-                                                                                    <Plus className="w-2.5 h-2.5" />
-                                                                                    {v}
-                                                                                </Button>
-                                                                            ))}
-                                                                            <Badge variant="secondary" className="text-[9px] px-1.5 h-5">
-                                                                                → {activeEditField === 'subject' ? 'Subject' : 'Body'}
-                                                                            </Badge>
+                                                                    const groups = EMAIL_VARIABLE_GROUPS[sampleGroup];
+                                                                    if (!groups || groups.length === 0) return null;
+
+                                                                    const GROUP_ICONS: Record<string, React.ReactNode> = {
+                                                                        'user': <User className="w-3 h-3" />,
+                                                                        'building-2': <Building2 className="w-3 h-3" />,
+                                                                        'sparkles': <Sparkles className="w-3 h-3" />,
+                                                                        'hard-hat': <HardHat className="w-3 h-3" />,
+                                                                        'link': <Link className="w-3 h-3" />,
+                                                                    };
+
+                                                                    const activeGroup = groups.find(g => g.label === activeVarGroup);
+
+                                                                    return (
+                                                                        <div className="space-y-2">
+                                                                            {/* Step 1 — Category pills */}
+                                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Insert Variable:</span>
+                                                                                {groups.map(g => (
+                                                                                    <Button
+                                                                                        key={g.label}
+                                                                                        size="sm"
+                                                                                        variant={activeVarGroup === g.label ? 'default' : 'outline'}
+                                                                                        className={`h-6 text-[10px] px-2.5 gap-1.5 transition-all ${
+                                                                                            activeVarGroup === g.label
+                                                                                                ? 'shadow-sm'
+                                                                                                : 'hover:bg-muted/60'
+                                                                                        }`}
+                                                                                        onClick={() => setActiveVarGroup(activeVarGroup === g.label ? null : g.label)}
+                                                                                    >
+                                                                                        {GROUP_ICONS[g.icon || ''] || null}
+                                                                                        {g.label}
+                                                                                        <ChevronRight className={`w-2.5 h-2.5 transition-transform ${activeVarGroup === g.label ? 'rotate-90' : ''}`} />
+                                                                                    </Button>
+                                                                                ))}
+                                                                                <Badge variant="secondary" className="text-[9px] px-1.5 h-5 ml-auto">
+                                                                                    → {activeEditField === 'subject' ? 'Subject' : 'Body'}
+                                                                                </Badge>
+                                                                            </div>
+
+                                                                            {/* Step 2 — Variable buttons for selected group */}
+                                                                            {activeGroup && (
+                                                                                <div className="flex items-center gap-1.5 flex-wrap pl-4 border-l-2 border-primary/20 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                                                    {activeGroup.vars.map(v => (
+                                                                                        <Button
+                                                                                            key={v}
+                                                                                            size="sm"
+                                                                                            variant="outline"
+                                                                                            className="h-6 text-[10px] font-mono px-2 gap-1 hover:bg-primary/10 hover:border-primary/40 transition-colors"
+                                                                                            onClick={() => insertVariable(activeEditField, v)}
+                                                                                        >
+                                                                                            <Plus className="w-2.5 h-2.5" />
+                                                                                            {v}
+                                                                                        </Button>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     );
                                                                 })()}
@@ -941,17 +1023,17 @@ export default function SequenceBuilder() {
                                                                                 })()}
                                                                                 <div>Subject: <span className="text-foreground font-semibold text-xs">{mergePreview(editSubject, sampleGroup, getLiveMergeData(sampleGroup))}</span></div>
                                                                             </div>
-                                                                            <div className="px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed max-h-96 overflow-auto">
-                                                                                {mergePreview(editBody, sampleGroup, getLiveMergeData(sampleGroup))}
-                                                                            </div>
+                                                                            <div
+                                                                                className="email-preview px-4 py-3 text-sm leading-relaxed max-h-96 overflow-auto"
+                                                                                dangerouslySetInnerHTML={{ __html: mergePreview(editBody, sampleGroup, getLiveMergeData(sampleGroup)) }}
+                                                                            />
                                                                         </div>
                                                                     ) : (
-                                                                        <Textarea
+                                                                        <RichTextEditor
                                                                             ref={editBodyRef}
-                                                                            value={editBody}
-                                                                            onChange={e => setEditBody(e.target.value)}
+                                                                            content={editBody}
+                                                                            onChange={setEditBody}
                                                                             onFocus={() => setActiveEditField('body')}
-                                                                            className="mt-1 text-sm min-h-[300px] font-mono leading-relaxed"
                                                                             placeholder={isPrompt ? "AI prompt instructions..." : "Email body..."}
                                                                         />
                                                                     )}
