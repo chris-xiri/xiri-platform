@@ -614,7 +614,7 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
 
     // Derived display values
     const displayName = contact ? `${contact.firstName} ${contact.lastName}`.trim() : '';
-    const businessName = company?.businessName || contact?.companyName || '';
+    const businessName = company?.businessName || (company as any)?.name || contact?.companyName || '';
     const createdDate = contact ? toDate(contact.createdAt) : null;
     const companyId = contact?.companyId || '';
 
@@ -682,17 +682,6 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                                 >
                                     {STATUS_ORDER.map((s) => (
                                         <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                                    ))}
-                                </select>
-                                <select
-                                    value={company?.facilityType || ''}
-                                    onChange={(e) => handleFacilityTypeChange(e.target.value)}
-                                    className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
-                                    aria-label="Facility type"
-                                >
-                                    <option value="">— Facility Type —</option>
-                                    {Object.entries(FACILITY_TYPE_LABELS).map(([key, label]) => (
-                                        <option key={key} value={key}>{label}</option>
                                     ))}
                                 </select>
                                 <select
@@ -783,30 +772,7 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                                             />
                                         </CardContent>
                                     </Card>
-                                    {/* Service Capabilities — Company-level */}
-                                    <DrawerCapabilities
-                                        capabilities={(company as any)?.serviceCapabilities || []}
-                                        onSave={async (caps: string[]) => {
-                                            if (!companyId) return;
-                                            await updateDoc(doc(db, 'companies', companyId), {
-                                                serviceCapabilities: caps,
-                                                updatedAt: new Date(),
-                                            });
-                                            // Re-fetch company
-                                            const compSnap = await getDoc(doc(db, 'companies', companyId));
-                                            if (compSnap.exists()) {
-                                                const compData = compSnap.data();
-                                                setCompany({
-                                                    id: compSnap.id,
-                                                    ...compData,
-                                                    createdAt: compData.createdAt?.toDate ? compData.createdAt.toDate() : new Date(compData.createdAt || Date.now()),
-                                                    preferredAuditTimes: compData.preferredAuditTimes?.map((t: any) =>
-                                                        t?.toDate ? t.toDate() : new Date(t)
-                                                    ),
-                                                } as Lead);
-                                            }
-                                        }}
-                                    />
+
 
                                     {/* Notes — Editable (stored on contact) */}
                                     <Card>

@@ -39,7 +39,6 @@ const ACCESS_MAP: Record<string, string[]> = {
     'admin/settings': ['admin', 'qa'],
     'admin/company': ['admin', 'qa'],
     'admin/users': ['admin', 'qa'],
-    'admin/templates': ['admin', 'qa'],
     'admin/agents': ['admin', 'qa'],
     'admin/email-templates': ['admin', 'qa'],
     'admin/profile': ['admin', 'sales', 'sales_exec', 'sales_mgr', 'fsm', 'night_manager', 'night_mgr', 'recruiter', 'accounting', 'qa'],

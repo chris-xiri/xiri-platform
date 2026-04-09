@@ -38,6 +38,15 @@ interface EnrichedProspect {
     emailSource: string;
     emailConfidence: string;
     enrichmentLog?: string[];
+    allContacts?: Array<{
+        email: string;
+        firstName?: string;
+        lastName?: string;
+        position?: string;
+        confidence?: number;
+        type: 'personal' | 'generic';
+        provider: string;
+    }>;
 }
 
 interface TemplateOption {
@@ -178,7 +187,7 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
         try {
             const selectedProspects = prospects.filter((_, i) => selected.has(i));
             const addToCrm = httpsCallable(functions, 'addProspectsToCrm');
-            const result = await addToCrm({ prospects: selectedProspects });
+            const result = await addToCrm({ prospects: selectedProspects.map(p => ({ ...p, allContacts: p.allContacts || [] })) });
             const data = result.data as any;
 
             toast({
@@ -204,7 +213,7 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
             // Step 1: Import to CRM
             const selectedProspects = prospects.filter((_, i) => selected.has(i));
             const addToCrm = httpsCallable(functions, 'addProspectsToCrm');
-            const importResult = await addToCrm({ prospects: selectedProspects });
+            const importResult = await addToCrm({ prospects: selectedProspects.map(p => ({ ...p, allContacts: p.allContacts || [] })) });
             const importData = importResult.data as { results: { companyId: string; contactId?: string; businessName: string }[]; imported: number };
 
             // Step 2: Send email to each imported prospect that has a contact
@@ -249,7 +258,7 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
             // Step 1: Import to CRM
             const selectedProspects = prospects.filter((_, i) => selected.has(i));
             const addToCrm = httpsCallable(functions, 'addProspectsToCrm');
-            const importResult = await addToCrm({ prospects: selectedProspects });
+            const importResult = await addToCrm({ prospects: selectedProspects.map(p => ({ ...p, allContacts: p.allContacts || [] })) });
             const importData = importResult.data as { results: { companyId: string; contactId?: string; businessName: string }[]; imported: number };
 
             // Step 2: Start sequence for each imported prospect that has a contact

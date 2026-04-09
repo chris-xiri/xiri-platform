@@ -2,6 +2,7 @@ import * as admin from "firebase-admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Resend } from 'resend';
 import { getPrompt } from './promptUtils';
+import { getFacilityPhrases } from '@xiri/shared';
 
 const db = admin.firestore();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -35,6 +36,30 @@ export async function getTemplate(templateId: string): Promise<EmailTemplate | n
  */
 export function replaceVariables(content: string, variables: Record<string, string>): string {
     return content.replace(/\{\{(\w+)\}\}/g, (_, key) => key in variables ? variables[key] : '');
+}
+
+/**
+ * Enrich a merge-variables object with facility-type personalization phrases.
+ *
+ * Reads `facilityType` from the provided variables (or accepts an explicit override),
+ * looks up the FACILITY_PHRASE_MAP from @xiri/shared, and spreads the phrase keys
+ * (spaceNoun, cadencePhrase, facilityCategory, serviceHook, coreOpsPhrase)
+ * into the variables object.
+ *
+ * Existing keys are NOT overwritten, so callers can set manual overrides.
+ * Returns the same object reference (mutated) for convenience.
+ */
+export function injectFacilityPhrases(
+    variables: Record<string, string>,
+    facilityTypeOverride?: string,
+): Record<string, string> {
+    const phrases = getFacilityPhrases(facilityTypeOverride || variables.facilityType);
+    for (const [key, value] of Object.entries(phrases)) {
+        if (!variables[key]) {
+            variables[key] = value;
+        }
+    }
+    return variables;
 }
 
 /**

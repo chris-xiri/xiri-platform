@@ -139,37 +139,71 @@ class SnovProvider implements EnrichmentProvider {
         return this.accessToken!;
     }
 
+    /** Poll a Snov v2 task until it returns status:"completed" or we give up */
+    private async pollResult(url: string, token: string, maxAttempts = 5): Promise<any> {
+        for (let i = 0; i < maxAttempts; i++) {
+            if (i > 0) await new Promise(r => setTimeout(r, 2000));
+            const res = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` },
+                signal: AbortSignal.timeout(10000),
+            });
+            if (!res.ok) throw new Error(`Snov poll failed: HTTP ${res.status}`);
+            const data = await res.json() as any;
+            if (data.status === 'completed') return data;
+        }
+        throw new Error('Snov task timed out after polling');
+    }
+
     async findEmailsByDomain(domain: string): Promise<ProviderResult> {
         try {
             const token = await this.getAccessToken();
 
-            // Domain search (v2) — returns emails associated with the domain
-            const response = await fetch('https://api.snov.io/v2/domain-emails-with-info', {
+            // Step 1: Start domain search (returns task_hash)
+            const startRes = await fetch('https://api.snov.io/v2/domain-search/domain-emails/start', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    domain,
-                    type: 'all',
-                    limit: 10,
-                }),
+                body: JSON.stringify({ domain }),
                 signal: AbortSignal.timeout(10000),
             });
 
-            if (!response.ok) {
-                const errorBody = await response.text();
-                if (response.status === 402 || response.status === 429) {
+            if (!startRes.ok) {
+                const errorBody = await startRes.text();
+                if (startRes.status === 402 || startRes.status === 429) {
                     return { emails: [], creditsUsed: 0, error: 'credits_exhausted' };
                 }
-                return { emails: [], creditsUsed: 0, error: `HTTP ${response.status}: ${errorBody}` };
+                return { emails: [], creditsUsed: 0, error: `HTTP ${startRes.status}: ${errorBody}` };
             }
 
-            const data = await response.json() as any;
-            const snovEmails = data.emails || [];
+            const startData = await startRes.json() as any;
+            const taskHash = startData?.meta?.task_hash || startData?.data?.task_hash;
+            if (!taskHash) {
+                // If the response contains data directly (legacy format), handle it
+                const directEmails = startData?.data || startData?.emails || [];
+                if (Array.isArray(directEmails) && directEmails.length > 0) {
+                    return this.parseEmails(directEmails);
+                }
+                return { emails: [], creditsUsed: 0, error: 'No task_hash returned' };
+            }
 
-            const emails: EnrichedEmail[] = snovEmails.map((e: any) => {
+            // Step 2: Poll for results
+            const resultUrl = `https://api.snov.io/v2/domain-search/domain-emails/result/${taskHash}`;
+            const resultData = await this.pollResult(resultUrl, token);
+            const snovEmails = resultData?.data || [];
+
+            return this.parseEmails(snovEmails);
+        } catch (error: any) {
+            console.error(`[Snov] Error searching ${domain}:`, error.message);
+            return { emails: [], creditsUsed: 0, error: error.message };
+        }
+    }
+
+    private parseEmails(snovEmails: any[]): ProviderResult {
+        const emails: EnrichedEmail[] = snovEmails
+            .filter((e: any) => e.email)
+            .map((e: any) => {
                 const isGeneric = /^(info|contact|hello|office|admin|support|sales|team|service|services)@/i.test(e.email || '');
                 return {
                     email: (e.email || '').toLowerCase(),
@@ -182,21 +216,17 @@ class SnovProvider implements EnrichmentProvider {
                 };
             });
 
-            // Sort: personal first, then by confidence descending
-            emails.sort((a, b) => {
-                if (a.type === 'personal' && b.type !== 'personal') return -1;
-                if (a.type !== 'personal' && b.type === 'personal') return 1;
-                return (b.confidence || 0) - (a.confidence || 0);
-            });
+        // Sort: personal first, then by confidence descending
+        emails.sort((a, b) => {
+            if (a.type === 'personal' && b.type !== 'personal') return -1;
+            if (a.type !== 'personal' && b.type === 'personal') return 1;
+            return (b.confidence || 0) - (a.confidence || 0);
+        });
 
-            return {
-                emails,
-                creditsUsed: 1,  // Snov charges 1 credit per domain search
-            };
-        } catch (error: any) {
-            console.error(`[Snov] Error searching ${domain}:`, error.message);
-            return { emails: [], creditsUsed: 0, error: error.message };
-        }
+        return {
+            emails,
+            creditsUsed: 1,  // Snov charges 1 credit per domain search
+        };
     }
 }
 

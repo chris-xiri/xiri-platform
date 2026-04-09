@@ -545,7 +545,7 @@ export default function LeadDetailPage() {
                         <div>
                             <EditableField
                                 label="Business name"
-                                value={lead.businessName || ''}
+                                value={lead.businessName || (lead as any).name || ''}
                                 icon={Building2}
                                 onSave={(v) => updateField('businessName', v)}
                                 renderDisplay={(val) => (

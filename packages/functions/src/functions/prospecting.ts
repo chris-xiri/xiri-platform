@@ -51,6 +51,7 @@ export const runProspector = onCall({
 
 // ── Add Prospects to CRM ──
 // Creates Company + Contact records for selected prospects.
+// Now creates multiple contacts per company from allContacts (Hunter/Snov).
 export const addProspectsToCrm = onCall({
     cors: DASHBOARD_CORS,
     timeoutSeconds: 60,
@@ -62,7 +63,7 @@ export const addProspectsToCrm = onCall({
     }
 
     try {
-        const results: { companyId: string; contactId?: string; businessName: string }[] = [];
+        const results: { companyId: string; contactId?: string; contactIds: string[]; businessName: string }[] = [];
         const batch = db.batch();
 
         for (const prospect of prospects) {
@@ -88,25 +89,70 @@ export const addProspectsToCrm = onCall({
                 updatedAt: new Date(),
             });
 
-            // 2. Create Contact (if we have any email)
-            const email = prospect.contactEmail || prospect.genericEmail;
-            let contactId: string | undefined;
+            // 2. Create Contacts — one per unique email from allContacts + primary
+            const contactIds: string[] = [];
+            const seenEmails = new Set<string>();
 
-            if (email) {
-                const contactRef = db.collection("contacts").doc();
-                contactId = contactRef.id;
+            // Build a merged contact list: primary first, then allContacts
+            const contactsToCreate: Array<{
+                email: string;
+                name?: string;
+                title?: string;
+                isGeneric: boolean;
+                confidence?: number;
+                provider?: string;
+            }> = [];
 
+            // Primary contact email
+            const primaryEmail = prospect.contactEmail || prospect.genericEmail;
+            if (primaryEmail) {
                 const isGeneric = !prospect.contactEmail ||
                     /^(info|contact|hello|office|admin|sales|team|service|services|marketing)@/i.test(prospect.contactEmail);
+                contactsToCreate.push({
+                    email: primaryEmail.toLowerCase(),
+                    name: prospect.contactName || (isGeneric ? prospect.businessName : undefined),
+                    title: prospect.contactTitle || undefined,
+                    isGeneric,
+                });
+                seenEmails.add(primaryEmail.toLowerCase());
+            }
+
+            // Additional contacts from Hunter/Snov enrichment
+            if (prospect.allContacts && Array.isArray(prospect.allContacts)) {
+                for (const c of prospect.allContacts) {
+                    if (!c.email || seenEmails.has(c.email.toLowerCase())) continue;
+                    seenEmails.add(c.email.toLowerCase());
+
+                    const isGeneric = c.type === 'generic' ||
+                        /^(info|contact|hello|office|admin|sales|team|service|services|marketing)@/i.test(c.email);
+                    const name = (c.firstName && c.lastName)
+                        ? `${c.firstName} ${c.lastName}`
+                        : c.firstName || undefined;
+
+                    contactsToCreate.push({
+                        email: c.email.toLowerCase(),
+                        name: name || (isGeneric ? prospect.businessName : undefined),
+                        title: c.position || undefined,
+                        isGeneric,
+                        confidence: c.confidence,
+                        provider: c.provider,
+                    });
+                }
+            }
+
+            // Write all contacts to Firestore
+            for (const contact of contactsToCreate) {
+                const contactRef = db.collection("contacts").doc();
+                contactIds.push(contactRef.id);
 
                 batch.set(contactRef, {
-                    name: prospect.contactName || prospect.businessName,
-                    email: email,
+                    name: contact.name || prospect.businessName,
+                    email: contact.email,
                     phone: prospect.phone || null,
-                    title: prospect.contactTitle || null,
+                    title: contact.title || null,
                     companyId: companyRef.id,
                     companyName: prospect.businessName,
-                    isGenericEmail: isGeneric,
+                    isGenericEmail: contact.isGeneric,
                     source: 'prospector',
                     status: 'new',
                     stage: 'lead',
@@ -117,17 +163,21 @@ export const addProspectsToCrm = onCall({
 
             results.push({
                 companyId: companyRef.id,
-                contactId,
+                contactId: contactIds[0],  // Primary contact for backwards compat (email/sequence triggers)
+                contactIds,                // All created contacts
                 businessName: prospect.businessName,
             });
         }
 
         await batch.commit();
-        console.log(`[addProspectsToCrm] Created ${results.length} companies + contacts.`);
+
+        const totalContacts = results.reduce((sum, r) => sum + r.contactIds.length, 0);
+        console.log(`[addProspectsToCrm] Created ${results.length} companies + ${totalContacts} contacts.`);
 
         return {
-            message: `Successfully imported ${results.length} prospects to CRM.`,
+            message: `Successfully imported ${results.length} prospects to CRM (${totalContacts} contacts total).`,
             imported: results.length,
+            totalContacts,
             results,
         };
     } catch (error: any) {

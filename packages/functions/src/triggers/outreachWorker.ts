@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import * as logger from "firebase-functions/logger";
 import { fetchPendingTasks, updateTaskStatus, enqueueTask, claimTask, QueueItem } from "../utils/queueUtils";
 import { sendEmail } from "../utils/emailUtils";
+import { getFacilityPhrases } from '@xiri/shared';
 
 // ── Smart fallbacks for unresolved merge variables ─────────────────
 const SMART_FALLBACKS: Record<string, string> = {
@@ -660,6 +661,15 @@ async function handleLeadSend(task: QueueItem) {
         address: task.metadata.address || '',
         squareFootage: task.metadata.squareFootage || '',
     };
+
+    // ── Inject facility-type personalization phrases ─────────────
+    // Resolves {{spaceNoun}}, {{cadencePhrase}}, {{facilityCategory}},
+    // {{serviceHook}}, {{coreOpsPhrase}} from the static phrase map.
+    const rawFacilityType = task.metadata.facilityType || '';
+    const phrases = getFacilityPhrases(rawFacilityType);
+    for (const [key, value] of Object.entries(phrases)) {
+        if (!mergeVars[key]) mergeVars[key] = value;
+    }
 
     // ── Defensive aliases ───────────────────────────────────────────
     // If the AI template optimizer (or a manual edit) accidentally

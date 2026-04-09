@@ -23,6 +23,7 @@ export type FacilityType =
     | 'auto_service_center'
     | 'edu_daycare'
     | 'edu_private_school'
+    | 'edu_tutoring'
     | 'lab_cleanroom'            // ISO 14644-1 / cGMP
     | 'lab_bsl'                  // BSL-1 / BSL-2
     | 'manufacturing_light'      // FOD / ESD / chain-of-custody
@@ -44,6 +45,7 @@ export const FACILITY_TYPE_LABELS: Record<FacilityType, string> = {
     auto_service_center: 'Auto Service Center',
     edu_daycare: 'Daycare / Preschool',
     edu_private_school: 'Private School',
+    edu_tutoring: 'Educational Center / Tutoring',
     lab_cleanroom: 'Lab / Cleanroom',
     lab_bsl: 'Lab (BSL)',
     manufacturing_light: 'Light Manufacturing',
@@ -60,6 +62,175 @@ export const FACILITY_TYPE_OPTIONS: { value: FacilityType; label: string }[] =
         ([value, label]) => ({ value, label })
     );
 
+// ── Facility-Type Email Phrase Map ────────────────────────────────
+
+/** Shape of the per-facility personalization phrases used in email templates. */
+export interface FacilityPhrases {
+    /** Informal noun for the space, e.g. "practice", "showroom", "center" */
+    spaceNoun: string;
+    /** Service cadence language, e.g. "nightly cleaning", "post-session sanitation" */
+    cadencePhrase: string;
+    /** Broad category label for the email body, e.g. "healthcare facilities" */
+    facilityCategory: string;
+    /** One-liner hook about the service benefit for this type */
+    serviceHook: string;
+    /** What the recipient's "core operations" look like */
+    coreOpsPhrase: string;
+}
+
+/**
+ * Static phrase map keyed by canonical FacilityType.
+ * Used during email merge to inject facility-aware copy via {{spaceNoun}},
+ * {{cadencePhrase}}, {{facilityCategory}}, {{serviceHook}}, {{coreOpsPhrase}}.
+ *
+ * When a new FacilityType is added to the union, TypeScript will flag a
+ * missing key here thanks to the `Record<FacilityType, …>` typing.
+ */
+export const FACILITY_PHRASE_MAP: Record<FacilityType, FacilityPhrases> = {
+    medical_urgent_care: {
+        spaceNoun: 'clinic',
+        cadencePhrase: 'nightly clinical-grade sanitation',
+        facilityCategory: 'healthcare facilities',
+        serviceHook: 'infection-control cleaning that keeps your clinic audit-ready',
+        coreOpsPhrase: 'patient care',
+    },
+    medical_private: {
+        spaceNoun: 'practice',
+        cadencePhrase: 'after-hours medical office cleaning',
+        facilityCategory: 'healthcare practices',
+        serviceHook: 'discreet, compliance-minded cleaning that reflects the quality of your care',
+        coreOpsPhrase: 'patient care',
+    },
+    medical_surgery: {
+        spaceNoun: 'center',
+        cadencePhrase: 'post-procedure terminal cleaning',
+        facilityCategory: 'surgical centers',
+        serviceHook: 'operating-room-grade sanitation and turnover protocols',
+        coreOpsPhrase: 'surgical procedures',
+    },
+    medical_dialysis: {
+        spaceNoun: 'center',
+        cadencePhrase: 'between-shift sanitation and waste handling',
+        facilityCategory: 'dialysis centers',
+        serviceHook: 'biohazard-safe cleaning tailored to CMS and state health codes',
+        coreOpsPhrase: 'patient treatments',
+    },
+    medical_dental: {
+        spaceNoun: 'office',
+        cadencePhrase: 'nightly dental suite cleaning',
+        facilityCategory: 'dental practices',
+        serviceHook: 'sterilization-area and operatory cleaning that safeguards your OSHA compliance',
+        coreOpsPhrase: 'patient care',
+    },
+    medical_veterinary: {
+        spaceNoun: 'clinic',
+        cadencePhrase: 'after-hours veterinary cleaning',
+        facilityCategory: 'veterinary practices',
+        serviceHook: 'deep sanitation that controls odor and cross-contamination between patients',
+        coreOpsPhrase: 'animal care',
+    },
+    auto_dealer_showroom: {
+        spaceNoun: 'showroom',
+        cadencePhrase: 'nightly showroom and lot facility cleaning',
+        facilityCategory: 'auto dealerships',
+        serviceHook: 'showroom-ready presentation that makes a first impression on every walk-in',
+        coreOpsPhrase: 'sales and customer service',
+    },
+    auto_service_center: {
+        spaceNoun: 'service center',
+        cadencePhrase: 'end-of-day bay and lobby cleaning',
+        facilityCategory: 'auto service facilities',
+        serviceHook: 'degreasing, lobby upkeep, and waste management that keeps your bays running safely',
+        coreOpsPhrase: 'vehicle service operations',
+    },
+    edu_daycare: {
+        spaceNoun: 'center',
+        cadencePhrase: 'after-hours childcare facility sanitation',
+        facilityCategory: 'childcare facilities',
+        serviceHook: 'child-safe, non-toxic cleaning that gives parents peace of mind',
+        coreOpsPhrase: 'caring for children',
+    },
+    edu_private_school: {
+        spaceNoun: 'campus',
+        cadencePhrase: 'evening classroom and common-area cleaning',
+        facilityCategory: 'educational institutions',
+        serviceHook: 'thorough sanitation across classrooms, gyms, and restrooms that supports a healthy learning environment',
+        coreOpsPhrase: 'educating students',
+    },
+    edu_tutoring: {
+        spaceNoun: 'center',
+        cadencePhrase: 'after-session cleaning and sanitization',
+        facilityCategory: 'learning centers',
+        serviceHook: 'clean, professional study spaces that reinforce parent confidence',
+        coreOpsPhrase: 'student instruction',
+    },
+    lab_cleanroom: {
+        spaceNoun: 'facility',
+        cadencePhrase: 'ISO-compliant cleanroom maintenance cycles',
+        facilityCategory: 'lab and cleanroom environments',
+        serviceHook: 'gowning-protocol cleaning that protects your ISO 14644 classification',
+        coreOpsPhrase: 'research and production',
+    },
+    lab_bsl: {
+        spaceNoun: 'lab',
+        cadencePhrase: 'biosafety-level decontamination cleaning',
+        facilityCategory: 'biosafety laboratories',
+        serviceHook: 'BSL-certified cleaning that maintains containment integrity',
+        coreOpsPhrase: 'laboratory research',
+    },
+    manufacturing_light: {
+        spaceNoun: 'facility',
+        cadencePhrase: 'shift-change floor and workstation cleaning',
+        facilityCategory: 'manufacturing facilities',
+        serviceHook: 'FOD-prevention and floor-care programs that reduce downtime',
+        coreOpsPhrase: 'production operations',
+    },
+    office_general: {
+        spaceNoun: 'office',
+        cadencePhrase: 'nightly office cleaning',
+        facilityCategory: 'commercial offices',
+        serviceHook: 'reliable, thorough cleaning that keeps your workspace professional',
+        coreOpsPhrase: 'business operations',
+    },
+    fitness_gym: {
+        spaceNoun: 'gym',
+        cadencePhrase: 'daily equipment wipe-down and deep cleaning',
+        facilityCategory: 'fitness facilities',
+        serviceHook: 'high-touch surface sanitation that keeps members healthy and coming back',
+        coreOpsPhrase: 'member experience',
+    },
+    retail_storefront: {
+        spaceNoun: 'store',
+        cadencePhrase: 'nightly floor care and front-of-house cleaning',
+        facilityCategory: 'retail spaces',
+        serviceHook: 'spotless presentation that drives customer confidence and repeat visits',
+        coreOpsPhrase: 'serving your customers',
+    },
+    religious_center: {
+        spaceNoun: 'space',
+        cadencePhrase: 'post-service sanctuary and facility cleaning',
+        facilityCategory: 'houses of worship',
+        serviceHook: 'respectful, thorough cleaning that honors your community space',
+        coreOpsPhrase: 'serving your congregation',
+    },
+    other: {
+        spaceNoun: 'space',
+        cadencePhrase: 'scheduled facility maintenance',
+        facilityCategory: 'commercial spaces',
+        serviceHook: 'reliable, transparent facility maintenance tailored to your operation',
+        coreOpsPhrase: 'core operations',
+    },
+};
+
+/**
+ * Look up facility phrases for a given FacilityType string.
+ * Returns the 'other' fallback if the type is unrecognized.
+ */
+export function getFacilityPhrases(facilityType?: string): FacilityPhrases {
+    if (!facilityType) return FACILITY_PHRASE_MAP.other;
+    return FACILITY_PHRASE_MAP[facilityType as FacilityType] ?? FACILITY_PHRASE_MAP.other;
+}
+
 /**
  * Infer a canonical FacilityType from a free-text search query string.
  * Used during prospecting import to auto-categorize businesses.
@@ -75,6 +246,7 @@ export function inferFacilityType(searchQuery?: string): FacilityType | null {
     if (q.includes('veterinary') || q.includes('vet clinic') || q.includes('animal hospital')) return 'medical_veterinary';
     if (q.includes('medical') || q.includes('doctor') || q.includes('physician') || q.includes('clinic')) return 'medical_private';
     if (q.includes('daycare') || q.includes('preschool') || q.includes('childcare')) return 'edu_daycare';
+    if (q.includes('tutoring') || q.includes('tutor') || q.includes('learning center') || q.includes('educational center') || q.includes('test prep') || q.includes('kumon') || q.includes('mathnasium') || q.includes('sylvan')) return 'edu_tutoring';
     if (q.includes('school') || q.includes('academy')) return 'edu_private_school';
     if (q.includes('dealership') || q.includes('auto dealer') || q.includes('car dealer')) return 'auto_dealer_showroom';
     if (q.includes('auto service') || q.includes('auto repair') || q.includes('mechanic')) return 'auto_service_center';
@@ -1333,6 +1505,21 @@ export type EmailSource =
 export type EmailConfidence = 'high' | 'medium' | 'low';
 
 /** A single prospect discovered and enriched by the prospecting pipeline */
+/**
+ * A single contact discovered during enrichment.
+ * Hunter.io / Snov.io return up to 10 emails per domain search (1 credit),
+ * so we store them all instead of discarding 90% of what we paid for.
+ */
+export interface ProspectContact {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    position?: string;       // "Office Manager", "Owner", etc.
+    confidence?: number;     // 0-100 from the provider
+    type: 'personal' | 'generic';
+    provider: string;        // "hunter", "snov", "ai_extraction", "mailto", "serper"
+}
+
 export interface EnrichedProspect {
     // Business info (from Google Places / Serper)
     businessName: string;
@@ -1342,13 +1529,16 @@ export interface EnrichedProspect {
     rating?: number;
     userRatingsTotal?: number;
 
-    // Contact (owner / decision-maker — from AI extraction)
+    // Primary contact (best email — owner / decision-maker)
     contactName?: string;       // "Dr. John Smith"
     contactTitle?: string;      // "Owner", "Managing Director"
     contactEmail?: string;      // "jsmith@business.com"
 
     // Fallback
     genericEmail?: string;      // "info@business.com"
+
+    // All contacts discovered (from Hunter/Snov domain search + scraping)
+    allContacts?: ProspectContact[];
 
     // Social
     facebookUrl?: string;

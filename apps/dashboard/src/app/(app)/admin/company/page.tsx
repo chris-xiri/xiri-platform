@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Building2, Save, CheckCircle, Loader2, Calculator, Mail } from 'lucide-react';
+import { Building2, Save, CheckCircle, Loader2, Calculator, Mail, ChevronDown } from 'lucide-react';
 
 export default function CompanySettingsPage() {
     const { profile } = useAuth();
@@ -20,6 +20,12 @@ export default function CompanySettingsPage() {
     const [saved, setSaved] = useState(false);
     const [data, setData] = useState<Record<string, any>>({});
     const [companyId, setCompanyId] = useState<string | null>(null);
+    const [openSections, setOpenSections] = useState<Set<string>>(new Set());
+    const toggleSection = (key: string) => setOpenSections(prev => {
+        const next = new Set(prev);
+        next.has(key) ? next.delete(key) : next.add(key);
+        return next;
+    });
 
     // Email signature settings (stored in settings/emailSignature)
     const [sigData, setSigData] = useState({
@@ -176,10 +182,16 @@ export default function CompanySettingsPage() {
 
             {/* Company Info */}
             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Company Information</CardTitle>
-                    <CardDescription className="text-xs">Used on proposals and contracts</CardDescription>
+                <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => toggleSection('company')}>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="text-sm">Company Information</CardTitle>
+                            <CardDescription className="text-xs">Used on proposals and contracts</CardDescription>
+                        </div>
+                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openSections.has('company') ? 'rotate-180' : ''}`} />
+                    </div>
                 </CardHeader>
+                {openSections.has('company') && (
                 <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -215,19 +227,26 @@ export default function CompanySettingsPage() {
                         </div>
                     </div>
                 </CardContent>
+                )}
             </Card>
 
             {/* Quote Calculator Defaults */}
             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                        <Calculator className="w-4 h-4" /> Quote Calculator Defaults
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                        These values pre-fill the Building Scope calculator when creating new quotes.
-                        State-based wages still auto-fill when a lead&apos;s state is known.
-                    </CardDescription>
+                <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => toggleSection('calculator')}>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="text-sm flex items-center gap-2">
+                                <Calculator className="w-4 h-4" /> Quote Calculator Defaults
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                                These values pre-fill the Building Scope calculator when creating new quotes.
+                                State-based wages still auto-fill when a lead&apos;s state is known.
+                            </CardDescription>
+                        </div>
+                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openSections.has('calculator') ? 'rotate-180' : ''}`} />
+                    </div>
                 </CardHeader>
+                {openSections.has('calculator') && (
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-3 gap-3">
                         <div>
@@ -319,16 +338,23 @@ export default function CompanySettingsPage() {
                         💡 State-based wage auto-fill from BLS data will override this default when a lead&apos;s state is known.
                     </p>
                 </CardContent>
+                )}
             </Card>
 
             {/* Proposal Terms & Conditions */}
             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Default Proposal Terms</CardTitle>
-                    <CardDescription className="text-xs">
-                        These defaults pre-fill the T&amp;C section on every new quote. Adjustable per-deal.
-                    </CardDescription>
+                <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => toggleSection('terms')}>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="text-sm">Default Proposal Terms</CardTitle>
+                            <CardDescription className="text-xs">
+                                These defaults pre-fill the T&amp;C section on every new quote. Adjustable per-deal.
+                            </CardDescription>
+                        </div>
+                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openSections.has('terms') ? 'rotate-180' : ''}`} />
+                    </div>
                 </CardHeader>
+                {openSections.has('terms') && (
                 <CardContent className="space-y-4">
                     {PROPOSAL_TERM_FIELDS.map(field => (
                         <div key={field.key}>
@@ -419,11 +445,12 @@ export default function CompanySettingsPage() {
                         </div>
                     )}
                 </CardContent>
+                )}
             </Card>
 
             {/* Email Signature Settings */}
             <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => toggleSection('signature')}>
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle className="text-sm flex items-center gap-2">
@@ -433,12 +460,18 @@ export default function CompanySettingsPage() {
                                 Auto-appended to all outgoing emails via Resend
                             </CardDescription>
                         </div>
-                        <Button size="sm" onClick={handleSaveSig} disabled={sigSaving} className="gap-2">
-                            {sigSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : sigSaved ? <CheckCircle className="w-3 h-3" /> : <Save className="w-3 h-3" />}
-                            {sigSaving ? 'Saving...' : sigSaved ? 'Saved!' : 'Save Signature'}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            {openSections.has('signature') && (
+                                <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSaveSig(); }} disabled={sigSaving} className="gap-2">
+                                    {sigSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : sigSaved ? <CheckCircle className="w-3 h-3" /> : <Save className="w-3 h-3" />}
+                                    {sigSaving ? 'Saving...' : sigSaved ? 'Saved!' : 'Save Signature'}
+                                </Button>
+                            )}
+                            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openSections.has('signature') ? 'rotate-180' : ''}`} />
+                        </div>
                     </div>
                 </CardHeader>
+                {openSections.has('signature') && (
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -509,6 +542,7 @@ export default function CompanySettingsPage() {
                         />
                     </div>
                 </CardContent>
+                )}
             </Card>
         </div>
     );

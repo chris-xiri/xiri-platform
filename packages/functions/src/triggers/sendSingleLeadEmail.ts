@@ -8,7 +8,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { sendEmail, getTemplate, replaceVariables } from "../utils/emailUtils";
+import { sendEmail, getTemplate, replaceVariables, injectFacilityPhrases } from "../utils/emailUtils";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -118,6 +118,9 @@ export const sendSingleLeadEmail = onCall(
         squareFootage: lead.squareFootage || '',
         email: contactEmail,
     };
+
+    // Inject facility-type personalization phrases (spaceNoun, cadencePhrase, etc.)
+    injectFacilityPhrases(variables);
 
     logger.info(`[SendSingle] Variables for merge:`, variables);
 

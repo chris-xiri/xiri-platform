@@ -14,9 +14,75 @@
 import { searchVendors, RawVendor } from './sourcer';
 import { scrapeWebsite, searchWebForEmail } from '../utils/websiteScraper';
 import { runEnrichmentWaterfall } from '../utils/enrichmentProviders';
-import type { EnrichedProspect, EmailSource } from '@xiri/shared';
+import type { EnrichedProspect, EmailSource, ProspectContact } from '@xiri/shared';
 
 const GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support)@/i;
+
+// Domains that are never a valid business email — library credits, tracking, platform junk
+const JUNK_EMAIL_DOMAINS = new Set([
+    'example.com', 'domain.com', 'test.com', 'sentry.io', 'wixpress.com',
+    'wordpress.org', 'wordpress.com', 'squarespace.com', 'weebly.com',
+    'godaddy.com', 'namecheap.com', 'cloudflare.com', 'netlify.com',
+    'vercel.com', 'heroku.com', 'amazonaws.com', 'google.com',
+    'facebook.com', 'instagram.com', 'twitter.com', 'x.com',
+    'broofa.com', 'uab.edu', 'w3.org', 'schema.org', 'jquery.com',
+    'bootstrapcdn.com', 'cdnjs.com', 'unpkg.com', 'jsdelivr.net',
+    'fontawesome.com', 'typekit.net', 'googleusercontent.com',
+    'gstatic.com', 'googleapis.com', 'fbcdn.net', 'twimg.com',
+    'linkedinusercontent.com', 'mysite.com',
+]);
+
+// Free email providers — valid for small businesses that use personal email
+const FREE_EMAIL_PROVIDERS = new Set([
+    'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'aol.com',
+    'icloud.com', 'me.com', 'mac.com', 'msn.com', 'live.com',
+    'verizon.net', 'comcast.net', 'att.net', 'sbcglobal.net',
+    'optonline.net', 'optimum.net', 'cox.net', 'charter.net',
+    'earthlink.net', 'juno.com', 'protonmail.com', 'proton.me',
+    'zoho.com', 'yandex.com', 'mail.com', 'inbox.com',
+    'atlanticbbn.net', // regional ISP
+]);
+
+/**
+ * Validate whether an email plausibly belongs to a business.
+ * Returns 'valid' | 'free_provider' | 'domain_match' | 'junk' | 'mismatch'
+ */
+function validateEmailForBusiness(
+    email: string,
+    businessWebsite?: string | null
+): 'domain_match' | 'free_provider' | 'junk' | 'mismatch' {
+    const emailDomain = email.split('@')[1]?.toLowerCase();
+    if (!emailDomain) return 'junk';
+
+    // Block known junk domains
+    if (JUNK_EMAIL_DOMAINS.has(emailDomain)) return 'junk';
+
+    // Allow free email providers (common for small biz owners)
+    if (FREE_EMAIL_PROVIDERS.has(emailDomain)) return 'free_provider';
+
+    // If we have a business website, check domain match
+    if (businessWebsite) {
+        const bizDomain = extractDomain(businessWebsite);
+        if (bizDomain) {
+            // Exact match or subdomain match
+            if (emailDomain === bizDomain || emailDomain.endsWith('.' + bizDomain)) {
+                return 'domain_match';
+            }
+            // Check if root domains are similar (e.g., "smithdental.com" vs "smith-dental.com")
+            const bizRoot = bizDomain.split('.')[0].replace(/[-_]/g, '');
+            const emailRoot = emailDomain.split('.')[0].replace(/[-_]/g, '');
+            if (bizRoot.length > 3 && emailRoot.length > 3 &&
+                (bizRoot.includes(emailRoot) || emailRoot.includes(bizRoot))) {
+                return 'domain_match';
+            }
+            // Email domain doesn't match website — suspicious
+            return 'mismatch';
+        }
+    }
+
+    // No website to compare against — can't validate, assume ok
+    return 'free_provider';
+}
 
 interface ProspectorInput {
     query: string;
@@ -170,18 +236,31 @@ async function enrichSingleBusiness(
             // Check if we got a personal email (owner-specific or from mailto)
             const bestEmail = data.ownerEmail || data.email;
             if (bestEmail && !GENERIC_PREFIXES.test(bestEmail)) {
-                prospect.contactEmail = bestEmail;
-                prospect.emailSource = data.ownerEmail ? 'ai_extraction' : 'mailto';
-                prospect.emailConfidence = 'high';
-                log.push(`Found personal email: ${bestEmail} (source: ${prospect.emailSource})`);
+                // ── EMAIL-DOMAIN VALIDATION ──
+                const emailValid = validateEmailForBusiness(bestEmail, vendor.website);
+                if (emailValid === 'junk') {
+                    log.push(`⚠️ Rejected junk email: ${bestEmail} (domain is blocklisted)`);
+                } else if (emailValid === 'mismatch') {
+                    log.push(`⚠️ Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} — demoting to low confidence`);
+                    // Still keep it but mark as low confidence so human review catches it
+                    prospect.contactEmail = bestEmail;
+                    prospect.emailSource = data.ownerEmail ? 'ai_extraction' : 'mailto';
+                    prospect.emailConfidence = 'low';
+                    // Don't return early — keep searching for a better match
+                } else {
+                    prospect.contactEmail = bestEmail;
+                    prospect.emailSource = data.ownerEmail ? 'ai_extraction' : 'mailto';
+                    prospect.emailConfidence = 'high';
+                    log.push(`Found personal email: ${bestEmail} (source: ${prospect.emailSource}, validation: ${emailValid})`);
 
-                // Also store generic if we have one separately
-                if (data.allEmails) {
-                    const generic = data.allEmails.find(e => e.type === 'generic');
-                    if (generic) prospect.genericEmail = generic.email;
+                    // Also store generic if we have one separately
+                    if (data.allEmails) {
+                        const generic = data.allEmails.find(e => e.type === 'generic');
+                        if (generic) prospect.genericEmail = generic.email;
+                    }
+
+                    return prospect; // Done — personal email found and validated
                 }
-
-                return prospect; // Done — personal email found
             }
 
             // Only generic email found
@@ -192,7 +271,21 @@ async function enrichSingleBusiness(
 
             // Check classified allEmails for personal ones we might have missed
             if (data.allEmails) {
-                const personalFromMailto = data.allEmails.find(e => e.type === 'personal');
+                // Filter out junk/mismatch emails before considering them
+                const validPersonals = data.allEmails.filter(e => {
+                    if (e.type !== 'personal') return false;
+                    const v = validateEmailForBusiness(e.email, vendor.website);
+                    if (v === 'junk') {
+                        log.push(`⚠️ Filtered junk mailto: ${e.email}`);
+                        return false;
+                    }
+                    if (v === 'mismatch') {
+                        log.push(`⚠️ Filtered mismatched mailto: ${e.email} (doesn't match ${vendor.website})`);
+                        return false;
+                    }
+                    return true;
+                });
+                const personalFromMailto = validPersonals[0];
                 if (personalFromMailto) {
                     prospect.contactEmail = personalFromMailto.email;
                     prospect.emailSource = 'mailto';
@@ -238,6 +331,22 @@ async function enrichSingleBusiness(
             });
 
             log.push(...waterfallResult.log);
+
+            // Persist ALL discovered contacts (Hunter/Snov return up to 10 per credit)
+            if (waterfallResult.allEmails.length > 0) {
+                const apiContacts: ProspectContact[] = waterfallResult.allEmails.map(e => ({
+                    email: e.email,
+                    firstName: e.firstName,
+                    lastName: e.lastName,
+                    position: e.position,
+                    confidence: e.confidence,
+                    type: e.type,
+                    provider: e.provider,
+                }));
+                // Merge with any contacts already found from scraping
+                prospect.allContacts = [...(prospect.allContacts || []), ...apiContacts];
+                log.push(`Stored ${apiContacts.length} total contacts from enrichment APIs`);
+            }
 
             if (waterfallResult.email) {
                 if (waterfallResult.type === 'personal') {
@@ -302,17 +411,26 @@ async function trySerperSearch(
         }
 
         if (searchResult.email) {
-            const isPersonal = !GENERIC_PREFIXES.test(searchResult.email);
-            if (isPersonal) {
-                prospect.contactEmail = searchResult.email;
-                prospect.emailSource = searchResult.source.includes('facebook')
-                    ? 'serper_facebook'
-                    : 'serper_search';
-                prospect.emailConfidence = 'medium';
-                log.push(`Found personal email via web search: ${searchResult.email} (${searchResult.source})`);
+            // ── EMAIL-DOMAIN VALIDATION for web search results ──
+            const webEmailValid = validateEmailForBusiness(searchResult.email, vendor.website);
+            if (webEmailValid === 'junk') {
+                log.push(`⚠️ Rejected junk email from web search: ${searchResult.email}`);
+            } else if (webEmailValid === 'mismatch') {
+                log.push(`⚠️ Web search email mismatch: ${searchResult.email} doesn't match ${vendor.website} — skipping`);
+                // Don't accept mismatched emails from web search — too unreliable
             } else {
-                prospect.genericEmail = prospect.genericEmail || searchResult.email;
-                log.push(`Found generic email via web search: ${searchResult.email} — continuing...`);
+                const isPersonal = !GENERIC_PREFIXES.test(searchResult.email);
+                if (isPersonal) {
+                    prospect.contactEmail = searchResult.email;
+                    prospect.emailSource = searchResult.source.includes('facebook')
+                        ? 'serper_facebook'
+                        : 'serper_search';
+                    prospect.emailConfidence = webEmailValid === 'domain_match' ? 'high' : 'medium';
+                    log.push(`Found personal email via web search: ${searchResult.email} (${searchResult.source}, validation: ${webEmailValid})`);
+                } else {
+                    prospect.genericEmail = prospect.genericEmail || searchResult.email;
+                    log.push(`Found generic email via web search: ${searchResult.email} — continuing...`);
+                }
             }
         } else {
             log.push(`No email found via web search (source: ${searchResult.source})`);

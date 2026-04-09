@@ -72,28 +72,50 @@ async function loadSeenSet(): Promise<Set<string>> {
 
     // 1. All prospect_queue entries (any status)
     const queueSnap = await db.collection("prospect_queue")
-        .select("normalizedName", "phone", "contactEmail", "genericEmail").get();
+        .select("normalizedName", "phone", "contactEmail", "genericEmail", "website", "address").get();
     for (const doc of queueSnap.docs) {
         const d = doc.data();
         if (d.normalizedName) seen.add(d.normalizedName);
-        if (d.phone) seen.add(d.phone);
-        if (d.contactEmail) seen.add(d.contactEmail.toLowerCase());
-        if (d.genericEmail) seen.add(d.genericEmail.toLowerCase());
+        if (d.phone) {
+            const cleaned = d.phone.replace(/[^0-9]/g, '');
+            if (cleaned.length >= 7) seen.add(`phone:${cleaned}`);
+        }
+        if (d.contactEmail) seen.add(`email:${d.contactEmail.toLowerCase()}`);
+        if (d.genericEmail) seen.add(`email:${d.genericEmail.toLowerCase()}`);
+        if (d.website) {
+            const domain = d.website.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase();
+            if (domain) seen.add(`domain:${domain}`);
+        }
+        if (d.address) {
+            const addrNorm = d.address.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
+            if (addrNorm.length >= 10) seen.add(`addr:${addrNorm}`);
+        }
     }
 
     // 2. All CRM companies
-    const companiesSnap = await db.collection("companies").select("name", "phone").get();
+    const companiesSnap = await db.collection("companies").select("name", "phone", "website", "address").get();
     for (const doc of companiesSnap.docs) {
         const d = doc.data();
         if (d.name) seen.add(normalizeName(d.name));
-        if (d.phone) seen.add(d.phone);
+        if (d.phone) {
+            const cleaned = d.phone.replace(/[^0-9]/g, '');
+            if (cleaned.length >= 7) seen.add(`phone:${cleaned}`);
+        }
+        if (d.website) {
+            const domain = d.website.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase();
+            if (domain) seen.add(`domain:${domain}`);
+        }
+        if (d.address) {
+            const addrNorm = d.address.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
+            if (addrNorm.length >= 10) seen.add(`addr:${addrNorm}`);
+        }
     }
 
     // 3. All CRM contacts (by email) — skip prospects with emails already in CRM
     const contactsSnap = await db.collection("contacts").select("email").get();
     for (const doc of contactsSnap.docs) {
         const d = doc.data();
-        if (d.email) seen.add(d.email.toLowerCase());
+        if (d.email) seen.add(`email:${d.email.toLowerCase()}`);
     }
 
     logger.info(`[DailyProspector] Seen set loaded: ${seen.size} entries (queue + companies + contacts)`);
@@ -171,15 +193,24 @@ async function runDailyPipeline() {
                     if (newProspects.length >= config.dailyTarget) break;
 
                     const normalized = normalizeName(prospect.businessName);
-
-                    // Dedup check: name, phone, or email
                     const emailLower = prospect.contactEmail?.toLowerCase();
                     const genericLower = prospect.genericEmail?.toLowerCase();
+                    const phoneCleaned = prospect.phone?.replace(/[^0-9]/g, '');
+                    const addressNorm = prospect.address
+                        ? prospect.address.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
+                        : undefined;
+                    const websiteDomain = prospect.website
+                        ? prospect.website.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase()
+                        : undefined;
+
+                    // Dedup check: name, phone, email, address, or website domain
                     if (
                         seen.has(normalized) ||
-                        (prospect.phone && seen.has(prospect.phone)) ||
-                        (emailLower && seen.has(emailLower)) ||
-                        (genericLower && seen.has(genericLower))
+                        (phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`)) ||
+                        (emailLower && seen.has(`email:${emailLower}`)) ||
+                        (genericLower && seen.has(`email:${genericLower}`)) ||
+                        (websiteDomain && seen.has(`domain:${websiteDomain}`)) ||
+                        (addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`))
                     ) {
                         duplicatesSkipped++;
                         continue;
@@ -198,8 +229,13 @@ async function runDailyPipeline() {
                         continue;
                     }
 
+                    // Add ALL identifiers to seen set to prevent within-batch dupes
                     seen.add(normalized);
-                    if (prospect.phone) seen.add(prospect.phone);
+                    if (phoneCleaned && phoneCleaned.length >= 7) seen.add(`phone:${phoneCleaned}`);
+                    if (emailLower) seen.add(`email:${emailLower}`);
+                    if (genericLower) seen.add(`email:${genericLower}`);
+                    if (websiteDomain) seen.add(`domain:${websiteDomain}`);
+                    if (addressNorm && addressNorm.length >= 10) seen.add(`addr:${addressNorm}`);
 
                     newProspects.push({ prospect, query: queryTerm, location });
                 }
@@ -238,6 +274,9 @@ async function runDailyPipeline() {
                 facebookUrl: prospect.facebookUrl || null,
                 linkedinUrl: prospect.linkedinUrl || null,
                 enrichmentLog: prospect.enrichmentLog || [],
+
+                // All contacts discovered via Hunter/Snov (up to 10 per domain search credit)
+                allContacts: prospect.allContacts || [],
 
                 status: "pending_review",
                 batchDate,
@@ -284,7 +323,7 @@ async function runDailyPipeline() {
 // ── Scheduled trigger: 6 AM ET daily ────────────────────────────────
 
 export const dailyProspector = onSchedule({
-    schedule: "0 10 * * *",  // 10:00 UTC = 6:00 AM ET
+    schedule: "0 6 * * *",  // 6:00 AM ET daily
     timeZone: "America/New_York",
     secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET"],
     timeoutSeconds: 540,

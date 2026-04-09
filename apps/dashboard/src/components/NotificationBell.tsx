@@ -138,7 +138,7 @@ export function NotificationBell() {
                                             <span className="text-[10px] text-muted-foreground">{formatTime(n.createdAt)}</span>
                                             {n.type === 'AI_TEMPLATE_OPTIMIZATION' && (
                                                 <Link
-                                                    href="/admin/templates"
+                                                    href="/admin/email-templates"
                                                     className="text-[10px] text-primary flex items-center gap-0.5 hover:underline"
                                                     onClick={(e: React.MouseEvent) => { e.stopPropagation(); setOpen(false); }}
                                                 >

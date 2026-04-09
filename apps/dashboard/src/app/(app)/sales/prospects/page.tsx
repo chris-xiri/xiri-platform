@@ -30,6 +30,16 @@ import {
 
 // ── Types ───────────────────────────────────────────────────────────
 
+interface ProspectContact {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    position?: string;
+    confidence?: number;
+    type: 'personal' | 'generic';
+    provider: string;
+}
+
 interface QueuedProspect {
     id: string;
     businessName: string;
@@ -46,6 +56,7 @@ interface QueuedProspect {
     facebookUrl?: string;
     linkedinUrl?: string;
     enrichmentLog?: string[];
+    allContacts?: ProspectContact[];
     status: string;
     batchDate: string;
     searchQuery: string;
@@ -332,6 +343,7 @@ export default function ProspectsPage() {
                     facebookUrl: p.facebookUrl,
                     linkedinUrl: p.linkedinUrl,
                     searchQuery: p.searchQuery,
+                    allContacts: p.allContacts || [],
                 })),
             });
 
@@ -353,7 +365,7 @@ export default function ProspectsPage() {
                 ids.forEach(id => next.delete(id));
                 return next;
             });
-            toast({ title: `Imported ${data.imported || ids.length} prospects to CRM` });
+            toast({ title: `Imported ${data.imported || ids.length} prospects (${data.totalContacts || ids.length} contacts) to CRM` });
         } catch (err) {
             toast({ title: 'Import failed', description: String(err) });
         }
@@ -373,6 +385,7 @@ export default function ProspectsPage() {
                     contactTitle: p.contactTitle, emailSource: p.emailSource,
                     emailConfidence: p.emailConfidence, facebookUrl: p.facebookUrl,
                     linkedinUrl: p.linkedinUrl, searchQuery: p.searchQuery,
+                    allContacts: p.allContacts || [],
                 })),
             });
 
@@ -431,6 +444,7 @@ export default function ProspectsPage() {
                     contactTitle: p.contactTitle, emailSource: p.emailSource,
                     emailConfidence: p.emailConfidence, facebookUrl: p.facebookUrl,
                     linkedinUrl: p.linkedinUrl,
+                    allContacts: p.allContacts || [],
                 })),
             });
 
@@ -1002,12 +1016,19 @@ export default function ProspectsPage() {
                                     ) : (
                                         <span className="text-xs text-muted-foreground">No email</span>
                                     )}
-                                    {prospect.contactName && (
-                                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                            <User className="w-3 h-3" />
-                                            {prospect.contactName}
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        {prospect.contactName && (
+                                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                <User className="w-3 h-3" />
+                                                {prospect.contactName}
+                                            </span>
+                                        )}
+                                        {(prospect.allContacts?.length ?? 0) > 1 && (
+                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-blue-600 border-blue-200 dark:border-blue-800">
+                                                {prospect.allContacts!.length} contacts
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Confidence */}
@@ -1029,23 +1050,54 @@ export default function ProspectsPage() {
                                 <div className="flex items-center gap-1">
                                     {prospect.status === 'pending_review' ? (
                                         <>
+                                            <DropdownMenu onOpenChange={(open: boolean) => { if (open) loadOptions(); }}>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
+                                                        title="Import to CRM"
+                                                    >
+                                                        <Plus className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-52">
+                                                    <DropdownMenuItem onClick={() => handleImportOnly([prospect.id])}>
+                                                        <Plus className="w-3.5 h-3.5 mr-2" />
+                                                        Add to CRM Only
+                                                    </DropdownMenuItem>
+                                                    {sequences.length > 0 && (
+                                                        <>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuSub>
+                                                                <DropdownMenuSubTrigger>
+                                                                    <ListPlus className="w-3.5 h-3.5 mr-2" />
+                                                                    Import + Sequence
+                                                                </DropdownMenuSubTrigger>
+                                                                <DropdownMenuSubContent>
+                                                                    {sequences.map(s => (
+                                                                        <DropdownMenuItem
+                                                                            key={s.id}
+                                                                            onClick={() => handleImportAndSequence([prospect.id], s.id)}
+                                                                        >
+                                                                            <ListPlus className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                                                                            {s.name} ({s.stepCount} steps)
+                                                                        </DropdownMenuItem>
+                                                                    ))}
+                                                                </DropdownMenuSubContent>
+                                                            </DropdownMenuSub>
+                                                        </>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-7 w-7 p-0"
-                                                title="Import to CRM"
-                                                onClick={() => handleImportOnly([prospect.id])}
-                                            >
-                                                <Plus className="w-3.5 h-3.5" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-7 w-7 p-0"
+                                                className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                                                 title="Skip"
                                                 onClick={() => handleSkip([prospect.id])}
                                             >
-                                                <SkipForward className="w-3.5 h-3.5 text-muted-foreground" />
+                                                <SkipForward className="w-3.5 h-3.5" />
                                             </Button>
                                         </>
                                     ) : (
