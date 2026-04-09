@@ -1,5 +1,5 @@
 export type IndustryVertical = 'medical' | 'auto' | 'education' | 'general';
-export type FacilityType = 'medical_urgent_care' | 'medical_private' | 'medical_surgery' | 'medical_dialysis' | 'auto_dealer_showroom' | 'auto_service_center' | 'edu_daycare' | 'edu_private_school' | 'office_general' | 'fitness_gym' | 'other';
+export type FacilityType = 'medical_urgent_care' | 'medical_private' | 'medical_surgery' | 'medical_dialysis' | 'auto_dealer_showroom' | 'auto_service_center' | 'edu_daycare' | 'edu_private_school' | 'office_general' | 'fitness_gym' | 'retail_storefront' | 'religious_center' | 'other';
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'walkthrough' | 'proposal' | 'won' | 'lost';
 export interface Lead {
     id?: string;

@@ -29,6 +29,7 @@ export type FacilityType =
     | 'office_general'
     | 'fitness_gym'
     | 'retail_storefront'
+    | 'religious_center'
     | 'other';
 
 /** Canonical display labels for every FacilityType — single source of truth. */
@@ -49,6 +50,7 @@ export const FACILITY_TYPE_LABELS: Record<FacilityType, string> = {
     office_general: 'Office (General)',
     fitness_gym: 'Fitness / Gym',
     retail_storefront: 'Retail Storefront',
+    religious_center: 'Religious Center',
     other: 'Other',
 };
 
@@ -57,6 +59,34 @@ export const FACILITY_TYPE_OPTIONS: { value: FacilityType; label: string }[] =
     (Object.entries(FACILITY_TYPE_LABELS) as [FacilityType, string][]).map(
         ([value, label]) => ({ value, label })
     );
+
+/**
+ * Infer a canonical FacilityType from a free-text search query string.
+ * Used during prospecting import to auto-categorize businesses.
+ * Order matters — most specific patterns are matched first.
+ */
+export function inferFacilityType(searchQuery?: string): FacilityType | null {
+    if (!searchQuery) return null;
+    const q = searchQuery.toLowerCase();
+    if (q.includes('dialysis')) return 'medical_dialysis';
+    if (q.includes('urgent care')) return 'medical_urgent_care';
+    if (q.includes('surgery') || q.includes('surgical')) return 'medical_surgery';
+    if (q.includes('dental') || q.includes('dentist')) return 'medical_dental';
+    if (q.includes('veterinary') || q.includes('vet clinic') || q.includes('animal hospital')) return 'medical_veterinary';
+    if (q.includes('medical') || q.includes('doctor') || q.includes('physician') || q.includes('clinic')) return 'medical_private';
+    if (q.includes('daycare') || q.includes('preschool') || q.includes('childcare')) return 'edu_daycare';
+    if (q.includes('school') || q.includes('academy')) return 'edu_private_school';
+    if (q.includes('dealership') || q.includes('auto dealer') || q.includes('car dealer')) return 'auto_dealer_showroom';
+    if (q.includes('auto service') || q.includes('auto repair') || q.includes('mechanic')) return 'auto_service_center';
+    if (q.includes('cleanroom') || q.includes('lab ')) return 'lab_cleanroom';
+    if (q.includes('bsl') || q.includes('biosafety')) return 'lab_bsl';
+    if (q.includes('manufacturing') || q.includes('factory') || q.includes('warehouse')) return 'manufacturing_light';
+    if (q.includes('gym') || q.includes('fitness') || q.includes('crossfit') || q.includes('yoga')) return 'fitness_gym';
+    if (q.includes('retail') || q.includes('store') || q.includes('shop') || q.includes('boutique')) return 'retail_storefront';
+    if (q.includes('church') || q.includes('religious') || q.includes('mosque') || q.includes('synagogue') || q.includes('temple') || q.includes('worship')) return 'religious_center';
+    if (q.includes('office')) return 'office_general';
+    return null;
+}
 
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'walkthrough' | 'proposal' | 'quoted' | 'won' | 'lost' | 'churned';
 

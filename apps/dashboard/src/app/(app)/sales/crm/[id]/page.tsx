@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Lead, LeadType } from '@xiri-facility-solutions/shared';
+import { Lead, LeadType, FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -61,19 +61,7 @@ const STATUS_COLORS: Record<string, string> = {
     'churned': 'bg-red-100 text-red-800 border-red-200',
 };
 
-const FACILITY_TYPE_LABELS: Record<string, string> = {
-    'medical_urgent_care': 'Urgent Care',
-    'medical_private': 'Private Practice',
-    'medical_surgery': 'Surgery Center',
-    'medical_dialysis': 'Dialysis Center',
-    'auto_dealer_showroom': 'Auto Dealership',
-    'auto_service_center': 'Auto Service Center',
-    'edu_daycare': 'Daycare',
-    'edu_private_school': 'Private School',
-    'office_general': 'General Office',
-    'fitness_gym': 'Fitness Gym',
-    'other': 'Other'
-};
+
 
 const LEAD_TYPE_CONFIG: Record<string, { color: string; label: string }> = {
     'direct': { color: 'bg-slate-100 text-slate-700 border-slate-200', label: 'Direct' },

@@ -18864,6 +18864,7 @@ __export(index_exports, {
   dailyProspector: () => dailyProspector,
   deleteFacebookPost: () => deleteFacebookPost,
   enrichFromWebsite: () => enrichFromWebsite,
+  generateAISequence: () => generateAISequence,
   generateLeads: () => generateLeads,
   generateMonthlyInvoices: () => generateMonthlyInvoices,
   generateMorningReports: () => generateMorningReports,
@@ -26593,9 +26594,9 @@ var regeneratePostCaption = (0, import_https11.onCall)({
   const post = postDoc.data();
   const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
   console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
-  const { GoogleGenerativeAI: GoogleGenerativeAI7 } = await import("@google/generative-ai");
+  const { GoogleGenerativeAI: GoogleGenerativeAI8 } = await import("@google/generative-ai");
   const API_KEY3 = process.env.GEMINI_API_KEY || "";
-  const genAI4 = new GoogleGenerativeAI7(API_KEY3);
+  const genAI4 = new GoogleGenerativeAI8(API_KEY3);
   const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
   const FALLBACK = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for {{audience}}:
 
@@ -29445,11 +29446,13 @@ var DEFAULT_CONFIG = {
 };
 async function loadSeenSet() {
   const seen = /* @__PURE__ */ new Set();
-  const queueSnap = await db.collection("prospect_queue").select("normalizedName", "phone").get();
+  const queueSnap = await db.collection("prospect_queue").select("normalizedName", "phone", "contactEmail", "genericEmail").get();
   for (const doc of queueSnap.docs) {
     const d = doc.data();
     if (d.normalizedName) seen.add(d.normalizedName);
     if (d.phone) seen.add(d.phone);
+    if (d.contactEmail) seen.add(d.contactEmail.toLowerCase());
+    if (d.genericEmail) seen.add(d.genericEmail.toLowerCase());
   }
   const companiesSnap = await db.collection("companies").select("name", "phone").get();
   for (const doc of companiesSnap.docs) {
@@ -29457,7 +29460,12 @@ async function loadSeenSet() {
     if (d.name) seen.add(normalizeName(d.name));
     if (d.phone) seen.add(d.phone);
   }
-  logger27.info(`[DailyProspector] Seen set loaded: ${seen.size} entries`);
+  const contactsSnap = await db.collection("contacts").select("email").get();
+  for (const doc of contactsSnap.docs) {
+    const d = doc.data();
+    if (d.email) seen.add(d.email.toLowerCase());
+  }
+  logger27.info(`[DailyProspector] Seen set loaded: ${seen.size} entries (queue + companies + contacts)`);
   return seen;
 }
 async function runDailyPipeline() {
@@ -29479,6 +29487,20 @@ async function runDailyPipeline() {
   const newProspects = [];
   let totalDiscovered = 0;
   let duplicatesSkipped = 0;
+  const statusRef = db.collection("prospecting_config").doc("run_status");
+  const updateProgress = async (currentQuery) => {
+    await statusRef.set({
+      running: true,
+      startedAt: /* @__PURE__ */ new Date(),
+      discovered: totalDiscovered,
+      qualified: newProspects.length,
+      duplicatesSkipped,
+      target: config2.dailyTarget,
+      currentQuery: currentQuery || null,
+      updatedAt: /* @__PURE__ */ new Date()
+    }, { merge: true });
+  };
+  await updateProgress("Initializing...");
   for (const location of config2.locations) {
     if (newProspects.length >= config2.dailyTarget) break;
     for (const queryTerm of config2.queries) {
@@ -29486,6 +29508,7 @@ async function runDailyPipeline() {
       const remaining = config2.dailyTarget - newProspects.length;
       const batchSize = Math.min(remaining + 10, 20);
       logger27.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
+      await updateProgress(`${queryTerm} in ${location}`);
       try {
         const result = await prospectAndEnrich(
           { query: queryTerm, location, maxResults: batchSize, skipPaidApis: false },
@@ -29495,7 +29518,9 @@ async function runDailyPipeline() {
         for (const prospect of result.prospects) {
           if (newProspects.length >= config2.dailyTarget) break;
           const normalized = normalizeName(prospect.businessName);
-          if (seen.has(normalized) || prospect.phone && seen.has(prospect.phone)) {
+          const emailLower = prospect.contactEmail?.toLowerCase();
+          const genericLower = prospect.genericEmail?.toLowerCase();
+          if (seen.has(normalized) || prospect.phone && seen.has(prospect.phone) || emailLower && seen.has(emailLower) || genericLower && seen.has(genericLower)) {
             duplicatesSkipped++;
             continue;
           }
@@ -29512,6 +29537,7 @@ async function runDailyPipeline() {
           if (prospect.phone) seen.add(prospect.phone);
           newProspects.push({ prospect, query: queryTerm, location });
         }
+        await updateProgress(`${queryTerm} in ${location}`);
       } catch (err) {
         logger27.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err.message);
       }
@@ -29560,6 +29586,16 @@ async function runDailyPipeline() {
     lastRunAt: /* @__PURE__ */ new Date(),
     lastRunStats: stats
   }, { merge: true });
+  await statusRef.set({
+    running: false,
+    discovered: totalDiscovered,
+    qualified: newProspects.length,
+    duplicatesSkipped,
+    target: config2.dailyTarget,
+    currentQuery: null,
+    completedAt: /* @__PURE__ */ new Date(),
+    updatedAt: /* @__PURE__ */ new Date()
+  });
   logger27.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
 }
 var dailyProspector = (0, import_scheduler10.onSchedule)({
@@ -29610,6 +29646,122 @@ var getProspectingConfig = (0, import_https17.onCall)({
   await db.collection("prospecting_config").doc("default").set(DEFAULT_CONFIG);
   return DEFAULT_CONFIG;
 });
+
+// src/functions/sequenceGenerator.ts
+var import_https18 = require("firebase-functions/v2/https");
+var import_generative_ai7 = require("@google/generative-ai");
+init_promptUtils();
+var FALLBACK_SYSTEM_PROMPT = `You are an expert B2B email copywriter for XIRI Facility Solutions, a commercial cleaning and facility management platform based in New York.
+
+Your job is to generate a complete multi-step email outreach sequence targeting a specific segment of businesses.
+
+XIRI's value proposition:
+- Commercial cleaning bidding platform that connects facilities with vetted janitorial vendors
+- AI-powered vendor matching, quality assurance via NFC check-ins, and transparent pricing
+- Serves medical offices, dialysis centers, religious centers, gyms, daycares, offices, and more
+
+Available merge variables (use these in templates with {{variable}} syntax):
+- {{contactName}} \u2014 The contact's full name
+- {{contactFirstName}} \u2014 The contact's first name
+- {{businessName}} \u2014 The business/facility name
+- {{facilityType}} \u2014 Type of facility (e.g., "Medical Office", "Religious Center")
+- {{address}} \u2014 Facility address
+- {{squareFootage}} \u2014 Facility size
+
+Guidelines:
+1. Write professional but warm emails \u2014 not overly salesy
+2. Keep emails concise (3-5 short paragraphs max)
+3. Each email should have a clear, specific call to action
+4. Later emails in the sequence should reference the previous ones (e.g., "I wanted to follow up...")
+5. Use merge variables naturally \u2014 don't force them where they don't fit
+6. Subject lines should be compelling but not clickbaity
+7. First email is an intro, middle emails add value/social proof, final email is a breakup/last-chance
+
+Return your response as valid JSON with this exact structure:
+{
+  "name": "Sequence name",
+  "description": "Brief description of the sequence",
+  "steps": [
+    {
+      "label": "Step 1 \u2014 Introduction",
+      "dayOffset": 0,
+      "subject": "Email subject line with optional {{variables}}",
+      "body": "Full email body text with optional {{variables}}"
+    }
+  ]
+}
+
+IMPORTANT: Return ONLY the JSON object. No markdown, no code fences, no explanation.`;
+var generateAISequence = (0, import_https18.onCall)({
+  secrets: ["GEMINI_API_KEY"],
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 120
+}, async (request) => {
+  const data = request.data;
+  if (!data.prompt || !data.prompt.trim()) {
+    throw new import_https18.HttpsError("invalid-argument", "A prompt describing the target segment is required.");
+  }
+  const numSteps = data.numSteps || 4;
+  const tone = data.tone || "professional";
+  const category = data.category || "lead";
+  const systemPrompt = await getPrompt("sequence_generator", FALLBACK_SYSTEM_PROMPT);
+  const userPrompt = `Generate a ${numSteps}-step email sequence for the following segment:
+
+Target: ${data.prompt}
+Category: ${category}
+Tone: ${tone}
+Number of steps: ${numSteps}
+
+Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
+  try {
+    const genAI4 = new import_generative_ai7.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+    const model2 = genAI4.getGenerativeModel({
+      model: "gemini-3.1-pro-preview",
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.8
+      }
+    });
+    const result = await model2.generateContent([
+      { text: systemPrompt },
+      { text: userPrompt }
+    ]);
+    const responseText = result.response.text();
+    let parsed;
+    try {
+      parsed = JSON.parse(responseText);
+    } catch {
+      const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[1].trim());
+      } else {
+        console.error("[generateAISequence] Failed to parse response:", responseText.slice(0, 500));
+        throw new import_https18.HttpsError("internal", "AI returned invalid JSON. Please try again.");
+      }
+    }
+    if (!parsed.name || !Array.isArray(parsed.steps) || parsed.steps.length === 0) {
+      throw new import_https18.HttpsError("internal", "AI returned incomplete sequence data. Please try again.");
+    }
+    parsed.steps = parsed.steps.map((step, idx) => ({
+      label: step.label || `Step ${idx + 1}`,
+      dayOffset: typeof step.dayOffset === "number" ? step.dayOffset : idx * 3,
+      subject: step.subject || "",
+      body: step.body || ""
+    }));
+    return {
+      sequence: {
+        name: parsed.name,
+        description: parsed.description || "",
+        category,
+        steps: parsed.steps
+      }
+    };
+  } catch (error13) {
+    if (error13 instanceof import_https18.HttpsError) throw error13;
+    console.error("[generateAISequence] Error:", error13);
+    throw new import_https18.HttpsError("internal", error13.message || "Failed to generate sequence.");
+  }
+});
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   addProspectsToCrm,
@@ -29626,6 +29778,7 @@ var getProspectingConfig = (0, import_https17.onCall)({
   dailyProspector,
   deleteFacebookPost,
   enrichFromWebsite,
+  generateAISequence,
   generateLeads,
   generateMonthlyInvoices,
   generateMorningReports,

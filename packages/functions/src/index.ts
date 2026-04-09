@@ -83,3 +83,6 @@ export {
 // ── Lead Prospecting & Enrichment (onCall + scheduled) ──
 export { runProspector, addProspectsToCrm } from "./functions/prospecting";
 export { dailyProspector, triggerDailyProspector, updateProspectingConfig, getProspectingConfig } from "./triggers/dailyProspector";
+
+// ── AI Sequence Generation (onCall) ──
+export { generateAISequence } from "./functions/sequenceGenerator";

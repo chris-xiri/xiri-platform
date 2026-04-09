@@ -686,7 +686,7 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                                 </select>
                                 <select
                                     value={company?.facilityType || ''}
-                                    onChange={(e) => updateCompanyField('facilityType', e.target.value)}
+                                    onChange={(e) => handleFacilityTypeChange(e.target.value)}
                                     className="text-xs px-2 py-0.5 rounded border bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground"
                                     aria-label="Facility type"
                                 >

@@ -3,6 +3,7 @@ import { db } from "../utils/firebase";
 import { DASHBOARD_CORS } from "../utils/cors";
 import { prospectAndEnrich } from "../agents/prospector";
 import type { EnrichedProspect } from "@xiri/shared";
+import { inferFacilityType } from "@xiri/shared";
 
 // ── Prospect & Enrich ──
 // Runs the full multi-source enrichment pipeline:
@@ -54,7 +55,7 @@ export const addProspectsToCrm = onCall({
     cors: DASHBOARD_CORS,
     timeoutSeconds: 60,
 }, async (request) => {
-    const { prospects } = request.data as { prospects: EnrichedProspect[] };
+    const { prospects, searchQuery: batchSearchQuery } = request.data as { prospects: (EnrichedProspect & { searchQuery?: string })[]; searchQuery?: string };
 
     if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
         throw new HttpsError("invalid-argument", "No prospects provided.");
@@ -65,16 +66,21 @@ export const addProspectsToCrm = onCall({
         const batch = db.batch();
 
         for (const prospect of prospects) {
+            // Infer facility type from the individual searchQuery or batch-level searchQuery
+            const facilityType = inferFacilityType(prospect.searchQuery || batchSearchQuery) || null;
+
             // 1. Create Company
             const companyRef = db.collection("companies").doc();
             batch.set(companyRef, {
                 name: prospect.businessName,
+                businessName: prospect.businessName,
                 address: prospect.address || null,
                 phone: prospect.phone || null,
                 website: prospect.website || null,
                 facebookUrl: prospect.facebookUrl || null,
                 linkedinUrl: prospect.linkedinUrl || null,
                 rating: prospect.rating || null,
+                facilityType,
                 source: 'prospector',
                 emailSource: prospect.emailSource,
                 emailConfidence: prospect.emailConfidence,

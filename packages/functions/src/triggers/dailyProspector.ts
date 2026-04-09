@@ -65,17 +65,20 @@ const DEFAULT_CONFIG: ProspectingConfig = {
     excludePatterns: [],
 };
 
-// ── Load seen set (names + phones we've already queued or imported) ──
+// ── Load seen set (names + phones + emails we've already queued or imported) ──
 
 async function loadSeenSet(): Promise<Set<string>> {
     const seen = new Set<string>();
 
     // 1. All prospect_queue entries (any status)
-    const queueSnap = await db.collection("prospect_queue").select("normalizedName", "phone").get();
+    const queueSnap = await db.collection("prospect_queue")
+        .select("normalizedName", "phone", "contactEmail", "genericEmail").get();
     for (const doc of queueSnap.docs) {
         const d = doc.data();
         if (d.normalizedName) seen.add(d.normalizedName);
         if (d.phone) seen.add(d.phone);
+        if (d.contactEmail) seen.add(d.contactEmail.toLowerCase());
+        if (d.genericEmail) seen.add(d.genericEmail.toLowerCase());
     }
 
     // 2. All CRM companies
@@ -86,7 +89,14 @@ async function loadSeenSet(): Promise<Set<string>> {
         if (d.phone) seen.add(d.phone);
     }
 
-    logger.info(`[DailyProspector] Seen set loaded: ${seen.size} entries`);
+    // 3. All CRM contacts (by email) — skip prospects with emails already in CRM
+    const contactsSnap = await db.collection("contacts").select("email").get();
+    for (const doc of contactsSnap.docs) {
+        const d = doc.data();
+        if (d.email) seen.add(d.email.toLowerCase());
+    }
+
+    logger.info(`[DailyProspector] Seen set loaded: ${seen.size} entries (queue + companies + contacts)`);
     return seen;
 }
 
@@ -118,6 +128,24 @@ async function runDailyPipeline() {
     let totalDiscovered = 0;
     let duplicatesSkipped = 0;
 
+    // Progress doc for live UI updates
+    const statusRef = db.collection("prospecting_config").doc("run_status");
+    const updateProgress = async (currentQuery?: string) => {
+        await statusRef.set({
+            running: true,
+            startedAt: new Date(),
+            discovered: totalDiscovered,
+            qualified: newProspects.length,
+            duplicatesSkipped,
+            target: config.dailyTarget,
+            currentQuery: currentQuery || null,
+            updatedAt: new Date(),
+        }, { merge: true });
+    };
+
+    // Mark as running
+    await updateProgress("Initializing...");
+
     // Iterate queries × locations until we hit dailyTarget
     for (const location of config.locations) {
         if (newProspects.length >= config.dailyTarget) break;
@@ -129,6 +157,7 @@ async function runDailyPipeline() {
             const batchSize = Math.min(remaining + 10, 20); // request a few extra to account for dedup
 
             logger.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
+            await updateProgress(`${queryTerm} in ${location}`);
 
             try {
                 const result = await prospectAndEnrich(
@@ -143,8 +172,15 @@ async function runDailyPipeline() {
 
                     const normalized = normalizeName(prospect.businessName);
 
-                    // Dedup check
-                    if (seen.has(normalized) || (prospect.phone && seen.has(prospect.phone))) {
+                    // Dedup check: name, phone, or email
+                    const emailLower = prospect.contactEmail?.toLowerCase();
+                    const genericLower = prospect.genericEmail?.toLowerCase();
+                    if (
+                        seen.has(normalized) ||
+                        (prospect.phone && seen.has(prospect.phone)) ||
+                        (emailLower && seen.has(emailLower)) ||
+                        (genericLower && seen.has(genericLower))
+                    ) {
                         duplicatesSkipped++;
                         continue;
                     }
@@ -167,6 +203,9 @@ async function runDailyPipeline() {
 
                     newProspects.push({ prospect, query: queryTerm, location });
                 }
+
+                // Update progress after each query batch
+                await updateProgress(`${queryTerm} in ${location}`);
             } catch (err: any) {
                 logger.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err.message);
                 // Continue with next query
@@ -226,6 +265,18 @@ async function runDailyPipeline() {
         lastRunAt: new Date(),
         lastRunStats: stats,
     }, { merge: true });
+
+    // Mark run as complete for UI
+    await statusRef.set({
+        running: false,
+        discovered: totalDiscovered,
+        qualified: newProspects.length,
+        duplicatesSkipped,
+        target: config.dailyTarget,
+        currentQuery: null,
+        completedAt: new Date(),
+        updatedAt: new Date(),
+    });
 
     logger.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
 }

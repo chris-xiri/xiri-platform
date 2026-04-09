@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
     AlertDialog,
-    AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
@@ -20,12 +19,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
     Loader2, Save, Mail, Eye, EyeOff, ChevronDown, ChevronUp,
-    Check, Clock, HardHat, Building2, Handshake, ArrowRight,
-    Plus, Trash2, X, Target, Edit3,
+    Check, Plus, Trash2, Search, Rocket,
 } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import SequenceBuilder from "@/components/email/SequenceBuilder";
-import { Rocket } from "lucide-react";
 
 interface EmailTemplate {
     id: string;
@@ -34,53 +31,11 @@ interface EmailTemplate {
     sequence?: number;
     subject: string;
     body: string;
-    category?: string;        // 'lead_sequence' | 'lead_targeted'
-    type?: string;            // 'template' | 'prompt'
+    category?: string;
+    type?: string;
     variables?: string[];
     updatedAt?: any;
     createdAt?: any;
-}
-
-// ─── Merge field sample data per section ──────────────────────────
-const SAMPLE_DATA: Record<string, Record<string, string>> = {
-    contractor: {
-        vendorName: "Bright Shine Cleaning Co.",
-        contactName: "Maria",
-        city: "Queens",
-        state: "NY",
-        services: "Janitorial, Floor Care, Post-Construction",
-        specialty: "Janitorial",
-        onboardingUrl: "https://xiri.ai/contractor?vid=DEMO123",
-    },
-    lead: {
-        businessName: "Garden City Medical Associates",
-        contactName: "Dr. Smith",
-        facilityType: "Medical Urgent Care",
-        address: "123 Main St, Garden City, NY 11530",
-        squareFootage: "3,200 sq ft",
-    },
-    referral: {
-        contactName: "Harvey",
-        businessName: "Nassau Commercial Realty",
-    },
-    targeted: {
-        businessName: "Morning Star Baptist Church",
-        contactName: "Pastor Johnson",
-        facilityType: "Religious Institution",
-        address: "1600 Hylan Boulevard, Staten Island, 10305",
-        squareFootage: "5,000 sq ft",
-    },
-};
-
-function mergePreview(text: string, sampleGroup: string): string {
-    let result = text;
-    const sample = SAMPLE_DATA[sampleGroup] || {};
-    for (const [key, value] of Object.entries(sample)) {
-        result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
-    }
-    // Legacy placeholder
-    result = result.replace(/\[ONBOARDING_LINK\]/g, sample.onboardingUrl || "#");
-    return result;
 }
 
 function extractMergeFields(text: string): string[] {
@@ -89,68 +44,17 @@ function extractMergeFields(text: string): string[] {
     return [...new Set(matches.map(m => m.replace(/[{}]/g, "")))];
 }
 
-// ─── Section configuration ────────────────────────────────────────
-interface SectionConfig {
-    key: string;
-    title: string;
-    icon: React.ReactNode;
-    description: string;
-    sampleGroup: string;
-    filter: (t: EmailTemplate) => boolean;
-    timing: Record<number, string>;
-    allowCreate?: boolean;
-    allowDelete?: boolean;
-}
-
-const SECTIONS: SectionConfig[] = [
-    {
-        key: 'targeted',
-        title: 'Targeted Sends',
-        icon: <Target className="w-5 h-5" />,
-        description: 'One-off email templates sent to individual leads — not part of any drip sequence.',
-        sampleGroup: 'targeted',
-        filter: (t) => t.category === 'lead_targeted',
-        timing: {},
-        allowCreate: true,
-        allowDelete: true,
-    },
-    {
-        key: 'contractor',
-        title: 'Contractors',
-        icon: <HardHat className="w-5 h-5" />,
-        description: 'Vendor outreach sequence — sent when a campaign targets new subcontractors.',
-        sampleGroup: 'contractor',
-        filter: (t) => t.id.startsWith('vendor_outreach_') && !t.id.includes('_warm') && !t.id.includes('_cold'),
-        timing: { 1: "Initial Contact", 2: "Day 3 — Follow Up", 3: "Day 7 — Social Proof", 4: "Day 14 — Final" },
-    },
-    {
-        key: 'lead',
-        title: 'Leads',
-        icon: <Building2 className="w-5 h-5" />,
-        description: 'Sales lead drip campaign — AI-generated emails for direct and tenant leads.',
-        sampleGroup: 'lead',
-        filter: (t) => t.id.startsWith('sales_outreach_') || t.id.startsWith('sales_followup_'),
-        timing: { 0: "Day 0 — Intro", 1: "Day 3 — Value Prop", 2: "Day 7 — Social Proof", 3: "Day 14 — Final" },
-    },
-    {
-        key: 'referral',
-        title: 'Referral Partnerships',
-        icon: <Handshake className="w-5 h-5" />,
-        description: 'CRE broker referral partnership outreach — static templates with {{variables}}.',
-        sampleGroup: 'referral',
-        filter: (t) => t.id.startsWith('referral_partnership_'),
-        timing: { 1: "Day 0 — Intro", 2: "Day 4 — Follow Up", 3: "Day 10 — Final" },
-    },
-];
-
 // ─── Main Page ────────────────────────────────────────────────────
 export default function EmailTemplatesPage() {
     const [allTemplates, setAllTemplates] = useState<EmailTemplate[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeSection, setActiveSection] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'sequences' | 'templates'>('sequences');
+
+    // Templates tab state
+    const [searchQuery, setSearchQuery] = useState("");
+    const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [previewMode, setPreviewMode] = useState(false);
-    const [activeTab, setActiveTab] = useState<'templates' | 'sequences'>('templates');
     const [editSubject, setEditSubject] = useState("");
     const [editBody, setEditBody] = useState("");
     const [editName, setEditName] = useState("");
@@ -158,55 +62,9 @@ export default function EmailTemplatesPage() {
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
-    // Refs for inserting variables at cursor
     const editSubjectRef = useRef<HTMLInputElement>(null);
     const editBodyRef = useRef<HTMLTextAreaElement>(null);
-    const newSubjectRef = useRef<HTMLInputElement>(null);
-    const newBodyRef = useRef<HTMLTextAreaElement>(null);
     const [activeEditField, setActiveEditField] = useState<'subject' | 'body'>('body');
-    const [activeNewField, setActiveNewField] = useState<'subject' | 'body'>('body');
-
-    const insertVariable = (
-        fieldType: 'subject' | 'body',
-        variable: string,
-        context: 'edit' | 'new'
-    ) => {
-        const token = `{{${variable}}}`;
-        if (context === 'edit') {
-            const ref = fieldType === 'subject' ? editSubjectRef.current : editBodyRef.current;
-            const setter = fieldType === 'subject' ? setEditSubject : setEditBody;
-            const value = fieldType === 'subject' ? editSubject : editBody;
-            if (ref) {
-                const start = ref.selectionStart ?? value.length;
-                const end = ref.selectionEnd ?? value.length;
-                const newValue = value.slice(0, start) + token + value.slice(end);
-                setter(newValue);
-                // Restore cursor after token
-                requestAnimationFrame(() => {
-                    ref.focus();
-                    ref.setSelectionRange(start + token.length, start + token.length);
-                });
-            } else {
-                setter(value + token);
-            }
-        } else {
-            const ref = fieldType === 'subject' ? newSubjectRef.current : newBodyRef.current;
-            const setter = fieldType === 'subject' ? setNewSubject : setNewBody;
-            const value = fieldType === 'subject' ? newSubject : newBody;
-            if (ref) {
-                const start = ref.selectionStart ?? value.length;
-                const end = ref.selectionEnd ?? value.length;
-                const newValue = value.slice(0, start) + token + value.slice(end);
-                setter(newValue);
-                requestAnimationFrame(() => {
-                    ref.focus();
-                    ref.setSelectionRange(start + token.length, start + token.length);
-                });
-            } else {
-                setter(value + token);
-            }
-        }
-    };
 
     // Create new template state
     const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -215,6 +73,10 @@ export default function EmailTemplatesPage() {
     const [newSubject, setNewSubject] = useState("");
     const [newBody, setNewBody] = useState("");
     const [creating, setCreating] = useState(false);
+
+    const newSubjectRef = useRef<HTMLInputElement>(null);
+    const newBodyRef = useRef<HTMLTextAreaElement>(null);
+    const [activeNewField, setActiveNewField] = useState<'subject' | 'body'>('body');
 
     // Delete confirmation
     const [deleteTarget, setDeleteTarget] = useState<EmailTemplate | null>(null);
@@ -234,6 +96,7 @@ export default function EmailTemplatesPage() {
 
     useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
+    // ─── Template handlers ────────────────────────────────────────
     const handleExpand = (template: EmailTemplate) => {
         if (expandedId === template.id) {
             setExpandedId(null);
@@ -272,16 +135,13 @@ export default function EmailTemplatesPage() {
         if (!newName.trim() || !newSubject.trim()) return;
         setCreating(true);
         try {
-            // Generate a slug-style ID
-            const slug = 'targeted_' + newName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+            const slug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
             const docRef = doc(db, "templates", slug);
-            const { setDoc } = await import("firebase/firestore");
             await setDoc(docRef, {
                 name: newName.trim(),
                 description: newDescription.trim(),
                 subject: newSubject.trim(),
                 body: newBody.trim(),
-                category: 'lead_targeted',
                 type: 'template',
                 variables: extractMergeFields(newSubject + newBody),
                 createdAt: serverTimestamp(),
@@ -315,6 +175,119 @@ export default function EmailTemplatesPage() {
         }
     };
 
+    const insertVariable = (
+        fieldType: 'subject' | 'body',
+        variable: string,
+        context: 'edit' | 'new'
+    ) => {
+        const token = `{{${variable}}}`;
+        if (context === 'edit') {
+            const ref = fieldType === 'subject' ? editSubjectRef.current : editBodyRef.current;
+            const setter = fieldType === 'subject' ? setEditSubject : setEditBody;
+            const value = fieldType === 'subject' ? editSubject : editBody;
+            if (ref) {
+                const start = ref.selectionStart ?? value.length;
+                const end = ref.selectionEnd ?? value.length;
+                const newValue = value.slice(0, start) + token + value.slice(end);
+                setter(newValue);
+                requestAnimationFrame(() => {
+                    ref.focus();
+                    ref.setSelectionRange(start + token.length, start + token.length);
+                });
+            } else {
+                setter(value + token);
+            }
+        } else {
+            const ref = fieldType === 'subject' ? newSubjectRef.current : newBodyRef.current;
+            const setter = fieldType === 'subject' ? setNewSubject : setNewBody;
+            const value = fieldType === 'subject' ? newSubject : newBody;
+            if (ref) {
+                const start = ref.selectionStart ?? value.length;
+                const end = ref.selectionEnd ?? value.length;
+                const newValue = value.slice(0, start) + token + value.slice(end);
+                setter(newValue);
+                requestAnimationFrame(() => {
+                    ref.focus();
+                    ref.setSelectionRange(start + token.length, start + token.length);
+                });
+            } else {
+                setter(value + token);
+            }
+        }
+    };
+
+    // ─── Category detection ──────────────────────────────────────
+    const getCategoryKey = (t: EmailTemplate): string => {
+        if (t.type === 'prompt' || t.id.includes('_prompt')) return 'prompt';
+        if (t.id.startsWith('vendor_outreach_') || t.id.startsWith('contractor_')) return 'vendor';
+        if (t.id.startsWith('enterprise_lead_')) return 'enterprise';
+        if (t.id.startsWith('tenant_lead_') || t.id.startsWith('sales_')) return 'lead';
+        if (t.id.startsWith('referral_')) return 'referral';
+        if (t.category === 'lead_targeted') return 'targeted';
+        if (t.id.includes('_warm')) return 'warm';
+        if (t.id.includes('_cold')) return 'cold';
+        return 'custom';
+    };
+
+    // Compute counts per category
+    const categoryCounts = allTemplates.reduce<Record<string, number>>((acc, t) => {
+        const key = getCategoryKey(t);
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+    }, {});
+
+    const FILTER_BADGES: { key: string; label: string; icon?: string; className: string }[] = [
+        { key: 'all', label: 'All', className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+        { key: 'lead', label: 'Lead', icon: '🎯', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+        { key: 'enterprise', label: 'Enterprise', icon: '🏢', className: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' },
+        { key: 'vendor', label: 'Vendor', icon: '🔧', className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
+        { key: 'referral', label: 'Referral', icon: '🤝', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+        { key: 'targeted', label: 'Targeted', icon: '📌', className: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' },
+        { key: 'warm', label: 'Warm (Opened)', icon: '🔥', className: 'bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400' },
+        { key: 'cold', label: 'Cold (Not Opened)', icon: '❄️', className: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' },
+        { key: 'prompt', label: 'AI Prompt', icon: '✨', className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+        { key: 'custom', label: 'Custom', className: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
+    ];
+
+    // Only show badges that have templates (plus 'all' always)
+    const visibleBadges = FILTER_BADGES.filter(b => b.key === 'all' || (categoryCounts[b.key] || 0) > 0);
+
+    // ─── Filtering ────────────────────────────────────────────────
+    const filteredTemplates = allTemplates
+        .filter(t => {
+            // Category filter
+            if (categoryFilter !== 'all' && getCategoryKey(t) !== categoryFilter) return false;
+            // Text search
+            if (!searchQuery.trim()) return true;
+            const q = searchQuery.toLowerCase();
+            return (
+                t.id.toLowerCase().includes(q) ||
+                (t.name || '').toLowerCase().includes(q) ||
+                (t.subject || '').toLowerCase().includes(q) ||
+                (t.description || '').toLowerCase().includes(q) ||
+                (t.category || '').toLowerCase().includes(q)
+            );
+        })
+        .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
+
+    // Derive a simple category badge from template ID / category field
+    const getTemplateBadge = (t: EmailTemplate): { label: string; className: string } => {
+        if (t.id.startsWith('vendor_outreach_') || t.id.startsWith('contractor_')) return { label: 'Vendor', className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' };
+        if (t.id.startsWith('tenant_lead_') || t.id.startsWith('sales_')) return { label: 'Lead', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' };
+        if (t.id.startsWith('enterprise_lead_')) return { label: 'Enterprise', className: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' };
+        if (t.id.startsWith('referral_')) return { label: 'Referral', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' };
+        if (t.category === 'lead_targeted') return { label: 'Targeted', className: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' };
+        if (t.id.includes('_warm')) return { label: 'Warm', className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' };
+        if (t.id.includes('_cold')) return { label: 'Cold', className: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' };
+        return { label: 'Custom', className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' };
+    };
+
+    const getVariantBadge = (t: EmailTemplate): { label: string; className: string } | null => {
+        if (t.id.includes('_warm')) return { label: '🔥 Opened', className: 'bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400' };
+        if (t.id.includes('_cold')) return { label: '❄️ Not Opened', className: 'bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400' };
+        return null;
+    };
+
     if (loading) {
         return (
             <ProtectedRoute resource="admin/email-templates">
@@ -332,24 +305,13 @@ export default function EmailTemplatesPage() {
                     <div>
                         <h2 className="text-2xl font-bold">Email & Outreach</h2>
                         <p className="text-muted-foreground text-sm mt-1">
-                            Manage templates and build multi-step email sequences.
+                            Manage sequences, templates, and outreach campaigns.
                         </p>
                     </div>
                 </div>
 
                 {/* ─── Tab Switcher ─── */}
                 <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit">
-                    <button
-                        onClick={() => setActiveTab('templates')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                            activeTab === 'templates'
-                                ? 'bg-background shadow-sm text-foreground'
-                                : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                    >
-                        <Mail className="w-4 h-4" />
-                        Templates
-                    </button>
                     <button
                         onClick={() => setActiveTab('sequences')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -361,492 +323,380 @@ export default function EmailTemplatesPage() {
                         <Rocket className="w-4 h-4" />
                         Sequences
                     </button>
+                    <button
+                        onClick={() => setActiveTab('templates')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                            activeTab === 'templates'
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <Mail className="w-4 h-4" />
+                        Templates
+                        <Badge variant="outline" className="text-[10px] ml-0.5">{allTemplates.length}</Badge>
+                    </button>
                 </div>
 
                 {activeTab === 'sequences' ? (
                     <SequenceBuilder />
                 ) : (
-                <>
-                {/* Templates content below */}
-
-                {/* ─── Section Selector (horizontal pipeline-style) ─── */}
-                <div className="flex items-stretch gap-0 overflow-x-auto pb-2">
-                    {SECTIONS.map((section, idx) => {
-                        const templates = allTemplates.filter(section.filter);
-                        const isActive = activeSection === section.key;
-
-                        return (
-                            <div key={section.key} className="flex items-stretch flex-shrink-0">
-                                <button
-                                    onClick={() => {
-                                        setActiveSection(isActive ? null : section.key);
-                                        setExpandedId(null);
-                                        setPreviewMode(false);
-                                    }}
-                                    className={`flex flex-col justify-between min-w-[200px] max-w-[260px] p-4 rounded-xl border-2 transition-all hover:shadow-md text-left ${isActive
-                                        ? 'border-sky-500 bg-sky-50/50 dark:bg-sky-950/20 shadow-md'
-                                        : 'border-border bg-card hover:border-muted-foreground/30'
-                                        }`}
-                                >
-                                    <div className="mb-3">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            {section.icon}
-                                            <span className="text-sm font-semibold">{section.title}</span>
-                                        </div>
-                                        <p className="text-[11px] text-muted-foreground leading-snug">
-                                            {section.description}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <Badge variant="outline" className="text-[10px]">
-                                            {templates.length} template{templates.length !== 1 ? 's' : ''}
-                                        </Badge>
-                                        {isActive
-                                            ? <ChevronUp className="w-4 h-4 text-sky-500" />
-                                            : <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                                        }
-                                    </div>
-                                </button>
-                                {idx < SECTIONS.length - 1 && (
-                                    <div className="flex items-center px-3">
-                                        <ArrowRight className="w-4 h-4 text-muted-foreground/30" />
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-
-                {/* ─── Expanded Section ─── */}
-                {activeSection && (() => {
-                    const section = SECTIONS.find(s => s.key === activeSection)!;
-                    const templates = allTemplates
-                        .filter(section.filter)
-                        .sort((a, b) => {
-                            // For targeted: sort alphabetically by name
-                            if (section.key === 'targeted') {
-                                return (a.name || '').localeCompare(b.name || '');
-                            }
-                            // For sequences: sort by sequence number extracted from ID
-                            const aNum = parseInt(a.id.match(/(\d+)/)?.[1] || '0');
-                            const bNum = parseInt(b.id.match(/(\d+)/)?.[1] || '0');
-                            return aNum - bNum;
-                        });
-
-                    return (
-                        <div className="space-y-3">
-                            {/* Section header with create button for targeted */}
-                            {section.allowCreate && (
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <Target className="w-4 h-4" />
-                                        {templates.length} targeted template{templates.length !== 1 ? 's' : ''}
-                                    </div>
-                                    <Button
-                                        size="sm"
-                                        onClick={() => setShowCreateDialog(true)}
-                                        className="gap-2"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        New Template
-                                    </Button>
+                    <>
+                        {/* ─── Templates Tab: Flat Searchable List ─── */}
+                        <div className="space-y-4">
+                            {/* Toolbar */}
+                            <div className="flex items-center gap-3">
+                                <div className="relative flex-1 max-w-sm">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                    <Input
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        placeholder="Search templates by name, subject, ID…"
+                                        className="pl-9 h-9 text-sm"
+                                    />
                                 </div>
-                            )}
+                                <Button onClick={() => setShowCreateDialog(true)} size="sm" className="gap-1.5 h-9">
+                                    <Plus className="w-4 h-4" />
+                                    New Template
+                                </Button>
+                            </div>
 
-                            {/* Sequence visual (for non-targeted sections) */}
-                            {!section.allowCreate && templates.length > 0 && (
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    {templates.map((t, i) => {
-                                        const stepNum = parseInt(t.id.match(/(\d+)/)?.[1] || '0');
+                            {/* Category Badge Filters */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                {visibleBadges.map(badge => {
+                                    const isActive = categoryFilter === badge.key;
+                                    const count = badge.key === 'all' ? allTemplates.length : (categoryCounts[badge.key] || 0);
+                                    return (
+                                        <button
+                                            key={badge.key}
+                                            onClick={() => setCategoryFilter(badge.key)}
+                                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                                                isActive
+                                                    ? `${badge.className} ring-2 ring-primary/40 shadow-sm`
+                                                    : 'bg-muted/40 text-muted-foreground hover:bg-muted/70'
+                                            }`}
+                                        >
+                                            {badge.icon && <span className="text-[11px]">{badge.icon}</span>}
+                                            {badge.label}
+                                            <span className={`text-[10px] ml-0.5 ${isActive ? 'opacity-80' : 'opacity-50'}`}>({count})</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Template List */}
+                            {filteredTemplates.length === 0 ? (
+                                <Card>
+                                    <CardContent className="py-12 text-center">
+                                        <Mail className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
+                                        <h3 className="font-medium text-sm">
+                                            {searchQuery ? 'No templates match your search' : 'No Email Templates Found'}
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {searchQuery
+                                                ? 'Try a different search term or clear the filter.'
+                                                : 'Create your first template to get started.'}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <div className="space-y-2">
+                                    {filteredTemplates.map(template => {
+                                        const isExpanded = expandedId === template.id;
+                                        const isSaved = saveSuccess === template.id;
+                                        const isPrompt = template.type === 'prompt' || template.id.includes('_prompt');
+                                        const catBadge = getTemplateBadge(template);
+                                        const variantBadge = getVariantBadge(template);
+                                        const mergeFields = extractMergeFields((template.subject || '') + (template.body || ''));
+
                                         return (
-                                            <div key={t.id} className="flex items-center gap-2">
-                                                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border cursor-pointer transition-all ${expandedId === t.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 border-border hover:border-muted-foreground/50'}`}
-                                                    onClick={() => handleExpand(t)}
+                                            <Card key={template.id} className={`transition-all ${isExpanded ? 'ring-2 ring-primary/20' : ''}`}>
+                                                <CardHeader
+                                                    className="cursor-pointer hover:bg-muted/30 transition-colors py-3"
+                                                    onClick={() => handleExpand(template)}
                                                 >
-                                                    <span className="font-bold">{stepNum || i + 1}</span>
-                                                    <span className="hidden sm:inline">
-                                                        {section.timing[stepNum] || section.timing[i] || `Step ${stepNum || i + 1}`}
-                                                    </span>
-                                                </div>
-                                                {i < templates.length - 1 && <span className="text-muted-foreground">→</span>}
-                                            </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted/60 text-muted-foreground flex-shrink-0">
+                                                                <Mail className="w-4 h-4" />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <CardTitle className="text-sm truncate">
+                                                                    {template.name || template.id}
+                                                                </CardTitle>
+                                                                <p className="text-[11px] text-muted-foreground truncate max-w-md">
+                                                                    {template.subject || 'No subject'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                            <Badge variant="secondary" className={`text-[10px] ${catBadge.className}`}>
+                                                                {catBadge.label}
+                                                            </Badge>
+                                                            {variantBadge && (
+                                                                <Badge variant="secondary" className={`text-[10px] ${variantBadge.className}`}>
+                                                                    {variantBadge.label}
+                                                                </Badge>
+                                                            )}
+                                                            {isPrompt && (
+                                                                <Badge variant="secondary" className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                                                                    AI Prompt
+                                                                </Badge>
+                                                            )}
+                                                            {isExpanded ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
+                                                        </div>
+                                                    </div>
+                                                </CardHeader>
+
+                                                {isExpanded && (
+                                                    <CardContent className="border-t pt-4 space-y-4">
+                                                        {/* Toolbar */}
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant={previewMode ? "default" : "outline"}
+                                                                    className="h-7 text-xs"
+                                                                    onClick={() => setPreviewMode(!previewMode)}
+                                                                >
+                                                                    {previewMode ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
+                                                                    {previewMode ? "Edit" : "Preview"}
+                                                                </Button>
+                                                                <code className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{template.id}</code>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    className="h-7 text-xs text-destructive hover:text-destructive"
+                                                                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(template); }}
+                                                                >
+                                                                    <Trash2 className="w-3 h-3 mr-1" /> Delete
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    className="h-7 text-xs"
+                                                                    onClick={() => handleSave(template.id)}
+                                                                    disabled={saving}
+                                                                >
+                                                                    {saving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> :
+                                                                        isSaved ? <Check className="w-3 h-3 mr-1" /> :
+                                                                            <Save className="w-3 h-3 mr-1" />}
+                                                                    {isSaved ? "Saved!" : "Save"}
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Name & Description */}
+                                                        {!previewMode && (
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                <div>
+                                                                    <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Template Name</label>
+                                                                    <Input
+                                                                        value={editName}
+                                                                        onChange={e => setEditName(e.target.value)}
+                                                                        className="mt-1 text-sm"
+                                                                        placeholder="Template name..."
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Description</label>
+                                                                    <Input
+                                                                        value={editDescription}
+                                                                        onChange={e => setEditDescription(e.target.value)}
+                                                                        className="mt-1 text-sm"
+                                                                        placeholder="Short description..."
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Merge fields (edit mode) */}
+                                                        {!previewMode && mergeFields.length > 0 && (
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Insert Variable:</span>
+                                                                {mergeFields.map(v => (
+                                                                    <Button
+                                                                        key={v}
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        className="h-6 text-[10px] font-mono px-2 gap-1 hover:bg-primary/10 hover:border-primary/40"
+                                                                        onClick={() => insertVariable(activeEditField, v, 'edit')}
+                                                                    >
+                                                                        <Plus className="w-2.5 h-2.5" />
+                                                                        {v}
+                                                                    </Button>
+                                                                ))}
+                                                                <Badge variant="secondary" className="text-[9px] px-1.5 h-5">
+                                                                    → {activeEditField === 'subject' ? 'Subject' : 'Body'}
+                                                                </Badge>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Subject */}
+                                                        <div>
+                                                            <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Subject Line</label>
+                                                            {previewMode ? (
+                                                                <div className="mt-1 px-3 py-2 bg-muted/30 rounded-md text-sm font-medium">
+                                                                    {editSubject}
+                                                                </div>
+                                                            ) : (
+                                                                <Input
+                                                                    ref={editSubjectRef}
+                                                                    value={editSubject}
+                                                                    onChange={e => setEditSubject(e.target.value)}
+                                                                    onFocus={() => setActiveEditField('subject')}
+                                                                    className="mt-1 text-sm font-medium"
+                                                                    placeholder="Email subject line..."
+                                                                />
+                                                            )}
+                                                        </div>
+
+                                                        {/* Body */}
+                                                        <div>
+                                                            <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                                                                {isPrompt ? "AI Prompt" : "Email Body"}
+                                                            </label>
+                                                            {previewMode ? (
+                                                                <div className="mt-1 border rounded-md bg-white dark:bg-background">
+                                                                    <div className="px-4 py-3 bg-muted/20 border-b text-[10px] text-muted-foreground space-y-0.5">
+                                                                        <div>From: <span className="text-foreground font-medium">XIRI Facility Solutions &lt;chris@xiri.ai&gt;</span></div>
+                                                                        <div>Subject: <span className="text-foreground font-semibold text-xs">{editSubject}</span></div>
+                                                                    </div>
+                                                                    <div className="px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed max-h-96 overflow-auto">
+                                                                        {editBody}
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <Textarea
+                                                                    ref={editBodyRef}
+                                                                    value={editBody}
+                                                                    onChange={e => setEditBody(e.target.value)}
+                                                                    onFocus={() => setActiveEditField('body')}
+                                                                    className="mt-1 text-sm min-h-[250px] font-mono leading-relaxed"
+                                                                    placeholder={isPrompt ? "AI prompt instructions..." : "Email body..."}
+                                                                />
+                                                            )}
+                                                        </div>
+
+                                                        {/* Template ID */}
+                                                        <div className="text-[10px] text-muted-foreground flex items-center gap-2 pt-1 border-t">
+                                                            <span>Firestore ID:</span>
+                                                            <code className="bg-muted px-1.5 py-0.5 rounded">{template.id}</code>
+                                                        </div>
+                                                    </CardContent>
+                                                )}
+                                            </Card>
                                         );
                                     })}
                                 </div>
                             )}
-
-                            {templates.length === 0 && (
-                                <Card>
-                                    <CardContent className="py-10 text-center">
-                                        <Mail className="w-8 h-8 mx-auto text-muted-foreground/30 mb-3" />
-                                        <h3 className="font-medium text-sm">No {section.title} Templates</h3>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {section.allowCreate
-                                                ? 'Click "New Template" to create your first targeted email template.'
-                                                : section.key === 'contractor'
-                                                    ? <>Run <code className="bg-muted px-1 rounded">node scripts/seed-email-templates.js</code></>
-                                                    : section.key === 'lead'
-                                                        ? <>These are AI prompts stored in Firestore.</>
-                                                        : <>Run <code className="bg-muted px-1 rounded">node scripts/seed-referral-templates.js</code></>
-                                            }
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            )}
-
-                            {/* Template cards */}
-                            {templates.map(template => {
-                                const isExpanded = expandedId === template.id;
-                                const mergeFields = extractMergeFields(template.subject + template.body);
-                                const isSaved = saveSuccess === template.id;
-                                const stepNum = parseInt(template.id.match(/(\d+)/)?.[1] || '0');
-                                const isPrompt = template.type === 'prompt' || template.id.includes('_prompt');
-                                const isTargeted = section.key === 'targeted';
-
-                                return (
-                                    <Card key={template.id} className={`transition-all ${isExpanded ? 'ring-2 ring-primary/30' : ''}`}>
-                                        <CardHeader
-                                            className="cursor-pointer hover:bg-muted/30 transition-colors py-4"
-                                            onClick={() => handleExpand(template)}
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    {isTargeted ? (
-                                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
-                                                            <Target className="w-4 h-4" />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
-                                                            {stepNum || '?'}
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <CardTitle className="text-sm">{template.name}</CardTitle>
-                                                        {template.description && (
-                                                            <p className="text-[11px] text-muted-foreground mt-0.5">{template.description}</p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    {isTargeted && (
-                                                        <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                                                            Targeted
-                                                        </Badge>
-                                                    )}
-                                                    {isPrompt && !isTargeted && (
-                                                        <Badge variant="secondary" className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-                                                            AI Prompt
-                                                        </Badge>
-                                                    )}
-                                                    {!isPrompt && !isTargeted && (
-                                                        <Badge variant="secondary" className="text-[10px]">
-                                                            Template
-                                                        </Badge>
-                                                    )}
-                                                    {!isTargeted && (
-                                                        <Badge variant="outline" className="text-[10px]">
-                                                            <Clock className="w-3 h-3 mr-1" />
-                                                            {section.timing[stepNum] || `Step ${stepNum}`}
-                                                        </Badge>
-                                                    )}
-                                                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                                </div>
-                                            </div>
-                                        </CardHeader>
-
-                                        {isExpanded && (
-                                            <CardContent className="border-t pt-4 space-y-4">
-                                                {/* Toolbar */}
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <Button
-                                                            size="sm"
-                                                            variant={previewMode ? "default" : "outline"}
-                                                            className="h-7 text-xs"
-                                                            onClick={() => setPreviewMode(!previewMode)}
-                                                        >
-                                                            {previewMode ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
-                                                            {previewMode ? "Edit" : "Preview"}
-                                                        </Button>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        {section.allowDelete && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                className="h-7 text-xs text-destructive hover:text-destructive"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setDeleteTarget(template);
-                                                                }}
-                                                            >
-                                                                <Trash2 className="w-3 h-3 mr-1" />
-                                                                Delete
-                                                            </Button>
-                                                        )}
-                                                        <Button
-                                                            size="sm"
-                                                            className="h-7 text-xs"
-                                                            onClick={() => handleSave(template.id)}
-                                                            disabled={saving}
-                                                        >
-                                                            {saving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> :
-                                                                isSaved ? <Check className="w-3 h-3 mr-1" /> :
-                                                                    <Save className="w-3 h-3 mr-1" />}
-                                                            {isSaved ? "Saved!" : "Save"}
-                                                        </Button>
-                                                    </div>
-                                                </div>
-
-                                                {/* Name & Description (editable for targeted) */}
-                                                {isTargeted && !previewMode && (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                        <div>
-                                                            <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Template Name</label>
-                                                            <Input
-                                                                value={editName}
-                                                                onChange={e => setEditName(e.target.value)}
-                                                                className="mt-1 text-sm"
-                                                                placeholder="e.g. Backflow Preventer"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Description</label>
-                                                            <Input
-                                                                value={editDescription}
-                                                                onChange={e => setEditDescription(e.target.value)}
-                                                                className="mt-1 text-sm"
-                                                                placeholder="Short description..."
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Insert Variable Buttons */}
-                                                {!previewMode && (() => {
-                                                    const sampleKeys = Object.keys(SAMPLE_DATA[section.sampleGroup] || {});
-                                                    return sampleKeys.length > 0 && (
-                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Insert Variable:</span>
-                                                            {sampleKeys.map(v => (
-                                                                <Button
-                                                                    key={v}
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    className="h-6 text-[10px] font-mono px-2 gap-1 hover:bg-primary/10 hover:border-primary/40"
-                                                                    onClick={() => insertVariable(activeEditField, v, 'edit')}
-                                                                >
-                                                                    <Plus className="w-2.5 h-2.5" />
-                                                                    {v}
-                                                                </Button>
-                                                            ))}
-                                                            <Badge variant="secondary" className="text-[9px] px-1.5 h-5">
-                                                                → {activeEditField === 'subject' ? 'Subject' : 'Body'}
-                                                            </Badge>
-                                                        </div>
-                                                    );
-                                                })()}
-
-                                                {/* Subject */}
-                                                <div>
-                                                    <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Subject Line</label>
-                                                    {previewMode ? (
-                                                        <div className="mt-1 px-3 py-2 bg-muted/30 rounded-md text-sm font-medium">
-                                                            {mergePreview(editSubject, section.sampleGroup)}
-                                                        </div>
-                                                    ) : (
-                                                        <Input
-                                                            ref={editSubjectRef}
-                                                            value={editSubject}
-                                                            onChange={e => setEditSubject(e.target.value)}
-                                                            onFocus={() => setActiveEditField('subject')}
-                                                            className="mt-1 text-sm font-medium"
-                                                            placeholder="Email subject line..."
-                                                        />
-                                                    )}
-                                                </div>
-
-                                                {/* Body */}
-                                                <div>
-                                                    <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                                                        {isPrompt ? "AI Prompt" : "Email Body"}
-                                                    </label>
-                                                    {previewMode ? (
-                                                        <div className="mt-1 border rounded-md bg-white dark:bg-background">
-                                                            <div className="px-4 py-3 bg-muted/20 border-b text-[10px] text-muted-foreground space-y-0.5">
-                                                                <div>From: <span className="text-foreground font-medium">XIRI Facility Solutions &lt;chris@xiri.ai&gt;</span></div>
-                                                                <div>To: <span className="text-foreground font-medium">{SAMPLE_DATA[section.sampleGroup]?.contactName || 'Contact'}</span></div>
-                                                                <div>Subject: <span className="text-foreground font-semibold text-xs">{mergePreview(editSubject, section.sampleGroup)}</span></div>
-                                                            </div>
-                                                            <div className="px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed max-h-96 overflow-auto">
-                                                                {mergePreview(editBody, section.sampleGroup)}
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <Textarea
-                                                            ref={editBodyRef}
-                                                            value={editBody}
-                                                            onChange={e => setEditBody(e.target.value)}
-                                                            onFocus={() => setActiveEditField('body')}
-                                                            className="mt-1 text-sm min-h-[300px] font-mono leading-relaxed"
-                                                            placeholder={isPrompt ? "AI prompt instructions..." : "Email body..."}
-                                                        />
-                                                    )}
-                                                </div>
-
-                                                {/* Template ID for reference */}
-                                                <div className="text-[10px] text-muted-foreground flex items-center gap-2 pt-1 border-t">
-                                                    <span>Firestore ID:</span>
-                                                    <code className="bg-muted px-1.5 py-0.5 rounded">{template.id}</code>
-                                                </div>
-                                            </CardContent>
-                                        )}
-                                    </Card>
-                                );
-                            })}
-                        </div>
-                    );
-                })()}
-
-                {allTemplates.length === 0 && (
-                    <Card>
-                        <CardContent className="py-12 text-center">
-                            <Mail className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
-                            <h3 className="font-medium text-sm">No Email Templates Found</h3>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                Run <code className="bg-muted px-1 rounded">node scripts/seed-email-templates.js</code> and{" "}
-                                <code className="bg-muted px-1 rounded">node scripts/seed-referral-templates.js</code> to seed templates.
-                            </p>
-                        </CardContent>
-                    </Card>
-                )}
-
-            {/* ─── Create Template Dialog ─── */}
-            <AlertDialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-                <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="flex items-center gap-2">
-                            <Plus className="w-5 h-5" />
-                            New Targeted Template
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Create a new email template for one-off targeted sends. Use <code className="bg-muted px-1 rounded text-[11px]">{"{{variableName}}"}</code> for merge fields.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-
-                    <div className="space-y-4 py-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-xs font-medium text-muted-foreground">Template Name</label>
-                                <Input
-                                    value={newName}
-                                    onChange={e => setNewName(e.target.value)}
-                                    placeholder="e.g. Backflow Preventer"
-                                    className="mt-1"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs font-medium text-muted-foreground">Description (optional)</label>
-                                <Input
-                                    value={newDescription}
-                                    onChange={e => setNewDescription(e.target.value)}
-                                    placeholder="Short description..."
-                                    className="mt-1"
-                                />
-                            </div>
                         </div>
 
-                        {/* Insert Variable Buttons for Create */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Insert Variable:</span>
-                            {Object.keys(SAMPLE_DATA['targeted'] || {}).map(v => (
-                                <Button
-                                    key={v}
-                                    size="sm"
-                                    variant="outline"
-                                    type="button"
-                                    className="h-6 text-[10px] font-mono px-2 gap-1 hover:bg-primary/10 hover:border-primary/40"
-                                    onClick={() => insertVariable(activeNewField, v, 'new')}
-                                >
-                                    <Plus className="w-2.5 h-2.5" />
-                                    {v}
-                                </Button>
-                            ))}
-                            <Badge variant="secondary" className="text-[9px] px-1.5 h-5">
-                                → {activeNewField === 'subject' ? 'Subject' : 'Body'}
-                            </Badge>
-                        </div>
+                        {/* ─── Create Template Dialog ─── */}
+                        <AlertDialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                            <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle className="flex items-center gap-2">
+                                        <Plus className="w-5 h-5" />
+                                        New Template
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Create a standalone email template. Use <code className="bg-muted px-1 rounded text-[11px]">{"{{variableName}}"}</code> for merge fields.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
 
-                        <div>
-                            <label className="text-xs font-medium text-muted-foreground">Subject Line</label>
-                            <Input
-                                ref={newSubjectRef}
-                                value={newSubject}
-                                onChange={e => setNewSubject(e.target.value)}
-                                onFocus={() => setActiveNewField('subject')}
-                                placeholder="Email subject..."
-                                className="mt-1"
-                            />
-                        </div>
+                                <div className="space-y-4 py-2">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs font-medium text-muted-foreground">Template Name</label>
+                                            <Input
+                                                value={newName}
+                                                onChange={e => setNewName(e.target.value)}
+                                                placeholder="e.g. Follow-Up After Meeting"
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-medium text-muted-foreground">Description (optional)</label>
+                                            <Input
+                                                value={newDescription}
+                                                onChange={e => setNewDescription(e.target.value)}
+                                                placeholder="Short description..."
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                    </div>
 
-                        <div>
-                            <label className="text-xs font-medium text-muted-foreground">Email Body</label>
-                            <Textarea
-                                ref={newBodyRef}
-                                value={newBody}
-                                onChange={e => setNewBody(e.target.value)}
-                                onFocus={() => setActiveNewField('body')}
-                                placeholder="Email body text..."
-                                className="mt-1 min-h-[250px] text-sm font-mono leading-relaxed"
-                            />
-                        </div>
+                                    <div>
+                                        <label className="text-xs font-medium text-muted-foreground">Subject Line</label>
+                                        <Input
+                                            ref={newSubjectRef}
+                                            value={newSubject}
+                                            onChange={e => setNewSubject(e.target.value)}
+                                            onFocus={() => setActiveNewField('subject')}
+                                            placeholder="Email subject..."
+                                            className="mt-1"
+                                        />
+                                    </div>
 
-                        {newBody && (
-                            <div className="flex gap-1 flex-wrap text-[10px]">
-                                <span className="text-muted-foreground">Detected merge fields:</span>
-                                {extractMergeFields(newSubject + newBody).map(f => (
-                                    <Badge key={f} variant="secondary" className="text-[9px] px-1 h-5 font-mono">{`{{${f}}}`}</Badge>
-                                ))}
-                                {extractMergeFields(newSubject + newBody).length === 0 && (
-                                    <span className="text-muted-foreground italic">None</span>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                                    <div>
+                                        <label className="text-xs font-medium text-muted-foreground">Email Body</label>
+                                        <Textarea
+                                            ref={newBodyRef}
+                                            value={newBody}
+                                            onChange={e => setNewBody(e.target.value)}
+                                            onFocus={() => setActiveNewField('body')}
+                                            placeholder="Email body text..."
+                                            className="mt-1 min-h-[250px] text-sm font-mono leading-relaxed"
+                                        />
+                                    </div>
 
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={creating}>Cancel</AlertDialogCancel>
-                        <Button
-                            onClick={handleCreate}
-                            disabled={creating || !newName.trim() || !newSubject.trim()}
-                            className="gap-2"
-                        >
-                            {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                            {creating ? 'Creating...' : 'Create Template'}
-                        </Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+                                    {newBody && (
+                                        <div className="flex gap-1 flex-wrap text-[10px]">
+                                            <span className="text-muted-foreground">Detected merge fields:</span>
+                                            {extractMergeFields(newSubject + newBody).map(f => (
+                                                <Badge key={f} variant="secondary" className="text-[9px] px-1 h-5 font-mono">{`{{${f}}}`}</Badge>
+                                            ))}
+                                            {extractMergeFields(newSubject + newBody).length === 0 && (
+                                                <span className="text-muted-foreground italic">None</span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
 
-            {/* ─── Delete Confirmation Dialog ─── */}
-            <AlertDialog open={!!deleteTarget} onOpenChange={(open: boolean) => !open && setDeleteTarget(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Template</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-                        <Button variant="destructive" onClick={handleDelete} disabled={deleting} className="gap-2">
-                            {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                            {deleting ? 'Deleting...' : 'Delete'}
-                        </Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-                </>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel disabled={creating}>Cancel</AlertDialogCancel>
+                                    <Button
+                                        onClick={handleCreate}
+                                        disabled={creating || !newName.trim() || !newSubject.trim()}
+                                        className="gap-2"
+                                    >
+                                        {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                        {creating ? 'Creating...' : 'Create Template'}
+                                    </Button>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+
+                        {/* ─── Delete Confirmation Dialog ─── */}
+                        <AlertDialog open={!!deleteTarget} onOpenChange={(open: boolean) => !open && setDeleteTarget(null)}>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Template</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to delete <strong>{deleteTarget?.name || deleteTarget?.id}</strong>? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                                    <Button variant="destructive" onClick={handleDelete} disabled={deleting} className="gap-2">
+                                        {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                        {deleting ? 'Deleting...' : 'Delete'}
+                                    </Button>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </>
                 )}
             </div>
         </ProtectedRoute>

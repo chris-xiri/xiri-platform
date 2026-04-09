@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { FACILITY_TYPE_LABELS, inferFacilityType, type FacilityType } from '@xiri-facility-solutions/shared';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
@@ -24,6 +25,7 @@ import {
     ChevronDown, Target, SendHorizonal, ListPlus, Plus,
     Settings, Play, SkipForward, ExternalLink, X,
     Calendar, TrendingUp, Zap, Filter, RefreshCw,
+    Tag,
 } from 'lucide-react';
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -105,9 +107,24 @@ export default function ProspectsPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('pending_review');
+    const [facilityTypeFilter, setFacilityTypeFilter] = useState<string>('all');
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [acting, setActing] = useState(false);
     const [triggering, setTriggering] = useState(false);
+
+    // Progress polling state
+    interface RunStatus {
+        running: boolean;
+        discovered: number;
+        qualified: number;
+        duplicatesSkipped: number;
+        target: number;
+        currentQuery: string | null;
+        completedAt?: any;
+        updatedAt?: any;
+    }
+    const [runStatus, setRunStatus] = useState<RunStatus | null>(null);
+    const [polling, setPolling] = useState(false);
 
     // Config state
     const [config, setConfig] = useState<ProspectingConfig | null>(null);
@@ -163,6 +180,25 @@ export default function ProspectsPage() {
         loadConfig();
     }, []);
 
+    // Check if a run is already in progress on mount
+    useEffect(() => {
+        const checkRunning = async () => {
+            try {
+                const snap = await getDoc(doc(db, 'prospecting_config', 'run_status'));
+                if (snap.exists()) {
+                    const data = snap.data() as RunStatus;
+                    setRunStatus(data);
+                    if (data.running) {
+                        setPolling(true);
+                    }
+                }
+            } catch (err) {
+                console.error('Error checking run status:', err);
+            }
+        };
+        checkRunning();
+    }, []);
+
     // ── Load template & sequence options ─────────────────────────────
 
     const loadOptions = useCallback(async () => {
@@ -190,6 +226,18 @@ export default function ProspectsPage() {
         }
     }, [templates.length, sequences.length]);
 
+    // ── Facility type mapping (from @xiri-facility-solutions/shared) ──
+
+    /** Unique facility types present in the current dataset with counts. */
+    const facilityTypeCounts = useMemo(() => {
+        const counts = new Map<string, number>();
+        for (const p of prospects) {
+            const ft = inferFacilityType(p.searchQuery) || 'unknown';
+            counts.set(ft, (counts.get(ft) || 0) + 1);
+        }
+        return counts;
+    }, [prospects, inferFacilityType]);
+
     // ── Filtering ───────────────────────────────────────────────────
 
     const filtered = useMemo(() => {
@@ -197,6 +245,13 @@ export default function ProspectsPage() {
 
         if (statusFilter !== 'all') {
             list = list.filter(p => p.status === statusFilter);
+        }
+
+        if (facilityTypeFilter !== 'all') {
+            list = list.filter(p => {
+                const ft = inferFacilityType(p.searchQuery) || 'unknown';
+                return ft === facilityTypeFilter;
+            });
         }
 
         if (search.trim()) {
@@ -211,7 +266,7 @@ export default function ProspectsPage() {
         }
 
         return list;
-    }, [prospects, statusFilter, search]);
+    }, [prospects, statusFilter, facilityTypeFilter, search, inferFacilityType]);
 
     // ── Stats ───────────────────────────────────────────────────────
 
@@ -276,6 +331,7 @@ export default function ProspectsPage() {
                     emailConfidence: p.emailConfidence,
                     facebookUrl: p.facebookUrl,
                     linkedinUrl: p.linkedinUrl,
+                    searchQuery: p.searchQuery,
                 })),
             });
 
@@ -316,7 +372,7 @@ export default function ProspectsPage() {
                     genericEmail: p.genericEmail, contactName: p.contactName,
                     contactTitle: p.contactTitle, emailSource: p.emailSource,
                     emailConfidence: p.emailConfidence, facebookUrl: p.facebookUrl,
-                    linkedinUrl: p.linkedinUrl,
+                    linkedinUrl: p.linkedinUrl, searchQuery: p.searchQuery,
                 })),
             });
 
@@ -426,13 +482,57 @@ export default function ProspectsPage() {
         setTriggering(true);
         try {
             const fn = httpsCallable(functions, 'triggerDailyProspector');
-            await fn();
-            toast({ title: 'Prospector pipeline started', description: 'New prospects will appear in a few minutes.' });
+            // Fire-and-forget: don't await — the pipeline runs for several minutes.
+            // We start polling the status doc immediately instead.
+            fn().catch(err => {
+                console.error('Prospector pipeline error:', err);
+                // Only show error toast if it's a real failure, not a timeout
+                toast({ title: 'Pipeline issue', description: 'Check logs for details.' });
+            });
+
+            toast({ title: 'Prospector pipeline started', description: 'Tracking progress below...' });
+            // Give the function 2s to initialize and write the first status doc
+            setTimeout(() => setPolling(true), 2000);
         } catch (err) {
             toast({ title: 'Trigger failed', description: String(err) });
         }
         setTriggering(false);
     };
+
+    // ── Poll run_status doc while pipeline is running ────────────────
+
+    useEffect(() => {
+        if (!polling) return;
+
+        const statusDocRef = doc(db, 'prospecting_config', 'run_status');
+        let interval: ReturnType<typeof setInterval>;
+
+        const pollStatus = async () => {
+            try {
+                const snap = await getDoc(statusDocRef);
+                if (snap.exists()) {
+                    const data = snap.data() as RunStatus;
+                    setRunStatus(data);
+                    if (!data.running) {
+                        // Pipeline finished — stop polling
+                        setPolling(false);
+                        toast({
+                            title: 'Prospector complete!',
+                            description: `Added ${data.qualified} prospects (${data.duplicatesSkipped} duplicates skipped).`,
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error('Error polling run status:', err);
+            }
+        };
+
+        // Poll immediately then every 3s
+        pollStatus();
+        interval = setInterval(pollStatus, 3000);
+
+        return () => clearInterval(interval);
+    }, [polling, toast]);
 
     // ── Save config ─────────────────────────────────────────────────
 
@@ -581,6 +681,52 @@ export default function ProspectsPage() {
                 </div>
             </div>
 
+            {/* Progress banner */}
+            {(polling || (runStatus && runStatus.running)) && runStatus && (
+                <div className="rounded-lg border bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                            <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Pipeline Running...</span>
+                        </div>
+                        <span className="text-xs text-blue-600 dark:text-blue-400">
+                            {runStatus.qualified} / {runStatus.target} qualified
+                        </span>
+                    </div>
+                    <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2 mb-2">
+                        <div
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(100, (runStatus.qualified / runStatus.target) * 100)}%` }}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400">
+                        <div className="flex gap-4">
+                            <span>Discovered: {runStatus.discovered}</span>
+                            <span>Qualified: {runStatus.qualified}</span>
+                            <span>Dupes Skipped: {runStatus.duplicatesSkipped}</span>
+                        </div>
+                        {runStatus.currentQuery && (
+                            <span className="italic truncate max-w-xs">Searching: {runStatus.currentQuery}</span>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Completed banner */}
+            {runStatus && !runStatus.running && !polling && runStatus.completedAt && (
+                <div className="rounded-lg border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900 p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        <span className="text-sm text-green-700 dark:text-green-400">
+                            Last run: Added {runStatus.qualified} prospects ({runStatus.discovered} found, {runStatus.duplicatesSkipped} dupes skipped)
+                        </span>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setRunStatus(null)} className="text-green-600 h-6 px-2">
+                        <X className="w-3 h-3" />
+                    </Button>
+                </div>
+            )}
+
             {/* Stats bar */}
             <div className="grid grid-cols-5 gap-3">
                 {[
@@ -610,6 +756,35 @@ export default function ProspectsPage() {
                     <span>Added {config.lastRunStats.added} with email</span>
                     <span>·</span>
                     <span>{config.lastRunStats.duplicatesSkipped} duplicates skipped</span>
+                </div>
+            )}
+
+            {/* Facility type filter badges */}
+            {facilityTypeCounts.size > 1 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                        <Tag className="w-3 h-3" /> Type:
+                    </span>
+                    <Badge
+                        variant={facilityTypeFilter === 'all' ? 'default' : 'outline'}
+                        className="cursor-pointer text-xs hover:bg-primary/10 transition-colors"
+                        onClick={() => setFacilityTypeFilter('all')}
+                    >
+                        All ({prospects.length})
+                    </Badge>
+                    {Array.from(facilityTypeCounts.entries())
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([ft, count]) => (
+                            <Badge
+                                key={ft}
+                                variant={facilityTypeFilter === ft ? 'default' : 'outline'}
+                                className="cursor-pointer text-xs hover:bg-primary/10 transition-colors"
+                                onClick={() => setFacilityTypeFilter(ft === facilityTypeFilter ? 'all' : ft)}
+                            >
+                                {ft === 'unknown' ? 'Uncategorized' : FACILITY_TYPE_LABELS[ft as FacilityType] || ft} ({count})
+                            </Badge>
+                        ))
+                    }
                 </div>
             )}
 
@@ -788,12 +963,22 @@ export default function ProspectsPage() {
                                             </a>
                                         )}
                                     </div>
-                                    {prospect.phone && (
-                                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                            <Phone className="w-3 h-3" />
-                                            {prospect.phone}
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        {(() => {
+                                            const ft = inferFacilityType(prospect.searchQuery);
+                                            return ft ? (
+                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                                                    {FACILITY_TYPE_LABELS[ft]}
+                                                </Badge>
+                                            ) : null;
+                                        })()}
+                                        {prospect.phone && (
+                                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                <Phone className="w-3 h-3" />
+                                                {prospect.phone}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Location */}
