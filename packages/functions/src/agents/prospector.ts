@@ -6,7 +6,7 @@
  *
  *   Layer 1: Website scraping (mailto, structured data, AI owner extraction)
  *   Layer 2: Serper web search (Facebook, person+business, directories)
- *   Layer 3: Paid API waterfall (Hunter.io)
+ *   Layer 3: Enrichment waterfall (email pattern guesser + optional Hunter.io)
  *
  * Each layer stops early if a personal email is found.
  */
@@ -16,7 +16,7 @@ import { scrapeWebsite, searchWebForEmail } from '../utils/websiteScraper';
 import { runEnrichmentWaterfall } from '../utils/enrichmentProviders';
 import type { EnrichedProspect, EmailSource, ProspectContact } from '@xiri/shared';
 
-const GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support)@/i;
+const GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support|billing|accounting|bookkeeping|inquiries|front|manager)@/i;
 
 // Domains that are never a valid business email — library credits, tracking, platform junk
 const JUNK_EMAIL_DOMAINS = new Set([
@@ -376,20 +376,25 @@ async function enrichSingleBusiness(
     if (prospect.contactEmail) return prospect;
 
     // ═══════════════════════════════════════════════════════
-    // LAYER 3: Paid Enrichment API Waterfall
+    // LAYER 3: Enrichment Waterfall (Pattern Guesser + optional APIs)
     // ═══════════════════════════════════════════════════════
     if (!input.skipPaidApis) {
         const domain = extractDomain(vendor.website);
         if (domain) {
-            log.push(`Layer 3: Running enrichment API waterfall for ${domain}...`);
+            log.push(`Layer 3: Running enrichment waterfall for ${domain}...`);
 
-            const waterfallResult = await runEnrichmentWaterfall(domain, {
-                hunterApiKey: secrets.hunterApiKey,
-            });
+            const waterfallResult = await runEnrichmentWaterfall(
+                domain,
+                { hunterApiKey: secrets.hunterApiKey },
+                {
+                    contactName: prospect.contactName,
+                    knownGenericEmail: prospect.genericEmail,
+                },
+            );
 
             log.push(...waterfallResult.log);
 
-            // Persist ALL discovered contacts (Hunter returns up to 10 per credit)
+            // Persist ALL discovered contacts
             if (waterfallResult.allEmails.length > 0) {
                 const apiContacts: ProspectContact[] = waterfallResult.allEmails.map(e => ({
                     email: e.email,
@@ -402,7 +407,7 @@ async function enrichSingleBusiness(
                 }));
                 // Merge with any contacts already found from scraping
                 prospect.allContacts = [...(prospect.allContacts || []), ...apiContacts];
-                log.push(`Stored ${apiContacts.length} total contacts from enrichment APIs`);
+                log.push(`Stored ${apiContacts.length} total contacts from enrichment waterfall`);
             }
 
             if (waterfallResult.email) {
@@ -417,7 +422,7 @@ async function enrichSingleBusiness(
                     prospect.emailConfidence = 'medium';
                     return prospect;
                 } else {
-                    // Generic from API
+                    // Generic from waterfall (pattern guess or API)
                     prospect.genericEmail = prospect.genericEmail || waterfallResult.email;
                 }
             }

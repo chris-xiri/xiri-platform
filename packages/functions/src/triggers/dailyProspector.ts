@@ -13,6 +13,7 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import * as crypto from "crypto";
 import { db } from "../utils/firebase";
 import { prospectAndEnrich } from "../agents/prospector";
 import { DASHBOARD_CORS } from "../utils/cors";
@@ -26,6 +27,43 @@ function normalizeName(name: string): string {
         .replace(/[^a-z0-9\s]/g, '')
         .replace(/\s+/g, ' ')
         .trim();
+}
+
+/**
+ * Create a deterministic document ID from prospect identifiers.
+ * This makes writes idempotent — writing the same business twice
+ * simply overwrites the same Firestore doc rather than creating a dupe.
+ */
+function prospectDocId(prospect: {
+    address?: string | null;
+    phone?: string | null;
+    website?: string | null;
+    businessName: string;
+}): string {
+    // Build a composite key from the most stable identifiers
+    const parts: string[] = [];
+
+    // Prefer address (most unique per physical business)
+    if (prospect.address) {
+        parts.push(prospect.address.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    }
+    // Phone as secondary
+    if (prospect.phone) {
+        parts.push(prospect.phone.replace(/[^0-9]/g, ''));
+    }
+    // Website domain as tertiary
+    if (prospect.website) {
+        const domain = prospect.website.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase();
+        parts.push(domain);
+    }
+    // Fall back to normalized name if no other identifiers
+    if (parts.length === 0) {
+        parts.push(normalizeName(prospect.businessName));
+    }
+
+    const composite = parts.join('|');
+    // Hash to create a valid Firestore doc ID (max 1500 bytes)
+    return crypto.createHash('sha256').update(composite).digest('hex').slice(0, 20);
 }
 
 interface ProspectingConfig {
@@ -218,14 +256,17 @@ async function runDailyPipeline() {
                             : undefined;
 
                         // Dedup check: name, phone, email, address, or website domain
-                        if (
-                            seen.has(normalized) ||
-                            (phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`)) ||
-                            (emailLower && seen.has(`email:${emailLower}`)) ||
-                            (genericLower && seen.has(`email:${genericLower}`)) ||
-                            (websiteDomain && seen.has(`domain:${websiteDomain}`)) ||
-                            (addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`))
-                        ) {
+                        const matchedKey =
+                            seen.has(normalized) ? `name:${normalized}` :
+                            (phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`)) ? `phone:${phoneCleaned}` :
+                            (emailLower && seen.has(`email:${emailLower}`)) ? `email:${emailLower}` :
+                            (genericLower && seen.has(`email:${genericLower}`)) ? `email:${genericLower}` :
+                            (websiteDomain && seen.has(`domain:${websiteDomain}`)) ? `domain:${websiteDomain}` :
+                            (addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`)) ? `addr:${addressNorm}` :
+                            null;
+
+                        if (matchedKey) {
+                            logger.info(`[DailyProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
                             duplicatesSkipped++;
                             continue;
                         }
@@ -251,8 +292,9 @@ async function runDailyPipeline() {
                         if (websiteDomain) seen.add(`domain:${websiteDomain}`);
                         if (addressNorm && addressNorm.length >= 10) seen.add(`addr:${addressNorm}`);
 
-                        // Incrementally add to batch
-                        const ref = db.collection("prospect_queue").doc();
+                        // Incrementally add to batch — use deterministic ID to prevent dupes
+                        const docId = prospectDocId(prospect);
+                        const ref = db.collection("prospect_queue").doc(docId);
                         batch.set(ref, {
                             businessName: prospect.businessName,
                             normalizedName: normalizeName(prospect.businessName),

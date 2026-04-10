@@ -669,7 +669,6 @@ export default function ProspectsPage() {
                             </DialogHeader>
                             <div className="space-y-4">
                                 <div>
-                                <div>
                                     <label className="text-sm font-medium">Search Queries</label>
                                     <div className="flex flex-wrap gap-2 mt-1 mb-2">
                                         {editQueries.map(q => (
@@ -697,11 +696,21 @@ export default function ProspectsPage() {
                                         }}
                                         className="mb-2"
                                     />
-                                    {Object.values(FACILITY_TYPE_LABELS).filter(label => !editQueries.some(q => q.toLowerCase() === label.toLowerCase())).length > 0 && (
+                                    {[
+                                        "property management", "commercial real estate", "corporate headquarters", "medical office building", 
+                                        "urgent care", "car dealership", "manufacturing plant", "logistics center", "distribution warehouse", 
+                                        "fitness center", "private school", "daycare center", "dental clinic", "veterinary clinic", 
+                                        "auto repair shop", "technology park", "franchise owner", "strip mall"
+                                    ].filter(label => !editQueries.some(q => q.toLowerCase() === label.toLowerCase())).length > 0 && (
                                         <div className="mt-2">
-                                            <span className="text-xs text-muted-foreground mb-2 block font-medium">Expand your search:</span>
+                                            <span className="text-xs text-muted-foreground mb-2 block font-medium">Suggested Commercial / NNN Tenants:</span>
                                             <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1 pb-1">
-                                                {Object.values(FACILITY_TYPE_LABELS)
+                                                {[
+                                                    "property management", "commercial real estate", "corporate headquarters", "medical office building", 
+                                                    "urgent care", "car dealership", "manufacturing plant", "logistics center", "distribution warehouse", 
+                                                    "fitness center", "private school", "daycare center", "dental clinic", "veterinary clinic", 
+                                                    "auto repair shop", "technology park", "franchise owner", "strip mall"
+                                                ]
                                                     .filter(label => !editQueries.some(q => q.toLowerCase() === label.toLowerCase()))
                                                     .map(label => (
                                                         <Badge
@@ -725,7 +734,6 @@ export default function ProspectsPage() {
                                 </div>
                                 <div>
                                     <div className="flex justify-between items-end mb-1">
-                                    <div className="flex justify-between items-end mb-1">
                                         <label className="text-sm font-medium">Locations</label>
                                         <Button 
                                             variant="ghost" 
@@ -733,37 +741,19 @@ export default function ProspectsPage() {
                                             className="h-6 text-xs text-blue-600 hover:text-blue-700 px-1 py-0 hover:bg-blue-50 dark:hover:bg-blue-900/40"
                                             onClick={async (e) => {
                                                 e.preventDefault();
-                                                const lines = [...editLocations];
-                                                const countyLineIndex = lines.findIndex(l => l.toLowerCase().includes('county') || l.toLowerCase().includes('region') || l.toLowerCase().includes('area'));
+                                                const targetLine = window.prompt("Which county or region would you like to expand into specific towns? (e.g. 'Nassau County, NY')");
                                                 
-                                                if (countyLineIndex === -1 && lines.length > 0) {
-                                                    toast({ title: "Using first location...", description: `Expanding: ${lines[0]}...` });
-                                                } else if (lines.length === 0 && !newLocation.trim()) {
-                                                    toast({ title: "No location found", description: "Please type a county (e.g. 'Nassau County, NY') and press enter to add it before expanding.", variant: "destructive" });
+                                                if (!targetLine || !targetLine.trim()) {
                                                     return;
                                                 }
 
-                                                let targetLineIndex = countyLineIndex !== -1 ? countyLineIndex : 0;
-                                                let targetLine = lines[targetLineIndex];
-
-                                                if (lines.length === 0 && newLocation.trim()) {
-                                                    targetLine = newLocation.trim();
-                                                }
-
-                                                toast({ title: "Expanding...", description: `Using AI to expand ${targetLine} into towns...` });
+                                                toast({ title: "Expanding...", description: `Using AI to expand ${targetLine.trim()} into towns...` });
                                                 try {
                                                     const expandFn = httpsCallable(functions, 'expandLocation');
-                                                    const res = await expandFn({ location: targetLine });
+                                                    const res = await expandFn({ location: targetLine.trim() });
                                                     const towns = (res.data as any).towns as string[];
                                                     
-                                                    // replace the line with the towns
-                                                    const newLines = [...lines];
-                                                    if (lines.length > 0) {
-                                                      newLines.splice(targetLineIndex, 1, ...towns);
-                                                    } else {
-                                                      newLines.push(...towns);
-                                                      setNewLocation('');
-                                                    }
+                                                    const newLines = [...editLocations, ...towns];
                                                     
                                                     // Deduplicate towns before setting
                                                     const uniqueSet = new Set(newLines.map(t => t.toLowerCase()));
@@ -776,7 +766,7 @@ export default function ProspectsPage() {
                                                     });
                                                     
                                                     setEditLocations(deduplicated);
-                                                    toast({ title: "Expanded successfully!", description: `Added ${towns.length} towns.` });
+                                                    toast({ title: "Expanded successfully!", description: `Added ${towns.length} towns from ${targetLine.trim()}.` });
                                                 } catch (err: any) {
                                                     toast({ title: "Error", description: err.message, variant: "destructive" });
                                                 }
@@ -838,7 +828,6 @@ export default function ProspectsPage() {
                                         </label>
                                     </div>
                                 </div>
-                                <div>
                                 <div>
                                     <label className="text-sm font-medium">Exclude Patterns</label>
                                     <div className="flex flex-wrap gap-2 mt-1 mb-2">
@@ -926,14 +915,14 @@ export default function ProspectsPage() {
 
             {/* Completed banner */}
             {runStatus && !runStatus.running && !polling && runStatus.completedAt && (
-                <div className="rounded-lg border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900 p-3 flex items-center justify-between">
+                <div className="rounded-lg border bg-emerald-600 dark:bg-emerald-700 border-emerald-700 dark:border-emerald-800 p-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-green-600" />
-                        <span className="text-sm text-green-700 dark:text-green-400">
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                        <span className="text-sm text-white font-medium">
                             Last run: Added {runStatus.qualified} prospects ({runStatus.discovered} found, {runStatus.duplicatesSkipped} dupes skipped)
                         </span>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setRunStatus(null)} className="text-green-600 h-6 px-2">
+                    <Button variant="ghost" size="sm" onClick={() => setRunStatus(null)} className="text-white hover:text-emerald-100 h-6 px-2">
                         <X className="w-3 h-3" />
                     </Button>
                 </div>

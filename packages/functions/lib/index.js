@@ -51645,22 +51645,22 @@ var require_crypto2 = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.NodeCrypto = void 0;
-    var crypto3 = require("crypto");
+    var crypto4 = require("crypto");
     var NodeCrypto = class {
       async sha256DigestBase64(str) {
-        return crypto3.createHash("sha256").update(str).digest("base64");
+        return crypto4.createHash("sha256").update(str).digest("base64");
       }
       randomBytesBase64(count) {
-        return crypto3.randomBytes(count).toString("base64");
+        return crypto4.randomBytes(count).toString("base64");
       }
       async verify(pubkey, data, signature) {
-        const verifier = crypto3.createVerify("RSA-SHA256");
+        const verifier = crypto4.createVerify("RSA-SHA256");
         verifier.update(data);
         verifier.end();
         return verifier.verify(pubkey, signature, "base64");
       }
       async sign(privateKey, data) {
-        const signer = crypto3.createSign("RSA-SHA256");
+        const signer = crypto4.createSign("RSA-SHA256");
         signer.update(data);
         signer.end();
         return signer.sign(privateKey, "base64");
@@ -51678,7 +51678,7 @@ var require_crypto2 = __commonJS({
        *   string in hexadecimal encoding.
        */
       async sha256DigestHex(str) {
-        return crypto3.createHash("sha256").update(str).digest("hex");
+        return crypto4.createHash("sha256").update(str).digest("hex");
       }
       /**
        * Computes the HMAC hash of a message using the provided crypto key and the
@@ -51690,7 +51690,7 @@ var require_crypto2 = __commonJS({
        */
       async signWithHmacSha256(key, msg) {
         const cryptoKey = typeof key === "string" ? key : toBuffer(key);
-        return toArrayBuffer(crypto3.createHmac("sha256", cryptoKey).update(msg).digest());
+        return toArrayBuffer(crypto4.createHmac("sha256", cryptoKey).update(msg).digest());
       }
     };
     exports2.NodeCrypto = NodeCrypto;
@@ -52469,10 +52469,10 @@ var require_oauth2client = __commonJS({
        * https://github.com/googleapis/google-auth-library-nodejs/blob/main/samples/oauth2-codeVerifier.js
        */
       async generateCodeVerifierAsync() {
-        const crypto3 = (0, crypto_1.createCrypto)();
-        const randomString = crypto3.randomBytesBase64(96);
+        const crypto4 = (0, crypto_1.createCrypto)();
+        const randomString = crypto4.randomBytesBase64(96);
         const codeVerifier = randomString.replace(/\+/g, "~").replace(/=/g, "_").replace(/\//g, "-");
-        const unencodedCodeChallenge = await crypto3.sha256DigestBase64(codeVerifier);
+        const unencodedCodeChallenge = await crypto4.sha256DigestBase64(codeVerifier);
         const codeChallenge = unencodedCodeChallenge.split("=")[0].replace(/\+/g, "-").replace(/\//g, "_");
         return { codeVerifier, codeChallenge };
       }
@@ -52916,7 +52916,7 @@ var require_oauth2client = __commonJS({
        * @return Returns a promise resolving to LoginTicket on verification.
        */
       async verifySignedJwtWithCertsAsync(jwt, certs, requiredAudience, issuers, maxExpiry) {
-        const crypto3 = (0, crypto_1.createCrypto)();
+        const crypto4 = (0, crypto_1.createCrypto)();
         if (!maxExpiry) {
           maxExpiry = _OAuth2Client.DEFAULT_MAX_TOKEN_LIFETIME_SECS_;
         }
@@ -52929,7 +52929,7 @@ var require_oauth2client = __commonJS({
         let envelope;
         let payload;
         try {
-          envelope = JSON.parse(crypto3.decodeBase64StringUtf8(segments[0]));
+          envelope = JSON.parse(crypto4.decodeBase64StringUtf8(segments[0]));
         } catch (err2) {
           if (err2 instanceof Error) {
             err2.message = `Can't parse token envelope: ${segments[0]}': ${err2.message}`;
@@ -52940,7 +52940,7 @@ var require_oauth2client = __commonJS({
           throw new Error("Can't parse token envelope: " + segments[0]);
         }
         try {
-          payload = JSON.parse(crypto3.decodeBase64StringUtf8(segments[1]));
+          payload = JSON.parse(crypto4.decodeBase64StringUtf8(segments[1]));
         } catch (err2) {
           if (err2 instanceof Error) {
             err2.message = `Can't parse token payload '${segments[0]}`;
@@ -52957,7 +52957,7 @@ var require_oauth2client = __commonJS({
         if (envelope.alg === "ES256") {
           signature = formatEcdsa.joseToDer(signature, "ES256").toString("base64");
         }
-        const verified = await crypto3.verify(cert, signed, signature);
+        const verified = await crypto4.verify(cert, signed, signature);
         if (!verified) {
           throw new Error("Invalid token signature: " + jwt);
         }
@@ -53327,14 +53327,14 @@ var require_jwa = __commonJS({
   "../../node_modules/jwa/index.js"(exports2, module2) {
     "use strict";
     var Buffer2 = require_safe_buffer().Buffer;
-    var crypto3 = require("crypto");
+    var crypto4 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto3.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto4.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -53424,17 +53424,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto3.createHmac("sha" + bits, secret);
+        var hmac = crypto4.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto3 ? function timingSafeEqual2(a2, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto4 ? function timingSafeEqual2(a2, b) {
       if (a2.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto3.timingSafeEqual(a2, b);
+      return crypto4.timingSafeEqual(a2, b);
     } : function timingSafeEqual2(a2, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -53451,7 +53451,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto3.createSign("RSA-SHA" + bits);
+        var signer = crypto4.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -53461,7 +53461,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto3.createVerify("RSA-SHA" + bits);
+        var verifier = crypto4.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -53470,11 +53470,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto3.createSign("RSA-SHA" + bits);
+        var signer = crypto4.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto3.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto3.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto4.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto4.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -53484,12 +53484,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto3.createVerify("RSA-SHA" + bits);
+        var verifier = crypto4.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto3.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto3.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto4.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto4.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -55651,14 +55651,14 @@ var require_awsrequestsigner = __commonJS({
       }
     };
     exports2.AwsRequestSigner = AwsRequestSigner;
-    async function sign(crypto3, key, msg) {
-      return await crypto3.signWithHmacSha256(key, msg);
+    async function sign(crypto4, key, msg) {
+      return await crypto4.signWithHmacSha256(key, msg);
     }
-    async function getSigningKey(crypto3, key, dateStamp, region, serviceName) {
-      const kDate = await sign(crypto3, `AWS4${key}`, dateStamp);
-      const kRegion = await sign(crypto3, kDate, region);
-      const kService = await sign(crypto3, kRegion, serviceName);
-      const kSigning = await sign(crypto3, kService, "aws4_request");
+    async function getSigningKey(crypto4, key, dateStamp, region, serviceName) {
+      const kDate = await sign(crypto4, `AWS4${key}`, dateStamp);
+      const kRegion = await sign(crypto4, kDate, region);
+      const kService = await sign(crypto4, kRegion, serviceName);
+      const kSigning = await sign(crypto4, kService, "aws4_request");
       return kSigning;
     }
     async function generateAuthenticationHeaderMap(options) {
@@ -57243,24 +57243,24 @@ var require_googleauth = __commonJS({
           const signed = await client.sign(data);
           return signed.signedBlob;
         }
-        const crypto3 = (0, crypto_1.createCrypto)();
+        const crypto4 = (0, crypto_1.createCrypto)();
         if (client instanceof jwtclient_1.JWT && client.key) {
-          const sign = await crypto3.sign(client.key, data);
+          const sign = await crypto4.sign(client.key, data);
           return sign;
         }
         const creds = await this.getCredentials();
         if (!creds.client_email) {
           throw new Error("Cannot sign data without `client_email`.");
         }
-        return this.signBlob(crypto3, creds.client_email, data, endpoint);
+        return this.signBlob(crypto4, creds.client_email, data, endpoint);
       }
-      async signBlob(crypto3, emailOrUniqueId, data, endpoint) {
+      async signBlob(crypto4, emailOrUniqueId, data, endpoint) {
         const url = new URL(endpoint + `${emailOrUniqueId}:signBlob`);
         const res = await this.request({
           method: "POST",
           url: url.href,
           data: {
-            payload: crypto3.encodeBase64StringUtf8(data)
+            payload: crypto4.encodeBase64StringUtf8(data)
           },
           retry: true,
           retryConfig: {
@@ -58731,6 +58731,11 @@ async function searchWebForEmail(businessName, location, domain, serperApiKey, c
   } else if (!domain) {
     queries.push(`"${businessName}" ${location} email contact`);
   }
+  queries.push(`site:bbb.org "${businessName}" ${location}`);
+  queries.push(`site:yelp.com "${businessName}" ${location} email OR contact`);
+  queries.push(`site:manta.com "${businessName}" ${location}`);
+  queries.push(`site:yellowpages.com "${businessName}" ${location}`);
+  queries.push(`site:instagram.com "${businessName}" ${location} email`);
   let facebookUrl;
   for (const query of queries) {
     try {
@@ -58800,9 +58805,9 @@ async function verifyEmail(email) {
   }
 }
 async function resolveMX(domain) {
-  const dns = await import("dns");
+  const dns2 = await import("dns");
   const { promisify } = await import("util");
-  const resolveMx = promisify(dns.resolveMx);
+  const resolveMx = promisify(dns2.resolveMx);
   try {
     return await resolveMx(domain);
   } catch (error13) {
@@ -68360,6 +68365,133 @@ var getTidyCalBookings = (0, import_https16.onCall)({
 // src/functions/prospecting.ts
 var import_https17 = require("firebase-functions/v2/https");
 
+// src/utils/emailPatternGuesser.ts
+var import_dns = require("dns");
+async function checkMxRecords(domain) {
+  try {
+    const records = await import_dns.promises.resolveMx(domain);
+    if (!records || records.length === 0) {
+      return { valid: false };
+    }
+    const exchanges = records.sort((a2, b) => a2.priority - b.priority).map((r) => r.exchange.toLowerCase());
+    let provider = "other";
+    const primary = exchanges[0];
+    if (primary.includes("google") || primary.includes("gmail") || primary.includes("googlemail")) {
+      provider = "google";
+    } else if (primary.includes("outlook") || primary.includes("microsoft") || primary.includes("office365") || primary.includes("hotmail")) {
+      provider = "microsoft";
+    } else if (primary.includes("zoho")) {
+      provider = "zoho";
+    }
+    return { valid: true, provider, records: exchanges };
+  } catch (error13) {
+    if (error13.code === "ENODATA" || error13.code === "ENOTFOUND" || error13.code === "ESERVFAIL") {
+      return { valid: false };
+    }
+    console.warn(`[PatternGuesser] MX lookup error for ${domain}: ${error13.message}`);
+    return { valid: true, provider: "other" };
+  }
+}
+function parseName(fullName) {
+  const cleaned = fullName.replace(/\b(dr|mr|mrs|ms|prof|rev|sr|jr|ii|iii|iv)\b\.?/gi, "").replace(/[^a-zA-Z\s-]/g, "").trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return null;
+  const first = parts[0].toLowerCase();
+  const last = parts[parts.length - 1].toLowerCase();
+  return {
+    first,
+    last,
+    firstInitial: first[0],
+    lastInitial: last[0]
+  };
+}
+var PERSONAL_PATTERNS = [
+  { pattern: "firstname", build: (n) => n.first, baseConfidence: 70 },
+  { pattern: "firstname.lastname", build: (n) => `${n.first}.${n.last}`, baseConfidence: 65 },
+  { pattern: "firstnamelastname", build: (n) => `${n.first}${n.last}`, baseConfidence: 55 },
+  { pattern: "flastname", build: (n) => `${n.firstInitial}${n.last}`, baseConfidence: 50 },
+  { pattern: "firstname.l", build: (n) => `${n.first}.${n.lastInitial}`, baseConfidence: 45 },
+  { pattern: "firstl", build: (n) => `${n.first}${n.lastInitial}`, baseConfidence: 40 },
+  { pattern: "f.lastname", build: (n) => `${n.firstInitial}.${n.last}`, baseConfidence: 40 }
+];
+var GENERIC_PATTERNS = [
+  { pattern: "info@", prefix: "info", baseConfidence: 60 },
+  { pattern: "office@", prefix: "office", baseConfidence: 55 },
+  { pattern: "admin@", prefix: "admin", baseConfidence: 50 },
+  { pattern: "contact@", prefix: "contact", baseConfidence: 45 },
+  { pattern: "hello@", prefix: "hello", baseConfidence: 40 },
+  { pattern: "sales@", prefix: "sales", baseConfidence: 40 },
+  { pattern: "service@", prefix: "service", baseConfidence: 38 },
+  { pattern: "billing@", prefix: "billing", baseConfidence: 35 },
+  { pattern: "accounting@", prefix: "accounting", baseConfidence: 35 },
+  { pattern: "bookkeeping@", prefix: "bookkeeping", baseConfidence: 33 },
+  { pattern: "inquiries@", prefix: "inquiries", baseConfidence: 33 },
+  { pattern: "front@", prefix: "front", baseConfidence: 30 },
+  { pattern: "manager@", prefix: "manager", baseConfidence: 30 }
+];
+async function guessEmails(domain, contactName, knownGeneric) {
+  const log = [];
+  const emails = [];
+  log.push(`[PatternGuesser] Starting for domain: ${domain}`);
+  const mx = await checkMxRecords(domain);
+  if (!mx.valid) {
+    log.push(`[PatternGuesser] \u274C Domain ${domain} has no MX records \u2014 skipping`);
+    return { emails: [], mxValid: false, log };
+  }
+  log.push(`[PatternGuesser] \u2705 MX valid (provider: ${mx.provider || "unknown"}, records: ${mx.records?.slice(0, 2).join(", ")})`);
+  const domainProven = !!knownGeneric;
+  if (domainProven) {
+    log.push(`[PatternGuesser] Domain confirmed via known email: ${knownGeneric}`);
+  }
+  const providerBoost = mx.provider === "google" || mx.provider === "microsoft" ? 10 : 0;
+  if (contactName) {
+    const parsed = parseName(contactName);
+    if (parsed) {
+      log.push(`[PatternGuesser] Parsed name: "${contactName}" \u2192 first="${parsed.first}", last="${parsed.last}"`);
+      for (const p of PERSONAL_PATTERNS) {
+        const localPart = p.build(parsed);
+        const email = `${localPart}@${domain}`;
+        const confidence = Math.min(100, p.baseConfidence + providerBoost + (domainProven ? 10 : 0));
+        emails.push({
+          email: email.toLowerCase(),
+          pattern: `${p.pattern}@`,
+          type: "personal",
+          confidence
+        });
+      }
+      log.push(`[PatternGuesser] Generated ${emails.length} personal pattern guesses`);
+    } else {
+      log.push(`[PatternGuesser] Could not parse name: "${contactName}" \u2014 falling back to generic`);
+    }
+  }
+  const knownPrefix = knownGeneric?.split("@")[0]?.toLowerCase();
+  for (const g of GENERIC_PATTERNS) {
+    if (knownPrefix === g.prefix) {
+      continue;
+    }
+    const email = `${g.prefix}@${domain}`;
+    const confidence = Math.min(100, g.baseConfidence + (domainProven ? 15 : 0));
+    emails.push({
+      email: email.toLowerCase(),
+      pattern: g.pattern,
+      type: "generic",
+      confidence
+    });
+  }
+  log.push(`[PatternGuesser] Generated ${emails.filter((e2) => e2.type === "generic").length} generic pattern guesses`);
+  emails.sort((a2, b) => {
+    if (a2.type === "personal" && b.type !== "personal") return -1;
+    if (a2.type !== "personal" && b.type === "personal") return 1;
+    return b.confidence - a2.confidence;
+  });
+  return {
+    emails,
+    mxValid: true,
+    mxProvider: mx.provider,
+    log
+  };
+}
+
 // src/utils/enrichmentProviders.ts
 var HunterProvider = class {
   constructor(apiKey) {
@@ -68412,17 +68544,68 @@ var HunterProvider = class {
     }
   }
 };
-async function runEnrichmentWaterfall(domain, secrets) {
-  const providers2 = [];
+async function runEnrichmentWaterfall(domain, secrets, context) {
   const log = [];
+  const allEmails = [];
+  try {
+    log.push(`[PatternGuesser] Trying pattern guesses for ${domain}...`);
+    const guessResult = await guessEmails(
+      domain,
+      context?.contactName,
+      context?.knownGenericEmail
+    );
+    log.push(...guessResult.log);
+    if (!guessResult.mxValid) {
+      log.push(`[PatternGuesser] Domain has no MX \u2014 skipping all providers`);
+      return { type: "none", provider: "none", allEmails: [], log };
+    }
+    if (guessResult.emails.length > 0) {
+      const guessedEnriched = guessResult.emails.map((e2) => ({
+        email: e2.email,
+        confidence: e2.confidence,
+        type: e2.type,
+        provider: "pattern_guess"
+      }));
+      allEmails.push(...guessedEnriched);
+      const bestPersonal = guessResult.emails.find((e2) => e2.type === "personal");
+      if (bestPersonal) {
+        const nameParts = context?.contactName?.split(/\s+/) || [];
+        log.push(`[PatternGuesser] Best personal guess: ${bestPersonal.email} (${bestPersonal.pattern}, confidence: ${bestPersonal.confidence})`);
+        if (!secrets.hunterApiKey) {
+          return {
+            email: bestPersonal.email,
+            firstName: nameParts[0],
+            lastName: nameParts.length > 1 ? nameParts[nameParts.length - 1] : void 0,
+            confidence: bestPersonal.confidence,
+            type: "personal",
+            provider: "pattern_guess",
+            allEmails,
+            log
+          };
+        }
+      }
+      if (!secrets.hunterApiKey) {
+        const bestGeneric2 = guessResult.emails.find((e2) => e2.type === "generic");
+        if (bestGeneric2) {
+          log.push(`[PatternGuesser] Best generic guess: ${bestGeneric2.email} (confidence: ${bestGeneric2.confidence})`);
+          return {
+            email: bestGeneric2.email,
+            confidence: bestGeneric2.confidence,
+            type: "generic",
+            provider: "pattern_guess",
+            allEmails,
+            log
+          };
+        }
+      }
+    }
+  } catch (error13) {
+    log.push(`[PatternGuesser] Error: ${error13.message}`);
+  }
+  const providers2 = [];
   if (secrets.hunterApiKey) {
     providers2.push(new HunterProvider(secrets.hunterApiKey));
   }
-  if (providers2.length === 0) {
-    log.push("No enrichment providers configured \u2014 skipping API waterfall");
-    return { type: "none", provider: "none", allEmails: [], log };
-  }
-  const allEmails = [];
   for (const provider of providers2) {
     log.push(`Trying ${provider.name} for ${domain}...`);
     const result = await provider.findEmailsByDomain(domain);
@@ -68456,7 +68639,23 @@ async function runEnrichmentWaterfall(domain, secrets) {
     }
     log.push(`${provider.name}: found ${result.emails.length} emails (generic only)`);
   }
-  const bestGeneric = allEmails[0];
+  const bestHunterGeneric = allEmails.find((e2) => e2.provider === "hunter");
+  const bestGuessPersonal = allEmails.find((e2) => e2.provider === "pattern_guess" && e2.type === "personal");
+  const bestGuessGeneric = allEmails.find((e2) => e2.provider === "pattern_guess" && e2.type === "generic");
+  if (bestGuessPersonal) {
+    const nameParts = context?.contactName?.split(/\s+/) || [];
+    return {
+      email: bestGuessPersonal.email,
+      firstName: nameParts[0],
+      lastName: nameParts.length > 1 ? nameParts[nameParts.length - 1] : void 0,
+      confidence: bestGuessPersonal.confidence,
+      type: "personal",
+      provider: "pattern_guess",
+      allEmails,
+      log
+    };
+  }
+  const bestGeneric = bestHunterGeneric || bestGuessGeneric || allEmails[0];
   if (bestGeneric) {
     return {
       email: bestGeneric.email,
@@ -68471,7 +68670,7 @@ async function runEnrichmentWaterfall(domain, secrets) {
 }
 
 // src/agents/prospector.ts
-var GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support)@/i;
+var GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support|billing|accounting|bookkeeping|inquiries|front|manager)@/i;
 var JUNK_EMAIL_DOMAINS = /* @__PURE__ */ new Set([
   "example.com",
   "domain.com",
@@ -68746,10 +68945,15 @@ async function enrichSingleBusiness(vendor, secrets, input) {
   if (!input.skipPaidApis) {
     const domain = extractDomain(vendor.website);
     if (domain) {
-      log.push(`Layer 3: Running enrichment API waterfall for ${domain}...`);
-      const waterfallResult = await runEnrichmentWaterfall(domain, {
-        hunterApiKey: secrets.hunterApiKey
-      });
+      log.push(`Layer 3: Running enrichment waterfall for ${domain}...`);
+      const waterfallResult = await runEnrichmentWaterfall(
+        domain,
+        { hunterApiKey: secrets.hunterApiKey },
+        {
+          contactName: prospect.contactName,
+          knownGenericEmail: prospect.genericEmail
+        }
+      );
       log.push(...waterfallResult.log);
       if (waterfallResult.allEmails.length > 0) {
         const apiContacts = waterfallResult.allEmails.map((e2) => ({
@@ -68762,7 +68966,7 @@ async function enrichSingleBusiness(vendor, secrets, input) {
           provider: e2.provider
         }));
         prospect.allContacts = [...prospect.allContacts || [], ...apiContacts];
-        log.push(`Stored ${apiContacts.length} total contacts from enrichment APIs`);
+        log.push(`Stored ${apiContacts.length} total contacts from enrichment waterfall`);
       }
       if (waterfallResult.email) {
         if (waterfallResult.type === "personal") {
@@ -69016,8 +69220,27 @@ var expandLocation = (0, import_https17.onCall)({
 var import_scheduler10 = require("firebase-functions/v2/scheduler");
 var import_https18 = require("firebase-functions/v2/https");
 var logger28 = __toESM(require("firebase-functions/logger"));
+var crypto3 = __toESM(require("crypto"));
 function normalizeName(name) {
   return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+}
+function prospectDocId(prospect) {
+  const parts = [];
+  if (prospect.address) {
+    parts.push(prospect.address.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  }
+  if (prospect.phone) {
+    parts.push(prospect.phone.replace(/[^0-9]/g, ""));
+  }
+  if (prospect.website) {
+    const domain = prospect.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase();
+    parts.push(domain);
+  }
+  if (parts.length === 0) {
+    parts.push(normalizeName(prospect.businessName));
+  }
+  const composite = parts.join("|");
+  return crypto3.createHash("sha256").update(composite).digest("hex").slice(0, 20);
 }
 var DEFAULT_CONFIG = {
   queries: [
@@ -69103,6 +69326,8 @@ async function runDailyPipeline() {
   const newProspects = [];
   let totalDiscovered = 0;
   let duplicatesSkipped = 0;
+  const queryYield = {};
+  const locationYield = {};
   const statusRef = db.collection("prospecting_config").doc("run_status");
   const startedAt = /* @__PURE__ */ new Date();
   const updateProgress = async (currentQuery) => {
@@ -69133,6 +69358,10 @@ async function runDailyPipeline() {
             secrets
           );
           totalDiscovered += result.prospects.length;
+          queryYield[queryTerm] = queryYield[queryTerm] || { discovered: 0, qualified: 0 };
+          queryYield[queryTerm].discovered += result.prospects.length;
+          locationYield[location] = locationYield[location] || { discovered: 0, qualified: 0 };
+          locationYield[location].discovered += result.prospects.length;
           let batchCount = 0;
           const batch = db.batch();
           for (const prospect of result.prospects) {
@@ -69143,7 +69372,9 @@ async function runDailyPipeline() {
             const phoneCleaned = prospect.phone?.replace(/[^0-9]/g, "");
             const addressNorm = prospect.address ? prospect.address.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30) : void 0;
             const websiteDomain = prospect.website ? prospect.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase() : void 0;
-            if (seen.has(normalized) || phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`) || emailLower && seen.has(`email:${emailLower}`) || genericLower && seen.has(`email:${genericLower}`) || websiteDomain && seen.has(`domain:${websiteDomain}`) || addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`)) {
+            const matchedKey = seen.has(normalized) ? `name:${normalized}` : phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`) ? `phone:${phoneCleaned}` : emailLower && seen.has(`email:${emailLower}`) ? `email:${emailLower}` : genericLower && seen.has(`email:${genericLower}`) ? `email:${genericLower}` : websiteDomain && seen.has(`domain:${websiteDomain}`) ? `domain:${websiteDomain}` : addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`) ? `addr:${addressNorm}` : null;
+            if (matchedKey) {
+              logger28.info(`[DailyProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
               duplicatesSkipped++;
               continue;
             }
@@ -69162,7 +69393,8 @@ async function runDailyPipeline() {
             if (genericLower) seen.add(`email:${genericLower}`);
             if (websiteDomain) seen.add(`domain:${websiteDomain}`);
             if (addressNorm && addressNorm.length >= 10) seen.add(`addr:${addressNorm}`);
-            const ref = db.collection("prospect_queue").doc();
+            const docId = prospectDocId(prospect);
+            const ref = db.collection("prospect_queue").doc(docId);
             batch.set(ref, {
               businessName: prospect.businessName,
               normalizedName: normalizeName(prospect.businessName),
@@ -69188,6 +69420,8 @@ async function runDailyPipeline() {
             });
             newProspects.push({ prospect, query: queryTerm, location });
             batchCount++;
+            queryYield[queryTerm].qualified++;
+            locationYield[location].qualified++;
           }
           if (batchCount > 0) {
             await batch.commit();
@@ -69212,7 +69446,9 @@ async function runDailyPipeline() {
       discovered: totalDiscovered,
       withEmail: newProspects.length,
       added: newProspects.length,
-      duplicatesSkipped
+      duplicatesSkipped,
+      queryYield,
+      locationYield
     };
     await db.collection("prospecting_config").doc("default").set({
       ...config2,

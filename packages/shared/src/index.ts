@@ -1623,6 +1623,7 @@ export type EmailSource =
     | 'serper_facebook'
     | 'hunter'
     | 'snov'
+    | 'pattern_guess'
     | 'none';
 
 export type EmailConfidence = 'high' | 'medium' | 'low';

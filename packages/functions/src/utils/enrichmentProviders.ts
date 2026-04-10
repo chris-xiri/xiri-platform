@@ -7,8 +7,11 @@
  * free tiers across multiple services.
  * 
  * Currently supported:
- *   1. Hunter.io  — 50 free credits/month (Domain Search)
+ *   1. Email Pattern Guesser — Free, generates common patterns + MX validation
+ *   2. Hunter.io  — 50 free credits/month (Domain Search) [optional]
  */
+
+import { guessEmails } from './emailPatternGuesser';
 
 interface EnrichedEmail {
     email: string;
@@ -119,29 +122,102 @@ export interface WaterfallResult {
 
 /**
  * Run the enrichment provider waterfall.
- * Tries each provider in order, stops when a personal email is found.
+ * 
+ * Order:
+ *   1. Pattern Guesser (free) — generates candidates from contact name + domain
+ *   2. Hunter.io (optional) — paid API, only if API key is configured
+ * 
+ * Stops when a personal email is found.
  * Falls through to next provider if credits exhausted or no results.
  */
 export async function runEnrichmentWaterfall(
     domain: string,
     secrets: {
         hunterApiKey?: string;
+    },
+    context?: {
+        contactName?: string;
+        knownGenericEmail?: string;
     }
 ): Promise<WaterfallResult> {
-    const providers: EnrichmentProvider[] = [];
     const log: string[] = [];
+    const allEmails: EnrichedEmail[] = [];
 
-    // Build provider list based on available credentials
+    // ── Step 1: Pattern Guesser (always runs, free) ──
+    try {
+        log.push(`[PatternGuesser] Trying pattern guesses for ${domain}...`);
+        const guessResult = await guessEmails(
+            domain,
+            context?.contactName,
+            context?.knownGenericEmail,
+        );
+        log.push(...guessResult.log);
+
+        if (!guessResult.mxValid) {
+            log.push(`[PatternGuesser] Domain has no MX — skipping all providers`);
+            // If domain has no MX, Hunter won't find anything either
+            return { type: 'none', provider: 'none', allEmails: [], log };
+        }
+
+        if (guessResult.emails.length > 0) {
+            // Convert guessed emails to EnrichedEmail format
+            const guessedEnriched: EnrichedEmail[] = guessResult.emails.map(e => ({
+                email: e.email,
+                confidence: e.confidence,
+                type: e.type,
+                provider: 'pattern_guess',
+            }));
+
+            allEmails.push(...guessedEnriched);
+
+            // Check for personal email guess
+            const bestPersonal = guessResult.emails.find(e => e.type === 'personal');
+            if (bestPersonal) {
+                // Parse first/last name from contact name for the result
+                const nameParts = context?.contactName?.split(/\s+/) || [];
+                log.push(`[PatternGuesser] Best personal guess: ${bestPersonal.email} (${bestPersonal.pattern}, confidence: ${bestPersonal.confidence})`);
+
+                // Don't return yet — if we have Hunter, let it verify/find real emails
+                // But if no Hunter, this is our best bet
+                if (!secrets.hunterApiKey) {
+                    return {
+                        email: bestPersonal.email,
+                        firstName: nameParts[0],
+                        lastName: nameParts.length > 1 ? nameParts[nameParts.length - 1] : undefined,
+                        confidence: bestPersonal.confidence,
+                        type: 'personal',
+                        provider: 'pattern_guess',
+                        allEmails,
+                        log,
+                    };
+                }
+            }
+
+            // If only generic guesses and no Hunter, return best generic
+            if (!secrets.hunterApiKey) {
+                const bestGeneric = guessResult.emails.find(e => e.type === 'generic');
+                if (bestGeneric) {
+                    log.push(`[PatternGuesser] Best generic guess: ${bestGeneric.email} (confidence: ${bestGeneric.confidence})`);
+                    return {
+                        email: bestGeneric.email,
+                        confidence: bestGeneric.confidence,
+                        type: 'generic',
+                        provider: 'pattern_guess',
+                        allEmails,
+                        log,
+                    };
+                }
+            }
+        }
+    } catch (error: any) {
+        log.push(`[PatternGuesser] Error: ${error.message}`);
+    }
+
+    // ── Step 2: Hunter.io (optional, paid) ──
+    const providers: EnrichmentProvider[] = [];
     if (secrets.hunterApiKey) {
         providers.push(new HunterProvider(secrets.hunterApiKey));
     }
-
-    if (providers.length === 0) {
-        log.push('No enrichment providers configured — skipping API waterfall');
-        return { type: 'none', provider: 'none', allEmails: [], log };
-    }
-
-    const allEmails: EnrichedEmail[] = [];
 
     for (const provider of providers) {
         log.push(`Trying ${provider.name} for ${domain}...`);
@@ -186,8 +262,28 @@ export async function runEnrichmentWaterfall(
         log.push(`${provider.name}: found ${result.emails.length} emails (generic only)`);
     }
 
-    // No personal email found across all providers — return best generic
-    const bestGeneric = allEmails[0];
+    // No personal email found across all providers — return best available
+    // Prefer Hunter results over pattern guesses for generic emails
+    const bestHunterGeneric = allEmails.find(e => e.provider === 'hunter');
+    const bestGuessPersonal = allEmails.find(e => e.provider === 'pattern_guess' && e.type === 'personal');
+    const bestGuessGeneric = allEmails.find(e => e.provider === 'pattern_guess' && e.type === 'generic');
+
+    // If we have a pattern-guessed personal email and no Hunter found anything better, use the guess
+    if (bestGuessPersonal) {
+        const nameParts = context?.contactName?.split(/\s+/) || [];
+        return {
+            email: bestGuessPersonal.email,
+            firstName: nameParts[0],
+            lastName: nameParts.length > 1 ? nameParts[nameParts.length - 1] : undefined,
+            confidence: bestGuessPersonal.confidence,
+            type: 'personal',
+            provider: 'pattern_guess',
+            allEmails,
+            log,
+        };
+    }
+
+    const bestGeneric = bestHunterGeneric || bestGuessGeneric || allEmails[0];
     if (bestGeneric) {
         return {
             email: bestGeneric.email,
