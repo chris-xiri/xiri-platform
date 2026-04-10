@@ -1,7 +1,11 @@
 /**
  * Auto-categorize prospect_queue documents based on searchQuery.
  * 
- * Maps searchQuery → canonical FacilityType, then batch-updates Firestore.
+ * 1. Uses a static searchQuery → FacilityType map for well-known types.
+ * 2. Loads custom facility types from Firestore (facility_types_custom)
+ *    and uses their `inferPatterns` for fuzzy matching against
+ *    businessName and searchQuery.
+ * 
  * Records that can't be mapped are left as-is (no facilityType set).
  * 
  * Usage: npx tsx scripts/categorize-prospects.ts [--dry-run]
@@ -19,7 +23,7 @@ const db = admin.firestore();
 db.settings({ ignoreUndefinedProperties: true });
 
 // ═══════════════════════════════════════════════════════════
-// searchQuery → FacilityType mapping
+// searchQuery → FacilityType mapping (static / well-known)
 // ═══════════════════════════════════════════════════════════
 const QUERY_TO_FACILITY_TYPE: Record<string, string> = {
     // Religious
@@ -64,14 +68,66 @@ const QUERY_TO_FACILITY_TYPE: Record<string, string> = {
     "office":           "office_general",
 };
 
+// ═══════════════════════════════════════════════════════════
+// Load custom facility types from Firestore
+// ═══════════════════════════════════════════════════════════
+interface CustomFacilityType {
+    slug: string;
+    label: string;
+    inferPatterns: string[];
+}
+
+async function loadCustomTypes(): Promise<CustomFacilityType[]> {
+    const snap = await db.collection("facility_types_custom").get();
+    const types: CustomFacilityType[] = [];
+    for (const doc of snap.docs) {
+        const data = doc.data();
+        types.push({
+            slug: data.slug || doc.id,
+            label: data.label || doc.id,
+            inferPatterns: data.inferPatterns || [],
+        });
+    }
+    return types;
+}
+
+/**
+ * Try to infer a facility type using custom types' inferPatterns.
+ * Checks both businessName and searchQuery with substring matching.
+ */
+function inferCustomType(
+    businessName: string,
+    searchQuery: string,
+    customTypes: CustomFacilityType[],
+): string | null {
+    const haystack = `${businessName} ${searchQuery}`.toLowerCase();
+    for (const ct of customTypes) {
+        for (const pattern of ct.inferPatterns) {
+            if (haystack.includes(pattern.toLowerCase())) {
+                return ct.slug;
+            }
+        }
+    }
+    return null;
+}
+
 async function main() {
     const dryRun = process.argv.includes("--dry-run");
     console.log(dryRun ? "🔍 DRY RUN MODE\n" : "✏️  LIVE MODE — will update Firestore\n");
+
+    // Load custom types first
+    const customTypes = await loadCustomTypes();
+    console.log(`Loaded ${customTypes.length} custom facility types from Firestore:`);
+    for (const ct of customTypes) {
+        console.log(`  • ${ct.label} (${ct.slug}) — patterns: [${ct.inferPatterns.join(", ")}]`);
+    }
+    console.log();
 
     const snap = await db.collection("prospect_queue").get();
     console.log(`Total documents: ${snap.size}\n`);
 
     let updated = 0;
+    let updatedCustom = 0;
     let alreadyCategorized = 0;
     let unmapped = 0;
     const unmappedQueries: Record<string, number> = {};
@@ -90,11 +146,27 @@ async function main() {
         }
 
         const searchQuery = (data.searchQuery || "").toLowerCase().trim();
-        const mapped = QUERY_TO_FACILITY_TYPE[searchQuery];
+        const businessName = (data.businessName || "").toLowerCase().trim();
+
+        // 1. Try static map first (exact match on searchQuery)
+        let mapped = QUERY_TO_FACILITY_TYPE[searchQuery];
+        let source = "static";
+
+        // 2. If not found, try custom types' inferPatterns (fuzzy match)
+        if (!mapped) {
+            const customMatch = inferCustomType(businessName, searchQuery, customTypes);
+            if (customMatch) {
+                mapped = customMatch;
+                source = "custom";
+            }
+        }
 
         if (mapped) {
             if (!dryRun) {
-                batch.update(doc.ref, { facilityType: mapped });
+                batch.update(doc.ref, {
+                    facilityType: mapped,
+                    updatedAt: new Date(),
+                });
                 batchCount++;
                 if (batchCount >= BATCH_LIMIT) {
                     await batch.commit();
@@ -103,7 +175,8 @@ async function main() {
                 }
             }
             updated++;
-            console.log(`  ✅ ${data.businessName} → ${mapped} (query: "${searchQuery}")`);
+            if (source === "custom") updatedCustom++;
+            console.log(`  ✅ ${data.businessName} → ${mapped} (${source}, query: "${searchQuery}")`);
         } else {
             unmapped++;
             unmappedQueries[searchQuery] = (unmappedQueries[searchQuery] || 0) + 1;
@@ -121,6 +194,8 @@ async function main() {
     console.log(`═══════════════════════════════════════`);
     console.log(`  Already categorized: ${alreadyCategorized}`);
     console.log(`  Auto-categorized:    ${updated}`);
+    console.log(`    ├─ via static map: ${updated - updatedCustom}`);
+    console.log(`    └─ via custom:     ${updatedCustom}`);
     console.log(`  Still uncategorized: ${unmapped}`);
 
     if (Object.keys(unmappedQueries).length > 0) {

@@ -22,6 +22,11 @@ import {
     Send,
     XCircle,
     Play,
+    MailOpen,
+    MousePointerClick,
+    AlertTriangle,
+    CheckCircle2,
+    BarChart3,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -47,6 +52,136 @@ const fmt = (n: number) =>
 interface CompanyHubProps {
     companyId: string;
     activities: { id: string; type: string; description: string; createdAt: any; metadata?: any }[];
+}
+
+/* ─── Email Engagement Card ────────────────────────────────────── */
+
+const EMAIL_EVENT_TYPES = ['EMAIL_DELIVERED', 'EMAIL_OPENED', 'EMAIL_CLICKED', 'EMAIL_BOUNCED', 'EMAIL_COMPLAINED'] as const;
+
+function EmailEngagementCard({ activities, contacts }: { activities: CompanyHubProps['activities']; contacts: any[] }) {
+    const [expanded, setExpanded] = useState(false);
+
+    // Filter email-related activities
+    const emailActivities = activities.filter(a =>
+        EMAIL_EVENT_TYPES.includes(a.type as any) || a.type === 'OUTREACH_SENT'
+    );
+
+    if (emailActivities.length === 0) return null;
+
+    // Aggregate counts
+    const sent = activities.filter(a => a.type === 'OUTREACH_SENT').length;
+    const delivered = activities.filter(a => a.type === 'EMAIL_DELIVERED').length;
+    const opened = activities.filter(a => a.type === 'EMAIL_OPENED').length;
+    const clicked = activities.filter(a => a.type === 'EMAIL_CLICKED').length;
+    const bounced = activities.filter(a => a.type === 'EMAIL_BOUNCED' || a.type === 'EMAIL_COMPLAINED').length;
+
+    const openRate = sent > 0 ? Math.round((opened / sent) * 100) : 0;
+    const clickRate = opened > 0 ? Math.round((clicked / opened) * 100) : 0;
+
+    // Per-contact breakdown
+    const contactMap = new Map<string, { name: string; email: string; sent: number; delivered: number; opened: number; clicked: number; bounced: number }>();
+
+    for (const act of activities) {
+        const contactId = act.metadata?.contactId;
+        if (!contactId) continue;
+        if (act.type !== 'OUTREACH_SENT' && !EMAIL_EVENT_TYPES.includes(act.type as any)) continue;
+
+        if (!contactMap.has(contactId)) {
+            const contact = contacts.find(c => c.id === contactId);
+            const name = contact
+                ? [contact.firstName, contact.lastName].filter(Boolean).join(' ') || contact.contactName || contact.name || 'Unknown'
+                : 'Unknown';
+            contactMap.set(contactId, { name, email: contact?.email || act.metadata?.to || '', sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 });
+        }
+
+        const entry = contactMap.get(contactId)!;
+        if (act.type === 'OUTREACH_SENT') entry.sent++;
+        else if (act.type === 'EMAIL_DELIVERED') entry.delivered++;
+        else if (act.type === 'EMAIL_OPENED') entry.opened++;
+        else if (act.type === 'EMAIL_CLICKED') entry.clicked++;
+        else if (act.type === 'EMAIL_BOUNCED' || act.type === 'EMAIL_COMPLAINED') entry.bounced++;
+    }
+
+    const contactBreakdown = Array.from(contactMap.entries())
+        .sort((a, b) => (b[1].opened + b[1].clicked) - (a[1].opened + a[1].clicked));
+
+    const stats = [
+        { label: 'Sent', value: sent, icon: Send, color: 'text-blue-600', bg: 'bg-blue-50' },
+        { label: 'Delivered', value: delivered, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+        { label: 'Opened', value: opened, icon: MailOpen, color: 'text-violet-600', bg: 'bg-violet-50', sub: openRate > 0 ? `${openRate}%` : undefined },
+        { label: 'Clicked', value: clicked, icon: MousePointerClick, color: 'text-amber-600', bg: 'bg-amber-50', sub: clickRate > 0 ? `${clickRate}%` : undefined },
+        { label: 'Bounced', value: bounced, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
+    ];
+
+    return (
+        <Card>
+            <CardHeader className="pb-2 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" /> Email Engagement
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">
+                        ({sent} sent · {openRate}% open rate)
+                    </span>
+                    {expanded
+                        ? <ChevronDown className="w-4 h-4 ml-auto" />
+                        : <ChevronRight className="w-4 h-4 ml-auto" />
+                    }
+                </CardTitle>
+            </CardHeader>
+            {expanded && (
+                <CardContent className="space-y-4">
+                    {/* Aggregate Stats */}
+                    <div className="grid grid-cols-5 gap-2">
+                        {stats.map(s => (
+                            <div key={s.label} className={`rounded-lg ${s.bg} p-2.5 text-center`}>
+                                <s.icon className={`w-4 h-4 mx-auto mb-1 ${s.color}`} />
+                                <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
+                                <p className="text-[10px] text-muted-foreground font-medium">{s.label}</p>
+                                {s.sub && <p className={`text-[10px] font-semibold ${s.color}`}>{s.sub}</p>}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Per-Contact Breakdown */}
+                    {contactBreakdown.length > 0 && (
+                        <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                                Per-Contact Breakdown
+                            </p>
+                            <div className="space-y-2">
+                                {contactBreakdown.map(([cId, cs]) => (
+                                    <div key={cId} className="rounded-lg border p-3">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium truncate">{cs.name}</p>
+                                                {cs.email && <p className="text-xs text-muted-foreground truncate">{cs.email}</p>}
+                                            </div>
+                                            {cs.bounced > 0 && (
+                                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">Bounced</Badge>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                            <span className="flex items-center gap-1">
+                                                <Send className="w-3 h-3 text-blue-500" /> {cs.sent}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <CheckCircle2 className="w-3 h-3 text-green-500" /> {cs.delivered}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <MailOpen className="w-3 h-3 text-violet-500" /> {cs.opened}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <MousePointerClick className="w-3 h-3 text-amber-500" /> {cs.clicked}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            )}
+        </Card>
+    );
 }
 
 export default function CompanyHub({ companyId, activities }: CompanyHubProps) {
@@ -249,6 +384,9 @@ export default function CompanyHub({ companyId, activities }: CompanyHubProps) {
                 </Card>
             </div>
 
+            {/* ═══ Collapsible Email Engagement ═══ */}
+            <EmailEngagementCard activities={activities} contacts={contacts} />
+
             {/* ═══ Collapsible Activity Timeline ═══ */}
             <Card>
                 <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowTimeline(!showTimeline)}>
@@ -277,11 +415,21 @@ export default function CompanyHub({ companyId, activities }: CompanyHubProps) {
                                                     act.type === 'OUTREACH_FAILED' ? 'bg-red-100 text-red-600' :
                                                     act.type === 'SEQUENCE_STARTED' ? 'bg-blue-100 text-blue-600' :
                                                     act.type === 'OUTREACH_QUEUED' ? 'bg-amber-100 text-amber-600' :
+                                                    act.type === 'EMAIL_DELIVERED' ? 'bg-green-100 text-green-600' :
+                                                    act.type === 'EMAIL_OPENED' ? 'bg-violet-100 text-violet-600' :
+                                                    act.type === 'EMAIL_CLICKED' ? 'bg-amber-100 text-amber-600' :
+                                                    act.type === 'EMAIL_BOUNCED' ? 'bg-red-100 text-red-600' :
+                                                    act.type === 'EMAIL_COMPLAINED' ? 'bg-red-100 text-red-600' :
                                                     'bg-muted text-muted-foreground'
                                                 }`}>
                                                     {act.type === 'OUTREACH_SENT' ? <Send className="w-3.5 h-3.5" /> :
                                                         act.type === 'OUTREACH_FAILED' ? <XCircle className="w-3.5 h-3.5" /> :
                                                         act.type === 'SEQUENCE_STARTED' ? <Play className="w-3.5 h-3.5" /> :
+                                                        act.type === 'EMAIL_DELIVERED' ? <CheckCircle2 className="w-3.5 h-3.5" /> :
+                                                        act.type === 'EMAIL_OPENED' ? <MailOpen className="w-3.5 h-3.5" /> :
+                                                        act.type === 'EMAIL_CLICKED' ? <MousePointerClick className="w-3.5 h-3.5" /> :
+                                                        act.type === 'EMAIL_BOUNCED' ? <AlertTriangle className="w-3.5 h-3.5" /> :
+                                                        act.type === 'EMAIL_COMPLAINED' ? <AlertTriangle className="w-3.5 h-3.5" /> :
                                                         <Activity className="w-3.5 h-3.5" />}
                                                 </div>
                                                 {!isLast && <div className="w-px bg-border flex-1 min-h-[16px]" />}

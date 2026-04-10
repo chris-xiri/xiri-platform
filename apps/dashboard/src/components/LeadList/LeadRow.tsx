@@ -287,11 +287,11 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
 
             {/* Contact column — now the PRIMARY display */}
             {show('contact') && (
-                <TableCell className="cursor-pointer" onClick={handleClick}>
-                    <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1.5">
-                            <User className="w-3 h-3 text-muted-foreground" />
-                            <span className="font-semibold text-sm">{fullName || lead.companyName || 'No name'}</span>
+                <TableCell className="cursor-pointer overflow-hidden" onClick={handleClick}>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <User className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                            <span className="font-semibold text-sm truncate">{fullName || lead.companyName || 'No name'}</span>
                             {lead.isPrimary && (
                                 <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 bg-primary/10 text-primary border-primary/20">Primary</Badge>
                             )}
@@ -315,20 +315,21 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
 
             {/* Business / Company column */}
             {show('business') && (
-                <TableCell>
-                    <div className="flex flex-col gap-1">
+                <TableCell className="overflow-hidden">
+                    <div className="flex flex-col gap-1 min-w-0">
                         <div
-                            className="font-medium text-sm flex items-center gap-1 cursor-pointer hover:underline text-primary"
+                            className="font-medium text-sm flex items-center gap-1 cursor-pointer hover:underline text-primary min-w-0"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (lead.companyId) router.push(`/sales/crm/${lead.companyId}`);
                             }}
+                            title={lead.companyName}
                         >
-                            <Building2 className="w-3 h-3 text-muted-foreground" />
-                            {lead.companyName}
+                            <Building2 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">{lead.companyName}</span>
                         </div>
                         {lead._companyFacilityType && (
-                            <div className="text-xs text-muted-foreground pl-4">
+                            <div className="text-xs text-muted-foreground pl-4 truncate" title={(FACILITY_TYPE_LABELS as Record<string, string>)[lead._companyFacilityType] || lead._companyFacilityType}>
                                 {(FACILITY_TYPE_LABELS as Record<string, string>)[lead._companyFacilityType] || lead._companyFacilityType}
                             </div>
                         )}

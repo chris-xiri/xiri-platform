@@ -17,6 +17,7 @@
     ],
     "scripts": {
         "build": "tsup",
+        "test": "vitest run",
         "refresh-data": "tsx scripts/generate-market-data.ts",
         "lint": "eslint",
         "prepublishOnly": "npm run build"
@@ -37,7 +38,8 @@
         "jspdf": "^4.2.0",
         "tsup": "^8.0.0",
         "tsx": "^4.0.0",
-        "typescript": "^5.0.0"
+        "typescript": "^5.0.0",
+        "vitest": "^4.1.4"
     },
     "publishConfig": {
         "access": "public"

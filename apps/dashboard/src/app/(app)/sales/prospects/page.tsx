@@ -3,7 +3,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FACILITY_TYPE_LABELS, inferFacilityType, type FacilityType } from '@xiri-facility-solutions/shared';
+import { FACILITY_TYPE_LABELS, FACILITY_TYPE_OPTIONS, inferFacilityType, type FacilityType } from '@xiri-facility-solutions/shared';
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
@@ -22,10 +25,10 @@ import { functions, db } from '@/lib/firebase';
 import {
     Search, Loader2, Building2, Mail, Phone, Globe, User,
     MapPin, Star, CheckCircle2, AlertCircle, XCircle,
-    ChevronDown, Target, SendHorizonal, ListPlus, Plus,
+    ChevronDown, ChevronRight, Target, SendHorizonal, ListPlus, Plus,
     Settings, Play, SkipForward, ExternalLink, X,
     Calendar, TrendingUp, Zap, Filter, RefreshCw,
-    Tag,
+    Tag, Users, AlertTriangle, Sparkles,
 } from 'lucide-react';
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -57,6 +60,7 @@ interface QueuedProspect {
     linkedinUrl?: string;
     enrichmentLog?: string[];
     allContacts?: ProspectContact[];
+    facilityType?: string;  // static FacilityType or custom slug
     status: string;
     batchDate: string;
     searchQuery: string;
@@ -156,6 +160,23 @@ export default function ProspectsPage() {
     const [templates, setTemplates] = useState<TemplateOption[]>([]);
     const [sequences, setSequences] = useState<SequenceOption[]>([]);
 
+    // ── Custom facility types from Firestore ────────────────────────
+    const [customFacilityTypes, setCustomFacilityTypes] = useState<Record<string, string>>({});
+
+    /** Merged labels: static well-known types + dynamic custom types from Firestore */
+    const mergedFacilityLabels = useMemo(() => {
+        return { ...FACILITY_TYPE_LABELS, ...customFacilityTypes } as Record<string, string>;
+    }, [customFacilityTypes]);
+
+    /** Merged options for dropdowns: static + custom, sorted alphabetically */
+    const mergedFacilityOptions = useMemo(() => {
+        const staticOpts = FACILITY_TYPE_OPTIONS.map(o => ({ value: o.value as string, label: o.label }));
+        const customOpts = Object.entries(customFacilityTypes)
+            .filter(([slug]) => !(slug in FACILITY_TYPE_LABELS))
+            .map(([slug, label]) => ({ value: slug, label: `${label} ✦` }));
+        return [...staticOpts, ...customOpts];
+    }, [customFacilityTypes]);
+
     // ── Load prospects from Firestore ────────────────────────────────
 
     useEffect(() => {
@@ -170,6 +191,18 @@ export default function ProspectsPage() {
             });
             setProspects(list);
             setLoading(false);
+        });
+        return () => unsub();
+    }, []);
+
+    // ── Load custom facility types from Firestore (real-time) ──────
+    useEffect(() => {
+        const unsub = onSnapshot(collection(db, 'facility_types_custom'), (snap) => {
+            const types: Record<string, string> = {};
+            snap.forEach((d) => {
+                types[d.id] = d.data().label || d.id;
+            });
+            setCustomFacilityTypes(types);
         });
         return () => unsub();
     }, []);
@@ -242,17 +275,253 @@ export default function ProspectsPage() {
         }
     }, [templates.length, sequences.length]);
 
-    // ── Facility type mapping (from @xiri-facility-solutions/shared) ──
+    // ── Expanded contacts state ─────────────────────────────────────
+    const [expandedContacts, setExpandedContacts] = useState<Set<string>>(new Set());
+    const toggleContactsExpand = (id: string) => {
+        setExpandedContacts(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    // ── Facility type helpers ──────────────────────────────────────
+
+    /** Get effective facility type: stored > inferred > unknown */
+    const getEffectiveFacilityType = useCallback((p: QueuedProspect): string => {
+        return p.facilityType || inferFacilityType(p.searchQuery) || 'unknown';
+    }, []);
+
+    /** Auto-persist inferred facility types so they flow to CRM on import */
+    useEffect(() => {
+        const toSave = prospects.filter(p => !p.facilityType && inferFacilityType(p.searchQuery));
+        if (toSave.length === 0) return;
+
+        const batch = writeBatch(db);
+        for (const p of toSave) {
+            const inferred = inferFacilityType(p.searchQuery)!;
+            batch.update(doc(db, 'prospect_queue', p.id), { facilityType: inferred });
+        }
+        batch.commit().catch(err => console.error('Auto-save facility types failed:', err));
+    }, [prospects]);
 
     /** Unique facility types present in the current dataset with counts. */
     const facilityTypeCounts = useMemo(() => {
         const counts = new Map<string, number>();
         for (const p of prospects) {
-            const ft = inferFacilityType(p.searchQuery) || 'unknown';
+            const ft = getEffectiveFacilityType(p);
             counts.set(ft, (counts.get(ft) || 0) + 1);
         }
         return counts;
-    }, [prospects, inferFacilityType]);
+    }, [prospects, getEffectiveFacilityType]);
+
+    /** Check if any selected prospects are uncategorized — gates sequence/email actions */
+    const selectedUncategorizedCount = useMemo(() => {
+        return Array.from(selected).filter(id => {
+            const p = prospects.find(pr => pr.id === id);
+            return p && getEffectiveFacilityType(p) === 'unknown';
+        }).length;
+    }, [selected, prospects, getEffectiveFacilityType]);
+    const selectedHasUncategorized = selectedUncategorizedCount > 0;
+
+    /** Detect clusters of 5+ uncategorized prospects sharing a common business term */
+    const uncategorizedClusters = useMemo(() => {
+        const uncategorized = prospects.filter(p =>
+            p.status === 'pending_review' && getEffectiveFacilityType(p) === 'unknown'
+        );
+        if (uncategorized.length < 5) return [];
+
+        // Extract meaningful terms from business names (2+ words get bigrams too)
+        const termProspects = new Map<string, Set<string>>();
+        const stopWords = new Set(['the', 'of', 'and', 'in', 'at', 'to', 'for', 'a', 'an', 'inc', 'llc', 'corp', 'ltd', 'pc', 'pllc', 'md', 'dds', 'dmd']);
+
+        for (const p of uncategorized) {
+            const words = p.businessName.toLowerCase()
+                .replace(/[^a-z0-9\s]/g, '')
+                .split(/\s+/)
+                .filter(w => w.length > 2 && !stopWords.has(w));
+
+            // Single meaningful words
+            for (const w of words) {
+                if (!termProspects.has(w)) termProspects.set(w, new Set());
+                termProspects.get(w)!.add(p.id);
+            }
+            // Bigrams (e.g. "physical therapy")
+            for (let i = 0; i < words.length - 1; i++) {
+                const bigram = `${words[i]} ${words[i + 1]}`;
+                if (!termProspects.has(bigram)) termProspects.set(bigram, new Set());
+                termProspects.get(bigram)!.add(p.id);
+            }
+        }
+
+        // Filter to clusters with 5+ unique prospects, prefer longer (more specific) terms
+        const clusters: { term: string; count: number; prospectIds: string[] }[] = [];
+        for (const [term, ids] of termProspects) {
+            if (ids.size >= 5) {
+                clusters.push({ term, count: ids.size, prospectIds: Array.from(ids) });
+            }
+        }
+
+        // Sort by count desc, then by term length desc (prefer more specific terms)
+        clusters.sort((a, b) => b.count - a.count || b.term.length - a.term.length);
+
+        // Deduplicate: if a bigram covers the same prospects as a unigram, keep the bigram
+        const usedIds = new Set<string>();
+        const deduped: typeof clusters = [];
+        for (const cluster of clusters) {
+            const newIds = cluster.prospectIds.filter(id => !usedIds.has(id));
+            if (newIds.length >= 5) {
+                deduped.push({ ...cluster, prospectIds: newIds, count: newIds.length });
+                newIds.forEach(id => usedIds.add(id));
+            }
+        }
+
+        return deduped.slice(0, 3); // Show max 3 suggestions
+    }, [prospects, getEffectiveFacilityType]);
+
+    /** Create a dynamic facility type from a suggested cluster */
+    const handleCreateTypeFromCluster = async (term: string, prospectIds: string[]) => {
+        // Generate a slug from the term
+        const slug = term.replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        const label = term.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+        try {
+            // Build broader infer patterns from the term
+            const patterns = new Set<string>();
+            patterns.add(term);
+            // Common variations: "physical therapist" ↔ "physical therapy"
+            const words = term.split(' ');
+            for (const word of words) {
+                // Add individual words as partial matches if multi-word
+                if (words.length > 1 && word.length > 4) {
+                    patterns.add(word);
+                }
+            }
+            // If term ends in common suffixes, add the root
+            if (term.endsWith('ist')) patterns.add(term.slice(0, -3) + 'y');
+            if (term.endsWith('ists')) patterns.add(term.slice(0, -4) + 'y');
+            if (term.endsWith('y') && !term.endsWith('ey')) {
+                patterns.add(term.slice(0, -1) + 'ist');
+            }
+
+            // Save to custom facility types collection
+            await setDoc(doc(db, 'facility_types_custom', slug), {
+                slug,
+                label,
+                phrases: {
+                    spaceNoun: 'facility',
+                    cadencePhrase: 'scheduled professional cleaning',
+                    facilityCategory: `${label.toLowerCase()} facilities`,
+                    serviceHook: `reliable, transparent cleaning tailored to your ${label.toLowerCase()}`,
+                    coreOpsPhrase: 'core operations',
+                },
+                inferPatterns: Array.from(patterns),
+                createdAt: new Date(),
+                prospectCount: prospectIds.length,
+            });
+
+            // Auto-categorize: scan ALL uncategorized prospects using all infer patterns
+            const patternsLower = Array.from(patterns).map(p => p.toLowerCase());
+            const allMatching = prospects.filter(p => {
+                // Already categorized? Skip.
+                const ft = getEffectiveFacilityType(p);
+                if (ft !== 'unknown') return false;
+                // Check if business name or search query contains ANY pattern
+                const haystack = `${p.businessName || ''} ${p.searchQuery || ''}`.toLowerCase();
+                return patternsLower.some(pat => haystack.includes(pat));
+            });
+
+            // Merge the cluster IDs with any additional matches found
+            const allIds = new Set([...prospectIds, ...allMatching.map(p => p.id)]);
+
+            // Firestore batch limit is 500, chunk if needed
+            const idArray = Array.from(allIds);
+            const BATCH_SIZE = 450;
+            let batchCount = 0;
+            for (let i = 0; i < idArray.length; i += BATCH_SIZE) {
+                const chunk = idArray.slice(i, i + BATCH_SIZE);
+                const batch = writeBatch(db);
+                for (const id of chunk) {
+                    batch.update(doc(db, 'prospect_queue', id), {
+                        facilityType: slug,
+                        updatedAt: new Date(),
+                    });
+                }
+                await batch.commit();
+                batchCount += chunk.length;
+            }
+
+            toast({
+                title: `Created "${label}" facility type`,
+                description: `${batchCount} prospects auto-categorized.`,
+            });
+        } catch (err) {
+            toast({ title: 'Error creating type', description: String(err) });
+        }
+    };
+
+    /** Re-run auto-categorization against static inference + custom types' inferPatterns */
+    const handleAutoRecategorize = async () => {
+        const uncategorized = prospects.filter(p => getEffectiveFacilityType(p) === 'unknown');
+        if (uncategorized.length === 0) {
+            toast({ title: 'All categorized', description: 'No uncategorized prospects found.' });
+            return;
+        }
+
+        let matched = 0;
+        const updates: { id: string; slug: string }[] = [];
+
+        for (const p of uncategorized) {
+            const haystack = `${p.businessName || ''} ${p.searchQuery || ''}`.toLowerCase();
+
+            // 1. Try the static inferFacilityType from shared package (on searchQuery, then businessName)
+            const staticMatch = inferFacilityType(p.searchQuery) || inferFacilityType(p.businessName);
+            if (staticMatch) {
+                updates.push({ id: p.id, slug: staticMatch });
+                matched++;
+                continue;
+            }
+
+            // 2. Try custom types' inferPatterns
+            let found = false;
+            for (const ct of customFacilityTypes) {
+                const patterns: string[] = ct.inferPatterns || [];
+                if (patterns.some(pat => haystack.includes(pat.toLowerCase()))) {
+                    updates.push({ id: p.id, slug: ct.slug });
+                    matched++;
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (updates.length === 0) {
+            toast({ title: 'No matches', description: `${uncategorized.length} uncategorized prospects didn't match any patterns.` });
+            return;
+        }
+
+        try {
+            const BATCH_SIZE = 450;
+            for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+                const chunk = updates.slice(i, i + BATCH_SIZE);
+                const batch = writeBatch(db);
+                for (const u of chunk) {
+                    batch.update(doc(db, 'prospect_queue', u.id), {
+                        facilityType: u.slug,
+                        updatedAt: new Date(),
+                    });
+                }
+                await batch.commit();
+            }
+            toast({
+                title: 'Auto-categorized',
+                description: `${matched} of ${uncategorized.length} uncategorized prospects categorized.`,
+            });
+        } catch (err) {
+            toast({ title: 'Error auto-categorizing', description: String(err) });
+        }
+    };
 
     // ── Filtering ───────────────────────────────────────────────────
 
@@ -265,7 +534,7 @@ export default function ProspectsPage() {
 
         if (facilityTypeFilter !== 'all') {
             list = list.filter(p => {
-                const ft = inferFacilityType(p.searchQuery) || 'unknown';
+                const ft = getEffectiveFacilityType(p);
                 return ft === facilityTypeFilter;
             });
         }
@@ -327,6 +596,19 @@ export default function ProspectsPage() {
         setActing(false);
     };
 
+    /** Save a manually-selected facility type to Firestore */
+    const handleSetFacilityType = async (prospectId: string, facilityType: string) => {
+        try {
+            await updateDoc(doc(db, 'prospect_queue', prospectId), {
+                facilityType,
+                updatedAt: new Date(),
+            });
+            toast({ title: `Facility type set to ${mergedFacilityLabels[facilityType] || facilityType}` });
+        } catch (err) {
+            toast({ title: 'Error updating facility type', description: String(err) });
+        }
+    };
+
     const handleImportOnly = async (ids: string[]) => {
         setActing(true);
         try {
@@ -348,6 +630,7 @@ export default function ProspectsPage() {
                     facebookUrl: p.facebookUrl,
                     linkedinUrl: p.linkedinUrl,
                     searchQuery: p.searchQuery,
+                    facilityType: p.facilityType,
                     allContacts: p.allContacts || [],
                 })),
             });
@@ -390,6 +673,7 @@ export default function ProspectsPage() {
                     contactTitle: p.contactTitle, emailSource: p.emailSource,
                     emailConfidence: p.emailConfidence, facebookUrl: p.facebookUrl,
                     linkedinUrl: p.linkedinUrl, searchQuery: p.searchQuery,
+                    facilityType: p.facilityType,
                     allContacts: p.allContacts || [],
                 })),
             });
@@ -448,7 +732,8 @@ export default function ProspectsPage() {
                     genericEmail: p.genericEmail, contactName: p.contactName,
                     contactTitle: p.contactTitle, emailSource: p.emailSource,
                     emailConfidence: p.emailConfidence, facebookUrl: p.facebookUrl,
-                    linkedinUrl: p.linkedinUrl,
+                    linkedinUrl: p.linkedinUrl, searchQuery: p.searchQuery,
+                    facilityType: p.facilityType,
                     allContacts: p.allContacts || [],
                 })),
             });
@@ -982,7 +1267,7 @@ export default function ProspectsPage() {
                                 className="cursor-pointer text-xs hover:bg-primary/10 transition-colors"
                                 onClick={() => setFacilityTypeFilter(ft === facilityTypeFilter ? 'all' : ft)}
                             >
-                                {ft === 'unknown' ? 'Uncategorized' : FACILITY_TYPE_LABELS[ft as FacilityType] || ft} ({count})
+                                {ft === 'unknown' ? 'Uncategorized' : mergedFacilityLabels[ft] || ft} ({count})
                             </Badge>
                         ))
                     }
@@ -1052,51 +1337,107 @@ export default function ProspectsPage() {
                                     Add to CRM Only
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
+                                {selectedHasUncategorized && (
+                                    <div className="px-2 py-1.5 text-[11px] text-amber-600 dark:text-amber-400 flex items-start gap-1.5 bg-amber-50 dark:bg-amber-950/30 border-b">
+                                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                        <span>{selectedUncategorizedCount} prospect(s) missing a facility type. Set one before emailing or sequencing.</span>
+                                    </div>
+                                )}
                                 <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger>
+                                    <DropdownMenuSubTrigger disabled={selectedHasUncategorized} className={selectedHasUncategorized ? 'opacity-50' : ''}>
                                         <SendHorizonal className="w-4 h-4 mr-2" />
                                         Import + Send Email
                                     </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent>
-                                        {templates.length === 0 && (
-                                            <DropdownMenuItem disabled>No templates found</DropdownMenuItem>
-                                        )}
-                                        {templates.map(t => (
-                                            <DropdownMenuItem
-                                                key={t.id}
-                                                onClick={() => handleImportAndEmail(Array.from(selected), t.id)}
-                                            >
-                                                <Mail className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                                                {t.name}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuSubContent>
+                                    {!selectedHasUncategorized && (
+                                        <DropdownMenuSubContent>
+                                            {templates.length === 0 && (
+                                                <DropdownMenuItem disabled>No templates found</DropdownMenuItem>
+                                            )}
+                                            {templates.map(t => (
+                                                <DropdownMenuItem
+                                                    key={t.id}
+                                                    onClick={() => handleImportAndEmail(Array.from(selected), t.id)}
+                                                >
+                                                    <Mail className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                                                    {t.name}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuSubContent>
+                                    )}
                                 </DropdownMenuSub>
                                 <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger>
+                                    <DropdownMenuSubTrigger disabled={selectedHasUncategorized} className={selectedHasUncategorized ? 'opacity-50' : ''}>
                                         <ListPlus className="w-4 h-4 mr-2" />
                                         Import + Add to Sequence
                                     </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent>
-                                        {sequences.length === 0 && (
-                                            <DropdownMenuItem disabled>No sequences found</DropdownMenuItem>
-                                        )}
-                                        {sequences.map(s => (
-                                            <DropdownMenuItem
-                                                key={s.id}
-                                                onClick={() => handleImportAndSequence(Array.from(selected), s.id)}
-                                            >
-                                                <ListPlus className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                                                {s.name} ({s.stepCount} steps)
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuSubContent>
+                                    {!selectedHasUncategorized && (
+                                        <DropdownMenuSubContent>
+                                            {sequences.length === 0 && (
+                                                <DropdownMenuItem disabled>No sequences found</DropdownMenuItem>
+                                            )}
+                                            {sequences.map(s => (
+                                                <DropdownMenuItem
+                                                    key={s.id}
+                                                    onClick={() => handleImportAndSequence(Array.from(selected), s.id)}
+                                                >
+                                                    <ListPlus className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                                                    {s.name} ({s.stepCount} steps)
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuSubContent>
+                                    )}
                                 </DropdownMenuSub>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
                 )}
             </div>
+
+            {/* Cluster suggestions */}
+            {uncategorizedClusters.length > 0 && (
+                <div className="space-y-2 mb-3">
+                    {uncategorizedClusters.map(cluster => (
+                        <div
+                            key={cluster.term}
+                            className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20"
+                        >
+                            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                            <span className="text-sm flex-1">
+                                <span className="font-medium">{cluster.count}</span> uncategorized prospects match
+                                &ldquo;<span className="font-semibold text-amber-700 dark:text-amber-300">{cluster.term}</span>&rdquo;
+                            </span>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                                onClick={() => handleCreateTypeFromCluster(cluster.term, cluster.prospectIds)}
+                            >
+                                <Plus className="w-3 h-3 mr-1" />
+                                Create Type
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Auto-categorize banner — independent of cluster detection threshold */}
+            {prospects.some(p => getEffectiveFacilityType(p) === 'unknown') && (
+                <div className="flex items-center gap-3 px-4 py-2 mb-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+                    <RefreshCw className="w-4 h-4 text-blue-500 shrink-0" />
+                    <span className="text-sm flex-1 text-blue-700 dark:text-blue-300">
+                        {prospects.filter(p => getEffectiveFacilityType(p) === 'unknown').length} uncategorized — auto-match against known patterns{customFacilityTypes.length > 0 ? ` + ${customFacilityTypes.length} custom type${customFacilityTypes.length !== 1 ? 's' : ''}` : ''}
+                    </span>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                        onClick={handleAutoRecategorize}
+                    >
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        Auto-Categorize
+                    </Button>
+                </div>
+            )}
 
             {/* Table */}
             {loading ? (
@@ -1117,7 +1458,7 @@ export default function ProspectsPage() {
             ) : (
                 <div className="border rounded-lg overflow-hidden">
                     {/* Table header */}
-                    <div className="grid grid-cols-[40px_1fr_200px_180px_100px_80px_120px] gap-2 px-3 py-2 bg-muted/50 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="grid grid-cols-[40px_1fr_160px_180px_180px_100px_80px_120px] gap-2 px-3 py-2 bg-muted/50 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         <div className="flex items-center justify-center">
                             <Checkbox
                                 checked={selected.size === filtered.length && filtered.length > 0}
@@ -1125,6 +1466,7 @@ export default function ProspectsPage() {
                             />
                         </div>
                         <div>Business</div>
+                        <div>Facility Type</div>
                         <div>Location</div>
                         <div>Contact</div>
                         <div>Confidence</div>
@@ -1137,7 +1479,7 @@ export default function ProspectsPage() {
                         {filtered.map(prospect => (
                             <div
                                 key={prospect.id}
-                                className={`grid grid-cols-[40px_1fr_200px_180px_100px_80px_120px] gap-2 px-3 py-2.5 items-center text-sm hover:bg-muted/30 transition-colors ${selected.has(prospect.id) ? 'bg-primary/5' : ''}`}
+                                className={`grid grid-cols-[40px_1fr_160px_180px_180px_100px_80px_120px] gap-2 px-3 py-2.5 items-center text-sm hover:bg-muted/30 transition-colors ${selected.has(prospect.id) ? 'bg-primary/5' : ''}`}
                             >
                                 {/* Checkbox */}
                                 <div className="flex items-center justify-center">
@@ -1165,14 +1507,6 @@ export default function ProspectsPage() {
                                         )}
                                     </div>
                                     <div className="flex items-center gap-1.5 mt-0.5">
-                                        {(() => {
-                                            const ft = inferFacilityType(prospect.searchQuery);
-                                            return ft ? (
-                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal">
-                                                    {FACILITY_TYPE_LABELS[ft]}
-                                                </Badge>
-                                            ) : null;
-                                        })()}
                                         {prospect.phone && (
                                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                 <Phone className="w-3 h-3" />
@@ -1180,6 +1514,40 @@ export default function ProspectsPage() {
                                             </span>
                                         )}
                                     </div>
+                                </div>
+
+                                {/* Facility Type */}
+                                <div className="min-w-0">
+                                    {(() => {
+                                        const effectiveFt = getEffectiveFacilityType(prospect);
+                                        const isUnknown = effectiveFt === 'unknown';
+                                        const isInferred = !prospect.facilityType && !isUnknown;
+                                        return (
+                                            <Select
+                                                value={effectiveFt === 'unknown' ? undefined : effectiveFt}
+                                                onValueChange={(val) => handleSetFacilityType(prospect.id, val)}
+                                            >
+                                                <SelectTrigger
+                                                    className={`h-7 text-[11px] px-2 w-full ${
+                                                        isUnknown
+                                                            ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400'
+                                                            : isInferred
+                                                            ? 'border-dashed border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400'
+                                                            : 'border-green-300 dark:border-green-800 text-green-700 dark:text-green-400'
+                                                    }`}
+                                                >
+                                                    <SelectValue placeholder="⚠ Set type…" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {mergedFacilityOptions.map(opt => (
+                                                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                                            {opt.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        );
+                                    })()}
                                 </div>
 
                                 {/* Location */}
@@ -1211,11 +1579,32 @@ export default function ProspectsPage() {
                                             </span>
                                         )}
                                         {(prospect.allContacts?.length ?? 0) > 1 && (
-                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-blue-600 border-blue-200 dark:border-blue-800">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); toggleContactsExpand(prospect.id); }}
+                                                className="flex items-center gap-0.5 text-[10px] px-1.5 py-0 h-4 font-normal text-blue-600 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
+                                            >
+                                                {expandedContacts.has(prospect.id)
+                                                    ? <ChevronDown className="w-2.5 h-2.5" />
+                                                    : <ChevronRight className="w-2.5 h-2.5" />
+                                                }
+                                                <Users className="w-2.5 h-2.5" />
                                                 {prospect.allContacts!.length} contacts
-                                            </Badge>
+                                            </button>
                                         )}
                                     </div>
+                                    {/* Expanded contacts list */}
+                                    {expandedContacts.has(prospect.id) && prospect.allContacts && prospect.allContacts.length > 1 && (
+                                        <div className="mt-1.5 space-y-1 pl-1 border-l-2 border-blue-200 dark:border-blue-800">
+                                            {prospect.allContacts.map((c, idx) => (
+                                                <div key={idx} className="text-[11px] flex items-center gap-1.5 text-muted-foreground">
+                                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.type === 'personal' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                                    <span className="truncate">{c.email}</span>
+                                                    {c.firstName && <span className="text-[10px] text-muted-foreground/60">({c.firstName}{c.lastName ? ` ${c.lastName}` : ''}{c.position ? `, ${c.position}` : ''})</span>}
+                                                    {c.confidence && <span className="text-[10px] text-muted-foreground/40">{Math.round(c.confidence * 100)}%</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Confidence */}
@@ -1253,7 +1642,7 @@ export default function ProspectsPage() {
                                                         <Plus className="w-3.5 h-3.5 mr-2" />
                                                         Add to CRM Only
                                                     </DropdownMenuItem>
-                                                    {sequences.length > 0 && (
+                                                    {sequences.length > 0 && getEffectiveFacilityType(prospect) !== 'unknown' && (
                                                         <>
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuSub>
@@ -1273,6 +1662,15 @@ export default function ProspectsPage() {
                                                                     ))}
                                                                 </DropdownMenuSubContent>
                                                             </DropdownMenuSub>
+                                                        </>
+                                                    )}
+                                                    {sequences.length > 0 && getEffectiveFacilityType(prospect) === 'unknown' && (
+                                                        <>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem disabled className="text-amber-600 dark:text-amber-400 text-xs">
+                                                                <AlertTriangle className="w-3 h-3 mr-2" />
+                                                                Set facility type first
+                                                            </DropdownMenuItem>
                                                         </>
                                                     )}
                                                 </DropdownMenuContent>

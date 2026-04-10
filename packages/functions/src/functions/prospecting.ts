@@ -54,7 +54,7 @@ export const addProspectsToCrm = onCall({
     cors: DASHBOARD_CORS,
     timeoutSeconds: 60,
 }, async (request) => {
-    const { prospects, searchQuery: batchSearchQuery } = request.data as { prospects: (EnrichedProspect & { searchQuery?: string })[]; searchQuery?: string };
+    const { prospects, searchQuery: batchSearchQuery } = request.data as { prospects: (EnrichedProspect & { searchQuery?: string; facilityType?: string })[]; searchQuery?: string };
 
     if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
         throw new HttpsError("invalid-argument", "No prospects provided.");
@@ -65,8 +65,8 @@ export const addProspectsToCrm = onCall({
         const batch = db.batch();
 
         for (const prospect of prospects) {
-            // Infer facility type from the individual searchQuery or batch-level searchQuery
-            const facilityType = inferFacilityType(prospect.searchQuery || batchSearchQuery) || null;
+            // Use explicitly-set facilityType first, then infer from searchQuery
+            const facilityType = prospect.facilityType || inferFacilityType(prospect.searchQuery || batchSearchQuery) || null;
 
             // 1. Create Company
             const companyRef = db.collection("companies").doc();

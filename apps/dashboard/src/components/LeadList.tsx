@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback } from "react";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight, ChevronDown, Building2, Settings2, Tag, Play } from "lucide-react";
+import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight, ChevronDown, Building2, Settings2, Tag, Play, Mail, MailOpen, MousePointerClick, AlertTriangle, Send } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, writeBatch, getDoc, getDocs } from "firebase/firestore";
 import { db, functions } from "@/lib/firebase";
@@ -56,6 +56,85 @@ const COLUMN_LABELS: Record<ColumnKey, string> = {
 };
 
 const DEFAULT_VISIBLE: ColumnKey[] = ['contact', 'business', 'type', 'location', 'status', 'actions'];
+
+// ─── Email Funnel Summary ─────────────────────────────────────────
+function EmailFunnelSummary({ contacts }: { contacts: ContactRow[] }) {
+    const [expanded, setExpanded] = useState(false);
+
+    const stats = useMemo(() => {
+        let sent = 0, delivered = 0, opened = 0, clicked = 0, bounced = 0;
+        contacts.forEach(c => {
+            const eng = c.emailEngagement;
+            if (!eng?.lastEvent) return;
+            sent++;
+            switch (eng.lastEvent) {
+                case 'clicked':
+                    clicked++;
+                    opened++;
+                    delivered++;
+                    break;
+                case 'opened':
+                    opened++;
+                    delivered++;
+                    break;
+                case 'delivered':
+                    delivered++;
+                    break;
+                case 'bounced':
+                    bounced++;
+                    break;
+                case 'spam':
+                    bounced++;
+                    break;
+            }
+        });
+        return { sent, delivered, opened, clicked, bounced };
+    }, [contacts]);
+
+    if (stats.sent === 0) return null;
+
+    const metrics = [
+        { label: 'Sent', value: stats.sent, icon: Send, color: 'text-slate-600', bg: 'bg-slate-50 border-slate-200' },
+        { label: 'Delivered', value: stats.delivered, icon: Mail, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
+        { label: 'Opened', value: stats.opened, icon: MailOpen, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
+        { label: 'Clicked', value: stats.clicked, icon: MousePointerClick, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
+        { label: 'Bounced', value: stats.bounced, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50 border-red-200' },
+    ];
+
+    return (
+        <div className="mx-0 mb-3">
+            <button
+                onClick={() => setExpanded(!expanded)}
+                className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-1 py-1"
+            >
+                <Mail className="w-3.5 h-3.5" />
+                Email Engagement
+                <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? '' : '-rotate-90'}`} />
+                {!expanded && (
+                    <span className="text-[10px] text-muted-foreground/70 ml-1">
+                        {stats.sent} sent · {stats.opened} opened · {stats.clicked} clicked
+                    </span>
+                )}
+            </button>
+            {expanded && (
+                <div className="flex gap-2 mt-1.5 flex-wrap">
+                    {metrics.map(m => (
+                        <div key={m.label} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${m.bg} text-xs`}>
+                            <m.icon className={`w-3.5 h-3.5 ${m.color}`} />
+                            <span className={`font-semibold tabular-nums ${m.color}`}>{m.value}</span>
+                            <span className="text-muted-foreground">{m.label}</span>
+                            {m.label !== 'Bounced' && stats.sent > 0 && (
+                                <span className="text-muted-foreground/60 text-[10px]">
+                                    ({Math.round((m.value / stats.sent) * 100)}%)
+                                </span>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
 
 interface LeadListProps {
     statusFilters?: LeadStatus[];
@@ -89,7 +168,7 @@ export default function LeadList({
     const [currentPage, setCurrentPage] = useState(1);
     const PAGE_SIZE = 50;
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-    const [groupByCompany, setGroupByCompany] = useState(true);
+    const [groupByCompany, setGroupByCompany] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('pipeline-columns');
@@ -622,6 +701,11 @@ export default function LeadList({
                 </div>
             </div>
 
+            {/* Email Engagement Funnel Summary */}
+            {contacts.length > 0 && (
+                <EmailFunnelSummary contacts={contacts} />
+            )}
+
             <CardContent className="p-0 flex-1 overflow-hidden flex flex-col">
                 {filteredContacts.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-muted/50">
@@ -633,7 +717,7 @@ export default function LeadList({
                     <>
                         {/* Desktop Table View */}
                         <div className="hidden md:block flex-1 overflow-auto">
-                            <table className="w-full caption-bottom text-sm text-foreground">
+                            <table className="w-full caption-bottom text-sm text-foreground table-fixed">
                                 <TableHeader className="bg-muted/50 shadow-sm">
                                     <TableRow className="border-b border-border hover:bg-muted/50">
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 w-12 shadow-sm text-center">
@@ -645,15 +729,15 @@ export default function LeadList({
                                             />
                                         </TableHead>
                                         <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 w-10 shadow-sm text-center text-xs">#</TableHead>
-                                        {visibleColumns.has('contact') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Contact</TableHead>}
-                                        {visibleColumns.has('business') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Company</TableHead>}
-                                        {visibleColumns.has('type') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Type</TableHead>}
-                                        {visibleColumns.has('location') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Location</TableHead>}
-                                        {visibleColumns.has('auditTime') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Audit Time</TableHead>}
-                                        {visibleColumns.has('status') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Status</TableHead>}
-                                        {visibleColumns.has('source') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Source</TableHead>}
-                                        {visibleColumns.has('created') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs">Created</TableHead>}
-                                        {visibleColumns.has('actions') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs w-12"></TableHead>}
+                                        {visibleColumns.has('contact') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '22%'}}>Contact</TableHead>}
+                                        {visibleColumns.has('business') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '18%'}}>Company</TableHead>}
+                                        {visibleColumns.has('type') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '8%'}}>Type</TableHead>}
+                                        {visibleColumns.has('location') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '16%'}}>Location</TableHead>}
+                                        {visibleColumns.has('auditTime') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '8%'}}>Audit Time</TableHead>}
+                                        {visibleColumns.has('status') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '10%'}}>Status</TableHead>}
+                                        {visibleColumns.has('source') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '8%'}}>Source</TableHead>}
+                                        {visibleColumns.has('created') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '9%'}}>Created</TableHead>}
+                                        {visibleColumns.has('actions') && <TableHead className="sticky top-0 z-20 bg-card font-semibold text-muted-foreground h-9 shadow-sm text-center text-xs" style={{width: '12%'}}></TableHead>}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

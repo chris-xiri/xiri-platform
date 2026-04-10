@@ -29,8 +29,10 @@ export type FacilityType =
     | 'manufacturing_light'      // FOD / ESD / chain-of-custody
     | 'office_general'
     | 'fitness_gym'
+    | 'medical_physical_therapy'
     | 'retail_storefront'
     | 'religious_center'
+    | 'funeral_home'
     | 'other';
 
 /** Canonical display labels for every FacilityType — single source of truth. */
@@ -51,8 +53,10 @@ export const FACILITY_TYPE_LABELS: Record<FacilityType, string> = {
     manufacturing_light: 'Light Manufacturing',
     office_general: 'Office (General)',
     fitness_gym: 'Fitness / Gym',
+    medical_physical_therapy: 'Physical Therapy / Rehab',
     retail_storefront: 'Retail Storefront',
     religious_center: 'Religious Center',
+    funeral_home: 'Funeral Home',
     other: 'Other',
 };
 
@@ -322,6 +326,13 @@ export const FACILITY_PHRASE_MAP: Record<FacilityType, FacilityPhrases> = {
         serviceHook: 'high-touch surface sanitation that keeps members healthy and coming back',
         coreOpsPhrase: 'member experience',
     },
+    medical_physical_therapy: {
+        spaceNoun: 'studio',
+        cadencePhrase: 'post-session sanitization and equipment wipe-down',
+        facilityCategory: 'physical therapy clinics',
+        serviceHook: 'hygienic, welcoming rehab spaces that put patients at ease and support recovery',
+        coreOpsPhrase: 'patient rehabilitation',
+    },
     retail_storefront: {
         spaceNoun: 'store',
         cadencePhrase: 'nightly floor care and front-of-house cleaning',
@@ -335,6 +346,13 @@ export const FACILITY_PHRASE_MAP: Record<FacilityType, FacilityPhrases> = {
         facilityCategory: 'houses of worship',
         serviceHook: 'respectful, thorough cleaning that honors your community space',
         coreOpsPhrase: 'serving your congregation',
+    },
+    funeral_home: {
+        spaceNoun: 'facility',
+        cadencePhrase: 'daily chapel, viewing room, and common area cleaning',
+        facilityCategory: 'funeral homes',
+        serviceHook: 'discreet, respectful cleaning that maintains the dignity families expect',
+        coreOpsPhrase: 'caring for families',
     },
     other: {
         spaceNoun: 'space',
@@ -367,6 +385,8 @@ export function inferFacilityType(searchQuery?: string): FacilityType | null {
     if (q.includes('surgery') || q.includes('surgical')) return 'medical_surgery';
     if (q.includes('dental') || q.includes('dentist')) return 'medical_dental';
     if (q.includes('veterinary') || q.includes('vet clinic') || q.includes('animal hospital')) return 'medical_veterinary';
+    if (q.includes('physical therapy') || q.includes('physical therapist') || q.includes('physiotherapy') || q.includes('pt clinic') || q.includes('rehab center') || q.includes('rehabilitation')) return 'medical_physical_therapy';
+    if (q.includes('chiropractic') || q.includes('chiropractor')) return 'medical_private';
     if (q.includes('medical') || q.includes('doctor') || q.includes('physician') || q.includes('clinic')) return 'medical_private';
     if (q.includes('daycare') || q.includes('preschool') || q.includes('childcare')) return 'edu_daycare';
     if (q.includes('tutoring') || q.includes('tutor') || q.includes('learning center') || q.includes('educational center') || q.includes('test prep') || q.includes('kumon') || q.includes('mathnasium') || q.includes('sylvan')) return 'edu_tutoring';
@@ -379,6 +399,7 @@ export function inferFacilityType(searchQuery?: string): FacilityType | null {
     if (q.includes('gym') || q.includes('fitness') || q.includes('crossfit') || q.includes('yoga')) return 'fitness_gym';
     if (q.includes('retail') || q.includes('store') || q.includes('shop') || q.includes('boutique')) return 'retail_storefront';
     if (q.includes('church') || q.includes('religious') || q.includes('mosque') || q.includes('synagogue') || q.includes('temple') || q.includes('worship')) return 'religious_center';
+    if (q.includes('funeral') || q.includes('mortuary') || q.includes('cremation')) return 'funeral_home';
     if (q.includes('office')) return 'office_general';
     return null;
 }

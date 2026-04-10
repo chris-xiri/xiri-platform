@@ -97,6 +97,9 @@ service cloud.firestore {
     match /prospecting_config/{configId} {
       allow read, write: if isAuthenticated();
     }
+    match /facility_types_custom/{typeId} {
+      allow read, write: if isAuthenticated();
+    }
 
     // ── Notifications ──
     match /notifications/{notificationId} {
