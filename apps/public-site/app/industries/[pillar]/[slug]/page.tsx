@@ -6,6 +6,7 @@ import { INDUSTRY_PILLARS, getPillarForIndustry } from '@/lib/industry-pillars';
 import { SITE } from '@/lib/constants';
 import { getNAICSMapping, DEFAULT_LOCAL_AREA } from '@/data/gov-data';
 import { getEstablishments } from '@/lib/census';
+import { regionToCountyId, getCountySummary, getMarketWageContext } from '@/data/open-data';
 
 type Props = {
     params: Promise<{ pillar: string; slug: string }>;
@@ -166,6 +167,12 @@ export default async function IndustryDetailPage({ params }: Props) {
         const censusResult = naicsMapping
             ? getEstablishments(naicsMapping, DEFAULT_LOCAL_AREA)
             : undefined;
+
+        // Resolve county-level open data for this location
+        const countyId = regionToCountyId(location.region);
+        const countySummary = countyId ? getCountySummary(countyId) : undefined;
+        const wageContext = countyId ? getMarketWageContext(countyId) : undefined;
+
         return (
             <IndustryHubPage
                 industry={industry as any}
@@ -173,6 +180,8 @@ export default async function IndustryDetailPage({ params }: Props) {
                 location={location}
                 censusResult={censusResult}
                 censusPlural={naicsMapping?.plural}
+                countySummary={countySummary ?? undefined}
+                wageContext={wageContext ?? undefined}
             />
         );
     }

@@ -461,3 +461,35 @@ Maintained by: @architect-cto
 >   - The `audit_feedback` subcollection persists across sessions so cleaners see manager feedback the next day.
 > - **RULE: Never split cleaner and manager sessions into separate collections. Use `personRole` to filter. Seed doc IDs must use `session_{role}_tonight_{siteId}` format.**
 > - Status: **Active**
+
+> - Date: 2026-04-11
+> - Decision: **Free Open Data API Catalog — Government Data Sources for SEO & Content**
+> - Rationale: XIRI uses authoritative government data to enrich hub pages, pricing content, and programmatic SEO. All data is cached at build time in `data/open-data-cache.json` via `scripts/refresh-open-data.ts`. The following free APIs are available for current and future use:
+>   - **Currently Integrated:**
+>     - **U.S. Census Bureau — County Business Patterns (CBP)**: `api.census.gov/data/2023/cbp` — Establishment counts by NAICS × County. Powers "Nassau County has X medical offices" stats. Key: optional but recommended (`CENSUS_API_KEY`).
+>     - **U.S. Census Bureau — American Community Survey (ACS) 5-Year**: `api.census.gov/data/2023/acs/acs5` — Population, median household income per county. Powers demographic context on hub pages.
+>     - **U.S. Bureau of Labor Statistics — OEWS**: `api.bls.gov/publicAPI/v2/timeseries/data/` — Area-specific wages by SOC code (37-2011 Janitors, 37-2012 Cleaners). Note: only MSA-level data available in time series (no metro divisions). Key: optional (`BLS_API_KEY`).
+>     - **State Minimum Wages**: Hardcoded in `data/state-wages.ts` — All 50 states + DC. Powers state-variable calculator pricing.
+>   - **Cataloged for Future Use:**
+>     - **GSA CALC API** (`open.gsa.gov/api/dx-calc-api/`): GSA Contract-Awarded Labor Category rates — hourly rates for professional services on GSA schedules. Could show "what the federal government pays for janitorial services."
+>     - **SAM.gov Contract Awards API** (`open.gsa.gov/api/contract-awards/`): Federal procurement contracts — could show government cleaning contract values/volumes in our service areas.
+>     - **SAM.gov Entity Management API** (`open.gsa.gov/api/entity-api/`): Registered government contractors — could identify janitorial companies with active SAM registrations in our markets.
+>     - **GSA Sustainable Facilities Tool API** (`sftool.gov/developers`): Green building guidance — could power sustainability content for LEED/green cleaning guides.
+>     - **GSA Per Diem API** (`open.gsa.gov/api/perdiem/`): Federal travel rates by location — less directly relevant but shows cost-of-doing-business data by geography.
+>     - **FPDS API** (`sam.gov`): Federal Procurement Data System — detailed contract data for competitive analysis.
+>     - **NYC Open Data** (`data.cityofnewyork.us`, Socrata API): DOB permits, building violations, commercial activity — powers "X new commercial permits filed in Queens" type stats.
+>     - **Data.gov CKAN API** (`open.gsa.gov/api/datadotgov/`): Government-wide data catalog — meta-API to discover additional datasets.
+>   - All integrated data includes citation helpers (`getCitation()` in `data/open-data.ts`) that generate verifiable, linked citations for every stat used on the site. No "AI slop" — every number traces back to a government URL.
+> - **RULE: When adding new data sources, add them to `scripts/refresh-open-data.ts` and include proper citation metadata. All stats on the public site must be traceable to a government data source via `getCitation()`.**
+> - Status: **Active**
+
+> - Date: 2026-04-11
+> - Decision: **Minimum Wage vs Market Wage — Content Angle for SEO**
+> - Rationale: Our BLS wage data reveals a powerful content angle: **the gap between minimum wage (regulation) and median market wage (reality)**. In the NYC MSA, janitors earn a median of **$21.61/hr** (BLS OEWS 2024) while NY state minimum wage is **$16/hr** — a **35% gap**. This means: (1) any facility manager budgeting at minimum wage for cleaning services will get subpar workers and high turnover, (2) the "real cost" of cleaning is market-driven, not regulation-driven, (3) XIRI can position itself as the expert on *actual* market rates vs regulatory minimums. Content opportunities:
+>   - **Blog**: "What Janitorial Services Actually Cost in NYC (It's Not Minimum Wage)" — compare min wage, mean hourly ($21.61), and median annual ($44,950) with BLS citation
+>   - **Calculator enrichment**: Show "Market Rate" badge next to the calculator's rate, with source citation
+>   - **Hub page stat**: "NYC janitors earn 35% above minimum wage on average — budget accordingly"
+>   - **Competitive positioning**: Competitors who bid at minimum-wage-derived rates are either paying below market (high turnover) or lying about margins
+>   - The data is already in `open-data-cache.json` (BLS wages) and `state-wages.ts` (min wages) — no new data collection needed, just content creation
+> - **RULE: When discussing cleaning costs or wages in content, always cite both the minimum wage AND the BLS market median to show the gap. This is a key differentiator backed by authoritative data.**
+> - Status: **Active — Content Strategy**

@@ -1,0 +1,237 @@
+{
+  "generatedAt": "2026-04-11T15:42:14.635Z",
+  "sources": {
+    "census_cbp": {
+      "year": 2023,
+      "citation": "U.S. Census Bureau, County Business Patterns (2023)",
+      "url": "https://data.census.gov/table/CBP2023.CB2300CBP"
+    },
+    "census_acs": {
+      "year": 2023,
+      "citation": "U.S. Census Bureau, American Community Survey 5-Year Estimates (2023)",
+      "url": "https://data.census.gov/table/ACSST5Y2023.S0101"
+    },
+    "bls_oews": {
+      "year": 2024,
+      "month": "May",
+      "citation": "U.S. Bureau of Labor Statistics, Occupational Employment and Wage Statistics, May 2024",
+      "url": "https://www.bls.gov/oes/"
+    }
+  },
+  "counties": {
+    "nyc-metro": {
+      "fips": {
+        "msa": "35620"
+      },
+      "demographics": {
+        "population": 19756722,
+        "medianHouseholdIncome": 97334,
+        "totalBusinessEstablishments": 571410,
+        "source": "census_acs"
+      },
+      "establishments": {
+        "medical-offices": 15136,
+        "dental-offices": 9582,
+        "urgent-care": 538,
+        "surgery-centers": 538,
+        "dialysis-centers": 381,
+        "veterinary-clinics": 1263,
+        "auto-dealerships": 1751,
+        "daycare-preschool": 6885,
+        "private-schools": 1928,
+        "professional-offices": 12736,
+        "fitness-gyms": 2847,
+        "retail-storefronts": 70682,
+        "janitorial-services": 3918
+      },
+      "wages": {
+        "janitors": {
+          "soc": "37-2011",
+          "median_hourly": 21.61,
+          "mean_hourly": 21.61,
+          "median_annual": 44950,
+          "area_title": "New York Metro Area"
+        },
+        "building-cleaners": {
+          "soc": "37-2012",
+          "median_hourly": 24.09,
+          "mean_hourly": 24.09,
+          "median_annual": 50110,
+          "area_title": "New York Metro Area"
+        }
+      }
+    },
+    "nassau": {
+      "fips": {
+        "state": "36",
+        "county": "059"
+      },
+      "demographics": {
+        "population": 1388138,
+        "medianHouseholdIncome": 143408,
+        "totalBusinessEstablishments": 45230,
+        "source": "census_acs"
+      },
+      "establishments": {
+        "medical-offices": 1561,
+        "dental-offices": 958,
+        "urgent-care": 59,
+        "surgery-centers": 59,
+        "dialysis-centers": 21,
+        "veterinary-clinics": 116,
+        "auto-dealerships": 191,
+        "daycare-preschool": 661,
+        "private-schools": 111,
+        "professional-offices": 1639,
+        "fitness-gyms": 262,
+        "retail-storefronts": 5518,
+        "janitorial-services": 333
+      },
+      "wages": {
+        "janitors": {
+          "soc": "37-2011",
+          "median_hourly": 21.61,
+          "mean_hourly": 21.61,
+          "median_annual": 44950,
+          "area_title": "New York Metro Area"
+        },
+        "building-cleaners": {
+          "soc": "37-2012",
+          "median_hourly": 24.09,
+          "mean_hourly": 24.09,
+          "median_annual": 50110,
+          "area_title": "New York Metro Area"
+        }
+      }
+    },
+    "suffolk": {
+      "fips": {
+        "state": "36",
+        "county": "103"
+      },
+      "demographics": {
+        "population": 1525680,
+        "medianHouseholdIncome": 128329,
+        "totalBusinessEstablishments": 46700,
+        "source": "census_acs"
+      },
+      "establishments": {
+        "medical-offices": 1108,
+        "dental-offices": 662,
+        "urgent-care": 55,
+        "surgery-centers": 55,
+        "dialysis-centers": 22,
+        "veterinary-clinics": 165,
+        "auto-dealerships": 211,
+        "daycare-preschool": 414,
+        "private-schools": 87,
+        "professional-offices": 1031,
+        "fitness-gyms": 283,
+        "retail-storefronts": 6079,
+        "janitorial-services": 511
+      },
+      "wages": {
+        "janitors": {
+          "soc": "37-2011",
+          "median_hourly": 21.61,
+          "mean_hourly": 21.61,
+          "median_annual": 44950,
+          "area_title": "New York Metro Area"
+        },
+        "building-cleaners": {
+          "soc": "37-2012",
+          "median_hourly": 24.09,
+          "mean_hourly": 24.09,
+          "median_annual": 50110,
+          "area_title": "New York Metro Area"
+        }
+      }
+    },
+    "queens": {
+      "fips": {
+        "state": "36",
+        "county": "081"
+      },
+      "demographics": {
+        "population": 2330124,
+        "medianHouseholdIncome": 84961,
+        "totalBusinessEstablishments": 52000,
+        "source": "census_acs"
+      },
+      "establishments": {
+        "medical-offices": 1406,
+        "dental-offices": 980,
+        "urgent-care": 45,
+        "surgery-centers": 45,
+        "dialysis-centers": 36,
+        "veterinary-clinics": 66,
+        "auto-dealerships": 112,
+        "daycare-preschool": 707,
+        "private-schools": 167,
+        "professional-offices": 720,
+        "fitness-gyms": 148,
+        "retail-storefronts": 7348,
+        "janitorial-services": 348
+      },
+      "wages": {
+        "janitors": {
+          "soc": "37-2011",
+          "median_hourly": 21.61,
+          "mean_hourly": 21.61,
+          "median_annual": 44950,
+          "area_title": "New York Metro Area"
+        },
+        "building-cleaners": {
+          "soc": "37-2012",
+          "median_hourly": 24.09,
+          "mean_hourly": 24.09,
+          "median_annual": 50110,
+          "area_title": "New York Metro Area"
+        }
+      }
+    },
+    "kings": {
+      "fips": {
+        "state": "36",
+        "county": "047"
+      },
+      "demographics": {
+        "population": 2646306,
+        "medianHouseholdIncome": 78548,
+        "totalBusinessEstablishments": 64300,
+        "source": "census_acs"
+      },
+      "establishments": {
+        "medical-offices": 1428,
+        "dental-offices": 815,
+        "urgent-care": 39,
+        "surgery-centers": 39,
+        "dialysis-centers": 49,
+        "veterinary-clinics": 86,
+        "auto-dealerships": 89,
+        "daycare-preschool": 1092,
+        "private-schools": 340,
+        "professional-offices": 694,
+        "fitness-gyms": 214,
+        "retail-storefronts": 10114,
+        "janitorial-services": 272
+      },
+      "wages": {
+        "janitors": {
+          "soc": "37-2011",
+          "median_hourly": 21.61,
+          "mean_hourly": 21.61,
+          "median_annual": 44950,
+          "area_title": "New York Metro Area"
+        },
+        "building-cleaners": {
+          "soc": "37-2012",
+          "median_hourly": 24.09,
+          "mean_hourly": 24.09,
+          "median_annual": 50110,
+          "area_title": "New York Metro Area"
+        }
+      }
+    }
+  }
+}

@@ -44,16 +44,20 @@ export default function OnboardingPage() {
     const [language, setLanguage] = useState<Language>('en');
     const [languageSelected, setLanguageSelected] = useState(false);
 
-    // Multi-Step State (Step 0 = Language, Step 1-4 = Form)
+    // Multi-Step State (Step 0 = Language, Step 1–5 = Form)
     const [currentStep, setCurrentStep] = useState(0);
-    const totalSteps = 4; // Not counting language selector
+    const totalSteps = 5; // Not counting language selector
 
     // Track Selection
     const searchParams = useSearchParams();
     const initialTrack = (searchParams?.get('track')?.toUpperCase() || 'STANDARD') as 'STANDARD' | 'FAST_TRACK';
     const [currentTrack, setCurrentTrack] = useState<'STANDARD' | 'FAST_TRACK'>(initialTrack);
 
-    // Form State - Step 2: Qualification
+    // Form State - Step 2: Service Capabilities
+    const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>([]);
+    const [step2Attempted, setStep2Attempted] = useState(false);
+
+    // Form State - Step 3: Qualification
     const [hasBusinessEntity, setHasBusinessEntity] = useState<boolean | null>(null);
     const [businessName, setBusinessName] = useState('');
     const [hasGeneralLiability, setHasGeneralLiability] = useState<boolean | null>(null);
@@ -61,19 +65,19 @@ export default function OnboardingPage() {
     const [hasAutoInsurance, setHasAutoInsurance] = useState<boolean | null>(null);
     const [hasPollutionLiability, setHasPollutionLiability] = useState<boolean | null>(null);
 
-    // Form State - Step 3: Contact Info
+    // Form State - Step 4: Contact Info
     const [contactName, setContactName] = useState('');
     const [contactRole, setContactRole] = useState<'Owner' | 'Dispatch' | 'Billing' | 'Sales' | 'Other'>('Owner');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
 
-    // Form State - Step 4: ACORD 25 Upload
+    // Form State - Step 5: ACORD 25 Upload
     const [acordFile, setAcordFile] = useState<File | null>(null);
     const [acordUploaded, setAcordUploaded] = useState(false);
     const [acordDownloadUrl, setAcordDownloadUrl] = useState<string | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploading, setUploading] = useState(false);
-    const [step4Attempted, setStep4Attempted] = useState(false);
+    const [step5Attempted, setStep5Attempted] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // State-based requirements
@@ -128,9 +132,53 @@ export default function OnboardingPage() {
         setPhone(formatPhoneNumber(e.target.value));
     };
 
+    // Canonical capabilities list (mirrors apps/dashboard/src/lib/vendor-capabilities.ts)
+    const ONBOARDING_CAPABILITIES = [
+        // Cleaning
+        { value: 'janitorial',           label: 'Janitorial Services',            group: 'cleaning' as const },
+        { value: 'commercial_cleaning',  label: 'Commercial Cleaning',            group: 'cleaning' as const },
+        { value: 'floor_care',           label: 'Floor Care',                     group: 'cleaning' as const },
+        { value: 'carpet_upholstery',    label: 'Carpet & Upholstery',            group: 'cleaning' as const },
+        { value: 'window_cleaning',      label: 'Window Cleaning',                group: 'cleaning' as const },
+        { value: 'pressure_washing',     label: 'Pressure Washing',               group: 'cleaning' as const },
+        { value: 'disinfecting',         label: 'Disinfecting Services',          group: 'cleaning' as const },
+        { value: 'day_porter',           label: 'Day Porters',                    group: 'cleaning' as const },
+        { value: 'post_construction',    label: 'Post-Construction Cleaning',     group: 'cleaning' as const },
+        // Facility & Maintenance
+        { value: 'hvac',                 label: 'HVAC Maintenance',               group: 'facility' as const },
+        { value: 'plumbing',             label: 'Plumbing',                       group: 'facility' as const },
+        { value: 'electrical',           label: 'Electrical',                     group: 'facility' as const },
+        { value: 'handyman',             label: 'Handyman Services',              group: 'facility' as const },
+        { value: 'landscaping',          label: 'Landscaping',                    group: 'facility' as const },
+        { value: 'snow_removal',         label: 'Snow & Ice Removal',             group: 'facility' as const },
+        { value: 'pest_control',         label: 'Pest Control',                   group: 'facility' as const },
+        { value: 'waste_management',     label: 'Waste Management',               group: 'facility' as const },
+        { value: 'indoor_plant_watering', label: 'Indoor Plant Watering',         group: 'facility' as const },
+        // Specialty
+        { value: 'painting',             label: 'Painting',                       group: 'specialty' as const },
+        { value: 'roofing',              label: 'Roofing',                        group: 'specialty' as const },
+        { value: 'locksmith',            label: 'Locksmith',                      group: 'specialty' as const },
+        { value: 'elevator',             label: 'Elevator Maintenance',           group: 'specialty' as const },
+        { value: 'fire_safety',          label: 'Fire Safety / Extinguishers',    group: 'specialty' as const },
+        { value: 'medical_cleaning',     label: 'Medical Facility Cleaning',      group: 'specialty' as const },
+    ];
+
+    const CAPABILITY_GROUPS = [
+        { key: 'cleaning' as const,  labelKey: 'cleaning' as const },
+        { key: 'facility' as const,  labelKey: 'facility' as const },
+        { key: 'specialty' as const, labelKey: 'specialty' as const },
+    ];
+
+    const toggleCapability = (value: string) => {
+        setSelectedCapabilities(prev =>
+            prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+        );
+    };
+
     // Step Validation
     const isStep1Valid = () => currentTrack !== null;
-    const isStep2Valid = () => {
+    const isStep2Valid = () => selectedCapabilities.length > 0;
+    const isStep3Valid = () => {
         if (hasBusinessEntity === null || hasGeneralLiability === null) return false;
         if (hasBusinessEntity && !businessName.trim()) return false;
         if (hasWorkersComp === null) return false;
@@ -138,7 +186,7 @@ export default function OnboardingPage() {
         if (requiresPollution && hasPollutionLiability === null) return false;
         return true;
     };
-    const isStep3Valid = () => {
+    const isStep4Valid = () => {
         if (!contactName.trim() || !email.trim() || !phone.trim()) return false;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) return false;
@@ -146,7 +194,7 @@ export default function OnboardingPage() {
         if (phoneDigits.length !== 10) return false;
         return true;
     };
-    const isStep4Valid = () => {
+    const isStep5Valid = () => {
         if (currentTrack === 'STANDARD') return true; // Skip for Partner Network
         return acordUploaded; // ACORD 25 uploaded
     };
@@ -191,12 +239,13 @@ export default function OnboardingPage() {
     const handleNext = async () => {
         // Validate current step before allowing advancement
         if (currentStep === 1 && !isStep1Valid()) return;
-        if (currentStep === 2 && !isStep2Valid()) return;
+        if (currentStep === 2 && !isStep2Valid()) { setStep2Attempted(true); return; }
         if (currentStep === 3 && !isStep3Valid()) return;
+        if (currentStep === 4 && !isStep4Valid()) return;
 
-        // Persist contact info when leaving Step 3 → Step 4 (FAST_TRACK)
+        // Persist contact info when leaving Step 4 → Step 5 (FAST_TRACK)
         // This ensures contact data is saved before ACORD upload triggers verification
-        if (currentStep === 3 && currentTrack === 'FAST_TRACK' && vendor?.id) {
+        if (currentStep === 4 && currentTrack === 'FAST_TRACK' && vendor?.id) {
             const nameParts = contactName.trim().split(/\s+/);
             const firstName = nameParts[0] || '';
             const lastName = nameParts.slice(1).join(' ') || '';
@@ -217,6 +266,7 @@ export default function OnboardingPage() {
                         isPrimary: true,
                     }],
                     preferredLanguage: language,
+                    capabilities: selectedCapabilities,
                     updatedAt: serverTimestamp(),
                 });
             } catch (error) {
@@ -224,11 +274,11 @@ export default function OnboardingPage() {
             }
         }
 
-        // Skip Step 4 for Partner Network
-        if (currentStep === 3 && currentTrack === 'STANDARD') {
+        // Skip Step 5 for Partner Network
+        if (currentStep === 4 && currentTrack === 'STANDARD') {
             handleSubmit();
-        } else if (currentStep === 4 && !isStep4Valid()) {
-            setStep4Attempted(true);
+        } else if (currentStep === 5 && !isStep5Valid()) {
+            setStep5Attempted(true);
         } else if (currentStep < totalSteps) {
             trackEvent('onboarding_step_complete', { step_number: String(currentStep), track: currentTrack, vendor_id: vendorId });
             setCurrentStep(currentStep + 1);
@@ -294,6 +344,7 @@ export default function OnboardingPage() {
                 email,
                 phone,
                 contacts: arrayUnion(primaryContact),
+                capabilities: selectedCapabilities,
                 status: 'compliance_review',
                 onboardingTrack: currentTrack,
                 preferredLanguage: language, // Save 'en' or 'es'
@@ -385,7 +436,7 @@ export default function OnboardingPage() {
 
     // Calculate progress
     const progress = (currentStep / totalSteps) * 100;
-    const effectiveSteps = currentTrack === 'STANDARD' ? 3 : 4; // Partner Network skips Step 4
+    const effectiveSteps = currentTrack === 'STANDARD' ? 4 : 5; // Partner Network skips Step 5
     const effectiveProgress = (currentStep / effectiveSteps) * 100;
 
     return (
@@ -533,19 +584,82 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {/* STEP 2: Qualification */}
+                    {/* STEP 2: Service Capabilities */}
                     {currentStep === 2 && (
                         <div className="space-y-6">
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step2.title', language)}</h2>
-                                <p className="text-slate-600">{t('step2.subtitle', language)}</p>
+                                <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step2_capabilities.title', language)}</h2>
+                                <p className="text-slate-600">{t('step2_capabilities.subtitle', language)}</p>
+                            </div>
+
+                            {CAPABILITY_GROUPS.map(({ key, labelKey }) => {
+                                const items = ONBOARDING_CAPABILITIES.filter(c => c.group === key);
+                                return (
+                                    <div key={key}>
+                                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+                                            {t(`step2_capabilities.groups.${labelKey}`, language)}
+                                        </h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {items.map((cap) => {
+                                                const isChecked = selectedCapabilities.includes(cap.value);
+                                                return (
+                                                    <button
+                                                        key={cap.value}
+                                                        type="button"
+                                                        onClick={() => toggleCapability(cap.value)}
+                                                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-left transition-all border ${
+                                                            isChecked
+                                                                ? 'bg-sky-50 border-sky-600 text-sky-900 font-medium shadow-sm'
+                                                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                                                        }`}
+                                                    >
+                                                        <div
+                                                            className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                                                isChecked
+                                                                    ? 'bg-sky-600 border-sky-600'
+                                                                    : 'border-slate-300'
+                                                            }`}
+                                                        >
+                                                            {isChecked && (
+                                                                <CheckCircle className="w-3.5 h-3.5 text-white" />
+                                                            )}
+                                                        </div>
+                                                        {cap.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {selectedCapabilities.length > 0 && (
+                                <div className="text-sm text-sky-700 bg-sky-50 border border-sky-200 rounded-lg p-3">
+                                    {selectedCapabilities.length} {selectedCapabilities.length === 1 ? 'service' : 'services'} selected
+                                </div>
+                            )}
+
+                            {step2Attempted && !isStep2Valid() && (
+                                <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                    {t('step2_capabilities.validation.selectOne', language)}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* STEP 3: Qualification */}
+                    {currentStep === 3 && (
+                        <div className="space-y-6">
+                            <div>
+                                <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step3_qualification.title', language)}</h2>
+                                <p className="text-slate-600">{t('step3_qualification.subtitle', language)}</p>
                             </div>
 
                             <div className="space-y-5">
                                 {/* Business Entity */}
                                 <div>
                                     <label className="block text-sm font-medium text-slate-900 mb-2">
-                                        {t('step2.businessEntity.question', language)}
+                                        {t('step3_qualification.businessEntity.question', language)}
                                     </label>
                                     <div className="flex gap-2">
                                         <button
@@ -574,13 +688,13 @@ export default function OnboardingPage() {
                                     {hasBusinessEntity === true && (
                                         <div className="mt-3 p-3 bg-sky-50 border border-sky-200 rounded-lg">
                                             <label className="block text-sm font-medium text-slate-900 mb-2">
-                                                {t('step2.businessEntity.businessNameLabel', language)}
+                                                {t('step3_qualification.businessEntity.businessNameLabel', language)}
                                             </label>
                                             <input
                                                 type="text"
                                                 value={businessName}
                                                 onChange={(e) => setBusinessName(e.target.value)}
-                                                placeholder={t('step2.businessEntity.businessNamePlaceholder', language)}
+                                                placeholder={t('step3_qualification.businessEntity.businessNamePlaceholder', language)}
                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent"
                                             />
                                         </div>
@@ -590,7 +704,7 @@ export default function OnboardingPage() {
                                 {/* General Liability */}
                                 <div>
                                     <label className="block text-sm font-medium text-slate-900 mb-2">
-                                        {t('step2.generalLiability.question', language)}
+                                        {t('step3_qualification.generalLiability.question', language)}
                                     </label>
                                     <div className="flex gap-2">
                                         <button
@@ -619,8 +733,8 @@ export default function OnboardingPage() {
                                 {/* Workers' Comp */}
                                 <div className={requiresWorkersComp ? 'p-4 bg-orange-50 border border-orange-200 rounded-lg' : ''}>
                                     <label className="block text-sm font-medium text-slate-900 mb-2">
-                                        {t('step2.workersComp.question', language)}
-                                        {requiresWorkersComp && <span className="text-orange-600 ml-2">({t('step2.workersComp.requiredIn', language, { state: vendorState })})</span>}
+                                        {t('step3_qualification.workersComp.question', language)}
+                                        {requiresWorkersComp && <span className="text-orange-600 ml-2">({t('step3_qualification.workersComp.requiredIn', language, { state: vendorState })})</span>}
                                     </label>
                                     <div className="flex gap-2">
                                         <button
@@ -649,7 +763,7 @@ export default function OnboardingPage() {
                                 {/* Commercial Auto */}
                                 <div>
                                     <label className="block text-sm font-medium text-slate-900 mb-2">
-                                        {t('step2.commercialAuto.question', language)}
+                                        {t('step3_qualification.commercialAuto.question', language)}
                                     </label>
                                     <div className="flex gap-2">
                                         <button
@@ -679,8 +793,8 @@ export default function OnboardingPage() {
                                 {requiresPollution && (
                                     <div className="p-4 bg-sky-50 border border-sky-200 rounded-lg">
                                         <label className="block text-sm font-medium text-sky-900 mb-2">
-                                            {t('step2.pollutionLiability.question', language)}
-                                            <span className="text-sky-700 ml-2">({t('step2.pollutionLiability.requiredFor', language)})</span>
+                                            {t('step3_qualification.pollutionLiability.question', language)}
+                                            <span className="text-sky-700 ml-2">({t('step3_qualification.pollutionLiability.requiredFor', language)})</span>
                                         </label>
                                         <div className="flex gap-2">
                                             <button
@@ -708,20 +822,20 @@ export default function OnboardingPage() {
                                 )}
                             </div>
 
-                            {!isStep2Valid() && hasBusinessEntity !== null && (
+                            {!isStep3Valid() && hasBusinessEntity !== null && (
                                 <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                    {t('step2.validation.answerAll', language)}
+                                    {t('step3_qualification.validation.answerAll', language)}
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* STEP 3: Contact Information */}
-                    {currentStep === 3 && (
+                    {/* STEP 4: Contact Information */}
+                    {currentStep === 4 && (
                         <div className="space-y-6">
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step3.title', language)}</h2>
-                                <p className="text-slate-600">{t('step3.subtitle', language)}</p>
+                                <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step4_contact.title', language)}</h2>
+                                <p className="text-slate-600">{t('step4_contact.subtitle', language)}</p>
                             </div>
 
                             <div className="space-y-4">
@@ -757,44 +871,44 @@ export default function OnboardingPage() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                                        {t('step3.email.label', language)}
+                                        {t('step4_contact.email.label', language)}
                                     </label>
                                     <input
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        placeholder={t('step3.email.placeholder', language)}
+                                        placeholder={t('step4_contact.email.placeholder', language)}
                                         className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-sky-600 focus:border-transparent"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                                        {t('step3.phone.label', language)}
+                                        {t('step4_contact.phone.label', language)}
                                     </label>
                                     <input
                                         type="tel"
                                         value={phone}
                                         onChange={handlePhoneChange}
-                                        placeholder={t('step3.phone.placeholder', language)}
+                                        placeholder={t('step4_contact.phone.placeholder', language)}
                                         className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-sky-600 focus:border-transparent"
                                     />
                                 </div>
                             </div>
 
-                            {!isStep3Valid() && email && phone && (
+                            {!isStep4Valid() && email && phone && (
                                 <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                    {t('step3.validation.invalidEmail', language)}
+                                    {t('step4_contact.validation.invalidEmail', language)}
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* STEP 4: ACORD 25 Upload (Express Only) */}
-                    {currentStep === 4 && currentTrack === 'FAST_TRACK' && (
+                    {/* STEP 5: ACORD 25 Upload (Express Only) */}
+                    {currentStep === 5 && currentTrack === 'FAST_TRACK' && (
                         <div className="space-y-6">
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step4.title', language)}</h2>
+                                <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('step5_documents.title', language)}</h2>
                                 <p className="text-slate-600">
                                     Upload your ACORD 25 (Certificate of Liability Insurance). We'll verify your coverage after submission.
                                 </p>
@@ -882,7 +996,7 @@ export default function OnboardingPage() {
                                 </ul>
                             </div>
 
-                            {step4Attempted && !isStep4Valid() && !uploading && (
+                            {step5Attempted && !isStep5Valid() && !uploading && (
                                 <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
                                     Please upload your ACORD 25 to continue.
                                 </div>
@@ -908,18 +1022,20 @@ export default function OnboardingPage() {
                         <div />
                     )}
 
-                    {currentStep < totalSteps && !(currentStep === 3 && currentTrack === 'STANDARD') ? (
+                    {currentStep < totalSteps && !(currentStep === 4 && currentTrack === 'STANDARD') ? (
                         <button
                             onClick={handleNext}
                             disabled={
                                 (currentStep === 1 && !isStep1Valid()) ||
                                 (currentStep === 2 && !isStep2Valid()) ||
-                                (currentStep === 3 && !isStep3Valid())
+                                (currentStep === 3 && !isStep3Valid()) ||
+                                (currentStep === 4 && !isStep4Valid())
                             }
                             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${(currentStep === 1 && isStep1Valid()) ||
                                 (currentStep === 2 && isStep2Valid()) ||
                                 (currentStep === 3 && isStep3Valid()) ||
-                                (currentStep === 4 && isStep4Valid())
+                                (currentStep === 4 && isStep4Valid()) ||
+                                (currentStep === 5 && isStep5Valid())
                                 ? 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg hover:shadow-xl'
                                 : 'bg-slate-300 text-slate-500 cursor-not-allowed'
                                 }`}
@@ -930,8 +1046,8 @@ export default function OnboardingPage() {
                     ) : (
                         <button
                             onClick={() => {
-                                if (currentStep === 4 && !isStep4Valid()) {
-                                    setStep4Attempted(true);
+                                if (currentStep === 5 && !isStep5Valid()) {
+                                    setStep5Attempted(true);
                                     return;
                                 }
                                 handleSubmit();

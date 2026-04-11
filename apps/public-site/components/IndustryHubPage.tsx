@@ -11,7 +11,9 @@ import { AuthorityBreadcrumb } from "@/components/AuthorityBreadcrumb";
 import { NearbyAreas } from "@/components/NearbyAreas";
 import { SITE } from '@/lib/constants';
 import { IndustryMarketStat } from '@/components/MarketSnapshot';
+import { CountyDataBar } from '@/components/CountyDataBar';
 import type { CensusEstablishmentResult } from '@/lib/census';
+import type { CountySummary, MarketWageContext } from '@/data/open-data';
 
 interface Location {
     slug: string;
@@ -42,9 +44,13 @@ interface IndustryHubPageProps {
     censusResult?: CensusEstablishmentResult;
     /** Plural noun for Census stat, e.g. "physician offices" */
     censusPlural?: string;
+    /** County-level demographics + competitor density (from open-data.ts) */
+    countySummary?: CountySummary;
+    /** Market-vs-regulation wage comparison (from open-data.ts) */
+    wageContext?: MarketWageContext;
 }
 
-export function IndustryHubPage({ industry, pillar, location, censusResult, censusPlural }: IndustryHubPageProps) {
+export function IndustryHubPage({ industry, pillar, location, censusResult, censusPlural, countySummary, wageContext }: IndustryHubPageProps) {
     // 1. Resolve Services (IDs to Objects)
     const allServices = (seoData.services || []) as SeoService[];
 
@@ -156,6 +162,16 @@ export function IndustryHubPage({ industry, pillar, location, censusResult, cens
                         </div>
                     </div>
                 </section>
+
+                {/* County Data Bar — Demographics + Wage Context */}
+                {countySummary && (
+                    <CountyDataBar
+                        summary={countySummary}
+                        wageContext={wageContext ?? null}
+                        industryName={industry.name}
+                        townName={townName}
+                    />
+                )}
 
                 {/* Local Insight */}
                 <section className="py-16 bg-white">

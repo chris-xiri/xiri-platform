@@ -43,6 +43,14 @@ export const SERVICE_AREAS: ServiceArea[] = [
         stateFips: '36',
     },
     {
+        id: 'suffolk',
+        label: 'Suffolk County',
+        display: 'Suffolk County',
+        censusLevel: 'county',
+        censusFips: '103',
+        stateFips: '36',
+    },
+    {
         id: 'kings',
         label: 'Kings County (Brooklyn)',
         display: 'Brooklyn',
@@ -160,6 +168,14 @@ export const NAICS_MAPPINGS: NAICSMapping[] = [
         censusLabel: 'Retail trade',
         singular: 'retail establishment',
         plural: 'retail establishments',
+    },
+    // Facility Services (our industry)
+    {
+        facilitySlug: 'janitorial-services',
+        naicsCodes: ['561720'],
+        censusLabel: 'Janitorial services',
+        singular: 'janitorial company',
+        plural: 'janitorial companies',
     },
 ];
 
@@ -356,9 +372,30 @@ export const BLS_WAGE_DATA = {
 export const CENSUS_CITATION = {
     source: 'U.S. Census Bureau',
     dataset: 'County Business Patterns',
-    year: 2022,
-    baseUrl: 'https://data.census.gov/table/CBP2022.CB2200CBP',
+    year: 2023,
+    baseUrl: 'https://data.census.gov/table/CBP2023.CB2300CBP',
     get citation() {
         return `${this.source}, ${this.dataset} (${this.year})`;
+    },
+};
+
+export const ACS_CITATION = {
+    source: 'U.S. Census Bureau',
+    dataset: 'American Community Survey 5-Year Estimates',
+    year: 2023,
+    baseUrl: 'https://data.census.gov/table/ACSST5Y2023.S0101',
+    get citation() {
+        return `${this.source}, ${this.dataset} (${this.year})`;
+    },
+};
+
+export const BLS_OEWS_CITATION = {
+    source: 'U.S. Bureau of Labor Statistics',
+    dataset: 'Occupational Employment and Wage Statistics',
+    year: 2024,
+    month: 'May',
+    baseUrl: 'https://www.bls.gov/oes/',
+    get citation() {
+        return `${this.source}, ${this.dataset}, ${this.month} ${this.year}`;
     },
 };

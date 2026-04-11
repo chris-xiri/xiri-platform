@@ -59,8 +59,22 @@ interface Translations {
         };
     };
 
-    // Step 2: Qualification
-    step2: {
+    // Step 2: Service Capabilities
+    step2_capabilities: {
+        title: string;
+        subtitle: string;
+        groups: {
+            cleaning: string;
+            facility: string;
+            specialty: string;
+        };
+        validation: {
+            selectOne: string;
+        };
+    };
+
+    // Step 3: Qualification (was Step 2)
+    step3_qualification: {
         title: string;
         subtitle: string;
         businessEntity: {
@@ -87,8 +101,8 @@ interface Translations {
         };
     };
 
-    // Step 3: Contact Info
-    step3: {
+    // Step 4: Contact Info (was Step 3)
+    step4_contact: {
         title: string;
         subtitle: string;
         email: {
@@ -105,8 +119,8 @@ interface Translations {
         };
     };
 
-    // Step 4: Documents
-    step4: {
+    // Step 5: Documents (was Step 4)
+    step5_documents: {
         title: string;
         subtitle: string;
         coi: {
@@ -180,7 +194,19 @@ export const translations: Record<Language, Translations> = {
                 subtitle: "Jobs ready - just need your paperwork"
             }
         },
-        step2: {
+        step2_capabilities: {
+            title: "What services do you offer?",
+            subtitle: "Select all that apply — this helps us match you to the right jobs",
+            groups: {
+                cleaning: "Cleaning",
+                facility: "Facility & Maintenance",
+                specialty: "Specialty Trades",
+            },
+            validation: {
+                selectOne: "Please select at least one service to continue",
+            },
+        },
+        step3_qualification: {
             title: "Quick Qualification",
             subtitle: "Just a few Yes/No questions",
             businessEntity: {
@@ -206,7 +232,7 @@ export const translations: Record<Language, Translations> = {
                 answerAll: "Please answer all questions to continue"
             }
         },
-        step3: {
+        step4_contact: {
             title: "✓ Great! You're qualified",
             subtitle: "How can we reach you?",
             email: {
@@ -222,7 +248,7 @@ export const translations: Record<Language, Translations> = {
                 invalidPhone: "Please enter a valid 10-digit phone number"
             }
         },
-        step4: {
+        step5_documents: {
             title: "✓ Almost there!",
             subtitle: "Upload your documents to complete your application",
             coi: {
@@ -290,7 +316,19 @@ export const translations: Record<Language, Translations> = {
                 subtitle: "Trabajos listos - solo necesita su documentación"
             }
         },
-        step2: {
+        step2_capabilities: {
+            title: "¿Qué servicios ofrece?",
+            subtitle: "Seleccione todos los que apliquen — esto nos ayuda a encontrarle los trabajos correctos",
+            groups: {
+                cleaning: "Limpieza",
+                facility: "Mantenimiento de Instalaciones",
+                specialty: "Oficios Especializados",
+            },
+            validation: {
+                selectOne: "Por favor seleccione al menos un servicio para continuar",
+            },
+        },
+        step3_qualification: {
             title: "Calificación Rápida",
             subtitle: "Solo algunas preguntas de Sí/No",
             businessEntity: {
@@ -316,7 +354,7 @@ export const translations: Record<Language, Translations> = {
                 answerAll: "Por favor responda todas las preguntas para continuar"
             }
         },
-        step3: {
+        step4_contact: {
             title: "✓ ¡Excelente! Usted califica",
             subtitle: "¿Cómo podemos contactarle?",
             email: {
@@ -332,7 +370,7 @@ export const translations: Record<Language, Translations> = {
                 invalidPhone: "Por favor ingrese un número de teléfono válido de 10 dígitos"
             }
         },
-        step4: {
+        step5_documents: {
             title: "✓ ¡Casi terminamos!",
             subtitle: "Suba sus documentos para completar su solicitud",
             coi: {

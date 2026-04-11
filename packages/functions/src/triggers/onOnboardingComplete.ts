@@ -30,6 +30,8 @@ export const onOnboardingComplete = onDocumentUpdated({
     const phone = after.phone || 'N/A';
     const track = after.onboardingTrack || 'STANDARD';
     const lang = after.preferredLanguage || 'en';
+    const capabilities: string[] = after.capabilities || [];
+    const capDisplay = capabilities.length > 0 ? capabilities.map(c => c.replace(/_/g, ' ')).join(', ') : 'None specified';
 
     logger.info(`Vendor ${vendorId} (${businessName}) completed onboarding. Sending notification.`);
 
@@ -58,6 +60,7 @@ export const onOnboardingComplete = onDocumentUpdated({
             <tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Phone</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${phone}</td></tr>
             <tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Track</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${track === 'FAST_TRACK' ? '⚡ Express Contract' : '🤝 Partner Network'}</td></tr>
             <tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Language</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${lang === 'es' ? '🇪🇸 Spanish' : '🇺🇸 English'}</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Capabilities</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${capDisplay}</td></tr>
         </table>
 
         <h3 style="color: #0c4a6e; margin-top: 24px;">Compliance Self-Report</h3>
@@ -166,6 +169,12 @@ export const onOnboardingComplete = onDocumentUpdated({
                             startIcon: { knownIcon: "DESCRIPTION" },
                         },
                     },
+                ],
+            },
+            {
+                header: "Service Capabilities",
+                widgets: [
+                    { textParagraph: { text: capDisplay } },
                 ],
             },
             {

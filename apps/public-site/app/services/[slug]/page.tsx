@@ -14,6 +14,8 @@ import { SITE } from '@/lib/constants';
 // FIX: Add Lucide imports
 import { MapPin, Eye } from 'lucide-react';
 import { AuthorityBreadcrumb, getPillarForService } from '@/components/AuthorityBreadcrumb';
+import { regionToCountyId, getCountySummary, getMarketWageContext } from '@/data/open-data';
+import { CountyDataBar } from '@/components/CountyDataBar';
 
 interface Location {
     slug: string;
@@ -406,6 +408,11 @@ export default async function ServicePage({ params }: Props) {
 
     const townName = location.name.split(',')[0].trim();
 
+    // Open-data: county-level demographics + wage context
+    const countyId = regionToCountyId(location.region);
+    const countySummary = countyId ? getCountySummary(countyId) : null;
+    const wageContext = countyId ? getMarketWageContext(countyId) : null;
+
     // Inject Landmarks into Hero
     const heroTitle = `${service.name} in ${location.name}`;
     const heroSubtitle = location.localInsight
@@ -527,8 +534,16 @@ export default async function ServicePage({ params }: Props) {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
                         <div>
-                            <div className="text-2xl font-bold text-sky-400">{location.medicalDensity?.split(' ')[0] || '10+'}</div>
-                            <div className="text-sm text-slate-300 mt-1">Facilities in Area</div>
+                            <div className="text-2xl font-bold text-sky-400">
+                                {countySummary
+                                    ? countySummary.totalBusinesses >= 1000
+                                        ? `${(countySummary.totalBusinesses / 1000).toFixed(1)}K`
+                                        : countySummary.totalBusinesses.toLocaleString('en-US')
+                                    : '10+'}
+                            </div>
+                            <div className="text-sm text-slate-300 mt-1">
+                                {countySummary ? 'Business Establishments' : 'Facilities in Area'}
+                            </div>
                         </div>
                         <div>
                             <div className="text-2xl font-bold text-sky-400">365</div>
@@ -545,6 +560,16 @@ export default async function ServicePage({ params }: Props) {
                     </div>
                 </div>
             </section>
+
+            {/* ═══ COUNTY DATA BAR — open-data enrichment ═══ */}
+            {countySummary && (
+                <CountyDataBar
+                    summary={countySummary}
+                    wageContext={wageContext ?? null}
+                    industryName={service.name}
+                    townName={townName}
+                />
+            )}
 
             {/* ═══ LOCAL INSIGHT — unique per town ═══ */}
             <section className="py-16 bg-white">
@@ -643,61 +668,65 @@ export default async function ServicePage({ params }: Props) {
 
             {/* ═══ LOCAL MARKET PULSE (from location data) ═══ */}
             {location.keyIntersection && (
-                <section className="py-20 bg-white border-b border-slate-200">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="grid md:grid-cols-2 gap-12 items-center">
-                            <div className="order-2 md:order-1 relative h-96 rounded-2xl overflow-hidden shadow-xl bg-white border border-slate-100">
-                                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#0ea5e9_1px,transparent_1px)] [background-size:16px_16px]"></div>
-                                <div className="absolute inset-0 flex items-center justify-center">
+            <section className="py-20 bg-white border-b border-slate-200">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid md:grid-cols-2 gap-12 items-center">
+                        <div className="order-2 md:order-1 relative h-96 rounded-2xl overflow-hidden shadow-xl border border-slate-100">
+                            {location.latitude ? (
+                                <iframe
+                                    title={`Map of ${townName}, ${location.region || 'NY'}`}
+                                    width="100%"
+                                    height="100%"
+                                    style={{ border: 0 }}
+                                    loading="lazy"
+                                    referrerPolicy="no-referrer-when-downgrade"
+                                    src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${location.latitude},${location.longitude}&zoom=14`}
+                                />
+                            ) : (
+                                <div className="absolute inset-0 flex items-center justify-center bg-slate-50">
                                     <div className="text-center">
                                         <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                                             <MapPin className="w-8 h-8" />
                                         </div>
-                                        <p className="font-bold text-slate-400">Active Service Area</p>
+                                        <p className="font-bold text-slate-400">Service Area</p>
                                     </div>
                                 </div>
-                                <div className="absolute top-8 left-8 bg-white p-3 rounded-lg shadow-lg border border-slate-100 max-w-[200px]">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                        <span className="text-xs font-bold text-slate-700">Live Coverage</span>
-                                    </div>
-                                    <p className="text-xs text-slate-500">{location.name}</p>
-                                </div>
-                            </div>
+                            )}
+                        </div>
 
-                            <div className="order-1 md:order-2">
-                                <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold mb-6">
-                                    Local Operations
+                        <div className="order-1 md:order-2">
+                            <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-bold mb-6">
+                                Already Serving Your Area
+                            </div>
+                            <h2 className="text-3xl font-bold font-heading text-slate-900 mb-6">
+                                {service.name} Near {townName}
+                            </h2>
+                            <div className="space-y-6 text-lg text-slate-600">
+                                <div className="flex gap-4">
+                                    <div className="w-12 h-12 flex-shrink-0 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 shadow-sm">
+                                        <MapPin className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-slate-900 mb-1">Local Crews, Not Drive-Ins</h3>
+                                        <p>We already serve facilities along <strong className="text-slate-900">{location.keyIntersection}</strong> — your building gets added to an existing route, meaning faster response and crews who know the area.</p>
+                                    </div>
                                 </div>
-                                <h2 className="text-3xl font-bold font-heading text-slate-900 mb-6">
-                                    Already Operating in {townName}
-                                </h2>
-                                <div className="space-y-6 text-lg text-slate-600">
+                                {location.landmarks && location.landmarks.length > 0 && (
                                     <div className="flex gap-4">
                                         <div className="w-12 h-12 flex-shrink-0 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 shadow-sm">
-                                            <MapPin className="w-6 h-6" />
+                                            <Eye className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-slate-900 mb-1">Active Routes</h3>
-                                            <p>Our teams are active along <strong className="text-slate-900">{location.keyIntersection}</strong>.</p>
+                                            <h3 className="font-bold text-slate-900 mb-1">Nearby Facilities We Serve</h3>
+                                            <p>Our teams operate near <strong className="text-slate-900">{location.landmarks.slice(0, 2).join(' & ')}</strong> — adding your facility means zero ramp-up time.</p>
                                         </div>
                                     </div>
-                                    {location.landmarks && location.landmarks.length > 0 && (
-                                        <div className="flex gap-4">
-                                            <div className="w-12 h-12 flex-shrink-0 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 shadow-sm">
-                                                <Eye className="w-6 h-6" />
-                                            </div>
-                                            <div>
-                                                <h3 className="font-bold text-slate-900 mb-1">Nearby Landmarks</h3>
-                                                <p>Serving facilities near <strong className="text-slate-900">{location.landmarks.slice(0, 2).join(' & ')}</strong>.</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                )}
                             </div>
                         </div>
                     </div>
-                </section>
+                </div>
+            </section>
             )}
 
             <ValuePropsSection title={`Our Standard for ${townName}`} />
