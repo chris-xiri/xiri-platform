@@ -33,6 +33,7 @@ export { startLeadSequence } from "./triggers/startLeadSequence";
 export { sendSingleLeadEmail } from "./triggers/sendSingleLeadEmail";
 export { sendPreviewEmail } from "./triggers/sendPreviewEmail";
 export { onContactDeleted } from "./triggers/onContactDeleted";
+export { onExperienceUpdated } from "./triggers/onExperienceUpdated";
 
 // ── Social AI Engine (scheduled) ──
 export { runSocialContentGenerator } from "./triggers/socialContentGenerator";
@@ -84,7 +85,7 @@ export {
 
 // ── Lead Prospecting & Enrichment (onCall + scheduled) ──
 export { runProspector, addProspectsToCrm, expandLocation } from "./functions/prospecting";
-export { dailyProspector, triggerDailyProspector, updateProspectingConfig, getProspectingConfig } from "./triggers/dailyProspector";
+export { dailyProspector, triggerDailyProspector, updateProspectingConfig, getProspectingConfig, regenerateProspectingConfig } from "./triggers/dailyProspector";
 
 // ── Vendor / Contractor Prospecting (onCall + scheduled) ──
 export { runVendorProspector, addVendorProspectsToCrm } from "./functions/vendorProspecting";

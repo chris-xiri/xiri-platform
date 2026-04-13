@@ -243,6 +243,12 @@ export const CERTIFICATIONS: CertificationOption[] = [
   // Landscaping
   { value: 'nys_pesticide_applicator', label: 'NYS Pesticide Applicator (Landscaping)',    capabilities: ['landscaping'] },
   { value: 'nys_arborist',            label: 'ISA Certified Arborist',                    capabilities: ['landscaping'] },
+  // Boiler
+  { value: 'nyc_hp_boiler_op',        label: 'NYC High Pressure Boiler Operator',           capabilities: ['hvac', 'plumbing'] },
+  { value: 'nys_lp_boiler_op',        label: 'NYS Low Pressure Boiler Operator',            capabilities: ['hvac', 'plumbing'] },
+  // Facility Management
+  { value: 'pmp',                     label: 'PMP (Project Management Professional)',       capabilities: [] }, // shown for all
+  { value: 'cpm',                     label: 'CPM (Certified Property Manager)',            capabilities: [] }, // shown for all
   // General trade
   { value: 'general_liability_ins',    label: 'General Liability Insurance ($1M+)',         capabilities: [] }, // shown for all
   { value: 'workers_comp',            label: 'Workers\' Compensation Certificate',          capabilities: [] }, // shown for all

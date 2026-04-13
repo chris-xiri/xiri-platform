@@ -17,6 +17,7 @@ import * as crypto from "crypto";
 import { db } from "../utils/firebase";
 import { prospectAndEnrich } from "../agents/prospector";
 import { DASHBOARD_CORS } from "../utils/cors";
+import { generateProspectingConfig, getConfigSummary } from "../utils/prospectingTargets";
 import type { EnrichedProspect } from "@xiri/shared";
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -83,27 +84,29 @@ interface ProspectingConfig {
     };
 }
 
+/**
+ * Auto-generated from ICP engine. Covers 75+ queries × 76 towns = 5,700+ combos.
+ * All facility types are single-tenant or self-managed cleaning.
+ * @see prospectingTargets.ts for the ICP definition
+ */
+const AUTO_CONFIG = generateProspectingConfig({ dailyTarget: 100 });
 const DEFAULT_CONFIG: ProspectingConfig = {
-    queries: [
-        "office building",
-        "dental office",
-        "veterinary clinic",
-        "gym fitness center",
-        "retail store",
-        "medical suite",
-        "urgent care center",
-        "car dealership",
-        "insurance office",
-    ],
-    locations: [
-        "Nassau County, NY",
-        "Suffolk County, NY",
-        "Queens, NY",
-    ],
-    dailyTarget: 100,
+    queries: AUTO_CONFIG.queries,
+    locations: AUTO_CONFIG.locations,
+    dailyTarget: AUTO_CONFIG.dailyTarget,
     enabled: true,
     excludePatterns: [],
 };
+
+/** Fisher-Yates shuffle — randomize combo order each run */
+function shuffle<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
 
 // ── Load seen set (names + phones + emails we've already queued or imported) ──
 
@@ -211,12 +214,20 @@ async function runDailyPipeline() {
     await updateProgress("Initializing...");
 
     try {
-        // Iterate queries × locations until we hit dailyTarget
+        // Build all combos and shuffle — ensures each run processes different
+        // corners of the search space instead of always starting from position 0
+        const combos: Array<{ query: string; location: string }> = [];
         for (const location of config.locations) {
-            if (newProspects.length >= config.dailyTarget) break;
-
             for (const queryTerm of config.queries) {
-                if (newProspects.length >= config.dailyTarget) break;
+                combos.push({ query: queryTerm, location });
+            }
+        }
+        const shuffled = shuffle(combos);
+        logger.info(`[DailyProspector] ${shuffled.length} combos shuffled. Target: ${config.dailyTarget}`);
+
+        // Iterate shuffled combos until we hit dailyTarget
+        for (const { query: queryTerm, location } of shuffled) {
+            if (newProspects.length >= config.dailyTarget) break;
 
                 const remaining = config.dailyTarget - newProspects.length;
                 const batchSize = Math.min(remaining + 10, 20); // request a few extra to account for dedup
@@ -347,12 +358,6 @@ async function runDailyPipeline() {
                     logger.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err.message);
                     // Continue with next query
                 }
-            }
-            
-            const elapsedSecs = (Date.now() - startedAt.getTime()) / 1000;
-            if (elapsedSecs > 480) {
-                break; 
-            }
         }
 
         // Prospects are now incrementally saved during the loops, so we don't need a final batch write here!
@@ -466,7 +471,40 @@ export const getProspectingConfig = onCall({
     if (doc.exists) {
         return doc.data();
     }
-    // Seed default config
+    // Seed with ICP-generated config on first read
     await db.collection("prospecting_config").doc("default").set(DEFAULT_CONFIG);
     return DEFAULT_CONFIG;
+});
+
+// ── Regenerate config from ICP engine (onCall) ──────────────────────
+
+export const regenerateProspectingConfig = onCall({
+    cors: DASHBOARD_CORS,
+}, async (request) => {
+    const data = request.data as { tiers?: (1 | 2 | 3)[]; dailyTarget?: number } | undefined;
+    const generated = generateProspectingConfig({
+        tiers: data?.tiers ?? [1, 2, 3],
+        dailyTarget: data?.dailyTarget ?? 100,
+    });
+
+    const config: ProspectingConfig = {
+        queries: generated.queries,
+        locations: generated.locations,
+        dailyTarget: generated.dailyTarget,
+        enabled: true,
+        excludePatterns: [],
+    };
+
+    await db.collection("prospecting_config").doc("default").set(config, { merge: true });
+
+    const summary = getConfigSummary(generated);
+    logger.info(`[regenerateProspectingConfig] ${summary}`);
+
+    return {
+        message: "Prospecting config regenerated from ICP engine.",
+        queries: generated.queries.length,
+        locations: generated.locations.length,
+        totalCombos: generated._generatorMeta.totalCombos,
+        estimatedWeeksOfFreshData: generated._generatorMeta.estimatedWeeksOfFreshData,
+    };
 });

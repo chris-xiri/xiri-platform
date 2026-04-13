@@ -18,6 +18,7 @@ import * as crypto from "crypto";
 import { db } from "../utils/firebase";
 import { vendorProspectAndEnrich, generateQueriesForCapability } from "../agents/vendorProspector";
 import { DASHBOARD_CORS } from "../utils/cors";
+import { SERVICE_REGIONS } from "../utils/prospectingTargets";
 import type { EnrichedProspect } from "@xiri/shared";
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -86,6 +87,17 @@ interface VendorProspectingConfig {
     };
 }
 
+/** Auto-generate town-level locations from the ICP service region list */
+function generateVendorLocations(): string[] {
+    const locations: string[] = [];
+    for (const region of SERVICE_REGIONS) {
+        for (const town of region.towns) {
+            locations.push(`${town}, ${region.state}`);
+        }
+    }
+    return locations;
+}
+
 const DEFAULT_CONFIG: VendorProspectingConfig = {
     capabilities: [
         { value: 'janitorial', label: 'Janitorial / Commercial Cleaning', group: 'cleaning' },
@@ -95,15 +107,21 @@ const DEFAULT_CONFIG: VendorProspectingConfig = {
         { value: 'landscaping', label: 'Landscaping & Grounds', group: 'facility' },
         { value: 'snow_removal', label: 'Snow & Ice Management', group: 'facility' },
     ],
-    locations: [
-        "Nassau County, NY",
-        "Suffolk County, NY",
-        "Queens, NY",
-    ],
+    locations: generateVendorLocations(),
     dailyTarget: 50,
     enabled: true,
     excludePatterns: [],
 };
+
+/** Fisher-Yates shuffle — randomize combo order each run */
+function shuffle<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
 
 // ── Load seen set (names + phones + emails we've already queued or imported) ──
 
@@ -210,171 +228,167 @@ async function runDailyVendorPipeline() {
     await updateProgress("Initializing...");
 
     try {
-        // Iterate capabilities × locations × query variants
+        // Build all combos (location × capability × query) and shuffle
+        const combos: Array<{ query: string; location: string; capability: typeof config.capabilities[0] }> = [];
         for (const location of config.locations) {
+            for (const capability of config.capabilities) {
+                const queries = generateQueriesForCapability(capability.label, capability.group);
+                for (const queryTerm of queries) {
+                    combos.push({ query: queryTerm, location, capability });
+                }
+            }
+        }
+        const shuffled = shuffle(combos);
+        logger.info(`[DailyVendorProspector] ${shuffled.length} combos shuffled. Target: ${config.dailyTarget}`);
+
+        // Iterate shuffled combos until we hit dailyTarget
+        for (const { query: queryTerm, location, capability } of shuffled) {
             if (newProspects.length >= config.dailyTarget) break;
 
-            for (const capability of config.capabilities) {
-                if (newProspects.length >= config.dailyTarget) break;
+            const remaining = config.dailyTarget - newProspects.length;
+            const batchSize = Math.min(remaining + 10, 20);
 
-                // Generate search queries from capability label
-                const queries = generateQueriesForCapability(capability.label, capability.group);
+            logger.info(`[DailyVendorProspector] Searching: "${queryTerm}" in "${location}" (capability: ${capability.value}, need ${remaining} more)`);
+            await updateProgress(`${capability.label} in ${location}`);
 
-                for (const queryTerm of queries) {
+            try {
+                const result = await vendorProspectAndEnrich(
+                    {
+                        query: queryTerm,
+                        location,
+                        capability: capability.value,
+                        maxResults: batchSize,
+                        skipPaidApis: false,
+                    },
+                    secrets
+                );
+
+                totalDiscovered += result.prospects.length;
+
+                capabilityYield[capability.value] = capabilityYield[capability.value] || { discovered: 0, qualified: 0 };
+                capabilityYield[capability.value].discovered += result.prospects.length;
+
+                locationYield[location] = locationYield[location] || { discovered: 0, qualified: 0 };
+                locationYield[location].discovered += result.prospects.length;
+
+                let batchCount = 0;
+                const batch = db.batch();
+
+                for (const prospect of result.prospects) {
                     if (newProspects.length >= config.dailyTarget) break;
 
-                    const remaining = config.dailyTarget - newProspects.length;
-                    const batchSize = Math.min(remaining + 10, 20);
+                    const normalized = normalizeName(prospect.businessName);
+                    const emailLower = prospect.contactEmail?.toLowerCase();
+                    const genericLower = prospect.genericEmail?.toLowerCase();
+                    const phoneCleaned = prospect.phone?.replace(/[^0-9]/g, '');
+                    const addressNorm = prospect.address
+                        ? prospect.address.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
+                        : undefined;
+                    const websiteDomain = prospect.website
+                        ? prospect.website.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase()
+                        : undefined;
+                    const fbPath = prospect.facebookUrl
+                        ? prospect.facebookUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//, '').split('?')[0].toLowerCase()
+                        : undefined;
 
-                    logger.info(`[DailyVendorProspector] Searching: "${queryTerm}" in "${location}" (capability: ${capability.value}, need ${remaining} more)`);
-                    await updateProgress(`${capability.label} in ${location}`);
+                    // Dedup check: name, phone, email, address, website domain, or Facebook URL
+                    const matchedKey =
+                        seen.has(normalized) ? `name:${normalized}` :
+                        (phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`)) ? `phone:${phoneCleaned}` :
+                        (emailLower && seen.has(`email:${emailLower}`)) ? `email:${emailLower}` :
+                        (genericLower && seen.has(`email:${genericLower}`)) ? `email:${genericLower}` :
+                        (websiteDomain && seen.has(`domain:${websiteDomain}`)) ? `domain:${websiteDomain}` :
+                        (fbPath && seen.has(`fb:${fbPath}`)) ? `fb:${fbPath}` :
+                        (addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`)) ? `addr:${addressNorm}` :
+                        null;
 
-                    try {
-                        const result = await vendorProspectAndEnrich(
-                            {
-                                query: queryTerm,
-                                location,
-                                capability: capability.value,
-                                maxResults: batchSize,
-                                skipPaidApis: false,
-                            },
-                            secrets
-                        );
-
-                        totalDiscovered += result.prospects.length;
-
-                        capabilityYield[capability.value] = capabilityYield[capability.value] || { discovered: 0, qualified: 0 };
-                        capabilityYield[capability.value].discovered += result.prospects.length;
-
-                        locationYield[location] = locationYield[location] || { discovered: 0, qualified: 0 };
-                        locationYield[location].discovered += result.prospects.length;
-
-                        let batchCount = 0;
-                        const batch = db.batch();
-
-                        for (const prospect of result.prospects) {
-                            if (newProspects.length >= config.dailyTarget) break;
-
-                            const normalized = normalizeName(prospect.businessName);
-                            const emailLower = prospect.contactEmail?.toLowerCase();
-                            const genericLower = prospect.genericEmail?.toLowerCase();
-                            const phoneCleaned = prospect.phone?.replace(/[^0-9]/g, '');
-                            const addressNorm = prospect.address
-                                ? prospect.address.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
-                                : undefined;
-                            const websiteDomain = prospect.website
-                                ? prospect.website.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase()
-                                : undefined;
-                            const facebookPath = prospect.facebookUrl
-                                ? prospect.facebookUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//, '').split('?')[0].toLowerCase()
-                                : undefined;
-
-                            // Dedup check: name, phone, email, address, website domain, or Facebook URL
-                            const matchedKey =
-                                seen.has(normalized) ? `name:${normalized}` :
-                                (phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`)) ? `phone:${phoneCleaned}` :
-                                (emailLower && seen.has(`email:${emailLower}`)) ? `email:${emailLower}` :
-                                (genericLower && seen.has(`email:${genericLower}`)) ? `email:${genericLower}` :
-                                (websiteDomain && seen.has(`domain:${websiteDomain}`)) ? `domain:${websiteDomain}` :
-                                (facebookPath && seen.has(`fb:${facebookPath}`)) ? `fb:${facebookPath}` :
-                                (addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`)) ? `addr:${addressNorm}` :
-                                null;
-
-                            if (matchedKey) {
-                                logger.info(`[DailyVendorProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
-                                duplicatesSkipped++;
-                                continue;
-                            }
-
-                            // Exclude patterns check
-                            if (config.excludePatterns.some(p =>
-                                normalized.includes(p.toLowerCase())
-                            )) {
-                                duplicatesSkipped++;
-                                continue;
-                            }
-
-                            // For vendors, we're more lenient — accept even without email  
-                            // (phone-only or Facebook-only contractors are still valuable)
-                            if (!prospect.contactEmail && !prospect.genericEmail && !prospect.phone && !prospect.facebookUrl) {
-                                continue;
-                            }
-
-                            // Add ALL identifiers to seen set to prevent within-batch dupes
-                            seen.add(normalized);
-                            if (phoneCleaned && phoneCleaned.length >= 7) seen.add(`phone:${phoneCleaned}`);
-                            if (emailLower) seen.add(`email:${emailLower}`);
-                            if (genericLower) seen.add(`email:${genericLower}`);
-                            if (websiteDomain) seen.add(`domain:${websiteDomain}`);
-                            if (facebookPath) seen.add(`fb:${facebookPath}`);
-                            if (addressNorm && addressNorm.length >= 10) seen.add(`addr:${addressNorm}`);
-
-                            // Write to vendor_prospect_queue with capability metadata
-                            const docId = vendorProspectDocId(prospect);
-                            const ref = db.collection("vendor_prospect_queue").doc(docId);
-                            batch.set(ref, {
-                                businessName: prospect.businessName,
-                                normalizedName: normalizeName(prospect.businessName),
-                                address: prospect.address || null,
-                                phone: prospect.phone || null,
-                                website: prospect.website || null,
-                                rating: prospect.rating || null,
-
-                                contactEmail: prospect.contactEmail || null,
-                                genericEmail: prospect.genericEmail || null,
-                                contactName: prospect.contactName || null,
-                                contactTitle: prospect.contactTitle || null,
-                                emailSource: prospect.emailSource || 'none',
-                                emailConfidence: prospect.emailConfidence || 'low',
-                                facebookUrl: prospect.facebookUrl || null,
-                                linkedinUrl: prospect.linkedinUrl || null,
-                                enrichmentLog: prospect.enrichmentLog || [],
-
-                                allContacts: prospect.allContacts || [],
-
-                                // Vendor-specific fields
-                                searchCapability: capability.value,
-                                detectedCapabilities: [capability.value],
-                                isCommercial: null, // To be determined by AI or manual review
-
-                                status: "pending_review",
-                                batchDate,
-                                searchQuery: queryTerm,
-                                searchLocation: location,
-
-                                createdAt: new Date(),
-                            });
-
-                            newProspects.push({ prospect, query: queryTerm, location, capability: capability.value });
-                            batchCount++;
-
-                            capabilityYield[capability.value].qualified++;
-                            locationYield[location].qualified++;
-                        }
-
-                        if (batchCount > 0) {
-                            await batch.commit();
-                            logger.info(`[DailyVendorProspector] Wrote batch of ${batchCount} vendor prospects.`);
-                        }
-
-                        await updateProgress(`${capability.label} in ${location}`);
-
-                        const elapsedSecs = (Date.now() - startedAt.getTime()) / 1000;
-                        if (elapsedSecs > 480) {
-                            logger.warn("[DailyVendorProspector] Approaching 9-minute limit. Stopping early.");
-                            break;
-                        }
-                    } catch (err: any) {
-                        logger.error(`[DailyVendorProspector] Error for "${queryTerm}" in "${location}":`, err.message);
+                    if (matchedKey) {
+                        logger.info(`[DailyVendorProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
+                        duplicatesSkipped++;
+                        continue;
                     }
+
+                    // Exclude patterns check
+                    if (config.excludePatterns.some(p =>
+                        normalized.includes(p.toLowerCase())
+                    )) {
+                        duplicatesSkipped++;
+                        continue;
+                    }
+
+                    // For vendors, we're more lenient — accept even without email  
+                    // (phone-only or Facebook-only contractors are still valuable)
+                    if (!prospect.contactEmail && !prospect.genericEmail && !prospect.phone && !prospect.facebookUrl) {
+                        continue;
+                    }
+
+                    // Add ALL identifiers to seen set to prevent within-batch dupes
+                    seen.add(normalized);
+                    if (phoneCleaned && phoneCleaned.length >= 7) seen.add(`phone:${phoneCleaned}`);
+                    if (emailLower) seen.add(`email:${emailLower}`);
+                    if (genericLower) seen.add(`email:${genericLower}`);
+                    if (websiteDomain) seen.add(`domain:${websiteDomain}`);
+                    if (fbPath) seen.add(`fb:${fbPath}`);
+                    if (addressNorm && addressNorm.length >= 10) seen.add(`addr:${addressNorm}`);
+
+                    // Write to vendor_prospect_queue with capability metadata
+                    const docId = vendorProspectDocId(prospect);
+                    const ref = db.collection("vendor_prospect_queue").doc(docId);
+                    batch.set(ref, {
+                        businessName: prospect.businessName,
+                        normalizedName: normalizeName(prospect.businessName),
+                        address: prospect.address || null,
+                        phone: prospect.phone || null,
+                        website: prospect.website || null,
+                        rating: prospect.rating || null,
+
+                        contactEmail: prospect.contactEmail || null,
+                        genericEmail: prospect.genericEmail || null,
+                        contactName: prospect.contactName || null,
+                        contactTitle: prospect.contactTitle || null,
+                        emailSource: prospect.emailSource || 'none',
+                        emailConfidence: prospect.emailConfidence || 'low',
+                        facebookUrl: prospect.facebookUrl || null,
+                        linkedinUrl: prospect.linkedinUrl || null,
+                        enrichmentLog: prospect.enrichmentLog || [],
+
+                        allContacts: prospect.allContacts || [],
+
+                        // Vendor-specific fields
+                        searchCapability: capability.value,
+                        detectedCapabilities: [capability.value],
+                        isCommercial: null, // To be determined by AI or manual review
+
+                        status: "pending_review",
+                        batchDate,
+                        searchQuery: queryTerm,
+                        searchLocation: location,
+
+                        createdAt: new Date(),
+                    });
+
+                    newProspects.push({ prospect, query: queryTerm, location, capability: capability.value });
+                    batchCount++;
+
+                    capabilityYield[capability.value].qualified++;
+                    locationYield[location].qualified++;
                 }
 
-                const elapsedSecs = (Date.now() - startedAt.getTime()) / 1000;
-                if (elapsedSecs > 480) break;
-            }
+                if (batchCount > 0) {
+                    await batch.commit();
+                    logger.info(`[DailyVendorProspector] Wrote batch of ${batchCount} vendor prospects.`);
+                }
 
-            const elapsedSecs = (Date.now() - startedAt.getTime()) / 1000;
-            if (elapsedSecs > 480) break;
+                await updateProgress(`${capability.label} in ${location}`);
+
+                const elapsedSecs = (Date.now() - startedAt.getTime()) / 1000;
+                if (elapsedSecs > 480) {
+                    logger.warn("[DailyVendorProspector] Approaching 9-minute limit. Stopping early.");
+                    break;
+                }
+            } catch (err: any) {
+                logger.error(`[DailyVendorProspector] Error for "${queryTerm}" in "${location}":`, err.message);
+            }
         }
 
         // Update config with run stats

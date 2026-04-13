@@ -17,7 +17,7 @@ import {
     LayoutDashboard, Briefcase,
     ShieldCheck, Activity, Phone, Mail, MapPin, Globe,
     Copy, Check, Rocket, AlertTriangle, Pencil, X, Plus, MoreHorizontal, Save, Loader2,
-    StickyNote, ClipboardList, Users as UsersIcon, Clock, DollarSign as DollarIcon, MapPinned, Award
+    StickyNote, ClipboardList, Users as UsersIcon, Clock, DollarSign as DollarIcon, MapPinned, Award, FileText
 } from 'lucide-react';
 
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
@@ -133,7 +133,8 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
         setOnboardingDraft({
             teamSize: ob.teamSize || '',
             serviceCounties: ob.serviceCounties || [],
-            hourlyRate: ob.hourlyRate || '',
+            experienceRaw: ob.experienceRaw || '',
+            experienceSummary: ob.experienceSummary || '',
             responseTime: ob.responseTime || '',
             certifications: ob.certifications || [],
             availability: ob.availability || '',
@@ -554,10 +555,21 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                             <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><Clock className="w-3 h-3" /> Response Time</label>
                                                             <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.responseTime} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, responseTime: e.target.value })} placeholder="e.g. Same day" />
                                                         </div>
-                                                        <div>
-                                                            <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><DollarIcon className="w-3 h-3" /> Hourly Rate</label>
-                                                            <Input className="h-7 text-sm mt-0.5" value={onboardingDraft.hourlyRate} onChange={(e) => setOnboardingDraft({ ...onboardingDraft, hourlyRate: e.target.value })} placeholder="e.g. $85/hr" />
-                                                        </div>
+                                                    <div className="col-span-2">
+                                                        <label className="text-[10px] uppercase text-muted-foreground font-medium flex items-center gap-1"><FileText className="w-3 h-3" /> Previous Experience</label>
+                                                        <Textarea
+                                                            className="min-h-[80px] text-sm resize-y mt-0.5"
+                                                            value={onboardingDraft.experienceRaw}
+                                                            onChange={(e) => setOnboardingDraft({ ...onboardingDraft, experienceRaw: e.target.value })}
+                                                            placeholder="Describe their experience, past clients, years in business, notable projects..."
+                                                        />
+                                                        {onboardingDraft.experienceSummary && (
+                                                            <div className="mt-1.5 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                                                                <p className="text-[10px] uppercase text-blue-600 font-semibold mb-0.5">AI Summary</p>
+                                                                <p className="text-xs text-blue-800 whitespace-pre-wrap">{onboardingDraft.experienceSummary}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
 
                                                     </div>
                                                     <div>
@@ -692,7 +704,8 @@ export default function VendorDetailDrawer({ vendorId, open, onClose }: VendorDe
                                                     <div className="grid grid-cols-2 gap-3 text-sm">
                                                         {ob.teamSize && <div><p className="text-[10px] uppercase text-muted-foreground">Team Size</p><p className="font-medium">{ob.teamSize}</p></div>}
                                                         {ob.responseTime && <div><p className="text-[10px] uppercase text-muted-foreground">Response Time</p><p className="font-medium">{ob.responseTime}</p></div>}
-                                                        {ob.hourlyRate && <div><p className="text-[10px] uppercase text-muted-foreground">Hourly Rate</p><p className="font-medium">{ob.hourlyRate}</p></div>}
+
+                                                        {ob.experienceRaw && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Previous Experience</p>{ob.experienceSummary && <div className="p-2 bg-blue-50 border border-blue-200 rounded-md mb-1"><p className="text-[10px] uppercase text-blue-600 font-semibold mb-0.5">AI Summary</p><p className="text-xs text-blue-800 whitespace-pre-wrap">{ob.experienceSummary}</p></div>}<p className="whitespace-pre-wrap text-xs text-muted-foreground">{ob.experienceRaw}</p></div>}
 
                                                         {ob.serviceCounties?.length > 0 && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Service Area</p><div className="flex flex-wrap gap-1 mt-0.5">{ob.serviceCounties.map((c: string) => { const county = SERVICE_COUNTIES.find(sc => sc.value === c); return <span key={c} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">{county?.label || c}</span>; })}</div></div>}
                                                         {ob.certifications?.length > 0 && <div className="col-span-2"><p className="text-[10px] uppercase text-muted-foreground">Certifications</p><div className="flex flex-wrap gap-1 mt-0.5">{ob.certifications.map((c: string) => { const cert = getCertificationsForCapabilities(vendor.capabilities || []).find(rc => rc.value === c); return <span key={c} className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">{cert?.label || c}</span>; })}</div></div>}
