@@ -483,8 +483,13 @@ export default function LeadDetailPage() {
             );
             const snap = await getDocs(q);
             setActivities(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
-        } catch (err) {
-            console.error('Error fetching activities:', err);
+            console.log(`[CRM] Loaded ${snap.size} activities for lead ${leadId}`);
+        } catch (err: any) {
+            console.error('[CRM] fetchActivities failed:', err?.message || err);
+            // Surface index errors prominently
+            if (err?.code === 'failed-precondition') {
+                console.error('[CRM] Missing Firestore index! Check firestore.indexes.json and deploy indexes.');
+            }
         }
     };
 

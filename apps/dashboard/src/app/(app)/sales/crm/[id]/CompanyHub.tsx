@@ -66,7 +66,30 @@ function EmailEngagementCard({ activities, contacts }: { activities: CompanyHubP
         EMAIL_EVENT_TYPES.includes(a.type as any) || a.type === 'OUTREACH_SENT'
     );
 
-    if (emailActivities.length === 0) return null;
+    // Show the card if there are email activities OR if a sequence was started
+    const hasSequence = activities.some(a => a.type === 'SEQUENCE_STARTED');
+    if (emailActivities.length === 0 && !hasSequence) return null;
+
+    // Empty state — sequence enrolled but first email hasn't sent yet
+    if (emailActivities.length === 0 && hasSequence) {
+        return (
+            <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4" /> Email Engagement
+                        <span className="ml-1 text-xs font-normal text-muted-foreground">
+                            (sequence enrolled — awaiting first send)
+                        </span>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                        The email sequence has been started. Stats will appear here once the first email is sent.
+                    </p>
+                </CardContent>
+            </Card>
+        );
+    }
 
     // Aggregate counts
     const sent = activities.filter(a => a.type === 'OUTREACH_SENT').length;
