@@ -13,8 +13,8 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { enqueueTask } from "../utils/queueUtils";
 import { buildScheduledDate } from "../utils/scheduleUtils";
+import { sendEmail } from "../utils/emailUtils";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -176,44 +176,126 @@ export const startLeadSequence = onCall(async (request) => {
         `[StartSequence] Starting "${sequence.name}" (${sequenceId}) for lead ${leadId} (${businessName}), contact ${contactId || "lead-level"}`
     );
 
-    // ── Schedule tasks from sequence steps (business days only) ──
+    // ── Resolve sender from email_senders (default to 'sales') ─────
+    let senderFrom = 'Chris Leung — XIRI <chris@xiri.ai>';
+    try {
+        const senderDoc = await db.collection('email_senders').doc('sales').get();
+        if (senderDoc.exists) {
+            const s = senderDoc.data()!;
+            senderFrom = `${s.name} <${s.email}>`;
+        }
+    } catch { /* use default */ }
+
+    // ── Schedule emails natively via Resend (Pro) ─────────────────
+    // Templates are resolved upfront so Resend holds the final content.
     const now = new Date();
+    const scheduledResendIds: string[] = [];
 
     for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
-        // buildScheduledDate skips weekends and defaults to 10 AM ET (14:00 UTC)
         const sendAt = buildScheduledDate(now, step.dayOffset);
 
-        await enqueueTask(db, {
-            leadId,
-            contactId: contactId || undefined,
-            type: "SEND",
-            scheduledAt: admin.firestore.Timestamp.fromDate(sendAt),
-            metadata: {
-                sequence: i,
-                businessName,
-                email: contactEmail,
-                contactName,
-                contactId: contactId || null,
-                facilityType: lead.facilityType || "",
-                address: lead.address || "",
-                squareFootage: lead.squareFootage || "",
-                propertySourcing: lead.propertySourcing || null,
-                leadType,
-                templateId: step.templateId,
-                sequenceId,
-                stepLabel: step.label,
-            },
-        });
+        const templateId = step.templateId;
+        if (!templateId) {
+            logger.warn(`[StartSequence] Step ${i} has no templateId — skipping.`);
+            continue;
+        }
+
+        // Fetch and merge template
+        const templateDoc = await db.collection('templates').doc(templateId).get();
+        if (!templateDoc.exists) {
+            logger.warn(`[StartSequence] Template ${templateId} not found — skipping step ${i}.`);
+            continue;
+        }
+        const template = templateDoc.data()!;
+
+        // Build merge variables
+        const titleCase = (s: string) => s
+            ? s.replace(/[_-]/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, c => c.toUpperCase())
+            : '';
+
+        const mergeVars: Record<string, string> = {
+            contactName: contactName || 'there',
+            businessName: businessName || 'your facility',
+            facilityType: titleCase(lead.facilityType || 'Medical Office'),
+            address: lead.address || '',
+            squareFootage: String(lead.squareFootage || ''),
+        };
+
+        // Inject facility-type personalization phrases (inline, no @xiri/shared dep)
+        const FACILITY_PHRASES: Record<string, { strength: string; compliance: string }> = {
+            'medical_office': { strength: 'clinical-grade disinfection', compliance: 'HIPAA & CDC-compliant protocols' },
+            'dental_office':  { strength: 'infection control expertise', compliance: 'CDC sterilization guidelines' },
+            'commercial':     { strength: 'commercial-scale cleaning', compliance: 'OSHA-compliant standards' },
+            'warehouse':      { strength: 'industrial-grade cleaning', compliance: 'OSHA workplace safety standards' },
+            'school':         { strength: 'EPA-certified disinfection', compliance: 'CDC school sanitization guidance' },
+        };
+        const facilityKey = (lead.facilityType || '').toLowerCase().replace(/[\s-]/g, '_');
+        const phrases = FACILITY_PHRASES[facilityKey] || { strength: 'professional facility cleaning', compliance: 'industry-standard protocols' };
+        for (const [key, value] of Object.entries(phrases)) {
+            if (!mergeVars[key]) mergeVars[key] = value;
+        }
+
+        // Defensive aliases for any vendor-style vars accidentally in template
+        const aliases: Record<string, string> = {
+            vendorName: mergeVars.businessName,
+            city: lead.address?.split(',')[0]?.trim() || '',
+            state: '',
+            services: titleCase(lead.facilityType || 'Facility Services'),
+            specialty: titleCase(lead.facilityType || 'Facility Services'),
+            onboardingUrl: 'https://xiri.ai/demo',
+        };
+        for (const [key, value] of Object.entries(aliases)) {
+            if (!mergeVars[key]) mergeVars[key] = value;
+        }
+
+        let subject = template.subject || '';
+        let body = template.body || '';
+        for (const [key, value] of Object.entries(mergeVars)) {
+            const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+            subject = subject.replace(regex, value);
+            body = body.replace(regex, value);
+        }
+        // Clean any remaining unresolved vars
+        subject = subject.replace(/\{\{[a-zA-Z_]+\}\}/g, '');
+        body = body.replace(/\{\{[a-zA-Z_]+\}\}/g, '');
+
+        const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.7;">${body.replace(/\n/g, '<br/>')}</div>`;
+
+        const result = await sendEmail(
+            contactEmail, subject, htmlBody,
+            undefined,         // attachments (positional)
+            senderFrom,        // from
+            leadId,            // entityId (for unsubscribe footer and leadId tag)
+            templateId,        // templateId tag
+            'lead',            // entityType
+            { contactId: contactId || undefined, scheduledAt: sendAt },
+        );
+
+        if (result.resendId) {
+            scheduledResendIds.push(result.resendId);
+        }
+
+        logger.info(`[StartSequence] Step ${i} (${step.label}) scheduled for ${sendAt.toISOString()} — Resend ID: ${result.resendId || 'none'}`);
+
+        // Increment template stats.sent
+        try {
+            await db.collection('templates').doc(templateId).update({
+                'stats.sent': admin.firestore.FieldValue.increment(1),
+                'stats.lastUpdated': new Date(),
+            });
+        } catch { /* non-critical */ }
     }
 
-    // ── Update lead/company doc ────────────────────────────────
+    // ── Update lead/company doc ────────────────────────────────────────────
     await db.collection(leadCollection).doc(leadId).update({
         status: lead.status === "new" ? "contacted" : lead.status,
         outreachStatus: "PENDING",
         sequenceId,
         sequenceStartedAt: admin.firestore.FieldValue.serverTimestamp(),
         sequenceStartedBy: request.auth?.uid || "manual",
+        // Store Resend email IDs so we can cancel scheduled emails if needed
+        ...(scheduledResendIds.length > 0 ? { scheduledEmailIds: scheduledResendIds } : {}),
     });
 
     // ── Write sequenceHistory on contact doc ──────────────────
@@ -235,7 +317,7 @@ export const startLeadSequence = onCall(async (request) => {
         leadId,
         contactId: contactId || null,
         type: "SEQUENCE_STARTED",
-        description: `"${sequence.name}" sequence started for ${businessName} → ${contactName || contactEmail}. Schedule: ${dayList}`,
+        description: `"${sequence.name}" sequence started for ${businessName} → ${contactName || contactEmail}. Schedule: ${dayList}. ${scheduledResendIds.length} emails scheduled via Resend.`,
         createdAt: new Date(),
         startedBy: request.auth?.uid || "manual",
         metadata: {
@@ -245,8 +327,10 @@ export const startLeadSequence = onCall(async (request) => {
             stepCount: steps.length,
             schedule: dayList,
             contactId: contactId || null,
+            scheduledResendIds,
         },
     });
+
 
     logger.info(
         `[StartSequence] "${sequence.name}" started for ${leadId}: ${steps.length} emails (${dayList})`

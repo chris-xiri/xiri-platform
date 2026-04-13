@@ -112,3 +112,45 @@ export async function cancelLeadTasks(db: admin.firestore.Firestore, leadId: str
     return snapshot.size;
 }
 
+/**
+ * Cancel all Resend-scheduled emails for a lead (Resend Pro native scheduling).
+ * Reads scheduledEmailIds from the company/lead doc and calls resend.emails.cancel(id)
+ * for each. Clears the scheduledEmailIds array on success.
+ *
+ * Falls back gracefully if Resend API key is not set or IDs are missing.
+ */
+export async function cancelLeadScheduledEmails(
+    db: admin.firestore.Firestore,
+    leadId: string,
+    collection: 'companies' | 'leads' = 'companies'
+): Promise<number> {
+    const { Resend } = await import('resend');
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+        console.warn('[cancelLeadScheduledEmails] RESEND_API_KEY not set — skipping Resend cancellation.');
+        return 0;
+    }
+
+    const resend = new Resend(apiKey);
+    const docRef = db.collection(collection).doc(leadId);
+    const snap = await docRef.get();
+    const ids: string[] = snap.data()?.scheduledEmailIds || [];
+
+    if (ids.length === 0) return 0;
+
+    let cancelled = 0;
+    for (const id of ids) {
+        try {
+            await resend.emails.cancel(id);
+            cancelled++;
+            console.log(`[cancelLeadScheduledEmails] Cancelled Resend email ${id} for lead ${leadId}`);
+        } catch (err: any) {
+            // Already sent or not found — not a fatal error
+            console.warn(`[cancelLeadScheduledEmails] Could not cancel ${id}: ${err?.message}`);
+        }
+    }
+
+    // Clear the array now that we've processed them
+    await docRef.update({ scheduledEmailIds: [] });
+    return cancelled;
+}

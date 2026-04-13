@@ -140,12 +140,14 @@ interface LeadListProps {
     statusFilters?: LeadStatus[];
     title?: string;
     onRowClick?: (id: string) => void;
+    onContactsLoaded?: (contacts: ContactRow[]) => void;
 }
 
 export default function LeadList({
     statusFilters,
     title = "Sales Pipeline",
-    onRowClick
+    onRowClick,
+    onContactsLoaded
 }: LeadListProps) {
     const [contacts, setContacts] = useState<ContactRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -262,6 +264,7 @@ export default function LeadList({
                     } as ContactRow);
                 });
                 setContacts(contactData);
+                onContactsLoaded?.(contactData);
                 setLoading(false);
             },
             (error) => {

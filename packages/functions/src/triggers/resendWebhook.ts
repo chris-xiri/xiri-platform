@@ -1,7 +1,10 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import * as crypto from "crypto";
 import { logger } from "firebase-functions/v2";
-import { cancelVendorTasks, cancelLeadTasks } from "../utils/queueUtils";
+import { cancelVendorTasks, cancelLeadTasks, cancelLeadScheduledEmails } from "../utils/queueUtils";
+import { addToResendSuppression } from "../utils/suppressionUtils";
+
 
 const db = admin.firestore();
 
@@ -16,14 +19,64 @@ const db = admin.firestore();
  * Events to subscribe: email.delivered, email.opened, email.clicked, email.bounced, email.complained
  */
 export const resendWebhook = onRequest({
-    cors: true,
+    cors: false,   // Resend is not a browser — no CORS needed
     timeoutSeconds: 30,
     memory: '256MiB',
+    secrets: ['RESEND_WEBHOOK_SECRET'],
 }, async (req, res) => {
     // Only accept POST
     if (req.method !== 'POST') {
         res.status(405).send('Method Not Allowed');
         return;
+    }
+
+    // ─── Webhook signature verification (Resend Pro) ────────────────
+    const secret = process.env.RESEND_WEBHOOK_SECRET;
+    if (secret) {
+        const svixId = req.headers['svix-id'] as string | undefined;
+        const svixTimestamp = req.headers['svix-timestamp'] as string | undefined;
+        const svixSignature = req.headers['svix-signature'] as string | undefined;
+
+        if (!svixId || !svixTimestamp || !svixSignature) {
+            logger.warn('Resend webhook: missing svix-* headers');
+            res.status(401).json({ error: 'Missing signature headers' });
+            return;
+        }
+
+        // Guard against replay attacks: reject messages older than 5 minutes
+        const tsSeconds = parseInt(svixTimestamp, 10);
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        if (isNaN(tsSeconds) || Math.abs(nowSeconds - tsSeconds) > 300) {
+            logger.warn('Resend webhook: timestamp out of tolerance', { svixTimestamp });
+            res.status(401).json({ error: 'Timestamp out of tolerance' });
+            return;
+        }
+
+        // Compute HMAC: sign("{svix-id}.{svix-timestamp}.{raw-body}")
+        const rawBody = typeof req.rawBody === 'string'
+            ? req.rawBody
+            : req.rawBody?.toString('utf8') ?? JSON.stringify(req.body);
+        const toSign = `${svixId}.${svixTimestamp}.${rawBody}`;
+        const secretBytes = Buffer.from(secret.replace(/^whsec_/, ''), 'base64');
+        const computed = crypto.createHmac('sha256', secretBytes).update(toSign).digest('base64');
+
+        // svix-signature may contain multiple versions: "v1,<sig> v1,<sig2>"
+        const signatures = svixSignature.split(' ').map(s => s.replace(/^v1,/, ''));
+        const isValid = signatures.some(sig => {
+            try {
+                return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(sig));
+            } catch { return false; }
+        });
+
+        if (!isValid) {
+            logger.error('Resend webhook: signature mismatch');
+            res.status(401).json({ error: 'Invalid signature' });
+            return;
+        }
+
+        logger.info('Resend webhook: signature verified ✓');
+    } else {
+        logger.warn('Resend webhook: RESEND_WEBHOOK_SECRET not set — running UNSIGNED (insecure)');
     }
 
     try {
@@ -141,16 +194,19 @@ export const resendWebhook = onRequest({
         }
 
         // ─── Resolve contactId ───
-        let resolvedContactId: string | null = tagContactId || null;
+        // Path 1 (fast): contactId from tag — no secondary DB fetch needed
+        let resolvedContactId: string | null = tagContactId;
 
-        // If no contactId from tags, try to get it from the matching activity
+        // Path 2 (fallback): if no tag, try the matching lead_activities doc
         if (!resolvedContactId && entityType === 'lead') {
             const actSnap = await db.collection('lead_activities')
                 .where('metadata.resendId', '==', emailId)
                 .limit(1)
                 .get();
             if (!actSnap.empty) {
-                resolvedContactId = actSnap.docs[0].data().contactId || actSnap.docs[0].data().metadata?.contactId || null;
+                resolvedContactId = actSnap.docs[0].data().contactId
+                    || actSnap.docs[0].data().metadata?.contactId
+                    || null;
             }
         }
 
@@ -253,6 +309,15 @@ export const resendWebhook = onRequest({
         if (eventType === 'email.bounced' || eventType === 'email.complained') {
             const reason = eventType === 'email.bounced' ? 'hard_bounce' : 'spam_complaint';
             const reasonLabel = eventType === 'email.bounced' ? 'Hard bounce' : 'Spam complaint';
+            const recipientEmail = event?.data?.to?.[0];
+
+            // Sync to Resend suppression audience
+            if (recipientEmail) {
+                await addToResendSuppression(recipientEmail, reason as any, {
+                    entityId: entityId!,
+                    entityType: entityType!,
+                });
+            }
 
             try {
                 if (entityType === 'vendor') {
@@ -279,11 +344,17 @@ export const resendWebhook = onRequest({
                         logger.info(`[AutoSuppress] Vendor ${entityId} dismissed (${reason}). ${cancelledCount} tasks cancelled.`);
                     }
                 } else if (entityType === 'lead') {
-                    // Check if already lost
-                    const leadDoc = await db.collection('leads').doc(entityId).get();
+                    // Check companies first, then leads collection
+                    let leadDoc = await db.collection('companies').doc(entityId).get();
+                    let leadCollection = 'companies';
+                    if (!leadDoc.exists) {
+                        leadDoc = await db.collection('leads').doc(entityId).get();
+                        leadCollection = 'leads';
+                    }
+
                     if (leadDoc.exists && leadDoc.data()?.status !== 'lost') {
                         const prevStatus = leadDoc.data()?.status;
-                        await db.collection('leads').doc(entityId).update({
+                        await db.collection(leadCollection).doc(entityId).update({
                             status: 'lost',
                             lostReason: reason,
                             unsubscribedAt: new Date(),
@@ -291,6 +362,9 @@ export const resendWebhook = onRequest({
                         });
 
                         const cancelledCount = await cancelLeadTasks(db, entityId);
+
+                        // Cancel any Resend-native-scheduled emails too
+                        const resendCancelled = await cancelLeadScheduledEmails(db, entityId, leadCollection as 'companies' | 'leads');
 
                         // Also mark contact as unsubscribed if we have one
                         if (resolvedContactId) {
@@ -305,12 +379,12 @@ export const resendWebhook = onRequest({
                             leadId: entityId,
                             contactId: resolvedContactId || null,
                             type: 'STATUS_CHANGE',
-                            description: `${reasonLabel} detected — lead auto-marked as lost. ${cancelledCount} pending tasks cancelled.`,
+                            description: `${reasonLabel} detected — lead auto-marked as lost. ${cancelledCount} queue tasks + ${resendCancelled} scheduled emails cancelled.`,
                             createdAt: new Date(),
-                            metadata: { from: prevStatus, to: 'lost', trigger: reason, cancelledTasks: cancelledCount, contactId: resolvedContactId || null },
+                            metadata: { from: prevStatus, to: 'lost', trigger: reason, cancelledTasks: cancelledCount, resendCancelled, contactId: resolvedContactId || null },
                         });
 
-                        logger.info(`[AutoSuppress] Lead ${entityId} marked lost (${reason}). ${cancelledCount} tasks cancelled.`);
+                        logger.info(`[AutoSuppress] Lead ${entityId} marked lost (${reason}). ${cancelledCount} queue tasks + ${resendCancelled} Resend emails cancelled.`);
                     }
                 }
             } catch (suppressErr) {

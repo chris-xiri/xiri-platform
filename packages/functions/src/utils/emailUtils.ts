@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Resend } from 'resend';
 import { getPrompt } from './promptUtils';
 import { getFacilityPhrases } from '@xiri/shared';
+import { isEmailSuppressed } from './suppressionUtils';
 
 const db = admin.firestore();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -398,6 +399,18 @@ function buildEmailFooter(entityId?: string, entityType?: 'vendor' | 'lead'): st
  *
  * If entityId + entityType are provided, a CAN-SPAM unsubscribe footer is appended.
  */
+export interface SendEmailOptions {
+    /** Resend email ID of the entity (lead or vendor) for webhook tracking. */
+    entityId?: string;
+    entityType?: 'vendor' | 'lead';
+    templateId?: string;
+    /** contactId to tag on the email for zero-lookup webhook resolution. */
+    contactId?: string;
+    /** Schedule delivery at a future time (Resend Pro native scheduling). */
+    scheduledAt?: Date;
+    attachments?: any[];
+}
+
 export async function sendEmail(
     to: string,
     subject: string,
@@ -407,29 +420,45 @@ export async function sendEmail(
     vendorId?: string,
     templateId?: string,
     entityType?: 'vendor' | 'lead',
+    options?: SendEmailOptions,
 ): Promise<{ success: boolean; resendId?: string }> {
     try {
-        // Determine entity ID for unsubscribe link
-        const entityId = vendorId; // vendorId param is actually entityId (vendor or lead)
+        // ── Pre-send suppression check ──────────────────────────────
+        // Check Firestore + Resend audience before wasting an API call
+        const suppressed = await isEmailSuppressed(to);
+        if (suppressed) {
+            console.warn(`⛔ Email to ${to} blocked — recipient is suppressed`);
+            return { success: false };
+        }
+
+        // Merge legacy positional params with new options object
+        const resolvedEntityId = options?.entityId ?? vendorId;
+        const resolvedEntityType = options?.entityType ?? entityType;
+        const resolvedTemplateId = options?.templateId ?? templateId;
+        const resolvedContactId = options?.contactId;
+        const resolvedScheduledAt = options?.scheduledAt;
+        const resolvedAttachments = options?.attachments ?? attachments;
+
         const header = buildEmailHeader();
         const sigConfig = await getEmailSignatureConfig();
         const signature = buildEmailSignature(sigConfig);
-        const footer = buildEmailFooter(entityId, entityType);
+        const footer = buildEmailFooter(resolvedEntityId, resolvedEntityType);
         const htmlWithFooter = header + html + signature + (footer || '');
 
         // Build tags array for webhook tracking
         const tags: { name: string; value: string }[] = [];
-        if (vendorId) {
-            // Tag with correct entity type for webhook resolution
-            const tagName = entityType === 'lead' ? 'leadId' : 'vendorId';
-            tags.push({ name: tagName, value: vendorId });
+        if (resolvedEntityId) {
+            const tagName = resolvedEntityType === 'lead' ? 'leadId' : 'vendorId';
+            tags.push({ name: tagName, value: resolvedEntityId });
         }
-        if (templateId) tags.push({ name: 'templateId', value: templateId });
+        if (resolvedTemplateId) tags.push({ name: 'templateId', value: resolvedTemplateId });
+        // contactId tag enables webhook resolution without a secondary DB fetch
+        if (resolvedContactId) tags.push({ name: 'contactId', value: resolvedContactId });
 
         // Build Resend List-Unsubscribe header for one-click unsubscribe
         const headers: Record<string, string> = {};
-        if (entityId && entityType) {
-            const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${entityId}&type=${entityType}`;
+        if (resolvedEntityId && resolvedEntityType) {
+            const unsubscribeUrl = `${FUNCTIONS_BASE_URL}/handleUnsubscribe?id=${resolvedEntityId}&type=${resolvedEntityType}`;
             headers['List-Unsubscribe'] = `<${unsubscribeUrl}>`;
             headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
         }
@@ -440,9 +469,11 @@ export async function sendEmail(
             to,
             subject,
             html: htmlWithFooter,
-            attachments,
+            attachments: resolvedAttachments,
             headers,
             ...(tags.length > 0 ? { tags } : {}),
+            // Native Resend scheduling (Pro feature) — ISO 8601 string
+            ...(resolvedScheduledAt ? { scheduledAt: resolvedScheduledAt.toISOString() } : {}),
         });
 
         if (error) {
@@ -450,7 +481,8 @@ export async function sendEmail(
             return { success: false };
         }
 
-        console.log(`✅ Email sent to ${to}: ${subject} (ID: ${data?.id})`);
+        const scheduled = resolvedScheduledAt ? ` (scheduled: ${resolvedScheduledAt.toISOString()})` : '';
+        console.log(`✅ Email ${resolvedScheduledAt ? 'scheduled' : 'sent'} to ${to}: ${subject} (ID: ${data?.id})${scheduled}`);
         return { success: true, resendId: data?.id };
     } catch (err) {
         console.error('Error sending raw email:', err);

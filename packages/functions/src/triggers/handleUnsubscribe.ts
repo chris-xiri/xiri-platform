@@ -1,7 +1,8 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { cancelVendorTasks, cancelLeadTasks } from "../utils/queueUtils";
+import { cancelVendorTasks, cancelLeadTasks, cancelLeadScheduledEmails } from "../utils/queueUtils";
+import { addToResendSuppression } from "../utils/suppressionUtils";
 import { COMPANY_NAME, COMPANY_ADDRESS, SERVICE_AREA } from "../utils/emailUtils";
 
 if (!admin.apps.length) {
@@ -93,6 +94,15 @@ async function handleVendorUnsubscribe(vendorId: string, res: any) {
 
     const cancelledCount = await cancelVendorTasks(db, vendorId);
 
+    // Sync to Resend suppression audience
+    const vendorEmail = vendor.email || vendor.contactEmail;
+    if (vendorEmail) {
+        await addToResendSuppression(vendorEmail, 'unsubscribed', {
+            entityId: vendorId,
+            entityType: 'vendor',
+        });
+    }
+
     await db.collection("vendor_activities").add({
         vendorId,
         type: "STATUS_CHANGE",
@@ -133,6 +143,7 @@ async function handleLeadUnsubscribe(leadId: string, res: any, contactId?: strin
 
     // ── Resolve contact for contact-level unsubscribe ──
     let resolvedContactId = contactId || null;
+    let contactEmail: string | null = null;
 
     if (!resolvedContactId) {
         // Try to find the primary contact
@@ -143,8 +154,19 @@ async function handleLeadUnsubscribe(leadId: string, res: any, contactId?: strin
             .get();
         if (!primarySnap.empty) {
             resolvedContactId = primarySnap.docs[0].id;
+            contactEmail = primarySnap.docs[0].data().email || null;
         }
     }
+
+    // Resolve email from contact doc if we have a contactId but no email yet
+    if (resolvedContactId && !contactEmail) {
+        const cDoc = await db.collection('contacts').doc(resolvedContactId).get();
+        if (cDoc.exists) contactEmail = cDoc.data()?.email || null;
+    }
+
+    // Fall back to lead-level email
+    if (!contactEmail) contactEmail = lead.email || null;
+
 
     // Check if already unsubscribed (contact-level or lead-level)
     if (resolvedContactId) {
@@ -188,23 +210,40 @@ async function handleLeadUnsubscribe(leadId: string, res: any, contactId?: strin
     // Cancel all pending outreach tasks
     const cancelledCount = await cancelLeadTasks(db, leadId);
 
+    // Cancel any Resend-native-scheduled emails
+    // Check companies first, then leads
+    let leadCollection: 'companies' | 'leads' = 'leads';
+    const compDoc = await db.collection('companies').doc(leadId).get();
+    if (compDoc.exists) leadCollection = 'companies';
+    const resendCancelled = await cancelLeadScheduledEmails(db, leadId, leadCollection);
+
+    // Sync to Resend suppression audience
+    if (contactEmail) {
+        await addToResendSuppression(contactEmail, 'unsubscribed', {
+            entityId: leadId,
+            entityType: 'lead',
+            contactId: resolvedContactId || undefined,
+        });
+    }
+
     // Log activity
     await db.collection("lead_activities").add({
         leadId,
         contactId: resolvedContactId || null,
         type: "STATUS_CHANGE",
-        description: `${businessName} unsubscribed via email link. Status changed from ${previousStatus} to lost. ${cancelledCount} pending tasks cancelled.`,
+        description: `${businessName} unsubscribed via email link. Status changed from ${previousStatus} to lost. ${cancelledCount} queue tasks + ${resendCancelled} scheduled emails cancelled.`,
         createdAt: new Date(),
         metadata: {
             from: previousStatus,
             to: 'lost',
             trigger: 'unsubscribe_link',
             cancelledTasks: cancelledCount,
+            resendCancelled,
             contactId: resolvedContactId || null,
         }
     });
 
-    logger.info(`Lead ${leadId} (${businessName}) unsubscribed. Contact: ${resolvedContactId || 'none'}. ${cancelledCount} tasks cancelled.`);
+    logger.info(`Lead ${leadId} (${businessName}) unsubscribed. Contact: ${resolvedContactId || 'none'}. ${cancelledCount} queue tasks + ${resendCancelled} scheduled emails cancelled.`);
 
     res.status(200).send(renderPage(
         'Unsubscribed Successfully',
