@@ -12,6 +12,7 @@ import VendorDetailDrawer from '@/components/vendor/VendorDetailDrawer';
 import { AddContractorDialog } from '@/components/AddContractorDialog';
 import { Vendor } from '@xiri-facility-solutions/shared';
 import CampaignResultsTable, { Campaign, PreviewVendor } from '@/components/supply/CampaignResultsTable';
+import VendorProspectorPanel from '@/components/supply/VendorProspectorPanel';
 import {
     Users, CheckCircle, Mail, Eye, MousePointerClick, ArrowRight,
     Loader2, TrendingUp, AlertTriangle, UserCheck, Clock, XCircle,
@@ -290,10 +291,7 @@ export default function SupplyDashboardPage() {
                             <Button variant={recruitExpanded ? 'default' : 'outline'} size="sm" className="h-8 text-xs gap-1"
                                 onClick={() => setRecruitExpanded(prev => !prev)}>
                                 <Search className="w-3 h-3" />
-                                Recruitment
-                                {rCampaigns.length > 0 && (
-                                    <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 ml-0.5">{rCampaigns.length}</Badge>
-                                )}
+                                Prospector
                             </Button>
                             <Button variant="outline" size="sm" className="h-8 text-xs gap-1"
                                 onClick={() => setFunnelCollapsed(prev => !prev)}>
@@ -307,24 +305,11 @@ export default function SupplyDashboardPage() {
                     </div>
                 </div>
 
-                {/* ─── Collapsible Recruitment Campaigns ─────────────────── */}
+                {/* ─── Collapsible Vendor Prospector ──────────────────────── */}
                 {recruitExpanded && (
-                    <div className="flex-shrink-0 border-b bg-muted/10 max-h-[45vh] overflow-auto">
+                    <div className="flex-shrink-0 border-b bg-muted/10 max-h-[50vh] overflow-auto">
                         <div className="p-3">
-                            <CampaignResultsTable
-                                campaigns={rCampaigns}
-                                activeCampaignId={rActiveCampaignId}
-                                onSetActiveCampaign={setRActiveCampaignId}
-                                onNewCampaign={rNewCampaign}
-                                onCloseCampaign={rCloseCampaign}
-                                onSearchResults={rSearchResults}
-                                onApprove={rApprove}
-                                onDismiss={rDismiss}
-                                onRevive={rRevive}
-                                onApproveAll={rApproveAll}
-                                onDismissAll={rDismissAll}
-                                onRenameCampaign={rRenameCampaign}
-                            />
+                            <VendorProspectorPanel />
                         </div>
                     </div>
                 )}

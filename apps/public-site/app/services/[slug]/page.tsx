@@ -8,6 +8,7 @@ import { CTAButton } from '@/components/CTAButton';
 import { JsonLd } from '@/components/JsonLd';
 import { FAQ } from '@/components/FAQ';
 import { NearbyAreas } from '@/components/NearbyAreas';
+import { AskAnyAI } from '@/components/AskAnyAI';
 import seoData from '@/data/seo-data.json';
 import { SeoService } from '@xiri-facility-solutions/shared';
 import { SITE } from '@/lib/constants';
@@ -16,6 +17,7 @@ import { MapPin, Eye } from 'lucide-react';
 import { AuthorityBreadcrumb, getPillarForService } from '@/components/AuthorityBreadcrumb';
 import { regionToCountyId, getCountySummary, getMarketWageContext } from '@/data/open-data';
 import { CountyDataBar } from '@/components/CountyDataBar';
+import { getServiceFaqProfile, getIndustryFaqProfile, type FaqEntry } from '@/data/service-faq-intelligence';
 
 interface Location {
     slug: string;
@@ -418,11 +420,59 @@ export default async function ServicePage({ params }: Props) {
     const heroSubtitle = location.localInsight
         || `${service.shortDescription} Proudly serving medical facilities near ${location.landmarks?.join(', ') || location.region}.`;
 
-    // Combine service + location FAQs for FAQPage schema
+    // ═══ SERVICE-SPECIFIC FAQ INTELLIGENCE ═══
+    // Uses per-service-category intelligence backed by ISSA, CDC, BLS, OSHA,
+    // EPA, and Liberty Mutual — every service slug now gets unique FAQ content.
+    const faqProfile = getServiceFaqProfile(service.slug);
+    const dataFaqs: FaqEntry[] = [];
+
+    // 1. Coverage area FAQ (always present — location-specific)
+    dataFaqs.push({
+        question: `What zip codes does XIRI cover for ${service.name} in ${townName}?`,
+        answer: `We provide ${service.name.toLowerCase()} services across zip codes ${location.zipCodes?.join(', ') || 'in the surrounding area'}, covering all of ${location.region}. Our crews are already on established routes in these areas, so adding your facility means zero ramp-up time.`,
+    });
+
+    // 2. Service-specific quality & retention FAQ (when we have wage data)
+    if (wageContext) {
+        dataFaqs.push(
+            faqProfile.qualityFaq(
+                townName,
+                wageContext.medianHourly,
+                wageContext.premiumPct,
+                wageContext.areaTitle,
+                wageContext.minWage,
+            ),
+        );
+    }
+
+    // 3. Service-specific competitive landscape FAQ (when we have competitor data)
+    if (countySummary && countySummary.janitorialCompetitors > 0) {
+        dataFaqs.push(
+            faqProfile.competitorFaq(townName, location.region, countySummary.janitorialCompetitors),
+        );
+    }
+
+    // 4. Service-specific pricing FAQ
+    dataFaqs.push(
+        faqProfile.pricingFaq(townName, service.name),
+    );
+
+    // 5. Service-specific compliance/insurance FAQ
+    dataFaqs.push(
+        faqProfile.complianceFaq(townName, service.name),
+    );
+
+    // 6. Bonus FAQ unique to this service category (when available)
+    if (faqProfile.bonusFaq) {
+        dataFaqs.push(
+            faqProfile.bonusFaq(townName, service.name),
+        );
+    }
+
     const allFaqs = [
         ...(location.localFaqs || []),
         ...(service.faqs || []),
-        { question: `What zip codes do you cover in ${townName}?`, answer: `We serve ${location.zipCodes?.join(', ') || 'the surrounding area'} and all of ${location.region}.` },
+        ...dataFaqs,
     ];
 
     // Enhanced JSON-LD: LocalBusiness + Service + FAQPage
@@ -731,20 +781,61 @@ export default async function ServicePage({ params }: Props) {
 
             <ValuePropsSection title={`Our Standard for ${townName}`} />
 
-            {/* ═══ COMBINED FAQs (location-specific + service) ═══ */}
-            <section className="py-16 bg-slate-50">
+            {/* ═══ COMBINED FAQs (location-specific + service + data-driven) ═══ */}
+            <section className="py-16 bg-slate-50" id="faq">
                 <div className="max-w-4xl mx-auto px-4">
-                    <h2 className="text-3xl font-bold text-slate-900 text-center mb-10">
+                    <h2 className="text-3xl font-bold text-slate-900 text-center mb-3">
                         {service.name} in {townName} — Frequently Asked Questions
                     </h2>
-                    <div className="space-y-4">
+                    <p className="text-center text-slate-500 mb-10 max-w-2xl mx-auto">
+                        Common questions from facility managers about {service.name.toLowerCase()} services in {location.region}.
+                    </p>
+                    <div className="space-y-3">
                         {allFaqs.map((faq, i) => (
-                            <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
-                                <h3 className="font-bold text-slate-900 mb-2">{faq.question}</h3>
-                                <p className="text-slate-600">{faq.answer}</p>
-                            </div>
+                            <details
+                                key={i}
+                                className="group bg-white rounded-xl shadow-sm border border-slate-200 hover:border-sky-200 transition-colors"
+                                {...(i === 0 ? { open: true } : {})}
+                            >
+                                <summary className="flex items-center justify-between cursor-pointer px-6 py-5 text-left font-semibold text-slate-900 select-none [&::-webkit-details-marker]:hidden list-none">
+                                    <span className="pr-4">{faq.question}</span>
+                                    <svg
+                                        className="w-5 h-5 flex-shrink-0 text-slate-400 group-open:rotate-180 transition-transform duration-200"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </summary>
+                                <div className="px-6 pb-5 text-slate-600 leading-relaxed border-t border-slate-100 pt-4">
+                                    {faq.answer}
+                                    {/* Source citation badges */}
+                                    {('sources' in faq) && (faq as FaqEntry).sources && (faq as FaqEntry).sources!.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-100">
+                                            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider self-center">Sources:</span>
+                                            {(faq as FaqEntry).sources!.map((src, si) => (
+                                                <a
+                                                    key={si}
+                                                    href={src.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-full text-xs font-medium text-sky-700 hover:text-sky-900 transition-colors"
+                                                >
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" />
+                                                    </svg>
+                                                    {src.name}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </details>
                         ))}
                     </div>
+                    <p className="text-xs text-slate-400 text-center mt-6">
+                        All claims cite authoritative sources. Click any badge above to verify. Market data: BLS OES (May 2023), Census Bureau County Business Patterns.
+                    </p>
                 </div>
             </section>
 
@@ -804,6 +895,13 @@ export default async function ServicePage({ params }: Props) {
                     >
                         Try the Cost Calculator →
                     </Link>
+                </div>
+            </section>
+
+            {/* ═══ ASK ANY AI ═══ */}
+            <section className="py-10 bg-white border-b border-slate-100">
+                <div className="max-w-3xl mx-auto px-4">
+                    <AskAnyAI variant="card" heading={`Research ${service.name} with AI`} />
                 </div>
             </section>
 

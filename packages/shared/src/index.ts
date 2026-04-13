@@ -6,6 +6,7 @@ export * from "./metro-wages";
 export * from "./generateProposal";
 export * from "./proposalDefaults";
 export * from "./taxRates";
+export * from "./pseo-types";
 
 // --- SHARED DOMAIN TYPES ---
 
@@ -1642,6 +1643,7 @@ export type EmailSource =
     | 'ai_extraction'
     | 'serper_search'
     | 'serper_facebook'
+    | 'facebook_scrape'
     | 'hunter'
     | 'snov'
     | 'pattern_guess'
@@ -1693,4 +1695,53 @@ export interface EnrichedProspect {
     emailSource: EmailSource;
     emailConfidence: EmailConfidence;
     enrichmentLog?: string[];   // Trace of steps tried — useful for debugging
+}
+
+// --- VENDOR PROSPECTING ---
+
+/** A vendor prospect discovered and enriched by the vendor prospecting pipeline */
+export interface VendorProspect {
+    // Identity
+    businessName: string;
+    normalizedName: string;
+
+    // Contact
+    contactName?: string;
+    contactEmail?: string;
+    genericEmail?: string;
+    phone?: string;
+
+    // Location
+    address?: string;
+    city?: string;
+    state?: string;
+
+    // Online presence
+    website?: string;
+    facebookUrl?: string;
+    linkedinUrl?: string;
+
+    // Capabilities (normalized to canonical VENDOR_CAPABILITIES values)
+    detectedCapabilities: string[];   // e.g. ['plumbing', 'hvac']
+    searchCapability: string;         // The capability value used in the search query
+    isCommercial?: boolean;           // AI-determined: commercial focus?
+
+    // Ratings
+    rating?: number;
+    reviewCount?: number;
+
+    // All contacts discovered
+    allContacts?: ProspectContact[];
+
+    // Enrichment metadata
+    emailSource: EmailSource;
+    emailConfidence: EmailConfidence;
+    enrichmentLog: string[];
+
+    // Pipeline
+    status: 'pending_review' | 'approved' | 'rejected';
+    batchDate: string;
+    searchQuery: string;
+    searchLocation: string;
+    createdAt: Date;
 }

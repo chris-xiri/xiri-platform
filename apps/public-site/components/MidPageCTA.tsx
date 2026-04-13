@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { LeadFormModal } from './LeadFormModal';
+import { AskAnyAI } from './AskAnyAI';
 import { trackEvent } from '@/lib/tracking';
 import { CTA } from '@/lib/constants';
 
@@ -12,6 +13,8 @@ interface MidPageCTAProps {
     ctaText?: string;
     variant?: 'light' | 'dark' | 'gradient';
     trackingId: string;
+    /** Show "Ask Any AI" buttons below the primary CTA */
+    showAskAI?: boolean;
 }
 
 export function MidPageCTA({
@@ -20,6 +23,7 @@ export function MidPageCTA({
     ctaText = `${CTA.primary} →`,
     variant = 'light',
     trackingId,
+    showAskAI = false,
 }: MidPageCTAProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -63,11 +67,18 @@ export function MidPageCTA({
                     </p>
                     <button
                         onClick={handleClick}
-                        className={`inline-flex items-center gap-2 px-8 py-4 rounded-full text-lg font-medium transition-all duration-300 transform hover:-translate-y-0.5 ${s.button}`}
+                        className={`inline-flex items-center gap-2 px-8 py-4 rounded-full text-lg font-medium transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer ${s.button}`}
                     >
                         {ctaText}
                         <ArrowRight className="w-5 h-5" />
                     </button>
+
+                    {/* Ask Any AI — secondary, low-commitment CTA */}
+                    {showAskAI && (
+                        <div className="mt-8">
+                            <AskAnyAI variant="inline" />
+                        </div>
+                    )}
                 </div>
             </section>
 

@@ -10,6 +10,7 @@ coverage
 dist
 build
 out
+packages/functions/lib
 
 # Misc
 .DS_Store

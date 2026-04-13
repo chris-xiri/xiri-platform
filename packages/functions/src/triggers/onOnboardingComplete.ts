@@ -9,8 +9,9 @@ if (!admin.apps.length) {
 }
 
 /**
- * Sends a notification email to chris@xiri.ai when a vendor
+ * Sends a Google Chat notification when a vendor
  * completes the onboarding form (status → compliance_review).
+ * Also sends a confirmation email to the vendor.
  */
 export const onOnboardingComplete = onDocumentUpdated({
     document: "vendors/{vendorId}",
@@ -32,10 +33,11 @@ export const onOnboardingComplete = onDocumentUpdated({
     const lang = after.preferredLanguage || 'en';
     const capabilities: string[] = after.capabilities || [];
     const capDisplay = capabilities.length > 0 ? capabilities.map(c => c.replace(/_/g, ' ')).join(', ') : 'None specified';
+    const vendorCity = after.city || '';
+    const vendorState = after.state || '';
+    const locationDisplay = [vendorCity, vendorState].filter(Boolean).join(', ') || 'Not specified';
 
     logger.info(`Vendor ${vendorId} (${businessName}) completed onboarding. Sending notification.`);
-
-    const resend = new Resend(process.env.RESEND_API_KEY);
 
     // Build compliance summary
     const compliance = after.compliance || {};
@@ -48,56 +50,6 @@ export const onOnboardingComplete = onDocumentUpdated({
     ].join('<br/>');
 
     const dashboardLink = `https://app.xiri.ai/supply/crm/${vendorId}`;
-
-    const html = `
-    ${buildEmailHeader()}
-    <div style="font-family: sans-serif; line-height: 1.8; max-width: 600px;">
-        <h2 style="color: #0c4a6e;">🏗️ Vendor Onboarding Complete</h2>
-        <p><strong>${businessName}</strong> has completed the onboarding form and is ready for compliance review.</p>
-        
-        <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-            <tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Email</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${email}</td></tr>
-            <tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Phone</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${phone}</td></tr>
-            <tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Track</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${track === 'FAST_TRACK' ? '⚡ Express Contract' : '🤝 Partner Network'}</td></tr>
-            <tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Language</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${lang === 'es' ? '🇪🇸 Spanish' : '🇺🇸 English'}</td></tr>
-            <tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Capabilities</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${capDisplay}</td></tr>
-        </table>
-
-        <h3 style="color: #0c4a6e; margin-top: 24px;">Compliance Self-Report</h3>
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 14px;">
-            ${complianceLines}
-        </div>
-
-        <div style="margin-top: 24px;">
-            <a href="${dashboardLink}" style="display: inline-block; padding: 12px 24px; background: #0369a1; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                Review in CRM →
-            </a>
-        </div>
-
-        <p style="margin-top: 32px; font-size: 12px; color: #94a3b8;">
-            Vendor ID: ${vendorId}
-        </p>
-
-        ${buildEmailSignature()}
-        ${buildSimpleFooter()}
-    </div>`;
-
-    try {
-        const { data, error } = await resend.emails.send({
-            from: 'XIRI Facility Solutions <onboarding@xiri.ai>',
-            to: 'chris@xiri.ai',
-            subject: `🏗️ Vendor Onboarded: ${businessName}`,
-            html,
-        });
-
-        if (error) {
-            logger.error('Failed to send onboarding notification:', error);
-        } else {
-            logger.info(`Notification sent to chris@xiri.ai (Resend ID: ${data?.id})`);
-        }
-    } catch (err) {
-        logger.error('Error sending onboarding notification:', err);
-    }
 
     // ─── Google Chat Notification Card ───
     const VENDOR_CHAT_WEBHOOK = "https://chat.googleapis.com/v1/spaces/AAQAYd8NzdA/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=WFryLEM_LRyVmM5I0m5A0KghBN8yL3Fw8vZMLgBDjOQ";
@@ -114,7 +66,7 @@ export const onOnboardingComplete = onDocumentUpdated({
     const chatCard = {
         header: {
             title: "🏗️  New Contractor Registered",
-            subtitle: businessName,
+            subtitle: `${businessName}  •  ${locationDisplay}`,
             imageUrl: "https://xiri.ai/icon.png",
             imageType: "CIRCLE",
         },
@@ -140,6 +92,13 @@ export const onOnboardingComplete = onDocumentUpdated({
                             topLabel: "PHONE",
                             text: phone,
                             startIcon: { knownIcon: "PHONE" },
+                        },
+                    },
+                    {
+                        decoratedText: {
+                            topLabel: "LOCATION",
+                            text: locationDisplay,
+                            startIcon: { knownIcon: "MAP_PIN" },
                         },
                     },
                     {
@@ -207,7 +166,7 @@ export const onOnboardingComplete = onDocumentUpdated({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                text: `New contractor registered: ${businessName} (${email})`,
+                text: `New contractor registered: ${businessName} (${email}) — Services: ${capDisplay}`,
                 cardsV2: [{ cardId: `vendor-onboard-${vendorId}`, card: chatCard }],
             }),
         });
@@ -221,6 +180,7 @@ export const onOnboardingComplete = onDocumentUpdated({
     }
 
     // ─── Vendor Confirmation Email ───
+    const resend = new Resend(process.env.RESEND_API_KEY);
     if (email && email !== 'N/A') {
         const isSpanish = lang === 'es';
 

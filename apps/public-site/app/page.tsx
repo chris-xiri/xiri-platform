@@ -47,6 +47,7 @@ export default function Home() {
         ctaText="Get Started — Free Audit"
         variant="dark"
         trackingId="after_testimonials"
+        showAskAI
       />
 
       <IndustriesSection />

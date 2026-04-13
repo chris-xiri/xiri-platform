@@ -8,6 +8,7 @@ import { ConditionalFooter } from "@/components/ConditionalFooter";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { ClarityProvider } from '@/components/ClarityProvider';
 import { StickyMobileCTA } from '@/components/StickyMobileCTA';
+import { AskAIWidget } from '@/components/AskAIWidget';
 
 import { MarketingShell } from '@/components/MarketingShell';
 import { BodyClassProvider } from '@/components/BodyClassProvider';
@@ -120,6 +121,7 @@ export default function RootLayout({
             </ConditionalFooter>
 
             <StickyMobileCTA />
+            <AskAIWidget />
           </MarketingShell>
         </TrackingProvider>
         {process.env.NEXT_PUBLIC_GA_ID && (

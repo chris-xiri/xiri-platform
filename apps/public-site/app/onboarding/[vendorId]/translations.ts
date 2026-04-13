@@ -105,6 +105,13 @@ interface Translations {
     step4_contact: {
         title: string;
         subtitle: string;
+        city: {
+            label: string;
+            placeholder: string;
+        };
+        state: {
+            label: string;
+        };
         email: {
             label: string;
             placeholder: string;
@@ -116,6 +123,8 @@ interface Translations {
         validation: {
             invalidEmail: string;
             invalidPhone: string;
+            cityRequired: string;
+            stateRequired: string;
         };
     };
 
@@ -235,6 +244,13 @@ export const translations: Record<Language, Translations> = {
         step4_contact: {
             title: "✓ Great! You're qualified",
             subtitle: "How can we reach you?",
+            city: {
+                label: "City",
+                placeholder: "e.g. Garden City"
+            },
+            state: {
+                label: "State"
+            },
             email: {
                 label: "Primary Email",
                 placeholder: "john@example.com"
@@ -245,7 +261,9 @@ export const translations: Record<Language, Translations> = {
             },
             validation: {
                 invalidEmail: "Please enter a valid email address",
-                invalidPhone: "Please enter a valid 10-digit phone number"
+                invalidPhone: "Please enter a valid 10-digit phone number",
+                cityRequired: "Please enter your city",
+                stateRequired: "Please select your state"
             }
         },
         step5_documents: {
@@ -357,6 +375,13 @@ export const translations: Record<Language, Translations> = {
         step4_contact: {
             title: "✓ ¡Excelente! Usted califica",
             subtitle: "¿Cómo podemos contactarle?",
+            city: {
+                label: "Ciudad",
+                placeholder: "ej. Garden City"
+            },
+            state: {
+                label: "Estado"
+            },
             email: {
                 label: "Correo Electrónico Principal",
                 placeholder: "juan@ejemplo.com"
@@ -367,7 +392,9 @@ export const translations: Record<Language, Translations> = {
             },
             validation: {
                 invalidEmail: "Por favor ingrese una dirección de correo electrónico válida",
-                invalidPhone: "Por favor ingrese un número de teléfono válido de 10 dígitos"
+                invalidPhone: "Por favor ingrese un número de teléfono válido de 10 dígitos",
+                cityRequired: "Por favor ingrese su ciudad",
+                stateRequired: "Por favor seleccione su estado"
             }
         },
         step5_documents: {

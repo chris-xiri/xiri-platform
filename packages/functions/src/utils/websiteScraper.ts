@@ -657,14 +657,11 @@ export async function searchWebForEmail(
         queries.push(`"${businessName}" ${location} email contact`);
     }
 
-    // Strategy 4: Business directories — great for small local businesses
-    queries.push(`site:bbb.org "${businessName}" ${location}`);
+    // Strategy 4: Yelp — highest-yield directory for local business contact info
     queries.push(`site:yelp.com "${businessName}" ${location} email OR contact`);
-    queries.push(`site:manta.com "${businessName}" ${location}`);
-    queries.push(`site:yellowpages.com "${businessName}" ${location}`);
 
-    // Strategy 5: Instagram — small businesses often put email in bio
-    queries.push(`site:instagram.com "${businessName}" ${location} email`);
+    // NOTE: BBB, Manta, YellowPages, Instagram removed — low email-in-snippet yield
+    // was burning ~4 extra Serper calls per prospect with negligible return
 
     let facebookUrl: string | undefined;
 

@@ -2,6 +2,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from 'firebase-admin';
 import * as logger from "firebase-functions/logger";
 import { fetchPendingTasks, updateTaskStatus, enqueueTask, claimTask, QueueItem } from "../utils/queueUtils";
+import { skipToWeekday, DEFAULT_SEND_HOUR_UTC } from "../utils/scheduleUtils";
 import { sendEmail } from "../utils/emailUtils";
 import { getFacilityPhrases } from '@xiri/shared';
 
@@ -112,6 +113,13 @@ export const processOutreachQueue = onSchedule({
 }, async (event) => {
     logger.info("Processing outreach queue...");
 
+    // ── Weekend guard: defer all outreach to next Monday 10 AM ET ──
+    const nowDay = new Date().getUTCDay();
+    if (nowDay === 0 || nowDay === 6) {
+        logger.info(`Weekend detected (day=${nowDay}) — skipping outreach queue processing.`);
+        return;
+    }
+
     try {
         const tasks = await fetchPendingTasks(db);
         if (tasks.length === 0) {
@@ -150,9 +158,10 @@ export const processOutreachQueue = onSchedule({
                 const newRetryCount = (task.retryCount || 0) + 1;
                 const status = newRetryCount > 5 ? 'FAILED' : 'RETRY';
 
-                // Exponential backoff for retry (1m, 2m, 4m...)
-                const nextAttempt = new Date();
+                // Exponential backoff for retry (1m, 2m, 4m...) — also skip weekends
+                let nextAttempt = new Date();
                 nextAttempt.setMinutes(nextAttempt.getMinutes() + Math.pow(2, newRetryCount));
+                nextAttempt = skipToWeekday(nextAttempt);
 
                 await updateTaskStatus(db, task.id!, status, {
                     retryCount: newRetryCount,

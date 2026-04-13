@@ -14,6 +14,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import { enqueueTask } from "../utils/queueUtils";
+import { buildScheduledDate } from "../utils/scheduleUtils";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -175,16 +176,13 @@ export const startLeadSequence = onCall(async (request) => {
         `[StartSequence] Starting "${sequence.name}" (${sequenceId}) for lead ${leadId} (${businessName}), contact ${contactId || "lead-level"}`
     );
 
-    // ── Schedule tasks from sequence steps ────────────────────
+    // ── Schedule tasks from sequence steps (business days only) ──
     const now = new Date();
 
     for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
-        const scheduledDate = new Date(now);
-        scheduledDate.setDate(scheduledDate.getDate() + step.dayOffset);
-        scheduledDate.setHours(14, 0, 0, 0); // 9am ET = 14:00 UTC
-
-        const sendAt = step.dayOffset === 0 ? now : scheduledDate;
+        // buildScheduledDate skips weekends and defaults to 10 AM ET (14:00 UTC)
+        const sendAt = buildScheduledDate(now, step.dayOffset);
 
         await enqueueTask(db, {
             leadId,

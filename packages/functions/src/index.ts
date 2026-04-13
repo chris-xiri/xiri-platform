@@ -44,6 +44,7 @@ export { adminUpdateAuthUser, adminCreateUser, changeMyPassword } from "./functi
 // ── Lead & Vendor sourcing (onCall / onRequest) ──
 export { generateLeads, clearPipeline, runRecruiterAgent, testSendEmail, sourceProperties } from "./functions/leads";
 
+
 // ── Social / Facebook (onCall) ──
 export {
     publishFacebookPost,
@@ -85,5 +86,34 @@ export {
 export { runProspector, addProspectsToCrm, expandLocation } from "./functions/prospecting";
 export { dailyProspector, triggerDailyProspector, updateProspectingConfig, getProspectingConfig } from "./triggers/dailyProspector";
 
+// ── Vendor / Contractor Prospecting (onCall + scheduled) ──
+export { runVendorProspector, addVendorProspectsToCrm } from "./functions/vendorProspecting";
+export { dailyVendorProspector, triggerDailyVendorProspector, updateVendorProspectingConfig, getVendorProspectingConfig } from "./triggers/dailyVendorProspector";
+
 // ── AI Sequence Generation (onCall) ──
 export { generateAISequence } from "./functions/sequenceGenerator";
+
+// ── AI Sales Assistant (onCall — public-site chat widget) ──
+export { askAI } from "./functions/askAI";
+
+// ── pSEO Engine – OAuth & Connection (onCall) ──
+export {
+    getGscAuthUrl,
+    exchangeGscToken,
+    getGscConnectionStatus,
+    disconnectGsc,
+    testGscConnection,
+} from "./functions/pseoAuth";
+
+// ── pSEO Engine – Analysis (scheduled + onCall) ──
+export {
+    weeklyPseoAnalysis,
+    triggerPseoAnalysis,
+    getPseoRunStatus,
+} from "./triggers/pseoAnalysis";
+
+// ── pSEO Engine – Deployment (onCall) ──
+export {
+    deployApprovedNudges,
+    getPseoDeployStatus,
+} from "./functions/pseoDeployment";

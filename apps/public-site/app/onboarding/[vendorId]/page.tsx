@@ -70,6 +70,16 @@ export default function OnboardingPage() {
     const [contactRole, setContactRole] = useState<'Owner' | 'Dispatch' | 'Billing' | 'Sales' | 'Other'>('Owner');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
+    const [city, setCity] = useState('');
+    const [state, setState] = useState('');
+
+    const US_STATES = [
+        'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
+        'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
+        'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+        'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
+        'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'
+    ];
 
     // Form State - Step 5: ACORD 25 Upload
     const [acordFile, setAcordFile] = useState<File | null>(null);
@@ -153,7 +163,7 @@ export default function OnboardingPage() {
         { value: 'snow_removal',         label: 'Snow & Ice Removal',             group: 'facility' as const },
         { value: 'pest_control',         label: 'Pest Control',                   group: 'facility' as const },
         { value: 'waste_management',     label: 'Waste Management',               group: 'facility' as const },
-        { value: 'indoor_plant_watering', label: 'Indoor Plant Watering',         group: 'facility' as const },
+        { value: 'indoor_plant_watering', label: 'Interior Plant Maintenance',       group: 'facility' as const },
         // Specialty
         { value: 'painting',             label: 'Painting',                       group: 'specialty' as const },
         { value: 'roofing',              label: 'Roofing',                        group: 'specialty' as const },
@@ -188,6 +198,7 @@ export default function OnboardingPage() {
     };
     const isStep4Valid = () => {
         if (!contactName.trim() || !email.trim() || !phone.trim()) return false;
+        if (!city.trim() || !state) return false;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) return false;
         const phoneDigits = phone.replace(/\D/g, '');
@@ -255,6 +266,8 @@ export default function OnboardingPage() {
                     contactName,
                     email,
                     phone,
+                    city,
+                    state,
                     businessName: businessName || vendor.businessName,
                     contacts: [{
                         id: crypto.randomUUID(),
@@ -343,6 +356,8 @@ export default function OnboardingPage() {
                 contactName,
                 email,
                 phone,
+                city,
+                state,
                 contacts: arrayUnion(primaryContact),
                 capabilities: selectedCapabilities,
                 status: 'compliance_review',
@@ -893,6 +908,36 @@ export default function OnboardingPage() {
                                         placeholder={t('step4_contact.phone.placeholder', language)}
                                         className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-sky-600 focus:border-transparent"
                                     />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                                            {t('step4_contact.city.label', language)}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={city}
+                                            onChange={(e) => setCity(e.target.value)}
+                                            placeholder={t('step4_contact.city.placeholder', language)}
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-sky-600 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                                            {t('step4_contact.state.label', language)}
+                                        </label>
+                                        <select
+                                            value={state}
+                                            onChange={(e) => setState(e.target.value)}
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 bg-white focus:ring-2 focus:ring-sky-600 focus:border-transparent"
+                                        >
+                                            <option value="">—</option>
+                                            {US_STATES.map(s => (
+                                                <option key={s} value={s}>{s}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 

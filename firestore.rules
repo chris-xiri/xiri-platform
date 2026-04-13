@@ -112,6 +112,25 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
 
+    // ── pSEO Engine (nudges, batches, config) ──
+    match /pseo_nudges/{nudgeId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /pseo_batches/{batchId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /pseo_config/{configId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ── Vendor Prospect Queue ──
+    match /vendor_prospect_queue/{prospectId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /vendor_prospecting_config/{configId} {
+      allow read, write: if isAuthenticated();
+    }
+
     // ════════════════════════════════════════════════════
     // PUBLIC COLLECTIONS (limited access for public site)
     // ════════════════════════════════════════════════════

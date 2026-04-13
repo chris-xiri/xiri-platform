@@ -113,6 +113,31 @@
         { "fieldPath": "leadId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "pseo_nudges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "segment", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pseo_nudges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "segment", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pseo_batches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "segment", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

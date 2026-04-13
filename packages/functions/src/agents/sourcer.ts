@@ -1,4 +1,6 @@
 import axios from 'axios';
+import * as crypto from 'crypto';
+import { db } from '../utils/firebase';
 
 // Define the shape of a raw vendor outcome
 export interface RawVendor {
@@ -13,6 +15,56 @@ export interface RawVendor {
     dcaCategory?: string;
 }
 
+// ── 7-day Serper Places cache ────────────────────────────────────────
+const CACHE_COLLECTION = 'serper_places_cache';
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function cacheKey(query: string, location: string): string {
+    const raw = `${query.toLowerCase().trim()}|${location.toLowerCase().trim()}`;
+    return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 24);
+}
+
+async function getCachedPlaces(query: string, location: string): Promise<RawVendor[] | null> {
+    try {
+        const docId = cacheKey(query, location);
+        const doc = await db.collection(CACHE_COLLECTION).doc(docId).get();
+        if (!doc.exists) return null;
+
+        const data = doc.data()!;
+        const cachedAt = data.cachedAt?.toDate?.() || new Date(data.cachedAt);
+        const age = Date.now() - cachedAt.getTime();
+
+        if (age > CACHE_TTL_MS) {
+            // Expired — let caller fetch fresh data (don't delete; just ignore)
+            console.log(`[PlacesCache] Expired for "${query}" in "${location}" (age: ${Math.round(age / 3600000)}h)`);
+            return null;
+        }
+
+        console.log(`[PlacesCache] HIT for "${query}" in "${location}" (age: ${Math.round(age / 3600000)}h, ${data.results?.length || 0} results)`);
+        return data.results as RawVendor[];
+    } catch (err: any) {
+        console.warn(`[PlacesCache] Read error: ${err.message}`);
+        return null;
+    }
+}
+
+async function setCachedPlaces(query: string, location: string, results: RawVendor[]): Promise<void> {
+    try {
+        const docId = cacheKey(query, location);
+        await db.collection(CACHE_COLLECTION).doc(docId).set({
+            query: query.toLowerCase().trim(),
+            location: location.toLowerCase().trim(),
+            results,
+            resultCount: results.length,
+            cachedAt: new Date(),
+        });
+        console.log(`[PlacesCache] SET for "${query}" in "${location}" (${results.length} results)`);
+    } catch (err: any) {
+        // Non-fatal — just skip caching
+        console.warn(`[PlacesCache] Write error: ${err.message}`);
+    }
+}
+
 /**
  * Lead Sourcing Agent
  * Supports multiple data providers:
@@ -21,6 +73,9 @@ export interface RawVendor {
  * - all: Both sources combined and deduplicated
  *
  * Requires: process.env.SERPER_API_KEY (for google_maps)
+ * 
+ * Results are cached in Firestore for 7 days to avoid redundant API calls
+ * when the same query+location combo runs daily.
  */
 export const searchVendors = async (
     query: string,
@@ -41,6 +96,12 @@ export const searchVendors = async (
     if (!apiKey) {
         console.warn("SERPER_API_KEY is not set. Returning mock data.");
         return getMockVendors(query, location);
+    }
+
+    // ─── Check cache first ───
+    const cached = await getCachedPlaces(query, location);
+    if (cached !== null) {
+        return cached;
     }
 
     const fullQuery = `${query} in ${location}`;
@@ -72,6 +133,9 @@ export const searchVendors = async (
         // Filter out low-rated vendors immediately
         googleResults = rawVendors.filter((v: any) => v.rating === undefined || v.rating >= 3.5);
         console.log(`Filtered ${rawVendors.length} -> ${googleResults.length} vendors (Rating >= 3.5 or N/A).`);
+
+        // ─── Cache the filtered results ───
+        await setCachedPlaces(query, location, googleResults);
 
     } catch (error: any) {
         console.error("Error searching vendors via Google:", error.message);

@@ -9,7 +9,7 @@ import {
     ClipboardList, FileText, Sun, Moon, Monitor, Shield, Receipt,
     MapPin, ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, Menu, X,
     Building2, LayoutDashboard, Search, HardHat, Bot, BarChart3, Mail, Scale,
-    Share2, Target,
+    Share2, Target, TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -181,6 +181,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const showOpsNav = canAccess('operations/work-orders', profile.roles) || canAccess('operations/nfc-zones', profile.roles);
     const showFinanceNav = canAccess('accounting/invoices', profile.roles);
     const showAdminNav = canAccess('admin/settings', profile.roles);
+    const showGrowthNav = canAccess('admin/settings', profile.roles);
 
     const sections: NavSection[] = [
         {
@@ -225,10 +226,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             ],
         },
         {
+            label: 'Growth',
+            icon: <TrendingUp className="w-3.5 h-3.5" />,
+            show: showGrowthNav,
+            dividerAbove: true,
+            items: [
+                { label: 'SEO Engine', href: '/admin/seo-engine', icon: <Search className="w-4 h-4" /> },
+                { label: 'Social Media', href: '/admin/social', icon: <Share2 className="w-4 h-4" /> },
+            ],
+        },
+        {
             label: 'Administration',
             icon: <Settings className="w-3.5 h-3.5" />,
             show: showAdminNav,
-            dividerAbove: true,
             items: [
                 { label: 'Company', href: '/admin/company', icon: <Building2 className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'Monitoring', href: '/admin/monitoring', icon: <Monitor className="w-4 h-4" />, subGroup: 'Settings' },
@@ -237,7 +247,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 { label: 'Pricing', href: '/admin/pricing', icon: <DollarSign className="w-4 h-4" />, subGroup: 'Settings' },
                 { label: 'Legal Templates', href: '/admin/legal', icon: <Scale className="w-4 h-4" />, subGroup: 'Communications' },
                 { label: 'Email Templates', href: '/admin/email-templates', icon: <Mail className="w-4 h-4" />, subGroup: 'Communications' },
-                { label: 'Social Media', href: '/admin/social', icon: <Share2 className="w-4 h-4" />, subGroup: 'Social Media' },
                 { label: 'Reports', href: '/admin/reports', icon: <BarChart3 className="w-4 h-4" />, subGroup: 'Reporting' },
                 { label: 'Commissions', href: '/admin/commissions', icon: <DollarSign className="w-4 h-4" />, subGroup: 'Reporting' },
             ],
