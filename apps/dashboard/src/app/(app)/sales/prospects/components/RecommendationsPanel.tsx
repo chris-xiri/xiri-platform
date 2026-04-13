@@ -52,7 +52,7 @@ export function RecommendationsPanel({ config, prospects, onApply, onDismiss }: 
                         description: `Consider removing '${query}' — yielded 0 qualified prospects last run.`,
                         action: { type: 'remove_query', query },
                         icon: Trash2,
-                        colorClass: 'text-red-500 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900',
+                        colorClass: 'bg-red-100 border-red-300 text-red-950',
                     });
                 }
                 
@@ -69,7 +69,7 @@ export function RecommendationsPanel({ config, prospects, onApply, onDismiss }: 
                                 description: `'${query}' yielded ${yieldData.qualified} prospects. Add related: ${missing.slice(0, 2).join(', ')}`,
                                 action: { type: 'add_queries', queries: missing },
                                 icon: Sparkles,
-                                colorClass: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900',
+                                colorClass: 'bg-amber-100 border-amber-300 text-amber-950',
                             });
                         }
                     }
@@ -91,7 +91,7 @@ export function RecommendationsPanel({ config, prospects, onApply, onDismiss }: 
                         description: `'${loc}' yielded nothing last run. Consider removing.`,
                         action: { type: 'remove_location', location: loc },
                         icon: AlertTriangle,
-                        colorClass: 'text-orange-500 bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-900',
+                        colorClass: 'bg-orange-100 border-orange-300 text-orange-950',
                     });
                 }
                 
@@ -107,7 +107,7 @@ export function RecommendationsPanel({ config, prospects, onApply, onDismiss }: 
                                 description: `High yield in ${loc}. Consider adding adjacent town ${missingTowns[0]}.`,
                                 action: { type: 'add_query', query: `${missingTowns[0]}, NY` },
                                 icon: PlusCircle,
-                                colorClass: 'text-blue-500 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900',
+                                colorClass: 'bg-blue-100 border-blue-300 text-blue-950',
                             });
                         }
                     }
@@ -139,7 +139,7 @@ export function RecommendationsPanel({ config, prospects, onApply, onDismiss }: 
                     description: `${count} recently skipped prospects contain '${word}'. Add to exclude list?`,
                     action: { type: 'add_exclude', pattern: word },
                     icon: Ban,
-                    colorClass: 'text-purple-500 bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-900',
+                    colorClass: 'bg-violet-100 border-violet-300 text-violet-950',
                 });
             }
         });
@@ -170,15 +170,15 @@ export function RecommendationsPanel({ config, prospects, onApply, onDismiss }: 
                     return (
                         <Card key={rec.id} className={`border overflow-hidden ${rec.colorClass}`}>
                             <div className="p-3 flex items-start gap-3">
-                                <div className="mt-0.5"><Icon className="w-4 h-4" /></div>
+                                <div className="mt-0.5 opacity-90"><Icon className="w-4 h-4" /></div>
                                 <div className="flex-1 space-y-1">
-                                    <h4 className="text-xs font-semibold">{rec.title}</h4>
-                                    <p className="text-[11px] opacity-90 leading-tight">{rec.description}</p>
+                                    <h4 className="text-xs font-extrabold tracking-wide uppercase">{rec.title}</h4>
+                                    <p className="text-[11px] leading-tight font-medium opacity-80">{rec.description}</p>
                                     <div className="flex items-center gap-2 pt-2">
                                         <Button 
                                             size="sm" 
                                             variant="secondary" 
-                                            className="h-6 text-[10px] px-2 bg-background/50 hover:bg-background/80"
+                                            className="h-6 text-[10px] px-2 bg-black/10 hover:bg-black/20 text-current border-0 font-bold"
                                             onClick={() => handleApply(rec)}
                                             disabled={applying === rec.id}
                                         >
@@ -187,7 +187,7 @@ export function RecommendationsPanel({ config, prospects, onApply, onDismiss }: 
                                         <Button 
                                             size="sm" 
                                             variant="ghost" 
-                                            className="h-6 text-[10px] px-2 opacity-70 hover:opacity-100"
+                                            className="h-6 text-[10px] px-2 opacity-60 hover:opacity-100 hover:bg-black/10"
                                             onClick={() => onDismiss(rec.id)}
                                         >
                                             <X className="w-3 h-3" />

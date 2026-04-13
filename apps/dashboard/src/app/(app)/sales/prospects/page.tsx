@@ -613,21 +613,16 @@ export default function ProspectsPage() {
 
             const data = result.data as any;
             const emailFn = httpsCallable(functions, 'sendSingleLeadEmail');
-            let emailsSent = 0;
 
-            for (let i = 0; i < ids.length; i++) {
-                const imported = data.results?.[i];
-                if (imported?.companyId && imported?.contactId) {
-                    try {
-                        await emailFn({
-                            leadId: imported.companyId,
-                            contactId: imported.contactId,
-                            templateId,
-                        });
-                        emailsSent++;
-                    } catch { /* skip failed emails */ }
-                }
-            }
+            // Fire all email sends concurrently instead of serially
+            const emailResults = await Promise.allSettled(
+                ids.map((_, i) => {
+                    const imported = data.results?.[i];
+                    if (!imported?.companyId || !imported?.contactId) return Promise.resolve(null);
+                    return emailFn({ leadId: imported.companyId, contactId: imported.contactId, templateId });
+                })
+            );
+            const emailsSent = emailResults.filter(r => r.status === 'fulfilled' && (r as PromiseFulfilledResult<unknown>).value !== null).length;
 
             const batch = writeBatch(db);
             for (let i = 0; i < ids.length; i++) {
@@ -673,21 +668,16 @@ export default function ProspectsPage() {
 
             const data = result.data as any;
             const seqFn = httpsCallable(functions, 'startLeadSequence');
-            let started = 0;
 
-            for (let i = 0; i < ids.length; i++) {
-                const imported = data.results?.[i];
-                if (imported?.companyId && imported?.contactId) {
-                    try {
-                        await seqFn({
-                            leadId: imported.companyId,
-                            contactId: imported.contactId,
-                            sequenceId,
-                        });
-                        started++;
-                    } catch { /* skip failed */ }
-                }
-            }
+            // Fire all sequence enrollments concurrently instead of serially
+            const seqResults = await Promise.allSettled(
+                ids.map((_, i) => {
+                    const imported = data.results?.[i];
+                    if (!imported?.companyId || !imported?.contactId) return Promise.resolve(null);
+                    return seqFn({ leadId: imported.companyId, contactId: imported.contactId, sequenceId });
+                })
+            );
+            const started = seqResults.filter(r => r.status === 'fulfilled' && (r as PromiseFulfilledResult<unknown>).value !== null).length;
 
             const batch = writeBatch(db);
             for (let i = 0; i < ids.length; i++) {
