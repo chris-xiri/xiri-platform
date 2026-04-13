@@ -583,8 +583,8 @@ export default function SeoEnginePage() {
                                     }`}
                                 style={{
                                     borderColor: scopeFilter === scope ? scopeColors[scope] : undefined,
-                                    ringColor: scopeFilter === scope ? scopeColors[scope] : undefined,
-                                }}
+                                    ['--tw-ring-color' as string]: scopeFilter === scope ? scopeColors[scope] : undefined,
+                                } as React.CSSProperties}
                             >
                                 <div className="flex items-center gap-2 mb-1">
                                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: scopeColors[scope] }} />

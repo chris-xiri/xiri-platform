@@ -15,10 +15,6 @@ import {
     DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent,
     DropdownMenuSubTrigger, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-    Dialog, DialogContent, DialogDescription, DialogFooter,
-    DialogHeader, DialogTitle, DialogTrigger,
-} from '@/components/ui/dialog';
 import { httpsCallable } from 'firebase/functions';
 import { collection, onSnapshot, query, orderBy, where, getDocs, doc, updateDoc, writeBatch, getDoc, setDoc } from 'firebase/firestore';
 import { functions, db } from '@/lib/firebase';
@@ -30,46 +26,12 @@ import {
     Calendar, TrendingUp, Zap, Filter, RefreshCw,
     Tag, Users, AlertTriangle, Sparkles,
 } from 'lucide-react';
+import type { ProspectingConfig, QueuedProspect } from './components/types';
+import { ConfigPanel } from './components/ConfigPanel';
+import { RecommendationsPanel } from './components/RecommendationsPanel';
+import type { RecommendationAction } from './components/RecommendationsPanel';
 
-// ── Types ───────────────────────────────────────────────────────────
-
-interface ProspectContact {
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    position?: string;
-    confidence?: number;
-    type: 'personal' | 'generic';
-    provider: string;
-}
-
-interface QueuedProspect {
-    id: string;
-    businessName: string;
-    address?: string;
-    phone?: string;
-    website?: string;
-    rating?: number;
-    contactEmail?: string;
-    genericEmail?: string;
-    contactName?: string;
-    contactTitle?: string;
-    emailSource?: string;
-    emailConfidence?: string;
-    facebookUrl?: string;
-    linkedinUrl?: string;
-    enrichmentLog?: string[];
-    allContacts?: ProspectContact[];
-    facilityType?: string;  // static FacilityType or custom slug
-    status: string;
-    batchDate: string;
-    searchQuery: string;
-    searchLocation: string;
-    companyId?: string;
-    contactId?: string;
-    actionedAt?: any;
-    createdAt?: any;
-}
+// ── Local-only types (not exported) ─────────────────────────────────
 
 interface TemplateOption {
     id: string;
@@ -84,23 +46,6 @@ interface SequenceOption {
     description?: string;
     stepCount: number;
     category?: string;
-}
-
-interface ProspectingConfig {
-    queries: string[];
-    locations: string[];
-    dailyTarget: number;
-    enabled: boolean;
-    excludePatterns: string[];
-    lastRunAt?: any;
-    lastRunStats?: {
-        discovered: number;
-        withEmail: number;
-        added: number;
-        duplicatesSkipped: number;
-        queryYield?: Record<string, { discovered: number; qualified: number }>;
-        locationYield?: Record<string, { discovered: number; qualified: number }>;
-    };
 }
 
 // ── Confidence badge helper ─────────────────────────────────────────
@@ -139,6 +84,7 @@ export default function ProspectsPage() {
         currentQuery: string | null;
         completedAt?: any;
         updatedAt?: any;
+        error?: string;
     }
     const [runStatus, setRunStatus] = useState<RunStatus | null>(null);
     const [polling, setPolling] = useState(false);
@@ -148,13 +94,10 @@ export default function ProspectsPage() {
     const [configOpen, setConfigOpen] = useState(false);
     const [configSaving, setConfigSaving] = useState(false);
     const [editQueries, setEditQueries] = useState<string[]>([]);
-    const [newQuery, setNewQuery] = useState('');
     const [editLocations, setEditLocations] = useState<string[]>([]);
-    const [newLocation, setNewLocation] = useState('');
     const [editTarget, setEditTarget] = useState(100);
     const [editEnabled, setEditEnabled] = useState(true);
     const [editExclude, setEditExclude] = useState<string[]>([]);
-    const [newExclude, setNewExclude] = useState('');
 
     // Template/sequence options for the action dropdown
     const [templates, setTemplates] = useState<TemplateOption[]>([]);
@@ -483,17 +426,7 @@ export default function ProspectsPage() {
                 continue;
             }
 
-            // 2. Try custom types' inferPatterns
-            let found = false;
-            for (const ct of customFacilityTypes) {
-                const patterns: string[] = ct.inferPatterns || [];
-                if (patterns.some(pat => haystack.includes(pat.toLowerCase()))) {
-                    updates.push({ id: p.id, slug: ct.slug });
-                    matched++;
-                    found = true;
-                    break;
-                }
-            }
+            // Note: customFacilityTypes is a slug→label map; no pattern matching supported for custom types
         }
 
         if (updates.length === 0) {
@@ -867,40 +800,109 @@ export default function ProspectsPage() {
     const handleSaveConfig = async () => {
         setConfigSaving(true);
         try {
-            // Process inputs separately
-            const getUniqueArray = (items: string[], pending?: string) => {
+            const dedup = (items: string[]) => {
                 const map = new Map<string, string>();
-                const list = [...items];
-                if (pending && pending.trim()) list.push(pending.trim());
-                list.forEach(line => {
+                items.forEach(line => {
                     const trimmed = line.trim();
                     if (trimmed) map.set(trimmed.toLowerCase(), trimmed);
                 });
                 return Array.from(map.values());
-            }
+            };
 
             const newConfig = {
-                queries: getUniqueArray(editQueries, newQuery),
-                locations: getUniqueArray(editLocations, newLocation),
+                queries: dedup(editQueries),
+                locations: dedup(editLocations),
                 dailyTarget: editTarget,
                 enabled: editEnabled,
-                excludePatterns: getUniqueArray(editExclude, newExclude),
+                excludePatterns: dedup(editExclude),
             };
             await setDoc(doc(db, 'prospecting_config', 'default'), newConfig, { merge: true });
             setConfig(prev => prev ? { ...prev, ...newConfig } : newConfig as ProspectingConfig);
-            
             setEditQueries(newConfig.queries);
             setEditLocations(newConfig.locations);
             setEditExclude(newConfig.excludePatterns);
-            setNewQuery('');
-            setNewLocation('');
-            setNewExclude('');
-            setConfigOpen(false);
             toast({ title: 'Config saved', description: 'Duplicates automatically removed.' });
         } catch (err) {
             toast({ title: 'Save failed', description: String(err) });
         }
         setConfigSaving(false);
+    };
+
+    // ── Seed config from ICP engine ──────────────────────────────────
+
+    const handleSeedFromICP = async () => {
+        try {
+            toast({ title: 'Regenerating config...', description: 'Seeding queries and locations from the ICP engine.' });
+            const fn = httpsCallable(functions, 'regenerateProspectingConfig');
+            await fn({});
+            // Reload config after seed
+            const snap = await getDoc(doc(db, 'prospecting_config', 'default'));
+            if (snap.exists()) {
+                const data = snap.data() as ProspectingConfig;
+                setConfig(data);
+                setEditQueries(data.queries || []);
+                setEditLocations(data.locations || []);
+                setEditTarget(data.dailyTarget || 100);
+                setEditEnabled(data.enabled !== false);
+                setEditExclude(data.excludePatterns || []);
+            }
+            toast({ title: 'Config seeded!', description: 'ICP engine queries and locations are now active.' });
+        } catch (err) {
+            toast({ title: 'Seed failed', description: String(err), variant: 'destructive' });
+        }
+    };
+
+    // ── Apply/dismiss AI recommendations ────────────────────────────
+
+    const handleApplyRecommendation = async (action: RecommendationAction, id: string) => {
+        const configRef = doc(db, 'prospecting_config', 'default');
+        try {
+            // Apply the recommended mutation to local state + Firestore
+            switch (action.type) {
+                case 'remove_query':
+                    setEditQueries(prev => prev.filter(q => q !== action.query));
+                    await setDoc(configRef, { queries: editQueries.filter(q => q !== action.query) }, { merge: true });
+                    break;
+                case 'add_query':
+                    if (!editQueries.includes(action.query)) {
+                        const next = [...editQueries, action.query];
+                        setEditQueries(next);
+                        await setDoc(configRef, { queries: next }, { merge: true });
+                    }
+                    break;
+                case 'add_queries': {
+                    const next = [...new Set([...editQueries, ...action.queries])];
+                    setEditQueries(next);
+                    await setDoc(configRef, { queries: next }, { merge: true });
+                    break;
+                }
+                case 'remove_location':
+                    setEditLocations(prev => prev.filter(l => l !== action.location));
+                    await setDoc(configRef, { locations: editLocations.filter(l => l !== action.location) }, { merge: true });
+                    break;
+                case 'add_exclude': {
+                    const next = [...editExclude, action.pattern];
+                    setEditExclude(next);
+                    await setDoc(configRef, { excludePatterns: next }, { merge: true });
+                    break;
+                }
+            }
+            // Mark as applied (same as dismissed — prevents re-showing)
+            handleDismissRecommendation(id);
+            toast({ title: 'Recommendation applied' });
+        } catch (err) {
+            toast({ title: 'Failed to apply recommendation', description: String(err), variant: 'destructive' });
+        }
+    };
+
+    const handleDismissRecommendation = async (id: string) => {
+        const dismissed = [...(config?.dismissedRecommendations || []), id];
+        setConfig(prev => prev ? { ...prev, dismissedRecommendations: dismissed } : prev);
+        try {
+            await setDoc(doc(db, 'prospecting_config', 'default'), { dismissedRecommendations: dismissed }, { merge: true });
+        } catch (err) {
+            console.error('Failed to persist dismissed recommendation:', err);
+        }
     };
 
     // ── Select helpers ──────────────────────────────────────────────
@@ -938,219 +940,14 @@ export default function ProspectsPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Dialog open={configOpen} onOpenChange={setConfigOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                                <Settings className="w-4 h-4 mr-1" />
-                                Config
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-lg">
-                            <DialogHeader>
-                                <DialogTitle>Prospecting Configuration</DialogTitle>
-                                <DialogDescription>
-                                    Configure what the daily prospector searches for.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-sm font-medium">Search Queries</label>
-                                    <div className="flex flex-wrap gap-2 mt-1 mb-2">
-                                        {editQueries.map(q => (
-                                            <Badge key={q} variant="secondary" className="flex items-center gap-1 group">
-                                                {q}
-                                                <X
-                                                    className="w-3 h-3 cursor-pointer opacity-50 hover:opacity-100"
-                                                    onClick={() => setEditQueries(prev => prev.filter(x => x !== q))}
-                                                />
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                    <Input
-                                        placeholder="Add query (press Enter)..."
-                                        value={newQuery}
-                                        onChange={e => setNewQuery(e.target.value)}
-                                        onKeyDown={e => {
-                                            if (e.key === 'Enter' && newQuery.trim()) {
-                                                e.preventDefault();
-                                                if (!editQueries.some(q => q.toLowerCase() === newQuery.trim().toLowerCase())) {
-                                                    setEditQueries(prev => [...prev, newQuery.trim()]);
-                                                }
-                                                setNewQuery('');
-                                            }
-                                        }}
-                                        className="mb-2"
-                                    />
-                                    {[
-                                        "property management", "commercial real estate", "corporate headquarters", "medical office building", 
-                                        "urgent care", "car dealership", "manufacturing plant", "logistics center", "distribution warehouse", 
-                                        "fitness center", "private school", "daycare center", "dental clinic", "veterinary clinic", 
-                                        "auto repair shop", "technology park", "franchise owner", "strip mall"
-                                    ].filter(label => !editQueries.some(q => q.toLowerCase() === label.toLowerCase())).length > 0 && (
-                                        <div className="mt-2">
-                                            <span className="text-xs text-muted-foreground mb-2 block font-medium">Suggested Commercial / NNN Tenants:</span>
-                                            <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1 pb-1">
-                                                {[
-                                                    "property management", "commercial real estate", "corporate headquarters", "medical office building", 
-                                                    "urgent care", "car dealership", "manufacturing plant", "logistics center", "distribution warehouse", 
-                                                    "fitness center", "private school", "daycare center", "dental clinic", "veterinary clinic", 
-                                                    "auto repair shop", "technology park", "franchise owner", "strip mall"
-                                                ]
-                                                    .filter(label => !editQueries.some(q => q.toLowerCase() === label.toLowerCase()))
-                                                    .map(label => (
-                                                        <Badge
-                                                            key={label}
-                                                            variant="secondary"
-                                                            className="text-[10px] cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors font-normal py-0 h-5"
-                                                            onClick={() => {
-                                                                if (!editQueries.some(q => q.toLowerCase() === label.toLowerCase())) {
-                                                                    setEditQueries(prev => [...prev, label]);
-                                                                }
-                                                            }}
-                                                        >
-                                                            <Plus className="w-3 h-3 mr-0.5 inline" />
-                                                            {label}
-                                                        </Badge>
-                                                    ))
-                                                }
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-end mb-1">
-                                        <label className="text-sm font-medium">Locations</label>
-                                        <Button 
-                                            variant="ghost" 
-                                            size="sm" 
-                                            className="h-6 text-xs text-blue-600 hover:text-blue-700 px-1 py-0 hover:bg-blue-50 dark:hover:bg-blue-900/40"
-                                            onClick={async (e) => {
-                                                e.preventDefault();
-                                                const targetLine = window.prompt("Which county or region would you like to expand into specific towns? (e.g. 'Nassau County, NY')");
-                                                
-                                                if (!targetLine || !targetLine.trim()) {
-                                                    return;
-                                                }
-
-                                                toast({ title: "Expanding...", description: `Using AI to expand ${targetLine.trim()} into towns...` });
-                                                try {
-                                                    const expandFn = httpsCallable(functions, 'expandLocation');
-                                                    const res = await expandFn({ location: targetLine.trim() });
-                                                    const towns = (res.data as any).towns as string[];
-                                                    
-                                                    const newLines = [...editLocations, ...towns];
-                                                    
-                                                    // Deduplicate towns before setting
-                                                    const uniqueSet = new Set(newLines.map(t => t.toLowerCase()));
-                                                    const deduplicated = newLines.filter(t => {
-                                                        if (uniqueSet.has(t.toLowerCase())) {
-                                                            uniqueSet.delete(t.toLowerCase());
-                                                            return true;
-                                                        }
-                                                        return false;
-                                                    });
-                                                    
-                                                    setEditLocations(deduplicated);
-                                                    toast({ title: "Expanded successfully!", description: `Added ${towns.length} towns from ${targetLine.trim()}.` });
-                                                } catch (err: any) {
-                                                    toast({ title: "Error", description: err.message, variant: "destructive" });
-                                                }
-                                            }}
-                                        >
-                                            <Zap className="w-3 h-3 mr-1" />
-                                            Auto-Expand Location
-                                        </Button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                        {editLocations.map(l => (
-                                            <Badge key={l} variant="secondary" className="flex items-center gap-1 group">
-                                                {l}
-                                                <X
-                                                    className="w-3 h-3 cursor-pointer opacity-50 hover:opacity-100"
-                                                    onClick={() => setEditLocations(prev => prev.filter(x => x !== l))}
-                                                />
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                    <Input
-                                        placeholder="Add location (press Enter)..."
-                                        value={newLocation}
-                                        onChange={e => setNewLocation(e.target.value)}
-                                        onKeyDown={e => {
-                                            if (e.key === 'Enter' && newLocation.trim()) {
-                                                e.preventDefault();
-                                                if (!editLocations.some(l => l.toLowerCase() === newLocation.trim().toLowerCase())) {
-                                                    setEditLocations(prev => [...prev, newLocation.trim()]);
-                                                }
-                                                setNewLocation('');
-                                            }
-                                        }}
-                                    />
-                                    <p className="text-[10px] text-muted-foreground mt-1">
-                                        For best results, use specific towns or cities rather than whole counties. 
-                                        Type a county and click the AI button above to automatically generate a town list.
-                                    </p>
-                                </div>
-                                <div className="flex gap-4">
-                                    <div className="flex-1">
-                                        <label className="text-sm font-medium">Daily Target</label>
-                                        <Input
-                                            type="number"
-                                            className="mt-1"
-                                            value={editTarget}
-                                            onChange={e => setEditTarget(Number(e.target.value))}
-                                            min={10}
-                                            max={500}
-                                        />
-                                    </div>
-                                    <div className="flex-1 flex items-end">
-                                        <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-                                            <Checkbox
-                                                checked={editEnabled}
-                                                onCheckedChange={(v: boolean) => setEditEnabled(v)}
-                                            />
-                                            Pipeline Enabled
-                                        </label>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium">Exclude Patterns</label>
-                                    <div className="flex flex-wrap gap-2 mt-1 mb-2">
-                                        {editExclude.map(p => (
-                                            <Badge key={p} variant="secondary" className="flex items-center gap-1 group">
-                                                {p}
-                                                <X
-                                                    className="w-3 h-3 cursor-pointer opacity-50 hover:opacity-100"
-                                                    onClick={() => setEditExclude(prev => prev.filter(x => x !== p))}
-                                                />
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                    <Input
-                                        placeholder="Add exclude pattern (press Enter)..."
-                                        value={newExclude}
-                                        onChange={e => setNewExclude(e.target.value)}
-                                        onKeyDown={e => {
-                                            if (e.key === 'Enter' && newExclude.trim()) {
-                                                e.preventDefault();
-                                                if (!editExclude.some(p => p.toLowerCase() === newExclude.trim().toLowerCase())) {
-                                                    setEditExclude(prev => [...prev, newExclude.trim()]);
-                                                }
-                                                setNewExclude('');
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button variant="outline" onClick={() => setConfigOpen(false)}>Cancel</Button>
-                                <Button onClick={handleSaveConfig} disabled={configSaving}>
-                                    {configSaving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                                    Save
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <Button
+                        variant={configOpen ? 'secondary' : 'outline'}
+                        size="sm"
+                        onClick={() => setConfigOpen(c => !c)}
+                    >
+                        <Settings className="w-4 h-4 mr-1" />
+                        {configOpen ? 'Hide Config' : 'Config'}
+                    </Button>
 
                     <Button
                         variant="outline"
@@ -1167,6 +964,35 @@ export default function ProspectsPage() {
                 </div>
             </div>
 
+            {/* ICP Config Panel */}
+            <ConfigPanel
+                configOpen={configOpen}
+                onClose={() => setConfigOpen(false)}
+                config={config}
+                editQueries={editQueries}
+                setEditQueries={setEditQueries}
+                editLocations={editLocations}
+                setEditLocations={setEditLocations}
+                editTarget={editTarget}
+                setEditTarget={setEditTarget}
+                editEnabled={editEnabled}
+                setEditEnabled={setEditEnabled}
+                editExclude={editExclude}
+                setEditExclude={setEditExclude}
+                onSave={handleSaveConfig}
+                onSeedFromICP={handleSeedFromICP}
+                isSaving={configSaving}
+            />
+
+            {/* AI Recommendations Panel */}
+            {config && (
+                <RecommendationsPanel
+                    config={config}
+                    prospects={prospects}
+                    onApply={handleApplyRecommendation}
+                    onDismiss={handleDismissRecommendation}
+                />
+            )}
             {/* Progress banner */}
             {(polling || (runStatus && runStatus.running)) && runStatus && (
                 <div className="rounded-lg border bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900 p-4">
@@ -1425,7 +1251,7 @@ export default function ProspectsPage() {
                 <div className="flex items-center gap-3 px-4 py-2 mb-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
                     <RefreshCw className="w-4 h-4 text-blue-500 shrink-0" />
                     <span className="text-sm flex-1 text-blue-700 dark:text-blue-300">
-                        {prospects.filter(p => getEffectiveFacilityType(p) === 'unknown').length} uncategorized — auto-match against known patterns{customFacilityTypes.length > 0 ? ` + ${customFacilityTypes.length} custom type${customFacilityTypes.length !== 1 ? 's' : ''}` : ''}
+                        {prospects.filter(p => getEffectiveFacilityType(p) === 'unknown').length} uncategorized — auto-match against known patterns{Object.keys(customFacilityTypes).length > 0 ? ` + ${Object.keys(customFacilityTypes).length} custom type${Object.keys(customFacilityTypes).length !== 1 ? 's' : ''}` : ''}
                     </span>
                     <Button
                         size="sm"
@@ -1525,7 +1351,7 @@ export default function ProspectsPage() {
                                         return (
                                             <Select
                                                 value={effectiveFt === 'unknown' ? undefined : effectiveFt}
-                                                onValueChange={(val) => handleSetFacilityType(prospect.id, val)}
+                                                onValueChange={(val: string) => handleSetFacilityType(prospect.id, val)}
                                             >
                                                 <SelectTrigger
                                                     className={`h-7 text-[11px] px-2 w-full ${

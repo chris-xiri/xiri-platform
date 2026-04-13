@@ -9,6 +9,7 @@ import { GoogleAnalytics } from '@next/third-parties/google';
 import { ClarityProvider } from '@/components/ClarityProvider';
 import { StickyMobileCTA } from '@/components/StickyMobileCTA';
 import { AskAIWidget } from '@/components/AskAIWidget';
+import { JsonLd } from '@/components/JsonLd';
 
 import { MarketingShell } from '@/components/MarketingShell';
 import { BodyClassProvider } from '@/components/BodyClassProvider';
@@ -75,25 +76,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* Critical inline styles — fallback if external CSS fails to load */}
+      {/* Resource hints — load fonts and Firebase faster */}
       <head>
-        <style dangerouslySetInnerHTML={{ __html: `
-          /* Base fallback if CSS bundle fails */
-          noscript .noscript-overlay {
-            position: fixed; inset: 0; z-index: 99999;
-            background: #0f172a; color: #e2e8f0;
-            display: flex; align-items: center; justify-content: center;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          }
-          noscript .noscript-card {
-            max-width: 480px; padding: 48px 32px; text-align: center;
-            background: #1e293b; border-radius: 16px; border: 1px solid #334155;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,.5);
-          }
-          noscript .noscript-card h1 { font-size: 24px; font-weight: 700; margin: 0 0 8px; color: #38bdf8; }
-          noscript .noscript-card p { font-size: 15px; line-height: 1.6; margin: 0 0 12px; color: #94a3b8; }
-          noscript .noscript-card a { color: #38bdf8; text-decoration: underline; }
-        `}} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
       </head>
       <BodyClassProvider className={`${inter.variable} ${outfit.variable} font-sans antialiased text-gray-900 bg-white pt-[112px]`}>
         {/* Fallback for users with JavaScript disabled */}
@@ -128,51 +116,40 @@ export default function RootLayout({
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
         )}
         <ClarityProvider />
-        {/* Organization Structured Data — placed in body to avoid render-blocking */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              "@id": `${SITE.url}/#organization`,
-              "name": SITE.name,
-              "url": SITE.url,
-              "logo": `${SITE.url}/icon.png`,
-              "description": "Medical-grade facility management for single-tenant buildings.",
-              "serviceType": "Facility Management",
-              "telephone": SITE.phone,
-              "sameAs": [
-                SITE.social.facebook,
-                SITE.social.linkedin
-              ],
-              "areaServed": {
-                "@type": "State",
-                "name": "New York"
-              },
-              "contactPoint": {
-                "@type": "ContactPoint",
-                "contactType": "sales",
-                "email": SITE.email,
-                "telephone": SITE.phone
-              }
-            })
-          }}
-        />
-        {/* WebSite Schema — tells Google our site name is "XIRI Facility Solutions", not "xiri.ai" */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              "@id": `${SITE.url}/#website`,
-              "name": SITE.name,
-              "alternateName": [SITE.shortName, "Xiri Facility Solutions", "XIRI FM"],
-              "url": SITE.url
-            })
-          }}
-        />
+        {/* Organization & WebSite Structured Data */}
+        <JsonLd data={{
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "@id": `${SITE.url}/#organization`,
+          "name": SITE.name,
+          "url": SITE.url,
+          "logo": `${SITE.url}/icon.png`,
+          "description": "Medical-grade facility management for single-tenant buildings.",
+          "serviceType": "Facility Management",
+          "telephone": SITE.phone,
+          "sameAs": [
+            SITE.social.facebook,
+            SITE.social.linkedin
+          ],
+          "areaServed": {
+            "@type": "State",
+            "name": "New York"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "sales",
+            "email": SITE.email,
+            "telephone": SITE.phone
+          }
+        }} />
+        <JsonLd data={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "@id": `${SITE.url}/#website`,
+          "name": SITE.name,
+          "alternateName": [SITE.shortName, "Xiri Facility Solutions", "XIRI FM"],
+          "url": SITE.url
+        }} />
       </BodyClassProvider>
     </html>
   );

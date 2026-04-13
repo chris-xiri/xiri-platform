@@ -82,6 +82,13 @@ export function Hero({
                                 >
                                     {ctaText}
                                 </button>
+                            ) : ctaLink ? (
+                                <a
+                                    href={ctaLink}
+                                    className="inline-flex justify-center items-center bg-sky-600 text-white px-8 py-4 rounded-full text-lg font-medium shadow-lg shadow-sky-600/20 hover:bg-sky-700 hover:shadow-xl hover:shadow-sky-600/30 transition-all duration-300 transform hover:-translate-y-0.5"
+                                >
+                                    {ctaText}
+                                </a>
                             ) : (
                                 <button
                                     onClick={() => setIsModalOpen(true)}
