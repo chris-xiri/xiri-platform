@@ -255,10 +255,12 @@ export default function ProspectsPage() {
         batch.commit().catch(err => console.error('Auto-save facility types failed:', err));
     }, [prospects]);
 
-    /** Unique facility types present in the current dataset with counts. */
+    /** Unique facility types present in pending_review prospects only, with counts.
+     *  We only show pending counts in the pills so reps see what's actually actionable. */
     const facilityTypeCounts = useMemo(() => {
         const counts = new Map<string, number>();
         for (const p of prospects) {
+            if (p.status !== 'pending_review') continue;
             const ft = getEffectiveFacilityType(p);
             counts.set(ft, (counts.get(ft) || 0) + 1);
         }
