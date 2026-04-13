@@ -27,6 +27,7 @@ export { onReferralLeadWritten } from "./triggers/referralPartnerNotifications";
 export { onAuditFailed } from "./triggers/onAuditFailed";
 export { generateMonthlyInvoices } from "./triggers/generateMonthlyInvoices";
 export { resendWebhook } from "./triggers/resendWebhook";
+export { backfillEngagement } from "./scripts/backfill-engagement";
 export { onLeadUpdated, onVendorUpdated, onStaffUpdated } from "./triggers/onLeadUpdated";
 export { weeklyTemplateOptimizer, optimizeTemplate } from "./triggers/aiTemplateOptimizer";
 export { startLeadSequence } from "./triggers/startLeadSequence";

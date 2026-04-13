@@ -303,6 +303,31 @@ export const resendWebhook = onRequest({
             logger.warn(`Failed to update ${entityType} engagement:`, engErr);
         }
 
+        // ─── Mirror engagement to contact doc ────────────────────────
+        // The CRM funnel reads emailEngagement from the contacts collection,
+        // so we must write it there too (not just on the entity doc).
+        if (resolvedContactId) {
+            const contactEngagement: Record<string, any> = {
+                'emailEngagement.lastEventAt': new Date(),
+            };
+
+            if (shouldUpdateLastEvent) {
+                contactEngagement['emailEngagement.lastEvent'] = mapping.deliveryStatus;
+            }
+            if (eventType === 'email.opened') {
+                contactEngagement['emailEngagement.openCount'] = admin.firestore.FieldValue.increment(1);
+            } else if (eventType === 'email.clicked') {
+                contactEngagement['emailEngagement.clickCount'] = admin.firestore.FieldValue.increment(1);
+            }
+
+            try {
+                await db.collection('contacts').doc(resolvedContactId).update(contactEngagement);
+                logger.info(`Contact ${resolvedContactId}: emailEngagement mirrored (${mapping.deliveryStatus})`);
+            } catch (contactErr) {
+                logger.warn(`Failed to mirror engagement to contact ${resolvedContactId}:`, contactErr);
+            }
+        }
+
         // ─── Auto-suppress on bounce / spam complaint ─────────────────
         // Dismiss vendor or mark lead as lost, and cancel all pending tasks
         // so we stop wasting queue cycles on undeliverable addresses.

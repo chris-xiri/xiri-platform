@@ -81,23 +81,23 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db26, task) {
-  return db26.collection(COLLECTION).add({
+async function enqueueTask(db27, task) {
+  return db27.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db26) {
+async function fetchPendingTasks(db27) {
   const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db26.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db27.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function claimTask(db26, taskId) {
-  const ref = db26.collection(COLLECTION).doc(taskId);
+async function claimTask(db27, taskId) {
+  const ref = db27.collection(COLLECTION).doc(taskId);
   try {
-    return await db26.runTransaction(async (txn) => {
+    return await db27.runTransaction(async (txn) => {
       const snap = await txn.get(ref);
       if (!snap.exists) return false;
       const current = snap.data();
@@ -114,39 +114,39 @@ async function claimTask(db26, taskId) {
     return false;
   }
 }
-async function updateTaskStatus(db26, taskId, status, updates = {}) {
-  await db26.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db27, taskId, status, updates = {}) {
+  await db27.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db26, vendorId) {
-  const snapshot = await db26.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db26.batch();
+async function cancelVendorTasks(db27, vendorId) {
+  const snapshot = await db27.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db27.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadTasks(db26, leadId) {
-  const snapshot = await db26.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db26.batch();
+async function cancelLeadTasks(db27, leadId) {
+  const snapshot = await db27.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db27.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadScheduledEmails(db26, leadId, collection = "companies") {
-  const { Resend: Resend4 } = await import("resend");
+async function cancelLeadScheduledEmails(db27, leadId, collection = "companies") {
+  const { Resend: Resend5 } = await import("resend");
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.warn("[cancelLeadScheduledEmails] RESEND_API_KEY not set \u2014 skipping Resend cancellation.");
     return 0;
   }
-  const resend2 = new Resend4(apiKey);
-  const docRef = db26.collection(collection).doc(leadId);
+  const resend2 = new Resend5(apiKey);
+  const docRef = db27.collection(collection).doc(leadId);
   const snap = await docRef.get();
   const ids = snap.data()?.scheduledEmailIds || [];
   if (ids.length === 0) return 0;
@@ -46242,7 +46242,7 @@ function fetch2(url, opts) {
   return new fetch2.Promise(function(resolve2, reject) {
     const request = new Request(url, opts);
     const options = getNodeRequestOptions(request);
-    const send = (options.protocol === "https:" ? import_https9.default : import_http.default).request;
+    const send = (options.protocol === "https:" ? import_https10.default : import_http.default).request;
     const signal = request.signal;
     let response = null;
     const abort = function abort2() {
@@ -46464,7 +46464,7 @@ function destroyStream(stream, err2) {
     stream.end();
   }
 }
-var import_stream, import_http, import_url, import_whatwg_url, import_https9, import_zlib, Readable, BUFFER, TYPE2, Blob2, convert, INTERNALS, PassThrough, invalidTokenRegex, invalidHeaderCharRegex, MAP, Headers, INTERNAL, HeadersIteratorPrototype, INTERNALS$1, STATUS_CODES, Response, INTERNALS$2, URL2, parse_url, format_url, streamDestructionSupported, Request, URL$1, PassThrough$1, isDomainOrSubdomain, isSameProtocol, lib_default;
+var import_stream, import_http, import_url, import_whatwg_url, import_https10, import_zlib, Readable, BUFFER, TYPE2, Blob2, convert, INTERNALS, PassThrough, invalidTokenRegex, invalidHeaderCharRegex, MAP, Headers, INTERNAL, HeadersIteratorPrototype, INTERNALS$1, STATUS_CODES, Response, INTERNALS$2, URL2, parse_url, format_url, streamDestructionSupported, Request, URL$1, PassThrough$1, isDomainOrSubdomain, isSameProtocol, lib_default;
 var init_lib = __esm({
   "../../node_modules/node-fetch/lib/index.mjs"() {
     "use strict";
@@ -46472,7 +46472,7 @@ var init_lib = __esm({
     import_http = __toESM(require("http"), 1);
     import_url = __toESM(require("url"), 1);
     import_whatwg_url = __toESM(require_public_api(), 1);
-    import_https9 = __toESM(require("https"), 1);
+    import_https10 = __toESM(require("https"), 1);
     import_zlib = __toESM(require("zlib"), 1);
     Readable = import_stream.default.Readable;
     BUFFER = /* @__PURE__ */ Symbol("buffer");
@@ -51169,12 +51169,12 @@ var require_logging_utils = __commonJS({
             this.setFilters();
             this.filtersSet = true;
           }
-          let logger34 = this.cached.get(namespace);
-          if (!logger34) {
-            logger34 = this.makeLogger(namespace);
-            this.cached.set(namespace, logger34);
+          let logger35 = this.cached.get(namespace);
+          if (!logger35) {
+            logger35 = this.makeLogger(namespace);
+            this.cached.set(namespace, logger35);
           }
-          logger34(fields, ...args);
+          logger35(fields, ...args);
         } catch (e2) {
           console.error(e2);
         }
@@ -51311,7 +51311,7 @@ var require_logging_utils = __commonJS({
       } else if (cachedBackend === void 0) {
         cachedBackend = getNodeBackend();
       }
-      const logger34 = (() => {
+      const logger35 = (() => {
         let previousBackend = void 0;
         const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
           if (previousBackend !== cachedBackend) {
@@ -51326,8 +51326,8 @@ var require_logging_utils = __commonJS({
         });
         return newLogger;
       })();
-      loggerCache.set(namespace, logger34);
-      return logger34.func;
+      loggerCache.set(namespace, logger35);
+      return logger35.func;
     }
   }
 });
@@ -51391,14 +51391,14 @@ var require_src4 = __commonJS({
     var gaxios_1 = require_src2();
     var jsonBigint = require_json_bigint();
     var gcp_residency_1 = require_gcp_residency();
-    var logger34 = require_src3();
+    var logger35 = require_src3();
     exports2.BASE_PATH = "/computeMetadata/v1";
     exports2.HOST_ADDRESS = "http://169.254.169.254";
     exports2.SECONDARY_HOST_ADDRESS = "http://metadata.google.internal.";
     exports2.HEADER_NAME = "Metadata-Flavor";
     exports2.HEADER_VALUE = "Google";
     exports2.HEADERS = Object.freeze({ [exports2.HEADER_NAME]: exports2.HEADER_VALUE });
-    var log = logger34.log("gcp metadata");
+    var log = logger35.log("gcp metadata");
     exports2.METADATA_SERVER_DETECTION = Object.freeze({
       "assume-present": "don't try to ping the metadata server, but assume it's present",
       none: "don't try to ping the metadata server, but don't try to use it either",
@@ -58387,6 +58387,7 @@ __export(index_exports, {
   adminCreateUser: () => adminCreateUser,
   adminUpdateAuthUser: () => adminUpdateAuthUser,
   askAI: () => askAI,
+  backfillEngagement: () => backfillEngagement,
   bookDiscoveryCall: () => bookDiscoveryCall,
   bookOnboardingCall: () => bookOnboardingCall,
   calculateNrr: () => calculateNrr,
@@ -60381,8 +60382,8 @@ async function runLegacyVerification(vendorId, docType, vendorData) {
 }
 async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
   try {
-    const { Resend: Resend4 } = await import("resend");
-    const resend2 = new Resend4(process.env.RESEND_API_KEY);
+    const { Resend: Resend5 } = await import("resend");
+    const resend2 = new Resend5(process.env.RESEND_API_KEY);
     const flagList = flags.map((f2) => `<li style="color: #b45309;">${f2}</li>`).join("");
     const dashboardLink = `https://app.xiri.ai/supply/crm/${vendorId}`;
     await resend2.emails.send({
@@ -60713,8 +60714,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db26 = (0, import_firestore6.getFirestore)();
-    const docRef = db26.collection(collection).doc(documentId);
+    const db27 = (0, import_firestore6.getFirestore)();
+    const docRef = db27.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -61033,7 +61034,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger8.error("Error sending vendor confirmation:", err2);
     }
   }
-  const db26 = admin10.firestore();
+  const db27 = admin10.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -61060,9 +61061,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db26.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db27.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger8.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db26.collection("vendor_activities").add({
+  await db27.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -62114,10 +62115,10 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
   logger12.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
-  const db26 = admin16.firestore();
+  const db27 = admin16.firestore();
   let vendorData;
   try {
-    const vendorSnap = await db26.collection("vendors").doc(newVendorId).get();
+    const vendorSnap = await db27.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
       logger12.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
@@ -62131,7 +62132,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   let leadData = {};
   if (after.leadId) {
     try {
-      const leadSnap = await db26.collection("leads").doc(after.leadId).get();
+      const leadSnap = await db27.collection("leads").doc(after.leadId).get();
       if (leadSnap.exists) {
         leadData = leadSnap.data();
       }
@@ -62141,7 +62142,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   }
   let xiriData;
   try {
-    const settingsSnap = await db26.collection("settings").doc("corporate").get();
+    const settingsSnap = await db27.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
       logger12.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
@@ -62175,7 +62176,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const result = await generateST1201(vendorCertData, xiriData, void 0);
   if (!result.success || !result.pdfBytes) {
     logger12.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
-    await db26.collection("vendor_activities").add({
+    await db27.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
       description: `ST-120.1 generation failed for WO ${workOrderId}: ${result.error}`,
@@ -62206,7 +62207,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     logger12.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err2);
     return;
   }
-  await db26.collection("work_orders").doc(workOrderId).update({
+  await db27.collection("work_orders").doc(workOrderId).update({
     st1201CertificatePath: storagePath,
     st1201IssueDate: result.issueDate,
     st1201ExpiryDate: result.expiryDate,
@@ -62215,7 +62216,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (vendorCertData.email) {
     const vendorName = vendorCertData.businessName;
     const pdfBase64 = Buffer.from(result.pdfBytes).toString("base64");
-    await db26.collection("mail_queue").add({
+    await db27.collection("mail_queue").add({
       to: vendorCertData.email,
       subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${xiriData.businessName}`,
       templateType: "st_120_1_certificate",
@@ -62236,7 +62237,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
       createdAt: admin16.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db26.collection("vendor_activities").add({
+  await db27.collection("vendor_activities").add({
     vendorId: newVendorId,
     type: "TAX_CERTIFICATE_ISSUED",
     description: `ST-120.1 blanket certificate generated (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
@@ -63619,6 +63620,25 @@ var resendWebhook = (0, import_https4.onRequest)({
     } catch (engErr) {
       import_v22.logger.warn(`Failed to update ${entityType} engagement:`, engErr);
     }
+    if (resolvedContactId) {
+      const contactEngagement = {
+        "emailEngagement.lastEventAt": /* @__PURE__ */ new Date()
+      };
+      if (shouldUpdateLastEvent) {
+        contactEngagement["emailEngagement.lastEvent"] = mapping.deliveryStatus;
+      }
+      if (eventType === "email.opened") {
+        contactEngagement["emailEngagement.openCount"] = admin24.firestore.FieldValue.increment(1);
+      } else if (eventType === "email.clicked") {
+        contactEngagement["emailEngagement.clickCount"] = admin24.firestore.FieldValue.increment(1);
+      }
+      try {
+        await db20.collection("contacts").doc(resolvedContactId).update(contactEngagement);
+        import_v22.logger.info(`Contact ${resolvedContactId}: emailEngagement mirrored (${mapping.deliveryStatus})`);
+      } catch (contactErr) {
+        import_v22.logger.warn(`Failed to mirror engagement to contact ${resolvedContactId}:`, contactErr);
+      }
+    }
     if (eventType === "email.bounced" || eventType === "email.complained") {
       const reason = eventType === "email.bounced" ? "hard_bounce" : "spam_complaint";
       const reasonLabel = eventType === "email.bounced" ? "Hard bounce" : "Spam complaint";
@@ -63726,9 +63746,265 @@ var resendWebhook = (0, import_https4.onRequest)({
   }
 });
 
+// src/scripts/backfill-engagement.ts
+var import_https5 = require("firebase-functions/v2/https");
+var admin25 = __toESM(require("firebase-admin"));
+var import_v23 = require("firebase-functions/v2");
+var import_resend4 = require("resend");
+init_queueUtils();
+var db21 = admin25.firestore();
+var PRIORITY = {
+  clicked: 3,
+  opened: 2,
+  delivered: 1,
+  bounced: 0,
+  complained: 0,
+  suppressed: 0,
+  sent: 0,
+  delivery_delayed: -1
+};
+var DISCARD_EVENTS = /* @__PURE__ */ new Set(["bounced", "complained", "suppressed"]);
+var backfillEngagement = (0, import_https5.onRequest)({
+  timeoutSeconds: 300,
+  memory: "512MiB",
+  secrets: ["RESEND_API_KEY"]
+}, async (req, res) => {
+  const dryRun = req.query.dryRun === "true";
+  const resend2 = new import_resend4.Resend(process.env.RESEND_API_KEY);
+  const log = [];
+  const emit = (msg) => {
+    log.push(msg);
+    import_v23.logger.info(msg);
+  };
+  emit(`\u{1F4E7} Backfill Email Engagement \u2192 Contacts`);
+  emit(`   Mode: ${dryRun ? "\u{1F3DC}\uFE0F  DRY RUN" : "\u{1F525} LIVE"}`);
+  emit("\u{1F4CB} Loading contacts from Firestore...");
+  const contactsSnap = await db21.collection("contacts").get();
+  const emailToContact = /* @__PURE__ */ new Map();
+  for (const doc of contactsSnap.docs) {
+    const data = doc.data();
+    const email = (data.email || "").toLowerCase().trim();
+    if (!email) continue;
+    emailToContact.set(email, {
+      id: doc.id,
+      email,
+      companyId: data.companyId || void 0,
+      unsubscribed: data.unsubscribed || false,
+      existing: data.emailEngagement || void 0
+    });
+  }
+  emit(`   Found ${emailToContact.size} contacts with emails`);
+  emit("\u{1F4E8} Fetching emails from Resend API...");
+  const engagementMap = /* @__PURE__ */ new Map();
+  let totalEmails = 0;
+  let matchedEmails = 0;
+  let cursor;
+  let pageNum = 0;
+  while (true) {
+    pageNum++;
+    const params = { limit: 100 };
+    if (cursor) params.after = cursor;
+    let data;
+    try {
+      const result = await resend2.emails.list(params);
+      data = result.data;
+    } catch (err2) {
+      emit(`   \u274C Resend API error on page ${pageNum}: ${err2.message}`);
+      break;
+    }
+    if (!data?.data || data.data.length === 0) {
+      emit(`   Page ${pageNum}: no more emails`);
+      break;
+    }
+    const emails = data.data;
+    totalEmails += emails.length;
+    for (const email of emails) {
+      const recipients = Array.isArray(email.to) ? email.to : [email.to];
+      const lastEvent = email.last_event || "delivered";
+      for (const rawTo of recipients) {
+        const to = rawTo.toLowerCase().trim();
+        const contact = emailToContact.get(to);
+        if (!contact) continue;
+        matchedEmails++;
+        const existing = engagementMap.get(contact.id);
+        const newPriority = PRIORITY[lastEvent] ?? 0;
+        const existingPriority = existing ? PRIORITY[existing.lastEvent] ?? 0 : -1;
+        const emailCreatedAt = email.created_at ? new Date(email.created_at) : /* @__PURE__ */ new Date();
+        if (!existing) {
+          engagementMap.set(contact.id, {
+            lastEvent,
+            openCount: lastEvent === "opened" || lastEvent === "clicked" ? 1 : 0,
+            clickCount: lastEvent === "clicked" ? 1 : 0,
+            lastEventAt: emailCreatedAt
+          });
+        } else {
+          if (newPriority > existingPriority) {
+            existing.lastEvent = lastEvent;
+          }
+          if (lastEvent === "opened" || lastEvent === "clicked") {
+            existing.openCount++;
+          }
+          if (lastEvent === "clicked") {
+            existing.clickCount++;
+          }
+          if (emailCreatedAt > existing.lastEventAt) {
+            existing.lastEventAt = emailCreatedAt;
+          }
+        }
+      }
+    }
+    emit(`   Page ${pageNum}: ${emails.length} emails (${matchedEmails} matched so far)`);
+    if (!data.has_more || emails.length < 100) break;
+    cursor = emails[emails.length - 1].id;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  emit(`\u{1F4CA} Summary:`);
+  emit(`   Total Resend emails scanned: ${totalEmails}`);
+  emit(`   Matched to contacts: ${matchedEmails}`);
+  emit(`   Unique contacts to update: ${engagementMap.size}`);
+  if (engagementMap.size === 0) {
+    emit("\u2705 Nothing to backfill \u2014 all contacts are up to date.");
+    res.json({ ok: true, log });
+    return;
+  }
+  emit(`${dryRun ? "\u{1F3DC}\uFE0F  Would update" : "\u270F\uFE0F  Updating"} ${engagementMap.size} contacts...`);
+  let updated = 0;
+  let skipped = 0;
+  const dryRunDetails = [];
+  const contactById = /* @__PURE__ */ new Map();
+  for (const c of emailToContact.values()) {
+    contactById.set(c.id, c);
+  }
+  const entries = [...engagementMap.entries()];
+  for (let i = 0; i < entries.length; i += 450) {
+    const chunk = entries.slice(i, i + 450);
+    const batch = db21.batch();
+    let batchCount = 0;
+    for (const [contactId, engagement] of chunk) {
+      const contact = contactById.get(contactId);
+      const existingEvent = contact?.existing?.lastEvent;
+      const existingPriority = PRIORITY[existingEvent || ""] ?? -1;
+      const newPriority = PRIORITY[engagement.lastEvent] ?? 0;
+      if (existingPriority >= newPriority && contact?.existing) {
+        skipped++;
+        continue;
+      }
+      const update = {
+        "emailEngagement.lastEvent": engagement.lastEvent,
+        "emailEngagement.lastEventAt": engagement.lastEventAt
+      };
+      if (engagement.openCount > (contact?.existing?.openCount || 0)) {
+        update["emailEngagement.openCount"] = engagement.openCount;
+      }
+      if (engagement.clickCount > (contact?.existing?.clickCount || 0)) {
+        update["emailEngagement.clickCount"] = engagement.clickCount;
+      }
+      if (dryRun) {
+        dryRunDetails.push({
+          email: contact?.email,
+          lastEvent: engagement.lastEvent,
+          opens: engagement.openCount,
+          clicks: engagement.clickCount
+        });
+      } else {
+        batch.update(db21.collection("contacts").doc(contactId), update);
+        batchCount++;
+      }
+      updated++;
+    }
+    if (!dryRun && batchCount > 0) {
+      await batch.commit();
+      emit(`   Committed batch of ${batchCount}`);
+    }
+  }
+  emit(`\u2705 Engagement backfill done! Updated: ${updated}, Skipped (already better): ${skipped}`);
+  emit(`\u{1F9F9} Cleaning up bounced/suppressed contacts...`);
+  let discarded = 0;
+  let alreadyDiscarded = 0;
+  const discardDetails = [];
+  for (const [contactId, engagement] of engagementMap.entries()) {
+    if (!DISCARD_EVENTS.has(engagement.lastEvent)) continue;
+    const contact = contactById.get(contactId);
+    if (!contact) continue;
+    if (contact.unsubscribed) {
+      alreadyDiscarded++;
+      continue;
+    }
+    if (dryRun) {
+      discardDetails.push({
+        contactId,
+        email: contact.email,
+        lastEvent: engagement.lastEvent,
+        companyId: contact.companyId || "none"
+      });
+      discarded++;
+      continue;
+    }
+    try {
+      await db21.collection("contacts").doc(contactId).update({
+        unsubscribed: true,
+        unsubscribedAt: /* @__PURE__ */ new Date(),
+        unsubscribeReason: engagement.lastEvent === "complained" ? "spam_complaint" : "hard_bounce"
+      });
+    } catch (err2) {
+      emit(`   \u26A0\uFE0F Failed to unsubscribe contact ${contactId}: ${err2.message}`);
+      continue;
+    }
+    if (contact.companyId) {
+      try {
+        const companyRef = db21.collection("companies").doc(contact.companyId);
+        const companyDoc = await companyRef.get();
+        if (companyDoc.exists && companyDoc.data()?.status !== "lost") {
+          const prevStatus = companyDoc.data()?.status;
+          await companyRef.update({
+            status: "lost",
+            lostReason: engagement.lastEvent === "complained" ? "spam_complaint" : "hard_bounce",
+            unsubscribedAt: /* @__PURE__ */ new Date(),
+            outreachStatus: engagement.lastEvent === "complained" ? "SPAM_COMPLAINT" : "BOUNCED"
+          });
+          const cancelledTasks = await cancelLeadTasks(db21, contact.companyId);
+          const cancelledEmails = await cancelLeadScheduledEmails(db21, contact.companyId, "companies");
+          await db21.collection("lead_activities").add({
+            leadId: contact.companyId,
+            contactId,
+            type: "STATUS_CHANGE",
+            description: `${engagement.lastEvent} detected during backfill \u2014 lead auto-marked as lost. ${cancelledTasks} tasks + ${cancelledEmails} scheduled emails cancelled.`,
+            createdAt: /* @__PURE__ */ new Date(),
+            metadata: {
+              from: prevStatus,
+              to: "lost",
+              trigger: `backfill_${engagement.lastEvent}`,
+              cancelledTasks,
+              resendCancelled: cancelledEmails,
+              contactId
+            }
+          });
+        }
+      } catch (err2) {
+        emit(`   \u26A0\uFE0F Failed to mark company ${contact.companyId} as lost: ${err2.message}`);
+      }
+    }
+    discarded++;
+  }
+  emit(`\u{1F9F9} Bounce cleanup done! Discarded: ${discarded}, Already discarded: ${alreadyDiscarded}`);
+  res.json({
+    ok: true,
+    dryRun,
+    totalEmails,
+    matchedEmails,
+    contactsUpdated: updated,
+    contactsSkipped: skipped,
+    discarded,
+    alreadyDiscarded,
+    dryRunDetails: dryRun ? dryRunDetails : void 0,
+    discardDetails: dryRun ? discardDetails : void 0,
+    log
+  });
+});
+
 // src/triggers/onLeadUpdated.ts
 var import_firestore17 = require("firebase-functions/v2/firestore");
-var import_v23 = require("firebase-functions/v2");
+var import_v24 = require("firebase-functions/v2");
 var changed = (before, after, field) => after[field] && before[field] !== after[field];
 var onLeadUpdated = (0, import_firestore17.onDocumentUpdated)("leads/{leadId}", async (event) => {
   const before = event.data?.before?.data();
@@ -63739,7 +64015,7 @@ var onLeadUpdated = (0, import_firestore17.onDocumentUpdated)("leads/{leadId}", 
   const emailChanged = changed(before, after, "email");
   const contactChanged = changed(before, after, "contactName");
   if (!nameChanged && !emailChanged && !contactChanged) return;
-  import_v23.logger.info(`[Cascade:Lead] ${leadId} \u2014 name:${nameChanged} email:${emailChanged} contact:${contactChanged}`);
+  import_v24.logger.info(`[Cascade:Lead] ${leadId} \u2014 name:${nameChanged} email:${emailChanged} contact:${contactChanged}`);
   const batch = db.batch();
   let count = 0;
   if (nameChanged) {
@@ -63785,7 +64061,7 @@ var onLeadUpdated = (0, import_firestore17.onDocumentUpdated)("leads/{leadId}", 
   }
   if (count > 0) {
     await batch.commit();
-    import_v23.logger.info(`[Cascade:Lead] Updated ${count} docs for "${after.businessName}"`);
+    import_v24.logger.info(`[Cascade:Lead] Updated ${count} docs for "${after.businessName}"`);
   }
 });
 var onVendorUpdated = (0, import_firestore17.onDocumentUpdated)("vendors/{vendorId}", async (event) => {
@@ -63796,7 +64072,7 @@ var onVendorUpdated = (0, import_firestore17.onDocumentUpdated)("vendors/{vendor
   const nameChanged = changed(before, after, "businessName");
   const emailChanged = changed(before, after, "email");
   if (!nameChanged && !emailChanged) return;
-  import_v23.logger.info(`[Cascade:Vendor] ${vendorId} \u2014 name:${nameChanged} email:${emailChanged}`);
+  import_v24.logger.info(`[Cascade:Vendor] ${vendorId} \u2014 name:${nameChanged} email:${emailChanged}`);
   const batch = db.batch();
   let count = 0;
   {
@@ -63833,7 +64109,7 @@ var onVendorUpdated = (0, import_firestore17.onDocumentUpdated)("vendors/{vendor
   }
   if (count > 0) {
     await batch.commit();
-    import_v23.logger.info(`[Cascade:Vendor] Updated ${count} docs for "${after.businessName}"`);
+    import_v24.logger.info(`[Cascade:Vendor] Updated ${count} docs for "${after.businessName}"`);
   }
 });
 var onStaffUpdated = (0, import_firestore17.onDocumentUpdated)("users/{userId}", async (event) => {
@@ -63845,7 +64121,7 @@ var onStaffUpdated = (0, import_firestore17.onDocumentUpdated)("users/{userId}",
   if (!nameChanged) return;
   const newName = after.displayName;
   const roles = after.roles || [];
-  import_v23.logger.info(`[Cascade:Staff] ${userId} displayName \u2192 "${newName}" (roles: ${roles.join(",")})`);
+  import_v24.logger.info(`[Cascade:Staff] ${userId} displayName \u2192 "${newName}" (roles: ${roles.join(",")})`);
   const batch = db.batch();
   let count = 0;
   if (roles.includes("fsm") || roles.includes("admin")) {
@@ -63874,35 +64150,35 @@ var onStaffUpdated = (0, import_firestore17.onDocumentUpdated)("users/{userId}",
   }
   if (count > 0) {
     await batch.commit();
-    import_v23.logger.info(`[Cascade:Staff] Updated ${count} docs for "${newName}"`);
+    import_v24.logger.info(`[Cascade:Staff] Updated ${count} docs for "${newName}"`);
   }
 });
 
 // src/triggers/aiTemplateOptimizer.ts
 var import_scheduler4 = require("firebase-functions/v2/scheduler");
-var import_https5 = require("firebase-functions/v2/https");
-var admin25 = __toESM(require("firebase-admin"));
-var logger22 = __toESM(require("firebase-functions/logger"));
+var import_https6 = require("firebase-functions/v2/https");
+var admin26 = __toESM(require("firebase-admin"));
+var logger23 = __toESM(require("firebase-functions/logger"));
 init_promptUtils();
-if (!admin25.apps.length) {
-  admin25.initializeApp();
+if (!admin26.apps.length) {
+  admin26.initializeApp();
 }
-var db21 = admin25.firestore();
+var db22 = admin26.firestore();
 var weeklyTemplateOptimizer = (0, import_scheduler4.onSchedule)({
   schedule: "every monday 09:00",
   timeZone: "America/New_York",
   secrets: ["GEMINI_API_KEY"],
   memory: "512MiB"
 }, async () => {
-  logger22.info("Running weekly template optimization check...");
+  logger23.info("Running weekly template optimization check...");
   await optimizeUnderperformingTemplates();
 });
-var optimizeTemplate = (0, import_https5.onCall)({
+var optimizeTemplate = (0, import_https6.onCall)({
   secrets: ["GEMINI_API_KEY"],
   memory: "512MiB"
 }, async (request) => {
   if (!request.auth) {
-    throw new import_https5.HttpsError("unauthenticated", "Must be logged in");
+    throw new import_https6.HttpsError("unauthenticated", "Must be logged in");
   }
   const templateId = request.data?.templateId;
   if (templateId) {
@@ -63919,21 +64195,21 @@ var OPTIMIZABLE_CATEGORIES = ["vendor", "tenant_lead", "referral_partnership", "
 async function optimizeUnderperformingTemplates() {
   const optimized = [];
   for (const category of OPTIMIZABLE_CATEGORIES) {
-    const templatesSnap = await db21.collection("templates").where("category", "==", category).get();
+    const templatesSnap = await db22.collection("templates").where("category", "==", category).get();
     for (const doc of templatesSnap.docs) {
       const template = doc.data();
       const stats = template.stats;
       if (!stats || stats.sent < MIN_SENDS_FOR_ANALYSIS) continue;
       const openRate = stats.sent > 0 ? stats.opened / stats.sent : 0;
       if (openRate < LOW_OPEN_RATE_THRESHOLD) {
-        logger22.info(`Template ${doc.id} (${category}): ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
+        logger23.info(`Template ${doc.id} (${category}): ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
         await optimizeSingleTemplate(doc.id);
         optimized.push(doc.id);
       }
     }
   }
   if (optimized.length > 0) {
-    await db21.collection("notifications").add({
+    await db22.collection("notifications").add({
       type: "AI_TEMPLATE_OPTIMIZATION",
       title: `AI optimized ${optimized.length} template${optimized.length > 1 ? "s" : ""}`,
       message: `${optimized.length} underperforming template${optimized.length > 1 ? "s have" : " has"} new AI suggestions ready for your review.`,
@@ -63941,16 +64217,16 @@ async function optimizeUnderperformingTemplates() {
       read: false,
       createdAt: /* @__PURE__ */ new Date()
     });
-    logger22.info(`Notification created for ${optimized.length} optimized templates.`);
+    logger23.info(`Notification created for ${optimized.length} optimized templates.`);
   } else {
-    logger22.info("No underperforming templates found.");
+    logger23.info("No underperforming templates found.");
   }
   return optimized;
 }
 async function optimizeSingleTemplate(templateId) {
-  const templateDoc = await db21.collection("templates").doc(templateId).get();
+  const templateDoc = await db22.collection("templates").doc(templateId).get();
   if (!templateDoc.exists) {
-    throw new import_https5.HttpsError("not-found", `Template ${templateId} not found`);
+    throw new import_https6.HttpsError("not-found", `Template ${templateId} not found`);
   }
   const template = templateDoc.data();
   const stats = template.stats || { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 };
@@ -63959,7 +64235,7 @@ async function optimizeSingleTemplate(templateId) {
   const bounceRate = stats.sent > 0 ? (stats.bounced / stats.sent * 100).toFixed(1) : "N/A";
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new import_https5.HttpsError("failed-precondition", "GEMINI_API_KEY not set");
+    throw new import_https6.HttpsError("failed-precondition", "GEMINI_API_KEY not set");
   }
   const category = template.category || "vendor";
   const CATEGORY_CONFIG = {
@@ -64044,20 +64320,20 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
     const result = await response.json();
     const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
-      logger22.error("No response from Gemini for template optimization");
-      throw new import_https5.HttpsError("internal", "Gemini returned empty response");
+      logger23.error("No response from Gemini for template optimization");
+      throw new import_https6.HttpsError("internal", "Gemini returned empty response");
     }
     const cleanText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const suggestions = JSON.parse(cleanText);
-    await db21.collection("templates").doc(templateId).update({
-      aiSuggestions: admin25.firestore.FieldValue.arrayUnion({
+    await db22.collection("templates").doc(templateId).update({
+      aiSuggestions: admin26.firestore.FieldValue.arrayUnion({
         ...suggestions,
         generatedAt: /* @__PURE__ */ new Date(),
         performanceSnapshot: stats
       }),
       lastOptimizedAt: /* @__PURE__ */ new Date()
     });
-    logger22.info(`Template ${templateId}: AI suggestions stored (${suggestions.suggestions?.length || 0} variants)`);
+    logger23.info(`Template ${templateId}: AI suggestions stored (${suggestions.suggestions?.length || 0} variants)`);
     return {
       templateId,
       analysis: suggestions.analysis,
@@ -64065,45 +64341,45 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
       shortUrlTest: suggestions.shortUrlTest
     };
   } catch (err2) {
-    logger22.error(`AI optimization failed for ${templateId}:`, err2);
-    throw new import_https5.HttpsError("internal", `AI optimization failed: ${err2}`);
+    logger23.error(`AI optimization failed for ${templateId}:`, err2);
+    throw new import_https6.HttpsError("internal", `AI optimization failed: ${err2}`);
   }
 }
 
 // src/triggers/startLeadSequence.ts
-var import_https6 = require("firebase-functions/v2/https");
-var admin26 = __toESM(require("firebase-admin"));
-var logger23 = __toESM(require("firebase-functions/logger"));
+var import_https7 = require("firebase-functions/v2/https");
+var admin27 = __toESM(require("firebase-admin"));
+var logger24 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
-if (!admin26.apps.length) {
-  admin26.initializeApp();
+if (!admin27.apps.length) {
+  admin27.initializeApp();
 }
-var db22 = admin26.firestore();
+var db23 = admin27.firestore();
 var DEFAULT_SEQUENCE_MAP = {
   enterprise: "enterprise_lead_sequence",
   referral_partnership: "referral_partnership_sequence",
   tenant: "tenant_lead_sequence",
   direct: "tenant_lead_sequence"
 };
-var startLeadSequence = (0, import_https6.onCall)(async (request) => {
+var startLeadSequence = (0, import_https7.onCall)(async (request) => {
   const { leadId, contactId: requestedContactId, sequenceId: requestedSequenceId } = request.data;
   if (!leadId) {
-    throw new import_https6.HttpsError("invalid-argument", "leadId is required");
+    throw new import_https7.HttpsError("invalid-argument", "leadId is required");
   }
-  let leadDoc = await db22.collection("companies").doc(leadId).get();
+  let leadDoc = await db23.collection("companies").doc(leadId).get();
   let leadCollection = "companies";
   if (!leadDoc.exists) {
-    leadDoc = await db22.collection("leads").doc(leadId).get();
+    leadDoc = await db23.collection("leads").doc(leadId).get();
     leadCollection = "leads";
   }
   if (!leadDoc.exists) {
-    throw new import_https6.HttpsError("not-found", `Lead/Company ${leadId} not found in companies or leads`);
+    throw new import_https7.HttpsError("not-found", `Lead/Company ${leadId} not found in companies or leads`);
   }
   const lead = leadDoc.data();
   const businessName = lead.businessName || "Unknown";
   const leadType = lead.leadType || "direct";
   if (lead.unsubscribedAt || lead.status === "lost") {
-    throw new import_https6.HttpsError(
+    throw new import_https7.HttpsError(
       "failed-precondition",
       `${businessName} has unsubscribed or is marked as lost \u2014 cannot enroll in a sequence.`
     );
@@ -64112,11 +64388,11 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
   let contactEmail = "";
   let contactName = "";
   if (contactId) {
-    const contactDoc = await db22.collection("contacts").doc(contactId).get();
+    const contactDoc = await db23.collection("contacts").doc(contactId).get();
     if (contactDoc.exists) {
       const contact = contactDoc.data();
       if (contact.unsubscribed) {
-        throw new import_https6.HttpsError(
+        throw new import_https7.HttpsError(
           "failed-precondition",
           `Contact ${contact.firstName || ""} ${contact.lastName || ""} has unsubscribed \u2014 cannot enroll in a sequence.`.trim()
         );
@@ -64126,7 +64402,7 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     }
   }
   if (!contactEmail) {
-    const primarySnap = await db22.collection("contacts").where("companyId", "==", leadId).where("isPrimary", "==", true).limit(1).get();
+    const primarySnap = await db23.collection("contacts").where("companyId", "==", leadId).where("isPrimary", "==", true).limit(1).get();
     if (!primarySnap.empty) {
       const primaryContact = primarySnap.docs[0];
       contactId = primaryContact.id;
@@ -64140,18 +64416,18 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     contactName = lead.contactName || "";
   }
   if (!contactEmail || contactEmail.trim().length === 0) {
-    await db22.collection(leadCollection).doc(leadId).update({
+    await db23.collection(leadCollection).doc(leadId).update({
       outreachStatus: "NEEDS_MANUAL"
     });
-    throw new import_https6.HttpsError(
+    throw new import_https7.HttpsError(
       "failed-precondition",
       `Lead ${businessName} has no email \u2014 manual outreach required.`
     );
   }
   const sequenceId = requestedSequenceId || DEFAULT_SEQUENCE_MAP[leadType] || "tenant_lead_sequence";
-  const sequenceDoc = await db22.collection("sequences").doc(sequenceId).get();
+  const sequenceDoc = await db23.collection("sequences").doc(sequenceId).get();
   if (!sequenceDoc.exists) {
-    throw new import_https6.HttpsError(
+    throw new import_https7.HttpsError(
       "not-found",
       `Sequence "${sequenceId}" not found. Create it in the Sequence Builder first.`
     );
@@ -64159,27 +64435,27 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
   const sequence = sequenceDoc.data();
   const BLOCKED_CATEGORIES = ["vendor", "vendor_email"];
   if (BLOCKED_CATEGORIES.includes(sequence.category)) {
-    throw new import_https6.HttpsError(
+    throw new import_https7.HttpsError(
       "failed-precondition",
       `Cannot enroll a lead in vendor sequence "${sequence.name || sequenceId}". Use a lead or referral sequence instead.`
     );
   }
   const steps = sequence.steps || [];
   if (steps.length === 0) {
-    throw new import_https6.HttpsError(
+    throw new import_https7.HttpsError(
       "failed-precondition",
       `Sequence "${sequence.name}" has no steps defined.`
     );
   }
   if (contactId) {
-    const contactDoc = await db22.collection("contacts").doc(contactId).get();
+    const contactDoc = await db23.collection("contacts").doc(contactId).get();
     if (contactDoc.exists) {
       const contactData = contactDoc.data();
       const history = contactData.sequenceHistory || {};
       if (history[sequenceId]) {
         const prevStart = history[sequenceId].startedAt;
         const prevDate = prevStart?.toDate ? prevStart.toDate() : prevStart;
-        throw new import_https6.HttpsError(
+        throw new import_https7.HttpsError(
           "already-exists",
           `${contactName || contactEmail} was already enrolled in "${sequence.name}" on ${prevDate ? prevDate.toLocaleDateString() : "a previous date"}. Contacts cannot be re-enrolled in the same sequence.`
         );
@@ -64187,16 +64463,16 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     }
   }
   const { cancelLeadTasks: cancelLeadTasks2 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
-  const cancelledCount = await cancelLeadTasks2(db22, leadId);
+  const cancelledCount = await cancelLeadTasks2(db23, leadId);
   if (cancelledCount > 0) {
-    logger23.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
+    logger24.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
   }
-  logger23.info(
+  logger24.info(
     `[StartSequence] Starting "${sequence.name}" (${sequenceId}) for lead ${leadId} (${businessName}), contact ${contactId || "lead-level"}`
   );
   let senderFrom = "Chris Leung \u2014 XIRI <chris@xiri.ai>";
   try {
-    const senderDoc = await db22.collection("email_senders").doc("sales").get();
+    const senderDoc = await db23.collection("email_senders").doc("sales").get();
     if (senderDoc.exists) {
       const s = senderDoc.data();
       senderFrom = `${s.name} <${s.email}>`;
@@ -64210,12 +64486,12 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     const sendAt = buildScheduledDate(now, step.dayOffset);
     const templateId = step.templateId;
     if (!templateId) {
-      logger23.warn(`[StartSequence] Step ${i} has no templateId \u2014 skipping.`);
+      logger24.warn(`[StartSequence] Step ${i} has no templateId \u2014 skipping.`);
       continue;
     }
-    const templateDoc = await db22.collection("templates").doc(templateId).get();
+    const templateDoc = await db23.collection("templates").doc(templateId).get();
     if (!templateDoc.exists) {
-      logger23.warn(`[StartSequence] Template ${templateId} not found \u2014 skipping step ${i}.`);
+      logger24.warn(`[StartSequence] Template ${templateId} not found \u2014 skipping step ${i}.`);
       continue;
     }
     const template = templateDoc.data();
@@ -64279,28 +64555,28 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     if (result.resendId) {
       scheduledResendIds.push(result.resendId);
     }
-    logger23.info(`[StartSequence] Step ${i} (${step.label}) scheduled for ${sendAt.toISOString()} \u2014 Resend ID: ${result.resendId || "none"}`);
+    logger24.info(`[StartSequence] Step ${i} (${step.label}) scheduled for ${sendAt.toISOString()} \u2014 Resend ID: ${result.resendId || "none"}`);
     try {
-      await db22.collection("templates").doc(templateId).update({
-        "stats.sent": admin26.firestore.FieldValue.increment(1),
+      await db23.collection("templates").doc(templateId).update({
+        "stats.sent": admin27.firestore.FieldValue.increment(1),
         "stats.lastUpdated": /* @__PURE__ */ new Date()
       });
     } catch {
     }
   }
-  await db22.collection(leadCollection).doc(leadId).update({
+  await db23.collection(leadCollection).doc(leadId).update({
     status: lead.status === "new" ? "contacted" : lead.status,
     outreachStatus: "PENDING",
     sequenceId,
-    sequenceStartedAt: admin26.firestore.FieldValue.serverTimestamp(),
+    sequenceStartedAt: admin27.firestore.FieldValue.serverTimestamp(),
     sequenceStartedBy: request.auth?.uid || "manual",
     // Store Resend email IDs so we can cancel scheduled emails if needed
     ...scheduledResendIds.length > 0 ? { scheduledEmailIds: scheduledResendIds } : {}
   });
   if (contactId) {
-    await db22.collection("contacts").doc(contactId).update({
+    await db23.collection("contacts").doc(contactId).update({
       [`sequenceHistory.${sequenceId}`]: {
-        startedAt: admin26.firestore.FieldValue.serverTimestamp(),
+        startedAt: admin27.firestore.FieldValue.serverTimestamp(),
         startedBy: request.auth?.uid || "manual",
         status: "in_progress",
         sequenceName: sequence.name,
@@ -64309,7 +64585,7 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
     });
   }
   const dayList = steps.map((s) => `Day ${s.dayOffset}`).join("/");
-  await db22.collection("lead_activities").add({
+  await db23.collection("lead_activities").add({
     leadId,
     contactId: contactId || null,
     type: "SEQUENCE_STARTED",
@@ -64326,7 +64602,7 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
       scheduledResendIds
     }
   });
-  logger23.info(
+  logger24.info(
     `[StartSequence] "${sequence.name}" started for ${leadId}: ${steps.length} emails (${dayList})`
   );
   return {
@@ -64339,34 +64615,34 @@ var startLeadSequence = (0, import_https6.onCall)(async (request) => {
 });
 
 // src/triggers/sendSingleLeadEmail.ts
-var import_https7 = require("firebase-functions/v2/https");
-var admin27 = __toESM(require("firebase-admin"));
-var logger24 = __toESM(require("firebase-functions/logger"));
+var import_https8 = require("firebase-functions/v2/https");
+var admin28 = __toESM(require("firebase-admin"));
+var logger25 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
-if (!admin27.apps.length) {
-  admin27.initializeApp();
+if (!admin28.apps.length) {
+  admin28.initializeApp();
 }
-var db23 = admin27.firestore();
-var sendSingleLeadEmail = (0, import_https7.onCall)(
+var db24 = admin28.firestore();
+var sendSingleLeadEmail = (0, import_https8.onCall)(
   { secrets: ["RESEND_API_KEY"] },
   async (request) => {
     const { leadId, templateId, contactId: requestedContactId } = request.data;
     if (!leadId || !templateId) {
-      throw new import_https7.HttpsError("invalid-argument", "leadId and templateId are required");
+      throw new import_https8.HttpsError("invalid-argument", "leadId and templateId are required");
     }
-    let leadDoc = await db23.collection("companies").doc(leadId).get();
+    let leadDoc = await db24.collection("companies").doc(leadId).get();
     let leadCollection = "companies";
     if (!leadDoc.exists) {
-      leadDoc = await db23.collection("leads").doc(leadId).get();
+      leadDoc = await db24.collection("leads").doc(leadId).get();
       leadCollection = "leads";
     }
     if (!leadDoc.exists) {
-      throw new import_https7.HttpsError("not-found", `Lead/Company ${leadId} not found`);
+      throw new import_https8.HttpsError("not-found", `Lead/Company ${leadId} not found`);
     }
     const lead = leadDoc.data();
     const businessName = lead.businessName || lead.name || "Unknown";
     if (lead.unsubscribedAt || lead.status === "lost") {
-      throw new import_https7.HttpsError(
+      throw new import_https8.HttpsError(
         "failed-precondition",
         `${businessName} has unsubscribed or is marked as lost \u2014 cannot send email.`
       );
@@ -64376,7 +64652,7 @@ var sendSingleLeadEmail = (0, import_https7.onCall)(
     let contactName = "";
     let contactUnsubscribed = false;
     if (contactId) {
-      const contactDoc = await db23.collection("contacts").doc(contactId).get();
+      const contactDoc = await db24.collection("contacts").doc(contactId).get();
       if (contactDoc.exists) {
         const c = contactDoc.data();
         contactEmail = c.email || "";
@@ -64385,7 +64661,7 @@ var sendSingleLeadEmail = (0, import_https7.onCall)(
       }
     }
     if (!contactEmail) {
-      const primarySnap = await db23.collection("contacts").where("companyId", "==", leadId).where("isPrimary", "==", true).limit(1).get();
+      const primarySnap = await db24.collection("contacts").where("companyId", "==", leadId).where("isPrimary", "==", true).limit(1).get();
       if (!primarySnap.empty) {
         const pDoc = primarySnap.docs[0];
         contactId = pDoc.id;
@@ -64401,20 +64677,20 @@ var sendSingleLeadEmail = (0, import_https7.onCall)(
       contactUnsubscribed = lead.unsubscribed || false;
     }
     if (!contactEmail || contactEmail.trim().length === 0) {
-      throw new import_https7.HttpsError(
+      throw new import_https8.HttpsError(
         "failed-precondition",
         `Lead ${businessName} has no email \u2014 cannot send.`
       );
     }
     if (contactUnsubscribed) {
-      throw new import_https7.HttpsError(
+      throw new import_https8.HttpsError(
         "failed-precondition",
         `${contactName || "Contact"} has unsubscribed from emails.`
       );
     }
     const template = await getTemplate(templateId);
     if (!template) {
-      throw new import_https7.HttpsError("not-found", `Template ${templateId} not found`);
+      throw new import_https8.HttpsError("not-found", `Template ${templateId} not found`);
     }
     const variables = {
       businessName,
@@ -64425,13 +64701,13 @@ var sendSingleLeadEmail = (0, import_https7.onCall)(
       email: contactEmail
     };
     injectFacilityPhrases(variables);
-    logger24.info(`[SendSingle] Variables for merge:`, variables);
+    logger25.info(`[SendSingle] Variables for merge:`, variables);
     const mergedSubject = replaceVariables(template.subject, variables);
     const templateBody = template.content || template.body || "";
-    logger24.info(`[SendSingle] Template body field found: ${templateBody ? "yes" : "no"}, length: ${templateBody.length}`);
+    logger25.info(`[SendSingle] Template body field found: ${templateBody ? "yes" : "no"}, length: ${templateBody.length}`);
     const mergedBody = replaceVariables(templateBody, variables);
     const htmlBody = mergedBody.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
-    logger24.info(`[SendSingle] Sending "${templateId}" to ${contactEmail} for lead ${leadId}`);
+    logger25.info(`[SendSingle] Sending "${templateId}" to ${contactEmail} for lead ${leadId}`);
     const result = await sendEmail(
       contactEmail,
       mergedSubject,
@@ -64444,23 +64720,23 @@ var sendSingleLeadEmail = (0, import_https7.onCall)(
       "lead"
     );
     if (!result.success) {
-      await db23.collection("lead_activities").add({
+      await db24.collection("lead_activities").add({
         leadId,
         contactId: contactId || null,
         type: "EMAIL_FAILED",
         description: `Failed to send targeted email "${templateId}" to ${contactEmail}`,
-        createdAt: admin27.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin28.firestore.FieldValue.serverTimestamp(),
         sentBy: request.auth?.uid || "manual",
         metadata: { templateId, subject: mergedSubject, to: contactEmail, contactId: contactId || null }
       });
-      throw new import_https7.HttpsError("internal", "Failed to send email via Resend");
+      throw new import_https8.HttpsError("internal", "Failed to send email via Resend");
     }
-    await db23.collection("lead_activities").add({
+    await db24.collection("lead_activities").add({
       leadId,
       contactId: contactId || null,
       type: "TARGETED_EMAIL_SENT",
       description: `Targeted email "${templateId}" sent to ${contactEmail}: ${mergedSubject}`,
-      createdAt: admin27.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin28.firestore.FieldValue.serverTimestamp(),
       sentBy: request.auth?.uid || "manual",
       metadata: {
         templateId,
@@ -64471,11 +64747,11 @@ var sendSingleLeadEmail = (0, import_https7.onCall)(
       }
     });
     if (lead.status === "new") {
-      await db23.collection(leadCollection).doc(leadId).update({
+      await db24.collection(leadCollection).doc(leadId).update({
         status: "contacted"
       });
     }
-    logger24.info(`[SendSingle] \u2705 Sent "${mergedSubject}" to ${contactEmail} (Resend: ${result.resendId})`);
+    logger25.info(`[SendSingle] \u2705 Sent "${mergedSubject}" to ${contactEmail} (Resend: ${result.resendId})`);
     return {
       success: true,
       message: `Email sent to ${contactEmail}`,
@@ -64486,23 +64762,23 @@ var sendSingleLeadEmail = (0, import_https7.onCall)(
 );
 
 // src/triggers/sendPreviewEmail.ts
-var import_https8 = require("firebase-functions/v2/https");
-var admin28 = __toESM(require("firebase-admin"));
-var logger25 = __toESM(require("firebase-functions/logger"));
+var import_https9 = require("firebase-functions/v2/https");
+var admin29 = __toESM(require("firebase-admin"));
+var logger26 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
-if (!admin28.apps.length) {
-  admin28.initializeApp();
+if (!admin29.apps.length) {
+  admin29.initializeApp();
 }
-var db24 = admin28.firestore();
-var sendPreviewEmail = (0, import_https8.onCall)(
+var db25 = admin29.firestore();
+var sendPreviewEmail = (0, import_https9.onCall)(
   { secrets: ["RESEND_API_KEY"] },
   async (request) => {
     if (!request.auth) {
-      throw new import_https8.HttpsError("unauthenticated", "Must be signed in");
+      throw new import_https9.HttpsError("unauthenticated", "Must be signed in");
     }
     const { to, subject, body, sampleData } = request.data;
     if (!to || !subject || !body) {
-      throw new import_https8.HttpsError("invalid-argument", "to, subject, and body are required");
+      throw new import_https9.HttpsError("invalid-argument", "to, subject, and body are required");
     }
     const variables = { ...sampleData };
     if (variables.facilityType) {
@@ -64513,7 +64789,7 @@ var sendPreviewEmail = (0, import_https8.onCall)(
     if (!mergedBody.includes("<p>") && !mergedBody.includes("<br")) {
       mergedBody = mergedBody.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
     }
-    logger25.info(`[SendPreview] Sending test email to ${to}: "${mergedSubject}"`);
+    logger26.info(`[SendPreview] Sending test email to ${to}: "${mergedSubject}"`);
     const result = await sendEmail(
       to,
       mergedSubject,
@@ -64529,9 +64805,9 @@ var sendPreviewEmail = (0, import_https8.onCall)(
       // no entity type (skip unsubscribe footer)
     );
     if (!result.success) {
-      throw new import_https8.HttpsError("internal", "Failed to send preview email");
+      throw new import_https9.HttpsError("internal", "Failed to send preview email");
     }
-    logger25.info(`[SendPreview] \u2705 Preview sent to ${to} (Resend: ${result.resendId})`);
+    logger26.info(`[SendPreview] \u2705 Preview sent to ${to} (Resend: ${result.resendId})`);
     return {
       success: true,
       message: `Preview sent to ${to}`,
@@ -64542,24 +64818,24 @@ var sendPreviewEmail = (0, import_https8.onCall)(
 
 // src/triggers/onContactDeleted.ts
 var import_firestore18 = require("firebase-functions/v2/firestore");
-var admin29 = __toESM(require("firebase-admin"));
-var logger26 = __toESM(require("firebase-functions/logger"));
-if (!admin29.apps.length) {
-  admin29.initializeApp();
+var admin30 = __toESM(require("firebase-admin"));
+var logger27 = __toESM(require("firebase-functions/logger"));
+if (!admin30.apps.length) {
+  admin30.initializeApp();
 }
-var db25 = admin29.firestore();
+var db26 = admin30.firestore();
 var onContactDeleted = (0, import_firestore18.onDocumentDeleted)("contacts/{contactId}", async (event) => {
   const contactId = event.params.contactId;
   const deletedData = event.data?.data();
   const email = deletedData?.email || "unknown";
   const companyId = deletedData?.companyId || null;
-  logger26.info(`[ContactCleanup] Contact ${contactId} (${email}) deleted. Cancelling pending tasks.`);
-  const contactTasks = await db25.collection("outreach_queue").where("contactId", "==", contactId).where("status", "in", ["PENDING", "RETRY"]).get();
+  logger27.info(`[ContactCleanup] Contact ${contactId} (${email}) deleted. Cancelling pending tasks.`);
+  const contactTasks = await db26.collection("outreach_queue").where("contactId", "==", contactId).where("status", "in", ["PENDING", "RETRY"]).get();
   let leadTasks = null;
   if (companyId) {
-    leadTasks = await db25.collection("outreach_queue").where("leadId", "==", companyId).where("status", "in", ["PENDING", "RETRY"]).get();
+    leadTasks = await db26.collection("outreach_queue").where("leadId", "==", companyId).where("status", "in", ["PENDING", "RETRY"]).get();
   }
-  const batch = db25.batch();
+  const batch = db26.batch();
   let count = 0;
   const seen = /* @__PURE__ */ new Set();
   for (const doc of contactTasks.docs) {
@@ -64581,12 +64857,12 @@ var onContactDeleted = (0, import_firestore18.onDocumentDeleted)("contacts/{cont
   if (count > 0) {
     await batch.commit();
   }
-  logger26.info(`[ContactCleanup] Cancelled ${count} pending task(s) for deleted contact ${contactId} (${email}).`);
+  logger27.info(`[ContactCleanup] Cancelled ${count} pending task(s) for deleted contact ${contactId} (${email}).`);
 });
 
 // src/triggers/onExperienceUpdated.ts
 var import_firestore19 = require("firebase-functions/v2/firestore");
-var import_v24 = require("firebase-functions/v2");
+var import_v25 = require("firebase-functions/v2");
 var import_params3 = require("firebase-functions/params");
 var import_generative_ai4 = require("@google/generative-ai");
 var GEMINI_API_KEY3 = (0, import_params3.defineSecret)("GEMINI_API_KEY");
@@ -64613,10 +64889,10 @@ var onExperienceUpdated = (0, import_firestore19.onDocumentUpdated)({
   const newRaw = after.onboarding?.experienceRaw || "";
   if (prevRaw === newRaw) return;
   if (!newRaw.trim()) {
-    import_v24.logger.info(`[ExperienceSummary] ${vendorId} \u2014 experienceRaw cleared, skipping.`);
+    import_v25.logger.info(`[ExperienceSummary] ${vendorId} \u2014 experienceRaw cleared, skipping.`);
     return;
   }
-  import_v24.logger.info(`[ExperienceSummary] ${vendorId} \u2014 generating AI summary (${newRaw.length} chars)`);
+  import_v25.logger.info(`[ExperienceSummary] ${vendorId} \u2014 generating AI summary (${newRaw.length} chars)`);
   try {
     const genAI4 = new import_generative_ai4.GoogleGenerativeAI(GEMINI_API_KEY3.value());
     const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
@@ -64624,15 +64900,15 @@ var onExperienceUpdated = (0, import_firestore19.onDocumentUpdated)({
     const result = await model2.generateContent(prompt);
     const summary = result.response.text().trim();
     if (!summary) {
-      import_v24.logger.warn(`[ExperienceSummary] ${vendorId} \u2014 Gemini returned empty summary.`);
+      import_v25.logger.warn(`[ExperienceSummary] ${vendorId} \u2014 Gemini returned empty summary.`);
       return;
     }
     await db.collection("vendors").doc(vendorId).update({
       "onboarding.experienceSummary": summary
     });
-    import_v24.logger.info(`[ExperienceSummary] ${vendorId} \u2014 summary saved (${summary.length} chars)`);
+    import_v25.logger.info(`[ExperienceSummary] ${vendorId} \u2014 summary saved (${summary.length} chars)`);
   } catch (err2) {
-    import_v24.logger.error(`[ExperienceSummary] ${vendorId} \u2014 Gemini call failed:`, err2.message);
+    import_v25.logger.error(`[ExperienceSummary] ${vendorId} \u2014 Gemini call failed:`, err2.message);
   }
 });
 
@@ -65215,7 +65491,7 @@ var runSocialPublisher = (0, import_scheduler6.onSchedule)({
 });
 
 // src/functions/auth.ts
-var import_https10 = require("firebase-functions/v2/https");
+var import_https11 = require("firebase-functions/v2/https");
 var import_auth = require("firebase-admin/auth");
 
 // src/utils/cors.ts
@@ -65245,43 +65521,43 @@ var DASHBOARD_CORS = [
 
 // src/functions/auth.ts
 init_emailUtils();
-var adminUpdateAuthUser = (0, import_https10.onCall)({
+var adminUpdateAuthUser = (0, import_https11.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const callerDoc = await db.collection("users").doc(request.auth.uid).get();
   const callerRoles = callerDoc.data()?.roles || [];
-  if (!callerRoles.includes("admin")) throw new import_https10.HttpsError("permission-denied", "Admin only");
+  if (!callerRoles.includes("admin")) throw new import_https11.HttpsError("permission-denied", "Admin only");
   const { uid, email, password, displayName } = request.data;
-  if (!uid) throw new import_https10.HttpsError("invalid-argument", "uid is required");
+  if (!uid) throw new import_https11.HttpsError("invalid-argument", "uid is required");
   const updatePayload = {};
   if (email) updatePayload.email = email;
   if (password) updatePayload.password = password;
   if (displayName) updatePayload.displayName = displayName;
   if (Object.keys(updatePayload).length === 0) {
-    throw new import_https10.HttpsError("invalid-argument", "Nothing to update");
+    throw new import_https11.HttpsError("invalid-argument", "Nothing to update");
   }
   try {
     await (0, import_auth.getAuth)().updateUser(uid, updatePayload);
     return { success: true, message: `Auth updated for ${uid}` };
   } catch (error16) {
     console.error("adminUpdateAuthUser error:", error16);
-    throw new import_https10.HttpsError("internal", error16.message || "Failed to update Auth user");
+    throw new import_https11.HttpsError("internal", error16.message || "Failed to update Auth user");
   }
 });
-var adminCreateUser = (0, import_https10.onCall)({
+var adminCreateUser = (0, import_https11.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["RESEND_API_KEY"]
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const callerDoc = await db.collection("users").doc(request.auth.uid).get();
   const callerRoles = callerDoc.data()?.roles || [];
-  if (!callerRoles.includes("admin")) throw new import_https10.HttpsError("permission-denied", "Admin only");
+  if (!callerRoles.includes("admin")) throw new import_https11.HttpsError("permission-denied", "Admin only");
   const { email, displayName, roles } = request.data;
-  if (!email) throw new import_https10.HttpsError("invalid-argument", "email is required");
-  if (!displayName) throw new import_https10.HttpsError("invalid-argument", "displayName is required");
+  if (!email) throw new import_https11.HttpsError("invalid-argument", "email is required");
+  if (!displayName) throw new import_https11.HttpsError("invalid-argument", "displayName is required");
   if (!roles || !Array.isArray(roles) || roles.length === 0) {
-    throw new import_https10.HttpsError("invalid-argument", "At least one role is required");
+    throw new import_https11.HttpsError("invalid-argument", "At least one role is required");
   }
   const chars2 = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
   const tempPassword = "Xiri-" + Array.from({ length: 10 }, () => chars2[Math.floor(Math.random() * chars2.length)]).join("") + "!";
@@ -65304,8 +65580,8 @@ var adminCreateUser = (0, import_https10.onCall)({
     });
     let emailSent = false;
     try {
-      const { Resend: Resend4 } = await import("resend");
-      const resend2 = new Resend4(process.env.RESEND_API_KEY);
+      const { Resend: Resend5 } = await import("resend");
+      const resend2 = new Resend5(process.env.RESEND_API_KEY);
       await resend2.emails.send({
         from: "XIRI Facility Solutions <noreply@xiri.ai>",
         replyTo: "chris@xiri.ai",
@@ -65365,30 +65641,30 @@ var adminCreateUser = (0, import_https10.onCall)({
   } catch (error16) {
     console.error("adminCreateUser error:", error16);
     if (error16.code === "auth/email-already-exists") {
-      throw new import_https10.HttpsError("already-exists", "A user with this email already exists");
+      throw new import_https11.HttpsError("already-exists", "A user with this email already exists");
     }
-    throw new import_https10.HttpsError("internal", error16.message || "Failed to create user");
+    throw new import_https11.HttpsError("internal", error16.message || "Failed to create user");
   }
 });
-var changeMyPassword = (0, import_https10.onCall)({
+var changeMyPassword = (0, import_https11.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https10.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
   const { newPassword } = request.data;
   if (!newPassword || newPassword.length < 6) {
-    throw new import_https10.HttpsError("invalid-argument", "Password must be at least 6 characters");
+    throw new import_https11.HttpsError("invalid-argument", "Password must be at least 6 characters");
   }
   try {
     await (0, import_auth.getAuth)().updateUser(request.auth.uid, { password: newPassword });
     return { success: true, message: "Password updated" };
   } catch (error16) {
     console.error("changeMyPassword error:", error16);
-    throw new import_https10.HttpsError("internal", error16.message || "Failed to change password");
+    throw new import_https11.HttpsError("internal", error16.message || "Failed to change password");
   }
 });
 
 // src/functions/leads.ts
-var import_https11 = require("firebase-functions/v2/https");
+var import_https12 = require("firebase-functions/v2/https");
 
 // src/agents/recruiter.ts
 var import_generative_ai6 = require("@google/generative-ai");
@@ -66037,7 +66313,7 @@ var searchProperties = async (query, location, providerName = "mock") => {
 };
 
 // src/functions/leads.ts
-var generateLeads = (0, import_https11.onCall)({
+var generateLeads = (0, import_https12.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540
@@ -66050,7 +66326,7 @@ var generateLeads = (0, import_https11.onCall)({
   const provider = data.provider || "google_maps";
   const dcaCategory = data.dcaCategory;
   if (provider === "google_maps" && !query || !location) {
-    throw new import_https11.HttpsError("invalid-argument", "Missing required fields in request.");
+    throw new import_https12.HttpsError("invalid-argument", "Missing required fields in request.");
   }
   try {
     console.log(`Analyzing leads for query: ${query}, location: ${location}, provider: ${provider}, category: ${dcaCategory}${previewOnly ? " (PREVIEW MODE)" : ""}`);
@@ -66065,10 +66341,10 @@ var generateLeads = (0, import_https11.onCall)({
     };
   } catch (error16) {
     console.error("Error in generateLeads:", error16);
-    throw new import_https11.HttpsError("internal", error16.message || "An internal error occurred.");
+    throw new import_https12.HttpsError("internal", error16.message || "An internal error occurred.");
   }
 });
-var clearPipeline = (0, import_https11.onCall)({
+var clearPipeline = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   try {
@@ -66091,10 +66367,10 @@ var clearPipeline = (0, import_https11.onCall)({
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
   } catch (error16) {
-    throw new import_https11.HttpsError("internal", error16.message);
+    throw new import_https12.HttpsError("internal", error16.message);
   }
 });
-var runRecruiterAgent = (0, import_https11.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
+var runRecruiterAgent = (0, import_https12.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
   const rawVendors = req.body.vendors || [
     { name: "ABC Cleaning", services: "We do medical office cleaning and terminal cleaning." },
     { name: "Joe's Pizza", services: "Best pizza in town" },
@@ -66103,24 +66379,24 @@ var runRecruiterAgent = (0, import_https11.onRequest)({ secrets: ["GEMINI_API_KE
   const result = await analyzeVendorLeads(rawVendors, "Commercial Cleaning");
   res.json(result);
 });
-var testSendEmail = (0, import_https11.onCall)({
+var testSendEmail = (0, import_https12.onCall)({
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
   cors: DASHBOARD_CORS
 }, async (request) => {
   const { sendTemplatedEmail: sendTemplatedEmail2 } = await Promise.resolve().then(() => (init_emailUtils(), emailUtils_exports));
   const { vendorId, templateId } = request.data;
   if (!vendorId || !templateId) {
-    throw new import_https11.HttpsError("invalid-argument", "Missing vendorId or templateId");
+    throw new import_https12.HttpsError("invalid-argument", "Missing vendorId or templateId");
   }
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
   } catch (error16) {
     console.error("Error sending test email:", error16);
-    throw new import_https11.HttpsError("internal", error16.message || "Failed to send email");
+    throw new import_https12.HttpsError("internal", error16.message || "Failed to send email");
   }
 });
-var sourceProperties = (0, import_https11.onCall)({
+var sourceProperties = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 120
 }, async (request) => {
@@ -66129,7 +66405,7 @@ var sourceProperties = (0, import_https11.onCall)({
   const location = data.location;
   const providerName = data.provider || "mock";
   if (!query || !location) {
-    throw new import_https11.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https12.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`[sourceProperties] query="${query}", location="${location}", provider=${providerName}`);
@@ -66141,22 +66417,22 @@ var sourceProperties = (0, import_https11.onCall)({
     };
   } catch (error16) {
     console.error("[sourceProperties] Error:", error16);
-    throw new import_https11.HttpsError("internal", error16.message || "Failed to source properties.");
+    throw new import_https12.HttpsError("internal", error16.message || "Failed to source properties.");
   }
 });
 
 // src/functions/social.ts
-var import_https12 = require("firebase-functions/v2/https");
+var import_https13 = require("firebase-functions/v2/https");
 init_promptUtils();
 init_facebookApi();
-var publishFacebookPost = (0, import_https12.onCall)({
+var publishFacebookPost = (0, import_https13.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
   const { message, link, imageUrl, scheduledTime } = request.data;
   if (!message) {
-    throw new import_https12.HttpsError("invalid-argument", "Message is required");
+    throw new import_https13.HttpsError("invalid-argument", "Message is required");
   }
   try {
     let result;
@@ -66183,14 +66459,14 @@ var publishFacebookPost = (0, import_https12.onCall)({
     return result;
   } catch (error16) {
     console.error("[Facebook] Publish error:", error16);
-    throw new import_https12.HttpsError("internal", error16.message || "Failed to publish to Facebook");
+    throw new import_https13.HttpsError("internal", error16.message || "Failed to publish to Facebook");
   }
 });
-var getFacebookPosts = (0, import_https12.onCall)({
+var getFacebookPosts = (0, import_https13.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const posts = await getRecentPosts(limit || 10);
@@ -66198,14 +66474,14 @@ var getFacebookPosts = (0, import_https12.onCall)({
     return { posts, insights };
   } catch (error16) {
     console.error("[Facebook] Get posts error:", error16);
-    throw new import_https12.HttpsError("internal", error16.message || "Failed to get Facebook posts");
+    throw new import_https13.HttpsError("internal", error16.message || "Failed to get Facebook posts");
   }
 });
-var getFacebookReels = (0, import_https12.onCall)({
+var getFacebookReels = (0, import_https13.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const { getRecentReels: getRecentReels2 } = await Promise.resolve().then(() => (init_facebookApi(), facebookApi_exports));
@@ -66213,16 +66489,16 @@ var getFacebookReels = (0, import_https12.onCall)({
     return { reels };
   } catch (error16) {
     console.error("[Facebook] Get reels error:", error16);
-    throw new import_https12.HttpsError("internal", error16.message || "Failed to get Facebook reels");
+    throw new import_https13.HttpsError("internal", error16.message || "Failed to get Facebook reels");
   }
 });
-var deleteFacebookPost = (0, import_https12.onCall)({
+var deleteFacebookPost = (0, import_https13.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https12.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https13.HttpsError("invalid-argument", "postId is required");
   try {
     const success = await deletePost(postId);
     const snapshot = await db.collection("social_posts").where("facebookPostId", "==", postId).limit(1).get();
@@ -66236,24 +66512,24 @@ var deleteFacebookPost = (0, import_https12.onCall)({
     return { success };
   } catch (error16) {
     console.error("[Facebook] Delete error:", error16);
-    throw new import_https12.HttpsError("internal", error16.message || "Failed to delete Facebook post");
+    throw new import_https13.HttpsError("internal", error16.message || "Failed to delete Facebook post");
   }
 });
-var triggerSocialContentGeneration = (0, import_https12.onCall)({
+var triggerSocialContentGeneration = (0, import_https13.onCall)({
   secrets: ["GEMINI_API_KEY", "FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
   const channel = request.data?.channel || "facebook_posts";
   await generateSocialContent(channel);
   return { success: true };
 });
-var updateSocialConfig = (0, import_https12.onCall)({
+var updateSocialConfig = (0, import_https13.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
   const { channel, cadence, preferredDays, preferredTime, tone, topics, hashtagSets, enabled, audienceMix } = request.data;
   const channelId = channel || "facebook_posts";
   const config2 = { updatedAt: /* @__PURE__ */ new Date() };
@@ -66270,18 +66546,18 @@ var updateSocialConfig = (0, import_https12.onCall)({
   console.log(`[Social] Config updated for ${channelId}:`, config2);
   return { success: true };
 });
-var reviewSocialPost = (0, import_https12.onCall)({
+var reviewSocialPost = (0, import_https13.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
   const { postId, action, editedMessage, rejectionReason, scheduledFor } = request.data;
   if (!postId || !action) {
-    throw new import_https12.HttpsError("invalid-argument", "postId and action are required");
+    throw new import_https13.HttpsError("invalid-argument", "postId and action are required");
   }
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
   if (!postDoc.exists) {
-    throw new import_https12.HttpsError("not-found", "Post not found");
+    throw new import_https13.HttpsError("not-found", "Post not found");
   }
   const update = {
     reviewedBy: request.auth.uid,
@@ -66298,24 +66574,24 @@ var reviewSocialPost = (0, import_https12.onCall)({
       update.rejectionReason = rejectionReason || null;
       break;
     default:
-      throw new import_https12.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
+      throw new import_https13.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
   }
   await postRef.update(update);
   console.log(`[Social] Post ${postId} ${action}ed by ${request.auth.uid}`);
   return { success: true, status: update.status };
 });
-var publishPostNow = (0, import_https12.onCall)({
+var publishPostNow = (0, import_https13.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   timeoutSeconds: 180,
   memory: "512MiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https12.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https13.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https12.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https13.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   try {
     let result;
@@ -66403,7 +66679,7 @@ file '${outroMp4}'
         error: result.error || "Publishing failed",
         failedAt: /* @__PURE__ */ new Date()
       });
-      throw new import_https12.HttpsError("internal", result.error || "Publishing failed");
+      throw new import_https13.HttpsError("internal", result.error || "Publishing failed");
     }
   } catch (err2) {
     const errorMsg = err2.message || "Publishing failed";
@@ -66414,37 +66690,37 @@ file '${outroMp4}'
       failedAt: /* @__PURE__ */ new Date()
     }).catch(() => {
     });
-    throw new import_https12.HttpsError("internal", errorMsg);
+    throw new import_https13.HttpsError("internal", errorMsg);
   }
 });
-var searchPlaces = (0, import_https12.onCall)({
+var searchPlaces = (0, import_https13.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"]
 }, async (request) => {
-  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
   const { query } = request.data;
-  if (!query) throw new import_https12.HttpsError("invalid-argument", "query is required");
+  if (!query) throw new import_https13.HttpsError("invalid-argument", "query is required");
   const results = await searchFacebookPlaces(query);
   return { places: results };
 });
-var regeneratePostImage = (0, import_https12.onCall)({
+var regeneratePostImage = (0, import_https13.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 300,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https12.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https13.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https12.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https13.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience || "contractor";
   console.log(`[RegenImage] Regenerating image for post ${postId} with feedback: "${feedback || "none"}"`);
   const { generatePostImage: generatePostImage2 } = await Promise.resolve().then(() => (init_imagenApi(), imagenApi_exports));
   const result = await generatePostImage2(post.message, audience, feedback || void 0);
   if (!result) {
-    throw new import_https12.HttpsError("internal", "Image generation failed");
+    throw new import_https13.HttpsError("internal", "Image generation failed");
   }
   await postRef.update({
     imageUrl: result.imageUrl,
@@ -66454,17 +66730,17 @@ var regeneratePostImage = (0, import_https12.onCall)({
   console.log(`[RegenImage] New image: ${result.imageUrl}`);
   return { success: true, imageUrl: result.imageUrl };
 });
-var regeneratePostCaption = (0, import_https12.onCall)({
+var regeneratePostCaption = (0, import_https13.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["GEMINI_API_KEY"],
   timeoutSeconds: 120
 }, async (request) => {
-  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https12.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https13.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https12.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https13.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
   console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
@@ -66500,7 +66776,7 @@ Respond with ONLY the post text. No introductions.`;
   const result = await model2.generateContent(prompt);
   const newCaption = result.response.text().trim();
   if (!newCaption) {
-    throw new import_https12.HttpsError("internal", "Caption generation returned empty");
+    throw new import_https13.HttpsError("internal", "Caption generation returned empty");
   }
   await postRef.update({
     message: newCaption,
@@ -66510,19 +66786,19 @@ Respond with ONLY the post text. No introductions.`;
   console.log(`[RegenCaption] New caption generated (${newCaption.length} chars)`);
   return { success: true, message: newCaption };
 });
-var getOutroPreview = (0, import_https12.onCall)({
+var getOutroPreview = (0, import_https13.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
   const { presetId } = request.data;
-  if (!presetId) throw new import_https12.HttpsError("invalid-argument", "presetId is required");
+  if (!presetId) throw new import_https13.HttpsError("invalid-argument", "presetId is required");
   const { getOrCreateOutroFrameUrl: getOrCreateOutroFrameUrl2 } = await Promise.resolve().then(() => (init_reelOutroGenerator(), reelOutroGenerator_exports));
   const url = await getOrCreateOutroFrameUrl2(presetId);
   return { url };
 });
 
 // src/functions/nfc.ts
-var import_https13 = require("firebase-functions/v2/https");
+var import_https14 = require("firebase-functions/v2/https");
 var crypto4 = __toESM(require("crypto"));
 
 // src/utils/googleChatUtils.ts
@@ -66907,27 +67183,27 @@ function hashSiteKey(plainKey) {
 function generateSessionToken() {
   return crypto4.randomUUID();
 }
-var validateSiteKey = (0, import_https13.onCall)({
+var validateSiteKey = (0, import_https14.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { locationId, siteKey, personName, personPhone } = request.data;
   if (!locationId || typeof locationId !== "string") {
-    throw new import_https13.HttpsError("invalid-argument", "locationId is required");
+    throw new import_https14.HttpsError("invalid-argument", "locationId is required");
   }
   if (!siteKey || typeof siteKey !== "string") {
-    throw new import_https13.HttpsError("invalid-argument", "Site key is required");
+    throw new import_https14.HttpsError("invalid-argument", "Site key is required");
   }
   if (!personName || typeof personName !== "string" || personName.trim().length === 0) {
-    throw new import_https13.HttpsError("invalid-argument", "Name is required");
+    throw new import_https14.HttpsError("invalid-argument", "Name is required");
   }
   const siteDoc = await db.collection("nfc_sites").doc(locationId).get();
   if (!siteDoc.exists) {
-    throw new import_https13.HttpsError("not-found", "Location not found. Check with your supervisor.");
+    throw new import_https14.HttpsError("not-found", "Location not found. Check with your supervisor.");
   }
   const siteData = siteDoc.data();
   if (siteData.revokedAt) {
-    throw new import_https13.HttpsError("permission-denied", "Access has been revoked. Contact your supervisor for a new site key.");
+    throw new import_https14.HttpsError("permission-denied", "Access has been revoked. Contact your supervisor for a new site key.");
   }
   const hashedInput = hashSiteKey(siteKey.trim());
   let personRole;
@@ -66936,7 +67212,7 @@ var validateSiteKey = (0, import_https13.onCall)({
   } else if (siteData.managerKeyHash && hashedInput === siteData.managerKeyHash) {
     personRole = "night_manager";
   } else {
-    throw new import_https13.HttpsError("permission-denied", "Invalid site key. Please check and try again.");
+    throw new import_https14.HttpsError("permission-denied", "Invalid site key. Please check and try again.");
   }
   const sessionId = generateSessionToken();
   const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1e3);
@@ -66990,25 +67266,25 @@ var validateSiteKey = (0, import_https13.onCall)({
     expiresAt: expiresAt.toISOString()
   };
 });
-var updateZoneScan = (0, import_https13.onCall)({
+var updateZoneScan = (0, import_https14.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { sessionId, zoneId, zoneName, tasksCompleted } = request.data;
   if (!sessionId || typeof sessionId !== "string") {
-    throw new import_https13.HttpsError("invalid-argument", "sessionId is required");
+    throw new import_https14.HttpsError("invalid-argument", "sessionId is required");
   }
   if (!zoneId || typeof zoneId !== "string") {
-    throw new import_https13.HttpsError("invalid-argument", "zoneId is required");
+    throw new import_https14.HttpsError("invalid-argument", "zoneId is required");
   }
   const sessionDoc = await db.collection("nfc_sessions").doc(sessionId).get();
   if (!sessionDoc.exists) {
-    throw new import_https13.HttpsError("not-found", "Session not found. Please tap the Start tag again.");
+    throw new import_https14.HttpsError("not-found", "Session not found. Please tap the Start tag again.");
   }
   const sessionData = sessionDoc.data();
   const expiresAt = sessionData.expiresAt?.toDate?.() || sessionData.expiresAt;
   if (expiresAt && /* @__PURE__ */ new Date() > new Date(expiresAt)) {
-    throw new import_https13.HttpsError("permission-denied", "Session expired. Please tap the Start tag to clock in again.");
+    throw new import_https14.HttpsError("permission-denied", "Session expired. Please tap the Start tag to clock in again.");
   }
   const scanResult = {
     zoneId,
@@ -67083,17 +67359,17 @@ var updateZoneScan = (0, import_https13.onCall)({
     allZonesDone: scannedZones >= totalZones
   };
 });
-var completeNfcSession = (0, import_https13.onCall)({
+var completeNfcSession = (0, import_https14.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { sessionId, auditScore, auditNotes } = request.data;
   if (!sessionId) {
-    throw new import_https13.HttpsError("invalid-argument", "sessionId is required");
+    throw new import_https14.HttpsError("invalid-argument", "sessionId is required");
   }
   const sessionDoc = await db.collection("nfc_sessions").doc(sessionId).get();
   if (!sessionDoc.exists) {
-    throw new import_https13.HttpsError("not-found", "Session not found.");
+    throw new import_https14.HttpsError("not-found", "Session not found.");
   }
   await db.collection("nfc_sessions").doc(sessionId).update({
     clockOutAt: /* @__PURE__ */ new Date(),
@@ -67123,16 +67399,16 @@ var completeNfcSession = (0, import_https13.onCall)({
 function getInitials(name) {
   return name.split(/\s+/).map((w) => w.charAt(0).toUpperCase()).join("").slice(0, 2) || "?";
 }
-var getComplianceLog = (0, import_https13.onCall)({
+var getComplianceLog = (0, import_https14.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const { locationId } = request.data;
   if (!locationId || typeof locationId !== "string") {
-    throw new import_https13.HttpsError("invalid-argument", "locationId is required");
+    throw new import_https14.HttpsError("invalid-argument", "locationId is required");
   }
   const siteDoc = await db.collection("nfc_sites").doc(locationId).get();
   if (!siteDoc.exists) {
-    throw new import_https13.HttpsError("not-found", "Location not found.");
+    throw new import_https14.HttpsError("not-found", "Location not found.");
   }
   const siteData = siteDoc.data();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3);
@@ -67181,7 +67457,7 @@ var getComplianceLog = (0, import_https13.onCall)({
 
 // src/functions/monitoring.ts
 var import_scheduler7 = require("firebase-functions/v2/scheduler");
-var import_https14 = require("firebase-functions/v2/https");
+var import_https15 = require("firebase-functions/v2/https");
 init_emailUtils();
 
 // src/utils/morningReportEmail.ts
@@ -67758,20 +68034,20 @@ async function buildReportData(wo, dateRef, graceMin) {
     complianceLogUrl: `https://xiri.ai/c/${wo.buildingId}`
   };
 }
-var sendTestMorningReport = (0, import_https14.onCall)({
+var sendTestMorningReport = (0, import_https15.onCall)({
   cors: true
 }, async (request) => {
   const { workOrderId, recipientEmail, scenario } = request.data;
   if (!workOrderId) {
-    throw new import_https14.HttpsError("invalid-argument", "workOrderId is required");
+    throw new import_https15.HttpsError("invalid-argument", "workOrderId is required");
   }
   const woDoc = await db.collection("work_orders").doc(workOrderId).get();
   if (!woDoc.exists) {
-    throw new import_https14.HttpsError("not-found", "Work order not found");
+    throw new import_https15.HttpsError("not-found", "Work order not found");
   }
   const wo = await resolveWorkOrder(woDoc);
   if (!wo) {
-    throw new import_https14.HttpsError("failed-precondition", "Work order is not active");
+    throw new import_https15.HttpsError("failed-precondition", "Work order is not active");
   }
   const config2 = await loadMonitoringConfig();
   const graceMin = wo.graceMinutes || config2.graceMinutes;
@@ -67928,9 +68204,9 @@ var weeklyAIBotDigest = (0, import_scheduler8.onSchedule)({
 
 // src/triggers/clarityAnalysis.ts
 var import_scheduler9 = require("firebase-functions/v2/scheduler");
-var import_https15 = require("firebase-functions/v2/https");
+var import_https16 = require("firebase-functions/v2/https");
 var import_params6 = require("firebase-functions/params");
-var import_v26 = require("firebase-functions/v2");
+var import_v27 = require("firebase-functions/v2");
 
 // src/utils/clarityUtils.ts
 var CLARITY_API_BASE = "https://www.clarity.ms/export-data/api/v1";
@@ -68129,7 +68405,7 @@ function buildClarityChatCard(metrics) {
 
 // src/utils/clarityAIAgent.ts
 var import_generative_ai7 = require("@google/generative-ai");
-var import_v25 = require("firebase-functions/v2");
+var import_v26 = require("firebase-functions/v2");
 
 // src/data/page-component-map.json
 var page_component_map_default = {
@@ -68182,7 +68458,7 @@ var DEFAULT_THRESHOLDS = {
 function detectFrictionSpikes(current, baseline, thresholds = DEFAULT_THRESHOLDS) {
   const spikes = [];
   if (current.totalSessions < thresholds.minSessions) {
-    import_v25.logger.info(`Skipping spike detection: only ${current.totalSessions} sessions (min: ${thresholds.minSessions})`);
+    import_v26.logger.info(`Skipping spike detection: only ${current.totalSessions} sessions (min: ${thresholds.minSessions})`);
     return spikes;
   }
   const checks = [
@@ -68296,7 +68572,7 @@ Classify each spike and provide actionable recommendations.`;
     const responseText = result.response.text();
     const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/) || responseText.match(/(\{[\s\S]*\})/);
     if (!jsonMatch?.[1]) {
-      import_v25.logger.warn("Gemini returned non-JSON response:", responseText.slice(0, 200));
+      import_v26.logger.warn("Gemini returned non-JSON response:", responseText.slice(0, 200));
       return {
         summary: "AI analysis returned unstructured response \u2014 manual review needed.",
         issues: [],
@@ -68318,7 +68594,7 @@ Classify each spike and provide actionable recommendations.`;
       analyzedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
   } catch (err2) {
-    import_v25.logger.error("Gemini analysis failed:", err2);
+    import_v26.logger.error("Gemini analysis failed:", err2);
     return {
       summary: `AI analysis error: ${err2.message}`,
       issues: [],
@@ -68402,10 +68678,10 @@ var dailyClarityReport = (0, import_scheduler9.onSchedule)({
   // Allow time for Gemini call
   memory: "512MiB"
 }, async () => {
-  import_v26.logger.info("\u{1F4CA} Starting daily Clarity report + AI analysis...");
+  import_v27.logger.info("\u{1F4CA} Starting daily Clarity report + AI analysis...");
   try {
     const yesterday = await fetchClarityInsights(CLARITY_API_TOKEN.value(), 1);
-    import_v26.logger.info(`Clarity (yesterday): ${yesterday.totalSessions} sessions, ${yesterday.deadClickCount} dead clicks, ${yesterday.rageClickCount} rage clicks`);
+    import_v27.logger.info(`Clarity (yesterday): ${yesterday.totalSessions} sessions, ${yesterday.deadClickCount} dead clicks, ${yesterday.rageClickCount} rage clicks`);
     const baseline = await fetchClarityInsights(CLARITY_API_TOKEN.value(), 3);
     const baselineDaily = {
       ...baseline,
@@ -68417,15 +68693,15 @@ var dailyClarityReport = (0, import_scheduler9.onSchedule)({
       errorClickCount: Math.round(baseline.errorClickCount / 3)
     };
     const spikes = detectFrictionSpikes(yesterday, baselineDaily);
-    import_v26.logger.info(`Detected ${spikes.length} friction spike(s)`);
+    import_v27.logger.info(`Detected ${spikes.length} friction spike(s)`);
     let aiAnalysis = null;
     if (spikes.length > 0) {
-      import_v26.logger.info("\u{1F916} Running Gemini AI analysis on spikes...");
+      import_v27.logger.info("\u{1F916} Running Gemini AI analysis on spikes...");
       aiAnalysis = await analyzeWithAI(spikes, yesterday, GEMINI_API_KEY4.value());
-      import_v26.logger.info(`AI classified ${aiAnalysis.issues.length} issues: ${aiAnalysis.summary}`);
+      import_v27.logger.info(`AI classified ${aiAnalysis.issues.length} issues: ${aiAnalysis.summary}`);
     }
     await postEnhancedReport(yesterday, aiAnalysis, CLARITY_CHAT_WEBHOOK.value());
-    import_v26.logger.info("\u2705 Posted to Google Chat");
+    import_v27.logger.info("\u2705 Posted to Google Chat");
     await db.collection("clarity_reports").add({
       createdAt: /* @__PURE__ */ new Date(),
       ...yesterday,
@@ -68438,13 +68714,13 @@ var dailyClarityReport = (0, import_scheduler9.onSchedule)({
         analyzedAt: aiAnalysis.analyzedAt
       } : null
     });
-    import_v26.logger.info("\u2705 Logged to Firestore");
+    import_v27.logger.info("\u2705 Logged to Firestore");
   } catch (err2) {
-    import_v26.logger.error("\u274C Clarity report failed:", err2);
+    import_v27.logger.error("\u274C Clarity report failed:", err2);
     throw err2;
   }
 });
-var triggerClarityReport = (0, import_https15.onCall)({
+var triggerClarityReport = (0, import_https16.onCall)({
   cors: true,
   secrets: [CLARITY_API_TOKEN, CLARITY_CHAT_WEBHOOK, GEMINI_API_KEY4],
   timeoutSeconds: 120,
@@ -68453,7 +68729,7 @@ var triggerClarityReport = (0, import_https15.onCall)({
   const days = request.data?.days || 3;
   const postToChat = request.data?.postToChat !== false;
   const runAI = request.data?.aiAnalysis !== false;
-  import_v26.logger.info(`\u{1F9EA} Manual Clarity report (${days} days, chat=${postToChat}, ai=${runAI})`);
+  import_v27.logger.info(`\u{1F9EA} Manual Clarity report (${days} days, chat=${postToChat}, ai=${runAI})`);
   try {
     const metrics = await fetchClarityInsights(CLARITY_API_TOKEN.value(), days);
     let aiAnalysis = null;
@@ -68464,7 +68740,7 @@ var triggerClarityReport = (0, import_https15.onCall)({
         { signal: "quickbacks", current: metrics.quickbackCount, baseline: 0, changePercent: 100 }
       ].filter((s) => s.current > 0);
       if (syntheticSpikes.length > 0) {
-        import_v26.logger.info("\u{1F916} Running AI analysis...");
+        import_v27.logger.info("\u{1F916} Running AI analysis...");
         aiAnalysis = await analyzeWithAI(syntheticSpikes, metrics, GEMINI_API_KEY4.value());
       }
     }
@@ -68502,8 +68778,8 @@ var triggerClarityReport = (0, import_https15.onCall)({
       links
     };
   } catch (err2) {
-    import_v26.logger.error("\u274C Manual Clarity report failed:", err2);
-    throw new import_https15.HttpsError("internal", err2.message || "Clarity report failed");
+    import_v27.logger.error("\u274C Manual Clarity report failed:", err2);
+    throw new import_https16.HttpsError("internal", err2.message || "Clarity report failed");
   }
 });
 async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
@@ -68537,7 +68813,7 @@ async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
 }
 
 // src/functions/tidycal-api.ts
-var import_https16 = require("firebase-functions/v2/https");
+var import_https17 = require("firebase-functions/v2/https");
 var import_params7 = require("firebase-functions/params");
 var import_firestore20 = require("firebase-admin/firestore");
 
@@ -68623,7 +68899,7 @@ async function listBookings(options) {
 
 // src/functions/tidycal-api.ts
 var TIDYCAL_API_KEY = (0, import_params7.defineSecret)("TIDYCAL_API_KEY");
-var getOnboardingTimeslots = (0, import_https16.onRequest)({
+var getOnboardingTimeslots = (0, import_https17.onRequest)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (req, res) => {
@@ -68646,7 +68922,7 @@ var getOnboardingTimeslots = (0, import_https16.onRequest)({
     res.status(500).json({ error: error16.message || "Failed to fetch timeslots" });
   }
 });
-var bookOnboardingCall = (0, import_https16.onRequest)({
+var bookOnboardingCall = (0, import_https17.onRequest)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (req, res) => {
@@ -68711,14 +68987,14 @@ var bookOnboardingCall = (0, import_https16.onRequest)({
     res.status(500).json({ error: error16.message || "Failed to book call" });
   }
 });
-var getDashboardTimeslots = (0, import_https16.onCall)({
+var getDashboardTimeslots = (0, import_https17.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https16.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https17.HttpsError("unauthenticated", "Must be logged in");
   const { startDate, endDate, timezone, bookingTypeId } = request.data;
   if (!startDate || !endDate) {
-    throw new import_https16.HttpsError("invalid-argument", "startDate and endDate are required");
+    throw new import_https17.HttpsError("invalid-argument", "startDate and endDate are required");
   }
   const typeId = bookingTypeId || TIDYCAL_BOOKING_TYPES.DISCOVERY_CALL;
   const slots = await getTimeslots(
@@ -68729,19 +69005,19 @@ var getDashboardTimeslots = (0, import_https16.onCall)({
   );
   return { slots };
 });
-var bookDiscoveryCall = (0, import_https16.onCall)({
+var bookDiscoveryCall = (0, import_https17.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https16.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https17.HttpsError("unauthenticated", "Must be logged in");
   const { leadId, name, email, starts_at, timezone, bookingTypeId } = request.data;
   if (!leadId || !name || !email || !starts_at) {
-    throw new import_https16.HttpsError("invalid-argument", "leadId, name, email, starts_at are required");
+    throw new import_https17.HttpsError("invalid-argument", "leadId, name, email, starts_at are required");
   }
   const leadRef = db.collection("leads").doc(leadId);
   const leadDoc = await leadRef.get();
   if (!leadDoc.exists) {
-    throw new import_https16.HttpsError("not-found", "Lead not found");
+    throw new import_https17.HttpsError("not-found", "Lead not found");
   }
   const typeId = bookingTypeId || TIDYCAL_BOOKING_TYPES.DISCOVERY_CALL;
   const booking = await createBooking(typeId, {
@@ -68782,11 +69058,11 @@ var bookDiscoveryCall = (0, import_https16.onCall)({
     }
   };
 });
-var getTidyCalBookings = (0, import_https16.onCall)({
+var getTidyCalBookings = (0, import_https17.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https16.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https17.HttpsError("unauthenticated", "Must be logged in");
   const { bookingTypeId, page } = request.data || {};
   const result = await listBookings({
     bookingTypeId,
@@ -68796,7 +69072,7 @@ var getTidyCalBookings = (0, import_https16.onCall)({
 });
 
 // src/functions/prospecting.ts
-var import_https17 = require("firebase-functions/v2/https");
+var import_https18 = require("firebase-functions/v2/https");
 
 // src/utils/emailPatternGuesser.ts
 var import_dns = require("dns");
@@ -69480,7 +69756,7 @@ function extractDomain(url) {
 
 // src/functions/prospecting.ts
 init_src();
-var runProspector = (0, import_https17.onCall)({
+var runProspector = (0, import_https18.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
@@ -69493,7 +69769,7 @@ var runProspector = (0, import_https17.onCall)({
   const maxResults = data.maxResults || 20;
   const skipPaidApis = data.skipPaidApis || false;
   if (!query || !location) {
-    throw new import_https17.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
+    throw new import_https18.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
   }
   try {
     console.log(`[runProspector] query="${query}", location="${location}", max=${maxResults}, skipPaid=${skipPaidApis}`);
@@ -69512,16 +69788,16 @@ var runProspector = (0, import_https17.onCall)({
     };
   } catch (error16) {
     console.error("[runProspector] Error:", error16);
-    throw new import_https17.HttpsError("internal", error16.message || "Pipeline failed.");
+    throw new import_https18.HttpsError("internal", error16.message || "Pipeline failed.");
   }
 });
-var addProspectsToCrm = (0, import_https17.onCall)({
+var addProspectsToCrm = (0, import_https18.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 60
 }, async (request) => {
   const { prospects, searchQuery: batchSearchQuery } = request.data;
   if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
-    throw new import_https17.HttpsError("invalid-argument", "No prospects provided.");
+    throw new import_https18.HttpsError("invalid-argument", "No prospects provided.");
   }
   try {
     const results = [];
@@ -69612,10 +69888,10 @@ var addProspectsToCrm = (0, import_https17.onCall)({
     };
   } catch (error16) {
     console.error("[addProspectsToCrm] Error:", error16);
-    throw new import_https17.HttpsError("internal", error16.message || "CRM import failed.");
+    throw new import_https18.HttpsError("internal", error16.message || "CRM import failed.");
   }
 });
-var expandLocation = (0, import_https17.onCall)({
+var expandLocation = (0, import_https18.onCall)({
   secrets: ["GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30
@@ -69623,7 +69899,7 @@ var expandLocation = (0, import_https17.onCall)({
   const data = request.data || {};
   const location = data.location;
   if (!location) {
-    throw new import_https17.HttpsError("invalid-argument", "Missing 'location'.");
+    throw new import_https18.HttpsError("invalid-argument", "Missing 'location'.");
   }
   try {
     console.log(`[expandLocation] Bursting location: "${location}"...`);
@@ -69645,14 +69921,14 @@ var expandLocation = (0, import_https17.onCall)({
     return { towns };
   } catch (error16) {
     console.error("[expandLocation] Error:", error16);
-    throw new import_https17.HttpsError("internal", error16.message || "Failed to expand location.");
+    throw new import_https18.HttpsError("internal", error16.message || "Failed to expand location.");
   }
 });
 
 // src/triggers/dailyProspector.ts
 var import_scheduler10 = require("firebase-functions/v2/scheduler");
-var import_https18 = require("firebase-functions/v2/https");
-var logger30 = __toESM(require("firebase-functions/logger"));
+var import_https19 = require("firebase-functions/v2/https");
+var logger31 = __toESM(require("firebase-functions/logger"));
 var crypto5 = __toESM(require("crypto"));
 
 // src/utils/prospectingTargets.ts
@@ -70134,14 +70410,14 @@ async function loadSeenSet() {
     const d = doc.data();
     if (d.email) seen.add(`email:${d.email.toLowerCase()}`);
   }
-  logger30.info(`[DailyProspector] Seen set loaded: ${seen.size} entries (queue + companies + contacts)`);
+  logger31.info(`[DailyProspector] Seen set loaded: ${seen.size} entries (queue + companies + contacts)`);
   return seen;
 }
 async function runDailyPipeline() {
   const configDoc = await db.collection("prospecting_config").doc("default").get();
   const config2 = configDoc.exists ? { ...DEFAULT_CONFIG, ...configDoc.data() } : DEFAULT_CONFIG;
   if (!config2.enabled) {
-    logger30.info("[DailyProspector] Disabled via config. Skipping.");
+    logger31.info("[DailyProspector] Disabled via config. Skipping.");
     return;
   }
   const secrets = {
@@ -70179,12 +70455,12 @@ async function runDailyPipeline() {
       }
     }
     const shuffled = shuffle(combos);
-    logger30.info(`[DailyProspector] ${shuffled.length} combos shuffled. Target: ${config2.dailyTarget}`);
+    logger31.info(`[DailyProspector] ${shuffled.length} combos shuffled. Target: ${config2.dailyTarget}`);
     for (const { query: queryTerm, location } of shuffled) {
       if (newProspects.length >= config2.dailyTarget) break;
       const remaining = config2.dailyTarget - newProspects.length;
       const batchSize = Math.min(remaining + 10, 20);
-      logger30.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
+      logger31.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
       await updateProgress(`${queryTerm} in ${location}`);
       try {
         const result = await prospectAndEnrich(
@@ -70208,7 +70484,7 @@ async function runDailyPipeline() {
           const websiteDomain = prospect.website ? prospect.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase() : void 0;
           const matchedKey = seen.has(normalized) ? `name:${normalized}` : phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`) ? `phone:${phoneCleaned}` : emailLower && seen.has(`email:${emailLower}`) ? `email:${emailLower}` : genericLower && seen.has(`email:${genericLower}`) ? `email:${genericLower}` : websiteDomain && seen.has(`domain:${websiteDomain}`) ? `domain:${websiteDomain}` : addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`) ? `addr:${addressNorm}` : null;
           if (matchedKey) {
-            logger30.info(`[DailyProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
+            logger31.info(`[DailyProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
             duplicatesSkipped++;
             continue;
           }
@@ -70263,16 +70539,16 @@ async function runDailyPipeline() {
         }
         if (batchCount > 0) {
           await batch.commit();
-          logger30.info(`[DailyProspector] Wrote incremental batch of ${batchCount} prospects.`);
+          logger31.info(`[DailyProspector] Wrote incremental batch of ${batchCount} prospects.`);
         }
         await updateProgress(`${queryTerm} in ${location}`);
         const elapsedSecs = (Date.now() - startedAt.getTime()) / 1e3;
         if (elapsedSecs > 480) {
-          logger30.warn("[DailyProspector] Approaching 9-minute execution limit. Stopping early to save state.");
+          logger31.warn("[DailyProspector] Approaching 9-minute execution limit. Stopping early to save state.");
           break;
         }
       } catch (err2) {
-        logger30.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
+        logger31.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
       }
     }
     const stats = {
@@ -70298,9 +70574,9 @@ async function runDailyPipeline() {
       completedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     });
-    logger30.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
+    logger31.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
   } catch (err2) {
-    logger30.error(`[DailyProspector] Pipeline crashed:`, err2.message || err2);
+    logger31.error(`[DailyProspector] Pipeline crashed:`, err2.message || err2);
     await statusRef.set({
       running: false,
       discovered: totalDiscovered,
@@ -70311,7 +70587,7 @@ async function runDailyPipeline() {
       error: err2.message || "Unknown error",
       failedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
-    }).catch((e2) => logger30.error("[DailyProspector] Failed to write error status:", e2.message));
+    }).catch((e2) => logger31.error("[DailyProspector] Failed to write error status:", e2.message));
     throw err2;
   }
 }
@@ -70323,20 +70599,20 @@ var dailyProspector = (0, import_scheduler10.onSchedule)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger30.info("[DailyProspector] Starting scheduled run...");
+  logger31.info("[DailyProspector] Starting scheduled run...");
   await runDailyPipeline();
 });
-var triggerDailyProspector = (0, import_https18.onCall)({
+var triggerDailyProspector = (0, import_https19.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger30.info("[DailyProspector] Manual trigger invoked.");
+  logger31.info("[DailyProspector] Manual trigger invoked.");
   await runDailyPipeline();
   return { message: "Daily prospector pipeline completed." };
 });
-var updateProspectingConfig = (0, import_https18.onCall)({
+var updateProspectingConfig = (0, import_https19.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const data = request.data;
@@ -70347,13 +70623,13 @@ var updateProspectingConfig = (0, import_https18.onCall)({
   if (data.enabled !== void 0) update.enabled = data.enabled;
   if (data.excludePatterns) update.excludePatterns = data.excludePatterns;
   if (Object.keys(update).length === 0) {
-    throw new import_https18.HttpsError("invalid-argument", "No valid fields to update.");
+    throw new import_https19.HttpsError("invalid-argument", "No valid fields to update.");
   }
   await db.collection("prospecting_config").doc("default").set(update, { merge: true });
-  logger30.info("[updateProspectingConfig] Config updated:", update);
+  logger31.info("[updateProspectingConfig] Config updated:", update);
   return { message: "Prospecting config updated.", updated: update };
 });
-var getProspectingConfig = (0, import_https18.onCall)({
+var getProspectingConfig = (0, import_https19.onCall)({
   cors: DASHBOARD_CORS
 }, async () => {
   const doc = await db.collection("prospecting_config").doc("default").get();
@@ -70363,7 +70639,7 @@ var getProspectingConfig = (0, import_https18.onCall)({
   await db.collection("prospecting_config").doc("default").set(DEFAULT_CONFIG);
   return DEFAULT_CONFIG;
 });
-var regenerateProspectingConfig = (0, import_https18.onCall)({
+var regenerateProspectingConfig = (0, import_https19.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const data = request.data;
@@ -70380,7 +70656,7 @@ var regenerateProspectingConfig = (0, import_https18.onCall)({
   };
   await db.collection("prospecting_config").doc("default").set(config2, { merge: true });
   const summary = getConfigSummary(generated);
-  logger30.info(`[regenerateProspectingConfig] ${summary}`);
+  logger31.info(`[regenerateProspectingConfig] ${summary}`);
   return {
     message: "Prospecting config regenerated from ICP engine.",
     queries: generated.queries.length,
@@ -70391,7 +70667,7 @@ var regenerateProspectingConfig = (0, import_https18.onCall)({
 });
 
 // src/functions/vendorProspecting.ts
-var import_https19 = require("firebase-functions/v2/https");
+var import_https20 = require("firebase-functions/v2/https");
 
 // src/utils/facebookEnricher.ts
 var cheerio2 = __toESM(require("cheerio"));
@@ -71205,7 +71481,7 @@ function extractDomain2(url) {
 }
 
 // src/functions/vendorProspecting.ts
-var runVendorProspector = (0, import_https19.onCall)({
+var runVendorProspector = (0, import_https20.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
@@ -71218,10 +71494,10 @@ var runVendorProspector = (0, import_https19.onCall)({
   const maxResults = data.maxResults || 20;
   const skipPaidApis = data.skipPaidApis || false;
   if (!query || !location) {
-    throw new import_https19.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
+    throw new import_https20.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
   }
   if (!capability) {
-    throw new import_https19.HttpsError("invalid-argument", "Missing 'capability' (e.g. 'plumbing', 'hvac').");
+    throw new import_https20.HttpsError("invalid-argument", "Missing 'capability' (e.g. 'plumbing', 'hvac').");
   }
   try {
     console.log(`[runVendorProspector] query="${query}", location="${location}", capability="${capability}", max=${maxResults}`);
@@ -71240,16 +71516,16 @@ var runVendorProspector = (0, import_https19.onCall)({
     };
   } catch (error16) {
     console.error("[runVendorProspector] Error:", error16);
-    throw new import_https19.HttpsError("internal", error16.message || "Vendor prospecting pipeline failed.");
+    throw new import_https20.HttpsError("internal", error16.message || "Vendor prospecting pipeline failed.");
   }
 });
-var addVendorProspectsToCrm = (0, import_https19.onCall)({
+var addVendorProspectsToCrm = (0, import_https20.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 60
 }, async (request) => {
   const { prospects, searchCapability } = request.data;
   if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
-    throw new import_https19.HttpsError("invalid-argument", "No vendor prospects provided.");
+    throw new import_https20.HttpsError("invalid-argument", "No vendor prospects provided.");
   }
   try {
     const results = [];
@@ -71302,14 +71578,14 @@ var addVendorProspectsToCrm = (0, import_https19.onCall)({
     };
   } catch (error16) {
     console.error("[addVendorProspectsToCrm] Error:", error16);
-    throw new import_https19.HttpsError("internal", error16.message || "Vendor CRM import failed.");
+    throw new import_https20.HttpsError("internal", error16.message || "Vendor CRM import failed.");
   }
 });
 
 // src/triggers/dailyVendorProspector.ts
 var import_scheduler11 = require("firebase-functions/v2/scheduler");
-var import_https20 = require("firebase-functions/v2/https");
-var logger31 = __toESM(require("firebase-functions/logger"));
+var import_https21 = require("firebase-functions/v2/https");
+var logger32 = __toESM(require("firebase-functions/logger"));
 var crypto6 = __toESM(require("crypto"));
 function normalizeName2(name) {
   return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
@@ -71410,14 +71686,14 @@ async function loadVendorSeenSet() {
       if (addrNorm.length >= 10) seen.add(`addr:${addrNorm}`);
     }
   }
-  logger31.info(`[DailyVendorProspector] Seen set loaded: ${seen.size} entries (queue + vendors)`);
+  logger32.info(`[DailyVendorProspector] Seen set loaded: ${seen.size} entries (queue + vendors)`);
   return seen;
 }
 async function runDailyVendorPipeline() {
   const configDoc = await db.collection("vendor_prospecting_config").doc("default").get();
   const config2 = configDoc.exists ? { ...DEFAULT_CONFIG2, ...configDoc.data() } : DEFAULT_CONFIG2;
   if (!config2.enabled) {
-    logger31.info("[DailyVendorProspector] Disabled via config. Skipping.");
+    logger32.info("[DailyVendorProspector] Disabled via config. Skipping.");
     return;
   }
   const secrets = {
@@ -71458,12 +71734,12 @@ async function runDailyVendorPipeline() {
       }
     }
     const shuffled = shuffle2(combos);
-    logger31.info(`[DailyVendorProspector] ${shuffled.length} combos shuffled. Target: ${config2.dailyTarget}`);
+    logger32.info(`[DailyVendorProspector] ${shuffled.length} combos shuffled. Target: ${config2.dailyTarget}`);
     for (const { query: queryTerm, location, capability } of shuffled) {
       if (newProspects.length >= config2.dailyTarget) break;
       const remaining = config2.dailyTarget - newProspects.length;
       const batchSize = Math.min(remaining + 10, 20);
-      logger31.info(`[DailyVendorProspector] Searching: "${queryTerm}" in "${location}" (capability: ${capability.value}, need ${remaining} more)`);
+      logger32.info(`[DailyVendorProspector] Searching: "${queryTerm}" in "${location}" (capability: ${capability.value}, need ${remaining} more)`);
       await updateProgress(`${capability.label} in ${location}`);
       try {
         const result = await vendorProspectAndEnrich(
@@ -71494,7 +71770,7 @@ async function runDailyVendorPipeline() {
           const fbPath = prospect.facebookUrl ? prospect.facebookUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//, "").split("?")[0].toLowerCase() : void 0;
           const matchedKey = seen.has(normalized) ? `name:${normalized}` : phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`) ? `phone:${phoneCleaned}` : emailLower && seen.has(`email:${emailLower}`) ? `email:${emailLower}` : genericLower && seen.has(`email:${genericLower}`) ? `email:${genericLower}` : websiteDomain && seen.has(`domain:${websiteDomain}`) ? `domain:${websiteDomain}` : fbPath && seen.has(`fb:${fbPath}`) ? `fb:${fbPath}` : addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`) ? `addr:${addressNorm}` : null;
           if (matchedKey) {
-            logger31.info(`[DailyVendorProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
+            logger32.info(`[DailyVendorProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
             duplicatesSkipped++;
             continue;
           }
@@ -71551,16 +71827,16 @@ async function runDailyVendorPipeline() {
         }
         if (batchCount > 0) {
           await batch.commit();
-          logger31.info(`[DailyVendorProspector] Wrote batch of ${batchCount} vendor prospects.`);
+          logger32.info(`[DailyVendorProspector] Wrote batch of ${batchCount} vendor prospects.`);
         }
         await updateProgress(`${capability.label} in ${location}`);
         const elapsedSecs = (Date.now() - startedAt.getTime()) / 1e3;
         if (elapsedSecs > 480) {
-          logger31.warn("[DailyVendorProspector] Approaching 9-minute limit. Stopping early.");
+          logger32.warn("[DailyVendorProspector] Approaching 9-minute limit. Stopping early.");
           break;
         }
       } catch (err2) {
-        logger31.error(`[DailyVendorProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
+        logger32.error(`[DailyVendorProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
       }
     }
     const stats = {
@@ -71586,9 +71862,9 @@ async function runDailyVendorPipeline() {
       completedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     });
-    logger31.info(`[DailyVendorProspector] Done. Added ${newProspects.length} vendor prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
+    logger32.info(`[DailyVendorProspector] Done. Added ${newProspects.length} vendor prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
   } catch (err2) {
-    logger31.error(`[DailyVendorProspector] Pipeline crashed:`, err2.message || err2);
+    logger32.error(`[DailyVendorProspector] Pipeline crashed:`, err2.message || err2);
     await statusRef.set({
       running: false,
       discovered: totalDiscovered,
@@ -71599,7 +71875,7 @@ async function runDailyVendorPipeline() {
       error: err2.message || "Unknown error",
       failedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
-    }).catch((e2) => logger31.error("[DailyVendorProspector] Failed to write error status:", e2.message));
+    }).catch((e2) => logger32.error("[DailyVendorProspector] Failed to write error status:", e2.message));
     throw err2;
   }
 }
@@ -71611,20 +71887,20 @@ var dailyVendorProspector = (0, import_scheduler11.onSchedule)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger31.info("[DailyVendorProspector] Starting scheduled run...");
+  logger32.info("[DailyVendorProspector] Starting scheduled run...");
   await runDailyVendorPipeline();
 });
-var triggerDailyVendorProspector = (0, import_https20.onCall)({
+var triggerDailyVendorProspector = (0, import_https21.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger31.info("[DailyVendorProspector] Manual trigger invoked.");
+  logger32.info("[DailyVendorProspector] Manual trigger invoked.");
   await runDailyVendorPipeline();
   return { message: "Daily vendor prospector pipeline completed." };
 });
-var updateVendorProspectingConfig = (0, import_https20.onCall)({
+var updateVendorProspectingConfig = (0, import_https21.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const data = request.data;
@@ -71635,13 +71911,13 @@ var updateVendorProspectingConfig = (0, import_https20.onCall)({
   if (data.enabled !== void 0) update.enabled = data.enabled;
   if (data.excludePatterns) update.excludePatterns = data.excludePatterns;
   if (Object.keys(update).length === 0) {
-    throw new import_https20.HttpsError("invalid-argument", "No valid fields to update.");
+    throw new import_https21.HttpsError("invalid-argument", "No valid fields to update.");
   }
   await db.collection("vendor_prospecting_config").doc("default").set(update, { merge: true });
-  logger31.info("[updateVendorProspectingConfig] Config updated:", update);
+  logger32.info("[updateVendorProspectingConfig] Config updated:", update);
   return { message: "Vendor prospecting config updated.", updated: update };
 });
-var getVendorProspectingConfig = (0, import_https20.onCall)({
+var getVendorProspectingConfig = (0, import_https21.onCall)({
   cors: DASHBOARD_CORS
 }, async () => {
   const doc = await db.collection("vendor_prospecting_config").doc("default").get();
@@ -71653,7 +71929,7 @@ var getVendorProspectingConfig = (0, import_https20.onCall)({
 });
 
 // src/functions/sequenceGenerator.ts
-var import_https21 = require("firebase-functions/v2/https");
+var import_https22 = require("firebase-functions/v2/https");
 var import_generative_ai9 = require("@google/generative-ai");
 init_promptUtils();
 var FALLBACK_SYSTEM_PROMPT = `You are an expert B2B email copywriter for XIRI Facility Solutions, a commercial cleaning and facility management platform based in New York.
@@ -71697,14 +71973,14 @@ Return your response as valid JSON with this exact structure:
 }
 
 IMPORTANT: Return ONLY the JSON object. No markdown, no code fences, no explanation.`;
-var generateAISequence = (0, import_https21.onCall)({
+var generateAISequence = (0, import_https22.onCall)({
   secrets: ["GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 120
 }, async (request) => {
   const data = request.data;
   if (!data.prompt || !data.prompt.trim()) {
-    throw new import_https21.HttpsError("invalid-argument", "A prompt describing the target segment is required.");
+    throw new import_https22.HttpsError("invalid-argument", "A prompt describing the target segment is required.");
   }
   const numSteps = data.numSteps || 4;
   const tone = data.tone || "professional";
@@ -71741,11 +72017,11 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
         parsed = JSON.parse(jsonMatch[1].trim());
       } else {
         console.error("[generateAISequence] Failed to parse response:", responseText.slice(0, 500));
-        throw new import_https21.HttpsError("internal", "AI returned invalid JSON. Please try again.");
+        throw new import_https22.HttpsError("internal", "AI returned invalid JSON. Please try again.");
       }
     }
     if (!parsed.name || !Array.isArray(parsed.steps) || parsed.steps.length === 0) {
-      throw new import_https21.HttpsError("internal", "AI returned incomplete sequence data. Please try again.");
+      throw new import_https22.HttpsError("internal", "AI returned incomplete sequence data. Please try again.");
     }
     parsed.steps = parsed.steps.map((step, idx) => ({
       label: step.label || `Step ${idx + 1}`,
@@ -71762,14 +72038,14 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
       }
     };
   } catch (error16) {
-    if (error16 instanceof import_https21.HttpsError) throw error16;
+    if (error16 instanceof import_https22.HttpsError) throw error16;
     console.error("[generateAISequence] Error:", error16);
-    throw new import_https21.HttpsError("internal", error16.message || "Failed to generate sequence.");
+    throw new import_https22.HttpsError("internal", error16.message || "Failed to generate sequence.");
   }
 });
 
 // src/functions/askAI.ts
-var import_https22 = require("firebase-functions/v2/https");
+var import_https23 = require("firebase-functions/v2/https");
 var import_generative_ai10 = require("@google/generative-ai");
 var SYSTEM_PROMPT = `You are XIRI's Facility Solutions Advisor \u2014 a knowledgeable, professional AI assistant on xiri.ai.  Your job is to help facility managers, building owners, and practice managers understand how XIRI works and determine whether it's a fit for their building.
 
@@ -71861,7 +72137,7 @@ function getPageContext(pageUrl) {
   }
   return "";
 }
-var askAI = (0, import_https22.onCall)({
+var askAI = (0, import_https23.onCall)({
   secrets: ["GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 60,
@@ -71869,15 +72145,15 @@ var askAI = (0, import_https22.onCall)({
 }, async (request) => {
   const data = request.data;
   if (!data.messages || !Array.isArray(data.messages) || data.messages.length === 0) {
-    throw new import_https22.HttpsError("invalid-argument", "Messages array is required.");
+    throw new import_https23.HttpsError("invalid-argument", "Messages array is required.");
   }
   if (data.messages.length > 30) {
-    throw new import_https22.HttpsError("invalid-argument", "Conversation too long. Please start a new chat.");
+    throw new import_https23.HttpsError("invalid-argument", "Conversation too long. Please start a new chat.");
   }
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.error("[askAI] GEMINI_API_KEY not configured");
-    throw new import_https22.HttpsError("internal", "AI service is temporarily unavailable.");
+    throw new import_https23.HttpsError("internal", "AI service is temporarily unavailable.");
   }
   const pageContext = getPageContext(data.pageUrl);
   const fullSystemPrompt = SYSTEM_PROMPT + pageContext;
@@ -71902,14 +72178,14 @@ var askAI = (0, import_https22.onCall)({
   } catch (error16) {
     console.error("[askAI] Gemini error:", error16.message);
     if (error16.message?.includes("quota") || error16.message?.includes("429")) {
-      throw new import_https22.HttpsError("resource-exhausted", "Our AI assistant is experiencing high demand. Please try again in a moment.");
+      throw new import_https23.HttpsError("resource-exhausted", "Our AI assistant is experiencing high demand. Please try again in a moment.");
     }
-    throw new import_https22.HttpsError("internal", "I had trouble generating a response. Please try again.");
+    throw new import_https23.HttpsError("internal", "I had trouble generating a response. Please try again.");
   }
 });
 
 // src/functions/pseoAuth.ts
-var import_https23 = require("firebase-functions/v2/https");
+var import_https24 = require("firebase-functions/v2/https");
 var import_params8 = require("firebase-functions/params");
 var gscClientId = (0, import_params8.defineSecret)("GSC_CLIENT_ID");
 var gscClientSecret = (0, import_params8.defineSecret)("GSC_CLIENT_SECRET");
@@ -71929,7 +72205,7 @@ var TOKEN_DOC_PATH = "pseo_config/gsc_credentials";
 function getRedirectUri(isDev) {
   return isDev ? REDIRECT_URI_DEV : REDIRECT_URI_PROD;
 }
-var getGscAuthUrl = (0, import_https23.onCall)({
+var getGscAuthUrl = (0, import_https24.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10,
   secrets: [gscClientId]
@@ -71950,7 +72226,7 @@ var getGscAuthUrl = (0, import_https23.onCall)({
     url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
   };
 });
-var exchangeGscToken = (0, import_https23.onCall)({
+var exchangeGscToken = (0, import_https24.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30,
   secrets: [gscClientId, gscClientSecret]
@@ -71958,7 +72234,7 @@ var exchangeGscToken = (0, import_https23.onCall)({
   const code = request.data?.code;
   const isDev = request.data?.isDev === true;
   if (!code) {
-    throw new import_https23.HttpsError("invalid-argument", "Missing authorization code");
+    throw new import_https24.HttpsError("invalid-argument", "Missing authorization code");
   }
   const redirectUri = getRedirectUri(isDev);
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -71975,7 +72251,7 @@ var exchangeGscToken = (0, import_https23.onCall)({
   const tokenData = await tokenResponse.json();
   if (tokenData.error) {
     console.error("[pSEO] Token exchange failed:", tokenData);
-    throw new import_https23.HttpsError("internal", `Token exchange failed: ${tokenData.error_description || tokenData.error}`);
+    throw new import_https24.HttpsError("internal", `Token exchange failed: ${tokenData.error_description || tokenData.error}`);
   }
   const expiresAt = admin.firestore.Timestamp.fromMillis(
     Date.now() + tokenData.expires_in * 1e3
@@ -72008,7 +72284,7 @@ var exchangeGscToken = (0, import_https23.onCall)({
     message: "Google Search Console and Analytics connected successfully"
   };
 });
-var getGscConnectionStatus = (0, import_https23.onCall)({
+var getGscConnectionStatus = (0, import_https24.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10
 }, async () => {
@@ -72024,7 +72300,7 @@ var getGscConnectionStatus = (0, import_https23.onCall)({
     connectedAt: data.connectedAt?.toDate?.()?.toISOString() || null
   };
 });
-var disconnectGsc = (0, import_https23.onCall)({
+var disconnectGsc = (0, import_https24.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 15
 }, async () => {
@@ -72082,7 +72358,7 @@ async function getValidAccessToken() {
   });
   return refreshData.access_token;
 }
-var testGscConnection = (0, import_https23.onCall)({
+var testGscConnection = (0, import_https24.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30
 }, async () => {
@@ -72126,8 +72402,8 @@ var testGscConnection = (0, import_https23.onCall)({
 
 // src/triggers/pseoAnalysis.ts
 var import_scheduler12 = require("firebase-functions/v2/scheduler");
-var import_https24 = require("firebase-functions/v2/https");
-var logger32 = __toESM(require("firebase-functions/logger"));
+var import_https25 = require("firebase-functions/v2/https");
+var logger33 = __toESM(require("firebase-functions/logger"));
 var import_generative_ai11 = require("@google/generative-ai");
 var BATCH_SIZE = 50;
 var GSC_SITE_URL = "https://xiri.ai/";
@@ -72179,7 +72455,7 @@ async function fetchGscData(accessToken, segment, startDate, endDate) {
     startRow += rows.length;
     if (rows.length < ROW_LIMIT) break;
   }
-  logger32.info(`[pSEO] Fetched ${allRows.length} GSC rows for segment "${segment}" (${startDate} \u2192 ${endDate})`);
+  logger33.info(`[pSEO] Fetched ${allRows.length} GSC rows for segment "${segment}" (${startDate} \u2192 ${endDate})`);
   return allRows;
 }
 function aggregateByPage(rows) {
@@ -72266,7 +72542,7 @@ async function fetchGa4Engagement(accessToken, pages, startDate, endDate) {
       }
     );
     if (!response.ok) {
-      logger32.warn(`[pSEO] GA4 API error: ${response.status}`);
+      logger33.warn(`[pSEO] GA4 API error: ${response.status}`);
       return result;
     }
     const data = await response.json();
@@ -72288,7 +72564,7 @@ async function fetchGa4Engagement(accessToken, pages, startDate, endDate) {
       }
     }
   } catch (err2) {
-    logger32.warn("[pSEO] GA4 fetch failed (non-critical):", err2.message);
+    logger33.warn("[pSEO] GA4 fetch failed (non-critical):", err2.message);
   }
   return result;
 }
@@ -72322,9 +72598,9 @@ async function fetchTrustSignals() {
       });
     }
   } catch (err2) {
-    logger32.warn("[pSEO] Trust signal fetch failed (non-critical):", err2.message);
+    logger33.warn("[pSEO] Trust signal fetch failed (non-critical):", err2.message);
   }
-  logger32.info(`[pSEO] Trust signals loaded for ${result.size} cities`);
+  logger33.info(`[pSEO] Trust signals loaded for ${result.size} cities`);
   return result;
 }
 async function fetchLivePageMeta(slugs) {
@@ -72340,7 +72616,7 @@ async function fetchLivePageMeta(slugs) {
           signal: AbortSignal.timeout(8e3)
         });
         if (!res.ok) {
-          logger32.warn(`[pSEO] Failed to fetch page for ${slug}: HTTP ${res.status}`);
+          logger33.warn(`[pSEO] Failed to fetch page for ${slug}: HTTP ${res.status}`);
           return;
         }
         const html = await res.text();
@@ -72352,12 +72628,12 @@ async function fetchLivePageMeta(slugs) {
         const h1 = h1Match ? h1Match[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() : "";
         result.set(slug, { title, description, h1 });
       } catch (err2) {
-        logger32.warn(`[pSEO] Page fetch failed for ${slug}: ${err2.message}`);
+        logger33.warn(`[pSEO] Page fetch failed for ${slug}: ${err2.message}`);
       }
     });
     await Promise.all(promises);
   }
-  logger32.info(`[pSEO] Fetched live meta for ${result.size}/${slugs.length} pages`);
+  logger33.info(`[pSEO] Fetched live meta for ${result.size}/${slugs.length} pages`);
   return result;
 }
 function getLiveValueForField(meta, field) {
@@ -72580,7 +72856,7 @@ async function fetchExistingPendingNudges() {
     const d = doc.data();
     keys.add(`${d.targetSlug}::${d.targetField}`);
   }
-  logger32.info(`[pSEO] Found ${keys.size} existing pending nudges for dedup`);
+  logger33.info(`[pSEO] Found ${keys.size} existing pending nudges for dedup`);
   return keys;
 }
 function deduplicateNudges(nudges, existingKeys) {
@@ -72588,7 +72864,7 @@ function deduplicateNudges(nudges, existingKeys) {
   const filtered = nudges.filter((n) => !existingKeys.has(`${n.targetSlug}::${n.targetField}`));
   const removed = before - filtered.length;
   if (removed > 0) {
-    logger32.info(`[pSEO] Dedup removed ${removed} nudges (already pending in inbox)`);
+    logger33.info(`[pSEO] Dedup removed ${removed} nudges (already pending in inbox)`);
   }
   return filtered;
 }
@@ -72607,7 +72883,7 @@ async function fetchWinningPatterns(segment) {
       });
     }
   }
-  logger32.info(`[pSEO] Found ${patterns.length} winning patterns from approved nudges`);
+  logger33.info(`[pSEO] Found ${patterns.length} winning patterns from approved nudges`);
   return patterns;
 }
 function identifyTopPerformers(pages, liveMetaMap) {
@@ -72652,7 +72928,7 @@ function identifyTopPerformers(pages, liveMetaMap) {
   }
   candidates.sort((a2, b) => b.ctr - a2.ctr);
   const top = candidates.slice(0, 10);
-  logger32.info(`[pSEO] Identified ${top.length} top-performing pages (high CTR vs position benchmark)`);
+  logger33.info(`[pSEO] Identified ${top.length} top-performing pages (high CTR vs position benchmark)`);
   return top;
 }
 async function generateCopySuggestion(nudge, segment, winningPatterns = [], topPerformers = []) {
@@ -72821,7 +73097,7 @@ STRICT RULES:
     const text = result.response?.text()?.trim() || "";
     return text.replace(/^["']|["']$/g, "").trim();
   } catch (err2) {
-    logger32.warn(`[pSEO] Gemini generation failed for ${nudge.targetSlug}/${nudge.targetField}:`, err2.message);
+    logger33.warn(`[pSEO] Gemini generation failed for ${nudge.targetSlug}/${nudge.targetField}:`, err2.message);
     return `[Auto-generation failed \u2014 please write manually. Reason: ${nudge.reasoning}]`;
   }
 }
@@ -72842,17 +73118,17 @@ async function runAnalysisPipeline(segment) {
   try {
     await updateStatus({ phase: "Connecting to GSC" });
     const accessToken = await getValidAccessToken();
-    logger32.info(`[pSEO] Access token acquired for segment "${segment}"`);
+    logger33.info(`[pSEO] Access token acquired for segment "${segment}"`);
     try {
       const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${accessToken}`);
       const tokenInfo = await tokenInfoRes.json();
-      logger32.info(`[pSEO] Token belongs to: ${tokenInfo.email || "unknown"}, scopes: ${tokenInfo.scope || "unknown"}`);
+      logger33.info(`[pSEO] Token belongs to: ${tokenInfo.email || "unknown"}, scopes: ${tokenInfo.scope || "unknown"}`);
       const sitesRes = await fetch("https://www.googleapis.com/webmasters/v3/sites", {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
       const sitesData = await sitesRes.json();
       const siteUrls = (sitesData.siteEntry || []).map((s) => s.siteUrl);
-      logger32.info(`[pSEO] GSC accessible sites: ${JSON.stringify(siteUrls)}`);
+      logger33.info(`[pSEO] GSC accessible sites: ${JSON.stringify(siteUrls)}`);
       if (!siteUrls.includes(GSC_SITE_URL)) {
         throw new Error(
           `Token email "${tokenInfo.email}" does not have access to "${GSC_SITE_URL}". Accessible sites: ${JSON.stringify(siteUrls)}. Please disconnect and reconnect GSC with the correct Google account.`
@@ -72860,7 +73136,7 @@ async function runAnalysisPipeline(segment) {
       }
     } catch (diagErr) {
       if (diagErr.message?.includes("does not have access")) throw diagErr;
-      logger32.warn(`[pSEO] Diagnostic check failed (non-fatal): ${diagErr.message}`);
+      logger33.warn(`[pSEO] Diagnostic check failed (non-fatal): ${diagErr.message}`);
     }
     const today = /* @__PURE__ */ new Date();
     const endDate = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1e3);
@@ -72882,7 +73158,7 @@ async function runAnalysisPipeline(segment) {
         pm.clicksPrior = prior.clicks;
       }
     }
-    logger32.info(`[pSEO] Aggregated ${currentPages.size} pages for segment "${segment}"`);
+    logger33.info(`[pSEO] Aggregated ${currentPages.size} pages for segment "${segment}"`);
     phase = "Fetching GA4 engagement";
     await updateStatus({ phase, pagesAnalyzed: currentPages.size });
     const ga4Data = await fetchGa4Engagement(
@@ -72922,12 +73198,12 @@ async function runAnalysisPipeline(segment) {
     const existingPages = new Set(Array.from(currentPages.keys()));
     const expansionNudges = detectExpansionOpportunities(currentRows, existingPages, segment);
     allNudges.push(...expansionNudges);
-    logger32.info(`[pSEO] Detected ${allNudges.length} raw nudges across ${currentPages.size} pages`);
+    logger33.info(`[pSEO] Detected ${allNudges.length} raw nudges across ${currentPages.size} pages`);
     phase = "Deduplicating against inbox";
     await updateStatus({ phase });
     const existingPending = await fetchExistingPendingNudges();
     allNudges = deduplicateNudges(allNudges, existingPending);
-    logger32.info(`[pSEO] ${allNudges.length} nudges after dedup`);
+    logger33.info(`[pSEO] ${allNudges.length} nudges after dedup`);
     phase = "Loading winning patterns";
     await updateStatus({ phase });
     const winningPatterns = await fetchWinningPatterns(segment);
@@ -73034,7 +73310,7 @@ async function runAnalysisPipeline(segment) {
       updatedAt: /* @__PURE__ */ new Date(),
       batchId
     });
-    logger32.info(`[pSEO] Analysis complete. Batch "${batchId}" \u2014 ${nudgesWithCopy.length} nudges written.`);
+    logger33.info(`[pSEO] Analysis complete. Batch "${batchId}" \u2014 ${nudgesWithCopy.length} nudges written.`);
     return {
       batchId,
       totalNudges: nudgesWithCopy.length,
@@ -73042,7 +73318,7 @@ async function runAnalysisPipeline(segment) {
       breakdown
     };
   } catch (err2) {
-    logger32.error("[pSEO] Analysis pipeline failed:", err2.message || err2);
+    logger33.error("[pSEO] Analysis pipeline failed:", err2.message || err2);
     await statusRef.set({
       running: false,
       segment,
@@ -73050,7 +73326,7 @@ async function runAnalysisPipeline(segment) {
       error: err2.message || "Unknown error",
       startedAt,
       updatedAt: /* @__PURE__ */ new Date()
-    }).catch((e2) => logger32.error("[pSEO] Failed to write error status:", e2.message));
+    }).catch((e2) => logger33.error("[pSEO] Failed to write error status:", e2.message));
     throw err2;
   }
 }
@@ -73069,11 +73345,11 @@ var weeklyPseoAnalysis = (0, import_scheduler12.onSchedule)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger32.info("[pSEO] Starting scheduled weekly analysis...");
+  logger33.info("[pSEO] Starting scheduled weekly analysis...");
   await runAnalysisPipeline("leads");
   await runAnalysisPipeline("contractors");
 });
-var triggerPseoAnalysis = (0, import_https24.onCall)({
+var triggerPseoAnalysis = (0, import_https25.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["GEMINI_API_KEY"],
   timeoutSeconds: 540,
@@ -73081,20 +73357,20 @@ var triggerPseoAnalysis = (0, import_https24.onCall)({
 }, async (request) => {
   const segment = request.data?.segment || "leads";
   if (!["leads", "contractors"].includes(segment)) {
-    throw new import_https24.HttpsError("invalid-argument", "Invalid segment. Use 'leads' or 'contractors'.");
+    throw new import_https25.HttpsError("invalid-argument", "Invalid segment. Use 'leads' or 'contractors'.");
   }
   const statusDoc = await db.collection("pseo_config").doc("run_status").get();
   if (statusDoc.exists && statusDoc.data()?.running) {
-    throw new import_https24.HttpsError("already-exists", "Analysis is already running. Please wait for it to complete.");
+    throw new import_https25.HttpsError("already-exists", "Analysis is already running. Please wait for it to complete.");
   }
-  logger32.info(`[pSEO] Manual trigger invoked for segment "${segment}"`);
+  logger33.info(`[pSEO] Manual trigger invoked for segment "${segment}"`);
   const result = await runAnalysisPipeline(segment);
   return {
     message: `Analysis complete for "${segment}"`,
     ...result
   };
 });
-var getPseoRunStatus = (0, import_https24.onCall)({
+var getPseoRunStatus = (0, import_https25.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10
 }, async () => {
@@ -73117,8 +73393,8 @@ var getPseoRunStatus = (0, import_https24.onCall)({
 });
 
 // src/functions/pseoDeployment.ts
-var import_https25 = require("firebase-functions/v2/https");
-var logger33 = __toESM(require("firebase-functions/logger"));
+var import_https26 = require("firebase-functions/v2/https");
+var logger34 = __toESM(require("firebase-functions/logger"));
 var import_params9 = require("firebase-functions/params");
 init_src();
 var googleChatWebhookSecret2 = (0, import_params9.defineSecret)("GOOGLE_CHAT_WEBHOOK_URL");
@@ -73312,7 +73588,7 @@ async function notifyDeployment(params) {
   ].join("\n");
   await sendText(threadKey, summary);
 }
-var deployApprovedNudges = (0, import_https25.onCall)({
+var deployApprovedNudges = (0, import_https26.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [githubTokenSecret, googleChatWebhookSecret2],
   timeoutSeconds: 120,
@@ -73320,45 +73596,45 @@ var deployApprovedNudges = (0, import_https25.onCall)({
 }, async (request) => {
   const { batchId } = request.data || {};
   if (!batchId || typeof batchId !== "string") {
-    throw new import_https25.HttpsError("invalid-argument", "batchId is required.");
+    throw new import_https26.HttpsError("invalid-argument", "batchId is required.");
   }
   const token = getGithubToken();
   if (!token) {
-    throw new import_https25.HttpsError("failed-precondition", "GITHUB_PAT secret not configured. Set it in Firebase Secrets.");
+    throw new import_https26.HttpsError("failed-precondition", "GITHUB_PAT secret not configured. Set it in Firebase Secrets.");
   }
-  logger33.info(`[pSEO Deploy] Starting deployment for batch "${batchId}"`);
+  logger34.info(`[pSEO Deploy] Starting deployment for batch "${batchId}"`);
   const nudgesSnap = await db.collection("pseo_nudges").where("batchId", "==", batchId).where("status", "==", "approved").get();
   if (nudgesSnap.empty) {
-    throw new import_https25.HttpsError("not-found", `No approved nudges found for batch "${batchId}".`);
+    throw new import_https26.HttpsError("not-found", `No approved nudges found for batch "${batchId}".`);
   }
   const nudges = nudgesSnap.docs.map((d) => ({
     id: d.id,
     ...d.data()
   }));
-  logger33.info(`[pSEO Deploy] Found ${nudges.length} approved nudges for batch "${batchId}"`);
+  logger34.info(`[pSEO Deploy] Found ${nudges.length} approved nudges for batch "${batchId}"`);
   const branchName = `pseo/${batchId}`;
   const mainSha = await getDefaultBranchSha(token);
   try {
     await createBranch(branchName, mainSha, token);
   } catch (err2) {
     if (err2.message?.includes("422") && err2.message?.includes("Reference already exists")) {
-      logger33.warn(`[pSEO Deploy] Branch "${branchName}" already exists, proceeding with update`);
+      logger34.warn(`[pSEO Deploy] Branch "${branchName}" already exists, proceeding with update`);
     } else {
       throw err2;
     }
   }
-  logger33.info(`[pSEO Deploy] Branch "${branchName}" created from ${mainSha.slice(0, 7)}`);
+  logger34.info(`[pSEO Deploy] Branch "${branchName}" created from ${mainSha.slice(0, 7)}`);
   const { content: seoDataRaw, sha: fileSha } = await getFileContent(SEO_DATA_PATH, branchName, token);
   const { modified, applied, skipped } = applySeoDataChanges(seoDataRaw, nudges);
   if (applied.length === 0) {
-    throw new import_https25.HttpsError("not-found", "No changes could be applied to seo-data.json. All nudges were skipped.");
+    throw new import_https26.HttpsError("not-found", "No changes could be applied to seo-data.json. All nudges were skipped.");
   }
   const commitMessage = `[pSEO] ${batchId}: ${applied.length} content optimizations
 
 Applied ${applied.length} approved nudges.
 Skipped ${skipped.length} nudges.`;
   await updateFile(SEO_DATA_PATH, branchName, modified, fileSha, commitMessage, token);
-  logger33.info(`[pSEO Deploy] Committed ${applied.length} changes to ${branchName}`);
+  logger34.info(`[pSEO Deploy] Committed ${applied.length} changes to ${branchName}`);
   const segment = nudges[0]?.segment || "leads";
   const scopeBreakdown = nudges.reduce((acc, n) => {
     const label = SCOPE_LABELS[n.scope] || n.scope;
@@ -73369,7 +73645,7 @@ Skipped ${skipped.length} nudges.`;
   const prTitle = `[pSEO] ${batchId} \u2014 ${applied.length} content optimizations (${scopeSummary})`;
   const prBodyText = buildPrBody(nudges, applied, skipped);
   const pr = await createPR(prTitle, prBodyText, branchName, GITHUB_DEFAULT_BRANCH, token);
-  logger33.info(`[pSEO Deploy] PR #${pr.number} created: ${pr.url}`);
+  logger34.info(`[pSEO Deploy] PR #${pr.number} created: ${pr.url}`);
   const batch = db.batch();
   for (const nudgeId of applied) {
     const ref = db.collection("pseo_nudges").doc(nudgeId);
@@ -73397,7 +73673,7 @@ Skipped ${skipped.length} nudges.`;
       prNumber: pr.number
     });
   } catch (err2) {
-    logger33.warn("[pSEO Deploy] Chat notification failed (non-critical):", err2.message);
+    logger34.warn("[pSEO Deploy] Chat notification failed (non-critical):", err2.message);
   }
   return {
     success: true,
@@ -73408,14 +73684,14 @@ Skipped ${skipped.length} nudges.`;
     branchName
   };
 });
-var getPseoDeployStatus = (0, import_https25.onCall)({
+var getPseoDeployStatus = (0, import_https26.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [githubTokenSecret],
   timeoutSeconds: 15
 }, async (request) => {
   const { batchId } = request.data || {};
   if (!batchId) {
-    throw new import_https25.HttpsError("invalid-argument", "batchId is required.");
+    throw new import_https26.HttpsError("invalid-argument", "batchId is required.");
   }
   const batchDoc = await db.collection("pseo_batches").doc(batchId).get();
   if (!batchDoc.exists) {
@@ -73454,6 +73730,7 @@ var getPseoDeployStatus = (0, import_https25.onCall)({
   adminCreateUser,
   adminUpdateAuthUser,
   askAI,
+  backfillEngagement,
   bookDiscoveryCall,
   bookOnboardingCall,
   calculateNrr,

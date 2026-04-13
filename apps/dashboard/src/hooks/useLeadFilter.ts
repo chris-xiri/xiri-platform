@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react';
 import { Contact, LeadStatus } from '@xiri-facility-solutions/shared';
 
+export type EngagementFilter = 'clicked' | 'opened' | 'delivered' | 'bounced' | null;
+
 /**
  * Generic filter hook — works with both Contact[] for the new model 
  * and still structurally compatible with Lead[].
  * Searches across contact fields AND denormalized companyName.
  */
-export function useLeadFilter(items: Contact[], statusFilters?: LeadStatus[]) {
+export function useLeadFilter(items: Contact[], statusFilters?: LeadStatus[], engagementFilter?: EngagementFilter) {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
 
@@ -26,6 +28,27 @@ export function useLeadFilter(items: Contact[], statusFilters?: LeadStatus[]) {
             filtered = filtered.filter(c =>
                 (c as any)._companyStatus === statusFilter
             );
+        }
+
+        // Apply engagement filter (from funnel card clicks)
+        if (engagementFilter) {
+            filtered = filtered.filter(c => {
+                const eng = (c as any).emailEngagement;
+                if (!eng?.lastEvent) return false;
+                const event = eng.lastEvent as string;
+                switch (engagementFilter) {
+                    case 'clicked':
+                        return event === 'clicked';
+                    case 'opened':
+                        return event === 'opened' || event === 'clicked';
+                    case 'delivered':
+                        return event === 'delivered' || event === 'opened' || event === 'clicked';
+                    case 'bounced':
+                        return event === 'bounced' || event === 'spam';
+                    default:
+                        return true;
+                }
+            });
         }
 
         // Apply search query
@@ -62,7 +85,7 @@ export function useLeadFilter(items: Contact[], statusFilters?: LeadStatus[]) {
         }
 
         return filtered;
-    }, [items, searchQuery, statusFilter, statusFilters]);
+    }, [items, searchQuery, statusFilter, statusFilters, engagementFilter]);
 
     const resetFilters = () => {
         setSearchQuery('');
