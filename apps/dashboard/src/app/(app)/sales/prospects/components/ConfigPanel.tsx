@@ -31,8 +31,8 @@ interface ConfigPanelProps {
 
 /** Helper to get yield color from stats */
 function getYieldColor(qualified: number): string {
-    if (qualified === 0) return 'bg-red-600 text-white border-red-700';
-    if (qualified >= 5) return 'bg-emerald-600 text-white border-emerald-700';
+    if (qualified === 0) return 'bg-red-100 text-red-900 border-red-300';
+    if (qualified >= 5) return 'bg-emerald-100 text-emerald-900 border-emerald-300';
     return 'bg-secondary text-secondary-foreground border-border';
 }
 
@@ -49,10 +49,10 @@ function TierSection({ tierNum, items, config, onRemove }: {
     return (
         <details className="border rounded-md overflow-hidden mb-2" open={tierNum <= 2}>
             <summary className={`flex items-center justify-between px-3 py-2 cursor-pointer list-none select-none border-b ${tierData.bgColor} hover:brightness-95 transition-all`}>
-                <span className="text-sm font-bold text-white tracking-wide">{label}</span>
+                <span className={`text-sm font-extrabold tracking-wide ${tierData.color}`}>{label}</span>
                 <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs font-semibold">{items.length}</Badge>
-                    <ChevronDown className="w-3.5 h-3.5 text-white/70 transition-transform details-chevron" />
+                    <Badge variant="secondary" className="bg-black/10 border-0 text-xs font-bold text-current">{items.length}</Badge>
+                    <ChevronDown className="w-3.5 h-3.5 opacity-60 transition-transform details-chevron" />
                 </div>
             </summary>
             <div className="p-3 bg-card flex flex-wrap gap-2">

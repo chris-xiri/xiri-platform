@@ -46,9 +46,9 @@ export const ICP_CATEGORIES: ICPCategory[] = [
 ];
 
 export const TIER_LABELS: Record<number, { label: string; color: string; bgColor: string }> = {
-  1: { label: 'Medical & Healthcare', color: 'text-red-950 font-extrabold', bgColor: 'bg-red-100 border-red-300' },
-  2: { label: 'Commercial', color: 'text-blue-950 font-extrabold', bgColor: 'bg-blue-100 border-blue-300' },
-  3: { label: 'Professional Services', color: 'text-violet-950 font-extrabold', bgColor: 'bg-violet-100 border-violet-300' },
+  1: { label: 'Medical & Healthcare', color: 'text-red-900', bgColor: 'bg-red-100 border-red-300' },
+  2: { label: 'Commercial', color: 'text-blue-900', bgColor: 'bg-blue-100 border-blue-300' },
+  3: { label: 'Professional Services', color: 'text-violet-900', bgColor: 'bg-violet-100 border-violet-300' },
 };
 
 // ── Service regions for grouping locations by county ─────────────────

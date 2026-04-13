@@ -24,6 +24,8 @@ export interface QueuedProspect {
     genericEmail?: string;
     contactName?: string;
     contactTitle?: string;
+    inferredTitle?: string;   // PIC role inferred from facility type when no scraped title exists
+    inferredDept?: string;    // Department for the inferred title
     emailSource?: string;
     emailConfidence?: string;
     facebookUrl?: string;

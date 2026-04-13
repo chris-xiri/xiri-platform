@@ -24,7 +24,7 @@ import {
     ChevronDown, ChevronRight, Target, SendHorizonal, ListPlus, Plus,
     Settings, Play, SkipForward, ExternalLink, X,
     Calendar, TrendingUp, Zap, Filter, RefreshCw,
-    Tag, Users, AlertTriangle, Sparkles,
+    Tag, Users, AlertTriangle, Sparkles, Pencil, Check,
 } from 'lucide-react';
 import type { ProspectingConfig, QueuedProspect } from './components/types';
 import { ConfigPanel } from './components/ConfigPanel';
@@ -73,6 +73,12 @@ export default function ProspectsPage() {
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [acting, setActing] = useState(false);
     const [triggering, setTriggering] = useState(false);
+
+    // ── Inline contact editing ──────────────────────────────────────
+    const [editingContact, setEditingContact] = useState<string | null>(null); // prospect id being edited
+    const [editEmail, setEditEmail] = useState('');
+    const [editName, setEditName] = useState('');
+    const [savingContact, setSavingContact] = useState(false);
 
     // Progress polling state
     interface RunStatus {
@@ -558,6 +564,8 @@ export default function ProspectsPage() {
                     genericEmail: p.genericEmail,
                     contactName: p.contactName,
                     contactTitle: p.contactTitle,
+                    inferredTitle: p.inferredTitle || null,
+                    inferredDept: p.inferredDept || null,
                     emailSource: p.emailSource,
                     emailConfidence: p.emailConfidence,
                     facebookUrl: p.facebookUrl,
@@ -603,7 +611,8 @@ export default function ProspectsPage() {
                     businessName: p.businessName, address: p.address, phone: p.phone,
                     website: p.website, rating: p.rating, contactEmail: p.contactEmail,
                     genericEmail: p.genericEmail, contactName: p.contactName,
-                    contactTitle: p.contactTitle, emailSource: p.emailSource,
+                    contactTitle: p.contactTitle, inferredTitle: p.inferredTitle || null,
+                    inferredDept: p.inferredDept || null, emailSource: p.emailSource,
                     emailConfidence: p.emailConfidence, facebookUrl: p.facebookUrl,
                     linkedinUrl: p.linkedinUrl, searchQuery: p.searchQuery,
                     facilityType: p.facilityType,
@@ -658,7 +667,8 @@ export default function ProspectsPage() {
                     businessName: p.businessName, address: p.address, phone: p.phone,
                     website: p.website, rating: p.rating, contactEmail: p.contactEmail,
                     genericEmail: p.genericEmail, contactName: p.contactName,
-                    contactTitle: p.contactTitle, emailSource: p.emailSource,
+                    contactTitle: p.contactTitle, inferredTitle: p.inferredTitle || null,
+                    inferredDept: p.inferredDept || null, emailSource: p.emailSource,
                     emailConfidence: p.emailConfidence, facebookUrl: p.facebookUrl,
                     linkedinUrl: p.linkedinUrl, searchQuery: p.searchQuery,
                     facilityType: p.facilityType,
@@ -893,6 +903,37 @@ export default function ProspectsPage() {
         } catch (err) {
             console.error('Failed to persist dismissed recommendation:', err);
         }
+    };
+
+    // ── Inline contact edit save ─────────────────────────────────
+
+    const handleStartEditContact = (p: QueuedProspect) => {
+        setEditingContact(p.id);
+        setEditEmail(p.contactEmail || p.genericEmail || '');
+        setEditName(p.contactName || '');
+    };
+
+    const handleCancelEditContact = () => {
+        setEditingContact(null);
+        setEditEmail('');
+        setEditName('');
+    };
+
+    const handleSaveContact = async (prospectId: string) => {
+        setSavingContact(true);
+        try {
+            const trimmedEmail = editEmail.trim();
+            const trimmedName = editName.trim();
+            await updateDoc(doc(db, 'prospect_queue', prospectId), {
+                ...(trimmedEmail ? { contactEmail: trimmedEmail, emailConfidence: 'high', emailSource: 'manual' } : {}),
+                ...(trimmedName ? { contactName: trimmedName } : {}),
+            });
+            toast({ title: 'Contact updated' });
+            setEditingContact(null);
+        } catch (err) {
+            toast({ title: 'Failed to save', description: String(err), variant: 'destructive' });
+        }
+        setSavingContact(false);
     };
 
     // ── Select helpers ──────────────────────────────────────────────
@@ -1372,53 +1413,126 @@ export default function ProspectsPage() {
                                     {prospect.address || prospect.searchLocation}
                                 </div>
 
-                                {/* Contact */}
+                                {/* Contact — inline editable */}
                                 <div className="min-w-0">
-                                    {prospect.contactEmail ? (
-                                        <div className="text-xs truncate flex items-center gap-1">
-                                            <Mail className="w-3 h-3 text-muted-foreground shrink-0" />
-                                            <span className="truncate">{prospect.contactEmail}</span>
-                                        </div>
-                                    ) : prospect.genericEmail ? (
-                                        <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                                            <Mail className="w-3 h-3 shrink-0" />
-                                            <span className="truncate">{prospect.genericEmail}</span>
+                                    {editingContact === prospect.id ? (
+                                        /* ── Edit mode ── */
+                                        <div className="space-y-1" onClick={e => e.stopPropagation()}>
+                                            <div className="flex items-center gap-1">
+                                                <Input
+                                                    value={editEmail}
+                                                    onChange={e => setEditEmail(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') handleSaveContact(prospect.id);
+                                                        if (e.key === 'Escape') handleCancelEditContact();
+                                                    }}
+                                                    placeholder="email@example.com"
+                                                    className="h-6 text-[11px] px-1.5 py-0"
+                                                    autoFocus
+                                                />
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Input
+                                                    value={editName}
+                                                    onChange={e => setEditName(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') handleSaveContact(prospect.id);
+                                                        if (e.key === 'Escape') handleCancelEditContact();
+                                                    }}
+                                                    placeholder="Contact name"
+                                                    className="h-6 text-[11px] px-1.5 py-0"
+                                                />
+                                                <button
+                                                    onClick={() => handleSaveContact(prospect.id)}
+                                                    disabled={savingContact}
+                                                    className="h-6 w-6 flex items-center justify-center rounded text-green-600 hover:bg-green-50 dark:hover:bg-green-950/40 transition-colors shrink-0"
+                                                    title="Save"
+                                                >
+                                                    {savingContact ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                                </button>
+                                                <button
+                                                    onClick={handleCancelEditContact}
+                                                    className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:bg-muted transition-colors shrink-0"
+                                                    title="Cancel"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
                                         </div>
                                     ) : (
-                                        <span className="text-xs text-muted-foreground">No email</span>
-                                    )}
-                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                        {prospect.contactName && (
-                                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                <User className="w-3 h-3" />
-                                                {prospect.contactName}
-                                            </span>
-                                        )}
-                                        {(prospect.allContacts?.length ?? 0) > 1 && (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); toggleContactsExpand(prospect.id); }}
-                                                className="flex items-center gap-0.5 text-[10px] px-1.5 py-0 h-4 font-normal text-blue-600 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
-                                            >
-                                                {expandedContacts.has(prospect.id)
-                                                    ? <ChevronDown className="w-2.5 h-2.5" />
-                                                    : <ChevronRight className="w-2.5 h-2.5" />
-                                                }
-                                                <Users className="w-2.5 h-2.5" />
-                                                {prospect.allContacts!.length} contacts
-                                            </button>
-                                        )}
-                                    </div>
-                                    {/* Expanded contacts list */}
-                                    {expandedContacts.has(prospect.id) && prospect.allContacts && prospect.allContacts.length > 1 && (
-                                        <div className="mt-1.5 space-y-1 pl-1 border-l-2 border-blue-200 dark:border-blue-800">
-                                            {prospect.allContacts.map((c, idx) => (
-                                                <div key={idx} className="text-[11px] flex items-center gap-1.5 text-muted-foreground">
-                                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.type === 'personal' ? 'bg-green-500' : 'bg-gray-400'}`} />
-                                                    <span className="truncate">{c.email}</span>
-                                                    {c.firstName && <span className="text-[10px] text-muted-foreground/60">({c.firstName}{c.lastName ? ` ${c.lastName}` : ''}{c.position ? `, ${c.position}` : ''})</span>}
-                                                    {c.confidence && <span className="text-[10px] text-muted-foreground/40">{Math.round(c.confidence * 100)}%</span>}
+                                        /* ── View mode ── */
+                                        <div className="group relative">
+                                            {prospect.contactEmail ? (
+                                                <div className="text-xs truncate flex items-center gap-1">
+                                                    <Mail className="w-3 h-3 text-muted-foreground shrink-0" />
+                                                    <span className="truncate">{prospect.contactEmail}</span>
+                                                    {prospect.emailSource === 'manual' && (
+                                                        <span className="text-[9px] text-emerald-600 font-medium">✎</span>
+                                                    )}
                                                 </div>
-                                            ))}
+                                            ) : prospect.genericEmail ? (
+                                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                                    <Mail className="w-3 h-3 shrink-0" />
+                                                    <span className="truncate">{prospect.genericEmail}</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground">No email</span>
+                                            )}
+                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                {prospect.contactName && (
+                                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                        <User className="w-3 h-3" />
+                                                        {prospect.contactName}
+                                                        {prospect.contactTitle && (
+                                                            <span className="text-[10px] text-muted-foreground/60">· {prospect.contactTitle}</span>
+                                                        )}
+                                                    </span>
+                                                )}
+                                                {!prospect.contactTitle && prospect.inferredTitle && (
+                                                    <span
+                                                        className="text-[10px] italic text-blue-600/70 dark:text-blue-400/60 border border-dashed border-blue-300 dark:border-blue-700 rounded px-1.5 py-0 leading-5"
+                                                        title={`Inferred from facility type${prospect.inferredDept ? ` · ${prospect.inferredDept}` : ''}`}
+                                                    >
+                                                        ~{prospect.inferredTitle}
+                                                    </span>
+                                                )}
+                                                {(prospect.allContacts?.length ?? 0) > 1 && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); toggleContactsExpand(prospect.id); }}
+                                                        className="flex items-center gap-0.5 text-[10px] px-1.5 py-0 h-4 font-normal text-blue-600 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
+                                                    >
+                                                        {expandedContacts.has(prospect.id)
+                                                            ? <ChevronDown className="w-2.5 h-2.5" />
+                                                            : <ChevronRight className="w-2.5 h-2.5" />
+                                                        }
+                                                        <Users className="w-2.5 h-2.5" />
+                                                        {prospect.allContacts!.length} contacts
+                                                    </button>
+                                                )}
+                                                {/* Edit pencil — only for pending */}
+                                                {prospect.status === 'pending_review' && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleStartEditContact(prospect); }}
+                                                        className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 text-[10px] px-1 py-0 h-4 text-muted-foreground hover:text-primary transition-all cursor-pointer rounded"
+                                                        title="Edit contact"
+                                                    >
+                                                        <Pencil className="w-2.5 h-2.5" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {/* Expanded contacts list */}
+                                            {expandedContacts.has(prospect.id) && prospect.allContacts && prospect.allContacts.length > 1 && (
+                                                <div className="mt-1.5 space-y-1 pl-1 border-l-2 border-blue-200 dark:border-blue-800">
+                                                    {prospect.allContacts.map((c, idx) => (
+                                                        <div key={idx} className="text-[11px] flex items-center gap-1.5 text-muted-foreground">
+                                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.type === 'personal' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                                            <span className="truncate">{c.email}</span>
+                                                            {c.firstName && <span className="text-[10px] text-muted-foreground/60">({c.firstName}{c.lastName ? ` ${c.lastName}` : ''}{c.position ? `, ${c.position}` : ''})</span>}
+                                                            {c.confidence && <span className="text-[10px] text-muted-foreground/40">{Math.round(c.confidence * 100)}%</span>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

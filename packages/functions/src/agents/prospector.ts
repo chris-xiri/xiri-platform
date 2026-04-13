@@ -84,7 +84,9 @@ function validateEmailForBusiness(
             const emailRoot = emailDomain.split('.')[0].replace(/[-_]/g, '');
 
             // 2. Simple substring match (one contains the other)
-            if (bizRoot.length > 2 && emailRoot.length > 2 &&
+            // Require at least 5 chars to avoid false positives with short abbreviations
+            // e.g. 'umc' (3 chars) must NOT match 'umcom' even though 'umcom'.includes('umc')
+            if (bizRoot.length >= 5 && emailRoot.length >= 5 &&
                 (bizRoot.includes(emailRoot) || emailRoot.includes(bizRoot))) {
                 return 'domain_match';
             }
@@ -92,7 +94,7 @@ function validateEmailForBusiness(
             // 3. Stripped match (remove common suffixes like 'center', 'ny', 'mail')
             const bizStripped = stripDomainNoise(bizRoot);
             const emailStripped = stripDomainNoise(emailRoot);
-            if (bizStripped.length > 2 && emailStripped.length > 2 &&
+            if (bizStripped.length >= 5 && emailStripped.length >= 5 &&
                 (bizStripped.includes(emailStripped) || emailStripped.includes(bizStripped))) {
                 return 'domain_match';
             }

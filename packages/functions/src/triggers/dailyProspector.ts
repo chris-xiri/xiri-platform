@@ -108,6 +108,145 @@ function shuffle<T>(arr: T[]): T[] {
     return a;
 }
 
+// ── PIC (Person In Charge) Inference ─────────────────────────────────
+// Maps search query terms → the most likely decision-maker for commercial
+// cleaning contracts at that facility type.
+//
+// Used when the enrichment pipeline doesn't find a real contact name/title,
+// so outreach sequences can still address the right person by role.
+// Source: https://www.bls.gov/ooh + industry convention
+
+const FACILITY_PIC_MAP: Record<string, { title: string; dept?: string }> = {
+    // ── DENTAL ──
+    'dental office':            { title: 'Practice Manager',         dept: 'Administration' },
+    'orthodontist':             { title: 'Office Manager',            dept: 'Administration' },
+    'pediatric dentist':        { title: 'Practice Manager',         dept: 'Administration' },
+    'oral surgeon office':      { title: 'Practice Administrator',   dept: 'Administration' },
+    'endodontist':              { title: 'Office Manager',            dept: 'Administration' },
+
+    // ── MEDICAL OFFICES ──
+    'medical office':           { title: 'Practice Manager',         dept: 'Administration' },
+    'doctor office':            { title: 'Practice Manager',         dept: 'Administration' },
+    'family medicine practice': { title: 'Practice Manager',         dept: 'Administration' },
+    'pediatrician office':      { title: 'Office Manager',            dept: 'Administration' },
+    'internal medicine office': { title: 'Practice Administrator',   dept: 'Administration' },
+
+    // ── SPECIALIST MEDICAL ──
+    'dermatologist office':     { title: 'Office Manager',            dept: 'Administration' },
+    'eye doctor optometrist':   { title: 'Practice Manager',         dept: 'Operations' },
+    'ENT doctor office':        { title: 'Practice Manager',         dept: 'Administration' },
+    'allergist office':         { title: 'Office Manager',            dept: 'Administration' },
+    'podiatrist office':        { title: 'Practice Manager',         dept: 'Administration' },
+
+    // ── URGENT CARE & SURGERY ──
+    'urgent care clinic':       { title: 'Clinic Manager',           dept: 'Operations' },
+    'outpatient surgery center':{ title: 'Facility Administrator',   dept: 'Facilities' },
+    'walk-in clinic':           { title: 'Clinic Manager',           dept: 'Operations' },
+
+    // ── VETERINARY ──
+    'veterinary clinic':        { title: 'Practice Manager',         dept: 'Operations' },
+    'animal hospital':          { title: 'Hospital Manager',         dept: 'Operations' },
+    'pet emergency vet':        { title: 'Practice Manager',         dept: 'Operations' },
+
+    // ── PHYSICAL THERAPY & REHAB ──
+    'physical therapy center':  { title: 'Center Director',          dept: 'Operations' },
+    'chiropractor office':      { title: 'Office Manager',            dept: 'Administration' },
+    'rehabilitation center':    { title: 'Facility Manager',         dept: 'Facilities' },
+
+    // ── DIALYSIS ──
+    'dialysis center':          { title: 'Facility Administrator',   dept: 'Facilities' },
+
+    // ── AUTOMOTIVE ──
+    'car dealership':           { title: 'General Manager',          dept: 'Management' },
+    'auto repair shop':         { title: 'Shop Owner',               dept: 'Management' },
+    'auto body shop':           { title: 'Shop Manager',             dept: 'Operations' },
+    'tire shop':                { title: 'Store Manager',            dept: 'Management' },
+
+    // ── CHILDCARE & EDUCATION ──
+    'daycare center':           { title: 'Director',                 dept: 'Administration' },
+    'preschool':                { title: 'Director',                 dept: 'Administration' },
+    'childcare center':         { title: 'Center Director',          dept: 'Administration' },
+    'Montessori school':        { title: 'Head of School',           dept: 'Administration' },
+
+    // ── TUTORING & LEARNING ──
+    'tutoring center':          { title: 'Center Director',          dept: 'Operations' },
+    'learning center':          { title: 'Center Director',          dept: 'Operations' },
+    'test prep center':         { title: 'Center Manager',           dept: 'Operations' },
+
+    // ── FITNESS & WELLNESS ──
+    'gym fitness center':       { title: 'General Manager',          dept: 'Operations' },
+    'CrossFit gym':             { title: 'Head Coach / Owner',       dept: 'Management' },
+    'yoga studio':              { title: 'Studio Owner',             dept: 'Management' },
+    'pilates studio':           { title: 'Studio Manager',           dept: 'Operations' },
+    'martial arts studio':      { title: 'Studio Owner',             dept: 'Management' },
+
+    // ── RETAIL ──
+    'retail store':             { title: 'Store Manager',            dept: 'Operations' },
+    'boutique shop':            { title: 'Store Owner',              dept: 'Management' },
+    'bridal shop':              { title: 'Owner',                    dept: 'Management' },
+    'furniture store':          { title: 'Store Manager',            dept: 'Operations' },
+
+    // ── SALON & PERSONAL CARE ──
+    'hair salon':               { title: 'Salon Owner',              dept: 'Management' },
+    'barbershop':               { title: 'Owner',                    dept: 'Management' },
+    'nail salon':               { title: 'Owner',                    dept: 'Management' },
+    'spa day spa':              { title: 'Spa Director',             dept: 'Management' },
+    'med spa':                  { title: 'Medical Director',         dept: 'Management' },
+
+    // ── RELIGIOUS CENTERS ──
+    'church':                   { title: 'Office Administrator',     dept: 'Administration' },
+    'synagogue':                { title: 'Executive Director',       dept: 'Administration' },
+    'mosque':                   { title: 'Administrator',            dept: 'Administration' },
+    'temple':                   { title: 'Executive Director',       dept: 'Administration' },
+
+    // ── FUNERAL HOMES ──
+    'funeral home':             { title: 'Funeral Director',         dept: 'Management' },
+    'funeral parlor':           { title: 'Funeral Director',         dept: 'Management' },
+
+    // ── PET SERVICES ──
+    'pet grooming':             { title: 'Owner',                    dept: 'Management' },
+    'doggy daycare':            { title: 'Facility Manager',         dept: 'Operations' },
+    'pet boarding kennel':      { title: 'Owner',                    dept: 'Management' },
+
+    // ── LEGAL ──
+    'law firm office':          { title: 'Office Manager',            dept: 'Administration' },
+    'attorney office':          { title: 'Office Administrator',     dept: 'Administration' },
+
+    // ── INSURANCE & FINANCE ──
+    'insurance agency office':  { title: 'Agency Manager',           dept: 'Operations' },
+    'accounting firm office':   { title: 'Office Manager',            dept: 'Administration' },
+    'tax preparation office':   { title: 'Office Manager',            dept: 'Administration' },
+
+    // ── REAL ESTATE ──
+    'real estate office':       { title: 'Broker / Office Manager',  dept: 'Management' },
+
+    // ── PHARMACY ──
+    'pharmacy':                 { title: 'Pharmacy Manager',         dept: 'Operations' },
+    'compounding pharmacy':     { title: 'Pharmacy Owner',           dept: 'Management' },
+
+    // ── DANCE & PERFORMING ARTS ──
+    'dance studio':             { title: 'Studio Director',          dept: 'Management' },
+    'music school':             { title: 'School Director',          dept: 'Management' },
+    'performing arts studio':   { title: 'Studio Director',          dept: 'Management' },
+
+    // ── PRIVATE SCHOOLS ──
+    'private school':           { title: 'Principal',                dept: 'Administration' },
+    'preparatory school':       { title: 'Head of School',           dept: 'Administration' },
+    'charter schools':          { title: 'Principal',                dept: 'Administration' },
+
+    // ── LIGHT INDUSTRIAL ──
+    'warehouse':                { title: 'Facilities Manager',       dept: 'Facilities' },
+    'light manufacturing facility': { title: 'Operations Manager',   dept: 'Operations' },
+};
+
+/**
+ * Resolve the most likely PIC title for a given search query term.
+ * Returns null if the term isn't in the map.
+ */
+function inferPicTitle(queryTerm: string): { title: string; dept?: string } | null {
+    return FACILITY_PIC_MAP[queryTerm] ?? null;
+}
+
 // ── Load seen set (names + phones + emails we've already queued or imported) ──
 
 async function loadSeenSet(): Promise<Set<string>> {
@@ -318,6 +457,12 @@ async function runDailyPipeline() {
                             genericEmail: prospect.genericEmail || null,
                             contactName: prospect.contactName || null,
                             contactTitle: prospect.contactTitle || null,
+
+                            // Inferred PIC — who likely manages cleaning decisions at this facility type.
+                            // Set from query term when scraping doesn't find a real contact title.
+                            inferredTitle: prospect.contactTitle ? null : (inferPicTitle(queryTerm)?.title ?? null),
+                            inferredDept: prospect.contactTitle ? null : (inferPicTitle(queryTerm)?.dept ?? null),
+
                             emailSource: prospect.emailSource || 'none',
                             emailConfidence: prospect.emailConfidence || 'low',
                             facebookUrl: prospect.facebookUrl || null,
