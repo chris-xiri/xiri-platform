@@ -336,7 +336,16 @@ async function runDailyPipeline() {
     // Progress doc for live UI updates
     const statusRef = db.collection("prospecting_config").doc("run_status");
     const startedAt = new Date();
+    let lastProgressWriteAt = 0;
+    let lastProgressQualified = -1;
     const updateProgress = async (currentQuery?: string) => {
+        const now = Date.now();
+        const qualifiedChanged = newProspects.length !== lastProgressQualified;
+        const timeSinceLastWrite = now - lastProgressWriteAt;
+        // Throttle: skip if nothing changed AND it's been less than 15s
+        if (!qualifiedChanged && timeSinceLastWrite < 15_000 && lastProgressWriteAt > 0) return;
+        lastProgressWriteAt = now;
+        lastProgressQualified = newProspects.length;
         await statusRef.set({
             running: true,
             startedAt,

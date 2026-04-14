@@ -64378,10 +64378,12 @@ var startLeadSequence = (0, import_https7.onCall)(async (request) => {
   const lead = leadDoc.data();
   const businessName = lead.businessName || "Unknown";
   const leadType = lead.leadType || "direct";
-  if (lead.unsubscribedAt || lead.status === "lost") {
+  const isManuallyLost = lead.status === "lost" && !lead.lostReason?.includes("bounce");
+  const isStillSuppressed = !!lead.unsubscribedAt;
+  if (isStillSuppressed || isManuallyLost) {
     throw new import_https7.HttpsError(
       "failed-precondition",
-      `${businessName} has unsubscribed or is marked as lost \u2014 cannot enroll in a sequence.`
+      lead.unsubscribedAt ? `${businessName} is suppressed (unsubscribed/bounced) \u2014 update the contact's email first to re-enable outreach.` : `${businessName} is marked as lost \u2014 cannot enroll in a sequence.`
     );
   }
   let contactId = requestedContactId || null;
@@ -73341,7 +73343,7 @@ var weeklyPseoAnalysis = (0, import_scheduler12.onSchedule)({
   schedule: "0 23 * * 0",
   // Sunday 11 PM
   timeZone: "America/New_York",
-  secrets: ["GEMINI_API_KEY"],
+  secrets: ["GEMINI_API_KEY", "GSC_CLIENT_ID", "GSC_CLIENT_SECRET"],
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
@@ -73351,7 +73353,7 @@ var weeklyPseoAnalysis = (0, import_scheduler12.onSchedule)({
 });
 var triggerPseoAnalysis = (0, import_https25.onCall)({
   cors: DASHBOARD_CORS,
-  secrets: ["GEMINI_API_KEY"],
+  secrets: ["GEMINI_API_KEY", "GSC_CLIENT_ID", "GSC_CLIENT_SECRET"],
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async (request) => {

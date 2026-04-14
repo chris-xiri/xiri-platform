@@ -139,10 +139,29 @@ async function createPR(
 // ── SEO Data Modification ────────────────────────────────────────────────────
 
 /**
+ * Finds a matching location entry by scanning known location slugs against the nudge slug.
+ * Instead of regex-parsing the nudge slug format, we check if the nudge slug
+ * contains any known location slug as a substring.
+ *
+ * e.g. "services/commercial-cleaning-in-old-bethpage-nassau-county-ny" → matches "old-bethpage-ny"
+ * e.g. "services/floor-care-in-manhasset-nassau-county-ny"             → matches "manhasset-ny"
+ * e.g. "solutions/dental-suite-sanitization-in-jericho-ny"             → matches "jericho-ny"
+ * e.g. "contractors/janitorial-subcontractor-in-port-washington-ny"    → matches "port-washington-ny"
+ */
+function findLocationMatch<T extends { slug: string }>(nudgeSlug: string, locations: T[]): T | null {
+    // Try exact match first
+    const exact = locations.find(l => l.slug === nudgeSlug);
+    if (exact) return exact;
+    // Scan all known location slugs — prefer longer (more specific) matches to avoid false positives
+    const sorted = [...locations].sort((a, b) => b.slug.length - a.slug.length);
+    return sorted.find(l => nudgeSlug.includes(l.slug)) ?? null;
+}
+
+/**
  * Apply approved nudges to the seo-data.json content.
  * Returns the modified JSON string, or null if no changes were made.
  *
- * This function modifies industry (template-level) and location (instance-level)
+ * This function modifies service/industry (template-level) and location (instance-level)
  * fields based on the nudge's targetSlug and targetField.
  */
 function applySeoDataChanges(
@@ -186,29 +205,31 @@ function applySeoDataChanges(
             }
         }
 
-        // Try to find in locations (instance-level)
+        // Instance-level: match locations by scanning known slugs
         if (!found && seoData.locations) {
-            for (const location of seoData.locations) {
-                // Match by slug — instance pages have location slugs like "great-neck-ny"
-                if (slug.includes(location.slug) || location.slug === slug) {
-                    if (field in location) {
-                        location[field] = value;
-                        found = true;
-                    } else if (field === "shortDescription") {
-                        location.localInsight = value; // Map to most relevant
-                        found = true;
-                    } else if (field === "ctaText") {
-                        location.whyXiri = value;
-                        found = true;
-                    } else if (field === "trustBadge" || field === "proofStatement") {
-                        // Add/update trust signal in the location
-                        location.trustStatement = value;
-                        found = true;
-                    } else if (field === "lastVerified") {
-                        location.lastVerified = value;
-                        found = true;
-                    }
-                    if (found) break;
+            const location = findLocationMatch(slug, seoData.locations);
+            if (location) {
+                if (field in location) {
+                    location[field] = value;
+                    found = true;
+                } else if (field === "shortDescription") {
+                    location.localInsight = value;
+                    found = true;
+                } else if (field === "metaTitle") {
+                    location.pageTitle = value;
+                    found = true;
+                } else if (field === "metaDescription") {
+                    location.metaDescription = value;
+                    found = true;
+                } else if (field === "ctaText") {
+                    location.whyXiri = value;
+                    found = true;
+                } else if (field === "trustBadge" || field === "proofStatement") {
+                    location.trustStatement = value;
+                    found = true;
+                } else if (field === "lastVerified") {
+                    location.lastVerified = value;
+                    found = true;
                 }
             }
         }

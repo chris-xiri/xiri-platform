@@ -53,10 +53,16 @@ export const startLeadSequence = onCall(async (request) => {
     const leadType = lead.leadType || "direct";
 
     // ── Guard: block enrollment of unsubscribed / lost leads ──
-    if (lead.unsubscribedAt || lead.status === 'lost') {
+    // Allow re-enrollment if company was auto-set to 'lost' due to a hard bounce
+    // but the suppression has since been lifted (unsubscribedAt cleared by email correction).
+    const isManuallyLost = lead.status === 'lost' && !lead.lostReason?.includes('bounce');
+    const isStillSuppressed = !!lead.unsubscribedAt;
+    if (isStillSuppressed || isManuallyLost) {
         throw new HttpsError(
             "failed-precondition",
-            `${businessName} has unsubscribed or is marked as lost — cannot enroll in a sequence.`
+            lead.unsubscribedAt
+                ? `${businessName} is suppressed (unsubscribed/bounced) — update the contact's email first to re-enable outreach.`
+                : `${businessName} is marked as lost — cannot enroll in a sequence.`
         );
     }
 

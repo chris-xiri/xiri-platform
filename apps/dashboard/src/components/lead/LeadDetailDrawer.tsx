@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
     Building2, User, Mail, Phone, MapPin, Calendar, Clock,
     Briefcase, TrendingUp, Pencil, Check, X, Save, Loader2,
-    FileText, ExternalLink, Plus, ChevronRight, Rocket, Send, Activity, LayoutDashboard, Calculator, Wrench
+    FileText, ExternalLink, Plus, ChevronRight, Rocket, Send, Activity, LayoutDashboard, Calculator, Wrench, AlertTriangle, RefreshCcw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
@@ -588,6 +588,43 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
         await updateDoc(doc(db, 'contacts', contactId), { [field]: value, updatedAt: new Date() });
     }, [contactId]);
 
+    // Save email — clears bounce suppression if the address changed
+    const handleEmailSave = useCallback(async (newEmail: string) => {
+        if (!contactId) return;
+        const emailChanged = newEmail.trim().toLowerCase() !== (contact?.email || '').trim().toLowerCase();
+        const wasSuppressed = contact?.unsubscribed === true;
+
+        // Always save the new email
+        const contactUpdate: Record<string, any> = { email: newEmail, updatedAt: new Date() };
+
+        // If the email actually changed and the contact was bounced, lift suppression
+        if (emailChanged && wasSuppressed) {
+            contactUpdate.unsubscribed = false;
+            contactUpdate.unsubscribedAt = null;
+            contactUpdate.unsubscribeReason = null;
+        }
+        await updateDoc(doc(db, 'contacts', contactId), contactUpdate);
+
+        // If suppression lifted, also restore the company to an actionable status
+        if (emailChanged && wasSuppressed && contact?.companyId) {
+            const companyUpdateData: Record<string, any> = {
+                outreachStatus: null,
+                unsubscribedAt: null,
+                lostReason: null,
+                updatedAt: new Date(),
+            };
+            // Only reset company status if it was auto-set to 'lost' due to bounce
+            const companySnap = await getDoc(doc(db, 'companies', contact.companyId));
+            if (companySnap.exists()) {
+                const compData = companySnap.data();
+                if (compData.status === 'lost' && compData.lostReason === 'hard_bounce') {
+                    companyUpdateData.status = 'new';
+                }
+            }
+            await updateDoc(doc(db, 'companies', contact.companyId), companyUpdateData);
+        }
+    }, [contactId, contact?.email, contact?.unsubscribed, contact?.companyId]);
+
     const handleStatusChange = async (newStatus: string) => {
         if (!contact?.companyId || newStatus === company?.status) return;
         setStatusUpdating(true);
@@ -716,6 +753,15 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent className="space-y-2.5">
+                                            {contact.unsubscribed && (
+                                                <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 text-xs">
+                                                    <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                                    <div className="flex-1">
+                                                        <span className="font-semibold">Email bounced</span> — outreach blocked.
+                                                        Update the email address below to lift suppression and re-enable sequence enrollment.
+                                                    </div>
+                                                </div>
+                                            )}
                                             <EditableField
                                                 label="First name"
                                                 value={contact.firstName || ''}
@@ -731,7 +777,7 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                                                 icon={Mail}
                                                 type="email"
                                                 linkPrefix="mailto:"
-                                                onSave={(v) => updateContactField('email', v)}
+                                                onSave={handleEmailSave}
                                             />
                                             <EditableField
                                                 label="Phone"

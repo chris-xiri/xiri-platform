@@ -1322,7 +1322,7 @@ function getISOWeek(date: Date): number {
 export const weeklyPseoAnalysis = onSchedule({
     schedule: "0 23 * * 0", // Sunday 11 PM
     timeZone: "America/New_York",
-    secrets: ["GEMINI_API_KEY"],
+    secrets: ["GEMINI_API_KEY", "GSC_CLIENT_ID", "GSC_CLIENT_SECRET"],
     timeoutSeconds: 540,
     memory: "1GiB",
 }, async () => {
@@ -1337,7 +1337,7 @@ export const weeklyPseoAnalysis = onSchedule({
 
 export const triggerPseoAnalysis = onCall({
     cors: DASHBOARD_CORS,
-    secrets: ["GEMINI_API_KEY"],
+    secrets: ["GEMINI_API_KEY", "GSC_CLIENT_ID", "GSC_CLIENT_SECRET"],
     timeoutSeconds: 540,
     memory: "1GiB",
 }, async (request) => {

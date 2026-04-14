@@ -723,10 +723,15 @@ export default function ProspectsPage() {
             const fn = httpsCallable(functions, 'triggerDailyProspector');
             // Fire-and-forget: don't await — the pipeline runs for several minutes.
             // We start polling the status doc immediately instead.
-            fn().catch(err => {
-                console.error('Prospector pipeline error:', err);
-                // Only show error toast if it's a real failure, not a timeout
-                toast({ title: 'Pipeline issue', description: 'Check logs for details.' });
+            fn().catch((err: any) => {
+                console.warn('Prospector pipeline error (may be benign):', err?.code, err?.message);
+                // deadline-exceeded = client HTTP connection dropped but the Cloud Function
+                // is still running server-side. The status polling will continue tracking it.
+                if (err?.code === 'functions/deadline-exceeded' || err?.message?.includes('deadline-exceeded')) {
+                    console.info('Pipeline still running server-side — continuing to poll status.');
+                    return;
+                }
+                toast({ title: 'Pipeline issue', description: String(err?.message || err), variant: 'destructive' });
             });
 
             toast({ title: 'Prospector pipeline started', description: 'Tracking progress below...' });
@@ -1317,7 +1322,7 @@ export default function ProspectsPage() {
             ) : (
                 <div className="border rounded-lg overflow-hidden">
                     {/* Table header */}
-                    <div className="grid grid-cols-[40px_1fr_160px_180px_180px_100px_80px_120px] gap-2 px-3 py-2 bg-muted/50 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="hidden md:grid grid-cols-[2.5rem_1fr_minmax(150px,180px)_minmax(140px,200px)_minmax(160px,220px)_90px_64px_100px] gap-x-3 px-4 py-2.5 bg-muted/50 border-b text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                         <div className="flex items-center justify-center">
                             <Checkbox
                                 checked={selected.size === filtered.length && filtered.length > 0}
@@ -1334,11 +1339,13 @@ export default function ProspectsPage() {
                     </div>
 
                     {/* Rows */}
-                    <div className="divide-y max-h-[calc(100vh-400px)] overflow-y-auto">
+                    <div className="divide-y max-h-[calc(100vh-360px)] overflow-y-auto">
                         {filtered.map(prospect => (
                             <div
                                 key={prospect.id}
-                                className={`grid grid-cols-[40px_1fr_160px_180px_180px_100px_80px_120px] gap-2 px-3 py-2.5 items-center text-sm hover:bg-muted/30 transition-colors ${selected.has(prospect.id) ? 'bg-primary/5' : ''}`}
+                                className={`group flex flex-col md:grid md:grid-cols-[2.5rem_1fr_minmax(150px,180px)_minmax(140px,200px)_minmax(160px,220px)_90px_64px_100px] gap-x-3 gap-y-2 px-4 py-3 md:items-center text-sm hover:bg-muted/30 transition-colors cursor-pointer ${
+                                    selected.has(prospect.id) ? 'bg-primary/5' : ''
+                                }`}
                             >
                                 {/* Checkbox */}
                                 <div className="flex items-center justify-center">
@@ -1410,9 +1417,9 @@ export default function ProspectsPage() {
                                 </div>
 
                                 {/* Location */}
-                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                                    <MapPin className="w-3 h-3 shrink-0" />
-                                    {prospect.address || prospect.searchLocation}
+                                <div className="min-w-0 text-xs text-muted-foreground flex items-start gap-1">
+                                    <MapPin className="w-3 h-3 shrink-0 mt-0.5" />
+                                    <span className="truncate leading-snug">{prospect.address || prospect.searchLocation}</span>
                                 </div>
 
                                 {/* Contact — inline editable */}

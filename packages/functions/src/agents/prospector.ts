@@ -167,10 +167,12 @@ export async function prospectAndEnrich(
 
     // Pipeline-level time guard — stop at 7 min to leave 2 min for cleanup/writes
     const PIPELINE_TIME_BUDGET_MS = 7 * 60 * 1000; // 420s
-    const PER_BUSINESS_TIMEOUT_MS = 30_000; // 30s max per business
+    const PER_BUSINESS_TIMEOUT_MS = 8_000;  // 8s per business (was 30s — parallel batches make this safe)
+    const CONCURRENCY = 5;                  // Process 5 businesses concurrently
     const pipelineStart = Date.now();
 
-    for (const vendor of toProcess) {
+    // ── Parallel batch processing ──
+    for (let i = 0; i < toProcess.length; i += CONCURRENCY) {
         // ── Pipeline time guard ──
         const elapsed = Date.now() - pipelineStart;
         if (elapsed > PIPELINE_TIME_BUDGET_MS) {
@@ -178,41 +180,55 @@ export async function prospectAndEnrich(
             break;
         }
 
-        // ── Per-business timeout wrapper ──
-        let prospect: EnrichedProspect;
-        try {
-            prospect = await Promise.race([
-                enrichSingleBusiness(vendor, secrets, input),
-                new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error(`Enrichment timed out after ${PER_BUSINESS_TIMEOUT_MS / 1000}s`)), PER_BUSINESS_TIMEOUT_MS)
-                ),
-            ]);
-        } catch (error: any) {
-            console.warn(`[Prospector] ⚠️ Skipping "${vendor.name}": ${error.message}`);
-            prospect = {
-                businessName: vendor.name,
-                address: vendor.location,
-                phone: vendor.phone,
-                website: vendor.website,
-                rating: vendor.rating,
-                userRatingsTotal: vendor.user_ratings_total,
-                emailSource: 'none' as EmailSource,
-                emailConfidence: 'low' as const,
-                enrichmentLog: [`Skipped: ${error.message}`],
-            };
-        }
-        prospects.push(prospect);
+        const chunk = toProcess.slice(i, i + CONCURRENCY);
+        console.log(`[Prospector] 🔄 Processing batch ${Math.floor(i / CONCURRENCY) + 1} (${chunk.length} businesses in parallel)...`);
 
-        if (prospect.contactEmail && !GENERIC_PREFIXES.test(prospect.contactEmail)) {
-            stats.withPersonalEmail++;
-        } else if (prospect.genericEmail || prospect.contactEmail) {
-            stats.withGenericEmail++;
-        } else {
-            stats.noEmail++;
-        }
+        const results = await Promise.allSettled(
+            chunk.map(vendor =>
+                Promise.race([
+                    enrichSingleBusiness(vendor, secrets, input),
+                    new Promise<never>((_, reject) =>
+                        setTimeout(() => reject(new Error(`Enrichment timed out after ${PER_BUSINESS_TIMEOUT_MS / 1000}s`)), PER_BUSINESS_TIMEOUT_MS)
+                    ),
+                ])
+            )
+        );
 
-        if (!vendor.website) {
-            stats.skippedNoWebsite++;
+        for (let j = 0; j < results.length; j++) {
+            const result = results[j];
+            const vendor = chunk[j];
+            let prospect: EnrichedProspect;
+
+            if (result.status === 'fulfilled') {
+                prospect = result.value;
+            } else {
+                console.warn(`[Prospector] ⚠️ Skipping "${vendor.name}": ${result.reason?.message}`);
+                prospect = {
+                    businessName: vendor.name,
+                    address: vendor.location,
+                    phone: vendor.phone,
+                    website: vendor.website,
+                    rating: vendor.rating,
+                    userRatingsTotal: vendor.user_ratings_total,
+                    emailSource: 'none' as EmailSource,
+                    emailConfidence: 'low' as const,
+                    enrichmentLog: [`Skipped: ${result.reason?.message}`],
+                };
+            }
+
+            prospects.push(prospect);
+
+            if (prospect.contactEmail && !GENERIC_PREFIXES.test(prospect.contactEmail)) {
+                stats.withPersonalEmail++;
+            } else if (prospect.genericEmail || prospect.contactEmail) {
+                stats.withGenericEmail++;
+            } else {
+                stats.noEmail++;
+            }
+
+            if (!vendor.website) {
+                stats.skippedNoWebsite++;
+            }
         }
     }
 
