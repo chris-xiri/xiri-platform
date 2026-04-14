@@ -31,7 +31,7 @@ const STATUS_COLORS: Record<LeadStatus, string> = {
     'proposal': 'bg-orange-100 text-orange-800 border-orange-200',
     'quoted': 'bg-indigo-100 text-indigo-800 border-indigo-200',
     'won': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    'lost': 'bg-gray-100 text-gray-800 border-gray-200',
+    'lost': 'bg-red-100 text-red-700 border-red-200',
     'churned': 'bg-red-100 text-red-800 border-red-200',
 };
 

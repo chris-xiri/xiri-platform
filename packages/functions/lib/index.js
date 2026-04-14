@@ -69502,46 +69502,58 @@ async function prospectAndEnrich(input, secrets) {
   };
   const toProcess = rawVendors.slice(0, maxResults);
   const PIPELINE_TIME_BUDGET_MS = 7 * 60 * 1e3;
-  const PER_BUSINESS_TIMEOUT_MS = 3e4;
+  const PER_BUSINESS_TIMEOUT_MS = 8e3;
+  const CONCURRENCY = 5;
   const pipelineStart = Date.now();
-  for (const vendor of toProcess) {
+  for (let i = 0; i < toProcess.length; i += CONCURRENCY) {
     const elapsed = Date.now() - pipelineStart;
     if (elapsed > PIPELINE_TIME_BUDGET_MS) {
       console.log(`[Prospector] \u23F1\uFE0F Pipeline time budget exhausted (${Math.round(elapsed / 1e3)}s). Processed ${prospects.length}/${toProcess.length} businesses.`);
       break;
     }
-    let prospect;
-    try {
-      prospect = await Promise.race([
-        enrichSingleBusiness(vendor, secrets, input),
-        new Promise(
-          (_, reject) => setTimeout(() => reject(new Error(`Enrichment timed out after ${PER_BUSINESS_TIMEOUT_MS / 1e3}s`)), PER_BUSINESS_TIMEOUT_MS)
-        )
-      ]);
-    } catch (error16) {
-      console.warn(`[Prospector] \u26A0\uFE0F Skipping "${vendor.name}": ${error16.message}`);
-      prospect = {
-        businessName: vendor.name,
-        address: vendor.location,
-        phone: vendor.phone,
-        website: vendor.website,
-        rating: vendor.rating,
-        userRatingsTotal: vendor.user_ratings_total,
-        emailSource: "none",
-        emailConfidence: "low",
-        enrichmentLog: [`Skipped: ${error16.message}`]
-      };
-    }
-    prospects.push(prospect);
-    if (prospect.contactEmail && !GENERIC_PREFIXES.test(prospect.contactEmail)) {
-      stats.withPersonalEmail++;
-    } else if (prospect.genericEmail || prospect.contactEmail) {
-      stats.withGenericEmail++;
-    } else {
-      stats.noEmail++;
-    }
-    if (!vendor.website) {
-      stats.skippedNoWebsite++;
+    const chunk = toProcess.slice(i, i + CONCURRENCY);
+    console.log(`[Prospector] \u{1F504} Processing batch ${Math.floor(i / CONCURRENCY) + 1} (${chunk.length} businesses in parallel)...`);
+    const results = await Promise.allSettled(
+      chunk.map(
+        (vendor) => Promise.race([
+          enrichSingleBusiness(vendor, secrets, input),
+          new Promise(
+            (_, reject) => setTimeout(() => reject(new Error(`Enrichment timed out after ${PER_BUSINESS_TIMEOUT_MS / 1e3}s`)), PER_BUSINESS_TIMEOUT_MS)
+          )
+        ])
+      )
+    );
+    for (let j = 0; j < results.length; j++) {
+      const result = results[j];
+      const vendor = chunk[j];
+      let prospect;
+      if (result.status === "fulfilled") {
+        prospect = result.value;
+      } else {
+        console.warn(`[Prospector] \u26A0\uFE0F Skipping "${vendor.name}": ${result.reason?.message}`);
+        prospect = {
+          businessName: vendor.name,
+          address: vendor.location,
+          phone: vendor.phone,
+          website: vendor.website,
+          rating: vendor.rating,
+          userRatingsTotal: vendor.user_ratings_total,
+          emailSource: "none",
+          emailConfidence: "low",
+          enrichmentLog: [`Skipped: ${result.reason?.message}`]
+        };
+      }
+      prospects.push(prospect);
+      if (prospect.contactEmail && !GENERIC_PREFIXES.test(prospect.contactEmail)) {
+        stats.withPersonalEmail++;
+      } else if (prospect.genericEmail || prospect.contactEmail) {
+        stats.withGenericEmail++;
+      } else {
+        stats.noEmail++;
+      }
+      if (!vendor.website) {
+        stats.skippedNoWebsite++;
+      }
     }
   }
   prospects.sort((a2, b) => {
@@ -70436,7 +70448,15 @@ async function runDailyPipeline() {
   const locationYield = {};
   const statusRef = db.collection("prospecting_config").doc("run_status");
   const startedAt = /* @__PURE__ */ new Date();
+  let lastProgressWriteAt = 0;
+  let lastProgressQualified = -1;
   const updateProgress = async (currentQuery) => {
+    const now = Date.now();
+    const qualifiedChanged = newProspects.length !== lastProgressQualified;
+    const timeSinceLastWrite = now - lastProgressWriteAt;
+    if (!qualifiedChanged && timeSinceLastWrite < 15e3 && lastProgressWriteAt > 0) return;
+    lastProgressWriteAt = now;
+    lastProgressQualified = newProspects.length;
     await statusRef.set({
       running: true,
       startedAt,
@@ -73474,6 +73494,12 @@ async function createPR(title, body, head, base, token) {
   });
   return { url: pr.html_url, number: pr.number };
 }
+function findLocationMatch(nudgeSlug, locations) {
+  const exact = locations.find((l) => l.slug === nudgeSlug);
+  if (exact) return exact;
+  const sorted = [...locations].sort((a2, b) => b.slug.length - a2.slug.length);
+  return sorted.find((l) => nudgeSlug.includes(l.slug)) ?? null;
+}
 function applySeoDataChanges(seoDataRaw, nudges) {
   const seoData = JSON.parse(seoDataRaw);
   const applied = [];
@@ -73505,25 +73531,29 @@ function applySeoDataChanges(seoDataRaw, nudges) {
       }
     }
     if (!found && seoData.locations) {
-      for (const location of seoData.locations) {
-        if (slug.includes(location.slug) || location.slug === slug) {
-          if (field in location) {
-            location[field] = value;
-            found = true;
-          } else if (field === "shortDescription") {
-            location.localInsight = value;
-            found = true;
-          } else if (field === "ctaText") {
-            location.whyXiri = value;
-            found = true;
-          } else if (field === "trustBadge" || field === "proofStatement") {
-            location.trustStatement = value;
-            found = true;
-          } else if (field === "lastVerified") {
-            location.lastVerified = value;
-            found = true;
-          }
-          if (found) break;
+      const location = findLocationMatch(slug, seoData.locations);
+      if (location) {
+        if (field in location) {
+          location[field] = value;
+          found = true;
+        } else if (field === "shortDescription") {
+          location.localInsight = value;
+          found = true;
+        } else if (field === "metaTitle") {
+          location.pageTitle = value;
+          found = true;
+        } else if (field === "metaDescription") {
+          location.metaDescription = value;
+          found = true;
+        } else if (field === "ctaText") {
+          location.whyXiri = value;
+          found = true;
+        } else if (field === "trustBadge" || field === "proofStatement") {
+          location.trustStatement = value;
+          found = true;
+        } else if (field === "lastVerified") {
+          location.lastVerified = value;
+          found = true;
         }
       }
     }
