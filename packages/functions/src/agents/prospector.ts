@@ -394,6 +394,29 @@ async function enrichSingleBusiness(
     if (prospect.contactEmail) return prospect;
 
     // ═══════════════════════════════════════════════════════
+    // LAYER 2.5: LinkedIn Decision-Maker Discovery
+    // If we don't have a contact name, search LinkedIn to find one.
+    // This name feeds the pattern guesser in Layer 3.
+    // ═══════════════════════════════════════════════════════
+    if (!prospect.contactName && secrets.serperApiKey) {
+        try {
+            const linkedinName = await searchLinkedInForDecisionMaker(
+                vendor.name,
+                input.location,
+                secrets.serperApiKey,
+                log
+            );
+            if (linkedinName) {
+                prospect.contactName = linkedinName.name;
+                prospect.contactTitle = prospect.contactTitle || linkedinName.title;
+                log.push(`LinkedIn discovery: Found ${linkedinName.name} (${linkedinName.title})`);
+            }
+        } catch (error: any) {
+            log.push(`LinkedIn discovery error: ${error.message}`);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
     // LAYER 3: Enrichment Waterfall (Pattern Guesser + optional APIs)
     // ═══════════════════════════════════════════════════════
     if (!input.skipPaidApis) {
@@ -450,13 +473,30 @@ async function enrichSingleBusiness(
     // ═══════════════════════════════════════════════════════
     // FINAL: Use best available email
     // ═══════════════════════════════════════════════════════
-    if (!prospect.contactEmail && prospect.genericEmail) {
-        prospect.contactEmail = prospect.genericEmail;
-        prospect.emailSource = 'none'; // It's generic
-        prospect.emailConfidence = 'low';
-        log.push(`No personal email found — using generic: ${prospect.genericEmail}`);
-    } else if (!prospect.contactEmail) {
-        log.push('No email found across all layers.');
+    if (!prospect.contactEmail) {
+        // Strategy: prefer pattern-guessed personal email over generic
+        // If we have a contact name AND a proven domain (generic email found),
+        // a pattern guess like firstname@domain.com is far more actionable
+        // than info@domain.com for cold outreach.
+        const bestPatternGuess = prospect.allContacts?.find(
+            c => c.type === 'personal' && c.provider === 'pattern_guess' && (c.confidence || 0) >= 60
+        );
+
+        if (bestPatternGuess && prospect.contactName && prospect.genericEmail) {
+            // Domain is proven (generic exists), contact name is known → trust the guess
+            prospect.contactEmail = bestPatternGuess.email;
+            prospect.emailSource = 'pattern_guess';
+            prospect.emailConfidence = 'medium';
+            // Keep generic as fallback for the outreach system
+            log.push(`Using pattern-guessed personal email: ${bestPatternGuess.email} (confidence: ${bestPatternGuess.confidence}, fallback: ${prospect.genericEmail})`);
+        } else if (prospect.genericEmail) {
+            prospect.contactEmail = prospect.genericEmail;
+            prospect.emailSource = 'none'; // It's generic
+            prospect.emailConfidence = 'low';
+            log.push(`No personal email found — using generic: ${prospect.genericEmail}`);
+        } else {
+            log.push('No email found across all layers.');
+        }
     }
 
     return prospect;
@@ -534,5 +574,81 @@ function extractDomain(url: string): string | undefined {
         return parsed.hostname.replace(/^www\./, '');
     } catch {
         return undefined;
+    }
+}
+
+/**
+ * Search LinkedIn via Serper to discover decision-maker names.
+ * Uses 1 Serper credit. Only called when we don't already have a contactName.
+ * LinkedIn titles follow the format: "Name - Title - Company | LinkedIn"
+ */
+async function searchLinkedInForDecisionMaker(
+    businessName: string,
+    location: string,
+    serperApiKey: string,
+    log: string[]
+): Promise<{ name: string; title: string } | null> {
+    const DECISION_MAKER_TITLES = [
+        'owner', 'CEO', 'president', 'founder', 'managing director',
+        'office manager', 'facilities manager', 'operations manager',
+        'general manager', 'administrator', 'practice manager',
+        'director of operations', 'principal',
+    ];
+
+    const titleQuery = DECISION_MAKER_TITLES.slice(0, 6).map(t => `"${t}"`).join(' OR ');
+    const query = `site:linkedin.com/in "${businessName}" (${titleQuery})`;
+    log.push(`Layer 2.5: LinkedIn search for decision-maker at "${businessName}"...`);
+
+    try {
+        const response = await fetch('https://google.serper.dev/search', {
+            method: 'POST',
+            headers: {
+                'X-API-KEY': serperApiKey.trim(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ q: query, num: 3 }),
+            signal: AbortSignal.timeout(8000),
+        });
+
+        if (!response.ok) {
+            log.push(`LinkedIn search failed: HTTP ${response.status}`);
+            return null;
+        }
+
+        const data = await response.json() as any;
+        const organic = data.organic || [];
+
+        for (const result of organic) {
+            const link: string = result.link || '';
+            const title: string = result.title || '';
+
+            // Only process actual LinkedIn profile pages
+            if (!link.includes('linkedin.com/in/')) continue;
+
+            // LinkedIn titles are typically: "Name - Title - Company | LinkedIn"
+            // or "Name – Title – Company | LinkedIn"
+            const parts = title.split(/\s[-–|]\s/);
+            if (parts.length >= 2) {
+                const candidateName = parts[0].trim();
+                const candidateTitle = parts[1].trim();
+
+                // Validate: must look like a real name (2+ words, not a company name)
+                const nameWords = candidateName.split(/\s+/);
+                if (nameWords.length >= 2 && nameWords.length <= 4 && candidateName.length < 40) {
+                    // Check that title matches one of our decision-maker roles
+                    const titleLower = candidateTitle.toLowerCase();
+                    const isDecisionMaker = DECISION_MAKER_TITLES.some(t => titleLower.includes(t));
+                    if (isDecisionMaker) {
+                        return { name: candidateName, title: candidateTitle };
+                    }
+                }
+            }
+        }
+
+        log.push('LinkedIn search: No matching decision-maker found');
+        return null;
+    } catch (error: any) {
+        log.push(`LinkedIn search error: ${error.message}`);
+        return null;
     }
 }

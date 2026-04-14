@@ -142,6 +142,18 @@ export async function scrapeWebsite(url: string, geminiApiKey: string): Promise<
         combinedData.ownerTitle = aiData.ownerTitle;
         combinedData.ownerEmail = aiData.ownerEmail;
 
+        // Merge AI-discovered staff emails into allEmails (deduped)
+        if (aiData.allEmails && aiData.allEmails.length > 0) {
+            const existingEmails = new Set(combinedData.allEmails?.map(e => e.email) || []);
+            for (const aiEmail of aiData.allEmails) {
+                if (!existingEmails.has(aiEmail.email)) {
+                    combinedData.allEmails = combinedData.allEmails || [];
+                    combinedData.allEmails.push(aiEmail);
+                    existingEmails.add(aiEmail.email);
+                }
+            }
+        }
+
         // ─── Step 6: Validate and format ───
         if (combinedData.email) {
             combinedData.email = validateEmail(combinedData.email);
@@ -421,18 +433,25 @@ async function extractWithAI(html: string, geminiApiKey: string): Promise<Partia
         const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').substring(0, 15000);
 
         const FALLBACK = `Extract business contact information AND owner/decision-maker info from this website content.
-Look specifically for the highest-ranking person listed — owner, founder, CEO, president, managing director, doctor, principal, or office manager.
-Check the About Us, Our Team, Staff, Leadership, or Meet the Doctor sections.
+
+PRIORITY: Find PERSONAL email addresses (e.g. john@business.com, jsmith@business.com).
+Generic emails like info@, contact@, hello@, office@, admin@ are LOW VALUE — only return those if absolutely nothing else exists.
+
+Look specifically for:
+1. The highest-ranking person — owner, founder, CEO, president, managing director, doctor, principal, or office manager
+2. Any named person with an email address listed (e.g. on About Us, Our Team, Staff, Leadership, Meet the Doctor sections)
+3. Email addresses that contain a person's name (e.g. sarah@, mike.johnson@, etc.)
 
 Return ONLY a JSON object with these fields (use null if not found):
 {
-  "email": "email address (prefer personal/owner email over generic info@)",
+  "email": "the BEST non-generic email found (personal > generic). Only use info@/contact@ as last resort",
   "phone": "primary phone number in format (xxx) xxx-xxxx",
   "address": "full physical address if available",
   "businessName": "official business name",
   "ownerName": "full name of owner/highest decision-maker (e.g. 'Dr. John Smith')",
   "ownerTitle": "their title (e.g. 'Owner', 'CEO', 'Managing Director', 'DDS')",
-  "ownerEmail": "owner's personal email if different from the general email"
+  "ownerEmail": "owner's personal email if different from the general email",
+  "allStaffEmails": ["array of ALL email addresses found for named individuals, e.g. john@biz.com"]
 }
 
 Website content:
@@ -449,6 +468,19 @@ Website content:
         if (jsonMatch) {
             const data = JSON.parse(jsonMatch[0]);
             const clean = (v: any) => (v && v !== 'null' && v !== null && v !== 'N/A' && v !== 'n/a') ? v : undefined;
+
+            // Extract staff emails from AI response and add to allEmails
+            const aiStaffEmails: { email: string; type: 'personal' | 'generic' }[] = [];
+            if (Array.isArray(data.allStaffEmails)) {
+                for (const staffEmail of data.allStaffEmails) {
+                    if (typeof staffEmail === 'string' && staffEmail.includes('@')) {
+                        const cleaned = staffEmail.trim().toLowerCase();
+                        const isGeneric = !!cleaned.match(/^(info|contact|hello|office|admin|sales|team|service|services|marketing)@/i);
+                        aiStaffEmails.push({ email: cleaned, type: isGeneric ? 'generic' : 'personal' });
+                    }
+                }
+            }
+
             return {
                 email: clean(data.email),
                 phone: clean(data.phone),
@@ -457,6 +489,7 @@ Website content:
                 ownerName: clean(data.ownerName),
                 ownerTitle: clean(data.ownerTitle),
                 ownerEmail: clean(data.ownerEmail),
+                allEmails: aiStaffEmails.length > 0 ? aiStaffEmails : undefined,
             };
         }
 
