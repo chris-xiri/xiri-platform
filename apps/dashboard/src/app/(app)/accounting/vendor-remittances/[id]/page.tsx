@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,7 +19,7 @@ import {
 import Link from 'next/link';
 
 interface PageProps {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }
 
 const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
@@ -41,6 +41,7 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 ];
 
 export default function VendorRemittanceDetailPage({ params }: PageProps) {
+    const { id } = use(params);
     const { profile } = useAuth();
     const [rem, setRem] = useState<(VendorRemittance & { id: string }) | null>(null);
     const [loading, setLoading] = useState(true);
@@ -60,7 +61,7 @@ export default function VendorRemittanceDetailPage({ params }: PageProps) {
     useEffect(() => {
         async function fetch() {
             try {
-                const snap = await getDoc(doc(db, 'vendor_remittances', params.id));
+                const snap = await getDoc(doc(db, 'vendor_remittances', id));
                 if (snap.exists()) {
                     const data = { id: snap.id, ...snap.data() } as VendorRemittance & { id: string };
                     setRem(data);
@@ -73,7 +74,7 @@ export default function VendorRemittanceDetailPage({ params }: PageProps) {
             }
         }
         fetch();
-    }, [params.id]);
+    }, [id]);
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { use, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -24,7 +24,7 @@ import {
 import Link from 'next/link';
 
 interface PageProps {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }
 
 const STATUS_BADGE: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
@@ -42,6 +42,7 @@ interface FsmUser {
 }
 
 export default function QuoteDetailPage({ params }: PageProps) {
+    const { id } = use(params);
     const router = useRouter();
     const { profile } = useAuth();
     const [quote, setQuote] = useState<(Quote & { id: string }) | null>(null);
@@ -82,7 +83,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
     useEffect(() => {
         async function fetchQuote() {
             try {
-                const docSnap = await getDoc(doc(db, 'quotes', params.id));
+                const docSnap = await getDoc(doc(db, 'quotes', id));
                 if (docSnap.exists()) {
                     setQuote({ id: docSnap.id, ...docSnap.data() } as Quote & { id: string });
                 }
@@ -93,7 +94,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
             }
         }
         fetchQuote();
-    }, [params.id]);
+    }, [id]);
 
     // Fetch related work orders
     useEffect(() => {

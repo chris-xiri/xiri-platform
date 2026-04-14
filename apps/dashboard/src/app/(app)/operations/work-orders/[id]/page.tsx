@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { use, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -22,7 +22,7 @@ import Link from 'next/link';
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 interface PageProps {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }
 
 const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string; color: string }> = {
@@ -48,6 +48,7 @@ interface VendorCandidate {
 }
 
 export default function WorkOrderDetailPage({ params }: PageProps) {
+    const { id } = use(params);
     const router = useRouter();
     const { profile } = useAuth();
     const [wo, setWo] = useState<(WorkOrder & { id: string }) | null>(null);
@@ -71,7 +72,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
     useEffect(() => {
         async function fetchWO() {
             try {
-                const docSnap = await getDoc(doc(db, 'work_orders', params.id));
+                const docSnap = await getDoc(doc(db, 'work_orders', id));
                 if (docSnap.exists()) {
                     setWo({ id: docSnap.id, ...docSnap.data() } as WorkOrder & { id: string });
                 }
@@ -82,7 +83,7 @@ export default function WorkOrderDetailPage({ params }: PageProps) {
             }
         }
         fetchWO();
-    }, [params.id]);
+    }, [id]);
 
     // Fetch quoteId from the contract
     useEffect(() => {

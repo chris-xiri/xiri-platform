@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -20,7 +20,7 @@ import {
 import Link from 'next/link';
 
 interface PageProps {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }
 
 const STATUS_CONFIG: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
@@ -44,6 +44,7 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 ];
 
 export default function InvoiceDetailPage({ params }: PageProps) {
+    const { id } = use(params);
     const router = useRouter();
     const { profile, hasRole } = useAuth();
     const [invoice, setInvoice] = useState<(Invoice & { id: string }) | null>(null);
@@ -68,7 +69,7 @@ export default function InvoiceDetailPage({ params }: PageProps) {
     useEffect(() => {
         async function fetch() {
             try {
-                const snap = await getDoc(doc(db, 'invoices', params.id));
+                const snap = await getDoc(doc(db, 'invoices', id));
                 if (snap.exists()) {
                     const inv = { id: snap.id, ...snap.data() } as Invoice & { id: string };
                     setInvoice(inv);
@@ -87,7 +88,7 @@ export default function InvoiceDetailPage({ params }: PageProps) {
             }
         }
         fetch();
-    }, [params.id]);
+    }, [id]);
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
