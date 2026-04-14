@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Plus, X, Search, MapPin, Settings2, Sparkles, TrendingUp, Target, Save, ChevronDown } from 'lucide-react';
+import { Loader2, Plus, X, Search, MapPin, Settings2, Sparkles, TrendingUp, Target, Save, ChevronDown, Briefcase, ShieldBan } from 'lucide-react';
 import { groupQueriesByTier, groupLocationsByCounty, TIER_LABELS } from './icp-data';
 import type { ProspectingConfig } from './types';
 
@@ -27,6 +27,11 @@ interface ConfigPanelProps {
     onSave: () => void;
     onSeedFromICP: () => void;
     onClose: () => void;
+    // Job Board Trigger config
+    editTriggerExclude: string[];
+    setEditTriggerExclude: (val: string[]) => void;
+    onSaveTriggerConfig: () => void;
+    isSavingTrigger: boolean;
 }
 
 /** Helper to get yield color from stats */
@@ -114,9 +119,14 @@ export function ConfigPanel({
     onSave,
     onSeedFromICP,
     onClose,
+    editTriggerExclude,
+    setEditTriggerExclude,
+    onSaveTriggerConfig,
+    isSavingTrigger,
 }: ConfigPanelProps) {
     const [newQuery, setNewQuery] = useState('');
     const [newLocation, setNewLocation] = useState('');
+    const [newTriggerExclude, setNewTriggerExclude] = useState('');
     const [newExclude, setNewExclude] = useState('');
 
     if (!configOpen) return null;
@@ -368,6 +378,69 @@ export function ConfigPanel({
                         <Button onClick={onSave} disabled={isSaving}>
                             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                             Save Configuration
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* ── Job Board Trigger Config ──────────────────────────── */}
+            <Card className="border-indigo-500/20 shadow-sm bg-card/50 backdrop-blur">
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        <Briefcase className="w-5 h-5 text-indigo-500" />
+                        Job Board Trigger — Exclusions
+                    </CardTitle>
+                    <CardDescription>
+                        Employer name patterns to skip when scraping job boards. Companies matching these terms are filtered out before enrichment.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex flex-wrap gap-1.5">
+                        {editTriggerExclude.map(pattern => (
+                            <Badge key={pattern} variant="outline" className="flex items-center gap-1 border-indigo-200 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400">
+                                <ShieldBan className="w-3 h-3" />
+                                {pattern}
+                                <X
+                                    className="w-3 h-3 cursor-pointer hover:text-indigo-900 transition-colors"
+                                    onClick={() => setEditTriggerExclude(editTriggerExclude.filter(p => p !== pattern))}
+                                />
+                            </Badge>
+                        ))}
+                        {editTriggerExclude.length === 0 && (
+                            <span className="text-xs text-muted-foreground italic">No exclusion patterns configured. All employers will be included.</span>
+                        )}
+                    </div>
+                    <div className="flex gap-2">
+                        <Input
+                            value={newTriggerExclude}
+                            onChange={(e) => setNewTriggerExclude(e.target.value)}
+                            placeholder="Add exclusion (e.g. facility solutions)..."
+                            className="h-8 text-sm flex-1"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && newTriggerExclude.trim()) {
+                                    if (!editTriggerExclude.includes(newTriggerExclude.trim())) {
+                                        setEditTriggerExclude([...editTriggerExclude, newTriggerExclude.trim()]);
+                                    }
+                                    setNewTriggerExclude('');
+                                }
+                            }}
+                        />
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            className="h-8"
+                            onClick={() => {
+                                if (newTriggerExclude.trim() && !editTriggerExclude.includes(newTriggerExclude.trim())) {
+                                    setEditTriggerExclude([...editTriggerExclude, newTriggerExclude.trim()]);
+                                    setNewTriggerExclude('');
+                                }
+                            }}
+                        >
+                            <Plus className="w-4 h-4 mr-1" /> Add
+                        </Button>
+                        <Button size="sm" className="h-8" onClick={onSaveTriggerConfig} disabled={isSavingTrigger}>
+                            {isSavingTrigger ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+                            Save
                         </Button>
                     </div>
                 </CardContent>

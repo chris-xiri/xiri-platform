@@ -451,4 +451,88 @@ export const COMPARISON_PAGES: Record<string, ComparisonPage> = {
             { question: 'What types of buildings benefit most from this model?', answer: 'Medical offices, dental practices, surgery centers, auto dealerships, and any facility with compliance requirements or multiple maintenance needs. Single-tenant NNN lease properties benefit especially, as owners get construction-grade accountability for ongoing operations.' },
         ],
     },
+
+    // ── AUTO-GENERATED: XIRI vs. KBS ──
+    'xiri-vs-xiri-vs-kbs': {
+    "title": "XIRI Facility Solutions vs. KBS: Which is Right for Your Business?",
+    "h1": "XIRI Facility Solutions vs. KBS: A Comparison for NY Businesses",
+    "metaDescription": "Comparing XIRI Facility Solutions and KBS for your facility maintenance needs in Nassau County, Suffolk County, and Queens, NY. Understand the differences in business models, compliance focus, and local expertise.",
+    "type": "vs",
+    "intro": "Choosing the right facility maintenance partner is crucial for the smooth operation and professional image of your business. In Nassau County, Suffolk County, and Queens, NY, you have several options, including XIRI Facility Solutions and KBS. While both offer facility services, their business models and areas of specialization differ significantly. This comparison will help you understand these differences to make an informed decision.",
+    "comparisonTable": [
+        {
+            "feature": "Business Model",
+            "xiri": "General Contractor model: We manage vetted local subcontractors for all services (janitorial, HVAC, landscaping, handyman) under one contract.",
+            "competitor": "Franchise model: KBS operates through a network of franchise owners, who manage their individual territories."
+        },
+        {
+            "feature": "Local Focus",
+            "xiri": "Dedicated to Nassau County, Suffolk County, and Queens, NY. We have deep local knowledge and established subcontractor relationships in the area.",
+            "competitor": "National company with a franchise presence in the New York area. Focus is typically on larger national contracts."
+        },
+        {
+            "feature": "Compliance Expertise",
+            "xiri": "Specializes in medical facilities, auto dealerships, and professional offices requiring strict OSHA/HIPAA/JCAHO compliance documentation. We provide thorough documentation and verification.",
+            "competitor": "Offers general cleaning services. Compliance expertise may vary by franchise owner."
+        },
+        {
+            "feature": "Quality Control",
+            "xiri": "Every cleaning shift is verified with NFC checkpoints and a physical Night Manager walkthrough to ensure consistent quality and accountability.",
+            "competitor": "Quality control is typically managed by individual franchise owners and may vary."
+        },
+        {
+            "feature": "Pricing",
+            "xiri": "Transparent pricing with no hidden franchise fees. We negotiate directly with subcontractors to ensure competitive rates.",
+            "competitor": "Pricing may include franchise markups, potentially leading to higher costs."
+        },
+        {
+            "feature": "Point of Contact",
+            "xiri": "Single point of contact for all facility maintenance needs, streamlining communication and issue resolution.",
+            "competitor": "Multiple points of contact depending on the services required and the franchise owner responsible."
+        },
+        {
+            "feature": "Service Verification",
+            "xiri": "Technology-driven verification system provides real-time data on cleaning completion and quality.",
+            "competitor": "Verification methods vary, potentially relying on self-reporting from franchise owners."
+        },
+        {
+            "feature": "Subcontractor Vetting",
+            "xiri": "Rigorous vetting process for all subcontractors, including background checks, insurance verification, and performance reviews.",
+            "competitor": "Franchise owners are responsible for hiring and managing their own cleaning staff, with varying levels of vetting."
+        }
+    ],
+    "sections": [
+        {
+            "title": "The XIRI Advantage: Specialized, Verified, and Local",
+            "content": "XIRI Facility Solutions offers a unique approach to facility maintenance in Nassau County, Suffolk County, and Queens. Unlike franchise models, we operate as a general contractor, meticulously managing a network of vetted local subcontractors. This allows us to offer specialized services, especially for industries with stringent compliance requirements like medical facilities and auto dealerships. Our NFC checkpoint system and Night Manager walkthroughs ensure that every cleaning shift meets our high standards, providing you with peace of mind."
+        },
+        {
+            "title": "KBS: A National Presence with Local Franchises",
+            "content": "KBS is a well-established national provider of facility services, operating through a franchise model. This model allows them to have a widespread presence, but it also means that service quality and compliance expertise can vary depending on the individual franchise owner. While KBS can be a suitable option for general cleaning needs, businesses requiring specialized compliance documentation and rigorous quality control may find XIRI's approach more aligned with their needs."
+        },
+        {
+            "title": "Compliance and Verification: A Critical Difference",
+            "content": "For medical facilities, auto dealerships, and professional offices, compliance with OSHA, HIPAA, and JCAHO regulations is non-negotiable. XIRI Facility Solutions specializes in these industries, providing comprehensive documentation and verification of all cleaning and maintenance procedures. Our technology-driven verification system and physical Night Manager walkthroughs ensure that all requirements are met, minimizing your risk and ensuring a safe and compliant environment. While KBS may offer cleaning services to these industries, their franchise model may not provide the same level of specialized compliance expertise and verification."
+        }
+    ],
+    "verdict": "If you're a business in Nassau County, Suffolk County, or Queens, NY, requiring reliable, verified, and compliant facility maintenance services, especially in industries like healthcare or auto dealerships, XIRI Facility Solutions offers a superior solution compared to the KBS franchise model. Our local focus, rigorous quality control, and specialized compliance expertise provide unmatched value and peace of mind.",
+    "faqs": [
+        {
+            "question": "What is the main difference between XIRI and KBS?",
+            "answer": "XIRI operates as a general contractor managing vetted local subcontractors, while KBS uses a franchise model with individual franchise owners. This difference impacts compliance expertise, quality control, and pricing."
+        },
+        {
+            "question": "Does XIRI offer services outside of cleaning?",
+            "answer": "Yes, XIRI manages a range of facility services including janitorial, HVAC, landscaping, and handyman services, all under one contract."
+        },
+        {
+            "question": "Is XIRI more expensive than KBS?",
+            "answer": "XIRI's transparent pricing, without franchise markups, often results in competitive rates. We negotiate directly with subcontractors to ensure you get the best value."
+        },
+        {
+            "question": "What areas does XIRI serve?",
+            "answer": "XIRI Facility Solutions proudly serves Nassau County, Suffolk County, and Queens, NY."
+        }
+    ]
+},
 };

@@ -14,7 +14,8 @@
         "lint": "turbo run lint",
         "format": "prettier --write \"**/*.{ts,tsx,md}\"",
         "translate:sync": "node scripts/translate-sync.js",
-        "knip": "knip"
+        "knip": "knip",
+        "radar": "npm run radar --prefix tools/seo-agent"
     },
     "devDependencies": {
         "@types/node-fetch": "^2.6.13",

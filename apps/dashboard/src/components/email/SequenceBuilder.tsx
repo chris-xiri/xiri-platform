@@ -34,7 +34,7 @@ import {
     ArrowRight, Mail, Rocket, Building2, HardHat,
     Handshake, Star, Clock, Eye, EyeOff, Save, Check,
     Flame, Snowflake, Database, X, Sparkles, Wand2,
-    User, Link, ChevronRight, Send,
+    User, Link, ChevronRight, Send, Briefcase,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ export interface EmailSequence {
     id: string;
     name: string;
     description: string;
-    category: 'lead' | 'vendor' | 'referral' | 'custom';
+    category: 'lead' | 'vendor' | 'referral' | 'in_house_conversion' | 'custom';
     steps: SequenceStep[];
     createdAt?: any;
     updatedAt?: any;
@@ -68,6 +68,7 @@ interface FullTemplate {
 
 const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string; sampleGroup: string }> = {
     lead: { label: 'Lead', icon: <Building2 className="w-4 h-4" />, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300', sampleGroup: 'lead' },
+    in_house_conversion: { label: 'In-House Conversion', icon: <Briefcase className="w-4 h-4" />, color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300', sampleGroup: 'lead' },
     vendor: { label: 'Vendor', icon: <HardHat className="w-4 h-4" />, color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300', sampleGroup: 'contractor' },
     referral: { label: 'Referral', icon: <Handshake className="w-4 h-4" />, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300', sampleGroup: 'referral' },
     custom: { label: 'Custom', icon: <Star className="w-4 h-4" />, color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300', sampleGroup: 'lead' },

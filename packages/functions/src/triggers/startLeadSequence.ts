@@ -28,6 +28,7 @@ const DEFAULT_SEQUENCE_MAP: Record<string, string> = {
     referral_partnership: "referral_partnership_sequence",
     tenant: "tenant_lead_sequence",
     direct: "tenant_lead_sequence",
+    in_house_conversion: "in_house_conversion_sequence",
 };
 
 export const startLeadSequence = onCall(async (request) => {

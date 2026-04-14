@@ -41,6 +41,25 @@ export interface QueuedProspect {
     contactId?: string;
     actionedAt?: any;
     createdAt?: any;
+
+    /** Source channel: 'prospector' (default Serper Places) or 'job_board_trigger' */
+    source?: 'prospector' | 'job_board_trigger';
+    /** Job posting metadata — only present for source='job_board_trigger' */
+    triggerData?: {
+        jobTitle: string;
+        sourcePlatform: string;
+        sourceUrl: string;
+        snippet: string;
+        datePosted?: string;
+    };
+}
+
+export interface ClientTriggerConfig {
+    queries: string[];
+    locations: string[];
+    dailyTarget: number;
+    enabled: boolean;
+    excludePatterns: string[];
 }
 
 export interface ProspectingConfig {

@@ -25,8 +25,9 @@ import {
     Settings, Play, SkipForward, ExternalLink, X,
     Calendar, TrendingUp, Zap, Filter, RefreshCw,
     Tag, Users, AlertTriangle, Sparkles, Pencil, Check,
+    Briefcase,
 } from 'lucide-react';
-import type { ProspectingConfig, QueuedProspect } from './components/types';
+import type { ProspectingConfig, QueuedProspect, ClientTriggerConfig } from './components/types';
 import { ConfigPanel } from './components/ConfigPanel';
 import { RecommendationsPanel } from './components/RecommendationsPanel';
 import type { RecommendationAction } from './components/RecommendationsPanel';
@@ -70,6 +71,7 @@ export default function ProspectsPage() {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('pending_review');
     const [facilityTypeFilter, setFacilityTypeFilter] = useState<string>('all');
+    const [sourceFilter, setSourceFilter] = useState<'all' | 'prospector' | 'job_board_trigger'>('all');
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [acting, setActing] = useState(false);
     const [triggering, setTriggering] = useState(false);
@@ -104,6 +106,11 @@ export default function ProspectsPage() {
     const [editTarget, setEditTarget] = useState(100);
     const [editEnabled, setEditEnabled] = useState(true);
     const [editExclude, setEditExclude] = useState<string[]>([]);
+
+    // Client Trigger (Job Board) config state
+    const [triggerConfig, setTriggerConfig] = useState<ClientTriggerConfig | null>(null);
+    const [editTriggerExclude, setEditTriggerExclude] = useState<string[]>([]);
+    const [triggerConfigSaving, setTriggerConfigSaving] = useState(false);
 
     // Template/sequence options for the action dropdown
     const [templates, setTemplates] = useState<TemplateOption[]>([]);
@@ -176,6 +183,23 @@ export default function ProspectsPage() {
             }
         };
         loadConfig();
+    }, []);
+
+    // ── Load client trigger config ──────────────────────────────────
+    useEffect(() => {
+        const loadTriggerConfig = async () => {
+            try {
+                const snap = await getDoc(doc(db, 'client_trigger_config', 'default'));
+                if (snap.exists()) {
+                    const data = snap.data() as ClientTriggerConfig;
+                    setTriggerConfig(data);
+                    setEditTriggerExclude(data.excludePatterns || []);
+                }
+            } catch (err) {
+                console.error('Failed to load client trigger config:', err);
+            }
+        };
+        loadTriggerConfig();
     }, []);
 
     // Check if a run is already in progress on mount
@@ -480,6 +504,10 @@ export default function ProspectsPage() {
             });
         }
 
+        if (sourceFilter !== 'all') {
+            list = list.filter(p => (p.source || 'prospector') === sourceFilter);
+        }
+
         if (search.trim()) {
             const q = search.toLowerCase();
             list = list.filter(p =>
@@ -492,7 +520,7 @@ export default function ProspectsPage() {
         }
 
         return list;
-    }, [prospects, statusFilter, facilityTypeFilter, search, inferFacilityType]);
+    }, [prospects, statusFilter, facilityTypeFilter, sourceFilter, search, inferFacilityType]);
 
     // ── Stats ───────────────────────────────────────────────────────
 
@@ -835,6 +863,33 @@ export default function ProspectsPage() {
         setConfigSaving(false);
     };
 
+    // ── Save client trigger config ─────────────────────────────────
+    const handleSaveTriggerConfig = async () => {
+        setTriggerConfigSaving(true);
+        try {
+            const dedup = (arr: string[]) => {
+                const map = new Map<string, string>();
+                arr.forEach(s => {
+                    const trimmed = s.trim();
+                    if (trimmed) map.set(trimmed.toLowerCase(), trimmed);
+                });
+                return Array.from(map.values());
+            };
+            const newExclude = dedup(editTriggerExclude);
+            await setDoc(
+                doc(db, 'client_trigger_config', 'default'),
+                { excludePatterns: newExclude },
+                { merge: true }
+            );
+            setTriggerConfig(prev => prev ? { ...prev, excludePatterns: newExclude } : prev);
+            setEditTriggerExclude(newExclude);
+            toast({ title: 'Trigger config saved', description: 'Job board exclusions updated.' });
+        } catch (err) {
+            toast({ title: 'Save failed', description: String(err) });
+        }
+        setTriggerConfigSaving(false);
+    };
+
     // ── Seed config from ICP engine ──────────────────────────────────
 
     const handleSeedFromICP = async () => {
@@ -1020,6 +1075,10 @@ export default function ProspectsPage() {
                 onSave={handleSaveConfig}
                 onSeedFromICP={handleSeedFromICP}
                 isSaving={configSaving}
+                editTriggerExclude={editTriggerExclude}
+                setEditTriggerExclude={setEditTriggerExclude}
+                onSaveTriggerConfig={handleSaveTriggerConfig}
+                isSavingTrigger={triggerConfigSaving}
             />
 
             {/* AI Recommendations Panel */}
@@ -1108,6 +1167,40 @@ export default function ProspectsPage() {
                     <span>{config.lastRunStats.duplicatesSkipped} duplicates skipped</span>
                 </div>
             )}
+
+            {/* Source channel filter */}
+            {(() => {
+                const prospectorCount = prospects.filter(p => (p.source || 'prospector') === 'prospector').length;
+                const triggerCount = prospects.filter(p => p.source === 'job_board_trigger').length;
+                return triggerCount > 0 ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                            <Filter className="w-3 h-3" /> Source:
+                        </span>
+                        <Badge
+                            variant={sourceFilter === 'all' ? 'default' : 'outline'}
+                            className="cursor-pointer text-xs hover:bg-primary/10 transition-colors"
+                            onClick={() => setSourceFilter('all')}
+                        >
+                            All ({prospects.length})
+                        </Badge>
+                        <Badge
+                            variant={sourceFilter === 'prospector' ? 'default' : 'outline'}
+                            className="cursor-pointer text-xs hover:bg-primary/10 transition-colors"
+                            onClick={() => setSourceFilter(sourceFilter === 'prospector' ? 'all' : 'prospector')}
+                        >
+                            <Target className="w-3 h-3 mr-1" /> Prospector ({prospectorCount})
+                        </Badge>
+                        <Badge
+                            variant={sourceFilter === 'job_board_trigger' ? 'default' : 'outline'}
+                            className="cursor-pointer text-xs hover:bg-primary/10 transition-colors"
+                            onClick={() => setSourceFilter(sourceFilter === 'job_board_trigger' ? 'all' : 'job_board_trigger')}
+                        >
+                            <Briefcase className="w-3 h-3 mr-1" /> Job Board ({triggerCount})
+                        </Badge>
+                    </div>
+                ) : null;
+            })()}
 
             {/* Facility type filter badges */}
             {facilityTypeCounts.size > 1 && (
@@ -1374,14 +1467,25 @@ export default function ProspectsPage() {
                                             </a>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                         {prospect.phone && (
                                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                 <Phone className="w-3 h-3" />
                                                 {prospect.phone}
                                             </span>
                                         )}
+                                        {prospect.source === 'job_board_trigger' && (
+                                            <Badge className="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] px-1.5 py-0 h-4 font-medium border-0">
+                                                <Briefcase className="w-2.5 h-2.5 mr-0.5" />
+                                                {prospect.triggerData?.sourcePlatform || 'Job Board'}
+                                            </Badge>
+                                        )}
                                     </div>
+                                    {prospect.triggerData && (
+                                        <div className="text-[10px] text-indigo-600 dark:text-indigo-400 mt-0.5 truncate max-w-[280px]" title={prospect.triggerData.jobTitle}>
+                                            Hiring: {prospect.triggerData.jobTitle}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Facility Type */}

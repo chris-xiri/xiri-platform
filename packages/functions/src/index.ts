@@ -28,6 +28,7 @@ export { onAuditFailed } from "./triggers/onAuditFailed";
 export { generateMonthlyInvoices } from "./triggers/generateMonthlyInvoices";
 export { resendWebhook } from "./triggers/resendWebhook";
 export { backfillEngagement } from "./scripts/backfill-engagement";
+export { seedInHouseSequence } from "./scripts/seed-in-house-sequence";
 export { onLeadUpdated, onVendorUpdated, onStaffUpdated } from "./triggers/onLeadUpdated";
 export { weeklyTemplateOptimizer, optimizeTemplate } from "./triggers/aiTemplateOptimizer";
 export { startLeadSequence } from "./triggers/startLeadSequence";
@@ -87,6 +88,9 @@ export {
 // ── Lead Prospecting & Enrichment (onCall + scheduled) ──
 export { runProspector, addProspectsToCrm, expandLocation } from "./functions/prospecting";
 export { dailyProspector, triggerDailyProspector, updateProspectingConfig, getProspectingConfig, regenerateProspectingConfig } from "./triggers/dailyProspector";
+
+// ── In-House Conversion Trigger (job board scanning — scheduled + onCall) ──
+export { dailyClientTrigger, triggerDailyClientTrigger } from "./triggers/dailyClientTrigger";
 
 // ── Vendor / Contractor Prospecting (onCall + scheduled) ──
 export { runVendorProspector, addVendorProspectsToCrm } from "./functions/vendorProspecting";
