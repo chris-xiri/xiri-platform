@@ -1321,6 +1321,8 @@ export default function ProspectsPage() {
                 </div>
             ) : (
                 <div className="border rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                    <div className="min-w-[860px]">
                     {/* Table header */}
                     <div className="hidden md:grid grid-cols-[2.5rem_1fr_minmax(150px,180px)_minmax(140px,200px)_minmax(160px,220px)_90px_64px_100px] gap-x-3 px-4 py-2.5 bg-muted/50 border-b text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                         <div className="flex items-center justify-center">
@@ -1635,6 +1637,8 @@ export default function ProspectsPage() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                    </div>
                     </div>
                 </div>
             )}
