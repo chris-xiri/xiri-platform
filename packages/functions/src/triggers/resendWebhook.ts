@@ -216,20 +216,37 @@ export const resendWebhook = onRequest({
             return;
         }
 
+        // ─── Detect unsubscribe clicks ────────────────────────────
+        // If the recipient clicked the unsubscribe link, this is NOT genuine
+        // engagement. Record it separately and skip engagement escalation.
+        const clickedUrl = event?.data?.click?.link || event?.data?.click?.url || '';
+        const isUnsubscribeClick = eventType === 'email.clicked' &&
+            (clickedUrl.includes('/handleUnsubscribe') || clickedUrl.includes('unsubscribe'));
+
+        if (isUnsubscribeClick) {
+            logger.info(`Resend webhook: unsubscribe link clicked for ${entityType} ${entityId} — skipping engagement escalation`);
+        }
+
+        // Use a modified mapping for unsubscribe clicks
+        const effectiveMapping = isUnsubscribeClick
+            ? { ...mapping, activityType: 'EMAIL_UNSUBSCRIBE_CLICKED', deliveryStatus: mapping.deliveryStatus, description: 'Recipient clicked the unsubscribe link.' }
+            : mapping;
+
         // ─── Log activity to the correct collection ───
         const activitiesCollection = entityType === 'vendor' ? 'vendor_activities' : 'lead_activities';
         const idField = entityType === 'vendor' ? 'vendorId' : 'leadId';
 
         const activityData: Record<string, any> = {
             [idField]: entityId,
-            type: mapping.activityType,
-            description: mapping.description,
+            type: effectiveMapping.activityType,
+            description: effectiveMapping.description,
             createdAt: new Date(),
             metadata: {
                 resendId: emailId,
-                deliveryStatus: mapping.deliveryStatus,
+                deliveryStatus: effectiveMapping.deliveryStatus,
                 rawEvent: eventType,
                 to: event?.data?.to?.[0] || undefined,
+                ...(isUnsubscribeClick ? { clickedUrl, isUnsubscribeClick: true } : {}),
             }
         };
 
@@ -242,7 +259,15 @@ export const resendWebhook = onRequest({
         await db.collection(activitiesCollection).add(activityData);
 
         // ─── Update entity doc engagement cache ───
-        const entityCollection = entityType === 'vendor' ? 'vendors' : 'leads';
+        // Resolve the correct collection for leads (companies first, then leads)
+        let entityCollection: string;
+        if (entityType === 'vendor') {
+            entityCollection = 'vendors';
+        } else {
+            // Match the dual-collection pattern used everywhere else
+            const companyDoc = await db.collection('companies').doc(entityId).get();
+            entityCollection = companyDoc.exists ? 'companies' : 'leads';
+        }
 
         // Priority map: higher number = higher engagement level. Never downgrade.
         const ENGAGEMENT_PRIORITY: Record<string, number> = {
@@ -276,13 +301,14 @@ export const resendWebhook = onRequest({
             logger.warn(`Could not read current engagement for ${entityType} ${entityId}:`, readErr);
         }
 
-        if (shouldUpdateLastEvent) {
-            engagementUpdate['emailEngagement.lastEvent'] = mapping.deliveryStatus;
+        if (shouldUpdateLastEvent && !isUnsubscribeClick) {
+            engagementUpdate['emailEngagement.lastEvent'] = effectiveMapping.deliveryStatus;
         }
 
         if (eventType === 'email.opened') {
             engagementUpdate['emailEngagement.openCount'] = admin.firestore.FieldValue.increment(1);
-        } else if (eventType === 'email.clicked') {
+        } else if (eventType === 'email.clicked' && !isUnsubscribeClick) {
+            // Only count genuine content clicks, not unsubscribe link clicks
             engagementUpdate['emailEngagement.clickCount'] = admin.firestore.FieldValue.increment(1);
         }
 
@@ -311,12 +337,12 @@ export const resendWebhook = onRequest({
                 'emailEngagement.lastEventAt': new Date(),
             };
 
-            if (shouldUpdateLastEvent) {
-                contactEngagement['emailEngagement.lastEvent'] = mapping.deliveryStatus;
+            if (shouldUpdateLastEvent && !isUnsubscribeClick) {
+                contactEngagement['emailEngagement.lastEvent'] = effectiveMapping.deliveryStatus;
             }
             if (eventType === 'email.opened') {
                 contactEngagement['emailEngagement.openCount'] = admin.firestore.FieldValue.increment(1);
-            } else if (eventType === 'email.clicked') {
+            } else if (eventType === 'email.clicked' && !isUnsubscribeClick) {
                 contactEngagement['emailEngagement.clickCount'] = admin.firestore.FieldValue.increment(1);
             }
 

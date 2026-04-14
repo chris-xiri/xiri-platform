@@ -729,6 +729,7 @@ async function handleLeadSend(task: QueueItem) {
         leadSenderFrom,
         task.leadId ?? undefined, templateId,
         'lead', // entityType for unsubscribe footer
+        { contactId: contactId || undefined }, // tag email with contactId for webhook resolution
     );
 
     await db.collection("lead_activities").add({
