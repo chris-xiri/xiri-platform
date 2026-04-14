@@ -19,6 +19,97 @@ import { regionToCountyId, getCountySummary, getMarketWageContext } from '@/data
 import { CountyDataBar } from '@/components/CountyDataBar';
 import { getServiceFaqProfile, getIndustryFaqProfile, type FaqEntry } from '@/data/service-faq-intelligence';
 
+// ─── Typical Cost Data (P1: high-intent pricing queries) ────────────────────
+// Ranges reflect commercial/institutional pricing in the Greater NY market.
+// Updated quarterly; tied to BLS OES data and ISSA market benchmarks.
+const PRICING_TABLE: Record<string, {
+    rows: { scope: string; low: string; high: string; unit: string }[];
+    note: string;
+}> = {
+    'medical-office-cleaning': {
+        rows: [
+            { scope: 'Small Practice (≤1,500 sq ft)', low: '$280', high: '$420', unit: '/month' },
+            { scope: 'Mid-Size Clinic (1,500–4,000 sq ft)', low: '$420', high: '$780', unit: '/month' },
+            { scope: 'Large Medical Group (4,000+ sq ft)', low: '$780', high: '$1,800', unit: '/month' },
+            { scope: 'Terminal / Deep Clean (one-time)', low: '$350', high: '$900', unit: '/visit' },
+        ],
+        note: 'Ranges reflect OSHA-compliant disinfection protocols and nightly Night Manager audits. Final quote based on room count, traffic, and compliance tier.',
+    },
+    'janitorial-services': {
+        rows: [
+            { scope: 'Small Office (≤2,500 sq ft)', low: '$200', high: '$380', unit: '/month' },
+            { scope: 'Mid-Size Office (2,500–7,500 sq ft)', low: '$380', high: '$720', unit: '/month' },
+            { scope: 'Large Commercial (7,500+ sq ft)', low: '$720', high: '$2,200', unit: '/month' },
+            { scope: 'Day Porter (add-on)', low: '$18', high: '$26', unit: '/hr' },
+        ],
+        note: 'Pricing includes background-checked crews, all supplies, and a dedicated Facility Success Manager. No hidden fees.',
+    },
+    'office-cleaning': {
+        rows: [
+            { scope: 'Executive Suite (≤1,200 sq ft)', low: '$150', high: '$280', unit: '/month' },
+            { scope: 'Standard Office (1,200–4,000 sq ft)', low: '$280', high: '$560', unit: '/month' },
+            { scope: 'Large Floor Plate (4,000+ sq ft)', low: '$560', high: '$1,500', unit: '/month' },
+        ],
+        note: 'Includes nightly cleaning, restroom sanitation, trash removal, and kitchen wipedown. One invoice per month.',
+    },
+    'commercial-cleaning': {
+        rows: [
+            { scope: 'Retail / Showroom (≤3,000 sq ft)', low: '$250', high: '$480', unit: '/month' },
+            { scope: 'Mixed-Use Commercial (3,000–8,000 sq ft)', low: '$480', high: '$950', unit: '/month' },
+            { scope: 'Industrial / Warehouse', low: '$0.06', high: '$0.12', unit: '/sq ft/month' },
+        ],
+        note: 'All commercial cleaning includes liability insurance certificate on request and digital service logs.',
+    },
+    'carpet-cleaning': {
+        rows: [
+            { scope: 'Spot / Traffic Lane Treatment', low: '$80', high: '$180', unit: '/visit' },
+            { scope: 'Full Office (up to 2,000 sq ft)', low: '$180', high: '$380', unit: '/visit' },
+            { scope: 'Large Facility (2,000–6,000 sq ft)', low: '$380', high: '$780', unit: '/visit' },
+        ],
+        note: 'Hot-water extraction standard; encapsulation available for occupied spaces. Dries in 2–4 hours.',
+    },
+    'floor-care': {
+        rows: [
+            { scope: 'Strip & Wax (per 1,000 sq ft)', low: '$120', high: '$220', unit: '/1,000 sq ft' },
+            { scope: 'Scrub & Recoat', low: '$60', high: '$110', unit: '/1,000 sq ft' },
+            { scope: 'Burnishing / Polishing', low: '$30', high: '$60', unit: '/1,000 sq ft' },
+        ],
+        note: 'Pricing varies by finish type (VCT, LVT, concrete). Includes all equipment and materials.',
+    },
+    'window-cleaning': {
+        rows: [
+            { scope: 'Interior Windows (per pane)', low: '$3', high: '$6', unit: '/pane' },
+            { scope: 'Interior + Exterior (per pane)', low: '$5', high: '$10', unit: '/pane' },
+            { scope: 'High-Rise (per floor)', low: '$800', high: '$2,500', unit: '/floor' },
+        ],
+        note: 'Ground-level and low-rise pricing. High-rise includes rigging, insurance surcharge, and permit coordination.',
+    },
+    'disinfection-services': {
+        rows: [
+            { scope: 'Electrostatic Spray (per 1,000 sq ft)', low: '$80', high: '$160', unit: '/1,000 sq ft' },
+            { scope: 'ATP Surface Testing (add-on)', low: '$50', high: '$120', unit: '/visit' },
+            { scope: 'Monthly Scheduled Program', low: '$250', high: '$600', unit: '/month' },
+        ],
+        note: 'EPA List N disinfectants used for all pathogens including SARS-CoV-2. SDS sheets provided on every visit.',
+    },
+    'post-construction-cleanup': {
+        rows: [
+            { scope: 'Phase 1 — Rough Cleanup', low: '$0.10', high: '$0.18', unit: '/sq ft' },
+            { scope: 'Phase 2 — Final Cleanup', low: '$0.18', high: '$0.35', unit: '/sq ft' },
+            { scope: 'Touch-Up / Punch List', low: '$150', high: '$400', unit: '/visit' },
+        ],
+        note: 'Pricing per square foot of gross floor area. Includes debris removal, surface wipedown, and floor finishing.',
+    },
+    'pressure-washing': {
+        rows: [
+            { scope: 'Sidewalks / Entryways', low: '$0.08', high: '$0.18', unit: '/sq ft' },
+            { scope: 'Parking Lot (per 10,000 sq ft)', low: '$220', high: '$480', unit: '/visit' },
+            { scope: 'Building Exterior (per story)', low: '$180', high: '$420', unit: '/story' },
+        ],
+        note: 'Hot-water pressure washing available for grease and heavy soiling. All runoff managed per local stormwater codes.',
+    },
+};
+
 interface Location {
     slug: string;
     name: string;
@@ -38,6 +129,7 @@ interface Location {
     nearbyCities?: string[];
     zipCodes?: string[];
     localFaqs?: { question: string; answer: string }[];
+    lastVerified?: string;
 }
 
 type Props = {
@@ -486,6 +578,7 @@ export default async function ServicePage({ params }: Props) {
             image: `${SITE.url}/xiri-logo-horizontal.svg`,
             url: `${SITE.url}/services/${slug}`,
             telephone: SITE.phone,
+            ...(location.lastVerified && { dateModified: location.lastVerified }),
             priceRange: '$$',
             areaServed: {
                 '@type': 'Place',
@@ -529,6 +622,17 @@ export default async function ServicePage({ params }: Props) {
                 name: `${townName}, ${location.state}`,
             },
             serviceType: service.name,
+            ...(PRICING_TABLE[service.slug] && {
+                offers: {
+                    '@type': 'AggregateOffer',
+                    priceCurrency: 'USD',
+                    lowPrice: PRICING_TABLE[service.slug].rows[0].low.replace(/[^0-9.]/g, ''),
+                    highPrice: PRICING_TABLE[service.slug].rows[PRICING_TABLE[service.slug].rows.length - 1].high.replace(/[^0-9.]/g, ''),
+                    offerCount: PRICING_TABLE[service.slug].rows.length,
+                    description: PRICING_TABLE[service.slug].note,
+                    url: `${SITE.url}/services/${slug}#pricing`,
+                },
+            }),
         },
         {
             '@context': 'https://schema.org',
@@ -626,8 +730,16 @@ export default async function ServicePage({ params }: Props) {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-2 gap-12 items-start">
                         <div>
-                            <div className="inline-block px-3 py-1 rounded-full bg-sky-100 text-sky-700 text-sm font-bold mb-6">
-                                Local Market Intelligence
+                            <div className="flex flex-wrap items-center gap-3 mb-6">
+                                <div className="inline-block px-3 py-1 rounded-full bg-sky-100 text-sky-700 text-sm font-bold">
+                                    Local Market Intelligence
+                                </div>
+                                {location.lastVerified && (
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                        Data verified {new Date(location.lastVerified + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                )}
                             </div>
                             <h2 className="text-3xl font-bold text-gray-900 mb-6">
                                 Why {service.name} in {townName} Requires a Specialist
@@ -780,6 +892,61 @@ export default async function ServicePage({ params }: Props) {
             )}
 
             <ValuePropsSection title={`Our Standard for ${townName}`} />
+
+            {/* ═══ TYPICAL COST TABLE — P1: high-intent pricing queries ═══ */}
+            {PRICING_TABLE[service.slug] && (
+                <section className="py-16 bg-white border-b border-slate-200" id="pricing">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="text-center mb-10">
+                            <div className="inline-block px-3 py-1 rounded-full bg-sky-100 text-sky-700 text-sm font-bold mb-4">
+                                Pricing Transparency
+                            </div>
+                            <h2 className="text-3xl font-bold text-slate-900">
+                                Typical {service.name} Cost in {townName}
+                            </h2>
+                            <p className="mt-3 text-slate-500 max-w-2xl mx-auto">
+                                Market ranges for {location.region} — actual quote depends on your facility&apos;s scope, frequency, and compliance requirements.
+                            </p>
+                        </div>
+
+                        {/* Pricing table */}
+                        <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-slate-800 text-white">
+                                        <th className="px-6 py-4 text-left font-semibold">Scope</th>
+                                        <th className="px-4 py-4 text-center font-semibold">Low</th>
+                                        <th className="px-4 py-4 text-center font-semibold">High</th>
+                                        <th className="px-4 py-4 text-left font-semibold">Unit</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {PRICING_TABLE[service.slug].rows.map((row, i) => (
+                                        <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                                            <td className="px-6 py-4 font-medium text-slate-800">{row.scope}</td>
+                                            <td className="px-4 py-4 text-center text-emerald-700 font-bold">{row.low}</td>
+                                            <td className="px-4 py-4 text-center text-emerald-700 font-bold">{row.high}</td>
+                                            <td className="px-4 py-4 text-slate-500">{row.unit}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Note + CTA */}
+                        <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                            <p className="text-sm text-slate-500 flex-1">
+                                ⓘ {PRICING_TABLE[service.slug].note}
+                            </p>
+                            <CTAButton
+                                href="/#audit"
+                                text="Get Your Free Quote"
+                                className="shrink-0 bg-sky-600 text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-sky-700 transition-colors"
+                            />
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* ═══ COMBINED FAQs (location-specific + service + data-driven) ═══ */}
             <section className="py-16 bg-slate-50" id="faq">

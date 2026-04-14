@@ -92,6 +92,24 @@ export default async function ComparisonPage({ params }: Props) {
                     { '@type': 'ListItem', position: 3, name: page.title, item: `${SITE.url}/compare/${slug}` },
                 ],
             }} />
+            {/* ItemList Schema — makes comparison rows extractable by AI search engines */}
+            <JsonLd data={{
+                '@context': 'https://schema.org',
+                '@type': 'ItemList',
+                name: page.h1,
+                description: page.metaDescription,
+                url: `${SITE.url}/compare/${slug}`,
+                numberOfItems: page.comparisonTable.length,
+                itemListElement: page.comparisonTable.map((row, i) => ({
+                    '@type': 'ListItem',
+                    position: i + 1,
+                    name: row.feature,
+                    description: `XIRI: ${row.xiri} | ${competitorName}: ${row.competitor}`,
+                })),
+            }} />
+
+
+
 
             <AuthorityBreadcrumb items={[{ label: 'Compare', href: '/compare' }, { label: page.title }]} />
 
