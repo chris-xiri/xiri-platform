@@ -1,4 +1,5 @@
-const PAT = "REDACTED_TOKEN";
+const PAT = process.env.GITHUB_TOKEN;
+if (!PAT) { console.error('Set GITHUB_TOKEN env var'); process.exit(1); }
 async function merge(pr) {
   const res = await fetch(`https://api.github.com/repos/chris-xiri/xiri-platform/pulls/${pr}/merge`, {
     method: "PUT",

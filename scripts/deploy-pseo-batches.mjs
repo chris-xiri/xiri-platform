@@ -10,7 +10,8 @@ import { getFirestore } from "firebase-admin/firestore";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const GITHUB_TOKEN = "REDACTED_TOKEN";
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+if (!GITHUB_TOKEN) { console.error('Set GITHUB_TOKEN env var'); process.exit(1); }
 const GITHUB_OWNER = "chris-xiri";
 const GITHUB_REPO = "xiri-platform";
 const GITHUB_DEFAULT_BRANCH = "main";
