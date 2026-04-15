@@ -17,6 +17,11 @@ import { DASHBOARD_CORS } from "../utils/cors";
 import { sendText } from "../utils/googleChatUtils";
 import type { PseoNudge, NudgeScope } from "@xiri/shared";
 import { SCOPE_LABELS } from "@xiri/shared";
+import {
+    normalizeTargetSlug,
+    PSEO_DEPLOYABLE_FIELDS,
+    type PseoSkipReason,
+} from "../pseo/config";
 
 // Google Chat webhook — same secret as googleChatUtils, referenced separately for Cloud Function secrets[] binding
 const googleChatWebhookSecret = defineSecret("GOOGLE_CHAT_WEBHOOK_URL");
@@ -149,12 +154,38 @@ async function createPR(
  * e.g. "contractors/janitorial-subcontractor-in-port-washington-ny"    → matches "port-washington-ny"
  */
 function findLocationMatch<T extends { slug: string }>(nudgeSlug: string, locations: T[]): T | null {
+    const normalized = normalizeTargetSlug(nudgeSlug);
     // Try exact match first
-    const exact = locations.find(l => l.slug === nudgeSlug);
+    const exact = locations.find(l => l.slug === normalized);
     if (exact) return exact;
     // Scan all known location slugs — prefer longer (more specific) matches to avoid false positives
     const sorted = [...locations].sort((a, b) => b.slug.length - a.slug.length);
-    return sorted.find(l => nudgeSlug.includes(l.slug)) ?? null;
+    return sorted.find(l => normalized.includes(l.slug)) ?? null;
+}
+
+type RouteFamily = "services" | "industries" | "locations" | "unknown";
+
+function getRouteFamily(slug: string): RouteFamily {
+    const normalized = normalizeTargetSlug(slug);
+    if (normalized.startsWith("services/")) return "services";
+    if (normalized.startsWith("industries/")) return "industries";
+    if (normalized.startsWith("contractors/")) return "locations";
+    if (normalized.includes("-in-")) return "locations";
+    return "unknown";
+}
+
+function getEntitySlug(slug: string, family: RouteFamily): string | null {
+    const normalized = normalizeTargetSlug(slug);
+    const segments = normalized.split("/").filter(Boolean);
+    if (family === "services") {
+        const value = segments[1] || "";
+        return value ? value.split("-in-")[0] : null;
+    }
+    if (family === "industries") {
+        const value = segments.length >= 3 ? segments[2] : segments[1];
+        return value ? value.split("-in-")[0] : null;
+    }
+    return null;
 }
 
 /**
@@ -167,28 +198,74 @@ function findLocationMatch<T extends { slug: string }>(nudgeSlug: string, locati
 function applySeoDataChanges(
     seoDataRaw: string,
     nudges: PseoNudge[],
-): { modified: string; applied: string[]; skipped: string[] } {
+): {
+    modified: string;
+    applied: string[];
+    skipped: string[];
+    skippedByReason: PseoSkipReason[];
+    unsupportedFields: string[];
+    expansionQueue: Array<{ nudgeId: string; targetSlug: string; reasoning: string }>;
+} {
     const seoData = JSON.parse(seoDataRaw);
     const applied: string[] = [];
     const skipped: string[] = [];
+    const skippedByReason: PseoSkipReason[] = [];
+    const unsupportedFields = new Set<string>();
+    const expansionQueue: Array<{ nudgeId: string; targetSlug: string; reasoning: string }> = [];
+
+    const pushSkip = (nudge: PseoNudge, code: PseoSkipReason["code"], message: string) => {
+        skipped.push(`${nudge.id}: ${message}`);
+        skippedByReason.push({
+            nudgeId: nudge.id,
+            code,
+            message,
+            targetSlug: nudge.targetSlug,
+            targetField: nudge.targetField,
+        });
+        if (code === "unsupported_field") {
+            unsupportedFields.add(nudge.targetField);
+        }
+    };
 
     for (const nudge of nudges) {
         const value = nudge.editedValue || nudge.suggestedValue;
         const field = nudge.targetField;
-        const slug = nudge.targetSlug;
+        const slug = normalizeTargetSlug(nudge.targetSlug);
+        const family = getRouteFamily(slug);
 
         // Skip expansion nudges (these create new pages, not modify existing)
         if (nudge.scope === "expansion") {
-            skipped.push(`${nudge.id}: expansion nudge (manual page creation)`);
+            expansionQueue.push({
+                nudgeId: nudge.id,
+                targetSlug: slug,
+                reasoning: nudge.reasoning,
+            });
+            pushSkip(nudge, "expansion_queued", "expansion nudge queued for manual page creation");
+            continue;
+        }
+
+        if (!value || !String(value).trim()) {
+            pushSkip(nudge, "empty_value", "empty suggested value");
+            continue;
+        }
+
+        if (family === "unknown") {
+            pushSkip(nudge, "target_not_found", `unsupported target route "${slug}"`);
             continue;
         }
 
         let found = false;
 
         // Try to find in industries (template-level)
-        if (seoData.industries) {
+        if ((family === "industries" || family === "locations") && seoData.industries) {
+            const industrySlug = getEntitySlug(slug, "industries");
             for (const industry of seoData.industries) {
-                if (industry.slug === slug || slug.includes(industry.slug)) {
+                if (industrySlug && (industry.slug === industrySlug || slug.includes(industry.slug))) {
+                    if (!PSEO_DEPLOYABLE_FIELDS.industries.has(field as any)) {
+                        pushSkip(nudge, "unsupported_field", `unsupported field "${field}" for industries`);
+                        found = true;
+                        break;
+                    }
                     // Direct field mapping
                     if (field in industry) {
                         industry[field] = value;
@@ -205,10 +282,40 @@ function applySeoDataChanges(
             }
         }
 
+        // Template-level services support (required for lead pSEO reliability)
+        if (!found && (family === "services" || family === "locations") && seoData.services) {
+            const serviceSlug = getEntitySlug(slug, "services");
+            for (const service of seoData.services) {
+                if (serviceSlug && (service.slug === serviceSlug || slug.includes(service.slug))) {
+                    if (!PSEO_DEPLOYABLE_FIELDS.services.has(field as any)) {
+                        pushSkip(nudge, "unsupported_field", `unsupported field "${field}" for services`);
+                        found = true;
+                        break;
+                    }
+                    if (field in service) {
+                        service[field] = value;
+                        found = true;
+                    } else if (field === "metaTitle") {
+                        service.heroTitle = value;
+                        found = true;
+                    } else if (field === "metaDescription") {
+                        service.heroSubtitle = value;
+                        found = true;
+                    }
+                    if (found) break;
+                }
+            }
+        }
+
         // Instance-level: match locations by scanning known slugs
         if (!found && seoData.locations) {
             const location = findLocationMatch(slug, seoData.locations);
             if (location) {
+                if (!PSEO_DEPLOYABLE_FIELDS.locations.has(field as any)) {
+                    pushSkip(nudge, "unsupported_field", `unsupported field "${field}" for locations`);
+                    found = true;
+                    continue;
+                }
                 if (field in location) {
                     location[field] = value;
                     found = true;
@@ -224,8 +331,11 @@ function applySeoDataChanges(
                 } else if (field === "ctaText") {
                     location.whyXiri = value;
                     found = true;
-                } else if (field === "trustBadge" || field === "proofStatement") {
-                    location.trustStatement = value;
+                } else if (field === "trustBadge") {
+                    location.complianceNote = value;
+                    found = true;
+                } else if (field === "proofStatement") {
+                    location.localInsight = value;
                     found = true;
                 } else if (field === "lastVerified") {
                     location.lastVerified = value;
@@ -237,7 +347,7 @@ function applySeoDataChanges(
         if (found) {
             applied.push(nudge.id);
         } else {
-            skipped.push(`${nudge.id}: could not locate ${slug}.${field} in seo-data.json`);
+            pushSkip(nudge, "target_not_found", `could not locate ${slug}.${field} in seo-data.json`);
         }
     }
 
@@ -245,6 +355,9 @@ function applySeoDataChanges(
         modified: JSON.stringify(seoData, null, 2),
         applied,
         skipped,
+        skippedByReason,
+        unsupportedFields: Array.from(unsupportedFields),
+        expansionQueue,
     };
 }
 
@@ -344,7 +457,7 @@ export const deployApprovedNudges = onCall({
     timeoutSeconds: 120,
     memory: "512MiB",
 }, async (request) => {
-    const { batchId } = request.data || {};
+    const { batchId, force } = request.data || {};
 
     if (!batchId || typeof batchId !== "string") {
         throw new HttpsError("invalid-argument", "batchId is required.");
@@ -395,10 +508,56 @@ export const deployApprovedNudges = onCall({
     const { content: seoDataRaw, sha: fileSha } = await getFileContent(SEO_DATA_PATH, branchName, token);
 
     // 4. Apply nudge changes
-    const { modified, applied, skipped } = applySeoDataChanges(seoDataRaw, nudges);
+    const {
+        modified,
+        applied,
+        skipped,
+        skippedByReason,
+        unsupportedFields,
+        expansionQueue,
+    } = applySeoDataChanges(seoDataRaw, nudges);
+
+    if (skipped.length !== skippedByReason.length) {
+        throw new HttpsError("internal", "Deploy aborted: skipped nudges must include explicit reason codes.");
+    }
 
     if (applied.length === 0) {
-        throw new HttpsError("not-found", "No changes could be applied to seo-data.json. All nudges were skipped.");
+        if (!force) {
+            throw new HttpsError(
+                "failed-precondition",
+                "Deploy aborted: zero applicable nudges in batch. Re-run with force=true if this is expected.",
+            );
+        }
+        await db.collection("pseo_batches").doc(batchId).set({
+            lastDeployAttemptAt: new Date(),
+            deployedCount: 0,
+            skippedCount: skipped.length,
+            deploySkippedByReason: skippedByReason,
+            unsupportedFields,
+            expansionQueueCount: expansionQueue.length,
+            reliability: {
+                generated: nudges.length,
+                deduped: 0,
+                applied: 0,
+                skipped_by_reason: skippedByReason.reduce<Record<string, number>>((acc, s) => {
+                    acc[s.code] = (acc[s.code] || 0) + 1;
+                    return acc;
+                }, {}),
+                unsupported_fields: unsupportedFields.length,
+                missing_metrics: {},
+            },
+        }, { merge: true });
+
+        return {
+            success: false,
+            forced: true,
+            message: "No deployable nudges were applied. Batch recorded with skip reasons.",
+            applied: 0,
+            skipped: skipped.length,
+            skippedByReason,
+            unsupportedFields,
+            expansionQueueCount: expansionQueue.length,
+        };
     }
 
     // 5. Commit the changes
@@ -436,13 +595,52 @@ export const deployApprovedNudges = onCall({
     }
     await batch.commit();
 
+    // 7b. Persist explicit skip reasons on nudges not applied in this deploy
+    if (skippedByReason.length > 0) {
+        const skipBatch = db.batch();
+        for (const skip of skippedByReason) {
+            const ref = db.collection("pseo_nudges").doc(skip.nudgeId);
+            skipBatch.set(ref, {
+                deploySkippedAt: new Date(),
+                deploySkipReason: skip,
+            }, { merge: true });
+        }
+        await skipBatch.commit();
+    }
+
     // 8. Update batch doc with deployment info
     await db.collection("pseo_batches").doc(batchId).update({
         lastDeployedAt: new Date(),
         prUrl: pr.url,
         prNumber: pr.number,
         deployedCount: applied.length,
+        skippedCount: skipped.length,
+        deploySkippedByReason: skippedByReason,
+        unsupportedFields,
+        expansionQueueCount: expansionQueue.length,
+        reliability: {
+            generated: nudges.length,
+            deduped: 0,
+            applied: applied.length,
+            skipped_by_reason: skippedByReason.reduce<Record<string, number>>((acc, s) => {
+                acc[s.code] = (acc[s.code] || 0) + 1;
+                return acc;
+            }, {}),
+            unsupported_fields: unsupportedFields.length,
+            missing_metrics: {},
+        },
     });
+
+    // 8b. Persist explicit expansion queue artifact (non-destructive)
+    if (expansionQueue.length > 0) {
+        await db.collection("pseo_expansion_queue").doc(batchId).set({
+            batchId,
+            createdAt: new Date(),
+            segment,
+            count: expansionQueue.length,
+            items: expansionQueue,
+        }, { merge: true });
+    }
 
     // 9. Google Chat notification
     try {
@@ -464,6 +662,9 @@ export const deployApprovedNudges = onCall({
         prNumber: pr.number,
         applied: applied.length,
         skipped: skipped.length,
+        skippedByReason,
+        unsupportedFields,
+        expansionQueueCount: expansionQueue.length,
         branchName,
     };
 });

@@ -1,52 +1,27 @@
-
-import { notFound } from "next/navigation";
-import { Metadata } from "next";
+import { notFound, permanentRedirect } from "next/navigation";
 import seoData from "@/data/seo-data.json";
-import { IndustryHubPage } from "@/components/IndustryHubPage";
-import { SITE } from '@/lib/constants';
+import { getPillarForIndustry } from "@/lib/industry-pillars";
 
-// 1. Static Paths for Industries
+type LegacyIndustryRouteProps = {
+    params: Promise<{ slug: string }>;
+};
+
 export async function generateStaticParams() {
-    return seoData.industries.map((ind) => ({
-        slug: ind.slug,
-    }));
+    return seoData.industries.map((ind) => ({ slug: ind.slug }));
 }
 
-// 2. Metadata
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export default async function LegacyIndustryPage({ params }: LegacyIndustryRouteProps) {
     const { slug } = await params;
-    const industry = seoData.industries.find((i) => i.slug === slug);
-
-    if (industry) {
-        return {
-            title: `${industry.heroTitle} | XIRI`, // e.g. "Clinical-Grade Facility Management | XIRI"
-            description: industry.heroSubtitle,
-            alternates: {
-                canonical: `${SITE.url}/${industry.slug}`
-            },
-            openGraph: {
-                title: `${industry.heroTitle} | XIRI`,
-                description: industry.heroSubtitle,
-                url: `${SITE.url}/${industry.slug}`,
-                siteName: SITE.name,
-                type: 'website',
-            },
-        };
-    }
-
-    return {};
-}
-
-// 3. Page Component
-export default async function IndustryPage({ params }: { params: Promise<{ slug: string }> }) {
-    const { slug } = await params;
-
-    // Strict Industry Check
     const industry = seoData.industries.find((i) => i.slug === slug);
 
     if (!industry) {
         notFound();
     }
 
-    return <IndustryHubPage industry={industry as any} />;
+    const pillar = getPillarForIndustry(slug);
+    if (!pillar) {
+        notFound();
+    }
+
+    permanentRedirect(`/industries/${pillar.slug}/${slug}`);
 }
