@@ -1,6 +1,7 @@
 import type { NudgeSegment } from "@xiri/shared";
 
-export const PSEO_BATCH_SIZE = 50;
+export const DEFAULT_PSEO_BATCH_SIZE = 100;
+export const MAX_PSEO_BATCH_SIZE = 250;
 
 export const PSEO_ROUTE_PREFIXES: Record<NudgeSegment, string[]> = {
     leads: ["/services/", "/industries/", "/guides/", "/compare/"],

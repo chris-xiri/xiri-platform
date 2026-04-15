@@ -54,11 +54,11 @@ interface SequenceOption {
 function ConfidenceBadge({ confidence }: { confidence?: string }) {
     switch (confidence) {
         case 'high':
-            return <Badge className="bg-green-100 text-green-700 text-[10px] px-1.5"><CheckCircle2 className="w-3 h-3 mr-0.5" />High</Badge>;
+            return <Badge className="border border-green-300 bg-green-100 text-green-900 text-[10px] px-1.5 font-semibold"><CheckCircle2 className="w-3 h-3 mr-0.5 text-green-700" />High</Badge>;
         case 'medium':
-            return <Badge className="bg-yellow-100 text-yellow-700 text-[10px] px-1.5"><AlertCircle className="w-3 h-3 mr-0.5" />Med</Badge>;
+            return <Badge className="border border-amber-300 bg-amber-100 text-amber-900 text-[10px] px-1.5 font-semibold"><AlertCircle className="w-3 h-3 mr-0.5 text-amber-700" />Med</Badge>;
         default:
-            return <Badge className="bg-gray-100 text-gray-500 text-[10px] px-1.5"><XCircle className="w-3 h-3 mr-0.5" />Low</Badge>;
+            return <Badge className="border border-slate-300 bg-slate-100 text-slate-800 text-[10px] px-1.5 font-semibold"><XCircle className="w-3 h-3 mr-0.5 text-slate-600" />Low</Badge>;
     }
 }
 
@@ -1208,11 +1208,14 @@ export default function ProspectsPage() {
                     <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                         <Tag className="w-3 h-3" /> Type:
                     </span>
-                    <Badge
-                        variant={facilityTypeFilter === 'all' ? 'default' : 'outline'}
-                        className="cursor-pointer text-xs hover:bg-primary/10 transition-colors"
-                        onClick={() => setFacilityTypeFilter('all')}
-                    >
+                        <Badge
+                            variant={facilityTypeFilter === 'all' ? 'default' : 'outline'}
+                            className={`cursor-pointer text-xs transition-colors ${facilityTypeFilter === 'all'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'border-slate-300 bg-white text-slate-900 hover:bg-slate-100'
+                                }`}
+                            onClick={() => setFacilityTypeFilter('all')}
+                        >
                         All ({prospects.length})
                     </Badge>
                     {Array.from(facilityTypeCounts.entries())
@@ -1221,7 +1224,10 @@ export default function ProspectsPage() {
                             <Badge
                                 key={ft}
                                 variant={facilityTypeFilter === ft ? 'default' : 'outline'}
-                                className="cursor-pointer text-xs hover:bg-primary/10 transition-colors"
+                                className={`cursor-pointer text-xs transition-colors ${facilityTypeFilter === ft
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'border-slate-300 bg-white text-slate-900 hover:bg-slate-100'
+                                    }`}
                                 onClick={() => setFacilityTypeFilter(ft === facilityTypeFilter ? 'all' : ft)}
                             >
                                 {ft === 'unknown' ? 'Uncategorized' : mergedFacilityLabels[ft] || ft} ({count})
@@ -1356,17 +1362,17 @@ export default function ProspectsPage() {
                     {uncategorizedClusters.map(cluster => (
                         <div
                             key={cluster.term}
-                            className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20"
+                            className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-amber-400 bg-amber-100 text-amber-950 shadow-sm"
                         >
-                            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                            <span className="text-sm flex-1">
-                                <span className="font-medium">{cluster.count}</span> uncategorized prospects match
-                                &ldquo;<span className="font-semibold text-amber-700 dark:text-amber-300">{cluster.term}</span>&rdquo;
+                            <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
+                            <span className="text-sm flex-1 font-medium">
+                                <span className="font-semibold">{cluster.count}</span> uncategorized prospects match
+                                &ldquo;<span className="font-bold text-amber-800">{cluster.term}</span>&rdquo;
                             </span>
                             <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-xs border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                                className="h-7 text-xs border-amber-700 bg-white text-amber-950 hover:bg-amber-50"
                                 onClick={() => handleCreateTypeFromCluster(cluster.term, cluster.prospectIds)}
                             >
                                 <Plus className="w-3 h-3 mr-1" />
@@ -1379,15 +1385,15 @@ export default function ProspectsPage() {
 
             {/* Auto-categorize banner — independent of cluster detection threshold */}
             {prospects.some(p => getEffectiveFacilityType(p) === 'unknown') && (
-                <div className="flex items-center gap-3 px-4 py-2 mb-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
-                    <RefreshCw className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span className="text-sm flex-1 text-blue-700 dark:text-blue-300">
+                <div className="flex items-center gap-3 px-4 py-2 mb-3 rounded-lg border border-blue-500 bg-blue-100 text-blue-950 shadow-sm">
+                    <RefreshCw className="w-4 h-4 text-blue-700 shrink-0" />
+                    <span className="text-sm flex-1 font-medium text-blue-900">
                         {prospects.filter(p => getEffectiveFacilityType(p) === 'unknown').length} uncategorized — auto-match against known patterns{Object.keys(customFacilityTypes).length > 0 ? ` + ${Object.keys(customFacilityTypes).length} custom type${Object.keys(customFacilityTypes).length !== 1 ? 's' : ''}` : ''}
                     </span>
                     <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                        className="h-7 text-xs border-blue-700 bg-white text-blue-950 hover:bg-blue-50"
                         onClick={handleAutoRecategorize}
                     >
                         <RefreshCw className="w-3 h-3 mr-1" />
@@ -1452,14 +1458,14 @@ export default function ProspectsPage() {
                                                 </a>
                                             )}
                                             {prospect.source === 'job_board_trigger' && (
-                                                <Badge className="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] px-1.5 py-0 h-4 font-medium border-0 shrink-0">
+                                                <Badge className="border border-indigo-300 bg-indigo-100 text-indigo-900 text-[9px] px-1.5 py-0 h-4 font-semibold shrink-0">
                                                     <Briefcase className="w-2.5 h-2.5 mr-0.5" />{prospect.triggerData?.sourcePlatform || 'Job Board'}
                                                 </Badge>
                                             )}
                                         </div>
                                         <div onClick={e => e.stopPropagation()}>
                                             <Select value={effectiveFt === 'unknown' ? undefined : effectiveFt} onValueChange={(val: string) => handleSetFacilityType(prospect.id, val)}>
-                                                <SelectTrigger className={`h-6 text-[11px] px-2 w-fit max-w-[220px] ${isUnknown ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400' : isInferred ? 'border-dashed border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400' : 'border-green-300 dark:border-green-800 text-green-700 dark:text-green-400 bg-green-50/50 dark:bg-green-950/20'}`}>
+                                                <SelectTrigger className={`h-6 text-[11px] px-2 w-fit max-w-[220px] font-medium ${isUnknown ? 'border-red-400 bg-red-100 text-red-900' : isInferred ? 'border-dashed border-amber-500 bg-amber-100 text-amber-900' : 'border-green-500 bg-green-100 text-green-900'}`}>
                                                     <SelectValue placeholder="⚠ Set type…" />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -1483,7 +1489,7 @@ export default function ProspectsPage() {
                                             )}
                                         </div>
                                         {prospect.triggerData && (
-                                            <div className="text-[10px] text-indigo-600 dark:text-indigo-400 truncate">Hiring: {prospect.triggerData.jobTitle}</div>
+                                            <div className="text-[10px] text-indigo-800 truncate font-medium">Hiring: {prospect.triggerData.jobTitle}</div>
                                         )}
                                     </div>
                                     {/* Contact Zone */}
@@ -1504,7 +1510,7 @@ export default function ProspectsPage() {
                                         ) : (
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground xl:hidden">Contact</span>
+                                                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-700 xl:hidden">Contact</span>
                                                     <ConfidenceBadge confidence={prospect.emailConfidence} />
                                                     {prospect.contactEmail ? (
                                                         <span className="text-xs font-medium flex items-center gap-1 min-w-0">
@@ -1529,14 +1535,14 @@ export default function ProspectsPage() {
                                                         </span>
                                                     )}
                                                     {!prospect.contactTitle && prospect.inferredTitle && (
-                                                        <span className="text-[10px] italic text-blue-600/70 dark:text-blue-400/60 border border-dashed border-blue-300 dark:border-blue-700 rounded px-1.5 py-0 leading-5" title={`Inferred${prospect.inferredDept ? ` · ${prospect.inferredDept}` : ''}`}>
+                                                        <span className="text-[10px] italic text-blue-900 border border-dashed border-blue-500 bg-blue-50 rounded px-1.5 py-0 leading-5 font-medium" title={`Inferred${prospect.inferredDept ? ` · ${prospect.inferredDept}` : ''}`}>
                                                             ~{prospect.inferredTitle}
                                                         </span>
                                                     )}
                                                 </div>
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     {(prospect.allContacts?.length ?? 0) > 1 && (
-                                                        <button onClick={e => { e.stopPropagation(); toggleContactsExpand(prospect.id); }} className="flex items-center gap-0.5 text-[10px] px-1.5 py-0 h-4 text-blue-600 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors">
+                                                        <button onClick={e => { e.stopPropagation(); toggleContactsExpand(prospect.id); }} className="flex items-center gap-0.5 text-[10px] px-1.5 py-0 h-4 text-blue-900 border border-blue-500 bg-white rounded-md hover:bg-blue-50 transition-colors font-medium">
                                                             {expandedContacts.has(prospect.id) ? <ChevronDown className="w-2.5 h-2.5" /> : <ChevronRight className="w-2.5 h-2.5" />}
                                                             <Users className="w-2.5 h-2.5 ml-0.5" />
                                                             <span className="ml-0.5">{prospect.allContacts!.length} contacts</span>

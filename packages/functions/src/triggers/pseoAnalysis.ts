@@ -21,9 +21,15 @@ import { DASHBOARD_CORS } from "../utils/cors";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type {
     NudgeSegment, NudgeScope, NudgePriority, HeuristicRuleId,
-    NudgeDataPoints, PseoNudge, PseoBatch,
+    NudgeDataPoints, PseoNudge, PseoBatch, PseoEngineConfig,
 } from "@xiri/shared";
-import { PSEO_BATCH_SIZE, isPathInSegment, normalizeTargetSlug, targetSlugToPath } from "../pseo/config";
+import {
+    DEFAULT_PSEO_BATCH_SIZE,
+    MAX_PSEO_BATCH_SIZE,
+    isPathInSegment,
+    normalizeTargetSlug,
+    targetSlugToPath,
+} from "../pseo/config";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -118,6 +124,27 @@ function initHeuristicObservability(): HeuristicObservability {
         notTriggered: initRuleCounter(),
         dataUnavailable: initRuleCounter(),
     };
+}
+
+async function getConfiguredBatchSize(): Promise<number> {
+    try {
+        const doc = await db.collection("pseo_config").doc("engine").get();
+        if (!doc.exists) {
+            return DEFAULT_PSEO_BATCH_SIZE;
+        }
+
+        const data = doc.data() as Partial<PseoEngineConfig> | undefined;
+        const rawBatchSize = Number(data?.batchSize);
+        if (!Number.isFinite(rawBatchSize)) {
+            return DEFAULT_PSEO_BATCH_SIZE;
+        }
+
+        const normalized = Math.floor(rawBatchSize);
+        return Math.min(MAX_PSEO_BATCH_SIZE, Math.max(1, normalized));
+    } catch (err: any) {
+        logger.warn(`[pSEO] Failed to load engine config batchSize, using default ${DEFAULT_PSEO_BATCH_SIZE}: ${err.message}`);
+        return DEFAULT_PSEO_BATCH_SIZE;
+    }
 }
 
 // ── GSC Data Fetching ────────────────────────────────────────────────────────
@@ -1107,6 +1134,8 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
 
     try {
         await updateStatus({ phase: "Connecting to GSC" });
+        const configuredBatchSize = await getConfiguredBatchSize();
+        logger.info(`[pSEO] Using batch size ${configuredBatchSize} (default ${DEFAULT_PSEO_BATCH_SIZE}, max ${MAX_PSEO_BATCH_SIZE})`);
 
         // 1. Get access token
         const accessToken = await getValidAccessToken();
@@ -1221,6 +1250,7 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
         reliability.skipped_by_reason.expansion_queued += expansionNudges.length;
         allNudges.push(...expansionNudges);
         reliability.generated = allNudges.length;
+        (reliability as any).batch_size = configuredBatchSize;
 
         for (const pm of currentPages.values()) {
             if (pm.bounceRate == null) reliability.missing_metrics.bounceRate += 1;
@@ -1255,7 +1285,7 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
             return (b.dataPoints.gscImpressions || 0) - (a.dataPoints.gscImpressions || 0);
         });
 
-        const cappedNudges = allNudges.slice(0, PSEO_BATCH_SIZE);
+        const cappedNudges = allNudges.slice(0, configuredBatchSize);
 
         // 8.5. Fetch live page content for nudge pages + top CTR candidates
         phase = "Fetching live page content";

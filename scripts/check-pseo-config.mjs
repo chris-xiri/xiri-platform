@@ -11,11 +11,16 @@ function read(filePath) {
 }
 
 function extractStringArray(source, constName) {
-  const regex = new RegExp(`export const ${constName} = \\[(.*?)\\] as const;`, "s");
+  const regex = new RegExp(`export const ${constName} = \\[([\\s\\S]*?)\\] as const;`);
   const match = source.match(regex);
   if (!match) return [];
-  const values = [...match[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-  return values;
+  return match[1]
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/,$/, ""))
+    .filter((line) => /^["'].*["']$/.test(line))
+    .map((line) => line.slice(1, -1));
 }
 
 function extractSetValues(source, key) {
@@ -56,6 +61,7 @@ function main() {
   serviceSchema.add("metaTitle");
   serviceSchema.add("metaDescription");
   const locationSchema = new Set(Object.keys(seoData.locations?.[0] || {}));
+  locationSchema.add("shortDescription");
   locationSchema.add("localContext");
   locationSchema.add("ctaText");
   locationSchema.add("metaTitle");
