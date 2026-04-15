@@ -461,14 +461,12 @@ async function enrichSingleVendor(
                 if (emailValid === 'junk') {
                     log.push(`⚠️ Rejected junk email: ${bestEmail} (domain is blocklisted)`);
                 } else if (emailValid === 'mismatch') {
-                    log.push(`⚠️ Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} — demoting to low confidence`);
-                    prospect.contactEmail = bestEmail;
-                    prospect.emailSource = data.ownerEmail ? 'ai_extraction' : 'mailto';
-                    prospect.emailConfidence = 'low';
+                    log.push(`⚠️ Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} — skipping`);
+                    log.push(`Skipping off-domain email from website scrape: ${bestEmail}`);
                 } else {
                     prospect.contactEmail = bestEmail;
                     prospect.emailSource = data.ownerEmail ? 'ai_extraction' : 'mailto';
-                    prospect.emailConfidence = 'high';
+                    prospect.emailConfidence = emailValid === 'domain_match' ? 'high' : 'medium';
                     log.push(`Found personal email: ${bestEmail} (source: ${prospect.emailSource}, validation: ${emailValid})`);
 
                     if (data.allEmails) {
@@ -542,21 +540,26 @@ async function enrichSingleVendor(
             log.push(...waterfallResult.log);
 
             if (waterfallResult.allEmails.length > 0) {
-                const apiContacts: ProspectContact[] = waterfallResult.allEmails.map(e => ({
-                    email: e.email,
-                    firstName: e.firstName,
-                    lastName: e.lastName,
-                    position: e.position,
-                    confidence: e.confidence,
-                    type: e.type,
-                    provider: e.provider,
-                }));
+                const apiContacts: ProspectContact[] = waterfallResult.allEmails
+                    .filter(e => validateEmailForBusiness(e.email, vendor.website) === 'domain_match')
+                    .map(e => ({
+                        email: e.email,
+                        firstName: e.firstName,
+                        lastName: e.lastName,
+                        position: e.position,
+                        confidence: e.confidence,
+                        type: e.type,
+                        provider: e.provider,
+                    }));
                 prospect.allContacts = [...(prospect.allContacts || []), ...apiContacts];
                 log.push(`Stored ${apiContacts.length} total contacts from enrichment waterfall`);
             }
 
             if (waterfallResult.email) {
-                if (waterfallResult.type === 'personal') {
+                const waterfallEmailValid = validateEmailForBusiness(waterfallResult.email, vendor.website);
+                if (waterfallEmailValid !== 'domain_match') {
+                    log.push(`Skipping non-company email from waterfall: ${waterfallResult.email} (validation: ${waterfallEmailValid})`);
+                } else if (waterfallResult.type === 'personal') {
                     prospect.contactEmail = waterfallResult.email;
                     prospect.contactName = prospect.contactName ||
                         (waterfallResult.firstName && waterfallResult.lastName
@@ -618,6 +621,8 @@ async function trySerperSearch(
             const webEmailValid = validateEmailForBusiness(searchResult.email, vendor.website);
             if (webEmailValid === 'junk') {
                 log.push(`⚠️ Rejected junk email from web search: ${searchResult.email}`);
+            } else if (webEmailValid === 'free_provider' && !!vendor.website) {
+                log.push(`⚠️ Rejected off-domain web email: ${searchResult.email} (published off-site and not tied to ${vendor.website})`);
             } else if (webEmailValid === 'mismatch') {
                 log.push(`⚠️ Web search email mismatch: ${searchResult.email} doesn't match ${vendor.website} — skipping`);
             } else {

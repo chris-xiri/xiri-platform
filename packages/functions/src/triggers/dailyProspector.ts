@@ -247,6 +247,49 @@ function inferPicTitle(queryTerm: string): { title: string; dept?: string } | nu
     return FACILITY_PIC_MAP[queryTerm] ?? null;
 }
 
+function inferPicTitleFromFacilityType(facilityType?: string | null): { title: string; dept?: string } | null {
+    switch (facilityType) {
+        case 'medical_dental':
+        case 'medical_private':
+            return { title: 'Practice Manager', dept: 'Administration' };
+        case 'medical_urgent_care':
+            return { title: 'Clinic Manager', dept: 'Operations' };
+        case 'medical_surgery':
+        case 'medical_dialysis':
+            return { title: 'Facility Administrator', dept: 'Facilities' };
+        case 'medical_veterinary':
+            return { title: 'Practice Manager', dept: 'Operations' };
+        case 'medical_physical_therapy':
+            return { title: 'Center Director', dept: 'Operations' };
+        case 'edu_daycare':
+            return { title: 'Director', dept: 'Administration' };
+        case 'edu_tutoring':
+            return { title: 'Center Director', dept: 'Operations' };
+        case 'edu_private_school':
+            return { title: 'Principal', dept: 'Administration' };
+        case 'auto_dealer_showroom':
+            return { title: 'General Manager', dept: 'Management' };
+        case 'auto_service_center':
+            return { title: 'Shop Owner', dept: 'Management' };
+        case 'lab_cleanroom':
+        case 'lab_bsl':
+        case 'manufacturing_light':
+            return { title: 'Facilities Manager', dept: 'Facilities' };
+        case 'fitness_gym':
+            return { title: 'General Manager', dept: 'Operations' };
+        case 'retail_storefront':
+            return { title: 'Store Manager', dept: 'Operations' };
+        case 'religious_center':
+            return { title: 'Executive Director', dept: 'Administration' };
+        case 'funeral_home':
+            return { title: 'Funeral Director', dept: 'Management' };
+        case 'office_general':
+            return { title: 'Office Manager', dept: 'Administration' };
+        default:
+            return null;
+    }
+}
+
 // ── Load seen set (names + phones + emails we've already queued or imported) ──
 
 async function loadSeenSet(): Promise<Set<string>> {
@@ -454,6 +497,9 @@ async function runDailyPipeline() {
                         // Incrementally add to batch — use deterministic ID to prevent dupes
                         const docId = prospectDocId(prospect);
                         const ref = db.collection("prospect_queue").doc(docId);
+                        const inferredPic = prospect.contactTitle
+                            ? null
+                            : (inferPicTitleFromFacilityType(prospect.facilityType) || inferPicTitle(queryTerm));
                         batch.set(ref, {
                             businessName: prospect.businessName,
                             normalizedName: normalizeName(prospect.businessName),
@@ -461,6 +507,7 @@ async function runDailyPipeline() {
                             phone: prospect.phone || null,
                             website: prospect.website || null,
                             rating: prospect.rating || null,
+                            facilityType: prospect.facilityType || null,
 
                             contactEmail: prospect.contactEmail || null,
                             genericEmail: prospect.genericEmail || null,
@@ -468,9 +515,9 @@ async function runDailyPipeline() {
                             contactTitle: prospect.contactTitle || null,
 
                             // Inferred PIC — who likely manages cleaning decisions at this facility type.
-                            // Set from query term when scraping doesn't find a real contact title.
-                            inferredTitle: prospect.contactTitle ? null : (inferPicTitle(queryTerm)?.title ?? null),
-                            inferredDept: prospect.contactTitle ? null : (inferPicTitle(queryTerm)?.dept ?? null),
+                            // Prefer resolved facilityType; fall back to the raw query term.
+                            inferredTitle: inferredPic?.title ?? null,
+                            inferredDept: inferredPic?.dept ?? null,
 
                             emailSource: prospect.emailSource || 'none',
                             emailConfidence: prospect.emailConfidence || 'low',

@@ -1675,6 +1675,7 @@ export interface EnrichedProspect {
     website?: string;
     rating?: number;
     userRatingsTotal?: number;
+    facilityType?: FacilityType;
 
     // Primary contact (best email — owner / decision-maker)
     contactName?: string;       // "Dr. John Smith"
