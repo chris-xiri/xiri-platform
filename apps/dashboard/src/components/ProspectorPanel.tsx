@@ -123,10 +123,15 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
                         variant: data.variant || null,
                     };
                 })
-                .filter(t => !t.variant) // Exclude cold/warm variants — only show base templates
+                .filter(t => !t.variant) // Exclude variants
+                .filter(t => 
+                    !t.category || 
+                    t.category.toLowerCase().includes('lead') ||
+                    t.name.toLowerCase().includes('lead')
+                )
                 .map(({ variant, ...rest }) => rest);
 
-            const LEAD_CATEGORIES = ['lead', 'referral', 'custom'];
+            const LEAD_CATEGORIES = ['lead', 'referral', 'custom', 'in_house_conversion'];
             const seqs: SequenceOption[] = seqSnap.docs
                 .map(d => {
                     const data = d.data();
@@ -138,7 +143,11 @@ export default function ProspectorPanel({ isOpen, onClose }: ProspectorPanelProp
                         category: data.category || '',
                     };
                 })
-                .filter(s => !s.category || LEAD_CATEGORIES.includes(s.category));
+                .filter(s => 
+                    !s.category || 
+                    LEAD_CATEGORIES.includes(s.category.toLowerCase()) || 
+                    s.category.toLowerCase().includes('lead')
+                );
 
             setTemplates(tpls);
             setSequences(seqs);
