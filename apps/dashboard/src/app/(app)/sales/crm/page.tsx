@@ -1,19 +1,22 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import LeadList from '@/components/LeadList';
 import { AddLeadDialog } from '@/components/AddLeadDialog';
 import LeadDetailDrawer from '@/components/lead/LeadDetailDrawer';
 import ProspectorPanel from '@/components/ProspectorPanel';
+import CRMReviewQueue from '@/components/CRMReviewQueue';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Plus, Radar, ChevronDown, ChevronUp, ArrowRight, XCircle,
     Users, Mail, MailOpen, MousePointerClick, TrendingUp, AlertTriangle, X,
 } from 'lucide-react';
-import type { ContactRow } from '@/components/LeadList/LeadRow';
 import type { EngagementFilter } from '@/components/LeadList';
+import { db } from '@/lib/firebase';
+import { collection, getCountFromServer, query, where } from 'firebase/firestore';
 
 /* ───────── Funnel Helper ─────────────────────────────────────────────── */
 
@@ -25,35 +28,6 @@ interface LeadFunnel {
     clicked: number;
     bounced: number;
     unsubscribed: number;
-}
-
-function computeLeadFunnel(contacts: ContactRow[]): LeadFunnel {
-    const data: LeadFunnel = { total: contacts.length, sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0, unsubscribed: 0 };
-    for (const c of contacts) {
-        if (c.unsubscribed) data.unsubscribed++;
-        const eng = c.emailEngagement;
-        if (!eng?.lastEvent) continue;
-        data.sent++;
-        switch (eng.lastEvent) {
-            case 'clicked':
-                data.clicked++;
-                data.opened++;
-                data.delivered++;
-                break;
-            case 'opened':
-                data.opened++;
-                data.delivered++;
-                break;
-            case 'delivered':
-                data.delivered++;
-                break;
-            case 'bounced':
-            case 'spam':
-                data.bounced++;
-                break;
-        }
-    }
-    return data;
 }
 
 function pct(n: number, d: number): string {
@@ -74,14 +48,17 @@ export default function SalesCRMPage() {
     const [drawerContactId, setDrawerContactId] = useState<string | null>(null);
     const [showProspector, setShowProspector] = useState(false);
     const [funnelCollapsed, setFunnelCollapsed] = useState(true);
-    const [contactsData, setContactsData] = useState<ContactRow[]>([]);
+    const [funnel, setFunnel] = useState<LeadFunnel>({
+        total: 0,
+        sent: 0,
+        delivered: 0,
+        opened: 0,
+        clicked: 0,
+        bounced: 0,
+        unsubscribed: 0,
+    });
+    const [crmView, setCrmView] = useState<'pipeline' | 'review'>('pipeline');
     const [engagementFilter, setEngagementFilter] = useState<EngagementFilter>(null);
-
-    const handleContactsLoaded = useCallback((contacts: ContactRow[]) => {
-        setContactsData(contacts);
-    }, []);
-
-    const funnel = useMemo(() => computeLeadFunnel(contactsData), [contactsData]);
 
     // Toggle engagement filter — clicking the same segment twice clears it
     const handleEngagementClick = (filter: NonNullable<EngagementFilter>) => {
@@ -89,6 +66,46 @@ export default function SalesCRMPage() {
         // Auto-expand funnel if collapsed so user can see their selection
         setFunnelCollapsed(false);
     };
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadFunnel = async () => {
+            const contactsRef = collection(db, 'contacts');
+            const [
+                totalSnap,
+                sentSnap,
+                deliveredSnap,
+                openedSnap,
+                clickedSnap,
+                bouncedSnap,
+                unsubscribedSnap,
+            ] = await Promise.all([
+                getCountFromServer(contactsRef),
+                getCountFromServer(query(contactsRef, where('emailEngagement.lastEvent', 'in', ['delivered', 'opened', 'clicked', 'bounced', 'spam']))),
+                getCountFromServer(query(contactsRef, where('emailEngagement.lastEvent', 'in', ['delivered', 'opened', 'clicked']))),
+                getCountFromServer(query(contactsRef, where('emailEngagement.lastEvent', 'in', ['opened', 'clicked']))),
+                getCountFromServer(query(contactsRef, where('emailEngagement.lastEvent', '==', 'clicked'))),
+                getCountFromServer(query(contactsRef, where('emailEngagement.lastEvent', 'in', ['bounced', 'spam']))),
+                getCountFromServer(query(contactsRef, where('unsubscribed', '==', true))),
+            ]);
+
+            if (cancelled) return;
+
+            setFunnel({
+                total: totalSnap.data().count,
+                sent: sentSnap.data().count,
+                delivered: deliveredSnap.data().count,
+                opened: openedSnap.data().count,
+                clicked: clickedSnap.data().count,
+                bounced: bouncedSnap.data().count,
+                unsubscribed: unsubscribedSnap.data().count,
+            });
+        };
+
+        void loadFunnel();
+        return () => { cancelled = true; };
+    }, []);
 
     return (
         <ProtectedRoute resource="sales/crm">
@@ -99,10 +116,16 @@ export default function SalesCRMPage() {
                         <div>
                             <h1 className="text-2xl font-bold">Sales CRM</h1>
                             <p className="text-sm text-muted-foreground">
-                                {contactsData.length} contacts • Email engagement funnel + pipeline
+                                {funnel.total} contacts • Email engagement funnel + pipeline
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
+                            <Tabs value={crmView} onValueChange={(value) => setCrmView(value as 'pipeline' | 'review')}>
+                                <TabsList className="h-8">
+                                    <TabsTrigger value="pipeline" className="text-xs">Pipeline</TabsTrigger>
+                                    <TabsTrigger value="review" className="text-xs">Review Queue</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                             <Button
                                 variant={showProspector ? 'default' : 'outline'}
                                 size="sm"
@@ -142,7 +165,7 @@ export default function SalesCRMPage() {
                 )}
 
                 {/* ─── Collapsible Email Engagement Funnel ────────────────── */}
-                {!funnelCollapsed && (
+                {crmView === 'pipeline' && !funnelCollapsed && (
                     <div className="flex-shrink-0 px-4 sm:px-6 py-4 space-y-4 border-b bg-muted/20">
                         {/* Stat Cards — clickable to filter */}
                         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
@@ -270,7 +293,7 @@ export default function SalesCRMPage() {
                 )}
 
                 {/* ─── Active Engagement Filter Banner ────────────────────── */}
-                {engagementFilter && (
+                {crmView === 'pipeline' && engagementFilter && (
                     <div className="flex-shrink-0 px-4 sm:px-6 py-2 bg-primary/5 border-b border-primary/10 flex items-center justify-between">
                         <p className="text-xs text-primary font-medium">
                             Filtering by: <span className="font-bold">{ENGAGEMENT_LABELS[engagementFilter]}</span>
@@ -286,12 +309,15 @@ export default function SalesCRMPage() {
 
                 {/* ─── Pipeline Table ─────────────────────────────────────── */}
                 <div className="flex-1 overflow-hidden px-4 sm:px-6 py-2">
-                    <LeadList
-                        title="Sales Pipeline"
-                        onRowClick={(contactId) => setDrawerContactId(contactId)}
-                        onContactsLoaded={handleContactsLoaded}
-                        engagementFilter={engagementFilter}
-                    />
+                    {crmView === 'pipeline' ? (
+                        <LeadList
+                            title="Sales Pipeline"
+                            onRowClick={(contactId) => setDrawerContactId(contactId)}
+                            engagementFilter={engagementFilter}
+                        />
+                    ) : (
+                        <CRMReviewQueue onRowClick={(contactId) => setDrawerContactId(contactId)} />
+                    )}
                 </div>
             </div>
 

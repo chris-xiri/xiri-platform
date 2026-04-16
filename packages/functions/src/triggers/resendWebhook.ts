@@ -423,6 +423,9 @@ export const resendWebhook = onRequest({
                                 unsubscribed: true,
                                 unsubscribedAt: new Date(),
                                 unsubscribeReason: reason,
+                                lifecycleStatus: 'suppressed',
+                                lifecycleReason: reason,
+                                lifecycleUpdatedAt: new Date(),
                             });
                         }
 

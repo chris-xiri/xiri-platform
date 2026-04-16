@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, orderBy, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Lead, LeadType, Contact, FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
+import { Lead, LeadType, Contact } from '@xiri-facility-solutions/shared';
+import { useFacilityTypes } from '@/lib/facilityTypes';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -463,6 +464,7 @@ function EditableAddressField({
 /* ─── Main Drawer ──────────────────────────────────────────────────── */
 
 export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: LeadDetailDrawerProps) {
+    const { facilityTypeLabels } = useFacilityTypes();
     const router = useRouter();
     // Contact data
     const [contact, setContact] = useState<Contact | null>(null);
@@ -602,6 +604,9 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
             contactUpdate.unsubscribed = false;
             contactUpdate.unsubscribedAt = null;
             contactUpdate.unsubscribeReason = null;
+            contactUpdate.lifecycleStatus = 'active';
+            contactUpdate.lifecycleReason = null;
+            contactUpdate.lifecycleUpdatedAt = new Date();
         }
         await updateDoc(doc(db, 'contacts', contactId), contactUpdate);
 
@@ -877,7 +882,7 @@ export default function LeadDetailDrawer({ leadId: contactId, open, onClose }: L
                                                     {company.facilityType && (
                                                         <div>
                                                             <p className="text-[10px] uppercase text-muted-foreground">Facility Type</p>
-                                                            <p className="font-medium">{FACILITY_TYPE_LABELS[company.facilityType] || company.facilityType}</p>
+                                                            <p className="font-medium">{facilityTypeLabels[company.facilityType] || company.facilityType}</p>
                                                         </div>
                                                     )}
                                                     {(company.sqft || company.sqft === '0') && (

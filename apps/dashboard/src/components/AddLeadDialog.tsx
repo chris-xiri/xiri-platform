@@ -8,11 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, X, Sparkles, Plus, User, ChevronDown, ChevronUp, Building2, Search, MapPin } from "lucide-react";
-import { collection, doc, serverTimestamp, writeBatch, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, doc, serverTimestamp, writeBatch, onSnapshot, query, orderBy, getDocs, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { EnrichButton } from "@/components/EnrichButton";
-import { FACILITY_TYPE_OPTIONS, FacilityType } from '@xiri-facility-solutions/shared';
+import { FacilityType } from '@xiri-facility-solutions/shared';
+import { ensureCustomFacilityType, useFacilityTypes } from "@/lib/facilityTypes";
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 
 /**
@@ -65,19 +66,6 @@ interface CompanyOption {
     state?: string;
 }
 
-function loadCustomFacilityTypes(): { value: string; label: string }[] {
-    if (typeof window === 'undefined') return [];
-    return JSON.parse(localStorage.getItem('custom-facility-types') || '[]');
-}
-
-function saveCustomFacilityType(type: { value: string; label: string }) {
-    const existing = loadCustomFacilityTypes();
-    if (!existing.find(t => t.value === type.value)) {
-        existing.push(type);
-        localStorage.setItem('custom-facility-types', JSON.stringify(existing));
-    }
-}
-
 const ATTRIBUTION_SOURCES = [
     { value: "Referral", label: "Referral" },
     { value: "Manual Search", label: "Manual Search" },
@@ -90,11 +78,12 @@ function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v
     const [search, setSearch] = useState("");
     const [isOpen, setIsOpen] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(0);
-    const [customTypes, setCustomTypes] = useState<{ value: string; label: string }[]>(loadCustomFacilityTypes());
+    const [creatingType, setCreatingType] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+    const { facilityTypeOptions } = useFacilityTypes();
 
-    const allTypes = [...FACILITY_TYPE_OPTIONS, ...customTypes];
+    const allTypes = facilityTypeOptions;
     const selectedLabel = allTypes.find(t => t.value === value)?.label || value || "";
 
     const filtered = search
@@ -137,14 +126,18 @@ function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v
         setSearch("");
     };
 
-    const handleAddNew = () => {
-        const slug = search.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-        const newType = { value: slug, label: search };
-        saveCustomFacilityType(newType);
-        setCustomTypes([...customTypes, newType]);
-        onChange(slug);
-        setIsOpen(false);
-        setSearch("");
+    const handleAddNew = async () => {
+        setCreatingType(true);
+        try {
+            const newType = await ensureCustomFacilityType(search);
+            onChange(newType.value);
+            setIsOpen(false);
+            setSearch("");
+        } catch (error) {
+            console.error("Failed to create facility type:", error);
+        } finally {
+            setCreatingType(false);
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -164,7 +157,7 @@ function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v
             if (highlightedIndex < filtered.length) {
                 handleSelect(filtered[highlightedIndex].value);
             } else if (showAddNew) {
-                handleAddNew();
+                void handleAddNew();
             }
         }
     };
@@ -215,10 +208,11 @@ function FacilityTypeCombobox({ value, onChange }: { value: string; onChange: (v
                             className={`w-full text-left px-3 py-2 text-sm transition-colors text-primary font-medium flex items-center gap-1.5 border-t ${
                                 highlightedIndex === filtered.length ? 'bg-accent' : ''
                             }`}
-                            onClick={handleAddNew}
+                            onClick={() => void handleAddNew()}
                             onMouseEnter={() => setHighlightedIndex(filtered.length)}
+                            disabled={creatingType}
                         >
-                            <Plus className="w-3.5 h-3.5" /> Add &ldquo;{search}&rdquo; as new type
+                            {creatingType ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add &ldquo;{search}&rdquo; as new type
                         </button>
                     )}
                     {filtered.length === 0 && !showAddNew && (
@@ -580,6 +574,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
     };
 
     const canSubmit = selectedCompanyId || (creatingNewCompany && businessName && address);
+    const hasContactDetails = !!(firstName.trim() || lastName.trim() || email.trim() || phone.trim() || contactRole.trim());
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -596,15 +591,17 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
 
             let companyId: string;
             let companyName: string;
+            let shouldCreatePrimaryContact = false;
 
             if (creatingNewCompany) {
                 // Create a new company
                 const companyRef = doc(collection(db, 'companies'));
                 companyId = companyRef.id;
-                companyName = businessName;
+                companyName = businessName.trim();
+                shouldCreatePrimaryContact = true;
 
                 batch.set(companyRef, {
-                    businessName,
+                    businessName: companyName,
                     website: normalizedWebsite,
                     address: address?.label || '',
                     city,
@@ -629,20 +626,28 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                 // Use existing company
                 companyId = selectedCompanyId!;
                 companyName = selectedCompanyName;
+                if (hasContactDetails) {
+                    const existingContactsSnap = await getDocs(query(
+                        collection(db, 'contacts'),
+                        where('companyId', '==', companyId),
+                        limit(1),
+                    ));
+                    shouldCreatePrimaryContact = existingContactsSnap.empty;
+                }
             }
 
-            // Create the contact only if name is provided
-            if (firstName || lastName) {
+            if (hasContactDetails) {
                 const contactRef = doc(collection(db, 'contacts'));
                 batch.set(contactRef, {
-                    firstName,
-                    lastName,
-                    email: email || null,
-                    phone: phone || null,
-                    role: contactRole || null,
+                    firstName: firstName.trim(),
+                    lastName: lastName.trim(),
+                    email: email.trim() || null,
+                    phone: phone.trim() || null,
+                    role: contactRole.trim() || null,
                     companyId,
                     companyName,
-                    isPrimary: false,
+                    isPrimary: shouldCreatePrimaryContact,
+                    lifecycleStatus: 'active',
                     unsubscribed: false,
                     notes: '',
                     createdAt: serverTimestamp(),
@@ -992,7 +997,7 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
                         </Button>
                         <Button type="submit" disabled={submitting || !canSubmit}>
                             {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            {firstName || lastName ? 'Add Lead & Contact' : 'Add Lead'}
+                            {hasContactDetails ? 'Add Lead & Contact' : 'Add Lead'}
                         </Button>
                     </div>
                 </form>

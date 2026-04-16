@@ -81,23 +81,23 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db28, task) {
-  return db28.collection(COLLECTION).add({
+async function enqueueTask(db29, task) {
+  return db29.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db28) {
+async function fetchPendingTasks(db29) {
   const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db28.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db29.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function claimTask(db28, taskId) {
-  const ref = db28.collection(COLLECTION).doc(taskId);
+async function claimTask(db29, taskId) {
+  const ref = db29.collection(COLLECTION).doc(taskId);
   try {
-    return await db28.runTransaction(async (txn) => {
+    return await db29.runTransaction(async (txn) => {
       const snap = await txn.get(ref);
       if (!snap.exists) return false;
       const current = snap.data();
@@ -114,31 +114,31 @@ async function claimTask(db28, taskId) {
     return false;
   }
 }
-async function updateTaskStatus(db28, taskId, status, updates = {}) {
-  await db28.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db29, taskId, status, updates = {}) {
+  await db29.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db28, vendorId) {
-  const snapshot = await db28.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db28.batch();
+async function cancelVendorTasks(db29, vendorId) {
+  const snapshot = await db29.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db29.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadTasks(db28, leadId) {
-  const snapshot = await db28.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db28.batch();
+async function cancelLeadTasks(db29, leadId) {
+  const snapshot = await db29.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db29.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadScheduledEmails(db28, leadId, collection = "companies") {
+async function cancelLeadScheduledEmails(db29, leadId, collection = "companies") {
   const { Resend: Resend5 } = await import("resend");
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -146,7 +146,7 @@ async function cancelLeadScheduledEmails(db28, leadId, collection = "companies")
     return 0;
   }
   const resend2 = new Resend5(apiKey);
-  const docRef = db28.collection(collection).doc(leadId);
+  const docRef = db29.collection(collection).doc(leadId);
   const snap = await docRef.get();
   const ids = snap.data()?.scheduledEmailIds || [];
   if (ids.length === 0) return 0;
@@ -58449,6 +58449,7 @@ __export(index_exports, {
   processOutreachQueue: () => processOutreachQueue,
   publishFacebookPost: () => publishFacebookPost,
   publishPostNow: () => publishPostNow,
+  refreshContactReviewQueue: () => refreshContactReviewQueue,
   regeneratePostCaption: () => regeneratePostCaption,
   regeneratePostImage: () => regeneratePostImage,
   regenerateProspectingConfig: () => regenerateProspectingConfig,
@@ -60747,8 +60748,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db28 = (0, import_firestore6.getFirestore)();
-    const docRef = db28.collection(collection).doc(documentId);
+    const db29 = (0, import_firestore6.getFirestore)();
+    const docRef = db29.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -61067,7 +61068,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger8.error("Error sending vendor confirmation:", err2);
     }
   }
-  const db28 = admin10.firestore();
+  const db29 = admin10.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -61094,9 +61095,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db28.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db29.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger8.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db28.collection("vendor_activities").add({
+  await db29.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -62148,10 +62149,10 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
   logger12.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
-  const db28 = admin16.firestore();
+  const db29 = admin16.firestore();
   let vendorData;
   try {
-    const vendorSnap = await db28.collection("vendors").doc(newVendorId).get();
+    const vendorSnap = await db29.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
       logger12.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
@@ -62165,7 +62166,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   let leadData = {};
   if (after.leadId) {
     try {
-      const leadSnap = await db28.collection("leads").doc(after.leadId).get();
+      const leadSnap = await db29.collection("leads").doc(after.leadId).get();
       if (leadSnap.exists) {
         leadData = leadSnap.data();
       }
@@ -62175,7 +62176,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   }
   let xiriData;
   try {
-    const settingsSnap = await db28.collection("settings").doc("corporate").get();
+    const settingsSnap = await db29.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
       logger12.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
@@ -62209,7 +62210,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const result = await generateST1201(vendorCertData, xiriData, void 0);
   if (!result.success || !result.pdfBytes) {
     logger12.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
-    await db28.collection("vendor_activities").add({
+    await db29.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
       description: `ST-120.1 generation failed for WO ${workOrderId}: ${result.error}`,
@@ -62240,7 +62241,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     logger12.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err2);
     return;
   }
-  await db28.collection("work_orders").doc(workOrderId).update({
+  await db29.collection("work_orders").doc(workOrderId).update({
     st1201CertificatePath: storagePath,
     st1201IssueDate: result.issueDate,
     st1201ExpiryDate: result.expiryDate,
@@ -62249,7 +62250,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (vendorCertData.email) {
     const vendorName = vendorCertData.businessName;
     const pdfBase64 = Buffer.from(result.pdfBytes).toString("base64");
-    await db28.collection("mail_queue").add({
+    await db29.collection("mail_queue").add({
       to: vendorCertData.email,
       subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${xiriData.businessName}`,
       templateType: "st_120_1_certificate",
@@ -62270,7 +62271,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
       createdAt: admin16.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db28.collection("vendor_activities").add({
+  await db29.collection("vendor_activities").add({
     vendorId: newVendorId,
     type: "TAX_CERTIFICATE_ISSUED",
     description: `ST-120.1 blanket certificate generated (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
@@ -63736,7 +63737,10 @@ var resendWebhook = (0, import_https4.onRequest)({
               await db20.collection("contacts").doc(resolvedContactId).update({
                 unsubscribed: true,
                 unsubscribedAt: /* @__PURE__ */ new Date(),
-                unsubscribeReason: reason
+                unsubscribeReason: reason,
+                lifecycleStatus: "suppressed",
+                lifecycleReason: reason,
+                lifecycleUpdatedAt: /* @__PURE__ */ new Date()
               });
             }
             await db20.collection("lead_activities").add({
@@ -64597,6 +64601,12 @@ var DEFAULT_SEQUENCE_MAP = {
   direct: "tenant_lead_sequence",
   in_house_conversion: "in_house_conversion_sequence"
 };
+function formatLifecycleDate(value) {
+  if (!value) return null;
+  const date = value?.toDate ? value.toDate() : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 var startLeadSequence = (0, import_https8.onCall)(async (request) => {
   const { leadId, contactId: requestedContactId, sequenceId: requestedSequenceId } = request.data;
   if (!leadId) {
@@ -64629,6 +64639,13 @@ var startLeadSequence = (0, import_https8.onCall)(async (request) => {
     const contactDoc = await db24.collection("contacts").doc(contactId).get();
     if (contactDoc.exists) {
       const contact = contactDoc.data();
+      if (contact.lifecycleStatus === "held") {
+        const holdUntil = formatLifecycleDate(contact.holdUntilAt);
+        throw new import_https8.HttpsError(
+          "failed-precondition",
+          holdUntil ? `Contact ${contact.firstName || ""} ${contact.lastName || ""} is on hold until ${holdUntil} \u2014 reactivate before enrolling in a sequence.`.trim() : `Contact ${contact.firstName || ""} ${contact.lastName || ""} is on hold \u2014 reactivate before enrolling in a sequence.`.trim()
+        );
+      }
       if (contact.unsubscribed) {
         throw new import_https8.HttpsError(
           "failed-precondition",
@@ -64645,6 +64662,13 @@ var startLeadSequence = (0, import_https8.onCall)(async (request) => {
       const primaryContact = primarySnap.docs[0];
       contactId = primaryContact.id;
       const pData = primaryContact.data();
+      if (pData.lifecycleStatus === "held") {
+        const holdUntil = formatLifecycleDate(pData.holdUntilAt);
+        throw new import_https8.HttpsError(
+          "failed-precondition",
+          holdUntil ? `${businessName}'s primary contact is on hold until ${holdUntil} \u2014 reactivate the contact before enrolling in a sequence.` : `${businessName}'s primary contact is on hold \u2014 reactivate the contact before enrolling in a sequence.`
+        );
+      }
       contactEmail = pData.email || "";
       contactName = `${pData.firstName || ""} ${pData.lastName || ""}`.trim();
     }
@@ -64861,6 +64885,12 @@ if (!admin29.apps.length) {
   admin29.initializeApp();
 }
 var db25 = admin29.firestore();
+function formatLifecycleDate2(value) {
+  if (!value) return null;
+  const date = value?.toDate ? value.toDate() : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 var sendSingleLeadEmail = (0, import_https9.onCall)(
   { secrets: ["RESEND_API_KEY"] },
   async (request) => {
@@ -64893,6 +64923,13 @@ var sendSingleLeadEmail = (0, import_https9.onCall)(
       const contactDoc = await db25.collection("contacts").doc(contactId).get();
       if (contactDoc.exists) {
         const c = contactDoc.data();
+        if (c.lifecycleStatus === "held") {
+          const holdUntil = formatLifecycleDate2(c.holdUntilAt);
+          throw new import_https9.HttpsError(
+            "failed-precondition",
+            holdUntil ? `${c.firstName || ""} ${c.lastName || ""} is on hold until ${holdUntil} \u2014 reactivate the contact before sending.`.trim() : `${c.firstName || ""} ${c.lastName || ""} is on hold \u2014 reactivate the contact before sending.`.trim()
+          );
+        }
         contactEmail = c.email || "";
         contactName = `${c.firstName || ""} ${c.lastName || ""}`.trim();
         contactUnsubscribed = c.unsubscribed || false;
@@ -64904,6 +64941,13 @@ var sendSingleLeadEmail = (0, import_https9.onCall)(
         const pDoc = primarySnap.docs[0];
         contactId = pDoc.id;
         const pData = pDoc.data();
+        if (pData.lifecycleStatus === "held") {
+          const holdUntil = formatLifecycleDate2(pData.holdUntilAt);
+          throw new import_https9.HttpsError(
+            "failed-precondition",
+            holdUntil ? `${businessName}'s primary contact is on hold until ${holdUntil} \u2014 reactivate the contact before sending.` : `${businessName}'s primary contact is on hold \u2014 reactivate the contact before sending.`
+          );
+        }
         contactEmail = pData.email || "";
         contactName = `${pData.firstName || ""} ${pData.lastName || ""}`.trim();
         contactUnsubscribed = pData.unsubscribed || false;
@@ -65874,8 +65918,166 @@ var changeMyPassword = (0, import_https12.onCall)({
   }
 });
 
-// src/functions/leads.ts
+// src/functions/contactReview.ts
 var import_https13 = require("firebase-functions/v2/https");
+var admin32 = __toESM(require("firebase-admin"));
+if (!admin32.apps.length) {
+  admin32.initializeApp();
+}
+var db28 = admin32.firestore();
+function normalizeEmail(email) {
+  return (email || "").trim().toLowerCase();
+}
+function normalizeName(firstName, lastName) {
+  return `${(firstName || "").trim().toLowerCase()} ${(lastName || "").trim().toLowerCase()}`.trim();
+}
+function scoreContact(contact) {
+  let score = 0;
+  const lifecycle = contact.lifecycleStatus || (contact.unsubscribed ? "suppressed" : "active");
+  if (contact.isPrimary) score += 100;
+  if (lifecycle === "active") score += 50;
+  if (lifecycle === "held") score += 15;
+  if (lifecycle === "suppressed") score -= 50;
+  if (!contact.unsubscribed) score += 10;
+  const engagement = contact.emailEngagement;
+  if (engagement?.lastEvent === "clicked") score += 15;
+  if (engagement?.lastEvent === "opened") score += 8;
+  if (engagement?.lastEvent === "delivered") score += 4;
+  if (engagement?.lastEvent === "bounced" || engagement?.lastEvent === "spam") score -= 20;
+  const email = normalizeEmail(contact.email);
+  if (email && !email.startsWith("info@") && !email.startsWith("hello@") && !email.startsWith("admin@")) {
+    score += 5;
+  }
+  return score;
+}
+function pickWinner(contacts) {
+  return [...contacts].sort((a2, b) => scoreContact(b.data) - scoreContact(a2.data))[0];
+}
+var refreshContactReviewQueue = (0, import_https13.onCall)(async (request) => {
+  if (!request.auth) {
+    throw new import_https13.HttpsError("unauthenticated", "Authentication required");
+  }
+  const snapshot = await db28.collection("contacts").get();
+  const byCompany = /* @__PURE__ */ new Map();
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    const companyId = data.companyId;
+    if (!companyId) return;
+    const group = byCompany.get(companyId) || [];
+    group.push({ id: docSnap.id, data });
+    byCompany.set(companyId, group);
+  });
+  const updates = /* @__PURE__ */ new Map();
+  let exactDuplicateCount = 0;
+  let nameCandidateCount = 0;
+  let lifecycleBackfillCount = 0;
+  const ensureUpdate = (contactId) => {
+    const existing = updates.get(contactId) || {};
+    updates.set(contactId, existing);
+    return existing;
+  };
+  for (const contacts of byCompany.values()) {
+    const byEmail = /* @__PURE__ */ new Map();
+    const byName = /* @__PURE__ */ new Map();
+    for (const contact of contacts) {
+      const email = normalizeEmail(contact.data.email);
+      const name = normalizeName(contact.data.firstName, contact.data.lastName);
+      if (!contact.data.lifecycleStatus) {
+        const update = ensureUpdate(contact.id);
+        update.lifecycleStatus = contact.data.unsubscribed ? "suppressed" : "active";
+        update.lifecycleUpdatedAt = admin32.firestore.FieldValue.serverTimestamp();
+        lifecycleBackfillCount++;
+      }
+      if (email) {
+        const emailGroup = byEmail.get(email) || [];
+        emailGroup.push(contact);
+        byEmail.set(email, emailGroup);
+      }
+      if (name) {
+        const nameGroup = byName.get(name) || [];
+        nameGroup.push(contact);
+        byName.set(name, nameGroup);
+      }
+    }
+    for (const group of byEmail.values()) {
+      if (group.length < 2) continue;
+      const winner = pickWinner(group);
+      for (const contact of group) {
+        const update = ensureUpdate(contact.id);
+        const existingReasons = new Set((contact.data.reviewReasons || []).filter((reason) => reason !== "duplicate_name_candidate"));
+        if (contact.id === winner.id) {
+          if (contact.data.lifecycleStatus === "duplicate" && contact.data.lifecycleReason === "duplicate_email") {
+            update.lifecycleStatus = "active";
+            update.lifecycleReason = null;
+            update.lifecycleUpdatedAt = admin32.firestore.FieldValue.serverTimestamp();
+          }
+          update.duplicateOfContactId = null;
+          update.reviewReasons = Array.from(existingReasons);
+          continue;
+        }
+        update.lifecycleStatus = "duplicate";
+        update.lifecycleReason = "duplicate_email";
+        update.lifecycleUpdatedAt = admin32.firestore.FieldValue.serverTimestamp();
+        update.duplicateOfContactId = winner.id;
+        update.reviewReasons = Array.from(existingReasons);
+        exactDuplicateCount++;
+      }
+    }
+    for (const group of byName.values()) {
+      if (group.length < 2) continue;
+      const uniqueEmails = new Set(group.map((contact) => normalizeEmail(contact.data.email)).filter(Boolean));
+      if (uniqueEmails.size <= 1) continue;
+      const winner = pickWinner(group);
+      for (const contact of group) {
+        if (contact.id === winner.id) {
+          const update2 = ensureUpdate(contact.id);
+          const remainingReasons = (contact.data.reviewReasons || []).filter((reason) => reason !== "duplicate_name_candidate");
+          update2.reviewReasons = remainingReasons;
+          continue;
+        }
+        const update = ensureUpdate(contact.id);
+        const reviewReasons = new Set(contact.data.reviewReasons || []);
+        reviewReasons.add("duplicate_name_candidate");
+        update.reviewReasons = Array.from(reviewReasons);
+        if (!contact.data.lifecycleStatus || contact.data.lifecycleStatus === "active") {
+          update.lifecycleStatus = "review";
+          update.lifecycleReason = "duplicate_name_candidate";
+          update.lifecycleUpdatedAt = admin32.firestore.FieldValue.serverTimestamp();
+        }
+        nameCandidateCount++;
+      }
+    }
+  }
+  const BATCH_LIMIT = 400;
+  const entries = Array.from(updates.entries());
+  for (let i = 0; i < entries.length; i += BATCH_LIMIT) {
+    const batch = db28.batch();
+    for (const [contactId, rawUpdate] of entries.slice(i, i + BATCH_LIMIT)) {
+      const update = {};
+      for (const [key, value] of Object.entries(rawUpdate)) {
+        if (key === "reviewReasons" && Array.isArray(value) && value.length === 0) {
+          update[key] = admin32.firestore.FieldValue.delete();
+        } else if (key === "duplicateOfContactId" && !value) {
+          update[key] = null;
+        } else {
+          update[key] = value;
+        }
+      }
+      batch.set(db28.collection("contacts").doc(contactId), update, { merge: true });
+    }
+    await batch.commit();
+  }
+  return {
+    scannedContacts: snapshot.size,
+    updatedContacts: entries.length,
+    exactDuplicateCount,
+    nameCandidateCount,
+    lifecycleBackfillCount
+  };
+});
+
+// src/functions/leads.ts
+var import_https14 = require("firebase-functions/v2/https");
 
 // src/agents/recruiter.ts
 var import_generative_ai6 = require("@google/generative-ai");
@@ -66524,7 +66726,7 @@ var searchProperties = async (query, location, providerName = "mock") => {
 };
 
 // src/functions/leads.ts
-var generateLeads = (0, import_https13.onCall)({
+var generateLeads = (0, import_https14.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540
@@ -66537,7 +66739,7 @@ var generateLeads = (0, import_https13.onCall)({
   const provider = data.provider || "google_maps";
   const dcaCategory = data.dcaCategory;
   if (provider === "google_maps" && !query || !location) {
-    throw new import_https13.HttpsError("invalid-argument", "Missing required fields in request.");
+    throw new import_https14.HttpsError("invalid-argument", "Missing required fields in request.");
   }
   try {
     console.log(`Analyzing leads for query: ${query}, location: ${location}, provider: ${provider}, category: ${dcaCategory}${previewOnly ? " (PREVIEW MODE)" : ""}`);
@@ -66552,10 +66754,10 @@ var generateLeads = (0, import_https13.onCall)({
     };
   } catch (error18) {
     console.error("Error in generateLeads:", error18);
-    throw new import_https13.HttpsError("internal", error18.message || "An internal error occurred.");
+    throw new import_https14.HttpsError("internal", error18.message || "An internal error occurred.");
   }
 });
-var clearPipeline = (0, import_https13.onCall)({
+var clearPipeline = (0, import_https14.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   try {
@@ -66578,10 +66780,10 @@ var clearPipeline = (0, import_https13.onCall)({
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
   } catch (error18) {
-    throw new import_https13.HttpsError("internal", error18.message);
+    throw new import_https14.HttpsError("internal", error18.message);
   }
 });
-var runRecruiterAgent = (0, import_https13.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
+var runRecruiterAgent = (0, import_https14.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
   const rawVendors = req.body.vendors || [
     { name: "ABC Cleaning", services: "We do medical office cleaning and terminal cleaning." },
     { name: "Joe's Pizza", services: "Best pizza in town" },
@@ -66590,24 +66792,24 @@ var runRecruiterAgent = (0, import_https13.onRequest)({ secrets: ["GEMINI_API_KE
   const result = await analyzeVendorLeads(rawVendors, "Commercial Cleaning");
   res.json(result);
 });
-var testSendEmail = (0, import_https13.onCall)({
+var testSendEmail = (0, import_https14.onCall)({
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
   cors: DASHBOARD_CORS
 }, async (request) => {
   const { sendTemplatedEmail: sendTemplatedEmail2 } = await Promise.resolve().then(() => (init_emailUtils(), emailUtils_exports));
   const { vendorId, templateId } = request.data;
   if (!vendorId || !templateId) {
-    throw new import_https13.HttpsError("invalid-argument", "Missing vendorId or templateId");
+    throw new import_https14.HttpsError("invalid-argument", "Missing vendorId or templateId");
   }
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
   } catch (error18) {
     console.error("Error sending test email:", error18);
-    throw new import_https13.HttpsError("internal", error18.message || "Failed to send email");
+    throw new import_https14.HttpsError("internal", error18.message || "Failed to send email");
   }
 });
-var sourceProperties = (0, import_https13.onCall)({
+var sourceProperties = (0, import_https14.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 120
 }, async (request) => {
@@ -66616,7 +66818,7 @@ var sourceProperties = (0, import_https13.onCall)({
   const location = data.location;
   const providerName = data.provider || "mock";
   if (!query || !location) {
-    throw new import_https13.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https14.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`[sourceProperties] query="${query}", location="${location}", provider=${providerName}`);
@@ -66628,22 +66830,22 @@ var sourceProperties = (0, import_https13.onCall)({
     };
   } catch (error18) {
     console.error("[sourceProperties] Error:", error18);
-    throw new import_https13.HttpsError("internal", error18.message || "Failed to source properties.");
+    throw new import_https14.HttpsError("internal", error18.message || "Failed to source properties.");
   }
 });
 
 // src/functions/social.ts
-var import_https14 = require("firebase-functions/v2/https");
+var import_https15 = require("firebase-functions/v2/https");
 init_promptUtils();
 init_facebookApi();
-var publishFacebookPost = (0, import_https14.onCall)({
+var publishFacebookPost = (0, import_https15.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { message, link, imageUrl, scheduledTime } = request.data;
   if (!message) {
-    throw new import_https14.HttpsError("invalid-argument", "Message is required");
+    throw new import_https15.HttpsError("invalid-argument", "Message is required");
   }
   try {
     let result;
@@ -66670,14 +66872,14 @@ var publishFacebookPost = (0, import_https14.onCall)({
     return result;
   } catch (error18) {
     console.error("[Facebook] Publish error:", error18);
-    throw new import_https14.HttpsError("internal", error18.message || "Failed to publish to Facebook");
+    throw new import_https15.HttpsError("internal", error18.message || "Failed to publish to Facebook");
   }
 });
-var getFacebookPosts = (0, import_https14.onCall)({
+var getFacebookPosts = (0, import_https15.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const posts = await getRecentPosts(limit || 10);
@@ -66685,14 +66887,14 @@ var getFacebookPosts = (0, import_https14.onCall)({
     return { posts, insights };
   } catch (error18) {
     console.error("[Facebook] Get posts error:", error18);
-    throw new import_https14.HttpsError("internal", error18.message || "Failed to get Facebook posts");
+    throw new import_https15.HttpsError("internal", error18.message || "Failed to get Facebook posts");
   }
 });
-var getFacebookReels = (0, import_https14.onCall)({
+var getFacebookReels = (0, import_https15.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const { getRecentReels: getRecentReels2 } = await Promise.resolve().then(() => (init_facebookApi(), facebookApi_exports));
@@ -66700,16 +66902,16 @@ var getFacebookReels = (0, import_https14.onCall)({
     return { reels };
   } catch (error18) {
     console.error("[Facebook] Get reels error:", error18);
-    throw new import_https14.HttpsError("internal", error18.message || "Failed to get Facebook reels");
+    throw new import_https15.HttpsError("internal", error18.message || "Failed to get Facebook reels");
   }
 });
-var deleteFacebookPost = (0, import_https14.onCall)({
+var deleteFacebookPost = (0, import_https15.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https14.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https15.HttpsError("invalid-argument", "postId is required");
   try {
     const success = await deletePost(postId);
     const snapshot = await db.collection("social_posts").where("facebookPostId", "==", postId).limit(1).get();
@@ -66723,24 +66925,24 @@ var deleteFacebookPost = (0, import_https14.onCall)({
     return { success };
   } catch (error18) {
     console.error("[Facebook] Delete error:", error18);
-    throw new import_https14.HttpsError("internal", error18.message || "Failed to delete Facebook post");
+    throw new import_https15.HttpsError("internal", error18.message || "Failed to delete Facebook post");
   }
 });
-var triggerSocialContentGeneration = (0, import_https14.onCall)({
+var triggerSocialContentGeneration = (0, import_https15.onCall)({
   secrets: ["GEMINI_API_KEY", "FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const channel = request.data?.channel || "facebook_posts";
   await generateSocialContent(channel);
   return { success: true };
 });
-var updateSocialConfig = (0, import_https14.onCall)({
+var updateSocialConfig = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { channel, cadence, preferredDays, preferredTime, tone, topics, hashtagSets, enabled, audienceMix } = request.data;
   const channelId = channel || "facebook_posts";
   const config2 = { updatedAt: /* @__PURE__ */ new Date() };
@@ -66757,18 +66959,18 @@ var updateSocialConfig = (0, import_https14.onCall)({
   console.log(`[Social] Config updated for ${channelId}:`, config2);
   return { success: true };
 });
-var reviewSocialPost = (0, import_https14.onCall)({
+var reviewSocialPost = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { postId, action, editedMessage, rejectionReason, scheduledFor } = request.data;
   if (!postId || !action) {
-    throw new import_https14.HttpsError("invalid-argument", "postId and action are required");
+    throw new import_https15.HttpsError("invalid-argument", "postId and action are required");
   }
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
   if (!postDoc.exists) {
-    throw new import_https14.HttpsError("not-found", "Post not found");
+    throw new import_https15.HttpsError("not-found", "Post not found");
   }
   const update = {
     reviewedBy: request.auth.uid,
@@ -66785,24 +66987,24 @@ var reviewSocialPost = (0, import_https14.onCall)({
       update.rejectionReason = rejectionReason || null;
       break;
     default:
-      throw new import_https14.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
+      throw new import_https15.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
   }
   await postRef.update(update);
   console.log(`[Social] Post ${postId} ${action}ed by ${request.auth.uid}`);
   return { success: true, status: update.status };
 });
-var publishPostNow = (0, import_https14.onCall)({
+var publishPostNow = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   timeoutSeconds: 180,
   memory: "512MiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https14.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https15.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https14.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https15.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   try {
     let result;
@@ -66890,7 +67092,7 @@ file '${outroMp4}'
         error: result.error || "Publishing failed",
         failedAt: /* @__PURE__ */ new Date()
       });
-      throw new import_https14.HttpsError("internal", result.error || "Publishing failed");
+      throw new import_https15.HttpsError("internal", result.error || "Publishing failed");
     }
   } catch (err2) {
     const errorMsg = err2.message || "Publishing failed";
@@ -66901,37 +67103,37 @@ file '${outroMp4}'
       failedAt: /* @__PURE__ */ new Date()
     }).catch(() => {
     });
-    throw new import_https14.HttpsError("internal", errorMsg);
+    throw new import_https15.HttpsError("internal", errorMsg);
   }
 });
-var searchPlaces = (0, import_https14.onCall)({
+var searchPlaces = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"]
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { query } = request.data;
-  if (!query) throw new import_https14.HttpsError("invalid-argument", "query is required");
+  if (!query) throw new import_https15.HttpsError("invalid-argument", "query is required");
   const results = await searchFacebookPlaces(query);
   return { places: results };
 });
-var regeneratePostImage = (0, import_https14.onCall)({
+var regeneratePostImage = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 300,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https14.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https15.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https14.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https15.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience || "contractor";
   console.log(`[RegenImage] Regenerating image for post ${postId} with feedback: "${feedback || "none"}"`);
   const { generatePostImage: generatePostImage2 } = await Promise.resolve().then(() => (init_imagenApi(), imagenApi_exports));
   const result = await generatePostImage2(post.message, audience, feedback || void 0);
   if (!result) {
-    throw new import_https14.HttpsError("internal", "Image generation failed");
+    throw new import_https15.HttpsError("internal", "Image generation failed");
   }
   await postRef.update({
     imageUrl: result.imageUrl,
@@ -66941,17 +67143,17 @@ var regeneratePostImage = (0, import_https14.onCall)({
   console.log(`[RegenImage] New image: ${result.imageUrl}`);
   return { success: true, imageUrl: result.imageUrl };
 });
-var regeneratePostCaption = (0, import_https14.onCall)({
+var regeneratePostCaption = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["GEMINI_API_KEY"],
   timeoutSeconds: 120
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https14.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https15.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https14.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https15.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
   console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
@@ -66987,7 +67189,7 @@ Respond with ONLY the post text. No introductions.`;
   const result = await model2.generateContent(prompt);
   const newCaption = result.response.text().trim();
   if (!newCaption) {
-    throw new import_https14.HttpsError("internal", "Caption generation returned empty");
+    throw new import_https15.HttpsError("internal", "Caption generation returned empty");
   }
   await postRef.update({
     message: newCaption,
@@ -66997,19 +67199,19 @@ Respond with ONLY the post text. No introductions.`;
   console.log(`[RegenCaption] New caption generated (${newCaption.length} chars)`);
   return { success: true, message: newCaption };
 });
-var getOutroPreview = (0, import_https14.onCall)({
+var getOutroPreview = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https14.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { presetId } = request.data;
-  if (!presetId) throw new import_https14.HttpsError("invalid-argument", "presetId is required");
+  if (!presetId) throw new import_https15.HttpsError("invalid-argument", "presetId is required");
   const { getOrCreateOutroFrameUrl: getOrCreateOutroFrameUrl2 } = await Promise.resolve().then(() => (init_reelOutroGenerator(), reelOutroGenerator_exports));
   const url = await getOrCreateOutroFrameUrl2(presetId);
   return { url };
 });
 
 // src/functions/nfc.ts
-var import_https15 = require("firebase-functions/v2/https");
+var import_https16 = require("firebase-functions/v2/https");
 var crypto4 = __toESM(require("crypto"));
 
 // src/utils/googleChatUtils.ts
@@ -67394,27 +67596,27 @@ function hashSiteKey(plainKey) {
 function generateSessionToken() {
   return crypto4.randomUUID();
 }
-var validateSiteKey = (0, import_https15.onCall)({
+var validateSiteKey = (0, import_https16.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { locationId, siteKey, personName, personPhone } = request.data;
   if (!locationId || typeof locationId !== "string") {
-    throw new import_https15.HttpsError("invalid-argument", "locationId is required");
+    throw new import_https16.HttpsError("invalid-argument", "locationId is required");
   }
   if (!siteKey || typeof siteKey !== "string") {
-    throw new import_https15.HttpsError("invalid-argument", "Site key is required");
+    throw new import_https16.HttpsError("invalid-argument", "Site key is required");
   }
   if (!personName || typeof personName !== "string" || personName.trim().length === 0) {
-    throw new import_https15.HttpsError("invalid-argument", "Name is required");
+    throw new import_https16.HttpsError("invalid-argument", "Name is required");
   }
   const siteDoc = await db.collection("nfc_sites").doc(locationId).get();
   if (!siteDoc.exists) {
-    throw new import_https15.HttpsError("not-found", "Location not found. Check with your supervisor.");
+    throw new import_https16.HttpsError("not-found", "Location not found. Check with your supervisor.");
   }
   const siteData = siteDoc.data();
   if (siteData.revokedAt) {
-    throw new import_https15.HttpsError("permission-denied", "Access has been revoked. Contact your supervisor for a new site key.");
+    throw new import_https16.HttpsError("permission-denied", "Access has been revoked. Contact your supervisor for a new site key.");
   }
   const hashedInput = hashSiteKey(siteKey.trim());
   let personRole;
@@ -67423,7 +67625,7 @@ var validateSiteKey = (0, import_https15.onCall)({
   } else if (siteData.managerKeyHash && hashedInput === siteData.managerKeyHash) {
     personRole = "night_manager";
   } else {
-    throw new import_https15.HttpsError("permission-denied", "Invalid site key. Please check and try again.");
+    throw new import_https16.HttpsError("permission-denied", "Invalid site key. Please check and try again.");
   }
   const sessionId = generateSessionToken();
   const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1e3);
@@ -67477,25 +67679,25 @@ var validateSiteKey = (0, import_https15.onCall)({
     expiresAt: expiresAt.toISOString()
   };
 });
-var updateZoneScan = (0, import_https15.onCall)({
+var updateZoneScan = (0, import_https16.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { sessionId, zoneId, zoneName, tasksCompleted } = request.data;
   if (!sessionId || typeof sessionId !== "string") {
-    throw new import_https15.HttpsError("invalid-argument", "sessionId is required");
+    throw new import_https16.HttpsError("invalid-argument", "sessionId is required");
   }
   if (!zoneId || typeof zoneId !== "string") {
-    throw new import_https15.HttpsError("invalid-argument", "zoneId is required");
+    throw new import_https16.HttpsError("invalid-argument", "zoneId is required");
   }
   const sessionDoc = await db.collection("nfc_sessions").doc(sessionId).get();
   if (!sessionDoc.exists) {
-    throw new import_https15.HttpsError("not-found", "Session not found. Please tap the Start tag again.");
+    throw new import_https16.HttpsError("not-found", "Session not found. Please tap the Start tag again.");
   }
   const sessionData = sessionDoc.data();
   const expiresAt = sessionData.expiresAt?.toDate?.() || sessionData.expiresAt;
   if (expiresAt && /* @__PURE__ */ new Date() > new Date(expiresAt)) {
-    throw new import_https15.HttpsError("permission-denied", "Session expired. Please tap the Start tag to clock in again.");
+    throw new import_https16.HttpsError("permission-denied", "Session expired. Please tap the Start tag to clock in again.");
   }
   const scanResult = {
     zoneId,
@@ -67570,17 +67772,17 @@ var updateZoneScan = (0, import_https15.onCall)({
     allZonesDone: scannedZones >= totalZones
   };
 });
-var completeNfcSession = (0, import_https15.onCall)({
+var completeNfcSession = (0, import_https16.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { sessionId, auditScore, auditNotes } = request.data;
   if (!sessionId) {
-    throw new import_https15.HttpsError("invalid-argument", "sessionId is required");
+    throw new import_https16.HttpsError("invalid-argument", "sessionId is required");
   }
   const sessionDoc = await db.collection("nfc_sessions").doc(sessionId).get();
   if (!sessionDoc.exists) {
-    throw new import_https15.HttpsError("not-found", "Session not found.");
+    throw new import_https16.HttpsError("not-found", "Session not found.");
   }
   await db.collection("nfc_sessions").doc(sessionId).update({
     clockOutAt: /* @__PURE__ */ new Date(),
@@ -67610,16 +67812,16 @@ var completeNfcSession = (0, import_https15.onCall)({
 function getInitials(name) {
   return name.split(/\s+/).map((w) => w.charAt(0).toUpperCase()).join("").slice(0, 2) || "?";
 }
-var getComplianceLog = (0, import_https15.onCall)({
+var getComplianceLog = (0, import_https16.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const { locationId } = request.data;
   if (!locationId || typeof locationId !== "string") {
-    throw new import_https15.HttpsError("invalid-argument", "locationId is required");
+    throw new import_https16.HttpsError("invalid-argument", "locationId is required");
   }
   const siteDoc = await db.collection("nfc_sites").doc(locationId).get();
   if (!siteDoc.exists) {
-    throw new import_https15.HttpsError("not-found", "Location not found.");
+    throw new import_https16.HttpsError("not-found", "Location not found.");
   }
   const siteData = siteDoc.data();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3);
@@ -67668,7 +67870,7 @@ var getComplianceLog = (0, import_https15.onCall)({
 
 // src/functions/monitoring.ts
 var import_scheduler7 = require("firebase-functions/v2/scheduler");
-var import_https16 = require("firebase-functions/v2/https");
+var import_https17 = require("firebase-functions/v2/https");
 init_emailUtils();
 
 // src/utils/morningReportEmail.ts
@@ -68245,20 +68447,20 @@ async function buildReportData(wo, dateRef, graceMin) {
     complianceLogUrl: `https://xiri.ai/c/${wo.buildingId}`
   };
 }
-var sendTestMorningReport = (0, import_https16.onCall)({
+var sendTestMorningReport = (0, import_https17.onCall)({
   cors: true
 }, async (request) => {
   const { workOrderId, recipientEmail, scenario } = request.data;
   if (!workOrderId) {
-    throw new import_https16.HttpsError("invalid-argument", "workOrderId is required");
+    throw new import_https17.HttpsError("invalid-argument", "workOrderId is required");
   }
   const woDoc = await db.collection("work_orders").doc(workOrderId).get();
   if (!woDoc.exists) {
-    throw new import_https16.HttpsError("not-found", "Work order not found");
+    throw new import_https17.HttpsError("not-found", "Work order not found");
   }
   const wo = await resolveWorkOrder(woDoc);
   if (!wo) {
-    throw new import_https16.HttpsError("failed-precondition", "Work order is not active");
+    throw new import_https17.HttpsError("failed-precondition", "Work order is not active");
   }
   const config2 = await loadMonitoringConfig();
   const graceMin = wo.graceMinutes || config2.graceMinutes;
@@ -68415,7 +68617,7 @@ var weeklyAIBotDigest = (0, import_scheduler8.onSchedule)({
 
 // src/triggers/clarityAnalysis.ts
 var import_scheduler9 = require("firebase-functions/v2/scheduler");
-var import_https17 = require("firebase-functions/v2/https");
+var import_https18 = require("firebase-functions/v2/https");
 var import_params6 = require("firebase-functions/params");
 var import_v27 = require("firebase-functions/v2");
 
@@ -68931,7 +69133,7 @@ var dailyClarityReport = (0, import_scheduler9.onSchedule)({
     throw err2;
   }
 });
-var triggerClarityReport = (0, import_https17.onCall)({
+var triggerClarityReport = (0, import_https18.onCall)({
   cors: true,
   secrets: [CLARITY_API_TOKEN, CLARITY_CHAT_WEBHOOK, GEMINI_API_KEY4],
   timeoutSeconds: 120,
@@ -68990,7 +69192,7 @@ var triggerClarityReport = (0, import_https17.onCall)({
     };
   } catch (err2) {
     import_v27.logger.error("\u274C Manual Clarity report failed:", err2);
-    throw new import_https17.HttpsError("internal", err2.message || "Clarity report failed");
+    throw new import_https18.HttpsError("internal", err2.message || "Clarity report failed");
   }
 });
 async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
@@ -69024,7 +69226,7 @@ async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
 }
 
 // src/functions/tidycal-api.ts
-var import_https18 = require("firebase-functions/v2/https");
+var import_https19 = require("firebase-functions/v2/https");
 var import_params7 = require("firebase-functions/params");
 var import_firestore20 = require("firebase-admin/firestore");
 
@@ -69110,7 +69312,7 @@ async function listBookings(options) {
 
 // src/functions/tidycal-api.ts
 var TIDYCAL_API_KEY = (0, import_params7.defineSecret)("TIDYCAL_API_KEY");
-var getOnboardingTimeslots = (0, import_https18.onRequest)({
+var getOnboardingTimeslots = (0, import_https19.onRequest)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (req, res) => {
@@ -69133,7 +69335,7 @@ var getOnboardingTimeslots = (0, import_https18.onRequest)({
     res.status(500).json({ error: error18.message || "Failed to fetch timeslots" });
   }
 });
-var bookOnboardingCall = (0, import_https18.onRequest)({
+var bookOnboardingCall = (0, import_https19.onRequest)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (req, res) => {
@@ -69198,14 +69400,14 @@ var bookOnboardingCall = (0, import_https18.onRequest)({
     res.status(500).json({ error: error18.message || "Failed to book call" });
   }
 });
-var getDashboardTimeslots = (0, import_https18.onCall)({
+var getDashboardTimeslots = (0, import_https19.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https18.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https19.HttpsError("unauthenticated", "Must be logged in");
   const { startDate, endDate, timezone, bookingTypeId } = request.data;
   if (!startDate || !endDate) {
-    throw new import_https18.HttpsError("invalid-argument", "startDate and endDate are required");
+    throw new import_https19.HttpsError("invalid-argument", "startDate and endDate are required");
   }
   const typeId = bookingTypeId || TIDYCAL_BOOKING_TYPES.DISCOVERY_CALL;
   const slots = await getTimeslots(
@@ -69216,19 +69418,19 @@ var getDashboardTimeslots = (0, import_https18.onCall)({
   );
   return { slots };
 });
-var bookDiscoveryCall = (0, import_https18.onCall)({
+var bookDiscoveryCall = (0, import_https19.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https18.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https19.HttpsError("unauthenticated", "Must be logged in");
   const { leadId, name, email, starts_at, timezone, bookingTypeId } = request.data;
   if (!leadId || !name || !email || !starts_at) {
-    throw new import_https18.HttpsError("invalid-argument", "leadId, name, email, starts_at are required");
+    throw new import_https19.HttpsError("invalid-argument", "leadId, name, email, starts_at are required");
   }
   const leadRef = db.collection("leads").doc(leadId);
   const leadDoc = await leadRef.get();
   if (!leadDoc.exists) {
-    throw new import_https18.HttpsError("not-found", "Lead not found");
+    throw new import_https19.HttpsError("not-found", "Lead not found");
   }
   const typeId = bookingTypeId || TIDYCAL_BOOKING_TYPES.DISCOVERY_CALL;
   const booking = await createBooking(typeId, {
@@ -69269,11 +69471,11 @@ var bookDiscoveryCall = (0, import_https18.onCall)({
     }
   };
 });
-var getTidyCalBookings = (0, import_https18.onCall)({
+var getTidyCalBookings = (0, import_https19.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https18.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https19.HttpsError("unauthenticated", "Must be logged in");
   const { bookingTypeId, page } = request.data || {};
   const result = await listBookings({
     bookingTypeId,
@@ -69283,7 +69485,7 @@ var getTidyCalBookings = (0, import_https18.onCall)({
 });
 
 // src/functions/prospecting.ts
-var import_https19 = require("firebase-functions/v2/https");
+var import_https20 = require("firebase-functions/v2/https");
 
 // src/utils/emailPatternGuesser.ts
 var import_dns = require("dns");
@@ -70236,7 +70438,7 @@ async function searchLinkedInForDecisionMaker(businessName, location, serperApiK
 
 // src/functions/prospecting.ts
 init_src();
-var runProspector = (0, import_https19.onCall)({
+var runProspector = (0, import_https20.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
@@ -70249,7 +70451,7 @@ var runProspector = (0, import_https19.onCall)({
   const maxResults = data.maxResults || 20;
   const skipPaidApis = data.skipPaidApis || false;
   if (!query || !location) {
-    throw new import_https19.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
+    throw new import_https20.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
   }
   try {
     console.log(`[runProspector] query="${query}", location="${location}", max=${maxResults}, skipPaid=${skipPaidApis}`);
@@ -70268,16 +70470,16 @@ var runProspector = (0, import_https19.onCall)({
     };
   } catch (error18) {
     console.error("[runProspector] Error:", error18);
-    throw new import_https19.HttpsError("internal", error18.message || "Pipeline failed.");
+    throw new import_https20.HttpsError("internal", error18.message || "Pipeline failed.");
   }
 });
-var addProspectsToCrm = (0, import_https19.onCall)({
+var addProspectsToCrm = (0, import_https20.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 60
 }, async (request) => {
   const { prospects, searchQuery: batchSearchQuery } = request.data;
   if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
-    throw new import_https19.HttpsError("invalid-argument", "No prospects provided.");
+    throw new import_https20.HttpsError("invalid-argument", "No prospects provided.");
   }
   try {
     const results = [];
@@ -70368,10 +70570,10 @@ var addProspectsToCrm = (0, import_https19.onCall)({
     };
   } catch (error18) {
     console.error("[addProspectsToCrm] Error:", error18);
-    throw new import_https19.HttpsError("internal", error18.message || "CRM import failed.");
+    throw new import_https20.HttpsError("internal", error18.message || "CRM import failed.");
   }
 });
-var expandLocation = (0, import_https19.onCall)({
+var expandLocation = (0, import_https20.onCall)({
   secrets: ["GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30
@@ -70379,7 +70581,7 @@ var expandLocation = (0, import_https19.onCall)({
   const data = request.data || {};
   const location = data.location;
   if (!location) {
-    throw new import_https19.HttpsError("invalid-argument", "Missing 'location'.");
+    throw new import_https20.HttpsError("invalid-argument", "Missing 'location'.");
   }
   try {
     console.log(`[expandLocation] Bursting location: "${location}"...`);
@@ -70401,13 +70603,13 @@ var expandLocation = (0, import_https19.onCall)({
     return { towns };
   } catch (error18) {
     console.error("[expandLocation] Error:", error18);
-    throw new import_https19.HttpsError("internal", error18.message || "Failed to expand location.");
+    throw new import_https20.HttpsError("internal", error18.message || "Failed to expand location.");
   }
 });
 
 // src/triggers/dailyProspector.ts
 var import_scheduler10 = require("firebase-functions/v2/scheduler");
-var import_https20 = require("firebase-functions/v2/https");
+var import_https21 = require("firebase-functions/v2/https");
 var logger32 = __toESM(require("firebase-functions/logger"));
 var crypto5 = __toESM(require("crypto"));
 
@@ -70707,7 +70909,7 @@ function getConfigSummary(config2) {
 }
 
 // src/triggers/dailyProspector.ts
-function normalizeName(name) {
+function normalizeName2(name) {
   return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
 }
 function prospectDocId(prospect) {
@@ -70723,7 +70925,7 @@ function prospectDocId(prospect) {
     parts.push(domain);
   }
   if (parts.length === 0) {
-    parts.push(normalizeName(prospect.businessName));
+    parts.push(normalizeName2(prospect.businessName));
   }
   const composite = parts.join("|");
   return crypto5.createHash("sha256").update(composite).digest("hex").slice(0, 20);
@@ -70913,7 +71115,7 @@ async function loadSeenSet() {
   const companiesSnap = await db.collection("companies").select("name", "phone", "website", "address").get();
   for (const doc of companiesSnap.docs) {
     const d = doc.data();
-    if (d.name) seen.add(normalizeName(d.name));
+    if (d.name) seen.add(normalizeName2(d.name));
     if (d.phone) {
       const cleaned = d.phone.replace(/[^0-9]/g, "");
       if (cleaned.length >= 7) seen.add(`phone:${cleaned}`);
@@ -71006,7 +71208,7 @@ async function runDailyPipeline() {
         const batch = db.batch();
         for (const prospect of result.prospects) {
           if (newProspects.length >= config2.dailyTarget) break;
-          const normalized = normalizeName(prospect.businessName);
+          const normalized = normalizeName2(prospect.businessName);
           const emailLower = prospect.contactEmail?.toLowerCase();
           const genericLower = prospect.genericEmail?.toLowerCase();
           const phoneCleaned = prospect.phone?.replace(/[^0-9]/g, "");
@@ -71038,7 +71240,7 @@ async function runDailyPipeline() {
           const inferredPic = prospect.contactTitle ? null : inferPicTitleFromFacilityType(prospect.facilityType) || inferPicTitle(queryTerm);
           batch.set(ref, {
             businessName: prospect.businessName,
-            normalizedName: normalizeName(prospect.businessName),
+            normalizedName: normalizeName2(prospect.businessName),
             address: prospect.address || null,
             phone: prospect.phone || null,
             website: prospect.website || null,
@@ -71134,7 +71336,7 @@ var dailyProspector = (0, import_scheduler10.onSchedule)({
   logger32.info("[DailyProspector] Starting scheduled run...");
   await runDailyPipeline();
 });
-var triggerDailyProspector = (0, import_https20.onCall)({
+var triggerDailyProspector = (0, import_https21.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   timeoutSeconds: 540,
@@ -71144,7 +71346,7 @@ var triggerDailyProspector = (0, import_https20.onCall)({
   await runDailyPipeline();
   return { message: "Daily prospector pipeline completed." };
 });
-var updateProspectingConfig = (0, import_https20.onCall)({
+var updateProspectingConfig = (0, import_https21.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const data = request.data;
@@ -71155,13 +71357,13 @@ var updateProspectingConfig = (0, import_https20.onCall)({
   if (data.enabled !== void 0) update.enabled = data.enabled;
   if (data.excludePatterns) update.excludePatterns = data.excludePatterns;
   if (Object.keys(update).length === 0) {
-    throw new import_https20.HttpsError("invalid-argument", "No valid fields to update.");
+    throw new import_https21.HttpsError("invalid-argument", "No valid fields to update.");
   }
   await db.collection("prospecting_config").doc("default").set(update, { merge: true });
   logger32.info("[updateProspectingConfig] Config updated:", update);
   return { message: "Prospecting config updated.", updated: update };
 });
-var getProspectingConfig = (0, import_https20.onCall)({
+var getProspectingConfig = (0, import_https21.onCall)({
   cors: DASHBOARD_CORS
 }, async () => {
   const doc = await db.collection("prospecting_config").doc("default").get();
@@ -71171,7 +71373,7 @@ var getProspectingConfig = (0, import_https20.onCall)({
   await db.collection("prospecting_config").doc("default").set(DEFAULT_CONFIG);
   return DEFAULT_CONFIG;
 });
-var regenerateProspectingConfig = (0, import_https20.onCall)({
+var regenerateProspectingConfig = (0, import_https21.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const data = request.data;
@@ -71200,7 +71402,7 @@ var regenerateProspectingConfig = (0, import_https20.onCall)({
 
 // src/triggers/dailyClientTrigger.ts
 var import_scheduler11 = require("firebase-functions/v2/scheduler");
-var import_https21 = require("firebase-functions/v2/https");
+var import_https22 = require("firebase-functions/v2/https");
 var logger34 = __toESM(require("firebase-functions/logger"));
 var crypto7 = __toESM(require("crypto"));
 
@@ -71419,7 +71621,7 @@ async function searchJobPostings(query, location, maxResults = 20, excludePatter
 }
 
 // src/triggers/dailyClientTrigger.ts
-function normalizeName2(name) {
+function normalizeName3(name) {
   return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
 }
 function prospectDocId2(prospect) {
@@ -71435,7 +71637,7 @@ function prospectDocId2(prospect) {
     parts.push(domain);
   }
   if (parts.length === 0) {
-    parts.push(normalizeName2(prospect.businessName));
+    parts.push(normalizeName3(prospect.businessName));
   }
   const composite = parts.join("|");
   return crypto7.createHash("sha256").update(composite).digest("hex").slice(0, 20);
@@ -71454,7 +71656,7 @@ async function loadSeenSet2() {
   for (const doc of queueSnap.docs) {
     const d = doc.data();
     if (d.normalizedName) seen.add(d.normalizedName);
-    else if (d.businessName) seen.add(normalizeName2(d.businessName));
+    else if (d.businessName) seen.add(normalizeName3(d.businessName));
     if (d.phone) {
       const cleaned = d.phone.replace(/[^0-9]/g, "");
       if (cleaned.length >= 7) seen.add(`phone:${cleaned}`);
@@ -71473,7 +71675,7 @@ async function loadSeenSet2() {
   const companiesSnap = await db.collection("companies").select("name", "phone", "website", "address").get();
   for (const doc of companiesSnap.docs) {
     const d = doc.data();
-    if (d.name) seen.add(normalizeName2(d.name));
+    if (d.name) seen.add(normalizeName3(d.name));
     if (d.phone) {
       const cleaned = d.phone.replace(/[^0-9]/g, "");
       if (cleaned.length >= 7) seen.add(`phone:${cleaned}`);
@@ -71567,7 +71769,7 @@ async function runClientTriggerPipeline() {
         let batchCount = 0;
         for (const job of jobResults) {
           if (newProspectsCount >= config2.dailyTarget) break;
-          const normalized = normalizeName2(job.employerName);
+          const normalized = normalizeName3(job.employerName);
           if (seen.has(normalized)) {
             duplicatesSkipped++;
             continue;
@@ -71692,7 +71894,7 @@ var dailyClientTrigger = (0, import_scheduler11.onSchedule)({
   logger34.info("[ClientTrigger] Starting scheduled job board scan...");
   await runClientTriggerPipeline();
 });
-var triggerDailyClientTrigger = (0, import_https21.onCall)({
+var triggerDailyClientTrigger = (0, import_https22.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["SERPER_API_KEY", "HUNTER_API_KEY"],
   timeoutSeconds: 540,
@@ -71704,7 +71906,7 @@ var triggerDailyClientTrigger = (0, import_https21.onCall)({
 });
 
 // src/functions/vendorProspecting.ts
-var import_https22 = require("firebase-functions/v2/https");
+var import_https23 = require("firebase-functions/v2/https");
 
 // src/utils/facebookEnricher.ts
 var cheerio2 = __toESM(require("cheerio"));
@@ -72521,7 +72723,7 @@ function extractDomain2(url) {
 }
 
 // src/functions/vendorProspecting.ts
-var runVendorProspector = (0, import_https22.onCall)({
+var runVendorProspector = (0, import_https23.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
@@ -72534,10 +72736,10 @@ var runVendorProspector = (0, import_https22.onCall)({
   const maxResults = data.maxResults || 20;
   const skipPaidApis = data.skipPaidApis || false;
   if (!query || !location) {
-    throw new import_https22.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
+    throw new import_https23.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
   }
   if (!capability) {
-    throw new import_https22.HttpsError("invalid-argument", "Missing 'capability' (e.g. 'plumbing', 'hvac').");
+    throw new import_https23.HttpsError("invalid-argument", "Missing 'capability' (e.g. 'plumbing', 'hvac').");
   }
   try {
     console.log(`[runVendorProspector] query="${query}", location="${location}", capability="${capability}", max=${maxResults}`);
@@ -72556,16 +72758,16 @@ var runVendorProspector = (0, import_https22.onCall)({
     };
   } catch (error18) {
     console.error("[runVendorProspector] Error:", error18);
-    throw new import_https22.HttpsError("internal", error18.message || "Vendor prospecting pipeline failed.");
+    throw new import_https23.HttpsError("internal", error18.message || "Vendor prospecting pipeline failed.");
   }
 });
-var addVendorProspectsToCrm = (0, import_https22.onCall)({
+var addVendorProspectsToCrm = (0, import_https23.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 60
 }, async (request) => {
   const { prospects, searchCapability } = request.data;
   if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
-    throw new import_https22.HttpsError("invalid-argument", "No vendor prospects provided.");
+    throw new import_https23.HttpsError("invalid-argument", "No vendor prospects provided.");
   }
   try {
     const results = [];
@@ -72618,16 +72820,16 @@ var addVendorProspectsToCrm = (0, import_https22.onCall)({
     };
   } catch (error18) {
     console.error("[addVendorProspectsToCrm] Error:", error18);
-    throw new import_https22.HttpsError("internal", error18.message || "Vendor CRM import failed.");
+    throw new import_https23.HttpsError("internal", error18.message || "Vendor CRM import failed.");
   }
 });
 
 // src/triggers/dailyVendorProspector.ts
 var import_scheduler12 = require("firebase-functions/v2/scheduler");
-var import_https23 = require("firebase-functions/v2/https");
+var import_https24 = require("firebase-functions/v2/https");
 var logger35 = __toESM(require("firebase-functions/logger"));
 var crypto8 = __toESM(require("crypto"));
-function normalizeName3(name) {
+function normalizeName4(name) {
   return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
 }
 function vendorProspectDocId(prospect) {
@@ -72647,7 +72849,7 @@ function vendorProspectDocId(prospect) {
     parts.push(`fb:${fbPath}`);
   }
   if (parts.length === 0) {
-    parts.push(normalizeName3(prospect.businessName));
+    parts.push(normalizeName4(prospect.businessName));
   }
   const composite = parts.join("|");
   return crypto8.createHash("sha256").update(composite).digest("hex").slice(0, 20);
@@ -72711,7 +72913,7 @@ async function loadVendorSeenSet() {
   const vendorsSnap = await db.collection("vendors").select("businessName", "phone", "email", "website", "address").get();
   for (const doc of vendorsSnap.docs) {
     const d = doc.data();
-    if (d.businessName) seen.add(normalizeName3(d.businessName));
+    if (d.businessName) seen.add(normalizeName4(d.businessName));
     if (d.phone) {
       const cleaned = d.phone.replace(/[^0-9]/g, "");
       if (cleaned.length >= 7) seen.add(`phone:${cleaned}`);
@@ -72801,7 +73003,7 @@ async function runDailyVendorPipeline() {
         const batch = db.batch();
         for (const prospect of result.prospects) {
           if (newProspects.length >= config2.dailyTarget) break;
-          const normalized = normalizeName3(prospect.businessName);
+          const normalized = normalizeName4(prospect.businessName);
           const emailLower = prospect.contactEmail?.toLowerCase();
           const genericLower = prospect.genericEmail?.toLowerCase();
           const phoneCleaned = prospect.phone?.replace(/[^0-9]/g, "");
@@ -72834,7 +73036,7 @@ async function runDailyVendorPipeline() {
           const ref = db.collection("vendor_prospect_queue").doc(docId);
           batch.set(ref, {
             businessName: prospect.businessName,
-            normalizedName: normalizeName3(prospect.businessName),
+            normalizedName: normalizeName4(prospect.businessName),
             address: prospect.address || null,
             phone: prospect.phone || null,
             website: prospect.website || null,
@@ -72930,7 +73132,7 @@ var dailyVendorProspector = (0, import_scheduler12.onSchedule)({
   logger35.info("[DailyVendorProspector] Starting scheduled run...");
   await runDailyVendorPipeline();
 });
-var triggerDailyVendorProspector = (0, import_https23.onCall)({
+var triggerDailyVendorProspector = (0, import_https24.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   timeoutSeconds: 540,
@@ -72940,7 +73142,7 @@ var triggerDailyVendorProspector = (0, import_https23.onCall)({
   await runDailyVendorPipeline();
   return { message: "Daily vendor prospector pipeline completed." };
 });
-var updateVendorProspectingConfig = (0, import_https23.onCall)({
+var updateVendorProspectingConfig = (0, import_https24.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const data = request.data;
@@ -72951,13 +73153,13 @@ var updateVendorProspectingConfig = (0, import_https23.onCall)({
   if (data.enabled !== void 0) update.enabled = data.enabled;
   if (data.excludePatterns) update.excludePatterns = data.excludePatterns;
   if (Object.keys(update).length === 0) {
-    throw new import_https23.HttpsError("invalid-argument", "No valid fields to update.");
+    throw new import_https24.HttpsError("invalid-argument", "No valid fields to update.");
   }
   await db.collection("vendor_prospecting_config").doc("default").set(update, { merge: true });
   logger35.info("[updateVendorProspectingConfig] Config updated:", update);
   return { message: "Vendor prospecting config updated.", updated: update };
 });
-var getVendorProspectingConfig = (0, import_https23.onCall)({
+var getVendorProspectingConfig = (0, import_https24.onCall)({
   cors: DASHBOARD_CORS
 }, async () => {
   const doc = await db.collection("vendor_prospecting_config").doc("default").get();
@@ -72969,7 +73171,7 @@ var getVendorProspectingConfig = (0, import_https23.onCall)({
 });
 
 // src/functions/sequenceGenerator.ts
-var import_https24 = require("firebase-functions/v2/https");
+var import_https25 = require("firebase-functions/v2/https");
 var import_generative_ai10 = require("@google/generative-ai");
 init_promptUtils();
 var FALLBACK_SYSTEM_PROMPT = `You are an expert B2B email copywriter for XIRI Facility Solutions, a commercial cleaning and facility management platform based in New York.
@@ -73013,14 +73215,14 @@ Return your response as valid JSON with this exact structure:
 }
 
 IMPORTANT: Return ONLY the JSON object. No markdown, no code fences, no explanation.`;
-var generateAISequence = (0, import_https24.onCall)({
+var generateAISequence = (0, import_https25.onCall)({
   secrets: ["GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 120
 }, async (request) => {
   const data = request.data;
   if (!data.prompt || !data.prompt.trim()) {
-    throw new import_https24.HttpsError("invalid-argument", "A prompt describing the target segment is required.");
+    throw new import_https25.HttpsError("invalid-argument", "A prompt describing the target segment is required.");
   }
   const numSteps = data.numSteps || 4;
   const tone = data.tone || "professional";
@@ -73057,11 +73259,11 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
         parsed = JSON.parse(jsonMatch[1].trim());
       } else {
         console.error("[generateAISequence] Failed to parse response:", responseText.slice(0, 500));
-        throw new import_https24.HttpsError("internal", "AI returned invalid JSON. Please try again.");
+        throw new import_https25.HttpsError("internal", "AI returned invalid JSON. Please try again.");
       }
     }
     if (!parsed.name || !Array.isArray(parsed.steps) || parsed.steps.length === 0) {
-      throw new import_https24.HttpsError("internal", "AI returned incomplete sequence data. Please try again.");
+      throw new import_https25.HttpsError("internal", "AI returned incomplete sequence data. Please try again.");
     }
     parsed.steps = parsed.steps.map((step, idx) => ({
       label: step.label || `Step ${idx + 1}`,
@@ -73078,14 +73280,14 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
       }
     };
   } catch (error18) {
-    if (error18 instanceof import_https24.HttpsError) throw error18;
+    if (error18 instanceof import_https25.HttpsError) throw error18;
     console.error("[generateAISequence] Error:", error18);
-    throw new import_https24.HttpsError("internal", error18.message || "Failed to generate sequence.");
+    throw new import_https25.HttpsError("internal", error18.message || "Failed to generate sequence.");
   }
 });
 
 // src/functions/askAI.ts
-var import_https25 = require("firebase-functions/v2/https");
+var import_https26 = require("firebase-functions/v2/https");
 var import_generative_ai11 = require("@google/generative-ai");
 var SYSTEM_PROMPT = `You are XIRI's Facility Solutions Advisor \u2014 a knowledgeable, professional AI assistant on xiri.ai.  Your job is to help facility managers, building owners, and practice managers understand how XIRI works and determine whether it's a fit for their building.
 
@@ -73177,7 +73379,7 @@ function getPageContext(pageUrl) {
   }
   return "";
 }
-var askAI = (0, import_https25.onCall)({
+var askAI = (0, import_https26.onCall)({
   secrets: ["GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 60,
@@ -73185,15 +73387,15 @@ var askAI = (0, import_https25.onCall)({
 }, async (request) => {
   const data = request.data;
   if (!data.messages || !Array.isArray(data.messages) || data.messages.length === 0) {
-    throw new import_https25.HttpsError("invalid-argument", "Messages array is required.");
+    throw new import_https26.HttpsError("invalid-argument", "Messages array is required.");
   }
   if (data.messages.length > 30) {
-    throw new import_https25.HttpsError("invalid-argument", "Conversation too long. Please start a new chat.");
+    throw new import_https26.HttpsError("invalid-argument", "Conversation too long. Please start a new chat.");
   }
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.error("[askAI] GEMINI_API_KEY not configured");
-    throw new import_https25.HttpsError("internal", "AI service is temporarily unavailable.");
+    throw new import_https26.HttpsError("internal", "AI service is temporarily unavailable.");
   }
   const pageContext = getPageContext(data.pageUrl);
   const fullSystemPrompt = SYSTEM_PROMPT + pageContext;
@@ -73218,14 +73420,14 @@ var askAI = (0, import_https25.onCall)({
   } catch (error18) {
     console.error("[askAI] Gemini error:", error18.message);
     if (error18.message?.includes("quota") || error18.message?.includes("429")) {
-      throw new import_https25.HttpsError("resource-exhausted", "Our AI assistant is experiencing high demand. Please try again in a moment.");
+      throw new import_https26.HttpsError("resource-exhausted", "Our AI assistant is experiencing high demand. Please try again in a moment.");
     }
-    throw new import_https25.HttpsError("internal", "I had trouble generating a response. Please try again.");
+    throw new import_https26.HttpsError("internal", "I had trouble generating a response. Please try again.");
   }
 });
 
 // src/functions/pseoAuth.ts
-var import_https26 = require("firebase-functions/v2/https");
+var import_https27 = require("firebase-functions/v2/https");
 var import_params8 = require("firebase-functions/params");
 var gscClientId = (0, import_params8.defineSecret)("GSC_CLIENT_ID");
 var gscClientSecret = (0, import_params8.defineSecret)("GSC_CLIENT_SECRET");
@@ -73245,7 +73447,7 @@ var TOKEN_DOC_PATH = "pseo_config/gsc_credentials";
 function getRedirectUri(isDev) {
   return isDev ? REDIRECT_URI_DEV : REDIRECT_URI_PROD;
 }
-var getGscAuthUrl = (0, import_https26.onCall)({
+var getGscAuthUrl = (0, import_https27.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10,
   secrets: [gscClientId]
@@ -73266,7 +73468,7 @@ var getGscAuthUrl = (0, import_https26.onCall)({
     url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
   };
 });
-var exchangeGscToken = (0, import_https26.onCall)({
+var exchangeGscToken = (0, import_https27.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30,
   secrets: [gscClientId, gscClientSecret]
@@ -73274,7 +73476,7 @@ var exchangeGscToken = (0, import_https26.onCall)({
   const code = request.data?.code;
   const isDev = request.data?.isDev === true;
   if (!code) {
-    throw new import_https26.HttpsError("invalid-argument", "Missing authorization code");
+    throw new import_https27.HttpsError("invalid-argument", "Missing authorization code");
   }
   const redirectUri = getRedirectUri(isDev);
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -73291,7 +73493,7 @@ var exchangeGscToken = (0, import_https26.onCall)({
   const tokenData = await tokenResponse.json();
   if (tokenData.error) {
     console.error("[pSEO] Token exchange failed:", tokenData);
-    throw new import_https26.HttpsError("internal", `Token exchange failed: ${tokenData.error_description || tokenData.error}`);
+    throw new import_https27.HttpsError("internal", `Token exchange failed: ${tokenData.error_description || tokenData.error}`);
   }
   const expiresAt = admin.firestore.Timestamp.fromMillis(
     Date.now() + tokenData.expires_in * 1e3
@@ -73324,7 +73526,7 @@ var exchangeGscToken = (0, import_https26.onCall)({
     message: "Google Search Console and Analytics connected successfully"
   };
 });
-var getGscConnectionStatus = (0, import_https26.onCall)({
+var getGscConnectionStatus = (0, import_https27.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10
 }, async () => {
@@ -73340,7 +73542,7 @@ var getGscConnectionStatus = (0, import_https26.onCall)({
     connectedAt: data.connectedAt?.toDate?.()?.toISOString() || null
   };
 });
-var disconnectGsc = (0, import_https26.onCall)({
+var disconnectGsc = (0, import_https27.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 15
 }, async () => {
@@ -73398,7 +73600,7 @@ async function getValidAccessToken() {
   });
   return refreshData.access_token;
 }
-var testGscConnection = (0, import_https26.onCall)({
+var testGscConnection = (0, import_https27.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30
 }, async () => {
@@ -73442,12 +73644,13 @@ var testGscConnection = (0, import_https26.onCall)({
 
 // src/triggers/pseoAnalysis.ts
 var import_scheduler13 = require("firebase-functions/v2/scheduler");
-var import_https27 = require("firebase-functions/v2/https");
+var import_https28 = require("firebase-functions/v2/https");
 var logger36 = __toESM(require("firebase-functions/logger"));
 var import_generative_ai12 = require("@google/generative-ai");
 
 // src/pseo/config.ts
-var PSEO_BATCH_SIZE = 50;
+var DEFAULT_PSEO_BATCH_SIZE = 100;
+var MAX_PSEO_BATCH_SIZE = 250;
 var PSEO_ROUTE_PREFIXES = {
   leads: ["/services/", "/industries/", "/guides/", "/compare/"],
   contractors: ["/contractors/"]
@@ -73520,6 +73723,24 @@ function initHeuristicObservability() {
     notTriggered: initRuleCounter(),
     dataUnavailable: initRuleCounter()
   };
+}
+async function getConfiguredBatchSize() {
+  try {
+    const doc = await db.collection("pseo_config").doc("engine").get();
+    if (!doc.exists) {
+      return DEFAULT_PSEO_BATCH_SIZE;
+    }
+    const data = doc.data();
+    const rawBatchSize = Number(data?.batchSize);
+    if (!Number.isFinite(rawBatchSize)) {
+      return DEFAULT_PSEO_BATCH_SIZE;
+    }
+    const normalized = Math.floor(rawBatchSize);
+    return Math.min(MAX_PSEO_BATCH_SIZE, Math.max(1, normalized));
+  } catch (err2) {
+    logger36.warn(`[pSEO] Failed to load engine config batchSize, using default ${DEFAULT_PSEO_BATCH_SIZE}: ${err2.message}`);
+    return DEFAULT_PSEO_BATCH_SIZE;
+  }
 }
 async function fetchGscData(accessToken, segment, startDate, endDate) {
   const allRows = [];
@@ -74290,6 +74511,8 @@ async function runAnalysisPipeline(segment) {
   };
   try {
     await updateStatus({ phase: "Connecting to GSC" });
+    const configuredBatchSize = await getConfiguredBatchSize();
+    logger36.info(`[pSEO] Using batch size ${configuredBatchSize} (default ${DEFAULT_PSEO_BATCH_SIZE}, max ${MAX_PSEO_BATCH_SIZE})`);
     const accessToken = await getValidAccessToken();
     logger36.info(`[pSEO] Access token acquired for segment "${segment}"`);
     try {
@@ -74373,6 +74596,7 @@ async function runAnalysisPipeline(segment) {
     reliability.skipped_by_reason.expansion_queued += expansionNudges.length;
     allNudges.push(...expansionNudges);
     reliability.generated = allNudges.length;
+    reliability.batch_size = configuredBatchSize;
     for (const pm of currentPages.values()) {
       if (pm.bounceRate == null) reliability.missing_metrics.bounceRate += 1;
       if (pm.avgEngagementTime == null) reliability.missing_metrics.avgEngagementTime += 1;
@@ -74396,7 +74620,7 @@ async function runAnalysisPipeline(segment) {
       if (pDiff !== 0) return pDiff;
       return (b.dataPoints.gscImpressions || 0) - (a2.dataPoints.gscImpressions || 0);
     });
-    const cappedNudges = allNudges.slice(0, PSEO_BATCH_SIZE);
+    const cappedNudges = allNudges.slice(0, configuredBatchSize);
     phase = "Fetching live page content";
     await updateStatus({ phase });
     const topCtrCandidates = [];
@@ -74551,7 +74775,7 @@ var weeklyPseoAnalysis = (0, import_scheduler13.onSchedule)({
   await runAnalysisPipeline("leads");
   await runAnalysisPipeline("contractors");
 });
-var triggerPseoAnalysis = (0, import_https27.onCall)({
+var triggerPseoAnalysis = (0, import_https28.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["GEMINI_API_KEY", "GSC_CLIENT_ID", "GSC_CLIENT_SECRET"],
   timeoutSeconds: 540,
@@ -74559,11 +74783,11 @@ var triggerPseoAnalysis = (0, import_https27.onCall)({
 }, async (request) => {
   const segment = request.data?.segment || "leads";
   if (!["leads", "contractors"].includes(segment)) {
-    throw new import_https27.HttpsError("invalid-argument", "Invalid segment. Use 'leads' or 'contractors'.");
+    throw new import_https28.HttpsError("invalid-argument", "Invalid segment. Use 'leads' or 'contractors'.");
   }
   const statusDoc = await db.collection("pseo_config").doc("run_status").get();
   if (statusDoc.exists && statusDoc.data()?.running) {
-    throw new import_https27.HttpsError("already-exists", "Analysis is already running. Please wait for it to complete.");
+    throw new import_https28.HttpsError("already-exists", "Analysis is already running. Please wait for it to complete.");
   }
   logger36.info(`[pSEO] Manual trigger invoked for segment "${segment}"`);
   const result = await runAnalysisPipeline(segment);
@@ -74572,7 +74796,7 @@ var triggerPseoAnalysis = (0, import_https27.onCall)({
     ...result
   };
 });
-var getPseoRunStatus = (0, import_https27.onCall)({
+var getPseoRunStatus = (0, import_https28.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10
 }, async () => {
@@ -74596,7 +74820,7 @@ var getPseoRunStatus = (0, import_https27.onCall)({
 });
 
 // src/functions/pseoDeployment.ts
-var import_https28 = require("firebase-functions/v2/https");
+var import_https29 = require("firebase-functions/v2/https");
 var logger37 = __toESM(require("firebase-functions/logger"));
 var import_params9 = require("firebase-functions/params");
 init_src();
@@ -74893,7 +75117,7 @@ async function notifyDeployment(params) {
   ].join("\n");
   await sendText(threadKey, summary);
 }
-var deployApprovedNudges = (0, import_https28.onCall)({
+var deployApprovedNudges = (0, import_https29.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [githubTokenSecret, googleChatWebhookSecret2],
   timeoutSeconds: 120,
@@ -74901,16 +75125,16 @@ var deployApprovedNudges = (0, import_https28.onCall)({
 }, async (request) => {
   const { batchId, force } = request.data || {};
   if (!batchId || typeof batchId !== "string") {
-    throw new import_https28.HttpsError("invalid-argument", "batchId is required.");
+    throw new import_https29.HttpsError("invalid-argument", "batchId is required.");
   }
   const token = getGithubToken();
   if (!token) {
-    throw new import_https28.HttpsError("failed-precondition", "GITHUB_PAT secret not configured. Set it in Firebase Secrets.");
+    throw new import_https29.HttpsError("failed-precondition", "GITHUB_PAT secret not configured. Set it in Firebase Secrets.");
   }
   logger37.info(`[pSEO Deploy] Starting deployment for batch "${batchId}"`);
   const nudgesSnap = await db.collection("pseo_nudges").where("batchId", "==", batchId).where("status", "==", "approved").get();
   if (nudgesSnap.empty) {
-    throw new import_https28.HttpsError("not-found", `No approved nudges found for batch "${batchId}".`);
+    throw new import_https29.HttpsError("not-found", `No approved nudges found for batch "${batchId}".`);
   }
   const nudges = nudgesSnap.docs.map((d) => ({
     id: d.id,
@@ -74939,11 +75163,11 @@ var deployApprovedNudges = (0, import_https28.onCall)({
     expansionQueue
   } = applySeoDataChanges(seoDataRaw, nudges);
   if (skipped.length !== skippedByReason.length) {
-    throw new import_https28.HttpsError("internal", "Deploy aborted: skipped nudges must include explicit reason codes.");
+    throw new import_https29.HttpsError("internal", "Deploy aborted: skipped nudges must include explicit reason codes.");
   }
   if (applied.length === 0) {
     if (!force) {
-      throw new import_https28.HttpsError(
+      throw new import_https29.HttpsError(
         "failed-precondition",
         "Deploy aborted: zero applicable nudges in batch. Re-run with force=true if this is expected."
       );
@@ -75071,14 +75295,14 @@ Skipped ${skipped.length} nudges.`;
     branchName
   };
 });
-var getPseoDeployStatus = (0, import_https28.onCall)({
+var getPseoDeployStatus = (0, import_https29.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [githubTokenSecret],
   timeoutSeconds: 15
 }, async (request) => {
   const { batchId } = request.data || {};
   if (!batchId) {
-    throw new import_https28.HttpsError("invalid-argument", "batchId is required.");
+    throw new import_https29.HttpsError("invalid-argument", "batchId is required.");
   }
   const batchDoc = await db.collection("pseo_batches").doc(batchId).get();
   if (!batchDoc.exists) {
@@ -75179,6 +75403,7 @@ var getPseoDeployStatus = (0, import_https28.onCall)({
   processOutreachQueue,
   publishFacebookPost,
   publishPostNow,
+  refreshContactReviewQueue,
   regeneratePostCaption,
   regeneratePostImage,
   regenerateProspectingConfig,

@@ -16,6 +16,13 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
+function formatLifecycleDate(value: any): string | null {
+    if (!value) return null;
+    const date = value?.toDate ? value.toDate() : new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export const sendSingleLeadEmail = onCall(
     { secrets: ["RESEND_API_KEY"] },
     async (request) => {
@@ -57,6 +64,15 @@ export const sendSingleLeadEmail = onCall(
         const contactDoc = await db.collection('contacts').doc(contactId).get();
         if (contactDoc.exists) {
             const c = contactDoc.data()!;
+            if (c.lifecycleStatus === 'held') {
+                const holdUntil = formatLifecycleDate(c.holdUntilAt);
+                throw new HttpsError(
+                    'failed-precondition',
+                    holdUntil
+                        ? `${c.firstName || ''} ${c.lastName || ''} is on hold until ${holdUntil} — reactivate the contact before sending.`.trim()
+                        : `${c.firstName || ''} ${c.lastName || ''} is on hold — reactivate the contact before sending.`.trim()
+                );
+            }
             contactEmail = c.email || '';
             contactName = `${c.firstName || ''} ${c.lastName || ''}`.trim();
             contactUnsubscribed = c.unsubscribed || false;
@@ -75,6 +91,15 @@ export const sendSingleLeadEmail = onCall(
             const pDoc = primarySnap.docs[0];
             contactId = pDoc.id;
             const pData = pDoc.data();
+            if (pData.lifecycleStatus === 'held') {
+                const holdUntil = formatLifecycleDate(pData.holdUntilAt);
+                throw new HttpsError(
+                    'failed-precondition',
+                    holdUntil
+                        ? `${businessName}'s primary contact is on hold until ${holdUntil} — reactivate the contact before sending.`
+                        : `${businessName}'s primary contact is on hold — reactivate the contact before sending.`
+                );
+            }
             contactEmail = pData.email || '';
             contactName = `${pData.firstName || ''} ${pData.lastName || ''}`.trim();
             contactUnsubscribed = pData.unsubscribed || false;

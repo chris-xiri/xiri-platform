@@ -31,6 +31,13 @@ const DEFAULT_SEQUENCE_MAP: Record<string, string> = {
     in_house_conversion: "in_house_conversion_sequence",
 };
 
+function formatLifecycleDate(value: any): string | null {
+    if (!value) return null;
+    const date = value?.toDate ? value.toDate() : new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export const startLeadSequence = onCall(async (request) => {
     const { leadId, contactId: requestedContactId, sequenceId: requestedSequenceId } = request.data;
 
@@ -76,6 +83,15 @@ export const startLeadSequence = onCall(async (request) => {
         const contactDoc = await db.collection("contacts").doc(contactId).get();
         if (contactDoc.exists) {
             const contact = contactDoc.data()!;
+            if (contact.lifecycleStatus === 'held') {
+                const holdUntil = formatLifecycleDate(contact.holdUntilAt);
+                throw new HttpsError(
+                    "failed-precondition",
+                    holdUntil
+                        ? `Contact ${contact.firstName || ''} ${contact.lastName || ''} is on hold until ${holdUntil} — reactivate before enrolling in a sequence.`.trim()
+                        : `Contact ${contact.firstName || ''} ${contact.lastName || ''} is on hold — reactivate before enrolling in a sequence.`.trim()
+                );
+            }
             if (contact.unsubscribed) {
                 throw new HttpsError(
                     "failed-precondition",
@@ -100,6 +116,15 @@ export const startLeadSequence = onCall(async (request) => {
             const primaryContact = primarySnap.docs[0];
             contactId = primaryContact.id;
             const pData = primaryContact.data();
+            if (pData.lifecycleStatus === 'held') {
+                const holdUntil = formatLifecycleDate(pData.holdUntilAt);
+                throw new HttpsError(
+                    "failed-precondition",
+                    holdUntil
+                        ? `${businessName}'s primary contact is on hold until ${holdUntil} — reactivate the contact before enrolling in a sequence.`
+                        : `${businessName}'s primary contact is on hold — reactivate the contact before enrolling in a sequence.`
+                );
+            }
             contactEmail = pData.email || "";
             contactName = `${pData.firstName || ""} ${pData.lastName || ""}`.trim();
         }
