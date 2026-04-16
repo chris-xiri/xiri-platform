@@ -21,20 +21,20 @@ import { DASHBOARD_CORS } from "../utils/cors";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type {
     NudgeSegment, NudgeScope, NudgePriority, HeuristicRuleId,
-    NudgeDataPoints, PseoNudge, PseoBatch,
+    NudgeDataPoints, PseoNudge, PseoBatch, PseoEngineConfig,
 } from "@xiri/shared";
+import {
+    DEFAULT_PSEO_BATCH_SIZE,
+    MAX_PSEO_BATCH_SIZE,
+    isPathInSegment,
+    normalizeTargetSlug,
+    targetSlugToPath,
+} from "../pseo/config";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const BATCH_SIZE = 50;
 const GSC_SITE_URL = "https://xiri.ai/"; // URL-prefix property (OAuth tokens see this, not sc-domain:)
 const GA4_PROPERTY_ID = "properties/468338270"; // Xiri GA4 property
-
-/** pSEO page URL patterns per segment */
-const SLUG_PATTERNS: Record<NudgeSegment, RegExp> = {
-    leads: /\/(janitorial|commercial|medical|office|dental|gym|veterinary|daycare|auto|cleaning|sanitization|floor)[\w-]+-in-[\w-]+$/,
-    contractors: /\/(janitorial|cleaning|hvac|plumbing|electrical|landscaping)[\w-]+-contracts?-in-[\w-]+$/,
-};
 
 // Commenting about scope targets for documentation purposes
 // Fields per scope: template → metaTitle/metaDescription/heroTitle/heroSubtitle
@@ -92,6 +92,59 @@ interface RunStatus {
     updatedAt: Date;
     completedAt?: Date;
     error?: string;
+    reliability?: Record<string, any>;
+}
+
+type RuleCounter = Record<HeuristicRuleId, number>;
+
+interface HeuristicObservability {
+    triggered: RuleCounter;
+    notTriggered: RuleCounter;
+    dataUnavailable: RuleCounter;
+}
+
+function initRuleCounter(): RuleCounter {
+    return {
+        R01: 0,
+        R02: 0,
+        R03: 0,
+        R04: 0,
+        R05: 0,
+        R06: 0,
+        R07: 0,
+        R08: 0,
+        R09: 0,
+        R10: 0,
+    };
+}
+
+function initHeuristicObservability(): HeuristicObservability {
+    return {
+        triggered: initRuleCounter(),
+        notTriggered: initRuleCounter(),
+        dataUnavailable: initRuleCounter(),
+    };
+}
+
+async function getConfiguredBatchSize(): Promise<number> {
+    try {
+        const doc = await db.collection("pseo_config").doc("engine").get();
+        if (!doc.exists) {
+            return DEFAULT_PSEO_BATCH_SIZE;
+        }
+
+        const data = doc.data() as Partial<PseoEngineConfig> | undefined;
+        const rawBatchSize = Number(data?.batchSize);
+        if (!Number.isFinite(rawBatchSize)) {
+            return DEFAULT_PSEO_BATCH_SIZE;
+        }
+
+        const normalized = Math.floor(rawBatchSize);
+        return Math.min(MAX_PSEO_BATCH_SIZE, Math.max(1, normalized));
+    } catch (err: any) {
+        logger.warn(`[pSEO] Failed to load engine config batchSize, using default ${DEFAULT_PSEO_BATCH_SIZE}: ${err.message}`);
+        return DEFAULT_PSEO_BATCH_SIZE;
+    }
 }
 
 // ── GSC Data Fetching ────────────────────────────────────────────────────────
@@ -135,13 +188,11 @@ async function fetchGscData(
         const rows = (data.rows || []) as GscRow[];
 
         if (rows.length === 0) break;
-
         // Filter to only pSEO segment pages
-        const pattern = SLUG_PATTERNS[segment];
-        const filteredRows = rows.filter(r => {
+        const filteredRows = rows.filter((r) => {
             try {
                 const path = new URL(r.keys[0]).pathname;
-                return pattern.test(path);
+                return isPathInSegment(path, segment);
             } catch {
                 return false;
             }
@@ -170,7 +221,7 @@ function aggregateByPage(rows: GscRow[]): Map<string, PageMetrics> {
         let pm = map.get(page);
         if (!pm) {
             let slug = page;
-            try { slug = new URL(page).pathname.replace(/^\//, ""); } catch {}
+            try { slug = normalizeTargetSlug(new URL(page).pathname); } catch { slug = normalizeTargetSlug(page); }
             pm = {
                 page,
                 slug,
@@ -399,7 +450,7 @@ function getLiveValueForField(meta: LivePageMeta | undefined, field: string): st
         case "metaTitle": return meta.title;
         case "metaDescription": return meta.description;
         case "heroTitle": return meta.h1;
-        case "heroSubtitle": return ""; // Not easily extractable from raw HTML
+        case "heroSubtitle": return "[live heroSubtitle extraction not supported]";
         default: return "";
     }
 }
@@ -436,6 +487,7 @@ function runHeuristics(
     metrics: PageMetrics,
     trustSignals: Map<string, { nfc: number; wo: number }>,
     segment: NudgeSegment,
+    observability?: HeuristicObservability,
 ): DetectedNudge[] {
     const nudges: DetectedNudge[] = [];
     const slug = metrics.slug;
@@ -458,6 +510,7 @@ function runHeuristics(
 
     // R01: CTR < 2% at Position < 10 → meta title/desc not compelling
     if (metrics.position < 10 && metrics.ctr < 0.02 && metrics.impressions > 50) {
+        observability && (observability.triggered.R01 += 1);
         nudges.push({
             ruleId: "R01",
             scope: "template",
@@ -468,10 +521,13 @@ function runHeuristics(
             dataPoints: baseDataPoints,
             currentValue: "",
         });
+    } else {
+        observability && (observability.notTriggered.R01 += 1);
     }
 
     // R02: Position 11-20 with >100 impressions → close to page 1
     if (metrics.position >= 11 && metrics.position <= 20 && metrics.impressions > 100) {
+        observability && (observability.triggered.R02 += 1);
         nudges.push({
             ruleId: "R02",
             scope: "instance",
@@ -482,10 +538,13 @@ function runHeuristics(
             dataPoints: baseDataPoints,
             currentValue: "",
         });
+    } else {
+        observability && (observability.notTriggered.R02 += 1);
     }
 
     // R03: Position > 20 with >500 impressions → major gap
     if (metrics.position > 20 && metrics.impressions > 500) {
+        observability && (observability.triggered.R03 += 1);
         nudges.push({
             ruleId: "R03",
             scope: "template",
@@ -496,12 +555,15 @@ function runHeuristics(
             dataPoints: baseDataPoints,
             currentValue: "",
         });
+    } else {
+        observability && (observability.notTriggered.R03 += 1);
     }
 
     // R04: Clicks declining MoM > 30%
     if (metrics.clicksPrior && metrics.clicksPrior > 10) {
         const decline = (metrics.clicksPrior - metrics.clicks) / metrics.clicksPrior;
         if (decline > 0.30) {
+            observability && (observability.triggered.R04 += 1);
             nudges.push({
                 ruleId: "R04",
                 scope: "trust-refresh",
@@ -512,12 +574,17 @@ function runHeuristics(
                 dataPoints: { ...baseDataPoints, gscClicksMoM: -decline },
                 currentValue: "",
             });
+        } else {
+            observability && (observability.notTriggered.R04 += 1);
         }
+    } else {
+        observability && (observability.dataUnavailable.R04 += 1);
     }
 
     // R05: Bounce rate > 70% + engagement < 30s
     if (metrics.bounceRate != null && metrics.avgEngagementTime != null) {
         if (metrics.bounceRate > 70 && metrics.avgEngagementTime < 30) {
+            observability && (observability.triggered.R05 += 1);
             nudges.push({
                 ruleId: "R05",
                 scope: "instance",
@@ -528,11 +595,16 @@ function runHeuristics(
                 dataPoints: baseDataPoints,
                 currentValue: "",
             });
+        } else {
+            observability && (observability.notTriggered.R05 += 1);
         }
+    } else {
+        observability && (observability.dataUnavailable.R05 += 1);
     }
 
     // R06: Scroll depth < 40%
     if (metrics.scrollDepth != null && metrics.scrollDepth < 40 && metrics.impressions > 30) {
+        observability && (observability.triggered.R06 += 1);
         nudges.push({
             ruleId: "R06",
             scope: "template",
@@ -543,10 +615,15 @@ function runHeuristics(
             dataPoints: baseDataPoints,
             currentValue: "",
         });
+    } else if (metrics.scrollDepth == null) {
+        observability && (observability.dataUnavailable.R06 += 1);
+    } else {
+        observability && (observability.notTriggered.R06 += 1);
     }
 
     // R07: High impressions, 0 clicks
     if (metrics.impressions > 200 && metrics.clicks === 0) {
+        observability && (observability.triggered.R07 += 1);
         nudges.push({
             ruleId: "R07",
             scope: "template",
@@ -557,10 +634,13 @@ function runHeuristics(
             dataPoints: baseDataPoints,
             currentValue: "",
         });
+    } else {
+        observability && (observability.notTriggered.R07 += 1);
     }
 
     // R09: NFC sessions > 10/mo in a city → trust signal not on page
     if (trust && trust.nfc > 10) {
+        observability && (observability.triggered.R09 += 1);
         nudges.push({
             ruleId: "R09",
             scope: "trust-refresh",
@@ -574,10 +654,15 @@ function runHeuristics(
             },
             currentValue: "",
         });
+    } else if (!trust) {
+        observability && (observability.dataUnavailable.R09 += 1);
+    } else {
+        observability && (observability.notTriggered.R09 += 1);
     }
 
     // R10: Work orders > 5/mo, not reflected in content
     if (trust && trust.wo > 5) {
+        observability && (observability.triggered.R10 += 1);
         nudges.push({
             ruleId: "R10",
             scope: "trust-refresh",
@@ -591,6 +676,10 @@ function runHeuristics(
             },
             currentValue: "",
         });
+    } else if (!trust) {
+        observability && (observability.dataUnavailable.R10 += 1);
+    } else {
+        observability && (observability.notTriggered.R10 += 1);
     }
 
     return nudges;
@@ -602,6 +691,7 @@ function detectExpansionOpportunities(
     rows: GscRow[],
     existingPages: Set<string>,
     segment: NudgeSegment,
+    observability?: HeuristicObservability,
 ): DetectedNudge[] {
     const nudges: DetectedNudge[] = [];
 
@@ -634,6 +724,7 @@ function detectExpansionOpportunities(
                 p.toLowerCase().includes(location.replace(/\s+/g, "-"))
             );
             if (!hasPage) {
+                observability && (observability.triggered.R08 += 1);
                 nudges.push({
                     ruleId: "R08",
                     scope: "expansion",
@@ -649,7 +740,11 @@ function detectExpansionOpportunities(
                     },
                     currentValue: "",
                 });
+            } else {
+                observability && (observability.notTriggered.R08 += 1);
             }
+        } else {
+            observability && (observability.dataUnavailable.R08 += 1);
         }
     }
 
@@ -669,20 +764,29 @@ async function fetchExistingPendingNudges(): Promise<Set<string>> {
     const keys = new Set<string>();
     for (const doc of snap.docs) {
         const d = doc.data();
-        keys.add(`${d.targetSlug}::${d.targetField}`);
+        const slug = normalizeTargetSlug(d.targetSlug || "");
+        const field = String(d.targetField || "").trim();
+        keys.add(`${slug}::${field}`);
     }
     logger.info(`[pSEO] Found ${keys.size} existing pending nudges for dedup`);
     return keys;
 }
 
-function deduplicateNudges(nudges: DetectedNudge[], existingKeys: Set<string>): DetectedNudge[] {
+function deduplicateNudges(
+    nudges: DetectedNudge[],
+    existingKeys: Set<string>,
+): { filtered: DetectedNudge[]; removed: number } {
     const before = nudges.length;
-    const filtered = nudges.filter(n => !existingKeys.has(`${n.targetSlug}::${n.targetField}`));
+    const filtered = nudges.filter((n) => {
+        const slug = normalizeTargetSlug(n.targetSlug);
+        const field = String(n.targetField || "").trim();
+        return !existingKeys.has(`${slug}::${field}`);
+    });
     const removed = before - filtered.length;
     if (removed > 0) {
         logger.info(`[pSEO] Dedup removed ${removed} nudges (already pending in inbox)`);
     }
-    return filtered;
+    return { filtered, removed };
 }
 
 // ── Cross-Page Learning: Extract winning patterns from approved nudges ───────
@@ -954,7 +1058,7 @@ Analyze the patterns: what differentiators, structures, or proof points are maki
 
 AUDIENCE: ${audienceContext}
 
-TASK: Write an optimized "${nudge.targetField}" for the page: /services/${nudge.targetSlug}
+TASK: Write an optimized "${nudge.targetField}" for the page: ${targetSlugToPath(nudge.targetSlug)}
 ${serviceFromSlug ? `SERVICE: ${serviceFromSlug}` : ""}
 ${locationFromSlug ? `LOCATION: ${locationFromSlug}` : ""}
 
@@ -999,6 +1103,23 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
     const statusRef = db.collection("pseo_config").doc("run_status");
     const startedAt = new Date();
     let phase = "Initializing";
+    const heuristicObservability = initHeuristicObservability();
+    const reliability = {
+        generated: 0,
+        deduped: 0,
+        applied: 0,
+        skipped_by_reason: {
+            expansion_queued: 0,
+        },
+        unsupported_fields: 0,
+        missing_metrics: {
+            bounceRate: 0,
+            avgEngagementTime: 0,
+            scrollDepth: 0,
+            trustSignals: 0,
+        },
+        heuristics: heuristicObservability,
+    };
 
     const updateStatus = async (updates: Partial<RunStatus>) => {
         await statusRef.set({
@@ -1013,6 +1134,8 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
 
     try {
         await updateStatus({ phase: "Connecting to GSC" });
+        const configuredBatchSize = await getConfiguredBatchSize();
+        logger.info(`[pSEO] Using batch size ${configuredBatchSize} (default ${DEFAULT_PSEO_BATCH_SIZE}, max ${MAX_PSEO_BATCH_SIZE})`);
 
         // 1. Get access token
         const accessToken = await getValidAccessToken();
@@ -1117,14 +1240,24 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
         let allNudges: DetectedNudge[] = [];
 
         for (const pm of currentPages.values()) {
-            const pageNudges = runHeuristics(pm, trustSignals, segment);
+            const pageNudges = runHeuristics(pm, trustSignals, segment, heuristicObservability);
             allNudges.push(...pageNudges);
         }
 
         // R08: Expansion opportunities
         const existingPages = new Set(Array.from(currentPages.keys()));
-        const expansionNudges = detectExpansionOpportunities(currentRows, existingPages, segment);
+        const expansionNudges = detectExpansionOpportunities(currentRows, existingPages, segment, heuristicObservability);
+        reliability.skipped_by_reason.expansion_queued += expansionNudges.length;
         allNudges.push(...expansionNudges);
+        reliability.generated = allNudges.length;
+        (reliability as any).batch_size = configuredBatchSize;
+
+        for (const pm of currentPages.values()) {
+            if (pm.bounceRate == null) reliability.missing_metrics.bounceRate += 1;
+            if (pm.avgEngagementTime == null) reliability.missing_metrics.avgEngagementTime += 1;
+            if (pm.scrollDepth == null) reliability.missing_metrics.scrollDepth += 1;
+            if (pm.nfcSessionsMonth == null && pm.workOrdersMonth == null) reliability.missing_metrics.trustSignals += 1;
+        }
 
         logger.info(`[pSEO] Detected ${allNudges.length} raw nudges across ${currentPages.size} pages`);
 
@@ -1132,7 +1265,9 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
         phase = "Deduplicating against inbox";
         await updateStatus({ phase });
         const existingPending = await fetchExistingPendingNudges();
-        allNudges = deduplicateNudges(allNudges, existingPending);
+        const dedup = deduplicateNudges(allNudges, existingPending);
+        allNudges = dedup.filtered;
+        reliability.deduped = dedup.removed;
 
         logger.info(`[pSEO] ${allNudges.length} nudges after dedup`);
 
@@ -1141,7 +1276,7 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
         await updateStatus({ phase });
         const winningPatterns = await fetchWinningPatterns(segment);
 
-        // 8. Prioritize and cap at BATCH_SIZE
+        // 8. Prioritize and cap at configured batch size
         const priorityOrder: Record<NudgePriority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
         allNudges.sort((a, b) => {
             const pDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -1150,7 +1285,7 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
             return (b.dataPoints.gscImpressions || 0) - (a.dataPoints.gscImpressions || 0);
         });
 
-        const cappedNudges = allNudges.slice(0, BATCH_SIZE);
+        const cappedNudges = allNudges.slice(0, configuredBatchSize);
 
         // 8.5. Fetch live page content for nudge pages + top CTR candidates
         phase = "Fetching live page content";
@@ -1236,6 +1371,26 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
 
         await db.collection("pseo_batches").doc(batchId).set(batchDoc);
 
+        // Persist non-destructive expansion backlog as an explicit queue artifact.
+        const expansionQueue = nudgesWithCopy
+            .filter((n) => n.scope === "expansion")
+            .map((n) => ({
+                targetSlug: n.targetSlug,
+                reasoning: n.reasoning,
+                dataPoints: n.dataPoints,
+                suggestedValue: n.suggestedValue,
+                createdAt: now,
+            }));
+        if (expansionQueue.length > 0) {
+            await db.collection("pseo_expansion_queue").doc(batchId).set({
+                batchId,
+                segment,
+                createdAt: now,
+                count: expansionQueue.length,
+                items: expansionQueue,
+            }, { merge: true });
+        }
+
         // Write individual nudge docs in batches of 500
         const FIRESTORE_BATCH_LIMIT = 490;
         for (let batchStart = 0; batchStart < nudgesWithCopy.length; batchStart += FIRESTORE_BATCH_LIMIT) {
@@ -1249,7 +1404,7 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
                     scope: nudge.scope,
                     priority: nudge.priority,
                     status: "pending",
-                    targetSlug: nudge.targetSlug,
+                    targetSlug: normalizeTargetSlug(nudge.targetSlug),
                     targetField: nudge.targetField,
                     currentValue: nudge.currentValue,
                     suggestedValue: nudge.suggestedValue,
@@ -1276,6 +1431,7 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
             completedAt: new Date(),
             updatedAt: new Date(),
             batchId,
+            reliability,
         });
 
         logger.info(`[pSEO] Analysis complete. Batch "${batchId}" — ${nudgesWithCopy.length} nudges written.`);
@@ -1285,6 +1441,7 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
             totalNudges: nudgesWithCopy.length,
             pagesAnalyzed: currentPages.size,
             breakdown,
+            reliability,
         };
 
     } catch (err: any) {
@@ -1297,6 +1454,7 @@ async function runAnalysisPipeline(segment: NudgeSegment) {
             error: err.message || "Unknown error",
             startedAt,
             updatedAt: new Date(),
+            reliability,
         }).catch(e => logger.error("[pSEO] Failed to write error status:", e.message));
 
         throw err;
@@ -1384,5 +1542,6 @@ export const getPseoRunStatus = onCall({
         completedAt: data.completedAt?.toDate?.()?.toISOString() || null,
         error: data.error || null,
         batchId: data.batchId || null,
+        reliability: data.reliability || null,
     };
 });

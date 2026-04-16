@@ -15,7 +15,8 @@
         "format": "prettier --write \"**/*.{ts,tsx,md}\"",
         "translate:sync": "node scripts/translate-sync.js",
         "knip": "knip",
-        "radar": "npm run radar --prefix tools/seo-agent"
+        "radar": "npm run radar --prefix tools/seo-agent",
+        "check:pseo-config": "node scripts/check-pseo-config.mjs"
     },
     "devDependencies": {
         "@types/node-fetch": "^2.6.13",

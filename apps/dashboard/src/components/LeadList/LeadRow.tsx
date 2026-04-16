@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Contact, LeadStatus, LeadType, FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
+import { Contact, LeadStatus, LeadType, ContactLifecycleStatus } from '@xiri-facility-solutions/shared';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -51,6 +51,10 @@ export type ColumnKey = 'business' | 'type' | 'contact' | 'location' | 'auditTim
 
 /** Contact row with denormalized company data */
 export interface ContactRow extends Contact {
+    lifecycleStatus?: ContactLifecycleStatus;
+    lifecycleReason?: string | null;
+    holdUntilAt?: any;
+    lifecycleUpdatedAt?: any;
     _companyStatus: LeadStatus;
     _companyLeadType?: LeadType;
     _companyFacilityType?: string;
@@ -71,6 +75,7 @@ interface LeadRowProps {
     onSelect?: (checked: boolean) => void;
     onRowClick?: (id: string) => void;
     visibleColumns?: Set<ColumnKey>;
+    facilityTypeLabels: Record<string, string>;
 }
 
 const STATUS_COLORS: Record<LeadStatus, string> = {
@@ -127,6 +132,21 @@ function getEngagementSignal(contact: Contact) {
     }
 }
 
+function getLifecycleBadge(contact: ContactRow) {
+    const lifecycleStatus = contact.lifecycleStatus || (contact.unsubscribed ? 'suppressed' : 'active');
+    if (lifecycleStatus === 'held') {
+        const holdUntil = contact.holdUntilAt?.toDate ? contact.holdUntilAt.toDate() : (contact.holdUntilAt ? new Date(contact.holdUntilAt) : null);
+        const label = holdUntil && !Number.isNaN(holdUntil.getTime())
+            ? `Held until ${format(holdUntil, 'MMM d, yyyy')}`
+            : 'Held';
+        return { label, className: 'text-amber-900 bg-amber-100 border-amber-300' };
+    }
+    if (lifecycleStatus === 'suppressed') {
+        return { label: 'Suppressed', className: 'text-red-800 bg-red-100 border-red-300' };
+    }
+    return null;
+}
+
 function timeAgo(timestamp: any): string {
     if (!timestamp) return '';
     const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -141,10 +161,11 @@ function timeAgo(timestamp: any): string {
     return `${diffDays}d ago`;
 }
 
-export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visibleColumns = ALL_COLUMNS }: LeadRowProps) {
+export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visibleColumns = ALL_COLUMNS, facilityTypeLabels }: LeadRowProps) {
     const router = useRouter();
     const [startingSequence, setStartingSequence] = useState(false);
     const [sequenceError, setSequenceError] = useState<string | null>(null);
+    const [confirmCompanyOverlap, setConfirmCompanyOverlap] = useState(false);
 
     // Navigate to the contact detail page (now company-scoped)
     const handleClick = () => {
@@ -170,8 +191,12 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
             const seqSnap = await getDocs(collection(db, 'sequences'));
             const allSeqs = seqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
             // Only show lead-appropriate sequences — exclude vendor sequences
-            const LEAD_CATEGORIES = ['lead', 'referral', 'custom'];
-            setAvailableSequences(allSeqs.filter((s: any) => !s.category || LEAD_CATEGORIES.includes(s.category)));
+            const LEAD_CATEGORIES = ['lead', 'referral', 'custom', 'in_house_conversion'];
+            setAvailableSequences(allSeqs.filter((s: any) => 
+                !s.category || 
+                LEAD_CATEGORIES.includes(s.category.toLowerCase()) || 
+                s.category.toLowerCase().includes('lead')
+            ));
         } catch (err) {
             console.error('Error loading sequences:', err);
         } finally {
@@ -182,6 +207,10 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
     const handleStartSequence = async (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!lead.email || !lead.companyId || !selectedSequenceId) return;
+        if (companyHasOutreachContext && !confirmCompanyOverlap) {
+            setConfirmCompanyOverlap(true);
+            return;
+        }
         setStartingSequence(true);
         setSequenceError(null);
         try {
@@ -189,6 +218,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
             await startSequence({ leadId: lead.companyId, contactId: lead.id, sequenceId: selectedSequenceId });
             setShowSequenceDialog(false);
             setSelectedSequenceId('');
+            setConfirmCompanyOverlap(false);
         } catch (err: any) {
             const msg = err?.message || 'Failed to start sequence';
             // Firebase callable errors wrap the message
@@ -215,7 +245,12 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
         try {
             const snap = await getDocs(collection(db, 'templates'));
             const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-            setTargetedTemplates(all.filter((t: any) => t.category === 'lead_targeted'));
+            // Broaden filter: include targeted + anything containing "lead"
+            setTargetedTemplates(all.filter((t: any) => 
+                t.category === 'lead_targeted' || 
+                (t.category && t.category.toLowerCase().includes('lead')) ||
+                (!t.category && (t.name?.toLowerCase().includes('lead') || t.id.toLowerCase().includes('lead')))
+            ));
         } catch (err) {
             console.error('Error fetching templates:', err);
         } finally {
@@ -242,9 +277,8 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
         }
     };
 
-    // Check both company-level outreach status AND contact-level sequenceHistory
+    // Contact-level sequence state is the only hard lock for CRM actions.
     const hasActiveSequence = (() => {
-        // Check contact-level sequenceHistory (real-time via onSnapshot)
         if (lead.sequenceHistory) {
             const activeStatuses = ['active', 'in_progress', 'pending', 'PENDING', 'IN_PROGRESS'];
             const hasActive = Object.values(lead.sequenceHistory).some(
@@ -252,9 +286,10 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
             );
             if (hasActive) return true;
         }
-        // Fallback: company-level outreach status
-        return !!(lead as any)._companyOutreachStatus && ['PENDING', 'IN_PROGRESS', 'SENT', 'COMPLETED'].includes((lead as any)._companyOutreachStatus);
+        return false;
     })();
+    const companyOutreachStatus = (lead as any)._companyOutreachStatus || null;
+    const companyHasOutreachContext = !!companyOutreachStatus && ['PENDING', 'IN_PROGRESS', 'SENT', 'COMPLETED'].includes(companyOutreachStatus);
 
     const firstAuditTime = lead._companyPreferredAuditTimes && lead._companyPreferredAuditTimes.length > 0
         ? toDate(lead._companyPreferredAuditTimes[0])
@@ -263,6 +298,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
     const createdDate = toDate(lead.createdAt);
     const show = (col: ColumnKey) => visibleColumns.has(col);
     const engagement = getEngagementSignal(lead);
+    const lifecycleBadge = getLifecycleBadge(lead);
 
     const fullName = `${lead.firstName} ${lead.lastName}`.trim();
 
@@ -309,6 +345,13 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                         {lead.role && (
                             <span className="text-[10px] text-muted-foreground pl-[18px]">{lead.role}</span>
                         )}
+                        {lifecycleBadge && (
+                            <div className="pl-[18px] pt-0.5">
+                                <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 ${lifecycleBadge.className}`}>
+                                    {lifecycleBadge.label}
+                                </Badge>
+                            </div>
+                        )}
                     </div>
                 </TableCell>
             )}
@@ -329,8 +372,8 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                             <span className="truncate">{lead.companyName}</span>
                         </div>
                         {lead._companyFacilityType && (
-                            <div className="text-xs text-muted-foreground pl-4 truncate" title={(FACILITY_TYPE_LABELS as Record<string, string>)[lead._companyFacilityType] || lead._companyFacilityType}>
-                                {(FACILITY_TYPE_LABELS as Record<string, string>)[lead._companyFacilityType] || lead._companyFacilityType}
+                            <div className="text-xs text-muted-foreground pl-4 truncate" title={facilityTypeLabels[lead._companyFacilityType] || lead._companyFacilityType}>
+                                {facilityTypeLabels[lead._companyFacilityType] || lead._companyFacilityType}
                             </div>
                         )}
                     </div>
@@ -445,18 +488,25 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                                         <CheckCircle2 className="w-3 h-3 mr-1" /> In Sequence
                                     </Badge>
                                 ) : (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                                        disabled={startingSequence}
-                                        onClick={openSequenceDialog}
-                                    >
-                                        {startingSequence
-                                            ? <Loader2 className="w-3 h-3 animate-spin" />
-                                            : <Rocket className="w-3 h-3" />}
-                                        {startingSequence ? 'Starting…' : 'Sequence'}
-                                    </Button>
+                                    <div className="flex flex-col items-center gap-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                                            disabled={startingSequence}
+                                            onClick={openSequenceDialog}
+                                        >
+                                            {startingSequence
+                                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                                : <Rocket className="w-3 h-3" />}
+                                            {startingSequence ? 'Starting…' : 'Sequence'}
+                                        </Button>
+                                        {companyHasOutreachContext && (
+                                            <Badge variant="outline" className="h-5 px-1.5 text-[9px] bg-amber-50 text-amber-900 border-amber-300">
+                                                Company outreach active
+                                            </Badge>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -502,18 +552,26 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                                     <>
                                         <div>
                                             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Select Template</label>
-                                            <Select value={selectedTemplateId} onValueChange={(v: string) => { setSelectedTemplateId(v); setPreviewOpen(false); }}>
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Choose a template..." />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {targetedTemplates.map(t => (
-                                                        <SelectItem key={t.id} value={t.id}>
-                                                            {t.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            {targetedTemplates.length === 0 ? (
+                                                <div className="text-center py-6 text-sm text-muted-foreground border rounded-lg border-dashed bg-muted/20">
+                                                    <Mail className="w-7 h-7 mx-auto mb-2 opacity-30" />
+                                                    No lead-related templates found.{' '}
+                                                    <a href="/admin/email-templates" className="text-primary hover:underline font-medium">Create one</a>.
+                                                </div>
+                                            ) : (
+                                                <Select value={selectedTemplateId} onValueChange={(v: string) => { setSelectedTemplateId(v); setPreviewOpen(false); }}>
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Choose a template..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {targetedTemplates.map(t => (
+                                                            <SelectItem key={t.id} value={t.id}>
+                                                                {t.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
                                         </div>
 
                                         {selectedTemplateId && (() => {
@@ -571,7 +629,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
             </AlertDialog>
 
             {/* ─── Sequence Picker Dialog ─── */}
-            <AlertDialog open={showSequenceDialog} onOpenChange={(open: boolean) => { setShowSequenceDialog(open); if (!open) { setSelectedSequenceId(''); setSequenceError(null); } }}>
+            <AlertDialog open={showSequenceDialog} onOpenChange={(open: boolean) => { setShowSequenceDialog(open); if (!open) { setSelectedSequenceId(''); setSequenceError(null); setConfirmCompanyOverlap(false); } }}>
                 <AlertDialogContent className="max-w-md" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2">
@@ -583,6 +641,18 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                                 <p className="text-sm">
                                     Choose a sequence for <strong>{fullName}</strong> ({lead.email}).
                                 </p>
+
+                                {companyHasOutreachContext && (
+                                    <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-950 text-sm">
+                                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                            <div className="font-medium">Company already has outreach history</div>
+                                            <div className="text-xs mt-0.5 opacity-90">
+                                                This account is marked <strong>{companyOutreachStatus}</strong>. You can still enroll this specific contact.
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {loadingSequencesList ? (
                                     <div className="flex items-center justify-center py-6">
@@ -651,6 +721,18 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                                         </div>
                                     </div>
                                 )}
+
+                                {companyHasOutreachContext && confirmCompanyOverlap && !sequenceError && (
+                                    <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-sm">
+                                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                            <div className="font-medium">Confirm overlapping outreach</div>
+                                            <div className="text-xs mt-0.5 opacity-90">
+                                                Starting this sequence will continue outreach for this contact even though the company already has outreach activity.
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -658,7 +740,7 @@ export function LeadRow({ lead, index, isSelected, onSelect, onRowClick, visible
                         <AlertDialogCancel disabled={startingSequence}>Cancel</AlertDialogCancel>
                         <Button onClick={handleStartSequence} disabled={startingSequence || !selectedSequenceId} className="gap-2">
                             {startingSequence ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
-                            {startingSequence ? 'Starting...' : 'Start Sequence'}
+                            {startingSequence ? 'Starting...' : companyHasOutreachContext && !confirmCompanyOverlap ? 'Continue to Confirm' : 'Start Sequence'}
                         </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>

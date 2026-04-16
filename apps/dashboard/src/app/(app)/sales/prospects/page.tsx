@@ -54,11 +54,11 @@ interface SequenceOption {
 function ConfidenceBadge({ confidence }: { confidence?: string }) {
     switch (confidence) {
         case 'high':
-            return <Badge className="bg-green-100 text-green-700 text-[10px] px-1.5"><CheckCircle2 className="w-3 h-3 mr-0.5" />High</Badge>;
+            return <Badge className="border border-green-300 bg-green-100 text-green-900 text-[10px] px-1.5 font-semibold"><CheckCircle2 className="w-3 h-3 mr-0.5 text-green-700" />High</Badge>;
         case 'medium':
-            return <Badge className="bg-yellow-100 text-yellow-700 text-[10px] px-1.5"><AlertCircle className="w-3 h-3 mr-0.5" />Med</Badge>;
+            return <Badge className="border border-amber-300 bg-amber-100 text-amber-900 text-[10px] px-1.5 font-semibold"><AlertCircle className="w-3 h-3 mr-0.5 text-amber-700" />Med</Badge>;
         default:
-            return <Badge className="bg-gray-100 text-gray-500 text-[10px] px-1.5"><XCircle className="w-3 h-3 mr-0.5" />Low</Badge>;
+            return <Badge className="border border-slate-300 bg-slate-100 text-slate-800 text-[10px] px-1.5 font-semibold"><XCircle className="w-3 h-3 mr-0.5 text-slate-600" />Low</Badge>;
     }
 }
 
@@ -1137,7 +1137,7 @@ export default function ProspectsPage() {
             )}
 
             {/* Stats bar */}
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-5">
                 {[
                     { label: 'Pending Review', value: stats.pending, icon: Target, color: 'text-blue-600' },
                     { label: "Today's Batch", value: stats.todayBatch, icon: Calendar, color: 'text-indigo-600' },
@@ -1145,11 +1145,11 @@ export default function ProspectsPage() {
                     { label: 'Skipped', value: stats.skipped, icon: SkipForward, color: 'text-gray-500' },
                     { label: 'Total Queued', value: stats.total, icon: TrendingUp, color: 'text-primary' },
                 ].map(s => (
-                    <div key={s.label} className="rounded-lg border bg-card p-3 flex items-center gap-3">
+                    <div key={s.label} className="rounded-lg border bg-card p-3 flex items-center gap-3 min-w-0">
                         <s.icon className={`w-5 h-5 ${s.color}`} />
-                        <div>
-                            <div className="text-xl font-bold">{s.value}</div>
-                            <div className="text-xs text-muted-foreground">{s.label}</div>
+                        <div className="min-w-0">
+                            <div className="text-xl font-bold leading-none">{s.value}</div>
+                            <div className="text-xs text-muted-foreground leading-snug">{s.label}</div>
                         </div>
                     </div>
                 ))}
@@ -1157,7 +1157,7 @@ export default function ProspectsPage() {
 
             {/* Last run info */}
             {config?.lastRunStats && (
-                <div className="text-xs text-muted-foreground flex items-center gap-4 bg-muted/50 rounded-lg px-3 py-2">
+                <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 bg-muted/50 rounded-lg px-3 py-2">
                     <span>Last run: {config.lastRunAt?.toDate ? config.lastRunAt.toDate().toLocaleString() : 'Unknown'}</span>
                     <span>·</span>
                     <span>Discovered {config.lastRunStats.discovered}</span>
@@ -1208,11 +1208,14 @@ export default function ProspectsPage() {
                     <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                         <Tag className="w-3 h-3" /> Type:
                     </span>
-                    <Badge
-                        variant={facilityTypeFilter === 'all' ? 'default' : 'outline'}
-                        className="cursor-pointer text-xs hover:bg-primary/10 transition-colors"
-                        onClick={() => setFacilityTypeFilter('all')}
-                    >
+                        <Badge
+                            variant={facilityTypeFilter === 'all' ? 'default' : 'outline'}
+                            className={`cursor-pointer text-xs transition-colors ${facilityTypeFilter === 'all'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'border-slate-300 bg-white text-slate-900 hover:bg-slate-100'
+                                }`}
+                            onClick={() => setFacilityTypeFilter('all')}
+                        >
                         All ({prospects.length})
                     </Badge>
                     {Array.from(facilityTypeCounts.entries())
@@ -1221,7 +1224,10 @@ export default function ProspectsPage() {
                             <Badge
                                 key={ft}
                                 variant={facilityTypeFilter === ft ? 'default' : 'outline'}
-                                className="cursor-pointer text-xs hover:bg-primary/10 transition-colors"
+                                className={`cursor-pointer text-xs transition-colors ${facilityTypeFilter === ft
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'border-slate-300 bg-white text-slate-900 hover:bg-slate-100'
+                                    }`}
                                 onClick={() => setFacilityTypeFilter(ft === facilityTypeFilter ? 'all' : ft)}
                             >
                                 {ft === 'unknown' ? 'Uncategorized' : mergedFacilityLabels[ft] || ft} ({count})
@@ -1232,8 +1238,8 @@ export default function ProspectsPage() {
             )}
 
             {/* Toolbar */}
-            <div className="flex items-center gap-3">
-                <div className="relative flex-1 max-w-sm">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+                <div className="relative w-full xl:max-w-sm xl:flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                         placeholder="Search by name, address, email..."
@@ -1244,7 +1250,7 @@ export default function ProspectsPage() {
                 </div>
 
                 {/* Status filter tabs */}
-                <div className="flex rounded-lg border overflow-hidden text-sm">
+                <div className="flex flex-wrap rounded-lg border overflow-hidden text-sm self-start">
                     {[
                         { key: 'pending_review', label: 'Pending' },
                         { key: 'imported', label: 'Imported' },
@@ -1266,7 +1272,7 @@ export default function ProspectsPage() {
 
                 {/* Bulk actions */}
                 {selected.size > 0 && (
-                    <div className="flex items-center gap-2 ml-auto">
+                    <div className="flex flex-wrap items-center gap-2 xl:ml-auto">
                         <span className="text-sm text-muted-foreground">{selected.size} selected</span>
                         <Button
                             variant="outline"
@@ -1356,17 +1362,17 @@ export default function ProspectsPage() {
                     {uncategorizedClusters.map(cluster => (
                         <div
                             key={cluster.term}
-                            className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20"
+                            className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-amber-400 bg-amber-100 text-amber-950 shadow-sm"
                         >
-                            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                            <span className="text-sm flex-1">
-                                <span className="font-medium">{cluster.count}</span> uncategorized prospects match
-                                &ldquo;<span className="font-semibold text-amber-700 dark:text-amber-300">{cluster.term}</span>&rdquo;
+                            <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
+                            <span className="text-sm flex-1 font-medium">
+                                <span className="font-semibold">{cluster.count}</span> uncategorized prospects match
+                                &ldquo;<span className="font-bold text-amber-800">{cluster.term}</span>&rdquo;
                             </span>
                             <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-xs border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                                className="h-7 text-xs border-amber-700 bg-white text-amber-950 hover:bg-amber-50"
                                 onClick={() => handleCreateTypeFromCluster(cluster.term, cluster.prospectIds)}
                             >
                                 <Plus className="w-3 h-3 mr-1" />
@@ -1379,15 +1385,15 @@ export default function ProspectsPage() {
 
             {/* Auto-categorize banner — independent of cluster detection threshold */}
             {prospects.some(p => getEffectiveFacilityType(p) === 'unknown') && (
-                <div className="flex items-center gap-3 px-4 py-2 mb-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
-                    <RefreshCw className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span className="text-sm flex-1 text-blue-700 dark:text-blue-300">
+                <div className="flex items-center gap-3 px-4 py-2 mb-3 rounded-lg border border-blue-500 bg-blue-100 text-blue-950 shadow-sm">
+                    <RefreshCw className="w-4 h-4 text-blue-700 shrink-0" />
+                    <span className="text-sm flex-1 font-medium text-blue-900">
                         {prospects.filter(p => getEffectiveFacilityType(p) === 'unknown').length} uncategorized — auto-match against known patterns{Object.keys(customFacilityTypes).length > 0 ? ` + ${Object.keys(customFacilityTypes).length} custom type${Object.keys(customFacilityTypes).length !== 1 ? 's' : ''}` : ''}
                     </span>
                     <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                        className="h-7 text-xs border-blue-700 bg-white text-blue-950 hover:bg-blue-50"
                         onClick={handleAutoRecategorize}
                     >
                         <RefreshCw className="w-3 h-3 mr-1" />
@@ -1396,7 +1402,7 @@ export default function ProspectsPage() {
                 </div>
             )}
 
-            {/* Table */}
+            {/* Prospect List */}
             {loading ? (
                 <div className="flex items-center justify-center py-20 text-muted-foreground">
                     <Loader2 className="w-6 h-6 animate-spin mr-2" />
@@ -1413,337 +1419,222 @@ export default function ProspectsPage() {
                     </p>
                 </div>
             ) : (
-                <div className="border rounded-lg overflow-hidden">
-                    <div className="overflow-x-auto">
-                    <div className="min-w-[860px]">
-                    {/* Table header */}
-                    <div className="hidden md:grid grid-cols-[2.5rem_1fr_minmax(150px,180px)_minmax(140px,200px)_minmax(160px,220px)_90px_64px_100px] gap-x-3 px-4 py-2.5 bg-muted/50 border-b text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        <div className="flex items-center justify-center">
-                            <Checkbox
-                                checked={selected.size === filtered.length && filtered.length > 0}
-                                onCheckedChange={toggleAll}
-                            />
-                        </div>
-                        <div>Business</div>
-                        <div>Facility Type</div>
-                        <div>Location</div>
-                        <div>Contact</div>
-                        <div>Confidence</div>
-                        <div>Rating</div>
-                        <div>Actions</div>
-                    </div>
-
-                    {/* Rows */}
-                    <div className="divide-y max-h-[calc(100vh-360px)] overflow-y-auto">
-                        {filtered.map(prospect => (
-                            <div
-                                key={prospect.id}
-                                className={`group flex flex-col md:grid md:grid-cols-[2.5rem_1fr_minmax(150px,180px)_minmax(140px,200px)_minmax(160px,220px)_90px_64px_100px] gap-x-3 gap-y-2 px-4 py-3 md:items-center text-sm hover:bg-muted/30 transition-colors cursor-pointer ${
-                                    selected.has(prospect.id) ? 'bg-primary/5' : ''
-                                }`}
-                            >
+                <div className="rounded-lg border overflow-hidden">
+                {/* Column header */}
+                <div className="hidden xl:flex items-center gap-3 px-4 py-2 bg-muted/50 border-b text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="w-4 shrink-0" />
+                    <div className="w-1 shrink-0" />{/* border accent spacer */}
+                    <div className="flex-1 min-w-0">Business</div>
+                    <div className="w-px h-3 bg-border shrink-0" />
+                    <div className="w-[320px] shrink-0">Contact</div>
+                    <div className="w-px h-3 bg-border shrink-0" />
+                    <div className="w-[120px] shrink-0 text-right">Actions</div>
+                </div>
+                <div className="divide-y max-h-[calc(100vh-380px)] overflow-y-auto">
+                    {filtered.map(prospect => {
+                        const effectiveFt = getEffectiveFacilityType(prospect);
+                        const isUnknown = effectiveFt === 'unknown';
+                        const isInferred = !prospect.facilityType && !isUnknown;
+                        const borderColor =
+                            prospect.emailConfidence === 'high' ? 'border-l-green-400' :
+                            prospect.emailConfidence === 'medium' ? 'border-l-amber-400' :
+                            prospect.contactEmail ? 'border-l-slate-300 dark:border-l-slate-600' :
+                            'border-l-red-300 dark:border-l-red-700';
+                        return (
+                            <div key={prospect.id} className={`group flex items-stretch border-l-4 ${borderColor} hover:bg-muted/30 transition-colors ${selected.has(prospect.id) ? 'bg-primary/5' : ''}`}>
                                 {/* Checkbox */}
-                                <div className="flex items-center justify-center">
-                                    <Checkbox
-                                        checked={selected.has(prospect.id)}
-                                        onCheckedChange={() => toggleSelect(prospect.id)}
-                                    />
+                                <div className="flex items-start justify-center w-10 shrink-0 pt-4 xl:items-center xl:pt-0">
+                                    <Checkbox checked={selected.has(prospect.id)} onCheckedChange={() => toggleSelect(prospect.id)} />
                                 </div>
-
-                                {/* Business */}
-                                <div className="min-w-0">
-                                    <div className="font-medium truncate flex items-center gap-1.5">
-                                        <Building2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                                        {prospect.businessName}
-                                        {prospect.website && (
-                                            <a
-                                                href={prospect.website.startsWith('http') ? prospect.website : `https://${prospect.website}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-muted-foreground hover:text-primary"
-                                                onClick={e => e.stopPropagation()}
-                                            >
-                                                <ExternalLink className="w-3 h-3" />
-                                            </a>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                        {prospect.phone && (
-                                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                <Phone className="w-3 h-3" />
-                                                {prospect.phone}
-                                            </span>
-                                        )}
-                                        {prospect.source === 'job_board_trigger' && (
-                                            <Badge className="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[9px] px-1.5 py-0 h-4 font-medium border-0">
-                                                <Briefcase className="w-2.5 h-2.5 mr-0.5" />
-                                                {prospect.triggerData?.sourcePlatform || 'Job Board'}
-                                            </Badge>
-                                        )}
-                                    </div>
-                                    {prospect.triggerData && (
-                                        <div className="text-[10px] text-indigo-600 dark:text-indigo-400 mt-0.5 truncate max-w-[280px]" title={prospect.triggerData.jobTitle}>
-                                            Hiring: {prospect.triggerData.jobTitle}
+                                {/* Card body */}
+                                <div className="flex-1 min-w-0 flex flex-col gap-3 px-3 py-3 xl:flex-row xl:items-center">
+                                    {/* Business Zone */}
+                                    <div className="flex-1 min-w-0 space-y-1.5">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-semibold text-sm">{prospect.businessName}</span>
+                                            {prospect.website && (
+                                                <a href={prospect.website.startsWith('http') ? prospect.website : `https://${prospect.website}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary shrink-0" onClick={e => e.stopPropagation()}>
+                                                    <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                            )}
+                                            {prospect.source === 'job_board_trigger' && (
+                                                <Badge className="border border-indigo-300 bg-indigo-100 text-indigo-900 text-[9px] px-1.5 py-0 h-4 font-semibold shrink-0">
+                                                    <Briefcase className="w-2.5 h-2.5 mr-0.5" />{prospect.triggerData?.sourcePlatform || 'Job Board'}
+                                                </Badge>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-
-                                {/* Facility Type */}
-                                <div className="min-w-0">
-                                    {(() => {
-                                        const effectiveFt = getEffectiveFacilityType(prospect);
-                                        const isUnknown = effectiveFt === 'unknown';
-                                        const isInferred = !prospect.facilityType && !isUnknown;
-                                        return (
-                                            <Select
-                                                value={effectiveFt === 'unknown' ? undefined : effectiveFt}
-                                                onValueChange={(val: string) => handleSetFacilityType(prospect.id, val)}
-                                            >
-                                                <SelectTrigger
-                                                    className={`h-7 text-[11px] px-2 w-full ${
-                                                        isUnknown
-                                                            ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400'
-                                                            : isInferred
-                                                            ? 'border-dashed border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400'
-                                                            : 'border-green-300 dark:border-green-800 text-green-700 dark:text-green-400'
-                                                    }`}
-                                                >
+                                        <div onClick={e => e.stopPropagation()}>
+                                            <Select value={effectiveFt === 'unknown' ? undefined : effectiveFt} onValueChange={(val: string) => handleSetFacilityType(prospect.id, val)}>
+                                                <SelectTrigger className={`h-6 text-[11px] px-2 w-fit max-w-[220px] font-medium ${isUnknown ? 'border-red-400 bg-red-100 text-red-900' : isInferred ? 'border-dashed border-amber-500 bg-amber-100 text-amber-900' : 'border-green-500 bg-green-100 text-green-900'}`}>
                                                     <SelectValue placeholder="⚠ Set type…" />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {mergedFacilityOptions.map(opt => (
-                                                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                                                            {opt.label}
-                                                        </SelectItem>
+                                                        <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-                                        );
-                                    })()}
-                                </div>
-
-                                {/* Location */}
-                                <div className="min-w-0 text-xs text-muted-foreground flex items-start gap-1">
-                                    <MapPin className="w-3 h-3 shrink-0 mt-0.5" />
-                                    <span className="truncate leading-snug">{prospect.address || prospect.searchLocation}</span>
-                                </div>
-
-                                {/* Contact — inline editable */}
-                                <div className="min-w-0">
-                                    {editingContact === prospect.id ? (
-                                        /* ── Edit mode ── */
-                                        <div className="space-y-1" onClick={e => e.stopPropagation()}>
-                                            <div className="flex items-center gap-1">
-                                                <Input
-                                                    value={editEmail}
-                                                    onChange={e => setEditEmail(e.target.value)}
-                                                    onKeyDown={e => {
-                                                        if (e.key === 'Enter') handleSaveContact(prospect.id);
-                                                        if (e.key === 'Escape') handleCancelEditContact();
-                                                    }}
-                                                    placeholder="email@example.com"
-                                                    className="h-6 text-[11px] px-1.5 py-0"
-                                                    autoFocus
-                                                />
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <Input
-                                                    value={editName}
-                                                    onChange={e => setEditName(e.target.value)}
-                                                    onKeyDown={e => {
-                                                        if (e.key === 'Enter') handleSaveContact(prospect.id);
-                                                        if (e.key === 'Escape') handleCancelEditContact();
-                                                    }}
-                                                    placeholder="Contact name"
-                                                    className="h-6 text-[11px] px-1.5 py-0"
-                                                />
-                                                <button
-                                                    onClick={() => handleSaveContact(prospect.id)}
-                                                    disabled={savingContact}
-                                                    className="h-6 w-6 flex items-center justify-center rounded text-green-600 hover:bg-green-50 dark:hover:bg-green-950/40 transition-colors shrink-0"
-                                                    title="Save"
-                                                >
-                                                    {savingContact ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                                                </button>
-                                                <button
-                                                    onClick={handleCancelEditContact}
-                                                    className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:bg-muted transition-colors shrink-0"
-                                                    title="Cancel"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </div>
                                         </div>
-                                    ) : (
-                                        /* ── View mode ── */
-                                        <div className="group relative">
-                                            {prospect.contactEmail ? (
-                                                <div className="text-xs truncate flex items-center gap-1">
-                                                    <Mail className="w-3 h-3 text-muted-foreground shrink-0" />
-                                                    <span className="truncate">{prospect.contactEmail}</span>
-                                                    {prospect.emailSource === 'manual' && (
-                                                        <span className="text-[9px] text-emerald-600 font-medium">✎</span>
+                                        <div className="flex items-center gap-4 flex-wrap">
+                                            {(prospect.address || prospect.searchLocation) && (
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1 min-w-0 max-w-full">
+                                                    <MapPin className="w-3 h-3 shrink-0" />
+                                                    <span className="truncate max-w-[320px] xl:max-w-[280px]">{prospect.address || prospect.searchLocation}</span>
+                                                </span>
+                                            )}
+                                            {prospect.phone && (
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                                                    <Phone className="w-3 h-3" />{prospect.phone}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {prospect.triggerData && (
+                                            <div className="text-[10px] text-indigo-800 truncate font-medium">Hiring: {prospect.triggerData.jobTitle}</div>
+                                        )}
+                                    </div>
+                                    {/* Contact Zone */}
+                                    <div className="w-full space-y-1 rounded-md border border-border/60 bg-muted/20 p-3 xl:w-[320px] xl:shrink-0 xl:rounded-none xl:border-0 xl:bg-transparent xl:p-0">
+                                        {editingContact === prospect.id ? (
+                                            <div className="space-y-1" onClick={e => e.stopPropagation()}>
+                                                <div className="flex items-center gap-1">
+                                                    <Input value={editEmail} onChange={e => setEditEmail(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSaveContact(prospect.id); if (e.key === 'Escape') handleCancelEditContact(); }} placeholder="email@example.com" className="h-6 text-[11px] px-1.5 py-0 flex-1" autoFocus />
+                                                    <button onClick={() => handleSaveContact(prospect.id)} disabled={savingContact} className="h-6 w-6 flex items-center justify-center rounded text-green-600 hover:bg-green-50 dark:hover:bg-green-950/40 transition-colors shrink-0">
+                                                        {savingContact ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                                    </button>
+                                                    <button onClick={handleCancelEditContact} className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:bg-muted transition-colors shrink-0">
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                                <Input value={editName} onChange={e => setEditName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSaveContact(prospect.id); if (e.key === 'Escape') handleCancelEditContact(); }} placeholder="Contact name" className="h-6 text-[11px] px-1.5 py-0" />
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-700 xl:hidden">Contact</span>
+                                                    <ConfidenceBadge confidence={prospect.emailConfidence} />
+                                                    {prospect.contactEmail ? (
+                                                        <span className="text-xs font-medium flex items-center gap-1 min-w-0">
+                                                            <Mail className="w-3 h-3 text-muted-foreground shrink-0" />
+                                                            <span className="truncate">{prospect.contactEmail}</span>
+                                                            {prospect.emailSource === 'manual' && <span className="text-[9px] text-emerald-600 font-medium shrink-0">✎</span>}
+                                                        </span>
+                                                    ) : prospect.genericEmail ? (
+                                                        <span className="text-xs text-muted-foreground flex items-center gap-1 min-w-0">
+                                                            <Mail className="w-3 h-3 shrink-0" /><span className="truncate">{prospect.genericEmail}</span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground/50 italic">No email found</span>
                                                     )}
                                                 </div>
-                                            ) : prospect.genericEmail ? (
-                                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                                                    <Mail className="w-3 h-3 shrink-0" />
-                                                    <span className="truncate">{prospect.genericEmail}</span>
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    {prospect.contactName && (
+                                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                            <User className="w-3 h-3 shrink-0" />
+                                                            {prospect.contactName}
+                                                            {prospect.contactTitle && <span className="text-[10px] text-muted-foreground/60">· {prospect.contactTitle}</span>}
+                                                        </span>
+                                                    )}
+                                                    {!prospect.contactTitle && prospect.inferredTitle && (
+                                                        <span className="text-[10px] italic text-blue-900 border border-dashed border-blue-500 bg-blue-50 rounded px-1.5 py-0 leading-5 font-medium" title={`Inferred${prospect.inferredDept ? ` · ${prospect.inferredDept}` : ''}`}>
+                                                            ~{prospect.inferredTitle}
+                                                        </span>
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground">No email</span>
-                                            )}
-                                            <div className="flex items-center gap-1.5 mt-0.5">
-                                                {prospect.contactName && (
-                                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                        <User className="w-3 h-3" />
-                                                        {prospect.contactName}
-                                                        {prospect.contactTitle && (
-                                                            <span className="text-[10px] text-muted-foreground/60">· {prospect.contactTitle}</span>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    {(prospect.allContacts?.length ?? 0) > 1 && (
+                                                        <button onClick={e => { e.stopPropagation(); toggleContactsExpand(prospect.id); }} className="flex items-center gap-0.5 text-[10px] px-1.5 py-0 h-4 text-blue-900 border border-blue-500 bg-white rounded-md hover:bg-blue-50 transition-colors font-medium">
+                                                            {expandedContacts.has(prospect.id) ? <ChevronDown className="w-2.5 h-2.5" /> : <ChevronRight className="w-2.5 h-2.5" />}
+                                                            <Users className="w-2.5 h-2.5 ml-0.5" />
+                                                            <span className="ml-0.5">{prospect.allContacts!.length} contacts</span>
+                                                        </button>
+                                                    )}
+                                                    {prospect.status === 'pending_review' && (
+                                                        <button onClick={e => { e.stopPropagation(); handleStartEditContact(prospect); }} className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 text-[10px] px-1 h-4 text-muted-foreground hover:text-primary transition-all rounded" title="Edit contact">
+                                                            <Pencil className="w-2.5 h-2.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                {expandedContacts.has(prospect.id) && prospect.allContacts && prospect.allContacts.length > 1 && (
+                                                    <div className="mt-1 space-y-1 pl-2 border-l-2 border-blue-200 dark:border-blue-800">
+                                                        {prospect.allContacts.map((c, idx) => (
+                                                            <div key={idx} className="text-[11px] flex items-center gap-1.5 text-muted-foreground">
+                                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.type === 'personal' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                                                <span className="truncate">{c.email}</span>
+                                                                {c.firstName && <span className="text-[10px] text-muted-foreground/50 shrink-0">({c.firstName}{c.lastName ? ` ${c.lastName}` : ''}{c.position ? `, ${c.position}` : ''})</span>}
+                                                                {c.confidence && <span className="text-[10px] text-muted-foreground/40 shrink-0">{Math.round(c.confidence * 100)}%</span>}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* Actions Zone */}
+                                    <div className="flex items-center justify-between gap-3 shrink-0 border-t border-border/60 pt-3 xl:w-[120px] xl:justify-end xl:border-t-0 xl:pt-0">
+                                        {prospect.rating ? (
+                                            <span className="text-xs text-muted-foreground flex items-center gap-0.5 shrink-0">
+                                                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />{prospect.rating}
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] uppercase tracking-wide text-muted-foreground xl:hidden">Actions</span>
+                                        )}
+                                        {prospect.status === 'pending_review' ? (
+                                            <div className="flex items-center gap-2">
+                                                <DropdownMenu onOpenChange={(open: boolean) => { if (open) loadOptions(); }}>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30" title="Import to CRM">
+                                                            <Plus className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-52">
+                                                        <DropdownMenuItem onClick={() => handleImportOnly([prospect.id])}>
+                                                            <Plus className="w-3.5 h-3.5 mr-2" />Add to CRM Only
+                                                        </DropdownMenuItem>
+                                                        {sequences.length > 0 && getEffectiveFacilityType(prospect) !== 'unknown' && (
+                                                            <>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuSub>
+                                                                    <DropdownMenuSubTrigger>
+                                                                        <ListPlus className="w-3.5 h-3.5 mr-2" />Import + Sequence
+                                                                    </DropdownMenuSubTrigger>
+                                                                    <DropdownMenuSubContent>
+                                                                        {sequences.map(s => (
+                                                                            <DropdownMenuItem key={s.id} onClick={() => handleImportAndSequence([prospect.id], s.id)}>
+                                                                                <ListPlus className="w-3.5 h-3.5 mr-2 text-muted-foreground" />{s.name} ({s.stepCount} steps)
+                                                                            </DropdownMenuItem>
+                                                                        ))}
+                                                                    </DropdownMenuSubContent>
+                                                                </DropdownMenuSub>
+                                                            </>
                                                         )}
-                                                    </span>
-                                                )}
-                                                {!prospect.contactTitle && prospect.inferredTitle && (
-                                                    <span
-                                                        className="text-[10px] italic text-blue-600/70 dark:text-blue-400/60 border border-dashed border-blue-300 dark:border-blue-700 rounded px-1.5 py-0 leading-5"
-                                                        title={`Inferred from facility type${prospect.inferredDept ? ` · ${prospect.inferredDept}` : ''}`}
-                                                    >
-                                                        ~{prospect.inferredTitle}
-                                                    </span>
-                                                )}
-                                                {(prospect.allContacts?.length ?? 0) > 1 && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); toggleContactsExpand(prospect.id); }}
-                                                        className="flex items-center gap-0.5 text-[10px] px-1.5 py-0 h-4 font-normal text-blue-600 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
-                                                    >
-                                                        {expandedContacts.has(prospect.id)
-                                                            ? <ChevronDown className="w-2.5 h-2.5" />
-                                                            : <ChevronRight className="w-2.5 h-2.5" />
-                                                        }
-                                                        <Users className="w-2.5 h-2.5" />
-                                                        {prospect.allContacts!.length} contacts
-                                                    </button>
-                                                )}
-                                                {/* Edit pencil — only for pending */}
-                                                {prospect.status === 'pending_review' && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleStartEditContact(prospect); }}
-                                                        className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 text-[10px] px-1 py-0 h-4 text-muted-foreground hover:text-primary transition-all cursor-pointer rounded"
-                                                        title="Edit contact"
-                                                    >
-                                                        <Pencil className="w-2.5 h-2.5" />
-                                                    </button>
-                                                )}
+                                                        {sequences.length > 0 && getEffectiveFacilityType(prospect) === 'unknown' && (
+                                                            <>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem disabled className="text-amber-600 dark:text-amber-400 text-xs">
+                                                                    <AlertTriangle className="w-3 h-3 mr-2" />Set facility type first
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30" title="Skip" onClick={() => handleSkip([prospect.id])}>
+                                                    <SkipForward className="w-3.5 h-3.5" />
+                                                </Button>
                                             </div>
-                                            {/* Expanded contacts list */}
-                                            {expandedContacts.has(prospect.id) && prospect.allContacts && prospect.allContacts.length > 1 && (
-                                                <div className="mt-1.5 space-y-1 pl-1 border-l-2 border-blue-200 dark:border-blue-800">
-                                                    {prospect.allContacts.map((c, idx) => (
-                                                        <div key={idx} className="text-[11px] flex items-center gap-1.5 text-muted-foreground">
-                                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.type === 'personal' ? 'bg-green-500' : 'bg-gray-400'}`} />
-                                                            <span className="truncate">{c.email}</span>
-                                                            {c.firstName && <span className="text-[10px] text-muted-foreground/60">({c.firstName}{c.lastName ? ` ${c.lastName}` : ''}{c.position ? `, ${c.position}` : ''})</span>}
-                                                            {c.confidence && <span className="text-[10px] text-muted-foreground/40">{Math.round(c.confidence * 100)}%</span>}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Confidence */}
-                                <div>
-                                    <ConfidenceBadge confidence={prospect.emailConfidence} />
-                                </div>
-
-                                {/* Rating */}
-                                <div className="text-xs text-muted-foreground">
-                                    {prospect.rating ? (
-                                        <span className="flex items-center gap-0.5">
-                                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                                            {prospect.rating}
-                                        </span>
-                                    ) : '—'}
-                                </div>
-
-                                {/* Row actions */}
-                                <div className="flex items-center gap-1">
-                                    {prospect.status === 'pending_review' ? (
-                                        <>
-                                            <DropdownMenu onOpenChange={(open: boolean) => { if (open) loadOptions(); }}>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
-                                                        title="Import to CRM"
-                                                    >
-                                                        <Plus className="w-3.5 h-3.5" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-52">
-                                                    <DropdownMenuItem onClick={() => handleImportOnly([prospect.id])}>
-                                                        <Plus className="w-3.5 h-3.5 mr-2" />
-                                                        Add to CRM Only
-                                                    </DropdownMenuItem>
-                                                    {sequences.length > 0 && getEffectiveFacilityType(prospect) !== 'unknown' && (
-                                                        <>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuSub>
-                                                                <DropdownMenuSubTrigger>
-                                                                    <ListPlus className="w-3.5 h-3.5 mr-2" />
-                                                                    Import + Sequence
-                                                                </DropdownMenuSubTrigger>
-                                                                <DropdownMenuSubContent>
-                                                                    {sequences.map(s => (
-                                                                        <DropdownMenuItem
-                                                                            key={s.id}
-                                                                            onClick={() => handleImportAndSequence([prospect.id], s.id)}
-                                                                        >
-                                                                            <ListPlus className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                                                                            {s.name} ({s.stepCount} steps)
-                                                                        </DropdownMenuItem>
-                                                                    ))}
-                                                                </DropdownMenuSubContent>
-                                                            </DropdownMenuSub>
-                                                        </>
-                                                    )}
-                                                    {sequences.length > 0 && getEffectiveFacilityType(prospect) === 'unknown' && (
-                                                        <>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem disabled className="text-amber-600 dark:text-amber-400 text-xs">
-                                                                <AlertTriangle className="w-3 h-3 mr-2" />
-                                                                Set facility type first
-                                                            </DropdownMenuItem>
-                                                        </>
-                                                    )}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                                                title="Skip"
-                                                onClick={() => handleSkip([prospect.id])}
-                                            >
-                                                <SkipForward className="w-3.5 h-3.5" />
-                                            </Button>
-                                        </>
-                                    ) : (
-                                        <Badge variant="outline" className="text-[10px]">
-                                            {prospect.status === 'imported' && '✓ Imported'}
-                                            {prospect.status === 'emailed' && '✉ Emailed'}
-                                            {prospect.status === 'sequenced' && '📋 Sequenced'}
-                                            {prospect.status === 'skipped' && '⏭ Skipped'}
-                                        </Badge>
-                                    )}
+                                        ) : (
+                                            <Badge variant="outline" className={`text-[10px] ${prospect.status === 'skipped' ? 'border-red-300 text-red-500 dark:border-red-800 dark:text-red-400' : ''}`}>
+                                                {prospect.status === 'imported' && '✓ Imported'}
+                                                {prospect.status === 'emailed' && '✉ Emailed'}
+                                                {prospect.status === 'sequenced' && '📋 Sequenced'}
+                                                {prospect.status === 'skipped' && '⏭ Skipped'}
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                    </div>
-                    </div>
+                        );
+                    })}
+                </div>
                 </div>
             )}
         </div>

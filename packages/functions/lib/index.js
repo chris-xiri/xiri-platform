@@ -81,23 +81,23 @@ __export(queueUtils_exports, {
   fetchPendingTasks: () => fetchPendingTasks,
   updateTaskStatus: () => updateTaskStatus
 });
-async function enqueueTask(db27, task) {
-  return db27.collection(COLLECTION).add({
+async function enqueueTask(db29, task) {
+  return db29.collection(COLLECTION).add({
     ...task,
     status: "PENDING",
     retryCount: 0,
     createdAt: /* @__PURE__ */ new Date()
   });
 }
-async function fetchPendingTasks(db27) {
+async function fetchPendingTasks(db29) {
   const now = admin3.firestore.Timestamp.now();
-  const snapshot = await db27.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
+  const snapshot = await db29.collection(COLLECTION).where("status", "in", ["PENDING", "RETRY"]).where("scheduledAt", "<=", now).limit(10).get();
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
-async function claimTask(db27, taskId) {
-  const ref = db27.collection(COLLECTION).doc(taskId);
+async function claimTask(db29, taskId) {
+  const ref = db29.collection(COLLECTION).doc(taskId);
   try {
-    return await db27.runTransaction(async (txn) => {
+    return await db29.runTransaction(async (txn) => {
       const snap = await txn.get(ref);
       if (!snap.exists) return false;
       const current = snap.data();
@@ -114,31 +114,31 @@ async function claimTask(db27, taskId) {
     return false;
   }
 }
-async function updateTaskStatus(db27, taskId, status, updates = {}) {
-  await db27.collection(COLLECTION).doc(taskId).update({
+async function updateTaskStatus(db29, taskId, status, updates = {}) {
+  await db29.collection(COLLECTION).doc(taskId).update({
     status,
     ...updates
   });
 }
-async function cancelVendorTasks(db27, vendorId) {
-  const snapshot = await db27.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db27.batch();
+async function cancelVendorTasks(db29, vendorId) {
+  const snapshot = await db29.collection(COLLECTION).where("vendorId", "==", vendorId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db29.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadTasks(db27, leadId) {
-  const snapshot = await db27.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
-  const batch = db27.batch();
+async function cancelLeadTasks(db29, leadId) {
+  const snapshot = await db29.collection(COLLECTION).where("leadId", "==", leadId).where("status", "in", ["PENDING", "RETRY"]).get();
+  const batch = db29.batch();
   snapshot.docs.forEach((doc) => {
     batch.update(doc.ref, { status: "CANCELLED", cancelledAt: /* @__PURE__ */ new Date() });
   });
   await batch.commit();
   return snapshot.size;
 }
-async function cancelLeadScheduledEmails(db27, leadId, collection = "companies") {
+async function cancelLeadScheduledEmails(db29, leadId, collection = "companies") {
   const { Resend: Resend5 } = await import("resend");
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -146,7 +146,7 @@ async function cancelLeadScheduledEmails(db27, leadId, collection = "companies")
     return 0;
   }
   const resend2 = new Resend5(apiKey);
-  const docRef = db27.collection(collection).doc(leadId);
+  const docRef = db29.collection(collection).doc(leadId);
   const snap = await docRef.get();
   const ids = snap.data()?.scheduledEmailIds || [];
   if (ids.length === 0) return 0;
@@ -17337,7 +17337,7 @@ var require_define_global_property = __commonJS({
     module2.exports = function(key, value) {
       try {
         defineProperty(globalThis2, key, { value, configurable: true, writable: true });
-      } catch (error16) {
+      } catch (error18) {
         globalThis2[key] = value;
       }
       return value;
@@ -17382,7 +17382,7 @@ var require_fails = __commonJS({
     module2.exports = function(exec) {
       try {
         return !!exec();
-      } catch (error16) {
+      } catch (error18) {
         return true;
       }
     };
@@ -17737,7 +17737,7 @@ var require_try_to_string = __commonJS({
     module2.exports = function(argument) {
       try {
         return $String(argument);
-      } catch (error16) {
+      } catch (error18) {
         return "Object";
       }
     };
@@ -17867,7 +17867,7 @@ var require_object_define_property = __commonJS({
       anObject(Attributes);
       if (IE8_DOM_DEFINE) try {
         return $defineProperty(O, P, Attributes);
-      } catch (error16) {
+      } catch (error18) {
       }
       if ("get" in Attributes || "set" in Attributes) throw new $TypeError("Accessors not supported");
       if ("value" in Attributes) O[P] = Attributes.value;
@@ -18092,7 +18092,7 @@ var require_make_built_in = __commonJS({
         if (options && hasOwn(options, "constructor") && options.constructor) {
           if (DESCRIPTORS) defineProperty(value, "prototype", { writable: false });
         } else if (value.prototype) value.prototype = void 0;
-      } catch (error16) {
+      } catch (error18) {
       }
       var state = enforceInternalState(value);
       if (!hasOwn(state, "source")) {
@@ -18126,7 +18126,7 @@ var require_define_built_in = __commonJS({
         try {
           if (!options.unsafe) delete O[key];
           else if (O[key]) simple = true;
-        } catch (error16) {
+        } catch (error18) {
         }
         if (simple) O[key] = value;
         else definePropertyModule.f(O, key, {
@@ -18170,7 +18170,7 @@ var require_classof = __commonJS({
     var tryGet = function(it, key) {
       try {
         return it[key];
-      } catch (error16) {
+      } catch (error18) {
       }
     };
     module2.exports = TO_STRING_TAG_SUPPORT ? classofRaw : function(it) {
@@ -18266,7 +18266,7 @@ var require_object_get_own_property_descriptor = __commonJS({
       P = toPropertyKey(P);
       if (IE8_DOM_DEFINE) try {
         return $getOwnPropertyDescriptor(O, P);
-      } catch (error16) {
+      } catch (error18) {
       }
       if (hasOwn(O, P)) return createPropertyDescriptor(!call(propertyIsEnumerableModule.f, O, P), O[P]);
     };
@@ -18587,7 +18587,7 @@ var require_function_uncurry_this_accessor = __commonJS({
     module2.exports = function(object, key, method) {
       try {
         return uncurryThis(aCallable(Object.getOwnPropertyDescriptor(object, key)[method]));
-      } catch (error16) {
+      } catch (error18) {
       }
     };
   }
@@ -18634,7 +18634,7 @@ var require_object_set_prototype_of = __commonJS({
         setter = uncurryThisAccessor(Object.prototype, "__proto__", "set");
         setter(test, []);
         CORRECT_SETTER = test instanceof Array;
-      } catch (error16) {
+      } catch (error18) {
       }
       return function setPrototypeOf(O, proto) {
         requireObjectCoercible(O);
@@ -18736,7 +18736,7 @@ var require_is_constructor = __commonJS({
       try {
         construct(noop, [], argument);
         return true;
-      } catch (error16) {
+      } catch (error18) {
         return false;
       }
     };
@@ -18750,7 +18750,7 @@ var require_is_constructor = __commonJS({
       }
       try {
         return INCORRECT_TO_STRING || !!exec(constructorRegExp, inspectSource(argument));
-      } catch (error16) {
+      } catch (error18) {
         return true;
       }
     };
@@ -19070,9 +19070,9 @@ var require_microtask = __commonJS({
         if (IS_NODE && (parent = process2.domain)) parent.exit();
         while (fn = queue.get()) try {
           fn();
-        } catch (error16) {
+        } catch (error18) {
           if (queue.head) notify();
-          throw error16;
+          throw error18;
         }
         if (parent) parent.enter();
       };
@@ -19118,7 +19118,7 @@ var require_host_report_errors = __commonJS({
     module2.exports = function(a2, b) {
       try {
         arguments.length === 1 ? console.error(a2) : console.error(a2, b);
-      } catch (error16) {
+      } catch (error18) {
       }
     };
   }
@@ -19131,8 +19131,8 @@ var require_perform = __commonJS({
     module2.exports = function(exec) {
       try {
         return { error: false, value: exec() };
-      } catch (error16) {
-        return { error: true, value: error16 };
+      } catch (error18) {
+        return { error: true, value: error18 };
       }
     };
   }
@@ -19303,9 +19303,9 @@ var require_es_promise_constructor = __commonJS({
             call(then, result, resolve2, reject);
           } else resolve2(result);
         } else reject(value);
-      } catch (error16) {
+      } catch (error18) {
         if (domain && !exited) domain.exit();
-        reject(error16);
+        reject(error18);
       }
     };
     var notify = function(state, isReject) {
@@ -19391,8 +19391,8 @@ var require_es_promise_constructor = __commonJS({
                 bind(internalResolve, wrapper, state),
                 bind(internalReject, wrapper, state)
               );
-            } catch (error16) {
-              internalReject(wrapper, error16, state);
+            } catch (error18) {
+              internalReject(wrapper, error18, state);
             }
           });
         } else {
@@ -19400,8 +19400,8 @@ var require_es_promise_constructor = __commonJS({
           state.state = FULFILLED;
           notify(state, false);
         }
-      } catch (error16) {
-        internalReject({ done: false }, error16, state);
+      } catch (error18) {
+        internalReject({ done: false }, error18, state);
       }
     };
     if (FORCED_PROMISE_CONSTRUCTOR) {
@@ -19412,8 +19412,8 @@ var require_es_promise_constructor = __commonJS({
         var state = getInternalPromiseState(this);
         try {
           executor(bind(internalResolve, state), bind(internalReject, state));
-        } catch (error16) {
-          internalReject(state, error16);
+        } catch (error18) {
+          internalReject(state, error18);
         }
       };
       PromisePrototype = PromiseConstructor.prototype;
@@ -19464,7 +19464,7 @@ var require_es_promise_constructor = __commonJS({
         }
         try {
           delete NativePromisePrototype.constructor;
-        } catch (error16) {
+        } catch (error18) {
         }
         if (setPrototypeOf) {
           setPrototypeOf(NativePromisePrototype, PromisePrototype);
@@ -19553,9 +19553,9 @@ var require_iterator_close = __commonJS({
           return value;
         }
         innerResult = call(innerResult, iterator);
-      } catch (error16) {
+      } catch (error18) {
         innerError = true;
-        innerResult = error16;
+        innerResult = error18;
       }
       if (kind === "throw") throw value;
       if (innerError) throw innerResult;
@@ -19624,8 +19624,8 @@ var require_iterate = __commonJS({
       while (!(step = call(next, iterator)).done) {
         try {
           result = callFn(step.value);
-        } catch (error16) {
-          iteratorClose(iterator, "throw", error16);
+        } catch (error18) {
+          iteratorClose(iterator, "throw", error18);
         }
         if (typeof result == "object" && result && isPrototypeOf(ResultPrototype, result)) return result;
       }
@@ -19657,14 +19657,14 @@ var require_check_correctness_of_iteration = __commonJS({
       Array.from(iteratorWithReturn, function() {
         throw 2;
       });
-    } catch (error16) {
+    } catch (error18) {
     }
     var called;
     var iteratorWithReturn;
     module2.exports = function(exec, SKIP_CLOSING) {
       try {
         if (!SKIP_CLOSING && !SAFE_CLOSING) return false;
-      } catch (error16) {
+      } catch (error18) {
         return false;
       }
       var ITERATION_SUPPORT = false;
@@ -19678,7 +19678,7 @@ var require_check_correctness_of_iteration = __commonJS({
           };
         };
         exec(object);
-      } catch (error16) {
+      } catch (error18) {
       }
       return ITERATION_SUPPORT;
     };
@@ -20663,7 +20663,7 @@ var require_object_create = __commonJS({
     var NullProtoObject = function() {
       try {
         activeXDocument = new ActiveXObject("htmlfile");
-      } catch (error16) {
+      } catch (error18) {
       }
       NullProtoObject = typeof document != "undefined" ? document.domain && activeXDocument ? NullProtoObjectViaActiveX(activeXDocument) : NullProtoObjectViaIFrame() : NullProtoObjectViaActiveX(activeXDocument);
       var length = enumBugKeys.length;
@@ -20938,7 +20938,7 @@ var require_regexp_flags_detection = __commonJS({
       var INDICES_SUPPORT = true;
       try {
         RegExp2(".", "d");
-      } catch (error16) {
+      } catch (error18) {
         INDICES_SUPPORT = false;
       }
       var O = {};
@@ -21549,8 +21549,8 @@ var require_array_set_length = __commonJS({
       if (this !== void 0) return true;
       try {
         Object.defineProperty([], "length", { writable: false }).length = 1;
-      } catch (error16) {
-        return error16 instanceof TypeError;
+      } catch (error18) {
+        return error18 instanceof TypeError;
       }
     })();
     module2.exports = SILENT_ON_NON_WRITABLE_LENGTH_SET ? function(O, length) {
@@ -21957,7 +21957,7 @@ var require_es_function_name = __commonJS({
         get: function() {
           try {
             return regExpExec(nameRE, functionToString(this))[1];
-          } catch (error16) {
+          } catch (error18) {
             return "";
           }
         }
@@ -22360,7 +22360,7 @@ var require_web_dom_collections_for_each = __commonJS({
     var handlePrototype = function(CollectionPrototype) {
       if (CollectionPrototype && CollectionPrototype.forEach !== forEach) try {
         createNonEnumerableProperty(CollectionPrototype, "forEach", forEach);
-      } catch (error16) {
+      } catch (error18) {
         CollectionPrototype.forEach = forEach;
       }
     };
@@ -22457,8 +22457,8 @@ var require_call_with_safe_iteration_closing = __commonJS({
     module2.exports = function(iterator, fn, value, ENTRIES) {
       try {
         return ENTRIES ? fn(anObject(value)[0], value[1]) : fn(value);
-      } catch (error16) {
-        iteratorClose(iterator, "throw", error16);
+      } catch (error18) {
+        iteratorClose(iterator, "throw", error18);
       }
     };
   }
@@ -23599,7 +23599,7 @@ var require_es_array_iterator = __commonJS({
     addToUnscopables("entries");
     if (!IS_PURE && DESCRIPTORS && values.name !== "values") try {
       defineProperty(values, "name", { value: "values" });
-    } catch (error16) {
+    } catch (error18) {
     }
   }
 });
@@ -23621,14 +23621,14 @@ var require_web_dom_collections_iterator = __commonJS({
       if (CollectionPrototype) {
         if (CollectionPrototype[ITERATOR] !== ArrayValues) try {
           createNonEnumerableProperty(CollectionPrototype, ITERATOR, ArrayValues);
-        } catch (error16) {
+        } catch (error18) {
           CollectionPrototype[ITERATOR] = ArrayValues;
         }
         setToStringTag(CollectionPrototype, COLLECTION_NAME2, true);
         if (DOMIterables[COLLECTION_NAME2]) for (var METHOD_NAME in ArrayIteratorMethods) {
           if (CollectionPrototype[METHOD_NAME] !== ArrayIteratorMethods[METHOD_NAME]) try {
             createNonEnumerableProperty(CollectionPrototype, METHOD_NAME, ArrayIteratorMethods[METHOD_NAME]);
-          } catch (error16) {
+          } catch (error18) {
             CollectionPrototype[METHOD_NAME] = ArrayIteratorMethods[METHOD_NAME];
           }
         }
@@ -23654,7 +23654,7 @@ var require_object_get_own_property_names_external = __commonJS({
     var getWindowNames = function(it) {
       try {
         return $getOwnPropertyNames(it);
-      } catch (error16) {
+      } catch (error18) {
         return arraySlice(windowNames);
       }
     };
@@ -31523,8 +31523,8 @@ var require_lib = __commonJS({
                   image2.onload = function() {
                     resolve2(image2);
                   };
-                  image2.onerror = function(_event, _source, _lineno, _colno, error16) {
-                    reject(error16);
+                  image2.onerror = function(_event, _source, _lineno, _colno, error18) {
+                    reject(error18);
                   };
                   image2.src = src;
                 }));
@@ -39581,7 +39581,7 @@ async function addToResendSuppression(email, reason, metadata) {
   }
   const resend2 = getResend();
   try {
-    const { error: error16 } = await resend2.contacts.create({
+    const { error: error18 } = await resend2.contacts.create({
       audienceId,
       email,
       unsubscribed: true,
@@ -39589,7 +39589,7 @@ async function addToResendSuppression(email, reason, metadata) {
       lastName: reason
       // Stash the reason in lastName for visibility in Resend dashboard
     });
-    if (error16) {
+    if (error18) {
       try {
         const { data: listData } = await resend2.contacts.list({ audienceId });
         const existing = listData?.data?.find((c) => c.email === email);
@@ -39606,7 +39606,7 @@ async function addToResendSuppression(email, reason, metadata) {
       } catch (updateErr) {
         logger3.warn(`[Suppression] Could not update contact ${email}:`, updateErr);
       }
-      logger3.warn(`[Suppression] Resend contacts.create error for ${email}:`, error16);
+      logger3.warn(`[Suppression] Resend contacts.create error for ${email}:`, error18);
       return false;
     }
     logger3.info(`[Suppression] Added ${email} to Resend suppression audience (${reason})`);
@@ -39681,8 +39681,8 @@ async function getTemplate(templateId) {
       return null;
     }
     return doc.data();
-  } catch (error16) {
-    console.error("Error fetching template:", error16);
+  } catch (error18) {
+    console.error("Error fetching template:", error18);
     return null;
   }
 }
@@ -39743,8 +39743,8 @@ BODY:
       subject: subjectMatch[1].trim(),
       body: bodyMatch[1].trim()
     };
-  } catch (error16) {
-    console.error("Error generating email:", error16);
+  } catch (error18) {
+    console.error("Error generating email:", error18);
     return null;
   }
 }
@@ -39812,8 +39812,8 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
       });
       resendId = data?.id;
       console.log(`\u2705 Email sent to ${vendor?.companyName}: ${email.subject} (Resend ID: ${data?.id})`);
-    } catch (error16) {
-      console.error("\u274C Resend API error:", error16);
+    } catch (error18) {
+      console.error("\u274C Resend API error:", error18);
       await db4.collection("vendor_activities").add({
         vendorId,
         type: "EMAIL_FAILED",
@@ -39823,7 +39823,7 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
           templateId,
           subject: email.subject,
           to: vendor?.email || "unknown",
-          error: String(error16)
+          error: String(error18)
         }
       });
       return;
@@ -39844,8 +39844,8 @@ async function sendTemplatedEmail(vendorId, templateId, customVariables) {
         // NEW: Track Resend email ID
       }
     });
-  } catch (error16) {
-    console.error("Error sending email:", error16);
+  } catch (error18) {
+    console.error("Error sending email:", error18);
   }
 }
 function buildEmailHeader() {
@@ -39941,7 +39941,7 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
       headers2["List-Unsubscribe"] = `<${unsubscribeUrl}>`;
       headers2["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
     }
-    const { data, error: error16 } = await resend.emails.send({
+    const { data, error: error18 } = await resend.emails.send({
       from: from || "XIRI Facility Solutions <onboarding@xiri.ai>",
       replyTo: "chris@xiri.ai",
       to,
@@ -39953,8 +39953,8 @@ async function sendEmail(to, subject, html, attachments, from, vendorId, templat
       // Native Resend scheduling (Pro feature) — ISO 8601 string
       ...resolvedScheduledAt ? { scheduledAt: resolvedScheduledAt.toISOString() } : {}
     });
-    if (error16) {
-      console.error("\u274C Resend API error:", error16);
+    if (error18) {
+      console.error("\u274C Resend API error:", error18);
       return { success: false };
     }
     const scheduled = resolvedScheduledAt ? ` (scheduled: ${resolvedScheduledAt.toISOString()})` : "";
@@ -39978,10 +39978,10 @@ async function sendBatchEmails(emails) {
       subject: e2.subject,
       html: header + e2.html + signature
     }));
-    const { data, error: error16 } = await resend.batch.send(payload);
-    if (error16) {
-      console.error("\u274C Batch send error:", error16);
-      return { success: false, error: error16.message || String(error16) };
+    const { data, error: error18 } = await resend.batch.send(payload);
+    if (error18) {
+      console.error("\u274C Batch send error:", error18);
+      return { success: false, error: error18.message || String(error18) };
     }
     const ids = data?.data?.map((d) => d.id) || [];
     console.log(`\u2705 Batch sent ${emails.length} emails (IDs: ${ids.join(", ")})`);
@@ -40077,12 +40077,12 @@ async function publishPost(message, link, imageUrl, placeId) {
       success: true,
       postUrl: `https://facebook.com/${postId}`
     };
-  } catch (error16) {
-    console.error("Facebook publish error:", error16);
+  } catch (error18) {
+    console.error("Facebook publish error:", error18);
     return {
       id: "",
       success: false,
-      error: error16.message || "Failed to publish to Facebook"
+      error: error18.message || "Failed to publish to Facebook"
     };
   }
 }
@@ -40152,12 +40152,12 @@ async function publishReel(videoUrl, description, placeId) {
       success: true,
       postUrl: `https://facebook.com/reel/${finishData.id || videoId}`
     };
-  } catch (error16) {
-    console.error("[FB Reels] Publish error:", error16);
+  } catch (error18) {
+    console.error("[FB Reels] Publish error:", error18);
     return {
       id: "",
       success: false,
-      error: error16.message || "Failed to publish reel"
+      error: error18.message || "Failed to publish reel"
     };
   }
 }
@@ -40175,8 +40175,8 @@ async function searchFacebookPlaces(query, lat, lng) {
       return [];
     }
     return data.data || [];
-  } catch (error16) {
-    console.error("[FB Places] Search error:", error16);
+  } catch (error18) {
+    console.error("[FB Places] Search error:", error18);
     return [];
   }
 }
@@ -40211,12 +40211,12 @@ async function schedulePost(message, scheduledTime, link) {
       id: data.id,
       success: true
     };
-  } catch (error16) {
-    console.error("Facebook schedule error:", error16);
+  } catch (error18) {
+    console.error("Facebook schedule error:", error18);
     return {
       id: "",
       success: false,
-      error: error16.message || "Failed to schedule post"
+      error: error18.message || "Failed to schedule post"
     };
   }
 }
@@ -40238,8 +40238,8 @@ async function getRecentPosts(limit = 10) {
       return !url.includes("/reel/") && !url.includes("/videos/");
     });
     return posts.slice(0, limit);
-  } catch (error16) {
-    console.error("Facebook get posts error:", error16);
+  } catch (error18) {
+    console.error("Facebook get posts error:", error18);
     return [];
   }
 }
@@ -40265,8 +40265,8 @@ async function getRecentReels(limit = 10) {
       comments: reel.comments,
       duration: reel.length
     }));
-  } catch (error16) {
-    console.error("Facebook get reels error:", error16);
+  } catch (error18) {
+    console.error("Facebook get reels error:", error18);
     return [];
   }
 }
@@ -40291,8 +40291,8 @@ async function getPageInsights(period = "week") {
       }
     }
     return insights;
-  } catch (error16) {
-    console.error("Facebook insights error:", error16);
+  } catch (error18) {
+    console.error("Facebook insights error:", error18);
     return {};
   }
 }
@@ -40305,8 +40305,8 @@ async function deletePost(postId) {
     );
     const data = await response.json();
     return data.success === true;
-  } catch (error16) {
-    console.error("Facebook delete post error:", error16);
+  } catch (error18) {
+    console.error("Facebook delete post error:", error18);
     return false;
   }
 }
@@ -40681,21 +40681,21 @@ var require_tr46 = __commonJS({
         label = punycode.toUnicode(label);
         processing_option = PROCESSING_OPTIONS.NONTRANSITIONAL;
       }
-      var error16 = false;
+      var error18 = false;
       if (normalize(label) !== label || label[3] === "-" && label[4] === "-" || label[0] === "-" || label[label.length - 1] === "-" || label.indexOf(".") !== -1 || label.search(combiningMarksRegex) === 0) {
-        error16 = true;
+        error18 = true;
       }
       var len = countSymbols(label);
       for (var i = 0; i < len; ++i) {
         var status = findStatus(label.codePointAt(i));
         if (processing === PROCESSING_OPTIONS.TRANSITIONAL && status[1] !== "valid" || processing === PROCESSING_OPTIONS.NONTRANSITIONAL && status[1] !== "valid" && status[1] !== "deviation") {
-          error16 = true;
+          error18 = true;
           break;
         }
       }
       return {
         label,
-        error: error16
+        error: error18
       };
     }
     function processing(domain_name, useSTD3, processing_option) {
@@ -45912,8 +45912,8 @@ function Body(body) {
   this.timeout = timeout;
   if (body instanceof import_stream.default) {
     body.on("error", function(err2) {
-      const error16 = err2.name === "AbortError" ? err2 : new FetchError(`Invalid response body while trying to fetch ${_this.url}: ${err2.message}`, "system", err2);
-      _this[INTERNALS].error = error16;
+      const error18 = err2.name === "AbortError" ? err2 : new FetchError(`Invalid response body while trying to fetch ${_this.url}: ${err2.message}`, "system", err2);
+      _this[INTERNALS].error = error18;
     });
   }
 }
@@ -46242,17 +46242,17 @@ function fetch2(url, opts) {
   return new fetch2.Promise(function(resolve2, reject) {
     const request = new Request(url, opts);
     const options = getNodeRequestOptions(request);
-    const send = (options.protocol === "https:" ? import_https10.default : import_http.default).request;
+    const send = (options.protocol === "https:" ? import_https11.default : import_http.default).request;
     const signal = request.signal;
     let response = null;
     const abort = function abort2() {
-      let error16 = new AbortError("The user aborted a request.");
-      reject(error16);
+      let error18 = new AbortError("The user aborted a request.");
+      reject(error18);
       if (request.body && request.body instanceof import_stream.default.Readable) {
-        destroyStream(request.body, error16);
+        destroyStream(request.body, error18);
       }
       if (!response || !response.body) return;
-      response.body.emit("error", error16);
+      response.body.emit("error", error18);
     };
     if (signal && signal.aborted) {
       abort();
@@ -46464,7 +46464,7 @@ function destroyStream(stream, err2) {
     stream.end();
   }
 }
-var import_stream, import_http, import_url, import_whatwg_url, import_https10, import_zlib, Readable, BUFFER, TYPE2, Blob2, convert, INTERNALS, PassThrough, invalidTokenRegex, invalidHeaderCharRegex, MAP, Headers, INTERNAL, HeadersIteratorPrototype, INTERNALS$1, STATUS_CODES, Response, INTERNALS$2, URL2, parse_url, format_url, streamDestructionSupported, Request, URL$1, PassThrough$1, isDomainOrSubdomain, isSameProtocol, lib_default;
+var import_stream, import_http, import_url, import_whatwg_url, import_https11, import_zlib, Readable, BUFFER, TYPE2, Blob2, convert, INTERNALS, PassThrough, invalidTokenRegex, invalidHeaderCharRegex, MAP, Headers, INTERNAL, HeadersIteratorPrototype, INTERNALS$1, STATUS_CODES, Response, INTERNALS$2, URL2, parse_url, format_url, streamDestructionSupported, Request, URL$1, PassThrough$1, isDomainOrSubdomain, isSameProtocol, lib_default;
 var init_lib = __esm({
   "../../node_modules/node-fetch/lib/index.mjs"() {
     "use strict";
@@ -46472,7 +46472,7 @@ var init_lib = __esm({
     import_http = __toESM(require("http"), 1);
     import_url = __toESM(require("url"), 1);
     import_whatwg_url = __toESM(require_public_api(), 1);
-    import_https10 = __toESM(require("https"), 1);
+    import_https11 = __toESM(require("https"), 1);
     import_zlib = __toESM(require("zlib"), 1);
     Readable = import_stream.default.Readable;
     BUFFER = /* @__PURE__ */ Symbol("buffer");
@@ -47254,12 +47254,12 @@ var require_common = __commonJS({
         }
         return Function.prototype[Symbol.hasInstance].call(_GaxiosError, instance);
       }
-      constructor(message, config2, response, error16) {
+      constructor(message, config2, response, error18) {
         var _b;
         super(message);
         this.config = config2;
         this.response = response;
-        this.error = error16;
+        this.error = error18;
         this[_a] = util_1.pkg.version;
         this.config = (0, extend_1.default)(true, {}, config2);
         if (this.response) {
@@ -47272,8 +47272,8 @@ var require_common = __commonJS({
           }
           this.status = this.response.status;
         }
-        if (error16 && "code" in error16 && error16.code) {
-          this.code = error16.code;
+        if (error18 && "code" in error18 && error18.code) {
+          this.code = error18.code;
         }
         if (config2.errorRedactor) {
           config2.errorRedactor({
@@ -47918,14 +47918,14 @@ var require_browser = __commonJS({
         } else {
           exports2.storage.removeItem("debug");
         }
-      } catch (error16) {
+      } catch (error18) {
       }
     }
     function load3() {
       let r;
       try {
         r = exports2.storage.getItem("debug") || exports2.storage.getItem("DEBUG");
-      } catch (error16) {
+      } catch (error18) {
       }
       if (!r && typeof process !== "undefined" && "env" in process) {
         r = process.env.DEBUG;
@@ -47935,7 +47935,7 @@ var require_browser = __commonJS({
     function localstorage() {
       try {
         return localStorage;
-      } catch (error16) {
+      } catch (error18) {
       }
     }
     module2.exports = require_common2()(exports2);
@@ -47943,8 +47943,8 @@ var require_browser = __commonJS({
     formatters.j = function(v) {
       try {
         return JSON.stringify(v);
-      } catch (error16) {
-        return "[UnexpectedJSONParseError]: " + error16.message;
+      } catch (error18) {
+        return "[UnexpectedJSONParseError]: " + error18.message;
       }
     };
   }
@@ -48165,7 +48165,7 @@ var require_node2 = __commonJS({
           221
         ];
       }
-    } catch (error16) {
+    } catch (error18) {
     }
     exports2.inspectOpts = Object.keys(process.env).filter((key) => {
       return /^debug_/i.test(key);
@@ -50711,7 +50711,7 @@ var require_parse = __commonJS({
         n: "\n",
         r: "\r",
         t: "	"
-      }, text, error16 = function(m) {
+      }, text, error18 = function(m) {
         throw {
           name: "SyntaxError",
           message: m,
@@ -50720,7 +50720,7 @@ var require_parse = __commonJS({
         };
       }, next = function(c) {
         if (c && c !== ch) {
-          error16("Expected '" + c + "' instead of '" + ch + "'");
+          error18("Expected '" + c + "' instead of '" + ch + "'");
         }
         ch = text.charAt(at);
         at += 1;
@@ -50755,7 +50755,7 @@ var require_parse = __commonJS({
         }
         number2 = +string2;
         if (!isFinite(number2)) {
-          error16("Bad number");
+          error18("Bad number");
         } else {
           if (BigNumber == null) BigNumber = require_bignumber();
           if (string2.length > 15)
@@ -50795,7 +50795,7 @@ var require_parse = __commonJS({
             }
           }
         }
-        error16("Bad string");
+        error18("Bad string");
       }, white = function() {
         while (ch && ch <= " ") {
           next();
@@ -50822,7 +50822,7 @@ var require_parse = __commonJS({
             next("l");
             return null;
         }
-        error16("Unexpected '" + ch + "'");
+        error18("Unexpected '" + ch + "'");
       }, value, array = function() {
         var array2 = [];
         if (ch === "[") {
@@ -50843,7 +50843,7 @@ var require_parse = __commonJS({
             white();
           }
         }
-        error16("Bad array");
+        error18("Bad array");
       }, object = function() {
         var key, object2 = /* @__PURE__ */ Object.create(null);
         if (ch === "{") {
@@ -50858,11 +50858,11 @@ var require_parse = __commonJS({
             white();
             next(":");
             if (_options.strict === true && Object.hasOwnProperty.call(object2, key)) {
-              error16('Duplicate key "' + key + '"');
+              error18('Duplicate key "' + key + '"');
             }
             if (suspectProtoRx.test(key) === true) {
               if (_options.protoAction === "error") {
-                error16("Object contains forbidden prototype property");
+                error18("Object contains forbidden prototype property");
               } else if (_options.protoAction === "ignore") {
                 value();
               } else {
@@ -50870,7 +50870,7 @@ var require_parse = __commonJS({
               }
             } else if (suspectConstructorRx.test(key) === true) {
               if (_options.constructorAction === "error") {
-                error16("Object contains forbidden constructor property");
+                error18("Object contains forbidden constructor property");
               } else if (_options.constructorAction === "ignore") {
                 value();
               } else {
@@ -50888,7 +50888,7 @@ var require_parse = __commonJS({
             white();
           }
         }
-        error16("Bad object");
+        error18("Bad object");
       };
       value = function() {
         white();
@@ -50913,7 +50913,7 @@ var require_parse = __commonJS({
         result = value();
         white();
         if (ch) {
-          error16("Syntax error");
+          error18("Syntax error");
         }
         return typeof reviver === "function" ? (function walk(holder, key) {
           var k, v, value2 = holder[key];
@@ -51169,12 +51169,12 @@ var require_logging_utils = __commonJS({
             this.setFilters();
             this.filtersSet = true;
           }
-          let logger35 = this.cached.get(namespace);
-          if (!logger35) {
-            logger35 = this.makeLogger(namespace);
-            this.cached.set(namespace, logger35);
+          let logger38 = this.cached.get(namespace);
+          if (!logger38) {
+            logger38 = this.makeLogger(namespace);
+            this.cached.set(namespace, logger38);
           }
-          logger35(fields, ...args);
+          logger38(fields, ...args);
         } catch (e2) {
           console.error(e2);
         }
@@ -51311,7 +51311,7 @@ var require_logging_utils = __commonJS({
       } else if (cachedBackend === void 0) {
         cachedBackend = getNodeBackend();
       }
-      const logger35 = (() => {
+      const logger38 = (() => {
         let previousBackend = void 0;
         const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
           if (previousBackend !== cachedBackend) {
@@ -51326,8 +51326,8 @@ var require_logging_utils = __commonJS({
         });
         return newLogger;
       })();
-      loggerCache.set(namespace, logger35);
-      return logger35.func;
+      loggerCache.set(namespace, logger38);
+      return logger38.func;
     }
   }
 });
@@ -51391,14 +51391,14 @@ var require_src4 = __commonJS({
     var gaxios_1 = require_src2();
     var jsonBigint = require_json_bigint();
     var gcp_residency_1 = require_gcp_residency();
-    var logger35 = require_src3();
+    var logger38 = require_src3();
     exports2.BASE_PATH = "/computeMetadata/v1";
     exports2.HOST_ADDRESS = "http://169.254.169.254";
     exports2.SECONDARY_HOST_ADDRESS = "http://metadata.google.internal.";
     exports2.HEADER_NAME = "Metadata-Flavor";
     exports2.HEADER_VALUE = "Google";
     exports2.HEADERS = Object.freeze({ [exports2.HEADER_NAME]: exports2.HEADER_VALUE });
-    var log = logger35.log("gcp metadata");
+    var log = logger38.log("gcp metadata");
     exports2.METADATA_SERVER_DETECTION = Object.freeze({
       "assume-present": "don't try to ping the metadata server, but assume it's present",
       none: "don't try to ping the metadata server, but don't try to use it either",
@@ -51813,22 +51813,22 @@ var require_crypto2 = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.NodeCrypto = void 0;
-    var crypto7 = require("crypto");
+    var crypto9 = require("crypto");
     var NodeCrypto = class {
       async sha256DigestBase64(str) {
-        return crypto7.createHash("sha256").update(str).digest("base64");
+        return crypto9.createHash("sha256").update(str).digest("base64");
       }
       randomBytesBase64(count) {
-        return crypto7.randomBytes(count).toString("base64");
+        return crypto9.randomBytes(count).toString("base64");
       }
       async verify(pubkey, data, signature) {
-        const verifier = crypto7.createVerify("RSA-SHA256");
+        const verifier = crypto9.createVerify("RSA-SHA256");
         verifier.update(data);
         verifier.end();
         return verifier.verify(pubkey, signature, "base64");
       }
       async sign(privateKey, data) {
-        const signer = crypto7.createSign("RSA-SHA256");
+        const signer = crypto9.createSign("RSA-SHA256");
         signer.update(data);
         signer.end();
         return signer.sign(privateKey, "base64");
@@ -51846,7 +51846,7 @@ var require_crypto2 = __commonJS({
        *   string in hexadecimal encoding.
        */
       async sha256DigestHex(str) {
-        return crypto7.createHash("sha256").update(str).digest("hex");
+        return crypto9.createHash("sha256").update(str).digest("hex");
       }
       /**
        * Computes the HMAC hash of a message using the provided crypto key and the
@@ -51858,7 +51858,7 @@ var require_crypto2 = __commonJS({
        */
       async signWithHmacSha256(key, msg) {
         const cryptoKey = typeof key === "string" ? key : toBuffer(key);
-        return toArrayBuffer(crypto7.createHmac("sha256", cryptoKey).update(msg).digest());
+        return toArrayBuffer(crypto9.createHmac("sha256", cryptoKey).update(msg).digest());
       }
     };
     exports2.NodeCrypto = NodeCrypto;
@@ -52637,10 +52637,10 @@ var require_oauth2client = __commonJS({
        * https://github.com/googleapis/google-auth-library-nodejs/blob/main/samples/oauth2-codeVerifier.js
        */
       async generateCodeVerifierAsync() {
-        const crypto7 = (0, crypto_1.createCrypto)();
-        const randomString = crypto7.randomBytesBase64(96);
+        const crypto9 = (0, crypto_1.createCrypto)();
+        const randomString = crypto9.randomBytesBase64(96);
         const codeVerifier = randomString.replace(/\+/g, "~").replace(/=/g, "_").replace(/\//g, "-");
-        const unencodedCodeChallenge = await crypto7.sha256DigestBase64(codeVerifier);
+        const unencodedCodeChallenge = await crypto9.sha256DigestBase64(codeVerifier);
         const codeChallenge = unencodedCodeChallenge.split("=")[0].replace(/\+/g, "-").replace(/\//g, "_");
         return { codeVerifier, codeChallenge };
       }
@@ -52975,13 +52975,13 @@ var require_oauth2client = __commonJS({
           },
           url: this.endpoints.tokenInfoUrl.toString()
         });
-        const info27 = Object.assign({
+        const info30 = Object.assign({
           expiry_date: (/* @__PURE__ */ new Date()).getTime() + data.expires_in * 1e3,
           scopes: data.scope.split(" ")
         }, data);
-        delete info27.expires_in;
-        delete info27.scope;
-        return info27;
+        delete info30.expires_in;
+        delete info30.scope;
+        return info30;
       }
       getFederatedSignonCerts(callback) {
         if (callback) {
@@ -53084,7 +53084,7 @@ var require_oauth2client = __commonJS({
        * @return Returns a promise resolving to LoginTicket on verification.
        */
       async verifySignedJwtWithCertsAsync(jwt, certs, requiredAudience, issuers, maxExpiry) {
-        const crypto7 = (0, crypto_1.createCrypto)();
+        const crypto9 = (0, crypto_1.createCrypto)();
         if (!maxExpiry) {
           maxExpiry = _OAuth2Client.DEFAULT_MAX_TOKEN_LIFETIME_SECS_;
         }
@@ -53097,7 +53097,7 @@ var require_oauth2client = __commonJS({
         let envelope;
         let payload;
         try {
-          envelope = JSON.parse(crypto7.decodeBase64StringUtf8(segments[0]));
+          envelope = JSON.parse(crypto9.decodeBase64StringUtf8(segments[0]));
         } catch (err2) {
           if (err2 instanceof Error) {
             err2.message = `Can't parse token envelope: ${segments[0]}': ${err2.message}`;
@@ -53108,7 +53108,7 @@ var require_oauth2client = __commonJS({
           throw new Error("Can't parse token envelope: " + segments[0]);
         }
         try {
-          payload = JSON.parse(crypto7.decodeBase64StringUtf8(segments[1]));
+          payload = JSON.parse(crypto9.decodeBase64StringUtf8(segments[1]));
         } catch (err2) {
           if (err2 instanceof Error) {
             err2.message = `Can't parse token payload '${segments[0]}`;
@@ -53125,7 +53125,7 @@ var require_oauth2client = __commonJS({
         if (envelope.alg === "ES256") {
           signature = formatEcdsa.joseToDer(signature, "ES256").toString("base64");
         }
-        const verified = await crypto7.verify(cert, signed, signature);
+        const verified = await crypto9.verify(cert, signed, signature);
         if (!verified) {
           throw new Error("Invalid token signature: " + jwt);
         }
@@ -53495,14 +53495,14 @@ var require_jwa = __commonJS({
   "../../node_modules/jwa/index.js"(exports2, module2) {
     "use strict";
     var Buffer2 = require_safe_buffer().Buffer;
-    var crypto7 = require("crypto");
+    var crypto9 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto7.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto9.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -53592,17 +53592,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto7.createHmac("sha" + bits, secret);
+        var hmac = crypto9.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual2 = "timingSafeEqual" in crypto7 ? function timingSafeEqual3(a2, b) {
+    var timingSafeEqual2 = "timingSafeEqual" in crypto9 ? function timingSafeEqual3(a2, b) {
       if (a2.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto7.timingSafeEqual(a2, b);
+      return crypto9.timingSafeEqual(a2, b);
     } : function timingSafeEqual3(a2, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -53619,7 +53619,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto7.createSign("RSA-SHA" + bits);
+        var signer = crypto9.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -53629,7 +53629,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto7.createVerify("RSA-SHA" + bits);
+        var verifier = crypto9.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -53638,11 +53638,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto7.createSign("RSA-SHA" + bits);
+        var signer = crypto9.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto7.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto7.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto9.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto9.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -53652,12 +53652,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto7.createVerify("RSA-SHA" + bits);
+        var verifier = crypto9.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto7.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto7.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto9.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto9.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -54261,16 +54261,16 @@ var require_jwtaccess = __commonJS({
        * @returns A string that returns the cached key.
        */
       getCachedKey(url, scopes) {
-        let cacheKey2 = url;
+        let cacheKey3 = url;
         if (scopes && Array.isArray(scopes) && scopes.length) {
-          cacheKey2 = url ? `${url}_${scopes.join("_")}` : `${scopes.join("_")}`;
+          cacheKey3 = url ? `${url}_${scopes.join("_")}` : `${scopes.join("_")}`;
         } else if (typeof scopes === "string") {
-          cacheKey2 = url ? `${url}_${scopes}` : scopes;
+          cacheKey3 = url ? `${url}_${scopes}` : scopes;
         }
-        if (!cacheKey2) {
+        if (!cacheKey3) {
           throw Error("Scopes or url must be provided");
         }
-        return cacheKey2;
+        return cacheKey3;
       }
       /**
        * Get a non-expired access token, after refreshing if necessary.
@@ -54870,21 +54870,21 @@ var require_impersonated = __commonJS({
             tokens: this.credentials,
             res
           };
-        } catch (error16) {
-          if (!(error16 instanceof Error))
-            throw error16;
+        } catch (error18) {
+          if (!(error18 instanceof Error))
+            throw error18;
           let status = 0;
           let message = "";
-          if (error16 instanceof gaxios_1.GaxiosError) {
-            status = (_c = (_b = (_a = error16 === null || error16 === void 0 ? void 0 : error16.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.error) === null || _c === void 0 ? void 0 : _c.status;
-            message = (_f = (_e = (_d = error16 === null || error16 === void 0 ? void 0 : error16.response) === null || _d === void 0 ? void 0 : _d.data) === null || _e === void 0 ? void 0 : _e.error) === null || _f === void 0 ? void 0 : _f.message;
+          if (error18 instanceof gaxios_1.GaxiosError) {
+            status = (_c = (_b = (_a = error18 === null || error18 === void 0 ? void 0 : error18.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.error) === null || _c === void 0 ? void 0 : _c.status;
+            message = (_f = (_e = (_d = error18 === null || error18 === void 0 ? void 0 : error18.response) === null || _d === void 0 ? void 0 : _d.data) === null || _e === void 0 ? void 0 : _e.error) === null || _f === void 0 ? void 0 : _f.message;
           }
           if (status && message) {
-            error16.message = `${status}: unable to impersonate: ${message}`;
-            throw error16;
+            error18.message = `${status}: unable to impersonate: ${message}`;
+            throw error18;
           } else {
-            error16.message = `unable to impersonate: ${error16}`;
-            throw error16;
+            error18.message = `unable to impersonate: ${error18}`;
+            throw error18;
           }
         }
       }
@@ -55147,15 +55147,15 @@ var require_stscredentials = __commonJS({
           const stsSuccessfulResponse = response.data;
           stsSuccessfulResponse.res = response;
           return stsSuccessfulResponse;
-        } catch (error16) {
-          if (error16 instanceof gaxios_1.GaxiosError && error16.response) {
+        } catch (error18) {
+          if (error18 instanceof gaxios_1.GaxiosError && error18.response) {
             throw (0, oauth2common_1.getErrorFromOAuthErrorResponse)(
-              error16.response.data,
+              error18.response.data,
               // Preserve other fields from the original error.
-              error16
+              error18
             );
           }
-          throw error16;
+          throw error18;
         }
       }
     };
@@ -55819,14 +55819,14 @@ var require_awsrequestsigner = __commonJS({
       }
     };
     exports2.AwsRequestSigner = AwsRequestSigner;
-    async function sign(crypto7, key, msg) {
-      return await crypto7.signWithHmacSha256(key, msg);
+    async function sign(crypto9, key, msg) {
+      return await crypto9.signWithHmacSha256(key, msg);
     }
-    async function getSigningKey(crypto7, key, dateStamp, region, serviceName) {
-      const kDate = await sign(crypto7, `AWS4${key}`, dateStamp);
-      const kRegion = await sign(crypto7, kDate, region);
-      const kService = await sign(crypto7, kRegion, serviceName);
-      const kSigning = await sign(crypto7, kService, "aws4_request");
+    async function getSigningKey(crypto9, key, dateStamp, region, serviceName) {
+      const kDate = await sign(crypto9, `AWS4${key}`, dateStamp);
+      const kRegion = await sign(crypto9, kDate, region);
+      const kService = await sign(crypto9, kRegion, serviceName);
+      const kSigning = await sign(crypto9, kService, "aws4_request");
       return kSigning;
     }
     async function generateAuthenticationHeaderMap(options) {
@@ -56314,9 +56314,9 @@ var require_pluggable_auth_handler = __commonJS({
                 const responseJson = JSON.parse(output);
                 const response = new executable_response_1.ExecutableResponse(responseJson);
                 return resolve2(response);
-              } catch (error16) {
-                if (error16 instanceof executable_response_1.ExecutableResponseError) {
-                  return reject(error16);
+              } catch (error18) {
+                if (error18 instanceof executable_response_1.ExecutableResponseError) {
+                  return reject(error18);
                 }
                 return reject(new executable_response_1.ExecutableResponseError(`The executable returned an invalid response: ${output}`));
               }
@@ -56356,9 +56356,9 @@ var require_pluggable_auth_handler = __commonJS({
             return new executable_response_1.ExecutableResponse(responseJson);
           }
           return void 0;
-        } catch (error16) {
-          if (error16 instanceof executable_response_1.ExecutableResponseError) {
-            throw error16;
+        } catch (error18) {
+          if (error18 instanceof executable_response_1.ExecutableResponseError) {
+            throw error18;
           }
           throw new executable_response_1.ExecutableResponseError(`The output file contained an invalid response: ${responseString}`);
         }
@@ -56606,15 +56606,15 @@ var require_externalAccountAuthorizedUserClient = __commonJS({
           const tokenRefreshResponse = response.data;
           tokenRefreshResponse.res = response;
           return tokenRefreshResponse;
-        } catch (error16) {
-          if (error16 instanceof gaxios_1.GaxiosError && error16.response) {
+        } catch (error18) {
+          if (error18 instanceof gaxios_1.GaxiosError && error18.response) {
             throw (0, oauth2common_1.getErrorFromOAuthErrorResponse)(
-              error16.response.data,
+              error18.response.data,
               // Preserve other fields from the original error.
-              error16
+              error18
             );
           }
-          throw error16;
+          throw error18;
         }
       }
     };
@@ -57411,24 +57411,24 @@ var require_googleauth = __commonJS({
           const signed = await client.sign(data);
           return signed.signedBlob;
         }
-        const crypto7 = (0, crypto_1.createCrypto)();
+        const crypto9 = (0, crypto_1.createCrypto)();
         if (client instanceof jwtclient_1.JWT && client.key) {
-          const sign = await crypto7.sign(client.key, data);
+          const sign = await crypto9.sign(client.key, data);
           return sign;
         }
         const creds = await this.getCredentials();
         if (!creds.client_email) {
           throw new Error("Cannot sign data without `client_email`.");
         }
-        return this.signBlob(crypto7, creds.client_email, data, endpoint);
+        return this.signBlob(crypto9, creds.client_email, data, endpoint);
       }
-      async signBlob(crypto7, emailOrUniqueId, data, endpoint) {
+      async signBlob(crypto9, emailOrUniqueId, data, endpoint) {
         const url = new URL(endpoint + `${emailOrUniqueId}:signBlob`);
         const res = await this.request({
           method: "POST",
           url: url.href,
           data: {
-            payload: crypto7.encodeBase64StringUtf8(data)
+            payload: crypto9.encodeBase64StringUtf8(data)
           },
           retry: true,
           retryConfig: {
@@ -58126,8 +58126,8 @@ async function searchNycDca(query, location, dcaCategory, limit = 50) {
       rating: void 0,
       user_ratings_total: void 0
     }));
-  } catch (error16) {
-    console.error("[SODA/NYC] Error:", error16.message);
+  } catch (error18) {
+    console.error("[SODA/NYC] Error:", error18.message);
     return [];
   }
 }
@@ -58162,8 +58162,8 @@ async function searchNyState(query, location, limit = 50) {
       rating: void 0,
       user_ratings_total: void 0
     }));
-  } catch (error16) {
-    console.error("[SODA/NYS] Error:", error16.message);
+  } catch (error18) {
+    console.error("[SODA/NYS] Error:", error18.message);
     return [];
   }
 }
@@ -58396,6 +58396,7 @@ __export(index_exports, {
   clearPipeline: () => clearPipeline,
   completeNfcSession: () => completeNfcSession,
   dailyClarityReport: () => dailyClarityReport,
+  dailyClientTrigger: () => dailyClientTrigger,
   dailyProspector: () => dailyProspector,
   dailyVendorProspector: () => dailyVendorProspector,
   deleteFacebookPost: () => deleteFacebookPost,
@@ -58448,6 +58449,7 @@ __export(index_exports, {
   processOutreachQueue: () => processOutreachQueue,
   publishFacebookPost: () => publishFacebookPost,
   publishPostNow: () => publishPostNow,
+  refreshContactReviewQueue: () => refreshContactReviewQueue,
   regeneratePostCaption: () => regeneratePostCaption,
   regeneratePostImage: () => regeneratePostImage,
   regenerateProspectingConfig: () => regenerateProspectingConfig,
@@ -58460,6 +58462,7 @@ __export(index_exports, {
   runSocialPublisher: () => runSocialPublisher,
   runVendorProspector: () => runVendorProspector,
   searchPlaces: () => searchPlaces,
+  seedInHouseSequence: () => seedInHouseSequence,
   sendBookingConfirmation: () => sendBookingConfirmation,
   sendOnboardingInvite: () => sendOnboardingInvite,
   sendPreviewEmail: () => sendPreviewEmail,
@@ -58472,6 +58475,7 @@ __export(index_exports, {
   testGscConnection: () => testGscConnection,
   testSendEmail: () => testSendEmail,
   triggerClarityReport: () => triggerClarityReport,
+  triggerDailyClientTrigger: () => triggerDailyClientTrigger,
   triggerDailyProspector: () => triggerDailyProspector,
   triggerDailyVendorProspector: () => triggerDailyVendorProspector,
   triggerPseoAnalysis: () => triggerPseoAnalysis,
@@ -58506,8 +58510,8 @@ if (!admin.apps.length) {
 var db = admin.firestore();
 try {
   db.settings({ ignoreUndefinedProperties: true });
-} catch (error16) {
-  console.log("Firestore settings usage note:", error16);
+} catch (error18) {
+  console.log("Firestore settings usage note:", error18);
 }
 
 // src/utils/websiteScraper.ts
@@ -58597,6 +58601,16 @@ async function scrapeWebsite(url, geminiApiKey) {
     combinedData.ownerName = aiData.ownerName;
     combinedData.ownerTitle = aiData.ownerTitle;
     combinedData.ownerEmail = aiData.ownerEmail;
+    if (aiData.allEmails && aiData.allEmails.length > 0) {
+      const existingEmails = new Set(combinedData.allEmails?.map((e2) => e2.email) || []);
+      for (const aiEmail of aiData.allEmails) {
+        if (!existingEmails.has(aiEmail.email)) {
+          combinedData.allEmails = combinedData.allEmails || [];
+          combinedData.allEmails.push(aiEmail);
+          existingEmails.add(aiEmail.email);
+        }
+      }
+    }
     if (combinedData.email) {
       combinedData.email = validateEmail(combinedData.email);
     }
@@ -58605,8 +58619,8 @@ async function scrapeWebsite(url, geminiApiKey) {
     }
     combinedData.confidence = determineConfidence(structuredData, patternData, mergedContact, linkData);
     return { success: true, data: combinedData };
-  } catch (error16) {
-    return { success: false, error: error16.message };
+  } catch (error18) {
+    return { success: false, error: error18.message };
   }
 }
 function extractMailtoAndTel($) {
@@ -58781,18 +58795,25 @@ async function extractWithAI(html, geminiApiKey) {
     const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
     const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 15e3);
     const FALLBACK = `Extract business contact information AND owner/decision-maker info from this website content.
-Look specifically for the highest-ranking person listed \u2014 owner, founder, CEO, president, managing director, doctor, principal, or office manager.
-Check the About Us, Our Team, Staff, Leadership, or Meet the Doctor sections.
+
+PRIORITY: Find PERSONAL email addresses (e.g. john@business.com, jsmith@business.com).
+Generic emails like info@, contact@, hello@, office@, admin@ are LOW VALUE \u2014 only return those if absolutely nothing else exists.
+
+Look specifically for:
+1. The highest-ranking person \u2014 owner, founder, CEO, president, managing director, doctor, principal, or office manager
+2. Any named person with an email address listed (e.g. on About Us, Our Team, Staff, Leadership, Meet the Doctor sections)
+3. Email addresses that contain a person's name (e.g. sarah@, mike.johnson@, etc.)
 
 Return ONLY a JSON object with these fields (use null if not found):
 {
-  "email": "email address (prefer personal/owner email over generic info@)",
+  "email": "the BEST non-generic email found (personal > generic). Only use info@/contact@ as last resort",
   "phone": "primary phone number in format (xxx) xxx-xxxx",
   "address": "full physical address if available",
   "businessName": "official business name",
   "ownerName": "full name of owner/highest decision-maker (e.g. 'Dr. John Smith')",
   "ownerTitle": "their title (e.g. 'Owner', 'CEO', 'Managing Director', 'DDS')",
-  "ownerEmail": "owner's personal email if different from the general email"
+  "ownerEmail": "owner's personal email if different from the general email",
+  "allStaffEmails": ["array of ALL email addresses found for named individuals, e.g. john@biz.com"]
 }
 
 Website content:
@@ -58806,6 +58827,16 @@ Website content:
     if (jsonMatch) {
       const data = JSON.parse(jsonMatch[0]);
       const clean = (v) => v && v !== "null" && v !== null && v !== "N/A" && v !== "n/a" ? v : void 0;
+      const aiStaffEmails = [];
+      if (Array.isArray(data.allStaffEmails)) {
+        for (const staffEmail of data.allStaffEmails) {
+          if (typeof staffEmail === "string" && staffEmail.includes("@")) {
+            const cleaned = staffEmail.trim().toLowerCase();
+            const isGeneric = !!cleaned.match(/^(info|contact|hello|office|admin|sales|team|service|services|marketing)@/i);
+            aiStaffEmails.push({ email: cleaned, type: isGeneric ? "generic" : "personal" });
+          }
+        }
+      }
       return {
         email: clean(data.email),
         phone: clean(data.phone),
@@ -58813,12 +58844,13 @@ Website content:
         businessName: clean(data.businessName),
         ownerName: clean(data.ownerName),
         ownerTitle: clean(data.ownerTitle),
-        ownerEmail: clean(data.ownerEmail)
+        ownerEmail: clean(data.ownerEmail),
+        allEmails: aiStaffEmails.length > 0 ? aiStaffEmails : void 0
       };
     }
     return {};
-  } catch (error16) {
-    console.error("AI extraction error:", error16);
+  } catch (error18) {
+    console.error("AI extraction error:", error18);
     return {};
   }
 }
@@ -58896,8 +58928,8 @@ async function deepMailtoScan(baseUrl) {
       if (foundEmail) break;
     }
     return { email: foundEmail, phone: foundPhone, pagesScanned: visited.size };
-  } catch (error16) {
-    console.error("Deep mailto scan error:", error16);
+  } catch (error18) {
+    console.error("Deep mailto scan error:", error18);
     return { pagesScanned: visited.size };
   }
 }
@@ -58963,8 +58995,8 @@ async function searchWebForEmail(businessName, location, domain, serperApiKey, c
           return { phone: kg.phone, facebookUrl, source: "serper_knowledge_graph" };
         }
       }
-    } catch (error16) {
-      console.error(`Serper search error for query "${query}":`, error16);
+    } catch (error18) {
+      console.error(`Serper search error for query "${query}":`, error18);
     }
   }
   return { facebookUrl, source: "serper_exhausted" };
@@ -58984,7 +59016,7 @@ async function verifyEmail(email) {
     } else {
       return { valid: true, deliverable: false, reason: "No MX records found" };
     }
-  } catch (error16) {
+  } catch (error18) {
     return { valid: true, deliverable: false, reason: "Domain not found" };
   }
 }
@@ -58994,7 +59026,7 @@ async function resolveMX(domain) {
   const resolveMx = promisify(dns2.resolveMx);
   try {
     return await resolveMx(domain);
-  } catch (error16) {
+  } catch (error18) {
     return [];
   }
 }
@@ -59326,8 +59358,8 @@ async function runEnrichPipeline(vendorId, vendorData, previousStatus) {
       vendorId,
       vendorName ? "No email found \u2014 web search exhausted, no website on file" : "No email, no website, no business name \u2014 cannot enrich"
     );
-  } catch (error16) {
-    logger2.error("Error in enrich pipeline:", error16);
+  } catch (error18) {
+    logger2.error("Error in enrich pipeline:", error18);
   }
 }
 async function checkProfileCompleteness(vendorId, vendorData) {
@@ -59548,8 +59580,8 @@ var processOutreachQueue = (0, import_scheduler.onSchedule)({
         }
       }
     }
-  } catch (error16) {
-    logger4.error("Fatal error in queue processor:", error16);
+  } catch (error18) {
+    logger4.error("Fatal error in queue processor:", error18);
   }
 });
 async function handleGenerate(task) {
@@ -59978,8 +60010,10 @@ async function handleLeadSend(task) {
     leadSenderFrom,
     task.leadId ?? void 0,
     templateId,
-    "lead"
+    "lead",
     // entityType for unsubscribe footer
+    { contactId: contactId || void 0 }
+    // tag email with contactId for webhook resolution
   );
   await db5.collection("lead_activities").add({
     leadId: task.leadId,
@@ -60108,11 +60142,11 @@ Verify compliance and extract key data. Return JSON:
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON found in response");
     return JSON.parse(jsonMatch[0]);
-  } catch (error16) {
-    console.error("AI Verification Failed:", error16);
+  } catch (error18) {
+    console.error("AI Verification Failed:", error18);
     return {
       valid: false,
-      reasoning: "AI Verification Failed: " + error16,
+      reasoning: "AI Verification Failed: " + error18,
       extracted: {}
     };
   }
@@ -60244,11 +60278,11 @@ Return ONLY the extracted JSON \u2014 do NOT make pass/fail judgments.`;
       extracted,
       flags: validation.flags
     };
-  } catch (error16) {
-    logger5.error("ACORD 25 verification failed:", error16);
+  } catch (error18) {
+    logger5.error("ACORD 25 verification failed:", error18);
     return {
       valid: false,
-      reasoning: `AI verification failed: ${error16}`,
+      reasoning: `AI verification failed: ${error18}`,
       extracted: {},
       flags: ["AI_PROCESSING_ERROR"]
     };
@@ -60323,13 +60357,13 @@ var onDocumentUploaded = (0, import_firestore3.onDocumentUpdated)({
       if (status === "FLAGGED") {
         await sendFlagNotification(vendorId, vendorName, result.flags, result.reasoning);
       }
-    } catch (error16) {
-      logger6.error(`ACORD 25 verification failed for ${vendorId}:`, error16);
+    } catch (error18) {
+      logger6.error(`ACORD 25 verification failed for ${vendorId}:`, error18);
       await db6.doc(`vendors/${vendorId}`).update({
         "compliance.acord25.status": "FLAGGED",
         "compliance.acord25.aiAnalysis": {
           valid: false,
-          reasoning: `Verification error: ${error16}`,
+          reasoning: `Verification error: ${error18}`,
           extracted: {}
         },
         updatedAt: admin8.firestore.FieldValue.serverTimestamp()
@@ -60376,8 +60410,8 @@ async function runLegacyVerification(vendorId, docType, vendorData) {
         documentType: docType === "COI" ? "Certificate of Insurance" : "W-9 Form"
       });
     }
-  } catch (error16) {
-    logger6.error(`Verification failed for ${docType}:`, error16);
+  } catch (error18) {
+    logger6.error(`Verification failed for ${docType}:`, error18);
   }
 }
 async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
@@ -60416,8 +60450,8 @@ async function sendFlagNotification(vendorId, vendorName, flags, reasoning) {
             </div>`
     });
     logger6.info(`Flag notification sent for vendor ${vendorId}`);
-  } catch (error16) {
-    logger6.error("Failed to send flag notification:", error16);
+  } catch (error18) {
+    logger6.error("Failed to send flag notification:", error18);
   }
 }
 
@@ -60714,8 +60748,8 @@ var enrichFromWebsite = (0, import_https.onCall)({
         }
       };
     }
-    const db27 = (0, import_firestore6.getFirestore)();
-    const docRef = db27.collection(collection).doc(documentId);
+    const db29 = (0, import_firestore6.getFirestore)();
+    const docRef = db29.collection(collection).doc(documentId);
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       throw new import_https.HttpsError("not-found", "Document not found");
@@ -60784,12 +60818,12 @@ var enrichFromWebsite = (0, import_https.onCall)({
         confidence: scrapedData.confidence
       }
     };
-  } catch (error16) {
-    console.error("Enrichment error:", error16);
-    if (error16 instanceof import_https.HttpsError) {
-      throw error16;
+  } catch (error18) {
+    console.error("Enrichment error:", error18);
+    if (error18 instanceof import_https.HttpsError) {
+      throw error18;
     }
-    throw new import_https.HttpsError("internal", `Enrichment failed: ${error16.message}`);
+    throw new import_https.HttpsError("internal", `Enrichment failed: ${error18.message}`);
   }
 });
 
@@ -61034,7 +61068,7 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
       logger8.error("Error sending vendor confirmation:", err2);
     }
   }
-  const db27 = admin10.firestore();
+  const db29 = admin10.firestore();
   const hasEntity = !!compliance.hasBusinessEntity;
   const hasGL = !!compliance.generalLiability?.hasInsurance;
   const hasWC = !!compliance.workersComp?.hasInsurance;
@@ -61061,9 +61095,9 @@ var onOnboardingComplete = (0, import_firestore7.onDocumentUpdated)({
   if (totalScore >= 80) {
     complianceUpdate.status = "onboarding_scheduled";
   }
-  await db27.collection("vendors").doc(vendorId).update(complianceUpdate);
+  await db29.collection("vendors").doc(vendorId).update(complianceUpdate);
   logger8.info(`Vendor ${vendorId} compliance score: ${totalScore}/100 (attest=${attestationScore}, docs=${docsUploadedScore}, verified=${docsVerifiedScore})`);
-  await db27.collection("vendor_activities").add({
+  await db29.collection("vendor_activities").add({
     vendorId,
     type: "ONBOARDING_COMPLETE",
     description: `${businessName} completed onboarding form (${track}). Compliance score: ${totalScore}/100.`,
@@ -61795,11 +61829,11 @@ var processMailQueue = (0, import_firestore10.onDocumentCreated)({
       await docRef.update({ status: "failed", error: "Resend API returned failure" });
       console.error(`\u274C Mail failed: ${templateType} \u2192 ${to}`);
     }
-  } catch (error16) {
-    console.error("Error processing mail_queue:", error16);
+  } catch (error18) {
+    console.error("Error processing mail_queue:", error18);
     await docRef.update({
       status: "failed",
-      error: error16.message || "Unknown error",
+      error: error18.message || "Unknown error",
       failedAt: admin15.firestore.FieldValue.serverTimestamp()
     });
   }
@@ -62091,10 +62125,10 @@ async function generateST1201(vendorData, xiriData, projectData) {
       // ISO for storage
       expiryDate
     };
-  } catch (error16) {
+  } catch (error18) {
     return {
       success: false,
-      error: `Failed to generate ST-120.1: ${error16.message}`
+      error: `Failed to generate ST-120.1: ${error18.message}`
     };
   }
 }
@@ -62115,10 +62149,10 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (!newVendorId || oldVendorId === newVendorId) return;
   const workOrderId = event.params.workOrderId;
   logger12.info(`[ST-120.1] Vendor ${newVendorId} assigned to work order ${workOrderId}.`);
-  const db27 = admin16.firestore();
+  const db29 = admin16.firestore();
   let vendorData;
   try {
-    const vendorSnap = await db27.collection("vendors").doc(newVendorId).get();
+    const vendorSnap = await db29.collection("vendors").doc(newVendorId).get();
     if (!vendorSnap.exists) {
       logger12.error(`[ST-120.1] Vendor ${newVendorId} not found.`);
       return;
@@ -62132,7 +62166,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   let leadData = {};
   if (after.leadId) {
     try {
-      const leadSnap = await db27.collection("leads").doc(after.leadId).get();
+      const leadSnap = await db29.collection("leads").doc(after.leadId).get();
       if (leadSnap.exists) {
         leadData = leadSnap.data();
       }
@@ -62142,7 +62176,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   }
   let xiriData;
   try {
-    const settingsSnap = await db27.collection("settings").doc("corporate").get();
+    const settingsSnap = await db29.collection("settings").doc("corporate").get();
     const settings = settingsSnap.data();
     if (!settings?.salesTaxId) {
       logger12.error("[ST-120.1] XIRI corporate settings missing or no salesTaxId configured.");
@@ -62176,7 +62210,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   const result = await generateST1201(vendorCertData, xiriData, void 0);
   if (!result.success || !result.pdfBytes) {
     logger12.error(`[ST-120.1] Generation failed for WO ${workOrderId}: ${result.error}`);
-    await db27.collection("vendor_activities").add({
+    await db29.collection("vendor_activities").add({
       vendorId: newVendorId,
       type: "TAX_CERTIFICATE_ERROR",
       description: `ST-120.1 generation failed for WO ${workOrderId}: ${result.error}`,
@@ -62207,7 +62241,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
     logger12.error(`[ST-120.1] Storage upload failed for WO ${workOrderId}:`, err2);
     return;
   }
-  await db27.collection("work_orders").doc(workOrderId).update({
+  await db29.collection("work_orders").doc(workOrderId).update({
     st1201CertificatePath: storagePath,
     st1201IssueDate: result.issueDate,
     st1201ExpiryDate: result.expiryDate,
@@ -62216,7 +62250,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
   if (vendorCertData.email) {
     const vendorName = vendorCertData.businessName;
     const pdfBase64 = Buffer.from(result.pdfBytes).toString("base64");
-    await db27.collection("mail_queue").add({
+    await db29.collection("mail_queue").add({
       to: vendorCertData.email,
       subject: `ST-120.1 Exempt Purchase Certificate \u2014 ${xiriData.businessName}`,
       templateType: "st_120_1_certificate",
@@ -62237,7 +62271,7 @@ var onWorkOrderAssigned = (0, import_firestore11.onDocumentUpdated)({
       createdAt: admin16.firestore.FieldValue.serverTimestamp()
     });
   }
-  await db27.collection("vendor_activities").add({
+  await db29.collection("vendor_activities").add({
     vendorId: newVendorId,
     type: "TAX_CERTIFICATE_ISSUED",
     description: `ST-120.1 blanket certificate generated (WO ${workOrderId}) and emailed to ${vendorCertData.email || "vendor"}.`,
@@ -63555,18 +63589,25 @@ var resendWebhook = (0, import_https4.onRequest)({
       res.status(200).json({ ok: true, notFound: true });
       return;
     }
+    const clickedUrl = event?.data?.click?.link || event?.data?.click?.url || "";
+    const isUnsubscribeClick = eventType === "email.clicked" && (clickedUrl.includes("/handleUnsubscribe") || clickedUrl.includes("unsubscribe"));
+    if (isUnsubscribeClick) {
+      import_v22.logger.info(`Resend webhook: unsubscribe link clicked for ${entityType} ${entityId} \u2014 skipping engagement escalation`);
+    }
+    const effectiveMapping = isUnsubscribeClick ? { ...mapping, activityType: "EMAIL_UNSUBSCRIBE_CLICKED", deliveryStatus: mapping.deliveryStatus, description: "Recipient clicked the unsubscribe link." } : mapping;
     const activitiesCollection = entityType === "vendor" ? "vendor_activities" : "lead_activities";
     const idField = entityType === "vendor" ? "vendorId" : "leadId";
     const activityData = {
       [idField]: entityId,
-      type: mapping.activityType,
-      description: mapping.description,
+      type: effectiveMapping.activityType,
+      description: effectiveMapping.description,
       createdAt: /* @__PURE__ */ new Date(),
       metadata: {
         resendId: emailId,
-        deliveryStatus: mapping.deliveryStatus,
+        deliveryStatus: effectiveMapping.deliveryStatus,
         rawEvent: eventType,
-        to: event?.data?.to?.[0] || void 0
+        to: event?.data?.to?.[0] || void 0,
+        ...isUnsubscribeClick ? { clickedUrl, isUnsubscribeClick: true } : {}
       }
     };
     if (entityType === "lead" && resolvedContactId) {
@@ -63574,7 +63615,13 @@ var resendWebhook = (0, import_https4.onRequest)({
       activityData.metadata.contactId = resolvedContactId;
     }
     await db20.collection(activitiesCollection).add(activityData);
-    const entityCollection = entityType === "vendor" ? "vendors" : "leads";
+    let entityCollection;
+    if (entityType === "vendor") {
+      entityCollection = "vendors";
+    } else {
+      const companyDoc = await db20.collection("companies").doc(entityId).get();
+      entityCollection = companyDoc.exists ? "companies" : "leads";
+    }
     const ENGAGEMENT_PRIORITY = {
       delivered: 1,
       opened: 2,
@@ -63599,12 +63646,12 @@ var resendWebhook = (0, import_https4.onRequest)({
     } catch (readErr) {
       import_v22.logger.warn(`Could not read current engagement for ${entityType} ${entityId}:`, readErr);
     }
-    if (shouldUpdateLastEvent) {
-      engagementUpdate["emailEngagement.lastEvent"] = mapping.deliveryStatus;
+    if (shouldUpdateLastEvent && !isUnsubscribeClick) {
+      engagementUpdate["emailEngagement.lastEvent"] = effectiveMapping.deliveryStatus;
     }
     if (eventType === "email.opened") {
       engagementUpdate["emailEngagement.openCount"] = admin24.firestore.FieldValue.increment(1);
-    } else if (eventType === "email.clicked") {
+    } else if (eventType === "email.clicked" && !isUnsubscribeClick) {
       engagementUpdate["emailEngagement.clickCount"] = admin24.firestore.FieldValue.increment(1);
     }
     if (eventType === "email.bounced") {
@@ -63624,12 +63671,12 @@ var resendWebhook = (0, import_https4.onRequest)({
       const contactEngagement = {
         "emailEngagement.lastEventAt": /* @__PURE__ */ new Date()
       };
-      if (shouldUpdateLastEvent) {
-        contactEngagement["emailEngagement.lastEvent"] = mapping.deliveryStatus;
+      if (shouldUpdateLastEvent && !isUnsubscribeClick) {
+        contactEngagement["emailEngagement.lastEvent"] = effectiveMapping.deliveryStatus;
       }
       if (eventType === "email.opened") {
         contactEngagement["emailEngagement.openCount"] = admin24.firestore.FieldValue.increment(1);
-      } else if (eventType === "email.clicked") {
+      } else if (eventType === "email.clicked" && !isUnsubscribeClick) {
         contactEngagement["emailEngagement.clickCount"] = admin24.firestore.FieldValue.increment(1);
       }
       try {
@@ -63690,7 +63737,10 @@ var resendWebhook = (0, import_https4.onRequest)({
               await db20.collection("contacts").doc(resolvedContactId).update({
                 unsubscribed: true,
                 unsubscribedAt: /* @__PURE__ */ new Date(),
-                unsubscribeReason: reason
+                unsubscribeReason: reason,
+                lifecycleStatus: "suppressed",
+                lifecycleReason: reason,
+                lifecycleUpdatedAt: /* @__PURE__ */ new Date()
               });
             }
             await db20.collection("lead_activities").add({
@@ -63740,8 +63790,8 @@ var resendWebhook = (0, import_https4.onRequest)({
     }
     import_v22.logger.info(`Resend webhook: processed ${eventType} for ${entityType} ${entityId}`);
     res.status(200).json({ ok: true, processed: eventType });
-  } catch (error16) {
-    import_v22.logger.error("Resend webhook error:", error16);
+  } catch (error18) {
+    import_v22.logger.error("Resend webhook error:", error18);
     res.status(500).json({ error: "Internal error" });
   }
 });
@@ -64002,6 +64052,195 @@ var backfillEngagement = (0, import_https5.onRequest)({
   });
 });
 
+// src/scripts/seed-in-house-sequence.ts
+var import_https6 = require("firebase-functions/v2/https");
+var admin26 = __toESM(require("firebase-admin"));
+var logger22 = __toESM(require("firebase-functions/logger"));
+
+// src/utils/cors.ts
+var DASHBOARD_CORS = [
+  "http://localhost:3001",
+  // Dashboard Dev
+  "http://localhost:3000",
+  // Public Site Dev
+  "http://localhost:3002",
+  // Public Site Dev (alt port)
+  "https://xiri.ai",
+  // Public Site Production
+  "https://www.xiri.ai",
+  // Public Site WWW
+  "https://app.xiri.ai",
+  // Dashboard Production
+  "https://xiri-dashboard.vercel.app",
+  // Dashboard Vercel
+  "https://xiri-dashboard-git-develop-xiri-facility-solutions.vercel.app",
+  // Vercel develop branch
+  /https:\/\/xiri-dashboard-.*\.vercel\.app$/,
+  // All Vercel preview deployments
+  "https://xiri-facility-solutions.web.app",
+  // Firebase Hosting
+  "https://xiri-facility-solutions.firebaseapp.com"
+];
+
+// src/scripts/seed-in-house-sequence.ts
+if (!admin26.apps.length) {
+  admin26.initializeApp();
+}
+var db22 = admin26.firestore();
+var TEMPLATES = [
+  {
+    id: "in_house_step1_cost_reality",
+    name: "In-House Step 1 \u2014 The True Cost of In-House Cleaning",
+    description: "Opener that highlights real cost of in-house staff (salary + benefits + overhead) vs outsourcing",
+    subject: "{{contactName}}, your in-house cleaning is costing you more than you think",
+    category: "in_house_conversion",
+    type: "cold_email",
+    variables: ["contactName", "businessName", "facilityType"],
+    body: `<p>Hi {{contactName}},</p>
+
+<p>I noticed {{businessName}} is hiring for a facility cleaning role \u2014 and I wanted to share something that could save you a significant amount.</p>
+
+<p>Most facility managers don't realize the <strong>true cost</strong> of an in-house janitor. When you add it up \u2014 salary, health insurance, workers' comp, PTO, sick days, training, equipment, and cleaning supplies \u2014 you're looking at <strong>$45,000\u2013$65,000+ per year</strong> for a single position.</p>
+
+<p>What if you could get the same (or better) cleaning quality for <strong>30\u201340% less</strong> \u2014 with zero HR headaches?</p>
+
+<p>At <strong>XIRI Facility Solutions</strong>, we provide professional, fully insured cleaning crews at a fixed monthly cost. No payroll. No benefits to manage. No scrambling when someone calls in sick.</p>
+
+<p>Would it make sense to see a quick cost comparison for {{businessName}}? I can put one together in under 24 hours \u2014 no obligation.</p>
+
+<p>Best,<br/>Chris Leung<br/>XIRI Facility Solutions<br/>chris@xiri.ai</p>`
+  },
+  {
+    id: "in_house_step2_hidden_costs",
+    name: "In-House Step 2 \u2014 The Hidden Costs You're Absorbing",
+    description: "Follow-up: breaks down the hidden costs they're paying beyond the wage",
+    subject: "The hidden costs of in-house cleaning at {{businessName}}",
+    category: "in_house_conversion",
+    type: "follow_up",
+    variables: ["contactName", "businessName"],
+    body: `<p>Hi {{contactName}},</p>
+
+<p>Following up on my last note \u2014 I wanted to share a quick breakdown that's eye-opening for most facility managers.</p>
+
+<p>Here's what in-house cleaning <em>really</em> costs beyond the hourly wage:</p>
+
+<ul>
+<li>\u{1F4B0} <strong>Payroll taxes</strong> \u2014 FICA, FUTA, state unemployment (~10% on top)</li>
+<li>\u{1F3E5} <strong>Health insurance</strong> \u2014 $5,000\u2013$12,000/year per employee</li>
+<li>\u{1F915} <strong>Workers' comp insurance</strong> \u2014 required, and janitorial is a high-risk category</li>
+<li>\u{1F3D6}\uFE0F <strong>PTO + sick days</strong> \u2014 who covers when they're out?</li>
+<li>\u{1F4CB} <strong>Hiring + training</strong> \u2014 turnover is 200%+ in janitorial</li>
+<li>\u{1F9F9} <strong>Supplies + equipment</strong> \u2014 commercial-grade products aren't cheap</li>
+<li>\u{1F4CA} <strong>Management overhead</strong> \u2014 someone has to supervise, schedule, and QA</li>
+</ul>
+
+<p>When you outsource to XIRI, <strong>all of that is included</strong> in one predictable monthly invoice. We handle staffing, supplies, insurance, and quality assurance.</p>
+
+<p>Worth a 10-minute call to explore? I can walk you through what the switch would look like for {{businessName}}.</p>
+
+<p>Best,<br/>Chris Leung<br/>XIRI Facility Solutions</p>`
+  },
+  {
+    id: "in_house_step3_case_study",
+    name: "In-House Step 3 \u2014 How a Facility Like Yours Saved $22K",
+    description: "Social proof: real savings case study from a similar conversion",
+    subject: "How a facility like {{businessName}} cut cleaning costs by 35%",
+    category: "in_house_conversion",
+    type: "follow_up",
+    variables: ["contactName", "businessName", "facilityType"],
+    body: `<p>Hi {{contactName}},</p>
+
+<p>Quick story that might resonate \u2014 </p>
+
+<p>A {{facilityType}} similar to {{businessName}} came to us last year. They had <strong>two in-house janitors</strong> costing them roughly <strong>$110,000/year</strong> between salaries, benefits, and supplies.</p>
+
+<p>After switching to XIRI, their cleaning costs dropped to <strong>$71,500/year</strong> \u2014 a savings of <strong>$38,500 annually</strong>. And the quality actually improved because we use trained, specialized crews with commercial-grade equipment.</p>
+
+<p>Here's what they got:</p>
+<ul>
+<li>\u2705 Same-night cleaning, 5 days/week</li>
+<li>\u2705 $0 in payroll, HR, or insurance costs</li>
+<li>\u2705 Guaranteed coverage (no call-outs, no scrambling)</li>
+<li>\u2705 NFC-verified quality inspections every visit</li>
+<li>\u2705 One flat invoice \u2014 no surprises</li>
+</ul>
+
+<p>I'd love to run the same analysis for {{businessName}}. Even if you stay in-house, you'll have real numbers to compare against.</p>
+
+<p>Can I send over a custom cost comparison?</p>
+
+<p>Chris Leung<br/>XIRI Facility Solutions<br/>chris@xiri.ai</p>`
+  },
+  {
+    id: "in_house_step4_trial_offer",
+    name: "In-House Step 4 \u2014 Risk-Free Trial Offer",
+    description: "Final touch: low-risk trial offer to make the switch easy",
+    subject: "Last thing, {{contactName}} \u2014 try us risk-free",
+    category: "in_house_conversion",
+    type: "breakup",
+    variables: ["contactName", "businessName"],
+    body: `<p>Hi {{contactName}},</p>
+
+<p>I know switching from in-house cleaning is a big decision \u2014 which is why I wanted to make it a no-brainer.</p>
+
+<p>We're offering a <strong>risk-free 30-day trial</strong> for facilities like {{businessName}} that are considering the switch:</p>
+
+<ul>
+<li>\u{1F504} <strong>No long-term contract required</strong></li>
+<li>\u{1F4CA} <strong>Side-by-side comparison</strong> \u2014 keep your current team while we prove the difference</li>
+<li>\u{1F4B5} <strong>Guaranteed cost savings</strong> \u2014 or you pay nothing for the trial month</li>
+<li>\u2705 <strong>Full insurance + bonding coverage from day one</strong></li>
+</ul>
+
+<p>Worst case: you get a free month of professional cleaning and real data to make an informed decision.</p>
+
+<p>Shall I set up the trial details for {{businessName}}? Takes about 10 minutes.</p>
+
+<p>Chris Leung<br/>XIRI Facility Solutions<br/>\u{1F4DE} (908) 596-4360<br/>\u{1F4E7} chris@xiri.ai</p>`
+  }
+];
+var SEQUENCE = {
+  id: "in_house_conversion_sequence",
+  name: "In-House Conversion \u2014 4-Step",
+  description: "Targets facilities hiring in-house janitorial staff. Pitches outsourcing for cost reduction, elimination of payroll/benefits, and a risk-free trial.",
+  category: "in_house_conversion",
+  steps: [
+    { templateId: "in_house_step1_cost_reality", dayOffset: 0, label: "Step 1 \u2014 True Cost Opener" },
+    { templateId: "in_house_step2_hidden_costs", dayOffset: 3, label: "Step 2 \u2014 Hidden Costs Breakdown" },
+    { templateId: "in_house_step3_case_study", dayOffset: 7, label: "Step 3 \u2014 Case Study" },
+    { templateId: "in_house_step4_trial_offer", dayOffset: 14, label: "Step 4 \u2014 Trial Offer (Breakup)" }
+  ]
+};
+var seedInHouseSequence = (0, import_https6.onCall)({
+  cors: DASHBOARD_CORS
+}, async () => {
+  const batch = db22.batch();
+  for (const tpl of TEMPLATES) {
+    const ref = db22.collection("templates").doc(tpl.id);
+    batch.set(ref, {
+      name: tpl.name,
+      description: tpl.description,
+      subject: tpl.subject,
+      body: tpl.body,
+      category: tpl.category,
+      type: tpl.type,
+      variables: tpl.variables,
+      createdAt: admin26.firestore.FieldValue.serverTimestamp()
+    });
+  }
+  const seqRef = db22.collection("sequences").doc(SEQUENCE.id);
+  batch.set(seqRef, {
+    name: SEQUENCE.name,
+    description: SEQUENCE.description,
+    category: SEQUENCE.category,
+    steps: SEQUENCE.steps,
+    createdAt: admin26.firestore.FieldValue.serverTimestamp()
+  });
+  await batch.commit();
+  logger22.info(`[SeedInHouse] Created ${TEMPLATES.length} templates + 1 sequence.`);
+  return { message: `Seeded ${TEMPLATES.length} templates + sequence "${SEQUENCE.name}"` };
+});
+
 // src/triggers/onLeadUpdated.ts
 var import_firestore17 = require("firebase-functions/v2/firestore");
 var import_v24 = require("firebase-functions/v2");
@@ -64156,29 +64395,29 @@ var onStaffUpdated = (0, import_firestore17.onDocumentUpdated)("users/{userId}",
 
 // src/triggers/aiTemplateOptimizer.ts
 var import_scheduler4 = require("firebase-functions/v2/scheduler");
-var import_https6 = require("firebase-functions/v2/https");
-var admin26 = __toESM(require("firebase-admin"));
-var logger23 = __toESM(require("firebase-functions/logger"));
+var import_https7 = require("firebase-functions/v2/https");
+var admin27 = __toESM(require("firebase-admin"));
+var logger24 = __toESM(require("firebase-functions/logger"));
 init_promptUtils();
-if (!admin26.apps.length) {
-  admin26.initializeApp();
+if (!admin27.apps.length) {
+  admin27.initializeApp();
 }
-var db22 = admin26.firestore();
+var db23 = admin27.firestore();
 var weeklyTemplateOptimizer = (0, import_scheduler4.onSchedule)({
   schedule: "every monday 09:00",
   timeZone: "America/New_York",
   secrets: ["GEMINI_API_KEY"],
   memory: "512MiB"
 }, async () => {
-  logger23.info("Running weekly template optimization check...");
+  logger24.info("Running weekly template optimization check...");
   await optimizeUnderperformingTemplates();
 });
-var optimizeTemplate = (0, import_https6.onCall)({
+var optimizeTemplate = (0, import_https7.onCall)({
   secrets: ["GEMINI_API_KEY"],
   memory: "512MiB"
 }, async (request) => {
   if (!request.auth) {
-    throw new import_https6.HttpsError("unauthenticated", "Must be logged in");
+    throw new import_https7.HttpsError("unauthenticated", "Must be logged in");
   }
   const templateId = request.data?.templateId;
   if (templateId) {
@@ -64195,21 +64434,21 @@ var OPTIMIZABLE_CATEGORIES = ["vendor", "tenant_lead", "referral_partnership", "
 async function optimizeUnderperformingTemplates() {
   const optimized = [];
   for (const category of OPTIMIZABLE_CATEGORIES) {
-    const templatesSnap = await db22.collection("templates").where("category", "==", category).get();
+    const templatesSnap = await db23.collection("templates").where("category", "==", category).get();
     for (const doc of templatesSnap.docs) {
       const template = doc.data();
       const stats = template.stats;
       if (!stats || stats.sent < MIN_SENDS_FOR_ANALYSIS) continue;
       const openRate = stats.sent > 0 ? stats.opened / stats.sent : 0;
       if (openRate < LOW_OPEN_RATE_THRESHOLD) {
-        logger23.info(`Template ${doc.id} (${category}): ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
+        logger24.info(`Template ${doc.id} (${category}): ${(openRate * 100).toFixed(1)}% open rate \u2014 optimizing`);
         await optimizeSingleTemplate(doc.id);
         optimized.push(doc.id);
       }
     }
   }
   if (optimized.length > 0) {
-    await db22.collection("notifications").add({
+    await db23.collection("notifications").add({
       type: "AI_TEMPLATE_OPTIMIZATION",
       title: `AI optimized ${optimized.length} template${optimized.length > 1 ? "s" : ""}`,
       message: `${optimized.length} underperforming template${optimized.length > 1 ? "s have" : " has"} new AI suggestions ready for your review.`,
@@ -64217,16 +64456,16 @@ async function optimizeUnderperformingTemplates() {
       read: false,
       createdAt: /* @__PURE__ */ new Date()
     });
-    logger23.info(`Notification created for ${optimized.length} optimized templates.`);
+    logger24.info(`Notification created for ${optimized.length} optimized templates.`);
   } else {
-    logger23.info("No underperforming templates found.");
+    logger24.info("No underperforming templates found.");
   }
   return optimized;
 }
 async function optimizeSingleTemplate(templateId) {
-  const templateDoc = await db22.collection("templates").doc(templateId).get();
+  const templateDoc = await db23.collection("templates").doc(templateId).get();
   if (!templateDoc.exists) {
-    throw new import_https6.HttpsError("not-found", `Template ${templateId} not found`);
+    throw new import_https7.HttpsError("not-found", `Template ${templateId} not found`);
   }
   const template = templateDoc.data();
   const stats = template.stats || { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 };
@@ -64235,7 +64474,7 @@ async function optimizeSingleTemplate(templateId) {
   const bounceRate = stats.sent > 0 ? (stats.bounced / stats.sent * 100).toFixed(1) : "N/A";
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new import_https6.HttpsError("failed-precondition", "GEMINI_API_KEY not set");
+    throw new import_https7.HttpsError("failed-precondition", "GEMINI_API_KEY not set");
   }
   const category = template.category || "vendor";
   const CATEGORY_CONFIG = {
@@ -64320,20 +64559,20 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
     const result = await response.json();
     const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
-      logger23.error("No response from Gemini for template optimization");
-      throw new import_https6.HttpsError("internal", "Gemini returned empty response");
+      logger24.error("No response from Gemini for template optimization");
+      throw new import_https7.HttpsError("internal", "Gemini returned empty response");
     }
     const cleanText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const suggestions = JSON.parse(cleanText);
-    await db22.collection("templates").doc(templateId).update({
-      aiSuggestions: admin26.firestore.FieldValue.arrayUnion({
+    await db23.collection("templates").doc(templateId).update({
+      aiSuggestions: admin27.firestore.FieldValue.arrayUnion({
         ...suggestions,
         generatedAt: /* @__PURE__ */ new Date(),
         performanceSnapshot: stats
       }),
       lastOptimizedAt: /* @__PURE__ */ new Date()
     });
-    logger23.info(`Template ${templateId}: AI suggestions stored (${suggestions.suggestions?.length || 0} variants)`);
+    logger24.info(`Template ${templateId}: AI suggestions stored (${suggestions.suggestions?.length || 0} variants)`);
     return {
       templateId,
       analysis: suggestions.analysis,
@@ -64341,39 +64580,46 @@ Return improvements as JSON with analysis, suggestions[], and shortUrlTest. Retu
       shortUrlTest: suggestions.shortUrlTest
     };
   } catch (err2) {
-    logger23.error(`AI optimization failed for ${templateId}:`, err2);
-    throw new import_https6.HttpsError("internal", `AI optimization failed: ${err2}`);
+    logger24.error(`AI optimization failed for ${templateId}:`, err2);
+    throw new import_https7.HttpsError("internal", `AI optimization failed: ${err2}`);
   }
 }
 
 // src/triggers/startLeadSequence.ts
-var import_https7 = require("firebase-functions/v2/https");
-var admin27 = __toESM(require("firebase-admin"));
-var logger24 = __toESM(require("firebase-functions/logger"));
+var import_https8 = require("firebase-functions/v2/https");
+var admin28 = __toESM(require("firebase-admin"));
+var logger25 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
-if (!admin27.apps.length) {
-  admin27.initializeApp();
+if (!admin28.apps.length) {
+  admin28.initializeApp();
 }
-var db23 = admin27.firestore();
+var db24 = admin28.firestore();
 var DEFAULT_SEQUENCE_MAP = {
   enterprise: "enterprise_lead_sequence",
   referral_partnership: "referral_partnership_sequence",
   tenant: "tenant_lead_sequence",
-  direct: "tenant_lead_sequence"
+  direct: "tenant_lead_sequence",
+  in_house_conversion: "in_house_conversion_sequence"
 };
-var startLeadSequence = (0, import_https7.onCall)(async (request) => {
+function formatLifecycleDate(value) {
+  if (!value) return null;
+  const date = value?.toDate ? value.toDate() : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+var startLeadSequence = (0, import_https8.onCall)(async (request) => {
   const { leadId, contactId: requestedContactId, sequenceId: requestedSequenceId } = request.data;
   if (!leadId) {
-    throw new import_https7.HttpsError("invalid-argument", "leadId is required");
+    throw new import_https8.HttpsError("invalid-argument", "leadId is required");
   }
-  let leadDoc = await db23.collection("companies").doc(leadId).get();
+  let leadDoc = await db24.collection("companies").doc(leadId).get();
   let leadCollection = "companies";
   if (!leadDoc.exists) {
-    leadDoc = await db23.collection("leads").doc(leadId).get();
+    leadDoc = await db24.collection("leads").doc(leadId).get();
     leadCollection = "leads";
   }
   if (!leadDoc.exists) {
-    throw new import_https7.HttpsError("not-found", `Lead/Company ${leadId} not found in companies or leads`);
+    throw new import_https8.HttpsError("not-found", `Lead/Company ${leadId} not found in companies or leads`);
   }
   const lead = leadDoc.data();
   const businessName = lead.businessName || "Unknown";
@@ -64381,7 +64627,7 @@ var startLeadSequence = (0, import_https7.onCall)(async (request) => {
   const isManuallyLost = lead.status === "lost" && !lead.lostReason?.includes("bounce");
   const isStillSuppressed = !!lead.unsubscribedAt;
   if (isStillSuppressed || isManuallyLost) {
-    throw new import_https7.HttpsError(
+    throw new import_https8.HttpsError(
       "failed-precondition",
       lead.unsubscribedAt ? `${businessName} is suppressed (unsubscribed/bounced) \u2014 update the contact's email first to re-enable outreach.` : `${businessName} is marked as lost \u2014 cannot enroll in a sequence.`
     );
@@ -64390,11 +64636,18 @@ var startLeadSequence = (0, import_https7.onCall)(async (request) => {
   let contactEmail = "";
   let contactName = "";
   if (contactId) {
-    const contactDoc = await db23.collection("contacts").doc(contactId).get();
+    const contactDoc = await db24.collection("contacts").doc(contactId).get();
     if (contactDoc.exists) {
       const contact = contactDoc.data();
+      if (contact.lifecycleStatus === "held") {
+        const holdUntil = formatLifecycleDate(contact.holdUntilAt);
+        throw new import_https8.HttpsError(
+          "failed-precondition",
+          holdUntil ? `Contact ${contact.firstName || ""} ${contact.lastName || ""} is on hold until ${holdUntil} \u2014 reactivate before enrolling in a sequence.`.trim() : `Contact ${contact.firstName || ""} ${contact.lastName || ""} is on hold \u2014 reactivate before enrolling in a sequence.`.trim()
+        );
+      }
       if (contact.unsubscribed) {
-        throw new import_https7.HttpsError(
+        throw new import_https8.HttpsError(
           "failed-precondition",
           `Contact ${contact.firstName || ""} ${contact.lastName || ""} has unsubscribed \u2014 cannot enroll in a sequence.`.trim()
         );
@@ -64404,11 +64657,18 @@ var startLeadSequence = (0, import_https7.onCall)(async (request) => {
     }
   }
   if (!contactEmail) {
-    const primarySnap = await db23.collection("contacts").where("companyId", "==", leadId).where("isPrimary", "==", true).limit(1).get();
+    const primarySnap = await db24.collection("contacts").where("companyId", "==", leadId).where("isPrimary", "==", true).limit(1).get();
     if (!primarySnap.empty) {
       const primaryContact = primarySnap.docs[0];
       contactId = primaryContact.id;
       const pData = primaryContact.data();
+      if (pData.lifecycleStatus === "held") {
+        const holdUntil = formatLifecycleDate(pData.holdUntilAt);
+        throw new import_https8.HttpsError(
+          "failed-precondition",
+          holdUntil ? `${businessName}'s primary contact is on hold until ${holdUntil} \u2014 reactivate the contact before enrolling in a sequence.` : `${businessName}'s primary contact is on hold \u2014 reactivate the contact before enrolling in a sequence.`
+        );
+      }
       contactEmail = pData.email || "";
       contactName = `${pData.firstName || ""} ${pData.lastName || ""}`.trim();
     }
@@ -64418,18 +64678,18 @@ var startLeadSequence = (0, import_https7.onCall)(async (request) => {
     contactName = lead.contactName || "";
   }
   if (!contactEmail || contactEmail.trim().length === 0) {
-    await db23.collection(leadCollection).doc(leadId).update({
+    await db24.collection(leadCollection).doc(leadId).update({
       outreachStatus: "NEEDS_MANUAL"
     });
-    throw new import_https7.HttpsError(
+    throw new import_https8.HttpsError(
       "failed-precondition",
       `Lead ${businessName} has no email \u2014 manual outreach required.`
     );
   }
   const sequenceId = requestedSequenceId || DEFAULT_SEQUENCE_MAP[leadType] || "tenant_lead_sequence";
-  const sequenceDoc = await db23.collection("sequences").doc(sequenceId).get();
+  const sequenceDoc = await db24.collection("sequences").doc(sequenceId).get();
   if (!sequenceDoc.exists) {
-    throw new import_https7.HttpsError(
+    throw new import_https8.HttpsError(
       "not-found",
       `Sequence "${sequenceId}" not found. Create it in the Sequence Builder first.`
     );
@@ -64437,27 +64697,27 @@ var startLeadSequence = (0, import_https7.onCall)(async (request) => {
   const sequence = sequenceDoc.data();
   const BLOCKED_CATEGORIES = ["vendor", "vendor_email"];
   if (BLOCKED_CATEGORIES.includes(sequence.category)) {
-    throw new import_https7.HttpsError(
+    throw new import_https8.HttpsError(
       "failed-precondition",
       `Cannot enroll a lead in vendor sequence "${sequence.name || sequenceId}". Use a lead or referral sequence instead.`
     );
   }
   const steps = sequence.steps || [];
   if (steps.length === 0) {
-    throw new import_https7.HttpsError(
+    throw new import_https8.HttpsError(
       "failed-precondition",
       `Sequence "${sequence.name}" has no steps defined.`
     );
   }
   if (contactId) {
-    const contactDoc = await db23.collection("contacts").doc(contactId).get();
+    const contactDoc = await db24.collection("contacts").doc(contactId).get();
     if (contactDoc.exists) {
       const contactData = contactDoc.data();
       const history = contactData.sequenceHistory || {};
       if (history[sequenceId]) {
         const prevStart = history[sequenceId].startedAt;
         const prevDate = prevStart?.toDate ? prevStart.toDate() : prevStart;
-        throw new import_https7.HttpsError(
+        throw new import_https8.HttpsError(
           "already-exists",
           `${contactName || contactEmail} was already enrolled in "${sequence.name}" on ${prevDate ? prevDate.toLocaleDateString() : "a previous date"}. Contacts cannot be re-enrolled in the same sequence.`
         );
@@ -64465,16 +64725,16 @@ var startLeadSequence = (0, import_https7.onCall)(async (request) => {
     }
   }
   const { cancelLeadTasks: cancelLeadTasks2 } = await Promise.resolve().then(() => (init_queueUtils(), queueUtils_exports));
-  const cancelledCount = await cancelLeadTasks2(db23, leadId);
+  const cancelledCount = await cancelLeadTasks2(db24, leadId);
   if (cancelledCount > 0) {
-    logger24.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
+    logger25.info(`[StartSequence] Cancelled ${cancelledCount} existing tasks for lead ${leadId}`);
   }
-  logger24.info(
+  logger25.info(
     `[StartSequence] Starting "${sequence.name}" (${sequenceId}) for lead ${leadId} (${businessName}), contact ${contactId || "lead-level"}`
   );
   let senderFrom = "Chris Leung \u2014 XIRI <chris@xiri.ai>";
   try {
-    const senderDoc = await db23.collection("email_senders").doc("sales").get();
+    const senderDoc = await db24.collection("email_senders").doc("sales").get();
     if (senderDoc.exists) {
       const s = senderDoc.data();
       senderFrom = `${s.name} <${s.email}>`;
@@ -64488,12 +64748,12 @@ var startLeadSequence = (0, import_https7.onCall)(async (request) => {
     const sendAt = buildScheduledDate(now, step.dayOffset);
     const templateId = step.templateId;
     if (!templateId) {
-      logger24.warn(`[StartSequence] Step ${i} has no templateId \u2014 skipping.`);
+      logger25.warn(`[StartSequence] Step ${i} has no templateId \u2014 skipping.`);
       continue;
     }
-    const templateDoc = await db23.collection("templates").doc(templateId).get();
+    const templateDoc = await db24.collection("templates").doc(templateId).get();
     if (!templateDoc.exists) {
-      logger24.warn(`[StartSequence] Template ${templateId} not found \u2014 skipping step ${i}.`);
+      logger25.warn(`[StartSequence] Template ${templateId} not found \u2014 skipping step ${i}.`);
       continue;
     }
     const template = templateDoc.data();
@@ -64557,28 +64817,28 @@ var startLeadSequence = (0, import_https7.onCall)(async (request) => {
     if (result.resendId) {
       scheduledResendIds.push(result.resendId);
     }
-    logger24.info(`[StartSequence] Step ${i} (${step.label}) scheduled for ${sendAt.toISOString()} \u2014 Resend ID: ${result.resendId || "none"}`);
+    logger25.info(`[StartSequence] Step ${i} (${step.label}) scheduled for ${sendAt.toISOString()} \u2014 Resend ID: ${result.resendId || "none"}`);
     try {
-      await db23.collection("templates").doc(templateId).update({
-        "stats.sent": admin27.firestore.FieldValue.increment(1),
+      await db24.collection("templates").doc(templateId).update({
+        "stats.sent": admin28.firestore.FieldValue.increment(1),
         "stats.lastUpdated": /* @__PURE__ */ new Date()
       });
     } catch {
     }
   }
-  await db23.collection(leadCollection).doc(leadId).update({
+  await db24.collection(leadCollection).doc(leadId).update({
     status: lead.status === "new" ? "contacted" : lead.status,
     outreachStatus: "PENDING",
     sequenceId,
-    sequenceStartedAt: admin27.firestore.FieldValue.serverTimestamp(),
+    sequenceStartedAt: admin28.firestore.FieldValue.serverTimestamp(),
     sequenceStartedBy: request.auth?.uid || "manual",
     // Store Resend email IDs so we can cancel scheduled emails if needed
     ...scheduledResendIds.length > 0 ? { scheduledEmailIds: scheduledResendIds } : {}
   });
   if (contactId) {
-    await db23.collection("contacts").doc(contactId).update({
+    await db24.collection("contacts").doc(contactId).update({
       [`sequenceHistory.${sequenceId}`]: {
-        startedAt: admin27.firestore.FieldValue.serverTimestamp(),
+        startedAt: admin28.firestore.FieldValue.serverTimestamp(),
         startedBy: request.auth?.uid || "manual",
         status: "in_progress",
         sequenceName: sequence.name,
@@ -64587,7 +64847,7 @@ var startLeadSequence = (0, import_https7.onCall)(async (request) => {
     });
   }
   const dayList = steps.map((s) => `Day ${s.dayOffset}`).join("/");
-  await db23.collection("lead_activities").add({
+  await db24.collection("lead_activities").add({
     leadId,
     contactId: contactId || null,
     type: "SEQUENCE_STARTED",
@@ -64604,7 +64864,7 @@ var startLeadSequence = (0, import_https7.onCall)(async (request) => {
       scheduledResendIds
     }
   });
-  logger24.info(
+  logger25.info(
     `[StartSequence] "${sequence.name}" started for ${leadId}: ${steps.length} emails (${dayList})`
   );
   return {
@@ -64617,34 +64877,40 @@ var startLeadSequence = (0, import_https7.onCall)(async (request) => {
 });
 
 // src/triggers/sendSingleLeadEmail.ts
-var import_https8 = require("firebase-functions/v2/https");
-var admin28 = __toESM(require("firebase-admin"));
-var logger25 = __toESM(require("firebase-functions/logger"));
+var import_https9 = require("firebase-functions/v2/https");
+var admin29 = __toESM(require("firebase-admin"));
+var logger26 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
-if (!admin28.apps.length) {
-  admin28.initializeApp();
+if (!admin29.apps.length) {
+  admin29.initializeApp();
 }
-var db24 = admin28.firestore();
-var sendSingleLeadEmail = (0, import_https8.onCall)(
+var db25 = admin29.firestore();
+function formatLifecycleDate2(value) {
+  if (!value) return null;
+  const date = value?.toDate ? value.toDate() : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+var sendSingleLeadEmail = (0, import_https9.onCall)(
   { secrets: ["RESEND_API_KEY"] },
   async (request) => {
     const { leadId, templateId, contactId: requestedContactId } = request.data;
     if (!leadId || !templateId) {
-      throw new import_https8.HttpsError("invalid-argument", "leadId and templateId are required");
+      throw new import_https9.HttpsError("invalid-argument", "leadId and templateId are required");
     }
-    let leadDoc = await db24.collection("companies").doc(leadId).get();
+    let leadDoc = await db25.collection("companies").doc(leadId).get();
     let leadCollection = "companies";
     if (!leadDoc.exists) {
-      leadDoc = await db24.collection("leads").doc(leadId).get();
+      leadDoc = await db25.collection("leads").doc(leadId).get();
       leadCollection = "leads";
     }
     if (!leadDoc.exists) {
-      throw new import_https8.HttpsError("not-found", `Lead/Company ${leadId} not found`);
+      throw new import_https9.HttpsError("not-found", `Lead/Company ${leadId} not found`);
     }
     const lead = leadDoc.data();
     const businessName = lead.businessName || lead.name || "Unknown";
     if (lead.unsubscribedAt || lead.status === "lost") {
-      throw new import_https8.HttpsError(
+      throw new import_https9.HttpsError(
         "failed-precondition",
         `${businessName} has unsubscribed or is marked as lost \u2014 cannot send email.`
       );
@@ -64654,20 +64920,34 @@ var sendSingleLeadEmail = (0, import_https8.onCall)(
     let contactName = "";
     let contactUnsubscribed = false;
     if (contactId) {
-      const contactDoc = await db24.collection("contacts").doc(contactId).get();
+      const contactDoc = await db25.collection("contacts").doc(contactId).get();
       if (contactDoc.exists) {
         const c = contactDoc.data();
+        if (c.lifecycleStatus === "held") {
+          const holdUntil = formatLifecycleDate2(c.holdUntilAt);
+          throw new import_https9.HttpsError(
+            "failed-precondition",
+            holdUntil ? `${c.firstName || ""} ${c.lastName || ""} is on hold until ${holdUntil} \u2014 reactivate the contact before sending.`.trim() : `${c.firstName || ""} ${c.lastName || ""} is on hold \u2014 reactivate the contact before sending.`.trim()
+          );
+        }
         contactEmail = c.email || "";
         contactName = `${c.firstName || ""} ${c.lastName || ""}`.trim();
         contactUnsubscribed = c.unsubscribed || false;
       }
     }
     if (!contactEmail) {
-      const primarySnap = await db24.collection("contacts").where("companyId", "==", leadId).where("isPrimary", "==", true).limit(1).get();
+      const primarySnap = await db25.collection("contacts").where("companyId", "==", leadId).where("isPrimary", "==", true).limit(1).get();
       if (!primarySnap.empty) {
         const pDoc = primarySnap.docs[0];
         contactId = pDoc.id;
         const pData = pDoc.data();
+        if (pData.lifecycleStatus === "held") {
+          const holdUntil = formatLifecycleDate2(pData.holdUntilAt);
+          throw new import_https9.HttpsError(
+            "failed-precondition",
+            holdUntil ? `${businessName}'s primary contact is on hold until ${holdUntil} \u2014 reactivate the contact before sending.` : `${businessName}'s primary contact is on hold \u2014 reactivate the contact before sending.`
+          );
+        }
         contactEmail = pData.email || "";
         contactName = `${pData.firstName || ""} ${pData.lastName || ""}`.trim();
         contactUnsubscribed = pData.unsubscribed || false;
@@ -64679,20 +64959,20 @@ var sendSingleLeadEmail = (0, import_https8.onCall)(
       contactUnsubscribed = lead.unsubscribed || false;
     }
     if (!contactEmail || contactEmail.trim().length === 0) {
-      throw new import_https8.HttpsError(
+      throw new import_https9.HttpsError(
         "failed-precondition",
         `Lead ${businessName} has no email \u2014 cannot send.`
       );
     }
     if (contactUnsubscribed) {
-      throw new import_https8.HttpsError(
+      throw new import_https9.HttpsError(
         "failed-precondition",
         `${contactName || "Contact"} has unsubscribed from emails.`
       );
     }
     const template = await getTemplate(templateId);
     if (!template) {
-      throw new import_https8.HttpsError("not-found", `Template ${templateId} not found`);
+      throw new import_https9.HttpsError("not-found", `Template ${templateId} not found`);
     }
     const variables = {
       businessName,
@@ -64703,13 +64983,13 @@ var sendSingleLeadEmail = (0, import_https8.onCall)(
       email: contactEmail
     };
     injectFacilityPhrases(variables);
-    logger25.info(`[SendSingle] Variables for merge:`, variables);
+    logger26.info(`[SendSingle] Variables for merge:`, variables);
     const mergedSubject = replaceVariables(template.subject, variables);
     const templateBody = template.content || template.body || "";
-    logger25.info(`[SendSingle] Template body field found: ${templateBody ? "yes" : "no"}, length: ${templateBody.length}`);
+    logger26.info(`[SendSingle] Template body field found: ${templateBody ? "yes" : "no"}, length: ${templateBody.length}`);
     const mergedBody = replaceVariables(templateBody, variables);
     const htmlBody = mergedBody.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
-    logger25.info(`[SendSingle] Sending "${templateId}" to ${contactEmail} for lead ${leadId}`);
+    logger26.info(`[SendSingle] Sending "${templateId}" to ${contactEmail} for lead ${leadId}`);
     const result = await sendEmail(
       contactEmail,
       mergedSubject,
@@ -64722,23 +65002,23 @@ var sendSingleLeadEmail = (0, import_https8.onCall)(
       "lead"
     );
     if (!result.success) {
-      await db24.collection("lead_activities").add({
+      await db25.collection("lead_activities").add({
         leadId,
         contactId: contactId || null,
         type: "EMAIL_FAILED",
         description: `Failed to send targeted email "${templateId}" to ${contactEmail}`,
-        createdAt: admin28.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin29.firestore.FieldValue.serverTimestamp(),
         sentBy: request.auth?.uid || "manual",
         metadata: { templateId, subject: mergedSubject, to: contactEmail, contactId: contactId || null }
       });
-      throw new import_https8.HttpsError("internal", "Failed to send email via Resend");
+      throw new import_https9.HttpsError("internal", "Failed to send email via Resend");
     }
-    await db24.collection("lead_activities").add({
+    await db25.collection("lead_activities").add({
       leadId,
       contactId: contactId || null,
       type: "TARGETED_EMAIL_SENT",
       description: `Targeted email "${templateId}" sent to ${contactEmail}: ${mergedSubject}`,
-      createdAt: admin28.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin29.firestore.FieldValue.serverTimestamp(),
       sentBy: request.auth?.uid || "manual",
       metadata: {
         templateId,
@@ -64749,11 +65029,11 @@ var sendSingleLeadEmail = (0, import_https8.onCall)(
       }
     });
     if (lead.status === "new") {
-      await db24.collection(leadCollection).doc(leadId).update({
+      await db25.collection(leadCollection).doc(leadId).update({
         status: "contacted"
       });
     }
-    logger25.info(`[SendSingle] \u2705 Sent "${mergedSubject}" to ${contactEmail} (Resend: ${result.resendId})`);
+    logger26.info(`[SendSingle] \u2705 Sent "${mergedSubject}" to ${contactEmail} (Resend: ${result.resendId})`);
     return {
       success: true,
       message: `Email sent to ${contactEmail}`,
@@ -64764,23 +65044,23 @@ var sendSingleLeadEmail = (0, import_https8.onCall)(
 );
 
 // src/triggers/sendPreviewEmail.ts
-var import_https9 = require("firebase-functions/v2/https");
-var admin29 = __toESM(require("firebase-admin"));
-var logger26 = __toESM(require("firebase-functions/logger"));
+var import_https10 = require("firebase-functions/v2/https");
+var admin30 = __toESM(require("firebase-admin"));
+var logger27 = __toESM(require("firebase-functions/logger"));
 init_emailUtils();
-if (!admin29.apps.length) {
-  admin29.initializeApp();
+if (!admin30.apps.length) {
+  admin30.initializeApp();
 }
-var db25 = admin29.firestore();
-var sendPreviewEmail = (0, import_https9.onCall)(
+var db26 = admin30.firestore();
+var sendPreviewEmail = (0, import_https10.onCall)(
   { secrets: ["RESEND_API_KEY"] },
   async (request) => {
     if (!request.auth) {
-      throw new import_https9.HttpsError("unauthenticated", "Must be signed in");
+      throw new import_https10.HttpsError("unauthenticated", "Must be signed in");
     }
     const { to, subject, body, sampleData } = request.data;
     if (!to || !subject || !body) {
-      throw new import_https9.HttpsError("invalid-argument", "to, subject, and body are required");
+      throw new import_https10.HttpsError("invalid-argument", "to, subject, and body are required");
     }
     const variables = { ...sampleData };
     if (variables.facilityType) {
@@ -64791,7 +65071,7 @@ var sendPreviewEmail = (0, import_https9.onCall)(
     if (!mergedBody.includes("<p>") && !mergedBody.includes("<br")) {
       mergedBody = mergedBody.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
     }
-    logger26.info(`[SendPreview] Sending test email to ${to}: "${mergedSubject}"`);
+    logger27.info(`[SendPreview] Sending test email to ${to}: "${mergedSubject}"`);
     const result = await sendEmail(
       to,
       mergedSubject,
@@ -64807,9 +65087,9 @@ var sendPreviewEmail = (0, import_https9.onCall)(
       // no entity type (skip unsubscribe footer)
     );
     if (!result.success) {
-      throw new import_https9.HttpsError("internal", "Failed to send preview email");
+      throw new import_https10.HttpsError("internal", "Failed to send preview email");
     }
-    logger26.info(`[SendPreview] \u2705 Preview sent to ${to} (Resend: ${result.resendId})`);
+    logger27.info(`[SendPreview] \u2705 Preview sent to ${to} (Resend: ${result.resendId})`);
     return {
       success: true,
       message: `Preview sent to ${to}`,
@@ -64820,24 +65100,24 @@ var sendPreviewEmail = (0, import_https9.onCall)(
 
 // src/triggers/onContactDeleted.ts
 var import_firestore18 = require("firebase-functions/v2/firestore");
-var admin30 = __toESM(require("firebase-admin"));
-var logger27 = __toESM(require("firebase-functions/logger"));
-if (!admin30.apps.length) {
-  admin30.initializeApp();
+var admin31 = __toESM(require("firebase-admin"));
+var logger28 = __toESM(require("firebase-functions/logger"));
+if (!admin31.apps.length) {
+  admin31.initializeApp();
 }
-var db26 = admin30.firestore();
+var db27 = admin31.firestore();
 var onContactDeleted = (0, import_firestore18.onDocumentDeleted)("contacts/{contactId}", async (event) => {
   const contactId = event.params.contactId;
   const deletedData = event.data?.data();
   const email = deletedData?.email || "unknown";
   const companyId = deletedData?.companyId || null;
-  logger27.info(`[ContactCleanup] Contact ${contactId} (${email}) deleted. Cancelling pending tasks.`);
-  const contactTasks = await db26.collection("outreach_queue").where("contactId", "==", contactId).where("status", "in", ["PENDING", "RETRY"]).get();
+  logger28.info(`[ContactCleanup] Contact ${contactId} (${email}) deleted. Cancelling pending tasks.`);
+  const contactTasks = await db27.collection("outreach_queue").where("contactId", "==", contactId).where("status", "in", ["PENDING", "RETRY"]).get();
   let leadTasks = null;
   if (companyId) {
-    leadTasks = await db26.collection("outreach_queue").where("leadId", "==", companyId).where("status", "in", ["PENDING", "RETRY"]).get();
+    leadTasks = await db27.collection("outreach_queue").where("leadId", "==", companyId).where("status", "in", ["PENDING", "RETRY"]).get();
   }
-  const batch = db26.batch();
+  const batch = db27.batch();
   let count = 0;
   const seen = /* @__PURE__ */ new Set();
   for (const doc of contactTasks.docs) {
@@ -64859,7 +65139,7 @@ var onContactDeleted = (0, import_firestore18.onDocumentDeleted)("contacts/{cont
   if (count > 0) {
     await batch.commit();
   }
-  logger27.info(`[ContactCleanup] Cancelled ${count} pending task(s) for deleted contact ${contactId} (${email}).`);
+  logger28.info(`[ContactCleanup] Cancelled ${count} pending task(s) for deleted contact ${contactId} (${email}).`);
 });
 
 // src/triggers/onExperienceUpdated.ts
@@ -65475,11 +65755,11 @@ async function publishScheduledPosts() {
         });
         console.error(`[SocialPublisher] Failed to publish ${doc.id}: ${result.error}`);
       }
-    } catch (error16) {
-      console.error(`[SocialPublisher] Error publishing ${doc.id}:`, error16);
+    } catch (error18) {
+      console.error(`[SocialPublisher] Error publishing ${doc.id}:`, error18);
       await doc.ref.update({
         status: "failed",
-        error: error16.message || "Unexpected error",
+        error: error18.message || "Unexpected error",
         failedAt: /* @__PURE__ */ new Date()
       });
     }
@@ -65493,73 +65773,46 @@ var runSocialPublisher = (0, import_scheduler6.onSchedule)({
 });
 
 // src/functions/auth.ts
-var import_https11 = require("firebase-functions/v2/https");
+var import_https12 = require("firebase-functions/v2/https");
 var import_auth = require("firebase-admin/auth");
-
-// src/utils/cors.ts
-var DASHBOARD_CORS = [
-  "http://localhost:3001",
-  // Dashboard Dev
-  "http://localhost:3000",
-  // Public Site Dev
-  "http://localhost:3002",
-  // Public Site Dev (alt port)
-  "https://xiri.ai",
-  // Public Site Production
-  "https://www.xiri.ai",
-  // Public Site WWW
-  "https://app.xiri.ai",
-  // Dashboard Production
-  "https://xiri-dashboard.vercel.app",
-  // Dashboard Vercel
-  "https://xiri-dashboard-git-develop-xiri-facility-solutions.vercel.app",
-  // Vercel develop branch
-  /https:\/\/xiri-dashboard-.*\.vercel\.app$/,
-  // All Vercel preview deployments
-  "https://xiri-facility-solutions.web.app",
-  // Firebase Hosting
-  "https://xiri-facility-solutions.firebaseapp.com"
-];
-
-// src/functions/auth.ts
 init_emailUtils();
-var adminUpdateAuthUser = (0, import_https11.onCall)({
+var adminUpdateAuthUser = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const callerDoc = await db.collection("users").doc(request.auth.uid).get();
   const callerRoles = callerDoc.data()?.roles || [];
-  if (!callerRoles.includes("admin")) throw new import_https11.HttpsError("permission-denied", "Admin only");
+  if (!callerRoles.includes("admin")) throw new import_https12.HttpsError("permission-denied", "Admin only");
   const { uid, email, password, displayName } = request.data;
-  if (!uid) throw new import_https11.HttpsError("invalid-argument", "uid is required");
+  if (!uid) throw new import_https12.HttpsError("invalid-argument", "uid is required");
   const updatePayload = {};
   if (email) updatePayload.email = email;
   if (password) updatePayload.password = password;
   if (displayName) updatePayload.displayName = displayName;
   if (Object.keys(updatePayload).length === 0) {
-    throw new import_https11.HttpsError("invalid-argument", "Nothing to update");
+    throw new import_https12.HttpsError("invalid-argument", "Nothing to update");
   }
   try {
     await (0, import_auth.getAuth)().updateUser(uid, updatePayload);
     return { success: true, message: `Auth updated for ${uid}` };
-  } catch (error16) {
-    console.error("adminUpdateAuthUser error:", error16);
-    throw new import_https11.HttpsError("internal", error16.message || "Failed to update Auth user");
+  } catch (error18) {
+    console.error("adminUpdateAuthUser error:", error18);
+    throw new import_https12.HttpsError("internal", error18.message || "Failed to update Auth user");
   }
 });
-var adminCreateUser = (0, import_https11.onCall)({
+var adminCreateUser = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["RESEND_API_KEY"]
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const callerDoc = await db.collection("users").doc(request.auth.uid).get();
   const callerRoles = callerDoc.data()?.roles || [];
-  if (!callerRoles.includes("admin")) throw new import_https11.HttpsError("permission-denied", "Admin only");
+  if (!callerRoles.includes("admin")) throw new import_https12.HttpsError("permission-denied", "Admin only");
   const { email, displayName, roles } = request.data;
-  if (!email) throw new import_https11.HttpsError("invalid-argument", "email is required");
-  if (!displayName) throw new import_https11.HttpsError("invalid-argument", "displayName is required");
+  if (!email) throw new import_https12.HttpsError("invalid-argument", "email is required");
+  if (!displayName) throw new import_https12.HttpsError("invalid-argument", "displayName is required");
   if (!roles || !Array.isArray(roles) || roles.length === 0) {
-    throw new import_https11.HttpsError("invalid-argument", "At least one role is required");
+    throw new import_https12.HttpsError("invalid-argument", "At least one role is required");
   }
   const chars2 = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
   const tempPassword = "Xiri-" + Array.from({ length: 10 }, () => chars2[Math.floor(Math.random() * chars2.length)]).join("") + "!";
@@ -65640,33 +65893,191 @@ var adminCreateUser = (0, import_https11.onCall)({
       emailSent,
       message: emailSent ? `User ${email} created and invite email sent with login credentials.` : `User ${email} created. Email failed \u2014 share the temp password manually.`
     };
-  } catch (error16) {
-    console.error("adminCreateUser error:", error16);
-    if (error16.code === "auth/email-already-exists") {
-      throw new import_https11.HttpsError("already-exists", "A user with this email already exists");
+  } catch (error18) {
+    console.error("adminCreateUser error:", error18);
+    if (error18.code === "auth/email-already-exists") {
+      throw new import_https12.HttpsError("already-exists", "A user with this email already exists");
     }
-    throw new import_https11.HttpsError("internal", error16.message || "Failed to create user");
+    throw new import_https12.HttpsError("internal", error18.message || "Failed to create user");
   }
 });
-var changeMyPassword = (0, import_https11.onCall)({
+var changeMyPassword = (0, import_https12.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https11.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https12.HttpsError("unauthenticated", "Must be logged in");
   const { newPassword } = request.data;
   if (!newPassword || newPassword.length < 6) {
-    throw new import_https11.HttpsError("invalid-argument", "Password must be at least 6 characters");
+    throw new import_https12.HttpsError("invalid-argument", "Password must be at least 6 characters");
   }
   try {
     await (0, import_auth.getAuth)().updateUser(request.auth.uid, { password: newPassword });
     return { success: true, message: "Password updated" };
-  } catch (error16) {
-    console.error("changeMyPassword error:", error16);
-    throw new import_https11.HttpsError("internal", error16.message || "Failed to change password");
+  } catch (error18) {
+    console.error("changeMyPassword error:", error18);
+    throw new import_https12.HttpsError("internal", error18.message || "Failed to change password");
   }
 });
 
+// src/functions/contactReview.ts
+var import_https13 = require("firebase-functions/v2/https");
+var admin32 = __toESM(require("firebase-admin"));
+if (!admin32.apps.length) {
+  admin32.initializeApp();
+}
+var db28 = admin32.firestore();
+function normalizeEmail(email) {
+  return (email || "").trim().toLowerCase();
+}
+function normalizeName(firstName, lastName) {
+  return `${(firstName || "").trim().toLowerCase()} ${(lastName || "").trim().toLowerCase()}`.trim();
+}
+function scoreContact(contact) {
+  let score = 0;
+  const lifecycle = contact.lifecycleStatus || (contact.unsubscribed ? "suppressed" : "active");
+  if (contact.isPrimary) score += 100;
+  if (lifecycle === "active") score += 50;
+  if (lifecycle === "held") score += 15;
+  if (lifecycle === "suppressed") score -= 50;
+  if (!contact.unsubscribed) score += 10;
+  const engagement = contact.emailEngagement;
+  if (engagement?.lastEvent === "clicked") score += 15;
+  if (engagement?.lastEvent === "opened") score += 8;
+  if (engagement?.lastEvent === "delivered") score += 4;
+  if (engagement?.lastEvent === "bounced" || engagement?.lastEvent === "spam") score -= 20;
+  const email = normalizeEmail(contact.email);
+  if (email && !email.startsWith("info@") && !email.startsWith("hello@") && !email.startsWith("admin@")) {
+    score += 5;
+  }
+  return score;
+}
+function pickWinner(contacts) {
+  return [...contacts].sort((a2, b) => scoreContact(b.data) - scoreContact(a2.data))[0];
+}
+var refreshContactReviewQueue = (0, import_https13.onCall)(async (request) => {
+  if (!request.auth) {
+    throw new import_https13.HttpsError("unauthenticated", "Authentication required");
+  }
+  const snapshot = await db28.collection("contacts").get();
+  const byCompany = /* @__PURE__ */ new Map();
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    const companyId = data.companyId;
+    if (!companyId) return;
+    const group = byCompany.get(companyId) || [];
+    group.push({ id: docSnap.id, data });
+    byCompany.set(companyId, group);
+  });
+  const updates = /* @__PURE__ */ new Map();
+  let exactDuplicateCount = 0;
+  let nameCandidateCount = 0;
+  let lifecycleBackfillCount = 0;
+  const ensureUpdate = (contactId) => {
+    const existing = updates.get(contactId) || {};
+    updates.set(contactId, existing);
+    return existing;
+  };
+  for (const contacts of byCompany.values()) {
+    const byEmail = /* @__PURE__ */ new Map();
+    const byName = /* @__PURE__ */ new Map();
+    for (const contact of contacts) {
+      const email = normalizeEmail(contact.data.email);
+      const name = normalizeName(contact.data.firstName, contact.data.lastName);
+      if (!contact.data.lifecycleStatus) {
+        const update = ensureUpdate(contact.id);
+        update.lifecycleStatus = contact.data.unsubscribed ? "suppressed" : "active";
+        update.lifecycleUpdatedAt = admin32.firestore.FieldValue.serverTimestamp();
+        lifecycleBackfillCount++;
+      }
+      if (email) {
+        const emailGroup = byEmail.get(email) || [];
+        emailGroup.push(contact);
+        byEmail.set(email, emailGroup);
+      }
+      if (name) {
+        const nameGroup = byName.get(name) || [];
+        nameGroup.push(contact);
+        byName.set(name, nameGroup);
+      }
+    }
+    for (const group of byEmail.values()) {
+      if (group.length < 2) continue;
+      const winner = pickWinner(group);
+      for (const contact of group) {
+        const update = ensureUpdate(contact.id);
+        const existingReasons = new Set((contact.data.reviewReasons || []).filter((reason) => reason !== "duplicate_name_candidate"));
+        if (contact.id === winner.id) {
+          if (contact.data.lifecycleStatus === "duplicate" && contact.data.lifecycleReason === "duplicate_email") {
+            update.lifecycleStatus = "active";
+            update.lifecycleReason = null;
+            update.lifecycleUpdatedAt = admin32.firestore.FieldValue.serverTimestamp();
+          }
+          update.duplicateOfContactId = null;
+          update.reviewReasons = Array.from(existingReasons);
+          continue;
+        }
+        update.lifecycleStatus = "duplicate";
+        update.lifecycleReason = "duplicate_email";
+        update.lifecycleUpdatedAt = admin32.firestore.FieldValue.serverTimestamp();
+        update.duplicateOfContactId = winner.id;
+        update.reviewReasons = Array.from(existingReasons);
+        exactDuplicateCount++;
+      }
+    }
+    for (const group of byName.values()) {
+      if (group.length < 2) continue;
+      const uniqueEmails = new Set(group.map((contact) => normalizeEmail(contact.data.email)).filter(Boolean));
+      if (uniqueEmails.size <= 1) continue;
+      const winner = pickWinner(group);
+      for (const contact of group) {
+        if (contact.id === winner.id) {
+          const update2 = ensureUpdate(contact.id);
+          const remainingReasons = (contact.data.reviewReasons || []).filter((reason) => reason !== "duplicate_name_candidate");
+          update2.reviewReasons = remainingReasons;
+          continue;
+        }
+        const update = ensureUpdate(contact.id);
+        const reviewReasons = new Set(contact.data.reviewReasons || []);
+        reviewReasons.add("duplicate_name_candidate");
+        update.reviewReasons = Array.from(reviewReasons);
+        if (!contact.data.lifecycleStatus || contact.data.lifecycleStatus === "active") {
+          update.lifecycleStatus = "review";
+          update.lifecycleReason = "duplicate_name_candidate";
+          update.lifecycleUpdatedAt = admin32.firestore.FieldValue.serverTimestamp();
+        }
+        nameCandidateCount++;
+      }
+    }
+  }
+  const BATCH_LIMIT = 400;
+  const entries = Array.from(updates.entries());
+  for (let i = 0; i < entries.length; i += BATCH_LIMIT) {
+    const batch = db28.batch();
+    for (const [contactId, rawUpdate] of entries.slice(i, i + BATCH_LIMIT)) {
+      const update = {};
+      for (const [key, value] of Object.entries(rawUpdate)) {
+        if (key === "reviewReasons" && Array.isArray(value) && value.length === 0) {
+          update[key] = admin32.firestore.FieldValue.delete();
+        } else if (key === "duplicateOfContactId" && !value) {
+          update[key] = null;
+        } else {
+          update[key] = value;
+        }
+      }
+      batch.set(db28.collection("contacts").doc(contactId), update, { merge: true });
+    }
+    await batch.commit();
+  }
+  return {
+    scannedContacts: snapshot.size,
+    updatedContacts: entries.length,
+    exactDuplicateCount,
+    nameCandidateCount,
+    lifecycleBackfillCount
+  };
+});
+
 // src/functions/leads.ts
-var import_https12 = require("firebase-functions/v2/https");
+var import_https14 = require("firebase-functions/v2/https");
 
 // src/agents/recruiter.ts
 var import_generative_ai6 = require("@google/generative-ai");
@@ -66102,10 +66513,10 @@ var searchVendors = async (query, location, provider = "google_maps", dcaCategor
     googleResults = rawVendors.filter((v) => v.rating === void 0 || v.rating >= 3.5);
     console.log(`Filtered ${rawVendors.length} -> ${googleResults.length} vendors (Rating >= 3.5 or N/A).`);
     await setCachedPlaces(query, location, googleResults);
-  } catch (error16) {
-    console.error("Error searching vendors via Google:", error16.message);
+  } catch (error18) {
+    console.error("Error searching vendors via Google:", error18.message);
     if (provider !== "all") {
-      throw new Error(`Failed to source vendors: ${error16.message}`);
+      throw new Error(`Failed to source vendors: ${error18.message}`);
     }
   }
   if (provider === "all") {
@@ -66308,14 +66719,14 @@ var searchProperties = async (query, location, providerName = "mock") => {
     const singleTenant = properties.filter((p) => !p.tenantCount || p.tenantCount === 1);
     console.log(`[PropertySourcer] After single-tenant filter: ${singleTenant.length}`);
     return singleTenant;
-  } catch (error16) {
-    console.error(`[PropertySourcer] Error sourcing properties: ${error16.message}`);
-    throw new Error(`Failed to source properties: ${error16.message}`);
+  } catch (error18) {
+    console.error(`[PropertySourcer] Error sourcing properties: ${error18.message}`);
+    throw new Error(`Failed to source properties: ${error18.message}`);
   }
 };
 
 // src/functions/leads.ts
-var generateLeads = (0, import_https12.onCall)({
+var generateLeads = (0, import_https14.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540
@@ -66328,7 +66739,7 @@ var generateLeads = (0, import_https12.onCall)({
   const provider = data.provider || "google_maps";
   const dcaCategory = data.dcaCategory;
   if (provider === "google_maps" && !query || !location) {
-    throw new import_https12.HttpsError("invalid-argument", "Missing required fields in request.");
+    throw new import_https14.HttpsError("invalid-argument", "Missing required fields in request.");
   }
   try {
     console.log(`Analyzing leads for query: ${query}, location: ${location}, provider: ${provider}, category: ${dcaCategory}${previewOnly ? " (PREVIEW MODE)" : ""}`);
@@ -66341,12 +66752,12 @@ var generateLeads = (0, import_https12.onCall)({
       analysis: result,
       vendors: previewOnly ? result.vendors : void 0
     };
-  } catch (error16) {
-    console.error("Error in generateLeads:", error16);
-    throw new import_https12.HttpsError("internal", error16.message || "An internal error occurred.");
+  } catch (error18) {
+    console.error("Error in generateLeads:", error18);
+    throw new import_https14.HttpsError("internal", error18.message || "An internal error occurred.");
   }
 });
-var clearPipeline = (0, import_https12.onCall)({
+var clearPipeline = (0, import_https14.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   try {
@@ -66368,11 +66779,11 @@ var clearPipeline = (0, import_https12.onCall)({
     chunks.push(currentBatch.commit());
     await Promise.all(chunks);
     return { message: `Cleared ${count} vendors from pipeline.` };
-  } catch (error16) {
-    throw new import_https12.HttpsError("internal", error16.message);
+  } catch (error18) {
+    throw new import_https14.HttpsError("internal", error18.message);
   }
 });
-var runRecruiterAgent = (0, import_https12.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
+var runRecruiterAgent = (0, import_https14.onRequest)({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
   const rawVendors = req.body.vendors || [
     { name: "ABC Cleaning", services: "We do medical office cleaning and terminal cleaning." },
     { name: "Joe's Pizza", services: "Best pizza in town" },
@@ -66381,24 +66792,24 @@ var runRecruiterAgent = (0, import_https12.onRequest)({ secrets: ["GEMINI_API_KE
   const result = await analyzeVendorLeads(rawVendors, "Commercial Cleaning");
   res.json(result);
 });
-var testSendEmail = (0, import_https12.onCall)({
+var testSendEmail = (0, import_https14.onCall)({
   secrets: ["RESEND_API_KEY", "GEMINI_API_KEY"],
   cors: DASHBOARD_CORS
 }, async (request) => {
   const { sendTemplatedEmail: sendTemplatedEmail2 } = await Promise.resolve().then(() => (init_emailUtils(), emailUtils_exports));
   const { vendorId, templateId } = request.data;
   if (!vendorId || !templateId) {
-    throw new import_https12.HttpsError("invalid-argument", "Missing vendorId or templateId");
+    throw new import_https14.HttpsError("invalid-argument", "Missing vendorId or templateId");
   }
   try {
     await sendTemplatedEmail2(vendorId, templateId);
     return { success: true, message: `Email sent to vendor ${vendorId}` };
-  } catch (error16) {
-    console.error("Error sending test email:", error16);
-    throw new import_https12.HttpsError("internal", error16.message || "Failed to send email");
+  } catch (error18) {
+    console.error("Error sending test email:", error18);
+    throw new import_https14.HttpsError("internal", error18.message || "Failed to send email");
   }
 });
-var sourceProperties = (0, import_https12.onCall)({
+var sourceProperties = (0, import_https14.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 120
 }, async (request) => {
@@ -66407,7 +66818,7 @@ var sourceProperties = (0, import_https12.onCall)({
   const location = data.location;
   const providerName = data.provider || "mock";
   if (!query || !location) {
-    throw new import_https12.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
+    throw new import_https14.HttpsError("invalid-argument", "Missing 'query' or 'location' in request.");
   }
   try {
     console.log(`[sourceProperties] query="${query}", location="${location}", provider=${providerName}`);
@@ -66417,24 +66828,24 @@ var sourceProperties = (0, import_https12.onCall)({
       sourced: properties.length,
       properties
     };
-  } catch (error16) {
-    console.error("[sourceProperties] Error:", error16);
-    throw new import_https12.HttpsError("internal", error16.message || "Failed to source properties.");
+  } catch (error18) {
+    console.error("[sourceProperties] Error:", error18);
+    throw new import_https14.HttpsError("internal", error18.message || "Failed to source properties.");
   }
 });
 
 // src/functions/social.ts
-var import_https13 = require("firebase-functions/v2/https");
+var import_https15 = require("firebase-functions/v2/https");
 init_promptUtils();
 init_facebookApi();
-var publishFacebookPost = (0, import_https13.onCall)({
+var publishFacebookPost = (0, import_https15.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { message, link, imageUrl, scheduledTime } = request.data;
   if (!message) {
-    throw new import_https13.HttpsError("invalid-argument", "Message is required");
+    throw new import_https15.HttpsError("invalid-argument", "Message is required");
   }
   try {
     let result;
@@ -66459,48 +66870,48 @@ var publishFacebookPost = (0, import_https13.onCall)({
       createdAt: /* @__PURE__ */ new Date()
     });
     return result;
-  } catch (error16) {
-    console.error("[Facebook] Publish error:", error16);
-    throw new import_https13.HttpsError("internal", error16.message || "Failed to publish to Facebook");
+  } catch (error18) {
+    console.error("[Facebook] Publish error:", error18);
+    throw new import_https15.HttpsError("internal", error18.message || "Failed to publish to Facebook");
   }
 });
-var getFacebookPosts = (0, import_https13.onCall)({
+var getFacebookPosts = (0, import_https15.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const posts = await getRecentPosts(limit || 10);
     const insights = await getPageInsights("week");
     return { posts, insights };
-  } catch (error16) {
-    console.error("[Facebook] Get posts error:", error16);
-    throw new import_https13.HttpsError("internal", error16.message || "Failed to get Facebook posts");
+  } catch (error18) {
+    console.error("[Facebook] Get posts error:", error18);
+    throw new import_https15.HttpsError("internal", error18.message || "Failed to get Facebook posts");
   }
 });
-var getFacebookReels = (0, import_https13.onCall)({
+var getFacebookReels = (0, import_https15.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { limit } = request.data || {};
   try {
     const { getRecentReels: getRecentReels2 } = await Promise.resolve().then(() => (init_facebookApi(), facebookApi_exports));
     const reels = await getRecentReels2(limit || 10);
     return { reels };
-  } catch (error16) {
-    console.error("[Facebook] Get reels error:", error16);
-    throw new import_https13.HttpsError("internal", error16.message || "Failed to get Facebook reels");
+  } catch (error18) {
+    console.error("[Facebook] Get reels error:", error18);
+    throw new import_https15.HttpsError("internal", error18.message || "Failed to get Facebook reels");
   }
 });
-var deleteFacebookPost = (0, import_https13.onCall)({
+var deleteFacebookPost = (0, import_https15.onCall)({
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https13.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https15.HttpsError("invalid-argument", "postId is required");
   try {
     const success = await deletePost(postId);
     const snapshot = await db.collection("social_posts").where("facebookPostId", "==", postId).limit(1).get();
@@ -66512,26 +66923,26 @@ var deleteFacebookPost = (0, import_https13.onCall)({
       });
     }
     return { success };
-  } catch (error16) {
-    console.error("[Facebook] Delete error:", error16);
-    throw new import_https13.HttpsError("internal", error16.message || "Failed to delete Facebook post");
+  } catch (error18) {
+    console.error("[Facebook] Delete error:", error18);
+    throw new import_https15.HttpsError("internal", error18.message || "Failed to delete Facebook post");
   }
 });
-var triggerSocialContentGeneration = (0, import_https13.onCall)({
+var triggerSocialContentGeneration = (0, import_https15.onCall)({
   secrets: ["GEMINI_API_KEY", "FACEBOOK_PAGE_ACCESS_TOKEN"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const channel = request.data?.channel || "facebook_posts";
   await generateSocialContent(channel);
   return { success: true };
 });
-var updateSocialConfig = (0, import_https13.onCall)({
+var updateSocialConfig = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { channel, cadence, preferredDays, preferredTime, tone, topics, hashtagSets, enabled, audienceMix } = request.data;
   const channelId = channel || "facebook_posts";
   const config2 = { updatedAt: /* @__PURE__ */ new Date() };
@@ -66548,18 +66959,18 @@ var updateSocialConfig = (0, import_https13.onCall)({
   console.log(`[Social] Config updated for ${channelId}:`, config2);
   return { success: true };
 });
-var reviewSocialPost = (0, import_https13.onCall)({
+var reviewSocialPost = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { postId, action, editedMessage, rejectionReason, scheduledFor } = request.data;
   if (!postId || !action) {
-    throw new import_https13.HttpsError("invalid-argument", "postId and action are required");
+    throw new import_https15.HttpsError("invalid-argument", "postId and action are required");
   }
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
   if (!postDoc.exists) {
-    throw new import_https13.HttpsError("not-found", "Post not found");
+    throw new import_https15.HttpsError("not-found", "Post not found");
   }
   const update = {
     reviewedBy: request.auth.uid,
@@ -66576,24 +66987,24 @@ var reviewSocialPost = (0, import_https13.onCall)({
       update.rejectionReason = rejectionReason || null;
       break;
     default:
-      throw new import_https13.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
+      throw new import_https15.HttpsError("invalid-argument", "action must be 'approve' or 'reject'");
   }
   await postRef.update(update);
   console.log(`[Social] Post ${postId} ${action}ed by ${request.auth.uid}`);
   return { success: true, status: update.status };
 });
-var publishPostNow = (0, import_https13.onCall)({
+var publishPostNow = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"],
   timeoutSeconds: 180,
   memory: "512MiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { postId } = request.data;
-  if (!postId) throw new import_https13.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https15.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https13.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https15.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   try {
     let result;
@@ -66681,7 +67092,7 @@ file '${outroMp4}'
         error: result.error || "Publishing failed",
         failedAt: /* @__PURE__ */ new Date()
       });
-      throw new import_https13.HttpsError("internal", result.error || "Publishing failed");
+      throw new import_https15.HttpsError("internal", result.error || "Publishing failed");
     }
   } catch (err2) {
     const errorMsg = err2.message || "Publishing failed";
@@ -66692,37 +67103,37 @@ file '${outroMp4}'
       failedAt: /* @__PURE__ */ new Date()
     }).catch(() => {
     });
-    throw new import_https13.HttpsError("internal", errorMsg);
+    throw new import_https15.HttpsError("internal", errorMsg);
   }
 });
-var searchPlaces = (0, import_https13.onCall)({
+var searchPlaces = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["FACEBOOK_PAGE_ACCESS_TOKEN"]
 }, async (request) => {
-  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { query } = request.data;
-  if (!query) throw new import_https13.HttpsError("invalid-argument", "query is required");
+  if (!query) throw new import_https15.HttpsError("invalid-argument", "query is required");
   const results = await searchFacebookPlaces(query);
   return { places: results };
 });
-var regeneratePostImage = (0, import_https13.onCall)({
+var regeneratePostImage = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 300,
   memory: "1GiB"
 }, async (request) => {
-  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https13.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https15.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https13.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https15.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience || "contractor";
   console.log(`[RegenImage] Regenerating image for post ${postId} with feedback: "${feedback || "none"}"`);
   const { generatePostImage: generatePostImage2 } = await Promise.resolve().then(() => (init_imagenApi(), imagenApi_exports));
   const result = await generatePostImage2(post.message, audience, feedback || void 0);
   if (!result) {
-    throw new import_https13.HttpsError("internal", "Image generation failed");
+    throw new import_https15.HttpsError("internal", "Image generation failed");
   }
   await postRef.update({
     imageUrl: result.imageUrl,
@@ -66732,23 +67143,23 @@ var regeneratePostImage = (0, import_https13.onCall)({
   console.log(`[RegenImage] New image: ${result.imageUrl}`);
   return { success: true, imageUrl: result.imageUrl };
 });
-var regeneratePostCaption = (0, import_https13.onCall)({
+var regeneratePostCaption = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["GEMINI_API_KEY"],
   timeoutSeconds: 120
 }, async (request) => {
-  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { postId, feedback } = request.data;
-  if (!postId) throw new import_https13.HttpsError("invalid-argument", "postId is required");
+  if (!postId) throw new import_https15.HttpsError("invalid-argument", "postId is required");
   const postRef = db.collection("social_posts").doc(postId);
   const postDoc = await postRef.get();
-  if (!postDoc.exists) throw new import_https13.HttpsError("not-found", "Post not found");
+  if (!postDoc.exists) throw new import_https15.HttpsError("not-found", "Post not found");
   const post = postDoc.data();
   const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
   console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
-  const { GoogleGenerativeAI: GoogleGenerativeAI12 } = await import("@google/generative-ai");
+  const { GoogleGenerativeAI: GoogleGenerativeAI13 } = await import("@google/generative-ai");
   const API_KEY3 = process.env.GEMINI_API_KEY || "";
-  const genAI4 = new GoogleGenerativeAI12(API_KEY3);
+  const genAI4 = new GoogleGenerativeAI13(API_KEY3);
   const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
   const FALLBACK = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for {{audience}}:
 
@@ -66778,7 +67189,7 @@ Respond with ONLY the post text. No introductions.`;
   const result = await model2.generateContent(prompt);
   const newCaption = result.response.text().trim();
   if (!newCaption) {
-    throw new import_https13.HttpsError("internal", "Caption generation returned empty");
+    throw new import_https15.HttpsError("internal", "Caption generation returned empty");
   }
   await postRef.update({
     message: newCaption,
@@ -66788,19 +67199,19 @@ Respond with ONLY the post text. No introductions.`;
   console.log(`[RegenCaption] New caption generated (${newCaption.length} chars)`);
   return { success: true, message: newCaption };
 });
-var getOutroPreview = (0, import_https13.onCall)({
+var getOutroPreview = (0, import_https15.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
-  if (!request.auth) throw new import_https13.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https15.HttpsError("unauthenticated", "Must be logged in");
   const { presetId } = request.data;
-  if (!presetId) throw new import_https13.HttpsError("invalid-argument", "presetId is required");
+  if (!presetId) throw new import_https15.HttpsError("invalid-argument", "presetId is required");
   const { getOrCreateOutroFrameUrl: getOrCreateOutroFrameUrl2 } = await Promise.resolve().then(() => (init_reelOutroGenerator(), reelOutroGenerator_exports));
   const url = await getOrCreateOutroFrameUrl2(presetId);
   return { url };
 });
 
 // src/functions/nfc.ts
-var import_https14 = require("firebase-functions/v2/https");
+var import_https16 = require("firebase-functions/v2/https");
 var crypto4 = __toESM(require("crypto"));
 
 // src/utils/googleChatUtils.ts
@@ -67185,27 +67596,27 @@ function hashSiteKey(plainKey) {
 function generateSessionToken() {
   return crypto4.randomUUID();
 }
-var validateSiteKey = (0, import_https14.onCall)({
+var validateSiteKey = (0, import_https16.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { locationId, siteKey, personName, personPhone } = request.data;
   if (!locationId || typeof locationId !== "string") {
-    throw new import_https14.HttpsError("invalid-argument", "locationId is required");
+    throw new import_https16.HttpsError("invalid-argument", "locationId is required");
   }
   if (!siteKey || typeof siteKey !== "string") {
-    throw new import_https14.HttpsError("invalid-argument", "Site key is required");
+    throw new import_https16.HttpsError("invalid-argument", "Site key is required");
   }
   if (!personName || typeof personName !== "string" || personName.trim().length === 0) {
-    throw new import_https14.HttpsError("invalid-argument", "Name is required");
+    throw new import_https16.HttpsError("invalid-argument", "Name is required");
   }
   const siteDoc = await db.collection("nfc_sites").doc(locationId).get();
   if (!siteDoc.exists) {
-    throw new import_https14.HttpsError("not-found", "Location not found. Check with your supervisor.");
+    throw new import_https16.HttpsError("not-found", "Location not found. Check with your supervisor.");
   }
   const siteData = siteDoc.data();
   if (siteData.revokedAt) {
-    throw new import_https14.HttpsError("permission-denied", "Access has been revoked. Contact your supervisor for a new site key.");
+    throw new import_https16.HttpsError("permission-denied", "Access has been revoked. Contact your supervisor for a new site key.");
   }
   const hashedInput = hashSiteKey(siteKey.trim());
   let personRole;
@@ -67214,7 +67625,7 @@ var validateSiteKey = (0, import_https14.onCall)({
   } else if (siteData.managerKeyHash && hashedInput === siteData.managerKeyHash) {
     personRole = "night_manager";
   } else {
-    throw new import_https14.HttpsError("permission-denied", "Invalid site key. Please check and try again.");
+    throw new import_https16.HttpsError("permission-denied", "Invalid site key. Please check and try again.");
   }
   const sessionId = generateSessionToken();
   const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1e3);
@@ -67268,25 +67679,25 @@ var validateSiteKey = (0, import_https14.onCall)({
     expiresAt: expiresAt.toISOString()
   };
 });
-var updateZoneScan = (0, import_https14.onCall)({
+var updateZoneScan = (0, import_https16.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { sessionId, zoneId, zoneName, tasksCompleted } = request.data;
   if (!sessionId || typeof sessionId !== "string") {
-    throw new import_https14.HttpsError("invalid-argument", "sessionId is required");
+    throw new import_https16.HttpsError("invalid-argument", "sessionId is required");
   }
   if (!zoneId || typeof zoneId !== "string") {
-    throw new import_https14.HttpsError("invalid-argument", "zoneId is required");
+    throw new import_https16.HttpsError("invalid-argument", "zoneId is required");
   }
   const sessionDoc = await db.collection("nfc_sessions").doc(sessionId).get();
   if (!sessionDoc.exists) {
-    throw new import_https14.HttpsError("not-found", "Session not found. Please tap the Start tag again.");
+    throw new import_https16.HttpsError("not-found", "Session not found. Please tap the Start tag again.");
   }
   const sessionData = sessionDoc.data();
   const expiresAt = sessionData.expiresAt?.toDate?.() || sessionData.expiresAt;
   if (expiresAt && /* @__PURE__ */ new Date() > new Date(expiresAt)) {
-    throw new import_https14.HttpsError("permission-denied", "Session expired. Please tap the Start tag to clock in again.");
+    throw new import_https16.HttpsError("permission-denied", "Session expired. Please tap the Start tag to clock in again.");
   }
   const scanResult = {
     zoneId,
@@ -67361,17 +67772,17 @@ var updateZoneScan = (0, import_https14.onCall)({
     allZonesDone: scannedZones >= totalZones
   };
 });
-var completeNfcSession = (0, import_https14.onCall)({
+var completeNfcSession = (0, import_https16.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [googleChatWebhookSecret]
 }, async (request) => {
   const { sessionId, auditScore, auditNotes } = request.data;
   if (!sessionId) {
-    throw new import_https14.HttpsError("invalid-argument", "sessionId is required");
+    throw new import_https16.HttpsError("invalid-argument", "sessionId is required");
   }
   const sessionDoc = await db.collection("nfc_sessions").doc(sessionId).get();
   if (!sessionDoc.exists) {
-    throw new import_https14.HttpsError("not-found", "Session not found.");
+    throw new import_https16.HttpsError("not-found", "Session not found.");
   }
   await db.collection("nfc_sessions").doc(sessionId).update({
     clockOutAt: /* @__PURE__ */ new Date(),
@@ -67401,16 +67812,16 @@ var completeNfcSession = (0, import_https14.onCall)({
 function getInitials(name) {
   return name.split(/\s+/).map((w) => w.charAt(0).toUpperCase()).join("").slice(0, 2) || "?";
 }
-var getComplianceLog = (0, import_https14.onCall)({
+var getComplianceLog = (0, import_https16.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const { locationId } = request.data;
   if (!locationId || typeof locationId !== "string") {
-    throw new import_https14.HttpsError("invalid-argument", "locationId is required");
+    throw new import_https16.HttpsError("invalid-argument", "locationId is required");
   }
   const siteDoc = await db.collection("nfc_sites").doc(locationId).get();
   if (!siteDoc.exists) {
-    throw new import_https14.HttpsError("not-found", "Location not found.");
+    throw new import_https16.HttpsError("not-found", "Location not found.");
   }
   const siteData = siteDoc.data();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3);
@@ -67459,7 +67870,7 @@ var getComplianceLog = (0, import_https14.onCall)({
 
 // src/functions/monitoring.ts
 var import_scheduler7 = require("firebase-functions/v2/scheduler");
-var import_https15 = require("firebase-functions/v2/https");
+var import_https17 = require("firebase-functions/v2/https");
 init_emailUtils();
 
 // src/utils/morningReportEmail.ts
@@ -67925,12 +68336,12 @@ var generateMorningReports = (0, import_scheduler7.onSchedule)({
     from: REPORT_FROM,
     replyTo: OPS_EMAIL
   }));
-  const BATCH_SIZE2 = 100;
-  for (let i = 0; i < batchPayload.length; i += BATCH_SIZE2) {
-    const chunk = batchPayload.slice(i, i + BATCH_SIZE2);
+  const BATCH_SIZE = 100;
+  for (let i = 0; i < batchPayload.length; i += BATCH_SIZE) {
+    const chunk = batchPayload.slice(i, i + BATCH_SIZE);
     const result = await sendBatchEmails(chunk);
     if (!result.success) {
-      console.error(`\u274C Batch ${i / BATCH_SIZE2 + 1} failed:`, result.error);
+      console.error(`\u274C Batch ${i / BATCH_SIZE + 1} failed:`, result.error);
     }
   }
   const batch = db.batch();
@@ -68036,20 +68447,20 @@ async function buildReportData(wo, dateRef, graceMin) {
     complianceLogUrl: `https://xiri.ai/c/${wo.buildingId}`
   };
 }
-var sendTestMorningReport = (0, import_https15.onCall)({
+var sendTestMorningReport = (0, import_https17.onCall)({
   cors: true
 }, async (request) => {
   const { workOrderId, recipientEmail, scenario } = request.data;
   if (!workOrderId) {
-    throw new import_https15.HttpsError("invalid-argument", "workOrderId is required");
+    throw new import_https17.HttpsError("invalid-argument", "workOrderId is required");
   }
   const woDoc = await db.collection("work_orders").doc(workOrderId).get();
   if (!woDoc.exists) {
-    throw new import_https15.HttpsError("not-found", "Work order not found");
+    throw new import_https17.HttpsError("not-found", "Work order not found");
   }
   const wo = await resolveWorkOrder(woDoc);
   if (!wo) {
-    throw new import_https15.HttpsError("failed-precondition", "Work order is not active");
+    throw new import_https17.HttpsError("failed-precondition", "Work order is not active");
   }
   const config2 = await loadMonitoringConfig();
   const graceMin = wo.graceMinutes || config2.graceMinutes;
@@ -68206,7 +68617,7 @@ var weeklyAIBotDigest = (0, import_scheduler8.onSchedule)({
 
 // src/triggers/clarityAnalysis.ts
 var import_scheduler9 = require("firebase-functions/v2/scheduler");
-var import_https16 = require("firebase-functions/v2/https");
+var import_https18 = require("firebase-functions/v2/https");
 var import_params6 = require("firebase-functions/params");
 var import_v27 = require("firebase-functions/v2");
 
@@ -68722,7 +69133,7 @@ var dailyClarityReport = (0, import_scheduler9.onSchedule)({
     throw err2;
   }
 });
-var triggerClarityReport = (0, import_https16.onCall)({
+var triggerClarityReport = (0, import_https18.onCall)({
   cors: true,
   secrets: [CLARITY_API_TOKEN, CLARITY_CHAT_WEBHOOK, GEMINI_API_KEY4],
   timeoutSeconds: 120,
@@ -68781,7 +69192,7 @@ var triggerClarityReport = (0, import_https16.onCall)({
     };
   } catch (err2) {
     import_v27.logger.error("\u274C Manual Clarity report failed:", err2);
-    throw new import_https16.HttpsError("internal", err2.message || "Clarity report failed");
+    throw new import_https18.HttpsError("internal", err2.message || "Clarity report failed");
   }
 });
 async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
@@ -68815,7 +69226,7 @@ async function postEnhancedReport(metrics, aiAnalysis, webhookUrl) {
 }
 
 // src/functions/tidycal-api.ts
-var import_https17 = require("firebase-functions/v2/https");
+var import_https19 = require("firebase-functions/v2/https");
 var import_params7 = require("firebase-functions/params");
 var import_firestore20 = require("firebase-admin/firestore");
 
@@ -68901,7 +69312,7 @@ async function listBookings(options) {
 
 // src/functions/tidycal-api.ts
 var TIDYCAL_API_KEY = (0, import_params7.defineSecret)("TIDYCAL_API_KEY");
-var getOnboardingTimeslots = (0, import_https17.onRequest)({
+var getOnboardingTimeslots = (0, import_https19.onRequest)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (req, res) => {
@@ -68919,12 +69330,12 @@ var getOnboardingTimeslots = (0, import_https17.onRequest)({
       timezone || "America/New_York"
     );
     res.json({ slots });
-  } catch (error16) {
-    console.error("getOnboardingTimeslots error:", error16);
-    res.status(500).json({ error: error16.message || "Failed to fetch timeslots" });
+  } catch (error18) {
+    console.error("getOnboardingTimeslots error:", error18);
+    res.status(500).json({ error: error18.message || "Failed to fetch timeslots" });
   }
 });
-var bookOnboardingCall = (0, import_https17.onRequest)({
+var bookOnboardingCall = (0, import_https19.onRequest)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (req, res) => {
@@ -68984,19 +69395,19 @@ var bookOnboardingCall = (0, import_https17.onRequest)({
         reschedule_url: booking.reschedule_url
       }
     });
-  } catch (error16) {
-    console.error("bookOnboardingCall error:", error16);
-    res.status(500).json({ error: error16.message || "Failed to book call" });
+  } catch (error18) {
+    console.error("bookOnboardingCall error:", error18);
+    res.status(500).json({ error: error18.message || "Failed to book call" });
   }
 });
-var getDashboardTimeslots = (0, import_https17.onCall)({
+var getDashboardTimeslots = (0, import_https19.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https17.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https19.HttpsError("unauthenticated", "Must be logged in");
   const { startDate, endDate, timezone, bookingTypeId } = request.data;
   if (!startDate || !endDate) {
-    throw new import_https17.HttpsError("invalid-argument", "startDate and endDate are required");
+    throw new import_https19.HttpsError("invalid-argument", "startDate and endDate are required");
   }
   const typeId = bookingTypeId || TIDYCAL_BOOKING_TYPES.DISCOVERY_CALL;
   const slots = await getTimeslots(
@@ -69007,19 +69418,19 @@ var getDashboardTimeslots = (0, import_https17.onCall)({
   );
   return { slots };
 });
-var bookDiscoveryCall = (0, import_https17.onCall)({
+var bookDiscoveryCall = (0, import_https19.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https17.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https19.HttpsError("unauthenticated", "Must be logged in");
   const { leadId, name, email, starts_at, timezone, bookingTypeId } = request.data;
   if (!leadId || !name || !email || !starts_at) {
-    throw new import_https17.HttpsError("invalid-argument", "leadId, name, email, starts_at are required");
+    throw new import_https19.HttpsError("invalid-argument", "leadId, name, email, starts_at are required");
   }
   const leadRef = db.collection("leads").doc(leadId);
   const leadDoc = await leadRef.get();
   if (!leadDoc.exists) {
-    throw new import_https17.HttpsError("not-found", "Lead not found");
+    throw new import_https19.HttpsError("not-found", "Lead not found");
   }
   const typeId = bookingTypeId || TIDYCAL_BOOKING_TYPES.DISCOVERY_CALL;
   const booking = await createBooking(typeId, {
@@ -69060,11 +69471,11 @@ var bookDiscoveryCall = (0, import_https17.onCall)({
     }
   };
 });
-var getTidyCalBookings = (0, import_https17.onCall)({
+var getTidyCalBookings = (0, import_https19.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [TIDYCAL_API_KEY]
 }, async (request) => {
-  if (!request.auth) throw new import_https17.HttpsError("unauthenticated", "Must be logged in");
+  if (!request.auth) throw new import_https19.HttpsError("unauthenticated", "Must be logged in");
   const { bookingTypeId, page } = request.data || {};
   const result = await listBookings({
     bookingTypeId,
@@ -69074,7 +69485,7 @@ var getTidyCalBookings = (0, import_https17.onCall)({
 });
 
 // src/functions/prospecting.ts
-var import_https18 = require("firebase-functions/v2/https");
+var import_https20 = require("firebase-functions/v2/https");
 
 // src/utils/emailPatternGuesser.ts
 var import_dns = require("dns");
@@ -69095,11 +69506,11 @@ async function checkMxRecords(domain) {
       provider = "zoho";
     }
     return { valid: true, provider, records: exchanges };
-  } catch (error16) {
-    if (error16.code === "ENODATA" || error16.code === "ENOTFOUND" || error16.code === "ESERVFAIL") {
+  } catch (error18) {
+    if (error18.code === "ENODATA" || error18.code === "ENOTFOUND" || error18.code === "ESERVFAIL") {
       return { valid: false };
     }
-    console.warn(`[PatternGuesser] MX lookup error for ${domain}: ${error16.message}`);
+    console.warn(`[PatternGuesser] MX lookup error for ${domain}: ${error18.message}`);
     return { valid: true, provider: "other" };
   }
 }
@@ -69249,15 +69660,16 @@ var HunterProvider = class {
         creditsUsed: hunterEmails.length,
         creditsRemaining: meta.available !== void 0 ? meta.available - meta.used : void 0
       };
-    } catch (error16) {
-      console.error(`[Hunter] Error searching ${domain}:`, error16.message);
-      return { emails: [], creditsUsed: 0, error: error16.message };
+    } catch (error18) {
+      console.error(`[Hunter] Error searching ${domain}:`, error18.message);
+      return { emails: [], creditsUsed: 0, error: error18.message };
     }
   }
 };
 async function runEnrichmentWaterfall(domain, secrets, context) {
   const log = [];
   const allEmails = [];
+  const preferredTitles = (context?.preferredTitles || []).map((t) => t.toLowerCase());
   try {
     log.push(`[PatternGuesser] Trying pattern guesses for ${domain}...`);
     const guessResult = await guessEmails(
@@ -69310,8 +69722,8 @@ async function runEnrichmentWaterfall(domain, secrets, context) {
         }
       }
     }
-  } catch (error16) {
-    log.push(`[PatternGuesser] Error: ${error16.message}`);
+  } catch (error18) {
+    log.push(`[PatternGuesser] Error: ${error18.message}`);
   }
   const providers2 = [];
   if (secrets.hunterApiKey) {
@@ -69332,8 +69744,11 @@ async function runEnrichmentWaterfall(domain, secrets, context) {
       log.push(`${provider.name}: no emails found`);
       continue;
     }
-    allEmails.push(...result.emails);
-    const personalEmail = result.emails.find((e2) => e2.type === "personal");
+    const rankedEmails = [...result.emails].sort((a2, b) => {
+      return scoreEnrichedEmail(b, preferredTitles) - scoreEnrichedEmail(a2, preferredTitles);
+    });
+    allEmails.push(...rankedEmails);
+    const personalEmail = rankedEmails.find((e2) => e2.type === "personal");
     if (personalEmail) {
       log.push(`${provider.name}: found personal email \u2014 ${personalEmail.email} (${personalEmail.position || "unknown role"})`);
       return {
@@ -69379,8 +69794,134 @@ async function runEnrichmentWaterfall(domain, secrets, context) {
   log.push("All enrichment providers exhausted \u2014 no emails found");
   return { type: "none", provider: "none", allEmails: [], log };
 }
+function scoreEnrichedEmail(email, preferredTitles) {
+  let score = email.type === "personal" ? 100 : 10;
+  score += email.confidence || 0;
+  const position2 = email.position?.toLowerCase() || "";
+  if (position2 && preferredTitles.length > 0) {
+    const matchIndex = preferredTitles.findIndex((title) => position2.includes(title));
+    if (matchIndex >= 0) {
+      score += 120 - matchIndex * 10;
+    }
+  }
+  if (position2.includes("owner") || position2.includes("founder")) score += 25;
+  if (position2.includes("manager")) score += 20;
+  if (position2.includes("director")) score += 15;
+  if (position2.includes("assistant")) score -= 20;
+  if (position2.includes("intern")) score -= 40;
+  return score;
+}
+
+// src/utils/facilityClassifier.ts
+var import_generative_ai8 = require("@google/generative-ai");
+init_src();
+var USER_AGENT2 = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+var FACILITY_KEYWORDS = [
+  { facilityType: "medical_dental", keywords: ["dentist", "dental", "orthodont", "endodont", "oral surgery", "periodont"] },
+  { facilityType: "medical_urgent_care", keywords: ["urgent care", "walk-in clinic", "walk in clinic"] },
+  { facilityType: "medical_surgery", keywords: ["surgery center", "surgical center", "outpatient surgery", "ambulatory surgery"] },
+  { facilityType: "medical_dialysis", keywords: ["dialysis"] },
+  { facilityType: "medical_veterinary", keywords: ["veterinary", "animal hospital", "vet clinic", "pet hospital"] },
+  { facilityType: "medical_physical_therapy", keywords: ["physical therapy", "physiotherapy", "rehabilitation", "rehab", "pt clinic"] },
+  { facilityType: "medical_private", keywords: ["medical office", "physician", "doctor", "family medicine", "internal medicine", "dermatology", "pediatrics", "optometry", "eye care", "allergy"] },
+  { facilityType: "edu_daycare", keywords: ["daycare", "childcare", "preschool", "nursery school"] },
+  { facilityType: "edu_tutoring", keywords: ["tutoring", "learning center", "test prep", "kumon", "mathnasium", "sylvan"] },
+  { facilityType: "edu_private_school", keywords: ["private school", "academy", "head of school", "montessori", "prep school"] },
+  { facilityType: "auto_dealer_showroom", keywords: ["dealership", "dealer", "new inventory", "used inventory", "schedule test drive"] },
+  { facilityType: "auto_service_center", keywords: ["auto repair", "collision", "mechanic", "oil change", "brake service", "tire service"] },
+  { facilityType: "lab_cleanroom", keywords: ["cleanroom", "laboratory", "analytical lab", "testing lab"] },
+  { facilityType: "lab_bsl", keywords: ["biosafety", "bsl-2", "bsl2", "bsl-3", "bsl3"] },
+  { facilityType: "manufacturing_light", keywords: ["warehouse", "manufacturing", "distribution center", "plant"] },
+  { facilityType: "fitness_gym", keywords: ["fitness center", "gym", "crossfit", "pilates", "yoga studio", "personal training"] },
+  { facilityType: "retail_storefront", keywords: ["shop now", "our store", "boutique", "retail", "showroom"] },
+  { facilityType: "religious_center", keywords: ["church", "synagogue", "mosque", "temple", "worship"] },
+  { facilityType: "funeral_home", keywords: ["funeral home", "memorial chapel", "cremation", "mortuary"] },
+  { facilityType: "office_general", keywords: ["law office", "accounting firm", "insurance agency", "professional office", "office suite"] }
+];
+function stripHtml(html) {
+  return html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<noscript[\s\S]*?<\/noscript>/gi, " ").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+function scoreHeuristic(text) {
+  const haystack = text.toLowerCase();
+  return FACILITY_KEYWORDS.map(({ facilityType, keywords }) => {
+    let score = 0;
+    for (const keyword of keywords) {
+      if (haystack.includes(keyword)) score += keyword.includes(" ") ? 3 : 2;
+    }
+    return { facilityType, score };
+  }).sort((a2, b) => b.score - a2.score);
+}
+function shouldEscalateToLlm(scores, heuristic) {
+  const top = scores[0];
+  const second = scores[1];
+  if (!top || top.score === 0) return true;
+  if (top.score >= 6 && (!second || top.score - second.score >= 3)) return false;
+  if (heuristic && top.facilityType === heuristic && top.score >= 4) return false;
+  return true;
+}
+async function classifyWithGemini(text, businessName, searchQuery, geminiApiKey) {
+  const genAI4 = new import_generative_ai8.GoogleGenerativeAI(geminiApiKey);
+  const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const prompt = `Classify this business into one canonical facility type for commercial cleaning outreach.
+
+Allowed facility types only:
+medical_dental, medical_private, medical_urgent_care, medical_surgery, medical_dialysis, medical_veterinary, medical_physical_therapy, edu_daycare, edu_tutoring, edu_private_school, auto_dealer_showroom, auto_service_center, lab_cleanroom, lab_bsl, manufacturing_light, fitness_gym, retail_storefront, religious_center, funeral_home, office_general, other
+
+Rules:
+- Use website evidence first.
+- Use search query only as a weak tiebreaker.
+- If still ambiguous, choose office_general or other.
+- Return JSON only: {"facilityType":"one_allowed_value","reason":"short explanation"}
+
+Business: ${businessName}
+Search query: ${searchQuery}
+Website text:
+${text.slice(0, 12e3)}`;
+  const result = await model2.generateContent(prompt);
+  const raw = result.response.text();
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return void 0;
+  const parsed = JSON.parse(jsonMatch[0]);
+  const candidate = parsed.facilityType;
+  return candidate;
+}
+async function classifyFacilityType(url, businessName, searchQuery, geminiApiKey, log) {
+  const heuristic = inferFacilityType(searchQuery);
+  if (!url) return heuristic || void 0;
+  try {
+    const response = await fetch(url, {
+      headers: { "User-Agent": USER_AGENT2 },
+      signal: AbortSignal.timeout(1e4)
+    });
+    if (!response.ok) {
+      log?.push(`Facility classifier: website fetch failed (${response.status}) \u2014 using heuristic`);
+      return heuristic || void 0;
+    }
+    const html = await response.text();
+    const text = stripHtml(html);
+    if (!text) return heuristic || void 0;
+    const scores = scoreHeuristic(text);
+    const top = scores[0];
+    const second = scores[1];
+    if (!shouldEscalateToLlm(scores, heuristic)) {
+      log?.push(`Facility classifier: heuristic match ${top.facilityType} (score ${top.score}${second ? ` vs ${second.score}` : ""})`);
+      return top.facilityType;
+    }
+    log?.push(`Facility classifier: ambiguous heuristic${top ? ` (${top.facilityType}:${top.score})` : ""} \u2014 escalating to Gemini`);
+    const llmType = await classifyWithGemini(text, businessName, searchQuery, geminiApiKey);
+    if (llmType) {
+      log?.push(`Facility classifier: Gemini chose ${llmType}`);
+      return llmType;
+    }
+    return top?.facilityType || heuristic || void 0;
+  } catch (error18) {
+    log?.push(`Facility classifier failed: ${error18.message}`);
+    return heuristic || void 0;
+  }
+}
 
 // src/agents/prospector.ts
+init_src();
 var GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support|billing|accounting|bookkeeping|inquiries|front|manager)@/i;
 var JUNK_EMAIL_DOMAINS = /* @__PURE__ */ new Set([
   "example.com",
@@ -69487,6 +70028,33 @@ function validateEmailForBusiness(email, businessWebsite) {
   }
   return "free_provider";
 }
+function getDecisionMakerTitles(facilityType, fallbackQuery) {
+  const resolved = facilityType || inferFacilityType(fallbackQuery) || "other";
+  return FACILITY_DECISION_MAKERS[resolved] || FACILITY_DECISION_MAKERS.other;
+}
+var FACILITY_DECISION_MAKERS = {
+  medical_dental: ["practice manager", "office manager", "practice administrator", "owner", "dentist"],
+  medical_private: ["practice manager", "office manager", "practice administrator", "administrator", "owner"],
+  medical_urgent_care: ["clinic manager", "operations manager", "facility administrator", "administrator"],
+  medical_surgery: ["facility administrator", "practice administrator", "director of operations", "administrator"],
+  medical_dialysis: ["facility administrator", "clinic manager", "operations manager", "administrator"],
+  medical_veterinary: ["practice manager", "hospital manager", "office manager", "owner"],
+  medical_physical_therapy: ["center director", "practice manager", "office manager", "owner"],
+  edu_daycare: ["director", "center director", "owner", "administrator"],
+  edu_tutoring: ["center director", "center manager", "director", "owner"],
+  edu_private_school: ["head of school", "principal", "director of operations", "administrator"],
+  auto_dealer_showroom: ["general manager", "dealer principal", "operations manager", "owner"],
+  auto_service_center: ["shop owner", "owner", "service manager", "general manager", "operations manager"],
+  lab_cleanroom: ["facilities manager", "operations manager", "facility manager"],
+  lab_bsl: ["facilities manager", "operations manager", "facility manager"],
+  manufacturing_light: ["facilities manager", "operations manager", "plant manager", "facility manager"],
+  fitness_gym: ["general manager", "owner", "studio manager", "operations manager"],
+  retail_storefront: ["store manager", "owner", "general manager", "operations manager"],
+  religious_center: ["executive director", "administrator", "office administrator"],
+  funeral_home: ["funeral director", "owner", "manager"],
+  office_general: ["office manager", "facilities manager", "operations manager", "property manager"],
+  other: ["office manager", "operations manager", "owner", "administrator"]
+};
 async function prospectAndEnrich(input, secrets) {
   const maxResults = input.maxResults || 20;
   console.log(`[Prospector] Discovering: "${input.query}" in "${input.location}"...`);
@@ -69566,6 +70134,7 @@ async function prospectAndEnrich(input, secrets) {
 }
 async function enrichSingleBusiness(vendor, secrets, input) {
   const log = [];
+  let targetTitles = inferPreferredDecisionMakerTitles(input.query);
   const prospect = {
     businessName: vendor.name,
     address: vendor.location,
@@ -69588,6 +70157,8 @@ async function enrichSingleBusiness(vendor, secrets, input) {
   }
   log.push(`Layer 1: Scraping ${vendor.website}...`);
   try {
+    prospect.facilityType = await classifyFacilityType(vendor.website, vendor.name, input.query, secrets.geminiApiKey, log);
+    targetTitles = getDecisionMakerTitles(prospect.facilityType, input.query);
     const scrapeResult = await scrapeWebsite(vendor.website, secrets.geminiApiKey);
     if (scrapeResult.success && scrapeResult.data) {
       const data = scrapeResult.data;
@@ -69608,14 +70179,12 @@ async function enrichSingleBusiness(vendor, secrets, input) {
         if (emailValid === "junk") {
           log.push(`\u26A0\uFE0F Rejected junk email: ${bestEmail} (domain is blocklisted)`);
         } else if (emailValid === "mismatch") {
-          log.push(`\u26A0\uFE0F Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} \u2014 demoting to low confidence`);
-          prospect.contactEmail = bestEmail;
-          prospect.emailSource = data.ownerEmail ? "ai_extraction" : "mailto";
-          prospect.emailConfidence = "low";
+          log.push(`\u26A0\uFE0F Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} \u2014 skipping`);
+          log.push(`Skipping off-domain email from website scrape: ${bestEmail}`);
         } else {
           prospect.contactEmail = bestEmail;
           prospect.emailSource = data.ownerEmail ? "ai_extraction" : "mailto";
-          prospect.emailConfidence = "high";
+          prospect.emailConfidence = emailValid === "domain_match" ? "high" : "medium";
           log.push(`Found personal email: ${bestEmail} (source: ${prospect.emailSource}, validation: ${emailValid})`);
           if (data.allEmails) {
             const generic = data.allEmails.find((e2) => e2.type === "generic");
@@ -69660,11 +70229,29 @@ async function enrichSingleBusiness(vendor, secrets, input) {
     } else {
       log.push(`Scraping failed: ${scrapeResult.error || "unknown error"}`);
     }
-  } catch (error16) {
-    log.push(`Layer 1 error: ${error16.message}`);
+  } catch (error18) {
+    log.push(`Layer 1 error: ${error18.message}`);
   }
   await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log);
   if (prospect.contactEmail) return prospect;
+  if (!prospect.contactName && secrets.serperApiKey) {
+    try {
+      const linkedinName = await searchLinkedInForDecisionMaker(
+        vendor.name,
+        input.location,
+        secrets.serperApiKey,
+        log,
+        targetTitles
+      );
+      if (linkedinName) {
+        prospect.contactName = linkedinName.name;
+        prospect.contactTitle = prospect.contactTitle || linkedinName.title;
+        log.push(`LinkedIn discovery: Found ${linkedinName.name} (${linkedinName.title})`);
+      }
+    } catch (error18) {
+      log.push(`LinkedIn discovery error: ${error18.message}`);
+    }
+  }
   if (!input.skipPaidApis) {
     const domain = extractDomain(vendor.website);
     if (domain) {
@@ -69674,12 +70261,13 @@ async function enrichSingleBusiness(vendor, secrets, input) {
         { hunterApiKey: secrets.hunterApiKey },
         {
           contactName: prospect.contactName,
-          knownGenericEmail: prospect.genericEmail
+          knownGenericEmail: prospect.genericEmail,
+          preferredTitles: targetTitles
         }
       );
       log.push(...waterfallResult.log);
       if (waterfallResult.allEmails.length > 0) {
-        const apiContacts = waterfallResult.allEmails.map((e2) => ({
+        const apiContacts = waterfallResult.allEmails.filter((e2) => validateEmailForBusiness(e2.email, vendor.website) === "domain_match").map((e2) => ({
           email: e2.email,
           firstName: e2.firstName,
           lastName: e2.lastName,
@@ -69692,7 +70280,10 @@ async function enrichSingleBusiness(vendor, secrets, input) {
         log.push(`Stored ${apiContacts.length} total contacts from enrichment waterfall`);
       }
       if (waterfallResult.email) {
-        if (waterfallResult.type === "personal") {
+        const waterfallEmailValid = validateEmailForBusiness(waterfallResult.email, vendor.website);
+        if (waterfallEmailValid !== "domain_match") {
+          log.push(`Skipping non-company email from waterfall: ${waterfallResult.email} (validation: ${waterfallEmailValid})`);
+        } else if (waterfallResult.type === "personal") {
           prospect.contactEmail = waterfallResult.email;
           prospect.contactName = prospect.contactName || (waterfallResult.firstName && waterfallResult.lastName ? `${waterfallResult.firstName} ${waterfallResult.lastName}` : void 0);
           prospect.contactTitle = prospect.contactTitle || waterfallResult.position;
@@ -69705,15 +70296,28 @@ async function enrichSingleBusiness(vendor, secrets, input) {
       }
     }
   }
-  if (!prospect.contactEmail && prospect.genericEmail) {
-    prospect.contactEmail = prospect.genericEmail;
-    prospect.emailSource = "none";
-    prospect.emailConfidence = "low";
-    log.push(`No personal email found \u2014 using generic: ${prospect.genericEmail}`);
-  } else if (!prospect.contactEmail) {
-    log.push("No email found across all layers.");
+  if (!prospect.contactEmail) {
+    const bestPatternGuess = prospect.allContacts?.find(
+      (c) => c.type === "personal" && c.provider === "pattern_guess" && (c.confidence || 0) >= 60
+    );
+    if (bestPatternGuess && prospect.contactName && prospect.genericEmail) {
+      prospect.contactEmail = bestPatternGuess.email;
+      prospect.emailSource = "pattern_guess";
+      prospect.emailConfidence = "medium";
+      log.push(`Using pattern-guessed personal email: ${bestPatternGuess.email} (confidence: ${bestPatternGuess.confidence}, fallback: ${prospect.genericEmail})`);
+    } else if (prospect.genericEmail) {
+      prospect.contactEmail = prospect.genericEmail;
+      prospect.emailSource = "none";
+      prospect.emailConfidence = "low";
+      log.push(`No personal email found \u2014 using generic: ${prospect.genericEmail}`);
+    } else {
+      log.push("No email found across all layers.");
+    }
   }
   return prospect;
+}
+function inferPreferredDecisionMakerTitles(searchQuery) {
+  return getDecisionMakerTitles(void 0, searchQuery);
 }
 async function trySerperSearch(prospect, vendor, serperApiKey, location, log) {
   log.push("Layer 2: Searching web (Facebook, directories, person search)...");
@@ -69735,6 +70339,8 @@ async function trySerperSearch(prospect, vendor, serperApiKey, location, log) {
       const webEmailValid = validateEmailForBusiness(searchResult.email, vendor.website);
       if (webEmailValid === "junk") {
         log.push(`\u26A0\uFE0F Rejected junk email from web search: ${searchResult.email}`);
+      } else if (webEmailValid === "free_provider" && !!vendor.website) {
+        log.push(`\u26A0\uFE0F Rejected off-domain web email: ${searchResult.email} (published off-site and not tied to ${vendor.website})`);
       } else if (webEmailValid === "mismatch") {
         log.push(`\u26A0\uFE0F Web search email mismatch: ${searchResult.email} doesn't match ${vendor.website} \u2014 skipping`);
       } else {
@@ -69755,8 +70361,8 @@ async function trySerperSearch(prospect, vendor, serperApiKey, location, log) {
     if (!prospect.phone && searchResult.phone) {
       prospect.phone = searchResult.phone;
     }
-  } catch (error16) {
-    log.push(`Layer 2 error: ${error16.message}`);
+  } catch (error18) {
+    log.push(`Layer 2 error: ${error18.message}`);
   }
 }
 function extractDomain(url) {
@@ -69767,10 +70373,72 @@ function extractDomain(url) {
     return void 0;
   }
 }
+async function searchLinkedInForDecisionMaker(businessName, location, serperApiKey, log, preferredTitles) {
+  const DECISION_MAKER_TITLES = [
+    ...preferredTitles,
+    "owner",
+    "CEO",
+    "president",
+    "founder",
+    "managing director",
+    "office manager",
+    "facilities manager",
+    "operations manager",
+    "general manager",
+    "administrator",
+    "practice manager",
+    "director of operations",
+    "principal"
+  ];
+  const dedupedTitles = [...new Set(DECISION_MAKER_TITLES)];
+  const titleQuery = dedupedTitles.slice(0, 8).map((t) => `"${t}"`).join(" OR ");
+  const query = `site:linkedin.com/in "${businessName}" "${location}" (${titleQuery})`;
+  log.push(`Layer 2.5: LinkedIn search for decision-maker at "${businessName}"...`);
+  try {
+    const response = await fetch("https://google.serper.dev/search", {
+      method: "POST",
+      headers: {
+        "X-API-KEY": serperApiKey.trim(),
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ q: query, num: 3 }),
+      signal: AbortSignal.timeout(8e3)
+    });
+    if (!response.ok) {
+      log.push(`LinkedIn search failed: HTTP ${response.status}`);
+      return null;
+    }
+    const data = await response.json();
+    const organic = data.organic || [];
+    for (const result of organic) {
+      const link = result.link || "";
+      const title = result.title || "";
+      if (!link.includes("linkedin.com/in/")) continue;
+      const parts = title.split(/\s[-–|]\s/);
+      if (parts.length >= 2) {
+        const candidateName = parts[0].trim();
+        const candidateTitle = parts[1].trim();
+        const nameWords = candidateName.split(/\s+/);
+        if (nameWords.length >= 2 && nameWords.length <= 4 && candidateName.length < 40) {
+          const titleLower = candidateTitle.toLowerCase();
+          const isDecisionMaker = dedupedTitles.some((t) => titleLower.includes(t));
+          if (isDecisionMaker) {
+            return { name: candidateName, title: candidateTitle };
+          }
+        }
+      }
+    }
+    log.push("LinkedIn search: No matching decision-maker found");
+    return null;
+  } catch (error18) {
+    log.push(`LinkedIn search error: ${error18.message}`);
+    return null;
+  }
+}
 
 // src/functions/prospecting.ts
 init_src();
-var runProspector = (0, import_https18.onCall)({
+var runProspector = (0, import_https20.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
@@ -69783,7 +70451,7 @@ var runProspector = (0, import_https18.onCall)({
   const maxResults = data.maxResults || 20;
   const skipPaidApis = data.skipPaidApis || false;
   if (!query || !location) {
-    throw new import_https18.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
+    throw new import_https20.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
   }
   try {
     console.log(`[runProspector] query="${query}", location="${location}", max=${maxResults}, skipPaid=${skipPaidApis}`);
@@ -69800,18 +70468,18 @@ var runProspector = (0, import_https18.onCall)({
       prospects: result.prospects,
       stats: result.stats
     };
-  } catch (error16) {
-    console.error("[runProspector] Error:", error16);
-    throw new import_https18.HttpsError("internal", error16.message || "Pipeline failed.");
+  } catch (error18) {
+    console.error("[runProspector] Error:", error18);
+    throw new import_https20.HttpsError("internal", error18.message || "Pipeline failed.");
   }
 });
-var addProspectsToCrm = (0, import_https18.onCall)({
+var addProspectsToCrm = (0, import_https20.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 60
 }, async (request) => {
   const { prospects, searchQuery: batchSearchQuery } = request.data;
   if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
-    throw new import_https18.HttpsError("invalid-argument", "No prospects provided.");
+    throw new import_https20.HttpsError("invalid-argument", "No prospects provided.");
   }
   try {
     const results = [];
@@ -69900,12 +70568,12 @@ var addProspectsToCrm = (0, import_https18.onCall)({
       totalContacts,
       results
     };
-  } catch (error16) {
-    console.error("[addProspectsToCrm] Error:", error16);
-    throw new import_https18.HttpsError("internal", error16.message || "CRM import failed.");
+  } catch (error18) {
+    console.error("[addProspectsToCrm] Error:", error18);
+    throw new import_https20.HttpsError("internal", error18.message || "CRM import failed.");
   }
 });
-var expandLocation = (0, import_https18.onCall)({
+var expandLocation = (0, import_https20.onCall)({
   secrets: ["GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30
@@ -69913,7 +70581,7 @@ var expandLocation = (0, import_https18.onCall)({
   const data = request.data || {};
   const location = data.location;
   if (!location) {
-    throw new import_https18.HttpsError("invalid-argument", "Missing 'location'.");
+    throw new import_https20.HttpsError("invalid-argument", "Missing 'location'.");
   }
   try {
     console.log(`[expandLocation] Bursting location: "${location}"...`);
@@ -69933,16 +70601,16 @@ var expandLocation = (0, import_https18.onCall)({
     textResponse = textResponse.replace(/^```json/g, "").replace(/^```/g, "").replace(/```$/g, "").trim();
     const towns = JSON.parse(textResponse);
     return { towns };
-  } catch (error16) {
-    console.error("[expandLocation] Error:", error16);
-    throw new import_https18.HttpsError("internal", error16.message || "Failed to expand location.");
+  } catch (error18) {
+    console.error("[expandLocation] Error:", error18);
+    throw new import_https20.HttpsError("internal", error18.message || "Failed to expand location.");
   }
 });
 
 // src/triggers/dailyProspector.ts
 var import_scheduler10 = require("firebase-functions/v2/scheduler");
-var import_https19 = require("firebase-functions/v2/https");
-var logger31 = __toESM(require("firebase-functions/logger"));
+var import_https21 = require("firebase-functions/v2/https");
+var logger32 = __toESM(require("firebase-functions/logger"));
 var crypto5 = __toESM(require("crypto"));
 
 // src/utils/prospectingTargets.ts
@@ -70241,7 +70909,7 @@ function getConfigSummary(config2) {
 }
 
 // src/triggers/dailyProspector.ts
-function normalizeName(name) {
+function normalizeName2(name) {
   return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
 }
 function prospectDocId(prospect) {
@@ -70257,7 +70925,7 @@ function prospectDocId(prospect) {
     parts.push(domain);
   }
   if (parts.length === 0) {
-    parts.push(normalizeName(prospect.businessName));
+    parts.push(normalizeName2(prospect.businessName));
   }
   const composite = parts.join("|");
   return crypto5.createHash("sha256").update(composite).digest("hex").slice(0, 20);
@@ -70381,6 +71049,48 @@ var FACILITY_PIC_MAP = {
 function inferPicTitle(queryTerm) {
   return FACILITY_PIC_MAP[queryTerm] ?? null;
 }
+function inferPicTitleFromFacilityType(facilityType) {
+  switch (facilityType) {
+    case "medical_dental":
+    case "medical_private":
+      return { title: "Practice Manager", dept: "Administration" };
+    case "medical_urgent_care":
+      return { title: "Clinic Manager", dept: "Operations" };
+    case "medical_surgery":
+    case "medical_dialysis":
+      return { title: "Facility Administrator", dept: "Facilities" };
+    case "medical_veterinary":
+      return { title: "Practice Manager", dept: "Operations" };
+    case "medical_physical_therapy":
+      return { title: "Center Director", dept: "Operations" };
+    case "edu_daycare":
+      return { title: "Director", dept: "Administration" };
+    case "edu_tutoring":
+      return { title: "Center Director", dept: "Operations" };
+    case "edu_private_school":
+      return { title: "Principal", dept: "Administration" };
+    case "auto_dealer_showroom":
+      return { title: "General Manager", dept: "Management" };
+    case "auto_service_center":
+      return { title: "Shop Owner", dept: "Management" };
+    case "lab_cleanroom":
+    case "lab_bsl":
+    case "manufacturing_light":
+      return { title: "Facilities Manager", dept: "Facilities" };
+    case "fitness_gym":
+      return { title: "General Manager", dept: "Operations" };
+    case "retail_storefront":
+      return { title: "Store Manager", dept: "Operations" };
+    case "religious_center":
+      return { title: "Executive Director", dept: "Administration" };
+    case "funeral_home":
+      return { title: "Funeral Director", dept: "Management" };
+    case "office_general":
+      return { title: "Office Manager", dept: "Administration" };
+    default:
+      return null;
+  }
+}
 async function loadSeenSet() {
   const seen = /* @__PURE__ */ new Set();
   const queueSnap = await db.collection("prospect_queue").select("normalizedName", "phone", "contactEmail", "genericEmail", "website", "address").get();
@@ -70405,7 +71115,7 @@ async function loadSeenSet() {
   const companiesSnap = await db.collection("companies").select("name", "phone", "website", "address").get();
   for (const doc of companiesSnap.docs) {
     const d = doc.data();
-    if (d.name) seen.add(normalizeName(d.name));
+    if (d.name) seen.add(normalizeName2(d.name));
     if (d.phone) {
       const cleaned = d.phone.replace(/[^0-9]/g, "");
       if (cleaned.length >= 7) seen.add(`phone:${cleaned}`);
@@ -70424,14 +71134,14 @@ async function loadSeenSet() {
     const d = doc.data();
     if (d.email) seen.add(`email:${d.email.toLowerCase()}`);
   }
-  logger31.info(`[DailyProspector] Seen set loaded: ${seen.size} entries (queue + companies + contacts)`);
+  logger32.info(`[DailyProspector] Seen set loaded: ${seen.size} entries (queue + companies + contacts)`);
   return seen;
 }
 async function runDailyPipeline() {
   const configDoc = await db.collection("prospecting_config").doc("default").get();
   const config2 = configDoc.exists ? { ...DEFAULT_CONFIG, ...configDoc.data() } : DEFAULT_CONFIG;
   if (!config2.enabled) {
-    logger31.info("[DailyProspector] Disabled via config. Skipping.");
+    logger32.info("[DailyProspector] Disabled via config. Skipping.");
     return;
   }
   const secrets = {
@@ -70477,12 +71187,12 @@ async function runDailyPipeline() {
       }
     }
     const shuffled = shuffle(combos);
-    logger31.info(`[DailyProspector] ${shuffled.length} combos shuffled. Target: ${config2.dailyTarget}`);
+    logger32.info(`[DailyProspector] ${shuffled.length} combos shuffled. Target: ${config2.dailyTarget}`);
     for (const { query: queryTerm, location } of shuffled) {
       if (newProspects.length >= config2.dailyTarget) break;
       const remaining = config2.dailyTarget - newProspects.length;
       const batchSize = Math.min(remaining + 10, 20);
-      logger31.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
+      logger32.info(`[DailyProspector] Searching: "${queryTerm}" in "${location}" (need ${remaining} more)`);
       await updateProgress(`${queryTerm} in ${location}`);
       try {
         const result = await prospectAndEnrich(
@@ -70498,7 +71208,7 @@ async function runDailyPipeline() {
         const batch = db.batch();
         for (const prospect of result.prospects) {
           if (newProspects.length >= config2.dailyTarget) break;
-          const normalized = normalizeName(prospect.businessName);
+          const normalized = normalizeName2(prospect.businessName);
           const emailLower = prospect.contactEmail?.toLowerCase();
           const genericLower = prospect.genericEmail?.toLowerCase();
           const phoneCleaned = prospect.phone?.replace(/[^0-9]/g, "");
@@ -70506,7 +71216,7 @@ async function runDailyPipeline() {
           const websiteDomain = prospect.website ? prospect.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase() : void 0;
           const matchedKey = seen.has(normalized) ? `name:${normalized}` : phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`) ? `phone:${phoneCleaned}` : emailLower && seen.has(`email:${emailLower}`) ? `email:${emailLower}` : genericLower && seen.has(`email:${genericLower}`) ? `email:${genericLower}` : websiteDomain && seen.has(`domain:${websiteDomain}`) ? `domain:${websiteDomain}` : addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`) ? `addr:${addressNorm}` : null;
           if (matchedKey) {
-            logger31.info(`[DailyProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
+            logger32.info(`[DailyProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
             duplicatesSkipped++;
             continue;
           }
@@ -70527,21 +71237,23 @@ async function runDailyPipeline() {
           if (addressNorm && addressNorm.length >= 10) seen.add(`addr:${addressNorm}`);
           const docId = prospectDocId(prospect);
           const ref = db.collection("prospect_queue").doc(docId);
+          const inferredPic = prospect.contactTitle ? null : inferPicTitleFromFacilityType(prospect.facilityType) || inferPicTitle(queryTerm);
           batch.set(ref, {
             businessName: prospect.businessName,
-            normalizedName: normalizeName(prospect.businessName),
+            normalizedName: normalizeName2(prospect.businessName),
             address: prospect.address || null,
             phone: prospect.phone || null,
             website: prospect.website || null,
             rating: prospect.rating || null,
+            facilityType: prospect.facilityType || null,
             contactEmail: prospect.contactEmail || null,
             genericEmail: prospect.genericEmail || null,
             contactName: prospect.contactName || null,
             contactTitle: prospect.contactTitle || null,
             // Inferred PIC — who likely manages cleaning decisions at this facility type.
-            // Set from query term when scraping doesn't find a real contact title.
-            inferredTitle: prospect.contactTitle ? null : inferPicTitle(queryTerm)?.title ?? null,
-            inferredDept: prospect.contactTitle ? null : inferPicTitle(queryTerm)?.dept ?? null,
+            // Prefer resolved facilityType; fall back to the raw query term.
+            inferredTitle: inferredPic?.title ?? null,
+            inferredDept: inferredPic?.dept ?? null,
             emailSource: prospect.emailSource || "none",
             emailConfidence: prospect.emailConfidence || "low",
             facebookUrl: prospect.facebookUrl || null,
@@ -70561,16 +71273,16 @@ async function runDailyPipeline() {
         }
         if (batchCount > 0) {
           await batch.commit();
-          logger31.info(`[DailyProspector] Wrote incremental batch of ${batchCount} prospects.`);
+          logger32.info(`[DailyProspector] Wrote incremental batch of ${batchCount} prospects.`);
         }
         await updateProgress(`${queryTerm} in ${location}`);
         const elapsedSecs = (Date.now() - startedAt.getTime()) / 1e3;
         if (elapsedSecs > 480) {
-          logger31.warn("[DailyProspector] Approaching 9-minute execution limit. Stopping early to save state.");
+          logger32.warn("[DailyProspector] Approaching 9-minute execution limit. Stopping early to save state.");
           break;
         }
       } catch (err2) {
-        logger31.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
+        logger32.error(`[DailyProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
       }
     }
     const stats = {
@@ -70596,9 +71308,9 @@ async function runDailyPipeline() {
       completedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     });
-    logger31.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
+    logger32.info(`[DailyProspector] Done. Added ${newProspects.length} prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
   } catch (err2) {
-    logger31.error(`[DailyProspector] Pipeline crashed:`, err2.message || err2);
+    logger32.error(`[DailyProspector] Pipeline crashed:`, err2.message || err2);
     await statusRef.set({
       running: false,
       discovered: totalDiscovered,
@@ -70609,7 +71321,7 @@ async function runDailyPipeline() {
       error: err2.message || "Unknown error",
       failedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
-    }).catch((e2) => logger31.error("[DailyProspector] Failed to write error status:", e2.message));
+    }).catch((e2) => logger32.error("[DailyProspector] Failed to write error status:", e2.message));
     throw err2;
   }
 }
@@ -70621,20 +71333,20 @@ var dailyProspector = (0, import_scheduler10.onSchedule)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger31.info("[DailyProspector] Starting scheduled run...");
+  logger32.info("[DailyProspector] Starting scheduled run...");
   await runDailyPipeline();
 });
-var triggerDailyProspector = (0, import_https19.onCall)({
+var triggerDailyProspector = (0, import_https21.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger31.info("[DailyProspector] Manual trigger invoked.");
+  logger32.info("[DailyProspector] Manual trigger invoked.");
   await runDailyPipeline();
   return { message: "Daily prospector pipeline completed." };
 });
-var updateProspectingConfig = (0, import_https19.onCall)({
+var updateProspectingConfig = (0, import_https21.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const data = request.data;
@@ -70645,13 +71357,13 @@ var updateProspectingConfig = (0, import_https19.onCall)({
   if (data.enabled !== void 0) update.enabled = data.enabled;
   if (data.excludePatterns) update.excludePatterns = data.excludePatterns;
   if (Object.keys(update).length === 0) {
-    throw new import_https19.HttpsError("invalid-argument", "No valid fields to update.");
+    throw new import_https21.HttpsError("invalid-argument", "No valid fields to update.");
   }
   await db.collection("prospecting_config").doc("default").set(update, { merge: true });
-  logger31.info("[updateProspectingConfig] Config updated:", update);
+  logger32.info("[updateProspectingConfig] Config updated:", update);
   return { message: "Prospecting config updated.", updated: update };
 });
-var getProspectingConfig = (0, import_https19.onCall)({
+var getProspectingConfig = (0, import_https21.onCall)({
   cors: DASHBOARD_CORS
 }, async () => {
   const doc = await db.collection("prospecting_config").doc("default").get();
@@ -70661,7 +71373,7 @@ var getProspectingConfig = (0, import_https19.onCall)({
   await db.collection("prospecting_config").doc("default").set(DEFAULT_CONFIG);
   return DEFAULT_CONFIG;
 });
-var regenerateProspectingConfig = (0, import_https19.onCall)({
+var regenerateProspectingConfig = (0, import_https21.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const data = request.data;
@@ -70678,7 +71390,7 @@ var regenerateProspectingConfig = (0, import_https19.onCall)({
   };
   await db.collection("prospecting_config").doc("default").set(config2, { merge: true });
   const summary = getConfigSummary(generated);
-  logger31.info(`[regenerateProspectingConfig] ${summary}`);
+  logger32.info(`[regenerateProspectingConfig] ${summary}`);
   return {
     message: "Prospecting config regenerated from ICP engine.",
     queries: generated.queries.length,
@@ -70688,15 +71400,520 @@ var regenerateProspectingConfig = (0, import_https19.onCall)({
   };
 });
 
+// src/triggers/dailyClientTrigger.ts
+var import_scheduler11 = require("firebase-functions/v2/scheduler");
+var import_https22 = require("firebase-functions/v2/https");
+var logger34 = __toESM(require("firebase-functions/logger"));
+var crypto7 = __toESM(require("crypto"));
+
+// src/agents/clientTriggerSourcer.ts
+var import_axios3 = __toESM(require("axios"));
+var crypto6 = __toESM(require("crypto"));
+var logger33 = __toESM(require("firebase-functions/logger"));
+var JOB_TRIGGER_QUERIES = [
+  "hiring night custodian",
+  "hiring janitor",
+  "hiring facilities coordinator",
+  "hiring cleaning staff",
+  "hiring janitorial worker",
+  "hiring building maintenance",
+  "hiring custodial worker",
+  "hiring housekeeping",
+  "hiring facility maintenance",
+  "hiring porter"
+];
+var JOB_BOARD_SITES = [
+  "indeed.com",
+  "ziprecruiter.com",
+  "glassdoor.com",
+  "linkedin.com/jobs",
+  "simplyhired.com"
+];
+var CACHE_COLLECTION2 = "serper_job_cache";
+var CACHE_TTL_MS2 = 3 * 24 * 60 * 60 * 1e3;
+function cacheKey2(query, location) {
+  const raw = `job|${query.toLowerCase().trim()}|${location.toLowerCase().trim()}`;
+  return crypto6.createHash("sha256").update(raw).digest("hex").slice(0, 24);
+}
+async function getCachedResults(query, location) {
+  try {
+    const docId = cacheKey2(query, location);
+    const doc = await db.collection(CACHE_COLLECTION2).doc(docId).get();
+    if (!doc.exists) return null;
+    const data = doc.data();
+    const cachedAt = data.cachedAt?.toDate?.() || new Date(data.cachedAt);
+    const age = Date.now() - cachedAt.getTime();
+    if (age > CACHE_TTL_MS2) {
+      logger33.info(`[JobCache] Expired for "${query}" in "${location}" (age: ${Math.round(age / 36e5)}h)`);
+      return null;
+    }
+    logger33.info(`[JobCache] HIT for "${query}" in "${location}" (${data.results?.length || 0} results)`);
+    return data.results;
+  } catch (err2) {
+    logger33.warn(`[JobCache] Read error: ${err2.message}`);
+    return null;
+  }
+}
+async function setCachedResults(query, location, results) {
+  try {
+    const docId = cacheKey2(query, location);
+    await db.collection(CACHE_COLLECTION2).doc(docId).set({
+      query: query.toLowerCase().trim(),
+      location: location.toLowerCase().trim(),
+      results,
+      resultCount: results.length,
+      cachedAt: /* @__PURE__ */ new Date()
+    });
+  } catch (err2) {
+    logger33.warn(`[JobCache] Write error: ${err2.message}`);
+  }
+}
+function extractEmployerName(title, snippet) {
+  let cleaned = title.replace(/\s*\|.*$/, "").replace(/\s*-\s*Indeed.*$/i, "").replace(/\s*-\s*ZipRecruiter.*$/i, "").replace(/\s*-\s*Glassdoor.*$/i, "").replace(/\s*-\s*LinkedIn.*$/i, "").replace(/\s*-\s*SimplyHired.*$/i, "").trim();
+  const parts = cleaned.split(/\s+-\s+/);
+  if (parts.length >= 3) {
+    return parts[1].trim();
+  }
+  if (parts.length === 2) {
+    const second = parts[1].trim();
+    if (/,\s*(NY|NJ|CT|PA|MA)/i.test(second)) {
+      return parts[0].trim();
+    }
+    return second;
+  }
+  const atMatch = snippet.match(/(?:at|for)\s+([A-Z][A-Za-z\s&'.,-]+?)(?:\s+in\s+|\s+is\s+|\s*\.|,)/);
+  if (atMatch) return atMatch[1].trim();
+  const hiringMatch = snippet.match(/([A-Z][A-Za-z\s&'.,-]+?)\s+is\s+(?:hiring|looking|seeking)/);
+  if (hiringMatch) return hiringMatch[1].trim();
+  return cleaned;
+}
+function detectPlatform(url) {
+  if (url.includes("indeed.com")) return "Indeed";
+  if (url.includes("linkedin.com")) return "LinkedIn";
+  if (url.includes("ziprecruiter.com")) return "ZipRecruiter";
+  if (url.includes("glassdoor.com")) return "Glassdoor";
+  if (url.includes("simplyhired.com")) return "SimplyHired";
+  if (url.includes("monster.com")) return "Monster";
+  if (url.includes("careerbuilder.com")) return "CareerBuilder";
+  return "Google";
+}
+var DEFAULT_EXCLUDED_EMPLOYERS = [
+  // Cleaning / janitorial / facility services companies (competitors)
+  "cleaning",
+  "janitorial",
+  "custodial",
+  "sanitation",
+  "maid",
+  "housekeeping",
+  "janitor",
+  "clean team",
+  "facility solutions",
+  "facility services",
+  "building services",
+  "maintenance solutions",
+  "maintenance services",
+  "environmental services",
+  "building maintenance",
+  "servicemaster",
+  "jani-king",
+  "coverall",
+  "stratus",
+  "pritchard",
+  "marsden",
+  "abm ",
+  "iss facility",
+  "cintas",
+  "aramark",
+  "sodexo",
+  "cushman",
+  // Property management firms
+  "property management",
+  "realty",
+  "real estate management",
+  "greystar",
+  "related companies",
+  "brookfield properties",
+  "cbre",
+  "jll",
+  "colliers",
+  "newmark",
+  "cushman & wakefield",
+  "marcus & millichap",
+  // Staffing agencies
+  "staffing",
+  "temp agency",
+  "employment agency",
+  "workforce",
+  "manpower",
+  "adecco",
+  "kelly services",
+  "randstad"
+];
+function isExcludedEmployer(name, patterns) {
+  const lower = name.toLowerCase();
+  return patterns.some((p) => lower.includes(p));
+}
+async function searchJobPostings(query, location, maxResults = 20, excludePatterns = DEFAULT_EXCLUDED_EMPLOYERS) {
+  const apiKey = process.env.SERPER_API_KEY;
+  if (!apiKey) {
+    logger33.error("[ClientTriggerSourcer] SERPER_API_KEY not set");
+    return [];
+  }
+  const cached = await getCachedResults(query, location);
+  if (cached !== null) return cached.slice(0, maxResults);
+  const siteFilter = JOB_BOARD_SITES.map((s) => `site:${s}`).join(" OR ");
+  const fullQuery = `${query} ${location} (${siteFilter})`;
+  logger33.info(`[ClientTriggerSourcer] Searching: "${fullQuery}"`);
+  try {
+    const response = await import_axios3.default.post(
+      "https://google.serper.dev/search",
+      {
+        q: fullQuery,
+        num: 30
+        // request extra to account for filtering
+      },
+      {
+        headers: {
+          "X-API-KEY": apiKey.trim(),
+          "Content-Type": "application/json"
+        },
+        timeout: 15e3
+      }
+    );
+    const organic = response.data.organic || [];
+    logger33.info(`[ClientTriggerSourcer] Serper returned ${organic.length} organic results`);
+    const results = [];
+    const seenEmployers = /* @__PURE__ */ new Set();
+    for (const item of organic) {
+      const title = item.title || "";
+      const snippet = item.snippet || "";
+      const link = item.link || "";
+      if (!JOB_BOARD_SITES.some((site) => link.includes(site.replace("/jobs", "")))) {
+        continue;
+      }
+      const employerName = extractEmployerName(title, snippet);
+      if (!employerName || employerName.length < 3) continue;
+      if (isExcludedEmployer(employerName, excludePatterns)) {
+        logger33.info(`[ClientTriggerSourcer] Skipping excluded employer: "${employerName}"`);
+        continue;
+      }
+      const normalizedEmployer = employerName.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (seenEmployers.has(normalizedEmployer)) continue;
+      seenEmployers.add(normalizedEmployer);
+      results.push({
+        employerName,
+        jobTitle: title.split(/\s+-\s+/)[0]?.trim() || title,
+        sourceUrl: link,
+        sourcePlatform: detectPlatform(link),
+        location,
+        snippet: snippet.slice(0, 300),
+        datePosted: item.date || void 0
+      });
+      if (results.length >= maxResults) break;
+    }
+    logger33.info(`[ClientTriggerSourcer] Extracted ${results.length} unique employer job postings`);
+    await setCachedResults(query, location, results);
+    return results;
+  } catch (err2) {
+    logger33.error(`[ClientTriggerSourcer] Search failed: ${err2.message}`);
+    return [];
+  }
+}
+
+// src/triggers/dailyClientTrigger.ts
+function normalizeName3(name) {
+  return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+}
+function prospectDocId2(prospect) {
+  const parts = [];
+  if (prospect.address) {
+    parts.push(prospect.address.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  }
+  if (prospect.phone) {
+    parts.push(prospect.phone.replace(/[^0-9]/g, ""));
+  }
+  if (prospect.website) {
+    const domain = prospect.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase();
+    parts.push(domain);
+  }
+  if (parts.length === 0) {
+    parts.push(normalizeName3(prospect.businessName));
+  }
+  const composite = parts.join("|");
+  return crypto7.createHash("sha256").update(composite).digest("hex").slice(0, 20);
+}
+function shuffle2(arr) {
+  const a2 = [...arr];
+  for (let i = a2.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a2[i], a2[j]] = [a2[j], a2[i]];
+  }
+  return a2;
+}
+async function loadSeenSet2() {
+  const seen = /* @__PURE__ */ new Set();
+  const queueSnap = await db.collection("prospect_queue").select("businessName", "normalizedName", "phone", "contactEmail", "genericEmail", "website", "address").get();
+  for (const doc of queueSnap.docs) {
+    const d = doc.data();
+    if (d.normalizedName) seen.add(d.normalizedName);
+    else if (d.businessName) seen.add(normalizeName3(d.businessName));
+    if (d.phone) {
+      const cleaned = d.phone.replace(/[^0-9]/g, "");
+      if (cleaned.length >= 7) seen.add(`phone:${cleaned}`);
+    }
+    if (d.contactEmail) seen.add(`email:${d.contactEmail.toLowerCase()}`);
+    if (d.genericEmail) seen.add(`email:${d.genericEmail.toLowerCase()}`);
+    if (d.website) {
+      const domain = d.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase();
+      if (domain) seen.add(`domain:${domain}`);
+    }
+    if (d.address) {
+      const addrNorm = d.address.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30);
+      if (addrNorm.length >= 10) seen.add(`addr:${addrNorm}`);
+    }
+  }
+  const companiesSnap = await db.collection("companies").select("name", "phone", "website", "address").get();
+  for (const doc of companiesSnap.docs) {
+    const d = doc.data();
+    if (d.name) seen.add(normalizeName3(d.name));
+    if (d.phone) {
+      const cleaned = d.phone.replace(/[^0-9]/g, "");
+      if (cleaned.length >= 7) seen.add(`phone:${cleaned}`);
+    }
+    if (d.website) {
+      const domain = d.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase();
+      if (domain) seen.add(`domain:${domain}`);
+    }
+  }
+  const contactsSnap = await db.collection("contacts").select("email").get();
+  for (const doc of contactsSnap.docs) {
+    const d = doc.data();
+    if (d.email) seen.add(`email:${d.email.toLowerCase()}`);
+  }
+  logger34.info(`[ClientTrigger] Seen set loaded: ${seen.size} entries`);
+  return seen;
+}
+var DEFAULT_CONFIG2 = {
+  queries: JOB_TRIGGER_QUERIES,
+  locations: [
+    // NJ/NY tri-state target market
+    "New York, NY",
+    "Brooklyn, NY",
+    "Manhattan, NY",
+    "Queens, NY",
+    "Bronx, NY",
+    "Jersey City, NJ",
+    "Newark, NJ",
+    "Hoboken, NJ",
+    "Edison, NJ",
+    "New Brunswick, NJ",
+    "Piscataway, NJ",
+    "Woodbridge, NJ",
+    "Elizabeth, NJ",
+    "Paterson, NJ",
+    "Clifton, NJ",
+    "Hackensack, NJ",
+    "Paramus, NJ",
+    "Fort Lee, NJ",
+    "Morristown, NJ",
+    "Parsippany, NJ"
+  ],
+  dailyTarget: 30,
+  enabled: true,
+  excludePatterns: DEFAULT_EXCLUDED_EMPLOYERS
+};
+async function runClientTriggerPipeline() {
+  const configDoc = await db.collection("client_trigger_config").doc("default").get();
+  const config2 = configDoc.exists ? { ...DEFAULT_CONFIG2, ...configDoc.data() } : DEFAULT_CONFIG2;
+  if (!config2.enabled) {
+    logger34.info("[ClientTrigger] Disabled via config. Skipping.");
+    return;
+  }
+  const seen = await loadSeenSet2();
+  const batchDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+  let totalDiscovered = 0;
+  let duplicatesSkipped = 0;
+  let newProspectsCount = 0;
+  const statusRef = db.collection("client_trigger_config").doc("run_status");
+  const startedAt = /* @__PURE__ */ new Date();
+  await statusRef.set({
+    running: true,
+    startedAt,
+    discovered: 0,
+    qualified: 0,
+    duplicatesSkipped: 0,
+    target: config2.dailyTarget,
+    currentQuery: "Initializing...",
+    updatedAt: /* @__PURE__ */ new Date()
+  });
+  try {
+    const combos = [];
+    for (const location of config2.locations) {
+      for (const queryTerm of config2.queries) {
+        combos.push({ query: queryTerm, location });
+      }
+    }
+    const shuffled = shuffle2(combos);
+    logger34.info(`[ClientTrigger] ${shuffled.length} combos. Target: ${config2.dailyTarget}`);
+    for (const { query: queryTerm, location } of shuffled) {
+      if (newProspectsCount >= config2.dailyTarget) break;
+      logger34.info(`[ClientTrigger] Searching: "${queryTerm}" in "${location}"`);
+      await statusRef.set({
+        currentQuery: `${queryTerm} in ${location}`,
+        updatedAt: /* @__PURE__ */ new Date()
+      }, { merge: true });
+      try {
+        const jobResults = await searchJobPostings(queryTerm, location, 15, config2.excludePatterns);
+        totalDiscovered += jobResults.length;
+        const batch = db.batch();
+        let batchCount = 0;
+        for (const job of jobResults) {
+          if (newProspectsCount >= config2.dailyTarget) break;
+          const normalized = normalizeName3(job.employerName);
+          if (seen.has(normalized)) {
+            duplicatesSkipped++;
+            continue;
+          }
+          let enrichedData = {};
+          try {
+            const enrichResult = await runEnrichmentWaterfall(
+              job.employerName,
+              job.location,
+              void 0,
+              // no website yet
+              { serperApiKey: process.env.SERPER_API_KEY, hunterApiKey: process.env.HUNTER_API_KEY }
+            );
+            enrichedData = enrichResult;
+          } catch (err2) {
+            logger34.warn(`[ClientTrigger] Enrichment failed for "${job.employerName}": ${err2.message}`);
+          }
+          const hasEmail = enrichedData.contactEmail || enrichedData.genericEmail;
+          if (!hasEmail) continue;
+          seen.add(normalized);
+          if (enrichedData.contactEmail) seen.add(`email:${enrichedData.contactEmail.toLowerCase()}`);
+          if (enrichedData.genericEmail) seen.add(`email:${enrichedData.genericEmail.toLowerCase()}`);
+          if (enrichedData.website) {
+            const domain = enrichedData.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase();
+            if (domain) seen.add(`domain:${domain}`);
+          }
+          const docId = prospectDocId2({
+            businessName: job.employerName,
+            address: enrichedData.address || job.location || null,
+            phone: enrichedData.phone || null,
+            website: enrichedData.website || null
+          });
+          const ref = db.collection("prospect_queue").doc(docId);
+          batch.set(ref, {
+            businessName: job.employerName,
+            normalizedName: normalized,
+            address: enrichedData.address || job.location || null,
+            phone: enrichedData.phone || null,
+            website: enrichedData.website || null,
+            rating: enrichedData.rating || null,
+            contactEmail: enrichedData.contactEmail || null,
+            genericEmail: enrichedData.genericEmail || null,
+            contactName: enrichedData.contactName || null,
+            contactTitle: enrichedData.contactTitle || null,
+            emailSource: enrichedData.emailSource || "none",
+            emailConfidence: enrichedData.emailConfidence || "low",
+            facebookUrl: enrichedData.facebookUrl || null,
+            linkedinUrl: enrichedData.linkedinUrl || null,
+            enrichmentLog: enrichedData.enrichmentLog || [],
+            allContacts: enrichedData.allContacts || [],
+            // ── Source differentiation ──
+            source: "job_board_trigger",
+            triggerData: {
+              jobTitle: job.jobTitle,
+              sourcePlatform: job.sourcePlatform,
+              sourceUrl: job.sourceUrl,
+              snippet: job.snippet,
+              datePosted: job.datePosted || null
+            },
+            status: "pending_review",
+            batchDate,
+            searchQuery: queryTerm,
+            searchLocation: location,
+            createdAt: /* @__PURE__ */ new Date()
+          });
+          newProspectsCount++;
+          batchCount++;
+        }
+        if (batchCount > 0) {
+          await batch.commit();
+          logger34.info(`[ClientTrigger] Wrote ${batchCount} prospects for "${queryTerm}" in "${location}"`);
+        }
+        const elapsedSecs = (Date.now() - startedAt.getTime()) / 1e3;
+        if (elapsedSecs > 420) {
+          logger34.warn("[ClientTrigger] Approaching timeout. Stopping early.");
+          break;
+        }
+      } catch (err2) {
+        logger34.error(`[ClientTrigger] Error for "${queryTerm}" in "${location}":`, err2.message);
+      }
+    }
+    await db.collection("client_trigger_config").doc("default").set({
+      ...config2,
+      lastRunAt: /* @__PURE__ */ new Date(),
+      lastRunStats: {
+        discovered: totalDiscovered,
+        added: newProspectsCount,
+        duplicatesSkipped
+      }
+    }, { merge: true });
+    await statusRef.set({
+      running: false,
+      discovered: totalDiscovered,
+      qualified: newProspectsCount,
+      duplicatesSkipped,
+      target: config2.dailyTarget,
+      currentQuery: null,
+      completedAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    });
+    logger34.info(`[ClientTrigger] Done. Added ${newProspectsCount} (${duplicatesSkipped} dupes, ${totalDiscovered} discovered).`);
+  } catch (err2) {
+    logger34.error(`[ClientTrigger] Pipeline crashed:`, err2.message || err2);
+    await statusRef.set({
+      running: false,
+      error: err2.message || "Unknown error",
+      failedAt: /* @__PURE__ */ new Date(),
+      updatedAt: /* @__PURE__ */ new Date()
+    }).catch(() => {
+    });
+    throw err2;
+  }
+}
+var dailyClientTrigger = (0, import_scheduler11.onSchedule)({
+  schedule: "30 6 * * *",
+  // 6:30 AM ET daily (30 min after lead prospector)
+  timeZone: "America/New_York",
+  secrets: ["SERPER_API_KEY", "HUNTER_API_KEY"],
+  timeoutSeconds: 540,
+  memory: "1GiB"
+}, async () => {
+  logger34.info("[ClientTrigger] Starting scheduled job board scan...");
+  await runClientTriggerPipeline();
+});
+var triggerDailyClientTrigger = (0, import_https22.onCall)({
+  cors: DASHBOARD_CORS,
+  secrets: ["SERPER_API_KEY", "HUNTER_API_KEY"],
+  timeoutSeconds: 540,
+  memory: "1GiB"
+}, async () => {
+  logger34.info("[ClientTrigger] Manual trigger invoked.");
+  await runClientTriggerPipeline();
+  return { message: "Client trigger pipeline completed." };
+});
+
 // src/functions/vendorProspecting.ts
-var import_https20 = require("firebase-functions/v2/https");
+var import_https23 = require("firebase-functions/v2/https");
 
 // src/utils/facebookEnricher.ts
 var cheerio2 = __toESM(require("cheerio"));
-var import_generative_ai8 = require("@google/generative-ai");
+var import_generative_ai9 = require("@google/generative-ai");
 init_promptUtils();
 var TIMEOUT_MS2 = 12e3;
-var USER_AGENT2 = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+var USER_AGENT3 = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 var MOBILE_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1";
 var PHONE_REGEX = /(\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})/g;
 var EMAIL_REGEX = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
@@ -70760,7 +71977,7 @@ async function enrichFromFacebook(facebookUrl, geminiApiKey) {
     const aboutUrl = normalizedUrl.replace(/\/?$/, "/about");
     let page = await fetchFacebookPage(aboutUrl, MOBILE_USER_AGENT);
     if (!page) {
-      page = await fetchFacebookPage(aboutUrl, USER_AGENT2);
+      page = await fetchFacebookPage(aboutUrl, USER_AGENT3);
     }
     if (!page) {
       page = await fetchFacebookPage(normalizedUrl, MOBILE_USER_AGENT);
@@ -70784,9 +72001,9 @@ async function enrichFromFacebook(facebookUrl, geminiApiKey) {
     merged.quality = signals >= 3 ? "rich" : signals >= 1 ? "partial" : "thin";
     console.log(`[FacebookEnricher] Result quality: ${merged.quality} (${signals} signals)`);
     return { success: true, data: merged };
-  } catch (error16) {
-    console.error(`[FacebookEnricher] Error enriching ${facebookUrl}:`, error16.message);
-    return { success: false, error: error16.message };
+  } catch (error18) {
+    console.error(`[FacebookEnricher] Error enriching ${facebookUrl}:`, error18.message);
+    return { success: false, error: error18.message };
   }
 }
 async function fetchFacebookPage(url, userAgent) {
@@ -70811,8 +72028,8 @@ async function fetchFacebookPage(url, userAgent) {
       return null;
     }
     return { html, $: cheerio2.load(html) };
-  } catch (error16) {
-    console.log(`[FacebookEnricher] Fetch error for ${url}: ${error16.message}`);
+  } catch (error18) {
+    console.log(`[FacebookEnricher] Fetch error for ${url}: ${error18.message}`);
     return null;
   }
 }
@@ -70897,7 +72114,7 @@ function extractFromPatterns2($, html) {
 }
 async function extractWithAI2(pageText, geminiApiKey) {
   try {
-    const genAI4 = new import_generative_ai8.GoogleGenerativeAI(geminiApiKey);
+    const genAI4 = new import_generative_ai9.GoogleGenerativeAI(geminiApiKey);
     const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
     const truncated = pageText.substring(0, 12e3);
     const FALLBACK = `You are extracting business information from a Facebook business page.
@@ -70948,8 +72165,8 @@ Facebook page content:
       };
     }
     return {};
-  } catch (error16) {
-    console.error(`[FacebookEnricher] AI extraction error:`, error16.message);
+  } catch (error18) {
+    console.error(`[FacebookEnricher] AI extraction error:`, error18.message);
     return {};
   }
 }
@@ -71169,8 +72386,8 @@ async function vendorProspectAndEnrich(input, secrets) {
       }
       console.log(`[VendorProspector] Layer 0.5: Found ${facebookDiscoveries.length} additional businesses via Facebook.`);
     }
-  } catch (error16) {
-    console.warn(`[VendorProspector] Layer 0.5 error: ${error16.message}`);
+  } catch (error18) {
+    console.warn(`[VendorProspector] Layer 0.5 error: ${error18.message}`);
   }
   const allVendors = [...rawVendors, ...facebookDiscoveries];
   const prospects = [];
@@ -71199,8 +72416,8 @@ async function vendorProspectAndEnrich(input, secrets) {
           (_, reject) => setTimeout(() => reject(new Error(`Enrichment timed out after ${PER_BUSINESS_TIMEOUT_MS / 1e3}s`)), PER_BUSINESS_TIMEOUT_MS)
         )
       ]);
-    } catch (error16) {
-      console.warn(`[VendorProspector] \u26A0\uFE0F Skipping "${vendor.name}": ${error16.message}`);
+    } catch (error18) {
+      console.warn(`[VendorProspector] \u26A0\uFE0F Skipping "${vendor.name}": ${error18.message}`);
       prospect = {
         businessName: vendor.name,
         address: vendor.location,
@@ -71210,7 +72427,7 @@ async function vendorProspectAndEnrich(input, secrets) {
         userRatingsTotal: vendor.user_ratings_total,
         emailSource: "none",
         emailConfidence: "low",
-        enrichmentLog: [`Skipped: ${error16.message}`]
+        enrichmentLog: [`Skipped: ${error18.message}`]
       };
     }
     prospects.push(prospect);
@@ -71343,14 +72560,12 @@ async function enrichSingleVendor(vendor, secrets, input) {
         if (emailValid === "junk") {
           log.push(`\u26A0\uFE0F Rejected junk email: ${bestEmail} (domain is blocklisted)`);
         } else if (emailValid === "mismatch") {
-          log.push(`\u26A0\uFE0F Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} \u2014 demoting to low confidence`);
-          prospect.contactEmail = bestEmail;
-          prospect.emailSource = data.ownerEmail ? "ai_extraction" : "mailto";
-          prospect.emailConfidence = "low";
+          log.push(`\u26A0\uFE0F Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} \u2014 skipping`);
+          log.push(`Skipping off-domain email from website scrape: ${bestEmail}`);
         } else {
           prospect.contactEmail = bestEmail;
           prospect.emailSource = data.ownerEmail ? "ai_extraction" : "mailto";
-          prospect.emailConfidence = "high";
+          prospect.emailConfidence = emailValid === "domain_match" ? "high" : "medium";
           log.push(`Found personal email: ${bestEmail} (source: ${prospect.emailSource}, validation: ${emailValid})`);
           if (data.allEmails) {
             const generic = data.allEmails.find((e2) => e2.type === "generic");
@@ -71395,8 +72610,8 @@ async function enrichSingleVendor(vendor, secrets, input) {
     } else {
       log.push(`Scraping failed: ${scrapeResult.error || "unknown error"}`);
     }
-  } catch (error16) {
-    log.push(`Layer 1 error: ${error16.message}`);
+  } catch (error18) {
+    log.push(`Layer 1 error: ${error18.message}`);
   }
   await trySerperSearch2(prospect, vendor, secrets.serperApiKey, input.location, log);
   if (prospect.contactEmail) return prospect;
@@ -71414,7 +72629,7 @@ async function enrichSingleVendor(vendor, secrets, input) {
       );
       log.push(...waterfallResult.log);
       if (waterfallResult.allEmails.length > 0) {
-        const apiContacts = waterfallResult.allEmails.map((e2) => ({
+        const apiContacts = waterfallResult.allEmails.filter((e2) => validateEmailForBusiness2(e2.email, vendor.website) === "domain_match").map((e2) => ({
           email: e2.email,
           firstName: e2.firstName,
           lastName: e2.lastName,
@@ -71427,7 +72642,10 @@ async function enrichSingleVendor(vendor, secrets, input) {
         log.push(`Stored ${apiContacts.length} total contacts from enrichment waterfall`);
       }
       if (waterfallResult.email) {
-        if (waterfallResult.type === "personal") {
+        const waterfallEmailValid = validateEmailForBusiness2(waterfallResult.email, vendor.website);
+        if (waterfallEmailValid !== "domain_match") {
+          log.push(`Skipping non-company email from waterfall: ${waterfallResult.email} (validation: ${waterfallEmailValid})`);
+        } else if (waterfallResult.type === "personal") {
           prospect.contactEmail = waterfallResult.email;
           prospect.contactName = prospect.contactName || (waterfallResult.firstName && waterfallResult.lastName ? `${waterfallResult.firstName} ${waterfallResult.lastName}` : void 0);
           prospect.contactTitle = prospect.contactTitle || waterfallResult.position;
@@ -71469,6 +72687,8 @@ async function trySerperSearch2(prospect, vendor, serperApiKey, location, log) {
       const webEmailValid = validateEmailForBusiness2(searchResult.email, vendor.website);
       if (webEmailValid === "junk") {
         log.push(`\u26A0\uFE0F Rejected junk email from web search: ${searchResult.email}`);
+      } else if (webEmailValid === "free_provider" && !!vendor.website) {
+        log.push(`\u26A0\uFE0F Rejected off-domain web email: ${searchResult.email} (published off-site and not tied to ${vendor.website})`);
       } else if (webEmailValid === "mismatch") {
         log.push(`\u26A0\uFE0F Web search email mismatch: ${searchResult.email} doesn't match ${vendor.website} \u2014 skipping`);
       } else {
@@ -71489,8 +72709,8 @@ async function trySerperSearch2(prospect, vendor, serperApiKey, location, log) {
     if (!prospect.phone && searchResult.phone) {
       prospect.phone = searchResult.phone;
     }
-  } catch (error16) {
-    log.push(`Layer 2 error: ${error16.message}`);
+  } catch (error18) {
+    log.push(`Layer 2 error: ${error18.message}`);
   }
 }
 function extractDomain2(url) {
@@ -71503,7 +72723,7 @@ function extractDomain2(url) {
 }
 
 // src/functions/vendorProspecting.ts
-var runVendorProspector = (0, import_https20.onCall)({
+var runVendorProspector = (0, import_https23.onCall)({
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 540,
@@ -71516,10 +72736,10 @@ var runVendorProspector = (0, import_https20.onCall)({
   const maxResults = data.maxResults || 20;
   const skipPaidApis = data.skipPaidApis || false;
   if (!query || !location) {
-    throw new import_https20.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
+    throw new import_https23.HttpsError("invalid-argument", "Missing 'query' or 'location'.");
   }
   if (!capability) {
-    throw new import_https20.HttpsError("invalid-argument", "Missing 'capability' (e.g. 'plumbing', 'hvac').");
+    throw new import_https23.HttpsError("invalid-argument", "Missing 'capability' (e.g. 'plumbing', 'hvac').");
   }
   try {
     console.log(`[runVendorProspector] query="${query}", location="${location}", capability="${capability}", max=${maxResults}`);
@@ -71536,18 +72756,18 @@ var runVendorProspector = (0, import_https20.onCall)({
       prospects: result.prospects,
       stats: result.stats
     };
-  } catch (error16) {
-    console.error("[runVendorProspector] Error:", error16);
-    throw new import_https20.HttpsError("internal", error16.message || "Vendor prospecting pipeline failed.");
+  } catch (error18) {
+    console.error("[runVendorProspector] Error:", error18);
+    throw new import_https23.HttpsError("internal", error18.message || "Vendor prospecting pipeline failed.");
   }
 });
-var addVendorProspectsToCrm = (0, import_https20.onCall)({
+var addVendorProspectsToCrm = (0, import_https23.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 60
 }, async (request) => {
   const { prospects, searchCapability } = request.data;
   if (!prospects || !Array.isArray(prospects) || prospects.length === 0) {
-    throw new import_https20.HttpsError("invalid-argument", "No vendor prospects provided.");
+    throw new import_https23.HttpsError("invalid-argument", "No vendor prospects provided.");
   }
   try {
     const results = [];
@@ -71598,18 +72818,18 @@ var addVendorProspectsToCrm = (0, import_https20.onCall)({
       imported: results.length,
       results
     };
-  } catch (error16) {
-    console.error("[addVendorProspectsToCrm] Error:", error16);
-    throw new import_https20.HttpsError("internal", error16.message || "Vendor CRM import failed.");
+  } catch (error18) {
+    console.error("[addVendorProspectsToCrm] Error:", error18);
+    throw new import_https23.HttpsError("internal", error18.message || "Vendor CRM import failed.");
   }
 });
 
 // src/triggers/dailyVendorProspector.ts
-var import_scheduler11 = require("firebase-functions/v2/scheduler");
-var import_https21 = require("firebase-functions/v2/https");
-var logger32 = __toESM(require("firebase-functions/logger"));
-var crypto6 = __toESM(require("crypto"));
-function normalizeName2(name) {
+var import_scheduler12 = require("firebase-functions/v2/scheduler");
+var import_https24 = require("firebase-functions/v2/https");
+var logger35 = __toESM(require("firebase-functions/logger"));
+var crypto8 = __toESM(require("crypto"));
+function normalizeName4(name) {
   return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
 }
 function vendorProspectDocId(prospect) {
@@ -71629,10 +72849,10 @@ function vendorProspectDocId(prospect) {
     parts.push(`fb:${fbPath}`);
   }
   if (parts.length === 0) {
-    parts.push(normalizeName2(prospect.businessName));
+    parts.push(normalizeName4(prospect.businessName));
   }
   const composite = parts.join("|");
-  return crypto6.createHash("sha256").update(composite).digest("hex").slice(0, 20);
+  return crypto8.createHash("sha256").update(composite).digest("hex").slice(0, 20);
 }
 function generateVendorLocations() {
   const locations = [];
@@ -71643,7 +72863,7 @@ function generateVendorLocations() {
   }
   return locations;
 }
-var DEFAULT_CONFIG2 = {
+var DEFAULT_CONFIG3 = {
   capabilities: [
     { value: "janitorial", label: "Janitorial / Commercial Cleaning", group: "cleaning" },
     { value: "plumbing", label: "Plumbing", group: "facility" },
@@ -71657,7 +72877,7 @@ var DEFAULT_CONFIG2 = {
   enabled: true,
   excludePatterns: []
 };
-function shuffle2(arr) {
+function shuffle3(arr) {
   const a2 = [...arr];
   for (let i = a2.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -71693,7 +72913,7 @@ async function loadVendorSeenSet() {
   const vendorsSnap = await db.collection("vendors").select("businessName", "phone", "email", "website", "address").get();
   for (const doc of vendorsSnap.docs) {
     const d = doc.data();
-    if (d.businessName) seen.add(normalizeName2(d.businessName));
+    if (d.businessName) seen.add(normalizeName4(d.businessName));
     if (d.phone) {
       const cleaned = d.phone.replace(/[^0-9]/g, "");
       if (cleaned.length >= 7) seen.add(`phone:${cleaned}`);
@@ -71708,14 +72928,14 @@ async function loadVendorSeenSet() {
       if (addrNorm.length >= 10) seen.add(`addr:${addrNorm}`);
     }
   }
-  logger32.info(`[DailyVendorProspector] Seen set loaded: ${seen.size} entries (queue + vendors)`);
+  logger35.info(`[DailyVendorProspector] Seen set loaded: ${seen.size} entries (queue + vendors)`);
   return seen;
 }
 async function runDailyVendorPipeline() {
   const configDoc = await db.collection("vendor_prospecting_config").doc("default").get();
-  const config2 = configDoc.exists ? { ...DEFAULT_CONFIG2, ...configDoc.data() } : DEFAULT_CONFIG2;
+  const config2 = configDoc.exists ? { ...DEFAULT_CONFIG3, ...configDoc.data() } : DEFAULT_CONFIG3;
   if (!config2.enabled) {
-    logger32.info("[DailyVendorProspector] Disabled via config. Skipping.");
+    logger35.info("[DailyVendorProspector] Disabled via config. Skipping.");
     return;
   }
   const secrets = {
@@ -71755,13 +72975,13 @@ async function runDailyVendorPipeline() {
         }
       }
     }
-    const shuffled = shuffle2(combos);
-    logger32.info(`[DailyVendorProspector] ${shuffled.length} combos shuffled. Target: ${config2.dailyTarget}`);
+    const shuffled = shuffle3(combos);
+    logger35.info(`[DailyVendorProspector] ${shuffled.length} combos shuffled. Target: ${config2.dailyTarget}`);
     for (const { query: queryTerm, location, capability } of shuffled) {
       if (newProspects.length >= config2.dailyTarget) break;
       const remaining = config2.dailyTarget - newProspects.length;
       const batchSize = Math.min(remaining + 10, 20);
-      logger32.info(`[DailyVendorProspector] Searching: "${queryTerm}" in "${location}" (capability: ${capability.value}, need ${remaining} more)`);
+      logger35.info(`[DailyVendorProspector] Searching: "${queryTerm}" in "${location}" (capability: ${capability.value}, need ${remaining} more)`);
       await updateProgress(`${capability.label} in ${location}`);
       try {
         const result = await vendorProspectAndEnrich(
@@ -71783,7 +73003,7 @@ async function runDailyVendorPipeline() {
         const batch = db.batch();
         for (const prospect of result.prospects) {
           if (newProspects.length >= config2.dailyTarget) break;
-          const normalized = normalizeName2(prospect.businessName);
+          const normalized = normalizeName4(prospect.businessName);
           const emailLower = prospect.contactEmail?.toLowerCase();
           const genericLower = prospect.genericEmail?.toLowerCase();
           const phoneCleaned = prospect.phone?.replace(/[^0-9]/g, "");
@@ -71792,7 +73012,7 @@ async function runDailyVendorPipeline() {
           const fbPath = prospect.facebookUrl ? prospect.facebookUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//, "").split("?")[0].toLowerCase() : void 0;
           const matchedKey = seen.has(normalized) ? `name:${normalized}` : phoneCleaned && phoneCleaned.length >= 7 && seen.has(`phone:${phoneCleaned}`) ? `phone:${phoneCleaned}` : emailLower && seen.has(`email:${emailLower}`) ? `email:${emailLower}` : genericLower && seen.has(`email:${genericLower}`) ? `email:${genericLower}` : websiteDomain && seen.has(`domain:${websiteDomain}`) ? `domain:${websiteDomain}` : fbPath && seen.has(`fb:${fbPath}`) ? `fb:${fbPath}` : addressNorm && addressNorm.length >= 10 && seen.has(`addr:${addressNorm}`) ? `addr:${addressNorm}` : null;
           if (matchedKey) {
-            logger32.info(`[DailyVendorProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
+            logger35.info(`[DailyVendorProspector] Skipping dupe: "${prospect.businessName}" matched on ${matchedKey}`);
             duplicatesSkipped++;
             continue;
           }
@@ -71816,7 +73036,7 @@ async function runDailyVendorPipeline() {
           const ref = db.collection("vendor_prospect_queue").doc(docId);
           batch.set(ref, {
             businessName: prospect.businessName,
-            normalizedName: normalizeName2(prospect.businessName),
+            normalizedName: normalizeName4(prospect.businessName),
             address: prospect.address || null,
             phone: prospect.phone || null,
             website: prospect.website || null,
@@ -71849,16 +73069,16 @@ async function runDailyVendorPipeline() {
         }
         if (batchCount > 0) {
           await batch.commit();
-          logger32.info(`[DailyVendorProspector] Wrote batch of ${batchCount} vendor prospects.`);
+          logger35.info(`[DailyVendorProspector] Wrote batch of ${batchCount} vendor prospects.`);
         }
         await updateProgress(`${capability.label} in ${location}`);
         const elapsedSecs = (Date.now() - startedAt.getTime()) / 1e3;
         if (elapsedSecs > 480) {
-          logger32.warn("[DailyVendorProspector] Approaching 9-minute limit. Stopping early.");
+          logger35.warn("[DailyVendorProspector] Approaching 9-minute limit. Stopping early.");
           break;
         }
       } catch (err2) {
-        logger32.error(`[DailyVendorProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
+        logger35.error(`[DailyVendorProspector] Error for "${queryTerm}" in "${location}":`, err2.message);
       }
     }
     const stats = {
@@ -71884,9 +73104,9 @@ async function runDailyVendorPipeline() {
       completedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     });
-    logger32.info(`[DailyVendorProspector] Done. Added ${newProspects.length} vendor prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
+    logger35.info(`[DailyVendorProspector] Done. Added ${newProspects.length} vendor prospects (${duplicatesSkipped} dupes skipped, ${totalDiscovered} discovered).`);
   } catch (err2) {
-    logger32.error(`[DailyVendorProspector] Pipeline crashed:`, err2.message || err2);
+    logger35.error(`[DailyVendorProspector] Pipeline crashed:`, err2.message || err2);
     await statusRef.set({
       running: false,
       discovered: totalDiscovered,
@@ -71897,11 +73117,11 @@ async function runDailyVendorPipeline() {
       error: err2.message || "Unknown error",
       failedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
-    }).catch((e2) => logger32.error("[DailyVendorProspector] Failed to write error status:", e2.message));
+    }).catch((e2) => logger35.error("[DailyVendorProspector] Failed to write error status:", e2.message));
     throw err2;
   }
 }
-var dailyVendorProspector = (0, import_scheduler11.onSchedule)({
+var dailyVendorProspector = (0, import_scheduler12.onSchedule)({
   schedule: "0 7 * * *",
   // 7:00 AM ET daily (1h after lead prospector)
   timeZone: "America/New_York",
@@ -71909,20 +73129,20 @@ var dailyVendorProspector = (0, import_scheduler11.onSchedule)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger32.info("[DailyVendorProspector] Starting scheduled run...");
+  logger35.info("[DailyVendorProspector] Starting scheduled run...");
   await runDailyVendorPipeline();
 });
-var triggerDailyVendorProspector = (0, import_https21.onCall)({
+var triggerDailyVendorProspector = (0, import_https24.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["SERPER_API_KEY", "GEMINI_API_KEY", "HUNTER_API_KEY"],
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger32.info("[DailyVendorProspector] Manual trigger invoked.");
+  logger35.info("[DailyVendorProspector] Manual trigger invoked.");
   await runDailyVendorPipeline();
   return { message: "Daily vendor prospector pipeline completed." };
 });
-var updateVendorProspectingConfig = (0, import_https21.onCall)({
+var updateVendorProspectingConfig = (0, import_https24.onCall)({
   cors: DASHBOARD_CORS
 }, async (request) => {
   const data = request.data;
@@ -71933,26 +73153,26 @@ var updateVendorProspectingConfig = (0, import_https21.onCall)({
   if (data.enabled !== void 0) update.enabled = data.enabled;
   if (data.excludePatterns) update.excludePatterns = data.excludePatterns;
   if (Object.keys(update).length === 0) {
-    throw new import_https21.HttpsError("invalid-argument", "No valid fields to update.");
+    throw new import_https24.HttpsError("invalid-argument", "No valid fields to update.");
   }
   await db.collection("vendor_prospecting_config").doc("default").set(update, { merge: true });
-  logger32.info("[updateVendorProspectingConfig] Config updated:", update);
+  logger35.info("[updateVendorProspectingConfig] Config updated:", update);
   return { message: "Vendor prospecting config updated.", updated: update };
 });
-var getVendorProspectingConfig = (0, import_https21.onCall)({
+var getVendorProspectingConfig = (0, import_https24.onCall)({
   cors: DASHBOARD_CORS
 }, async () => {
   const doc = await db.collection("vendor_prospecting_config").doc("default").get();
   if (doc.exists) {
     return doc.data();
   }
-  await db.collection("vendor_prospecting_config").doc("default").set(DEFAULT_CONFIG2);
-  return DEFAULT_CONFIG2;
+  await db.collection("vendor_prospecting_config").doc("default").set(DEFAULT_CONFIG3);
+  return DEFAULT_CONFIG3;
 });
 
 // src/functions/sequenceGenerator.ts
-var import_https22 = require("firebase-functions/v2/https");
-var import_generative_ai9 = require("@google/generative-ai");
+var import_https25 = require("firebase-functions/v2/https");
+var import_generative_ai10 = require("@google/generative-ai");
 init_promptUtils();
 var FALLBACK_SYSTEM_PROMPT = `You are an expert B2B email copywriter for XIRI Facility Solutions, a commercial cleaning and facility management platform based in New York.
 
@@ -71995,14 +73215,14 @@ Return your response as valid JSON with this exact structure:
 }
 
 IMPORTANT: Return ONLY the JSON object. No markdown, no code fences, no explanation.`;
-var generateAISequence = (0, import_https22.onCall)({
+var generateAISequence = (0, import_https25.onCall)({
   secrets: ["GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 120
 }, async (request) => {
   const data = request.data;
   if (!data.prompt || !data.prompt.trim()) {
-    throw new import_https22.HttpsError("invalid-argument", "A prompt describing the target segment is required.");
+    throw new import_https25.HttpsError("invalid-argument", "A prompt describing the target segment is required.");
   }
   const numSteps = data.numSteps || 4;
   const tone = data.tone || "professional";
@@ -72017,7 +73237,7 @@ Number of steps: ${numSteps}
 
 Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
   try {
-    const genAI4 = new import_generative_ai9.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+    const genAI4 = new import_generative_ai10.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     const model2 = genAI4.getGenerativeModel({
       model: "gemini-3.1-pro-preview",
       generationConfig: {
@@ -72039,11 +73259,11 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
         parsed = JSON.parse(jsonMatch[1].trim());
       } else {
         console.error("[generateAISequence] Failed to parse response:", responseText.slice(0, 500));
-        throw new import_https22.HttpsError("internal", "AI returned invalid JSON. Please try again.");
+        throw new import_https25.HttpsError("internal", "AI returned invalid JSON. Please try again.");
       }
     }
     if (!parsed.name || !Array.isArray(parsed.steps) || parsed.steps.length === 0) {
-      throw new import_https22.HttpsError("internal", "AI returned incomplete sequence data. Please try again.");
+      throw new import_https25.HttpsError("internal", "AI returned incomplete sequence data. Please try again.");
     }
     parsed.steps = parsed.steps.map((step, idx) => ({
       label: step.label || `Step ${idx + 1}`,
@@ -72059,16 +73279,16 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
         steps: parsed.steps
       }
     };
-  } catch (error16) {
-    if (error16 instanceof import_https22.HttpsError) throw error16;
-    console.error("[generateAISequence] Error:", error16);
-    throw new import_https22.HttpsError("internal", error16.message || "Failed to generate sequence.");
+  } catch (error18) {
+    if (error18 instanceof import_https25.HttpsError) throw error18;
+    console.error("[generateAISequence] Error:", error18);
+    throw new import_https25.HttpsError("internal", error18.message || "Failed to generate sequence.");
   }
 });
 
 // src/functions/askAI.ts
-var import_https23 = require("firebase-functions/v2/https");
-var import_generative_ai10 = require("@google/generative-ai");
+var import_https26 = require("firebase-functions/v2/https");
+var import_generative_ai11 = require("@google/generative-ai");
 var SYSTEM_PROMPT = `You are XIRI's Facility Solutions Advisor \u2014 a knowledgeable, professional AI assistant on xiri.ai.  Your job is to help facility managers, building owners, and practice managers understand how XIRI works and determine whether it's a fit for their building.
 
 ABOUT XIRI FACILITY SOLUTIONS:
@@ -72159,7 +73379,7 @@ function getPageContext(pageUrl) {
   }
   return "";
 }
-var askAI = (0, import_https23.onCall)({
+var askAI = (0, import_https26.onCall)({
   secrets: ["GEMINI_API_KEY"],
   cors: DASHBOARD_CORS,
   timeoutSeconds: 60,
@@ -72167,15 +73387,15 @@ var askAI = (0, import_https23.onCall)({
 }, async (request) => {
   const data = request.data;
   if (!data.messages || !Array.isArray(data.messages) || data.messages.length === 0) {
-    throw new import_https23.HttpsError("invalid-argument", "Messages array is required.");
+    throw new import_https26.HttpsError("invalid-argument", "Messages array is required.");
   }
   if (data.messages.length > 30) {
-    throw new import_https23.HttpsError("invalid-argument", "Conversation too long. Please start a new chat.");
+    throw new import_https26.HttpsError("invalid-argument", "Conversation too long. Please start a new chat.");
   }
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.error("[askAI] GEMINI_API_KEY not configured");
-    throw new import_https23.HttpsError("internal", "AI service is temporarily unavailable.");
+    throw new import_https26.HttpsError("internal", "AI service is temporarily unavailable.");
   }
   const pageContext = getPageContext(data.pageUrl);
   const fullSystemPrompt = SYSTEM_PROMPT + pageContext;
@@ -72184,7 +73404,7 @@ var askAI = (0, import_https23.onCall)({
     parts: [{ text: msg.text }]
   }));
   try {
-    const genAI4 = new import_generative_ai10.GoogleGenerativeAI(apiKey);
+    const genAI4 = new import_generative_ai11.GoogleGenerativeAI(apiKey);
     const model2 = genAI4.getGenerativeModel({
       model: "gemini-2.0-flash",
       systemInstruction: fullSystemPrompt,
@@ -72197,17 +73417,17 @@ var askAI = (0, import_https23.onCall)({
     const result = await model2.generateContent({ contents });
     const reply = result.response.text();
     return { reply };
-  } catch (error16) {
-    console.error("[askAI] Gemini error:", error16.message);
-    if (error16.message?.includes("quota") || error16.message?.includes("429")) {
-      throw new import_https23.HttpsError("resource-exhausted", "Our AI assistant is experiencing high demand. Please try again in a moment.");
+  } catch (error18) {
+    console.error("[askAI] Gemini error:", error18.message);
+    if (error18.message?.includes("quota") || error18.message?.includes("429")) {
+      throw new import_https26.HttpsError("resource-exhausted", "Our AI assistant is experiencing high demand. Please try again in a moment.");
     }
-    throw new import_https23.HttpsError("internal", "I had trouble generating a response. Please try again.");
+    throw new import_https26.HttpsError("internal", "I had trouble generating a response. Please try again.");
   }
 });
 
 // src/functions/pseoAuth.ts
-var import_https24 = require("firebase-functions/v2/https");
+var import_https27 = require("firebase-functions/v2/https");
 var import_params8 = require("firebase-functions/params");
 var gscClientId = (0, import_params8.defineSecret)("GSC_CLIENT_ID");
 var gscClientSecret = (0, import_params8.defineSecret)("GSC_CLIENT_SECRET");
@@ -72227,7 +73447,7 @@ var TOKEN_DOC_PATH = "pseo_config/gsc_credentials";
 function getRedirectUri(isDev) {
   return isDev ? REDIRECT_URI_DEV : REDIRECT_URI_PROD;
 }
-var getGscAuthUrl = (0, import_https24.onCall)({
+var getGscAuthUrl = (0, import_https27.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10,
   secrets: [gscClientId]
@@ -72248,7 +73468,7 @@ var getGscAuthUrl = (0, import_https24.onCall)({
     url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
   };
 });
-var exchangeGscToken = (0, import_https24.onCall)({
+var exchangeGscToken = (0, import_https27.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30,
   secrets: [gscClientId, gscClientSecret]
@@ -72256,7 +73476,7 @@ var exchangeGscToken = (0, import_https24.onCall)({
   const code = request.data?.code;
   const isDev = request.data?.isDev === true;
   if (!code) {
-    throw new import_https24.HttpsError("invalid-argument", "Missing authorization code");
+    throw new import_https27.HttpsError("invalid-argument", "Missing authorization code");
   }
   const redirectUri = getRedirectUri(isDev);
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -72273,7 +73493,7 @@ var exchangeGscToken = (0, import_https24.onCall)({
   const tokenData = await tokenResponse.json();
   if (tokenData.error) {
     console.error("[pSEO] Token exchange failed:", tokenData);
-    throw new import_https24.HttpsError("internal", `Token exchange failed: ${tokenData.error_description || tokenData.error}`);
+    throw new import_https27.HttpsError("internal", `Token exchange failed: ${tokenData.error_description || tokenData.error}`);
   }
   const expiresAt = admin.firestore.Timestamp.fromMillis(
     Date.now() + tokenData.expires_in * 1e3
@@ -72306,7 +73526,7 @@ var exchangeGscToken = (0, import_https24.onCall)({
     message: "Google Search Console and Analytics connected successfully"
   };
 });
-var getGscConnectionStatus = (0, import_https24.onCall)({
+var getGscConnectionStatus = (0, import_https27.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10
 }, async () => {
@@ -72322,7 +73542,7 @@ var getGscConnectionStatus = (0, import_https24.onCall)({
     connectedAt: data.connectedAt?.toDate?.()?.toISOString() || null
   };
 });
-var disconnectGsc = (0, import_https24.onCall)({
+var disconnectGsc = (0, import_https27.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 15
 }, async () => {
@@ -72380,7 +73600,7 @@ async function getValidAccessToken() {
   });
   return refreshData.access_token;
 }
-var testGscConnection = (0, import_https24.onCall)({
+var testGscConnection = (0, import_https27.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30
 }, async () => {
@@ -72423,17 +73643,105 @@ var testGscConnection = (0, import_https24.onCall)({
 });
 
 // src/triggers/pseoAnalysis.ts
-var import_scheduler12 = require("firebase-functions/v2/scheduler");
-var import_https25 = require("firebase-functions/v2/https");
-var logger33 = __toESM(require("firebase-functions/logger"));
-var import_generative_ai11 = require("@google/generative-ai");
-var BATCH_SIZE = 50;
+var import_scheduler13 = require("firebase-functions/v2/scheduler");
+var import_https28 = require("firebase-functions/v2/https");
+var logger36 = __toESM(require("firebase-functions/logger"));
+var import_generative_ai12 = require("@google/generative-ai");
+
+// src/pseo/config.ts
+var DEFAULT_PSEO_BATCH_SIZE = 100;
+var MAX_PSEO_BATCH_SIZE = 250;
+var PSEO_ROUTE_PREFIXES = {
+  leads: ["/services/", "/industries/", "/guides/", "/compare/"],
+  contractors: ["/contractors/"]
+};
+var PSEO_DEPLOYABLE_FIELDS = {
+  industries: /* @__PURE__ */ new Set([
+    "heroTitle",
+    "heroSubtitle",
+    "metaTitle",
+    "metaDescription"
+  ]),
+  services: /* @__PURE__ */ new Set([
+    "heroTitle",
+    "heroSubtitle",
+    "shortDescription",
+    "metaTitle",
+    "metaDescription"
+  ]),
+  locations: /* @__PURE__ */ new Set([
+    "shortDescription",
+    "localContext",
+    "ctaText",
+    "metaTitle",
+    "metaDescription",
+    "trustBadge",
+    "proofStatement",
+    "lastVerified"
+  ])
+};
+function toPagePath(input) {
+  const candidate = (input || "").trim();
+  if (!candidate) return "/";
+  try {
+    return new URL(candidate).pathname || "/";
+  } catch {
+    return candidate.startsWith("/") ? candidate : `/${candidate}`;
+  }
+}
+function normalizeTargetSlug(input) {
+  return toPagePath(input).replace(/^\/+/, "").replace(/\/+$/, "");
+}
+function targetSlugToPath(targetSlug) {
+  return `/${normalizeTargetSlug(targetSlug)}`;
+}
+function isPathInSegment(path2, segment) {
+  const normalized = toPagePath(path2);
+  return PSEO_ROUTE_PREFIXES[segment].some((prefix) => normalized.startsWith(prefix));
+}
+
+// src/triggers/pseoAnalysis.ts
 var GSC_SITE_URL = "https://xiri.ai/";
 var GA4_PROPERTY_ID = "properties/468338270";
-var SLUG_PATTERNS = {
-  leads: /\/(janitorial|commercial|medical|office|dental|gym|veterinary|daycare|auto|cleaning|sanitization|floor)[\w-]+-in-[\w-]+$/,
-  contractors: /\/(janitorial|cleaning|hvac|plumbing|electrical|landscaping)[\w-]+-contracts?-in-[\w-]+$/
-};
+function initRuleCounter() {
+  return {
+    R01: 0,
+    R02: 0,
+    R03: 0,
+    R04: 0,
+    R05: 0,
+    R06: 0,
+    R07: 0,
+    R08: 0,
+    R09: 0,
+    R10: 0
+  };
+}
+function initHeuristicObservability() {
+  return {
+    triggered: initRuleCounter(),
+    notTriggered: initRuleCounter(),
+    dataUnavailable: initRuleCounter()
+  };
+}
+async function getConfiguredBatchSize() {
+  try {
+    const doc = await db.collection("pseo_config").doc("engine").get();
+    if (!doc.exists) {
+      return DEFAULT_PSEO_BATCH_SIZE;
+    }
+    const data = doc.data();
+    const rawBatchSize = Number(data?.batchSize);
+    if (!Number.isFinite(rawBatchSize)) {
+      return DEFAULT_PSEO_BATCH_SIZE;
+    }
+    const normalized = Math.floor(rawBatchSize);
+    return Math.min(MAX_PSEO_BATCH_SIZE, Math.max(1, normalized));
+  } catch (err2) {
+    logger36.warn(`[pSEO] Failed to load engine config batchSize, using default ${DEFAULT_PSEO_BATCH_SIZE}: ${err2.message}`);
+    return DEFAULT_PSEO_BATCH_SIZE;
+  }
+}
 async function fetchGscData(accessToken, segment, startDate, endDate) {
   const allRows = [];
   let startRow = 0;
@@ -72464,11 +73772,10 @@ async function fetchGscData(accessToken, segment, startDate, endDate) {
     const data = await response.json();
     const rows = data.rows || [];
     if (rows.length === 0) break;
-    const pattern = SLUG_PATTERNS[segment];
     const filteredRows = rows.filter((r) => {
       try {
         const path2 = new URL(r.keys[0]).pathname;
-        return pattern.test(path2);
+        return isPathInSegment(path2, segment);
       } catch {
         return false;
       }
@@ -72477,7 +73784,7 @@ async function fetchGscData(accessToken, segment, startDate, endDate) {
     startRow += rows.length;
     if (rows.length < ROW_LIMIT) break;
   }
-  logger33.info(`[pSEO] Fetched ${allRows.length} GSC rows for segment "${segment}" (${startDate} \u2192 ${endDate})`);
+  logger36.info(`[pSEO] Fetched ${allRows.length} GSC rows for segment "${segment}" (${startDate} \u2192 ${endDate})`);
   return allRows;
 }
 function aggregateByPage(rows) {
@@ -72489,8 +73796,9 @@ function aggregateByPage(rows) {
     if (!pm) {
       let slug = page;
       try {
-        slug = new URL(page).pathname.replace(/^\//, "");
+        slug = normalizeTargetSlug(new URL(page).pathname);
       } catch {
+        slug = normalizeTargetSlug(page);
       }
       pm = {
         page,
@@ -72564,7 +73872,7 @@ async function fetchGa4Engagement(accessToken, pages, startDate, endDate) {
       }
     );
     if (!response.ok) {
-      logger33.warn(`[pSEO] GA4 API error: ${response.status}`);
+      logger36.warn(`[pSEO] GA4 API error: ${response.status}`);
       return result;
     }
     const data = await response.json();
@@ -72586,7 +73894,7 @@ async function fetchGa4Engagement(accessToken, pages, startDate, endDate) {
       }
     }
   } catch (err2) {
-    logger33.warn("[pSEO] GA4 fetch failed (non-critical):", err2.message);
+    logger36.warn("[pSEO] GA4 fetch failed (non-critical):", err2.message);
   }
   return result;
 }
@@ -72620,9 +73928,9 @@ async function fetchTrustSignals() {
       });
     }
   } catch (err2) {
-    logger33.warn("[pSEO] Trust signal fetch failed (non-critical):", err2.message);
+    logger36.warn("[pSEO] Trust signal fetch failed (non-critical):", err2.message);
   }
-  logger33.info(`[pSEO] Trust signals loaded for ${result.size} cities`);
+  logger36.info(`[pSEO] Trust signals loaded for ${result.size} cities`);
   return result;
 }
 async function fetchLivePageMeta(slugs) {
@@ -72638,7 +73946,7 @@ async function fetchLivePageMeta(slugs) {
           signal: AbortSignal.timeout(8e3)
         });
         if (!res.ok) {
-          logger33.warn(`[pSEO] Failed to fetch page for ${slug}: HTTP ${res.status}`);
+          logger36.warn(`[pSEO] Failed to fetch page for ${slug}: HTTP ${res.status}`);
           return;
         }
         const html = await res.text();
@@ -72650,12 +73958,12 @@ async function fetchLivePageMeta(slugs) {
         const h1 = h1Match ? h1Match[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() : "";
         result.set(slug, { title, description, h1 });
       } catch (err2) {
-        logger33.warn(`[pSEO] Page fetch failed for ${slug}: ${err2.message}`);
+        logger36.warn(`[pSEO] Page fetch failed for ${slug}: ${err2.message}`);
       }
     });
     await Promise.all(promises);
   }
-  logger33.info(`[pSEO] Fetched live meta for ${result.size}/${slugs.length} pages`);
+  logger36.info(`[pSEO] Fetched live meta for ${result.size}/${slugs.length} pages`);
   return result;
 }
 function getLiveValueForField(meta, field) {
@@ -72668,8 +73976,7 @@ function getLiveValueForField(meta, field) {
     case "heroTitle":
       return meta.h1;
     case "heroSubtitle":
-      return "";
-    // Not easily extractable from raw HTML
+      return "[live heroSubtitle extraction not supported]";
     default:
       return "";
   }
@@ -72692,7 +73999,7 @@ function extractCityFromSlug(slug) {
   }
   return tail.replace(/-/g, " ");
 }
-function runHeuristics(metrics, trustSignals, segment) {
+function runHeuristics(metrics, trustSignals, segment, observability) {
   const nudges = [];
   const slug = metrics.slug;
   const city = extractCityFromSlug(slug);
@@ -72710,6 +74017,7 @@ function runHeuristics(metrics, trustSignals, segment) {
     workOrdersMonth: trust?.wo
   };
   if (metrics.position < 10 && metrics.ctr < 0.02 && metrics.impressions > 50) {
+    observability && (observability.triggered.R01 += 1);
     nudges.push({
       ruleId: "R01",
       scope: "template",
@@ -72720,8 +74028,11 @@ function runHeuristics(metrics, trustSignals, segment) {
       dataPoints: baseDataPoints,
       currentValue: ""
     });
+  } else {
+    observability && (observability.notTriggered.R01 += 1);
   }
   if (metrics.position >= 11 && metrics.position <= 20 && metrics.impressions > 100) {
+    observability && (observability.triggered.R02 += 1);
     nudges.push({
       ruleId: "R02",
       scope: "instance",
@@ -72732,8 +74043,11 @@ function runHeuristics(metrics, trustSignals, segment) {
       dataPoints: baseDataPoints,
       currentValue: ""
     });
+  } else {
+    observability && (observability.notTriggered.R02 += 1);
   }
   if (metrics.position > 20 && metrics.impressions > 500) {
+    observability && (observability.triggered.R03 += 1);
     nudges.push({
       ruleId: "R03",
       scope: "template",
@@ -72744,10 +74058,13 @@ function runHeuristics(metrics, trustSignals, segment) {
       dataPoints: baseDataPoints,
       currentValue: ""
     });
+  } else {
+    observability && (observability.notTriggered.R03 += 1);
   }
   if (metrics.clicksPrior && metrics.clicksPrior > 10) {
     const decline = (metrics.clicksPrior - metrics.clicks) / metrics.clicksPrior;
     if (decline > 0.3) {
+      observability && (observability.triggered.R04 += 1);
       nudges.push({
         ruleId: "R04",
         scope: "trust-refresh",
@@ -72758,10 +74075,15 @@ function runHeuristics(metrics, trustSignals, segment) {
         dataPoints: { ...baseDataPoints, gscClicksMoM: -decline },
         currentValue: ""
       });
+    } else {
+      observability && (observability.notTriggered.R04 += 1);
     }
+  } else {
+    observability && (observability.dataUnavailable.R04 += 1);
   }
   if (metrics.bounceRate != null && metrics.avgEngagementTime != null) {
     if (metrics.bounceRate > 70 && metrics.avgEngagementTime < 30) {
+      observability && (observability.triggered.R05 += 1);
       nudges.push({
         ruleId: "R05",
         scope: "instance",
@@ -72772,9 +74094,14 @@ function runHeuristics(metrics, trustSignals, segment) {
         dataPoints: baseDataPoints,
         currentValue: ""
       });
+    } else {
+      observability && (observability.notTriggered.R05 += 1);
     }
+  } else {
+    observability && (observability.dataUnavailable.R05 += 1);
   }
   if (metrics.scrollDepth != null && metrics.scrollDepth < 40 && metrics.impressions > 30) {
+    observability && (observability.triggered.R06 += 1);
     nudges.push({
       ruleId: "R06",
       scope: "template",
@@ -72785,8 +74112,13 @@ function runHeuristics(metrics, trustSignals, segment) {
       dataPoints: baseDataPoints,
       currentValue: ""
     });
+  } else if (metrics.scrollDepth == null) {
+    observability && (observability.dataUnavailable.R06 += 1);
+  } else {
+    observability && (observability.notTriggered.R06 += 1);
   }
   if (metrics.impressions > 200 && metrics.clicks === 0) {
+    observability && (observability.triggered.R07 += 1);
     nudges.push({
       ruleId: "R07",
       scope: "template",
@@ -72797,8 +74129,11 @@ function runHeuristics(metrics, trustSignals, segment) {
       dataPoints: baseDataPoints,
       currentValue: ""
     });
+  } else {
+    observability && (observability.notTriggered.R07 += 1);
   }
   if (trust && trust.nfc > 10) {
+    observability && (observability.triggered.R09 += 1);
     nudges.push({
       ruleId: "R09",
       scope: "trust-refresh",
@@ -72812,8 +74147,13 @@ function runHeuristics(metrics, trustSignals, segment) {
       },
       currentValue: ""
     });
+  } else if (!trust) {
+    observability && (observability.dataUnavailable.R09 += 1);
+  } else {
+    observability && (observability.notTriggered.R09 += 1);
   }
   if (trust && trust.wo > 5) {
+    observability && (observability.triggered.R10 += 1);
     nudges.push({
       ruleId: "R10",
       scope: "trust-refresh",
@@ -72827,10 +74167,14 @@ function runHeuristics(metrics, trustSignals, segment) {
       },
       currentValue: ""
     });
+  } else if (!trust) {
+    observability && (observability.dataUnavailable.R10 += 1);
+  } else {
+    observability && (observability.notTriggered.R10 += 1);
   }
   return nudges;
 }
-function detectExpansionOpportunities(rows, existingPages, segment) {
+function detectExpansionOpportunities(rows, existingPages, segment, observability) {
   const nudges = [];
   const queryImpressions = /* @__PURE__ */ new Map();
   for (const row of rows) {
@@ -72851,6 +74195,7 @@ function detectExpansionOpportunities(rows, existingPages, segment) {
         (p) => p.toLowerCase().includes(location.replace(/\s+/g, "-"))
       );
       if (!hasPage) {
+        observability && (observability.triggered.R08 += 1);
         nudges.push({
           ruleId: "R08",
           scope: "expansion",
@@ -72866,7 +74211,11 @@ function detectExpansionOpportunities(rows, existingPages, segment) {
           },
           currentValue: ""
         });
+      } else {
+        observability && (observability.notTriggered.R08 += 1);
       }
+    } else {
+      observability && (observability.dataUnavailable.R08 += 1);
     }
   }
   return nudges;
@@ -72876,19 +74225,25 @@ async function fetchExistingPendingNudges() {
   const keys = /* @__PURE__ */ new Set();
   for (const doc of snap.docs) {
     const d = doc.data();
-    keys.add(`${d.targetSlug}::${d.targetField}`);
+    const slug = normalizeTargetSlug(d.targetSlug || "");
+    const field = String(d.targetField || "").trim();
+    keys.add(`${slug}::${field}`);
   }
-  logger33.info(`[pSEO] Found ${keys.size} existing pending nudges for dedup`);
+  logger36.info(`[pSEO] Found ${keys.size} existing pending nudges for dedup`);
   return keys;
 }
 function deduplicateNudges(nudges, existingKeys) {
   const before = nudges.length;
-  const filtered = nudges.filter((n) => !existingKeys.has(`${n.targetSlug}::${n.targetField}`));
+  const filtered = nudges.filter((n) => {
+    const slug = normalizeTargetSlug(n.targetSlug);
+    const field = String(n.targetField || "").trim();
+    return !existingKeys.has(`${slug}::${field}`);
+  });
   const removed = before - filtered.length;
   if (removed > 0) {
-    logger33.info(`[pSEO] Dedup removed ${removed} nudges (already pending in inbox)`);
+    logger36.info(`[pSEO] Dedup removed ${removed} nudges (already pending in inbox)`);
   }
-  return filtered;
+  return { filtered, removed };
 }
 async function fetchWinningPatterns(segment) {
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1e3);
@@ -72905,7 +74260,7 @@ async function fetchWinningPatterns(segment) {
       });
     }
   }
-  logger33.info(`[pSEO] Found ${patterns.length} winning patterns from approved nudges`);
+  logger36.info(`[pSEO] Found ${patterns.length} winning patterns from approved nudges`);
   return patterns;
 }
 function identifyTopPerformers(pages, liveMetaMap) {
@@ -72950,7 +74305,7 @@ function identifyTopPerformers(pages, liveMetaMap) {
   }
   candidates.sort((a2, b) => b.ctr - a2.ctr);
   const top = candidates.slice(0, 10);
-  logger33.info(`[pSEO] Identified ${top.length} top-performing pages (high CTR vs position benchmark)`);
+  logger36.info(`[pSEO] Identified ${top.length} top-performing pages (high CTR vs position benchmark)`);
   return top;
 }
 async function generateCopySuggestion(nudge, segment, winningPatterns = [], topPerformers = []) {
@@ -72958,7 +74313,7 @@ async function generateCopySuggestion(nudge, segment, winningPatterns = [], topP
   if (!apiKey) {
     return `[GEMINI_API_KEY not configured \u2014 manual suggestion needed for ${nudge.targetField}]`;
   }
-  const genAI4 = new import_generative_ai11.GoogleGenerativeAI(apiKey);
+  const genAI4 = new import_generative_ai12.GoogleGenerativeAI(apiKey);
   const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
   const audienceContext = segment === "leads" ? "facility managers, office managers, and property managers evaluating commercial cleaning partners. They are B2B decision-makers who prioritize compliance documentation, verified quality, and operational reliability over price." : "independent janitorial contractors and cleaning company owners seeking commercial cleaning contracts and subcontracting opportunities in the Long Island/NYC market.";
   const trustContext = nudge.dataPoints.trustSignal ? `
@@ -73086,7 +74441,7 @@ Analyze the patterns: what differentiators, structures, or proof points are maki
 
 AUDIENCE: ${audienceContext}
 
-TASK: Write an optimized "${nudge.targetField}" for the page: /services/${nudge.targetSlug}
+TASK: Write an optimized "${nudge.targetField}" for the page: ${targetSlugToPath(nudge.targetSlug)}
 ${serviceFromSlug ? `SERVICE: ${serviceFromSlug}` : ""}
 ${locationFromSlug ? `LOCATION: ${locationFromSlug}` : ""}
 
@@ -73119,7 +74474,7 @@ STRICT RULES:
     const text = result.response?.text()?.trim() || "";
     return text.replace(/^["']|["']$/g, "").trim();
   } catch (err2) {
-    logger33.warn(`[pSEO] Gemini generation failed for ${nudge.targetSlug}/${nudge.targetField}:`, err2.message);
+    logger36.warn(`[pSEO] Gemini generation failed for ${nudge.targetSlug}/${nudge.targetField}:`, err2.message);
     return `[Auto-generation failed \u2014 please write manually. Reason: ${nudge.reasoning}]`;
   }
 }
@@ -73127,6 +74482,23 @@ async function runAnalysisPipeline(segment) {
   const statusRef = db.collection("pseo_config").doc("run_status");
   const startedAt = /* @__PURE__ */ new Date();
   let phase = "Initializing";
+  const heuristicObservability = initHeuristicObservability();
+  const reliability = {
+    generated: 0,
+    deduped: 0,
+    applied: 0,
+    skipped_by_reason: {
+      expansion_queued: 0
+    },
+    unsupported_fields: 0,
+    missing_metrics: {
+      bounceRate: 0,
+      avgEngagementTime: 0,
+      scrollDepth: 0,
+      trustSignals: 0
+    },
+    heuristics: heuristicObservability
+  };
   const updateStatus = async (updates) => {
     await statusRef.set({
       running: true,
@@ -73139,18 +74511,20 @@ async function runAnalysisPipeline(segment) {
   };
   try {
     await updateStatus({ phase: "Connecting to GSC" });
+    const configuredBatchSize = await getConfiguredBatchSize();
+    logger36.info(`[pSEO] Using batch size ${configuredBatchSize} (default ${DEFAULT_PSEO_BATCH_SIZE}, max ${MAX_PSEO_BATCH_SIZE})`);
     const accessToken = await getValidAccessToken();
-    logger33.info(`[pSEO] Access token acquired for segment "${segment}"`);
+    logger36.info(`[pSEO] Access token acquired for segment "${segment}"`);
     try {
       const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${accessToken}`);
       const tokenInfo = await tokenInfoRes.json();
-      logger33.info(`[pSEO] Token belongs to: ${tokenInfo.email || "unknown"}, scopes: ${tokenInfo.scope || "unknown"}`);
+      logger36.info(`[pSEO] Token belongs to: ${tokenInfo.email || "unknown"}, scopes: ${tokenInfo.scope || "unknown"}`);
       const sitesRes = await fetch("https://www.googleapis.com/webmasters/v3/sites", {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
       const sitesData = await sitesRes.json();
       const siteUrls = (sitesData.siteEntry || []).map((s) => s.siteUrl);
-      logger33.info(`[pSEO] GSC accessible sites: ${JSON.stringify(siteUrls)}`);
+      logger36.info(`[pSEO] GSC accessible sites: ${JSON.stringify(siteUrls)}`);
       if (!siteUrls.includes(GSC_SITE_URL)) {
         throw new Error(
           `Token email "${tokenInfo.email}" does not have access to "${GSC_SITE_URL}". Accessible sites: ${JSON.stringify(siteUrls)}. Please disconnect and reconnect GSC with the correct Google account.`
@@ -73158,7 +74532,7 @@ async function runAnalysisPipeline(segment) {
       }
     } catch (diagErr) {
       if (diagErr.message?.includes("does not have access")) throw diagErr;
-      logger33.warn(`[pSEO] Diagnostic check failed (non-fatal): ${diagErr.message}`);
+      logger36.warn(`[pSEO] Diagnostic check failed (non-fatal): ${diagErr.message}`);
     }
     const today = /* @__PURE__ */ new Date();
     const endDate = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1e3);
@@ -73180,7 +74554,7 @@ async function runAnalysisPipeline(segment) {
         pm.clicksPrior = prior.clicks;
       }
     }
-    logger33.info(`[pSEO] Aggregated ${currentPages.size} pages for segment "${segment}"`);
+    logger36.info(`[pSEO] Aggregated ${currentPages.size} pages for segment "${segment}"`);
     phase = "Fetching GA4 engagement";
     await updateStatus({ phase, pagesAnalyzed: currentPages.size });
     const ga4Data = await fetchGa4Engagement(
@@ -73214,18 +74588,29 @@ async function runAnalysisPipeline(segment) {
     await updateStatus({ phase });
     let allNudges = [];
     for (const pm of currentPages.values()) {
-      const pageNudges = runHeuristics(pm, trustSignals, segment);
+      const pageNudges = runHeuristics(pm, trustSignals, segment, heuristicObservability);
       allNudges.push(...pageNudges);
     }
     const existingPages = new Set(Array.from(currentPages.keys()));
-    const expansionNudges = detectExpansionOpportunities(currentRows, existingPages, segment);
+    const expansionNudges = detectExpansionOpportunities(currentRows, existingPages, segment, heuristicObservability);
+    reliability.skipped_by_reason.expansion_queued += expansionNudges.length;
     allNudges.push(...expansionNudges);
-    logger33.info(`[pSEO] Detected ${allNudges.length} raw nudges across ${currentPages.size} pages`);
+    reliability.generated = allNudges.length;
+    reliability.batch_size = configuredBatchSize;
+    for (const pm of currentPages.values()) {
+      if (pm.bounceRate == null) reliability.missing_metrics.bounceRate += 1;
+      if (pm.avgEngagementTime == null) reliability.missing_metrics.avgEngagementTime += 1;
+      if (pm.scrollDepth == null) reliability.missing_metrics.scrollDepth += 1;
+      if (pm.nfcSessionsMonth == null && pm.workOrdersMonth == null) reliability.missing_metrics.trustSignals += 1;
+    }
+    logger36.info(`[pSEO] Detected ${allNudges.length} raw nudges across ${currentPages.size} pages`);
     phase = "Deduplicating against inbox";
     await updateStatus({ phase });
     const existingPending = await fetchExistingPendingNudges();
-    allNudges = deduplicateNudges(allNudges, existingPending);
-    logger33.info(`[pSEO] ${allNudges.length} nudges after dedup`);
+    const dedup = deduplicateNudges(allNudges, existingPending);
+    allNudges = dedup.filtered;
+    reliability.deduped = dedup.removed;
+    logger36.info(`[pSEO] ${allNudges.length} nudges after dedup`);
     phase = "Loading winning patterns";
     await updateStatus({ phase });
     const winningPatterns = await fetchWinningPatterns(segment);
@@ -73235,7 +74620,7 @@ async function runAnalysisPipeline(segment) {
       if (pDiff !== 0) return pDiff;
       return (b.dataPoints.gscImpressions || 0) - (a2.dataPoints.gscImpressions || 0);
     });
-    const cappedNudges = allNudges.slice(0, BATCH_SIZE);
+    const cappedNudges = allNudges.slice(0, configuredBatchSize);
     phase = "Fetching live page content";
     await updateStatus({ phase });
     const topCtrCandidates = [];
@@ -73296,6 +74681,22 @@ async function runAnalysisPipeline(segment) {
       }
     };
     await db.collection("pseo_batches").doc(batchId).set(batchDoc);
+    const expansionQueue = nudgesWithCopy.filter((n) => n.scope === "expansion").map((n) => ({
+      targetSlug: n.targetSlug,
+      reasoning: n.reasoning,
+      dataPoints: n.dataPoints,
+      suggestedValue: n.suggestedValue,
+      createdAt: now
+    }));
+    if (expansionQueue.length > 0) {
+      await db.collection("pseo_expansion_queue").doc(batchId).set({
+        batchId,
+        segment,
+        createdAt: now,
+        count: expansionQueue.length,
+        items: expansionQueue
+      }, { merge: true });
+    }
     const FIRESTORE_BATCH_LIMIT = 490;
     for (let batchStart = 0; batchStart < nudgesWithCopy.length; batchStart += FIRESTORE_BATCH_LIMIT) {
       const chunk = nudgesWithCopy.slice(batchStart, batchStart + FIRESTORE_BATCH_LIMIT);
@@ -73307,7 +74708,7 @@ async function runAnalysisPipeline(segment) {
           scope: nudge.scope,
           priority: nudge.priority,
           status: "pending",
-          targetSlug: nudge.targetSlug,
+          targetSlug: normalizeTargetSlug(nudge.targetSlug),
           targetField: nudge.targetField,
           currentValue: nudge.currentValue,
           suggestedValue: nudge.suggestedValue,
@@ -73330,25 +74731,28 @@ async function runAnalysisPipeline(segment) {
       startedAt,
       completedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date(),
-      batchId
+      batchId,
+      reliability
     });
-    logger33.info(`[pSEO] Analysis complete. Batch "${batchId}" \u2014 ${nudgesWithCopy.length} nudges written.`);
+    logger36.info(`[pSEO] Analysis complete. Batch "${batchId}" \u2014 ${nudgesWithCopy.length} nudges written.`);
     return {
       batchId,
       totalNudges: nudgesWithCopy.length,
       pagesAnalyzed: currentPages.size,
-      breakdown
+      breakdown,
+      reliability
     };
   } catch (err2) {
-    logger33.error("[pSEO] Analysis pipeline failed:", err2.message || err2);
+    logger36.error("[pSEO] Analysis pipeline failed:", err2.message || err2);
     await statusRef.set({
       running: false,
       segment,
       phase: "Failed",
       error: err2.message || "Unknown error",
       startedAt,
-      updatedAt: /* @__PURE__ */ new Date()
-    }).catch((e2) => logger33.error("[pSEO] Failed to write error status:", e2.message));
+      updatedAt: /* @__PURE__ */ new Date(),
+      reliability
+    }).catch((e2) => logger36.error("[pSEO] Failed to write error status:", e2.message));
     throw err2;
   }
 }
@@ -73359,7 +74763,7 @@ function getISOWeek(date) {
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 864e5 + 1) / 7);
 }
-var weeklyPseoAnalysis = (0, import_scheduler12.onSchedule)({
+var weeklyPseoAnalysis = (0, import_scheduler13.onSchedule)({
   schedule: "0 23 * * 0",
   // Sunday 11 PM
   timeZone: "America/New_York",
@@ -73367,11 +74771,11 @@ var weeklyPseoAnalysis = (0, import_scheduler12.onSchedule)({
   timeoutSeconds: 540,
   memory: "1GiB"
 }, async () => {
-  logger33.info("[pSEO] Starting scheduled weekly analysis...");
+  logger36.info("[pSEO] Starting scheduled weekly analysis...");
   await runAnalysisPipeline("leads");
   await runAnalysisPipeline("contractors");
 });
-var triggerPseoAnalysis = (0, import_https25.onCall)({
+var triggerPseoAnalysis = (0, import_https28.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["GEMINI_API_KEY", "GSC_CLIENT_ID", "GSC_CLIENT_SECRET"],
   timeoutSeconds: 540,
@@ -73379,20 +74783,20 @@ var triggerPseoAnalysis = (0, import_https25.onCall)({
 }, async (request) => {
   const segment = request.data?.segment || "leads";
   if (!["leads", "contractors"].includes(segment)) {
-    throw new import_https25.HttpsError("invalid-argument", "Invalid segment. Use 'leads' or 'contractors'.");
+    throw new import_https28.HttpsError("invalid-argument", "Invalid segment. Use 'leads' or 'contractors'.");
   }
   const statusDoc = await db.collection("pseo_config").doc("run_status").get();
   if (statusDoc.exists && statusDoc.data()?.running) {
-    throw new import_https25.HttpsError("already-exists", "Analysis is already running. Please wait for it to complete.");
+    throw new import_https28.HttpsError("already-exists", "Analysis is already running. Please wait for it to complete.");
   }
-  logger33.info(`[pSEO] Manual trigger invoked for segment "${segment}"`);
+  logger36.info(`[pSEO] Manual trigger invoked for segment "${segment}"`);
   const result = await runAnalysisPipeline(segment);
   return {
     message: `Analysis complete for "${segment}"`,
     ...result
   };
 });
-var getPseoRunStatus = (0, import_https25.onCall)({
+var getPseoRunStatus = (0, import_https28.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10
 }, async () => {
@@ -73410,13 +74814,14 @@ var getPseoRunStatus = (0, import_https25.onCall)({
     startedAt: data.startedAt?.toDate?.()?.toISOString() || null,
     completedAt: data.completedAt?.toDate?.()?.toISOString() || null,
     error: data.error || null,
-    batchId: data.batchId || null
+    batchId: data.batchId || null,
+    reliability: data.reliability || null
   };
 });
 
 // src/functions/pseoDeployment.ts
-var import_https26 = require("firebase-functions/v2/https");
-var logger34 = __toESM(require("firebase-functions/logger"));
+var import_https29 = require("firebase-functions/v2/https");
+var logger37 = __toESM(require("firebase-functions/logger"));
 var import_params9 = require("firebase-functions/params");
 init_src();
 var googleChatWebhookSecret2 = (0, import_params9.defineSecret)("GOOGLE_CHAT_WEBHOOK_URL");
@@ -73495,27 +74900,85 @@ async function createPR(title, body, head, base, token) {
   return { url: pr.html_url, number: pr.number };
 }
 function findLocationMatch(nudgeSlug, locations) {
-  const exact = locations.find((l) => l.slug === nudgeSlug);
+  const normalized = normalizeTargetSlug(nudgeSlug);
+  const exact = locations.find((l) => l.slug === normalized);
   if (exact) return exact;
   const sorted = [...locations].sort((a2, b) => b.slug.length - a2.slug.length);
-  return sorted.find((l) => nudgeSlug.includes(l.slug)) ?? null;
+  return sorted.find((l) => normalized.includes(l.slug)) ?? null;
+}
+function getRouteFamily(slug) {
+  const normalized = normalizeTargetSlug(slug);
+  if (normalized.startsWith("services/")) return "services";
+  if (normalized.startsWith("industries/")) return "industries";
+  if (normalized.startsWith("contractors/")) return "locations";
+  if (normalized.includes("-in-")) return "locations";
+  return "unknown";
+}
+function getEntitySlug(slug, family) {
+  const normalized = normalizeTargetSlug(slug);
+  const segments = normalized.split("/").filter(Boolean);
+  if (family === "services") {
+    const value = segments[1] || "";
+    return value ? value.split("-in-")[0] : null;
+  }
+  if (family === "industries") {
+    const value = segments.length >= 3 ? segments[2] : segments[1];
+    return value ? value.split("-in-")[0] : null;
+  }
+  return null;
 }
 function applySeoDataChanges(seoDataRaw, nudges) {
   const seoData = JSON.parse(seoDataRaw);
   const applied = [];
   const skipped = [];
+  const skippedByReason = [];
+  const unsupportedFields = /* @__PURE__ */ new Set();
+  const expansionQueue = [];
+  const pushSkip = (nudge, code, message) => {
+    skipped.push(`${nudge.id}: ${message}`);
+    skippedByReason.push({
+      nudgeId: nudge.id,
+      code,
+      message,
+      targetSlug: nudge.targetSlug,
+      targetField: nudge.targetField
+    });
+    if (code === "unsupported_field") {
+      unsupportedFields.add(nudge.targetField);
+    }
+  };
   for (const nudge of nudges) {
     const value = nudge.editedValue || nudge.suggestedValue;
     const field = nudge.targetField;
-    const slug = nudge.targetSlug;
+    const slug = normalizeTargetSlug(nudge.targetSlug);
+    const family = getRouteFamily(slug);
     if (nudge.scope === "expansion") {
-      skipped.push(`${nudge.id}: expansion nudge (manual page creation)`);
+      expansionQueue.push({
+        nudgeId: nudge.id,
+        targetSlug: slug,
+        reasoning: nudge.reasoning
+      });
+      pushSkip(nudge, "expansion_queued", "expansion nudge queued for manual page creation");
+      continue;
+    }
+    if (!value || !String(value).trim()) {
+      pushSkip(nudge, "empty_value", "empty suggested value");
+      continue;
+    }
+    if (family === "unknown") {
+      pushSkip(nudge, "target_not_found", `unsupported target route "${slug}"`);
       continue;
     }
     let found = false;
-    if (seoData.industries) {
+    if ((family === "industries" || family === "locations") && seoData.industries) {
+      const industrySlug = getEntitySlug(slug, "industries");
       for (const industry of seoData.industries) {
-        if (industry.slug === slug || slug.includes(industry.slug)) {
+        if (industrySlug && (industry.slug === industrySlug || slug.includes(industry.slug))) {
+          if (!PSEO_DEPLOYABLE_FIELDS.industries.has(field)) {
+            pushSkip(nudge, "unsupported_field", `unsupported field "${field}" for industries`);
+            found = true;
+            break;
+          }
           if (field in industry) {
             industry[field] = value;
             found = true;
@@ -73530,9 +74993,37 @@ function applySeoDataChanges(seoDataRaw, nudges) {
         }
       }
     }
+    if (!found && (family === "services" || family === "locations") && seoData.services) {
+      const serviceSlug = getEntitySlug(slug, "services");
+      for (const service of seoData.services) {
+        if (serviceSlug && (service.slug === serviceSlug || slug.includes(service.slug))) {
+          if (!PSEO_DEPLOYABLE_FIELDS.services.has(field)) {
+            pushSkip(nudge, "unsupported_field", `unsupported field "${field}" for services`);
+            found = true;
+            break;
+          }
+          if (field in service) {
+            service[field] = value;
+            found = true;
+          } else if (field === "metaTitle") {
+            service.heroTitle = value;
+            found = true;
+          } else if (field === "metaDescription") {
+            service.heroSubtitle = value;
+            found = true;
+          }
+          if (found) break;
+        }
+      }
+    }
     if (!found && seoData.locations) {
       const location = findLocationMatch(slug, seoData.locations);
       if (location) {
+        if (!PSEO_DEPLOYABLE_FIELDS.locations.has(field)) {
+          pushSkip(nudge, "unsupported_field", `unsupported field "${field}" for locations`);
+          found = true;
+          continue;
+        }
         if (field in location) {
           location[field] = value;
           found = true;
@@ -73548,8 +75039,11 @@ function applySeoDataChanges(seoDataRaw, nudges) {
         } else if (field === "ctaText") {
           location.whyXiri = value;
           found = true;
-        } else if (field === "trustBadge" || field === "proofStatement") {
-          location.trustStatement = value;
+        } else if (field === "trustBadge") {
+          location.complianceNote = value;
+          found = true;
+        } else if (field === "proofStatement") {
+          location.localInsight = value;
           found = true;
         } else if (field === "lastVerified") {
           location.lastVerified = value;
@@ -73560,13 +75054,16 @@ function applySeoDataChanges(seoDataRaw, nudges) {
     if (found) {
       applied.push(nudge.id);
     } else {
-      skipped.push(`${nudge.id}: could not locate ${slug}.${field} in seo-data.json`);
+      pushSkip(nudge, "target_not_found", `could not locate ${slug}.${field} in seo-data.json`);
     }
   }
   return {
     modified: JSON.stringify(seoData, null, 2),
     applied,
-    skipped
+    skipped,
+    skippedByReason,
+    unsupportedFields: Array.from(unsupportedFields),
+    expansionQueue
   };
 }
 function buildPrBody(nudges, applied, skipped) {
@@ -73620,53 +75117,97 @@ async function notifyDeployment(params) {
   ].join("\n");
   await sendText(threadKey, summary);
 }
-var deployApprovedNudges = (0, import_https26.onCall)({
+var deployApprovedNudges = (0, import_https29.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [githubTokenSecret, googleChatWebhookSecret2],
   timeoutSeconds: 120,
   memory: "512MiB"
 }, async (request) => {
-  const { batchId } = request.data || {};
+  const { batchId, force } = request.data || {};
   if (!batchId || typeof batchId !== "string") {
-    throw new import_https26.HttpsError("invalid-argument", "batchId is required.");
+    throw new import_https29.HttpsError("invalid-argument", "batchId is required.");
   }
   const token = getGithubToken();
   if (!token) {
-    throw new import_https26.HttpsError("failed-precondition", "GITHUB_PAT secret not configured. Set it in Firebase Secrets.");
+    throw new import_https29.HttpsError("failed-precondition", "GITHUB_PAT secret not configured. Set it in Firebase Secrets.");
   }
-  logger34.info(`[pSEO Deploy] Starting deployment for batch "${batchId}"`);
+  logger37.info(`[pSEO Deploy] Starting deployment for batch "${batchId}"`);
   const nudgesSnap = await db.collection("pseo_nudges").where("batchId", "==", batchId).where("status", "==", "approved").get();
   if (nudgesSnap.empty) {
-    throw new import_https26.HttpsError("not-found", `No approved nudges found for batch "${batchId}".`);
+    throw new import_https29.HttpsError("not-found", `No approved nudges found for batch "${batchId}".`);
   }
   const nudges = nudgesSnap.docs.map((d) => ({
     id: d.id,
     ...d.data()
   }));
-  logger34.info(`[pSEO Deploy] Found ${nudges.length} approved nudges for batch "${batchId}"`);
+  logger37.info(`[pSEO Deploy] Found ${nudges.length} approved nudges for batch "${batchId}"`);
   const branchName = `pseo/${batchId}`;
   const mainSha = await getDefaultBranchSha(token);
   try {
     await createBranch(branchName, mainSha, token);
   } catch (err2) {
     if (err2.message?.includes("422") && err2.message?.includes("Reference already exists")) {
-      logger34.warn(`[pSEO Deploy] Branch "${branchName}" already exists, proceeding with update`);
+      logger37.warn(`[pSEO Deploy] Branch "${branchName}" already exists, proceeding with update`);
     } else {
       throw err2;
     }
   }
-  logger34.info(`[pSEO Deploy] Branch "${branchName}" created from ${mainSha.slice(0, 7)}`);
+  logger37.info(`[pSEO Deploy] Branch "${branchName}" created from ${mainSha.slice(0, 7)}`);
   const { content: seoDataRaw, sha: fileSha } = await getFileContent(SEO_DATA_PATH, branchName, token);
-  const { modified, applied, skipped } = applySeoDataChanges(seoDataRaw, nudges);
+  const {
+    modified,
+    applied,
+    skipped,
+    skippedByReason,
+    unsupportedFields,
+    expansionQueue
+  } = applySeoDataChanges(seoDataRaw, nudges);
+  if (skipped.length !== skippedByReason.length) {
+    throw new import_https29.HttpsError("internal", "Deploy aborted: skipped nudges must include explicit reason codes.");
+  }
   if (applied.length === 0) {
-    throw new import_https26.HttpsError("not-found", "No changes could be applied to seo-data.json. All nudges were skipped.");
+    if (!force) {
+      throw new import_https29.HttpsError(
+        "failed-precondition",
+        "Deploy aborted: zero applicable nudges in batch. Re-run with force=true if this is expected."
+      );
+    }
+    await db.collection("pseo_batches").doc(batchId).set({
+      lastDeployAttemptAt: /* @__PURE__ */ new Date(),
+      deployedCount: 0,
+      skippedCount: skipped.length,
+      deploySkippedByReason: skippedByReason,
+      unsupportedFields,
+      expansionQueueCount: expansionQueue.length,
+      reliability: {
+        generated: nudges.length,
+        deduped: 0,
+        applied: 0,
+        skipped_by_reason: skippedByReason.reduce((acc, s) => {
+          acc[s.code] = (acc[s.code] || 0) + 1;
+          return acc;
+        }, {}),
+        unsupported_fields: unsupportedFields.length,
+        missing_metrics: {}
+      }
+    }, { merge: true });
+    return {
+      success: false,
+      forced: true,
+      message: "No deployable nudges were applied. Batch recorded with skip reasons.",
+      applied: 0,
+      skipped: skipped.length,
+      skippedByReason,
+      unsupportedFields,
+      expansionQueueCount: expansionQueue.length
+    };
   }
   const commitMessage = `[pSEO] ${batchId}: ${applied.length} content optimizations
 
 Applied ${applied.length} approved nudges.
 Skipped ${skipped.length} nudges.`;
   await updateFile(SEO_DATA_PATH, branchName, modified, fileSha, commitMessage, token);
-  logger34.info(`[pSEO Deploy] Committed ${applied.length} changes to ${branchName}`);
+  logger37.info(`[pSEO Deploy] Committed ${applied.length} changes to ${branchName}`);
   const segment = nudges[0]?.segment || "leads";
   const scopeBreakdown = nudges.reduce((acc, n) => {
     const label = SCOPE_LABELS[n.scope] || n.scope;
@@ -73677,7 +75218,7 @@ Skipped ${skipped.length} nudges.`;
   const prTitle = `[pSEO] ${batchId} \u2014 ${applied.length} content optimizations (${scopeSummary})`;
   const prBodyText = buildPrBody(nudges, applied, skipped);
   const pr = await createPR(prTitle, prBodyText, branchName, GITHUB_DEFAULT_BRANCH, token);
-  logger34.info(`[pSEO Deploy] PR #${pr.number} created: ${pr.url}`);
+  logger37.info(`[pSEO Deploy] PR #${pr.number} created: ${pr.url}`);
   const batch = db.batch();
   for (const nudgeId of applied) {
     const ref = db.collection("pseo_nudges").doc(nudgeId);
@@ -73689,12 +75230,47 @@ Skipped ${skipped.length} nudges.`;
     });
   }
   await batch.commit();
+  if (skippedByReason.length > 0) {
+    const skipBatch = db.batch();
+    for (const skip of skippedByReason) {
+      const ref = db.collection("pseo_nudges").doc(skip.nudgeId);
+      skipBatch.set(ref, {
+        deploySkippedAt: /* @__PURE__ */ new Date(),
+        deploySkipReason: skip
+      }, { merge: true });
+    }
+    await skipBatch.commit();
+  }
   await db.collection("pseo_batches").doc(batchId).update({
     lastDeployedAt: /* @__PURE__ */ new Date(),
     prUrl: pr.url,
     prNumber: pr.number,
-    deployedCount: applied.length
+    deployedCount: applied.length,
+    skippedCount: skipped.length,
+    deploySkippedByReason: skippedByReason,
+    unsupportedFields,
+    expansionQueueCount: expansionQueue.length,
+    reliability: {
+      generated: nudges.length,
+      deduped: 0,
+      applied: applied.length,
+      skipped_by_reason: skippedByReason.reduce((acc, s) => {
+        acc[s.code] = (acc[s.code] || 0) + 1;
+        return acc;
+      }, {}),
+      unsupported_fields: unsupportedFields.length,
+      missing_metrics: {}
+    }
   });
+  if (expansionQueue.length > 0) {
+    await db.collection("pseo_expansion_queue").doc(batchId).set({
+      batchId,
+      createdAt: /* @__PURE__ */ new Date(),
+      segment,
+      count: expansionQueue.length,
+      items: expansionQueue
+    }, { merge: true });
+  }
   try {
     await notifyDeployment({
       batchId,
@@ -73705,7 +75281,7 @@ Skipped ${skipped.length} nudges.`;
       prNumber: pr.number
     });
   } catch (err2) {
-    logger34.warn("[pSEO Deploy] Chat notification failed (non-critical):", err2.message);
+    logger37.warn("[pSEO Deploy] Chat notification failed (non-critical):", err2.message);
   }
   return {
     success: true,
@@ -73713,17 +75289,20 @@ Skipped ${skipped.length} nudges.`;
     prNumber: pr.number,
     applied: applied.length,
     skipped: skipped.length,
+    skippedByReason,
+    unsupportedFields,
+    expansionQueueCount: expansionQueue.length,
     branchName
   };
 });
-var getPseoDeployStatus = (0, import_https26.onCall)({
+var getPseoDeployStatus = (0, import_https29.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [githubTokenSecret],
   timeoutSeconds: 15
 }, async (request) => {
   const { batchId } = request.data || {};
   if (!batchId) {
-    throw new import_https26.HttpsError("invalid-argument", "batchId is required.");
+    throw new import_https29.HttpsError("invalid-argument", "batchId is required.");
   }
   const batchDoc = await db.collection("pseo_batches").doc(batchId).get();
   if (!batchDoc.exists) {
@@ -73771,6 +75350,7 @@ var getPseoDeployStatus = (0, import_https26.onCall)({
   clearPipeline,
   completeNfcSession,
   dailyClarityReport,
+  dailyClientTrigger,
   dailyProspector,
   dailyVendorProspector,
   deleteFacebookPost,
@@ -73823,6 +75403,7 @@ var getPseoDeployStatus = (0, import_https26.onCall)({
   processOutreachQueue,
   publishFacebookPost,
   publishPostNow,
+  refreshContactReviewQueue,
   regeneratePostCaption,
   regeneratePostImage,
   regenerateProspectingConfig,
@@ -73835,6 +75416,7 @@ var getPseoDeployStatus = (0, import_https26.onCall)({
   runSocialPublisher,
   runVendorProspector,
   searchPlaces,
+  seedInHouseSequence,
   sendBookingConfirmation,
   sendOnboardingInvite,
   sendPreviewEmail,
@@ -73847,6 +75429,7 @@ var getPseoDeployStatus = (0, import_https26.onCall)({
   testGscConnection,
   testSendEmail,
   triggerClarityReport,
+  triggerDailyClientTrigger,
   triggerDailyProspector,
   triggerDailyVendorProspector,
   triggerPseoAnalysis,

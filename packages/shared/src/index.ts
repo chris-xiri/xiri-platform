@@ -494,6 +494,7 @@ export type CompanyStatus = LeadStatus;
 
 /** Role a contact plays at a company */
 export type ContactRole = 'Owner' | 'Property Manager' | 'Office Manager' | 'Billing' | 'Tenant' | 'Other';
+export type ContactLifecycleStatus = 'active' | 'held' | 'suppressed' | 'review' | 'duplicate' | 'archived';
 
 /**
  * A CRM contact — the primary entity in the contact-centric model.
@@ -509,6 +510,13 @@ export interface Contact {
     companyName: string;       // denormalized for list views
     role?: ContactRole;
     isPrimary: boolean;
+    lifecycleStatus?: ContactLifecycleStatus;
+    lifecycleUpdatedAt?: any;
+    lifecycleReason?: string | null;
+    holdUntilAt?: any;
+    holdCreatedAt?: any;
+    reviewReasons?: string[];
+    duplicateOfContactId?: string | null;
     unsubscribed?: boolean;
     unsubscribedAt?: any;
     notes?: string;
@@ -1675,6 +1683,7 @@ export interface EnrichedProspect {
     website?: string;
     rating?: number;
     userRatingsTotal?: number;
+    facilityType?: FacilityType;
 
     // Primary contact (best email — owner / decision-maker)
     contactName?: string;       // "Dr. John Smith"

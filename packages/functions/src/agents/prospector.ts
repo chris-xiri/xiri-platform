@@ -14,7 +14,9 @@
 import { searchVendors, RawVendor } from './sourcer';
 import { scrapeWebsite, searchWebForEmail } from '../utils/websiteScraper';
 import { runEnrichmentWaterfall } from '../utils/enrichmentProviders';
+import { classifyFacilityType } from '../utils/facilityClassifier';
 import type { EnrichedProspect, EmailSource, ProspectContact } from '@xiri/shared';
+import { inferFacilityType, type FacilityType } from '@xiri/shared';
 
 const GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support|billing|accounting|bookkeeping|inquiries|front|manager)@/i;
 
@@ -115,6 +117,11 @@ function validateEmailForBusiness(
     return 'free_provider';
 }
 
+function getDecisionMakerTitles(facilityType?: FacilityType | null, fallbackQuery?: string): string[] {
+    const resolved = facilityType || inferFacilityType(fallbackQuery) || 'other';
+    return FACILITY_DECISION_MAKERS[resolved] || FACILITY_DECISION_MAKERS.other;
+}
+
 interface ProspectorInput {
     query: string;
     location: string;
@@ -132,6 +139,30 @@ interface ProspectorOutput {
         skippedNoWebsite: number;
     };
 }
+
+const FACILITY_DECISION_MAKERS: Record<string, string[]> = {
+    medical_dental: ['practice manager', 'office manager', 'practice administrator', 'owner', 'dentist'],
+    medical_private: ['practice manager', 'office manager', 'practice administrator', 'administrator', 'owner'],
+    medical_urgent_care: ['clinic manager', 'operations manager', 'facility administrator', 'administrator'],
+    medical_surgery: ['facility administrator', 'practice administrator', 'director of operations', 'administrator'],
+    medical_dialysis: ['facility administrator', 'clinic manager', 'operations manager', 'administrator'],
+    medical_veterinary: ['practice manager', 'hospital manager', 'office manager', 'owner'],
+    medical_physical_therapy: ['center director', 'practice manager', 'office manager', 'owner'],
+    edu_daycare: ['director', 'center director', 'owner', 'administrator'],
+    edu_tutoring: ['center director', 'center manager', 'director', 'owner'],
+    edu_private_school: ['head of school', 'principal', 'director of operations', 'administrator'],
+    auto_dealer_showroom: ['general manager', 'dealer principal', 'operations manager', 'owner'],
+    auto_service_center: ['shop owner', 'owner', 'service manager', 'general manager', 'operations manager'],
+    lab_cleanroom: ['facilities manager', 'operations manager', 'facility manager'],
+    lab_bsl: ['facilities manager', 'operations manager', 'facility manager'],
+    manufacturing_light: ['facilities manager', 'operations manager', 'plant manager', 'facility manager'],
+    fitness_gym: ['general manager', 'owner', 'studio manager', 'operations manager'],
+    retail_storefront: ['store manager', 'owner', 'general manager', 'operations manager'],
+    religious_center: ['executive director', 'administrator', 'office administrator'],
+    funeral_home: ['funeral director', 'owner', 'manager'],
+    office_general: ['office manager', 'facilities manager', 'operations manager', 'property manager'],
+    other: ['office manager', 'operations manager', 'owner', 'administrator'],
+};
 
 /**
  * Run the full prospecting pipeline.
@@ -256,6 +287,7 @@ async function enrichSingleBusiness(
     input: ProspectorInput
 ): Promise<EnrichedProspect> {
     const log: string[] = [];
+    let targetTitles = inferPreferredDecisionMakerTitles(input.query);
     const prospect: EnrichedProspect = {
         businessName: vendor.name,
         address: vendor.location,
@@ -290,6 +322,9 @@ async function enrichSingleBusiness(
     log.push(`Layer 1: Scraping ${vendor.website}...`);
 
     try {
+        prospect.facilityType = await classifyFacilityType(vendor.website, vendor.name, input.query, secrets.geminiApiKey, log);
+        targetTitles = getDecisionMakerTitles(prospect.facilityType, input.query);
+
         const scrapeResult = await scrapeWebsite(vendor.website, secrets.geminiApiKey);
 
         if (scrapeResult.success && scrapeResult.data) {
@@ -318,16 +353,12 @@ async function enrichSingleBusiness(
                 if (emailValid === 'junk') {
                     log.push(`⚠️ Rejected junk email: ${bestEmail} (domain is blocklisted)`);
                 } else if (emailValid === 'mismatch') {
-                    log.push(`⚠️ Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} — demoting to low confidence`);
-                    // Still keep it but mark as low confidence so human review catches it
-                    prospect.contactEmail = bestEmail;
-                    prospect.emailSource = data.ownerEmail ? 'ai_extraction' : 'mailto';
-                    prospect.emailConfidence = 'low';
-                    // Don't return early — keep searching for a better match
+                    log.push(`⚠️ Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} — skipping`);
+                    log.push(`Skipping off-domain email from website scrape: ${bestEmail}`);
                 } else {
                     prospect.contactEmail = bestEmail;
                     prospect.emailSource = data.ownerEmail ? 'ai_extraction' : 'mailto';
-                    prospect.emailConfidence = 'high';
+                    prospect.emailConfidence = emailValid === 'domain_match' ? 'high' : 'medium';
                     log.push(`Found personal email: ${bestEmail} (source: ${prospect.emailSource}, validation: ${emailValid})`);
 
                     // Also store generic if we have one separately
@@ -404,7 +435,8 @@ async function enrichSingleBusiness(
                 vendor.name,
                 input.location,
                 secrets.serperApiKey,
-                log
+                log,
+                targetTitles
             );
             if (linkedinName) {
                 prospect.contactName = linkedinName.name;
@@ -430,6 +462,7 @@ async function enrichSingleBusiness(
                 {
                     contactName: prospect.contactName,
                     knownGenericEmail: prospect.genericEmail,
+                    preferredTitles: targetTitles,
                 },
             );
 
@@ -437,22 +470,27 @@ async function enrichSingleBusiness(
 
             // Persist ALL discovered contacts
             if (waterfallResult.allEmails.length > 0) {
-                const apiContacts: ProspectContact[] = waterfallResult.allEmails.map(e => ({
-                    email: e.email,
-                    firstName: e.firstName,
-                    lastName: e.lastName,
-                    position: e.position,
-                    confidence: e.confidence,
-                    type: e.type,
-                    provider: e.provider,
-                }));
+                const apiContacts: ProspectContact[] = waterfallResult.allEmails
+                    .filter(e => validateEmailForBusiness(e.email, vendor.website) === 'domain_match')
+                    .map(e => ({
+                        email: e.email,
+                        firstName: e.firstName,
+                        lastName: e.lastName,
+                        position: e.position,
+                        confidence: e.confidence,
+                        type: e.type,
+                        provider: e.provider,
+                    }));
                 // Merge with any contacts already found from scraping
                 prospect.allContacts = [...(prospect.allContacts || []), ...apiContacts];
                 log.push(`Stored ${apiContacts.length} total contacts from enrichment waterfall`);
             }
 
             if (waterfallResult.email) {
-                if (waterfallResult.type === 'personal') {
+                const waterfallEmailValid = validateEmailForBusiness(waterfallResult.email, vendor.website);
+                if (waterfallEmailValid !== 'domain_match') {
+                    log.push(`Skipping non-company email from waterfall: ${waterfallResult.email} (validation: ${waterfallEmailValid})`);
+                } else if (waterfallResult.type === 'personal') {
                     prospect.contactEmail = waterfallResult.email;
                     prospect.contactName = prospect.contactName ||
                         (waterfallResult.firstName && waterfallResult.lastName
@@ -502,6 +540,10 @@ async function enrichSingleBusiness(
     return prospect;
 }
 
+function inferPreferredDecisionMakerTitles(searchQuery?: string): string[] {
+    return getDecisionMakerTitles(undefined, searchQuery);
+}
+
 /**
  * Layer 2 helper: targeted web searches via Serper
  */
@@ -535,6 +577,8 @@ async function trySerperSearch(
             const webEmailValid = validateEmailForBusiness(searchResult.email, vendor.website);
             if (webEmailValid === 'junk') {
                 log.push(`⚠️ Rejected junk email from web search: ${searchResult.email}`);
+            } else if (webEmailValid === 'free_provider' && !!vendor.website) {
+                log.push(`⚠️ Rejected off-domain web email: ${searchResult.email} (published off-site and not tied to ${vendor.website})`);
             } else if (webEmailValid === 'mismatch') {
                 log.push(`⚠️ Web search email mismatch: ${searchResult.email} doesn't match ${vendor.website} — skipping`);
                 // Don't accept mismatched emails from web search — too unreliable
@@ -586,17 +630,20 @@ async function searchLinkedInForDecisionMaker(
     businessName: string,
     location: string,
     serperApiKey: string,
-    log: string[]
+    log: string[],
+    preferredTitles: string[]
 ): Promise<{ name: string; title: string } | null> {
     const DECISION_MAKER_TITLES = [
+        ...preferredTitles,
         'owner', 'CEO', 'president', 'founder', 'managing director',
         'office manager', 'facilities manager', 'operations manager',
         'general manager', 'administrator', 'practice manager',
         'director of operations', 'principal',
     ];
 
-    const titleQuery = DECISION_MAKER_TITLES.slice(0, 6).map(t => `"${t}"`).join(' OR ');
-    const query = `site:linkedin.com/in "${businessName}" (${titleQuery})`;
+    const dedupedTitles = [...new Set(DECISION_MAKER_TITLES)];
+    const titleQuery = dedupedTitles.slice(0, 8).map(t => `"${t}"`).join(' OR ');
+    const query = `site:linkedin.com/in "${businessName}" "${location}" (${titleQuery})`;
     log.push(`Layer 2.5: LinkedIn search for decision-maker at "${businessName}"...`);
 
     try {
@@ -637,7 +684,7 @@ async function searchLinkedInForDecisionMaker(
                 if (nameWords.length >= 2 && nameWords.length <= 4 && candidateName.length < 40) {
                     // Check that title matches one of our decision-maker roles
                     const titleLower = candidateTitle.toLowerCase();
-                    const isDecisionMaker = DECISION_MAKER_TITLES.some(t => titleLower.includes(t));
+                    const isDecisionMaker = dedupedTitles.some(t => titleLower.includes(t));
                     if (isDecisionMaker) {
                         return { name: candidateName, title: candidateTitle };
                     }

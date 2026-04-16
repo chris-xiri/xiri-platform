@@ -43,6 +43,7 @@ export { runSocialPublisher } from "./triggers/socialPublisher";
 
 // ── Auth functions (onCall) ──
 export { adminUpdateAuthUser, adminCreateUser, changeMyPassword } from "./functions/auth";
+export { refreshContactReviewQueue } from "./functions/contactReview";
 
 // ── Lead & Vendor sourcing (onCall / onRequest) ──
 export { generateLeads, clearPipeline, runRecruiterAgent, testSendEmail, sourceProperties } from "./functions/leads";

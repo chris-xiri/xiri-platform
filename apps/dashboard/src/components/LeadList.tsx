@@ -36,9 +36,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight, ChevronDown, Building2, Settings2, Tag, Play, Mail, Send } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
-import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, writeBatch, getDoc, getDocs } from "firebase/firestore";
+import { collection, getCountFromServer, query, orderBy, doc, writeBatch, getDoc, getDocs, limit, startAfter, where } from "firebase/firestore";
 import { db, functions } from "@/lib/firebase";
 import { LeadStatus, LeadType } from "@xiri-facility-solutions/shared";
+import { useFacilityTypes } from "@/lib/facilityTypes";
 import { useLeadFilter } from "@/hooks/useLeadFilter";
 import { LeadRow, ColumnKey, ContactRow } from "./LeadList/LeadRow";
 import { LeadCard } from "./LeadList/LeadCard";
@@ -59,12 +60,18 @@ const DEFAULT_VISIBLE: ColumnKey[] = ['contact', 'business', 'type', 'location',
 
 
 export type EngagementFilter = 'clicked' | 'opened' | 'delivered' | 'bounced' | null;
+type ContactLifecycleFilter = 'active' | 'held' | 'suppressed' | 'all';
+
+function resolveLifecycleStatus(contact: Partial<ContactRow>): Exclude<ContactLifecycleFilter, 'all'> | 'review' | 'duplicate' | 'archived' {
+    if (contact.lifecycleStatus) return contact.lifecycleStatus as any;
+    if (contact.unsubscribed) return 'suppressed';
+    return 'active';
+}
 
 interface LeadListProps {
     statusFilters?: LeadStatus[];
     title?: string;
     onRowClick?: (id: string) => void;
-    onContactsLoaded?: (contacts: ContactRow[]) => void;
     engagementFilter?: EngagementFilter;
 }
 
@@ -72,7 +79,6 @@ export default function LeadList({
     statusFilters,
     title = "Sales Pipeline",
     onRowClick,
-    onContactsLoaded,
     engagementFilter,
 }: LeadListProps) {
     const [contacts, setContacts] = useState<ContactRow[]>([]);
@@ -86,6 +92,14 @@ export default function LeadList({
     const [deleting, setDeleting] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [updatingType, setUpdatingType] = useState(false);
+    const [updatingLifecycle, setUpdatingLifecycle] = useState(false);
+    const [lifecycleFilter, setLifecycleFilter] = useState<ContactLifecycleFilter>('active');
+    const [lifecycleCounts, setLifecycleCounts] = useState<Record<ContactLifecycleFilter, number>>({
+        active: 0,
+        held: 0,
+        suppressed: 0,
+        all: 0,
+    });
     // Bulk sequence
     const [showBulkSequenceDialog, setShowBulkSequenceDialog] = useState(false);
     const [bulkSequences, setBulkSequences] = useState<{id:string;name:string;description?:string;steps:any[]}[]>([]);
@@ -95,8 +109,13 @@ export default function LeadList({
     const [bulkSequenceProgress, setBulkSequenceProgress] = useState<{done:number;total:number;errors:string[]}|null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const PAGE_SIZE = 50;
+    const SERVER_PAGE_SIZE = 120;
+    const [totalCount, setTotalCount] = useState(0);
+    const [hasNextPage, setHasNextPage] = useState(false);
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
     const [groupByCompany, setGroupByCompany] = useState(false);
+    const companyCacheRef = useRef<Map<string, any>>(new Map());
+    const pageCursorRef = useRef<Record<number, any>>({});
     const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('pipeline-columns');
@@ -106,6 +125,7 @@ export default function LeadList({
         }
         return new Set(DEFAULT_VISIBLE);
     });
+    const { facilityTypeLabels } = useFacilityTypes();
 
     const {
         searchQuery,
@@ -117,94 +137,198 @@ export default function LeadList({
         hasActiveFilters
     } = useLeadFilter(contacts as any, statusFilters, engagementFilter);
 
-    // ─── Fetch contacts + join company data ──────────────────────────
-    useEffect(() => {
-        const q = query(
-            collection(db, "contacts"),
-            orderBy("createdAt", "desc")
-        );
+    const hasAnyFilters = hasActiveFilters || lifecycleFilter !== 'active';
+    const requiresFullDataset = searchQuery.trim() !== '' || statusFilter !== 'all' || !!engagementFilter;
 
-        // Cache companies to avoid re-fetching the same company for each contact
-        const companyCache = new Map<string, any>();
+    const hydrateContacts = useCallback(async (docSnaps: any[]): Promise<ContactRow[]> => {
+        const companyIdsToFetch = new Set<string>();
 
-        const unsubscribe = onSnapshot(
-            q,
-            async (snapshot) => {
-                const contactData: ContactRow[] = [];
-                const companyIdsToFetch = new Set<string>();
-
-                // First pass: collect all unique companyIds we need
-                snapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    const companyId = data.companyId;
-                    if (companyId && !companyCache.has(companyId)) {
-                        companyIdsToFetch.add(companyId);
-                    }
-                });
-
-                // Fetch any missing companies
-                const fetchPromises = Array.from(companyIdsToFetch).map(async (cId) => {
-                    try {
-                        const compDoc = await getDoc(doc(db, "companies", cId));
-                        if (compDoc.exists()) {
-                            companyCache.set(cId, compDoc.data());
-                        }
-                    } catch (err) {
-                        console.error(`Failed to fetch company ${cId}:`, err);
-                    }
-                });
-                await Promise.all(fetchPromises);
-
-                // Second pass: build enriched contact rows
-                snapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    const company = companyCache.get(data.companyId) || {};
-
-                    contactData.push({
-                        id: docSnap.id,
-                        firstName: data.firstName || "",
-                        lastName: data.lastName || "",
-                        email: data.email || "",
-                        phone: data.phone || "",
-                        companyId: data.companyId || "",
-                        companyName: data.companyName || company.businessName || "Unknown",
-                        role: data.role || undefined,
-                        isPrimary: data.isPrimary ?? false,
-                        unsubscribed: data.unsubscribed || false,
-                        notes: data.notes || "",
-                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
-                        createdBy: data.createdBy,
-                        emailEngagement: data.emailEngagement,
-                        sequenceHistory: data.sequenceHistory || undefined,
-                        // Denormalized company fields
-                        _companyStatus: company.status || "new",
-                        _companyLeadType: company.leadType,
-                        _companyFacilityType: company.facilityType,
-                        _companyAddress: company.address,
-                        _companyCity: company.city,
-                        _companyState: company.state,
-                        _companyZip: company.zip,
-                        _companyAttribution: company.attribution,
-                        _companyOutreachStatus: company.outreachStatus,
-                        _companyPreferredAuditTimes: company.preferredAuditTimes,
-                    } as ContactRow);
-                });
-                setContacts(contactData);
-                onContactsLoaded?.(contactData);
-                setLoading(false);
-            },
-            (error) => {
-                console.error("Error fetching contacts:", error);
-                setLoading(false);
+        docSnaps.forEach((docSnap) => {
+            const data = docSnap.data();
+            const companyId = data.companyId;
+            if (companyId && !companyCacheRef.current.has(companyId)) {
+                companyIdsToFetch.add(companyId);
             }
-        );
+        });
 
-        return () => unsubscribe();
+        await Promise.all(Array.from(companyIdsToFetch).map(async (companyId) => {
+            try {
+                const companyDoc = await getDoc(doc(db, "companies", companyId));
+                if (companyDoc.exists()) {
+                    companyCacheRef.current.set(companyId, companyDoc.data());
+                }
+            } catch (error) {
+                console.error(`Failed to hydrate company ${companyId}:`, error);
+            }
+        }));
+
+        return docSnaps.map((docSnap) => {
+            const data = docSnap.data();
+            const company = companyCacheRef.current.get(data.companyId) || {};
+
+            return {
+                id: docSnap.id,
+                firstName: data.firstName || "",
+                lastName: data.lastName || "",
+                email: data.email || "",
+                phone: data.phone || "",
+                companyId: data.companyId || "",
+                companyName: data.companyName || company.businessName || "Unknown",
+                role: data.role || undefined,
+                isPrimary: data.isPrimary ?? false,
+                lifecycleStatus: data.lifecycleStatus || (data.unsubscribed ? 'suppressed' : 'active'),
+                lifecycleReason: data.lifecycleReason || null,
+                holdUntilAt: data.holdUntilAt || null,
+                holdCreatedAt: data.holdCreatedAt || null,
+                lifecycleUpdatedAt: data.lifecycleUpdatedAt || null,
+                reviewReasons: data.reviewReasons || [],
+                duplicateOfContactId: data.duplicateOfContactId || null,
+                unsubscribed: data.unsubscribed || false,
+                notes: data.notes || "",
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
+                createdBy: data.createdBy,
+                emailEngagement: data.emailEngagement,
+                sequenceHistory: data.sequenceHistory || undefined,
+                _companyStatus: company.status || "new",
+                _companyLeadType: company.leadType,
+                _companyFacilityType: company.facilityType,
+                _companyAddress: company.address,
+                _companyCity: company.city,
+                _companyState: company.state,
+                _companyZip: company.zip,
+                _companyAttribution: company.attribution,
+                _companyOutreachStatus: company.outreachStatus,
+                _companyPreferredAuditTimes: company.preferredAuditTimes,
+            } as ContactRow;
+        });
     }, []);
+
+    useEffect(() => {
+        setCurrentPage(1);
+        setSelectedLeads(new Set());
+        pageCursorRef.current = {};
+    }, [lifecycleFilter, requiresFullDataset]);
+
+    useEffect(() => {
+        if (!requiresFullDataset) return;
+        setCurrentPage(1);
+        setSelectedLeads(new Set());
+    }, [searchQuery, statusFilter, engagementFilter, requiresFullDataset]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadLifecycleCounts = async () => {
+            const contactsRef = collection(db, "contacts");
+            const [allSnap, heldSnap, suppressedSnap, reviewSnap, duplicateSnap, archivedSnap] = await Promise.all([
+                getCountFromServer(contactsRef),
+                getCountFromServer(query(contactsRef, where("lifecycleStatus", "==", "held"))),
+                getCountFromServer(query(contactsRef, where("lifecycleStatus", "==", "suppressed"))),
+                getCountFromServer(query(contactsRef, where("lifecycleStatus", "==", "review"))),
+                getCountFromServer(query(contactsRef, where("lifecycleStatus", "==", "duplicate"))),
+                getCountFromServer(query(contactsRef, where("lifecycleStatus", "==", "archived"))),
+            ]);
+
+            const all = allSnap.data().count;
+            const held = heldSnap.data().count;
+            const suppressed = suppressedSnap.data().count;
+            const review = reviewSnap.data().count;
+            const duplicate = duplicateSnap.data().count;
+            const archived = archivedSnap.data().count;
+            const active = Math.max(0, all - held - suppressed - review - duplicate - archived);
+
+            if (cancelled) return;
+            setLifecycleCounts({ active, held, suppressed, all });
+            if (!requiresFullDataset) {
+                setTotalCount(
+                    lifecycleFilter === "all"
+                        ? all
+                        : lifecycleFilter === "active"
+                            ? active
+                            : lifecycleFilter === "held"
+                                ? held
+                                : suppressed
+                );
+            }
+        };
+
+        const loadServerPage = async () => {
+            const contactsRef = collection(db, "contacts");
+            const previousCursor = currentPage === 1 ? null : pageCursorRef.current[currentPage - 1];
+            let scannedCursor = previousCursor;
+            let pageRows: ContactRow[] = [];
+            let exhausted = false;
+
+            while (pageRows.length < PAGE_SIZE && !exhausted) {
+                const constraints: any[] = [];
+                if (lifecycleFilter === "held" || lifecycleFilter === "suppressed") {
+                    constraints.push(where("lifecycleStatus", "==", lifecycleFilter));
+                }
+                constraints.push(orderBy("createdAt", "desc"));
+                if (scannedCursor) constraints.push(startAfter(scannedCursor));
+                constraints.push(limit(SERVER_PAGE_SIZE));
+
+                const snapshot = await getDocs(query(contactsRef, ...constraints));
+                if (snapshot.empty) {
+                    exhausted = true;
+                    break;
+                }
+
+                scannedCursor = snapshot.docs[snapshot.docs.length - 1];
+                let rows = await hydrateContacts(snapshot.docs);
+                if (lifecycleFilter === "active") {
+                    rows = rows.filter((contact) => resolveLifecycleStatus(contact) === "active");
+                } else if (lifecycleFilter !== "all" && lifecycleFilter !== "held" && lifecycleFilter !== "suppressed") {
+                    rows = rows.filter((contact) => resolveLifecycleStatus(contact) === lifecycleFilter);
+                }
+
+                pageRows = [...pageRows, ...rows].slice(0, PAGE_SIZE);
+                if (snapshot.size < SERVER_PAGE_SIZE) {
+                    exhausted = true;
+                }
+            }
+
+            if (cancelled) return;
+            pageCursorRef.current[currentPage] = scannedCursor;
+            setContacts(pageRows);
+            setHasNextPage(!exhausted);
+        };
+
+        const loadFullDataset = async () => {
+            const snapshot = await getDocs(query(collection(db, "contacts"), orderBy("createdAt", "desc")));
+            let rows = await hydrateContacts(snapshot.docs);
+            if (lifecycleFilter !== "all") {
+                rows = rows.filter((contact) => resolveLifecycleStatus(contact) === lifecycleFilter);
+            }
+            if (cancelled) return;
+            setContacts(rows);
+            setHasNextPage(false);
+            setTotalCount(rows.length);
+        };
+
+        const run = async () => {
+            setLoading(true);
+            try {
+                await loadLifecycleCounts();
+                if (requiresFullDataset) {
+                    await loadFullDataset();
+                } else {
+                    await loadServerPage();
+                }
+            } catch (error) {
+                console.error("Error fetching contacts:", error);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
+        void run();
+        return () => { cancelled = true; };
+    }, [currentPage, lifecycleFilter, requiresFullDataset, hydrateContacts]);
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            setSelectedLeads(new Set(filteredContacts.map((l: any) => l.id!)));
+            setSelectedLeads(new Set(displayedContacts.map((l: any) => l.id!)));
         } else {
             setSelectedLeads(new Set());
         }
@@ -310,6 +434,38 @@ export default function LeadList({
         }
     };
 
+    const handleBulkLifecycleUpdate = async (nextStatus: 'active' | 'held', holdMonths?: 4 | 6) => {
+        if (selectedLeads.size === 0) return;
+        setUpdatingLifecycle(true);
+        const ids = Array.from(selectedLeads);
+        const BATCH_LIMIT = 499;
+        const now = new Date();
+        const holdUntil = holdMonths ? new Date(now.getFullYear(), now.getMonth() + holdMonths, now.getDate()) : null;
+        try {
+            for (let i = 0; i < ids.length; i += BATCH_LIMIT) {
+                const chunk = ids.slice(i, i + BATCH_LIMIT);
+                const batch = writeBatch(db);
+                chunk.forEach(contactId => {
+                    const update: Record<string, any> = {
+                        lifecycleStatus: nextStatus,
+                        lifecycleUpdatedAt: now,
+                        lifecycleReason: nextStatus === 'held' ? 'not_currently_looking' : null,
+                        holdUntilAt: nextStatus === 'held' ? holdUntil : null,
+                        holdCreatedAt: nextStatus === 'held' ? now : null,
+                    };
+                    batch.update(doc(db, "contacts", contactId), update);
+                });
+                await batch.commit();
+            }
+            setSelectedLeads(new Set());
+        } catch (error) {
+            console.error("Error updating contact lifecycle:", error);
+            window.alert(`Failed to update contact lifecycle: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setUpdatingLifecycle(false);
+        }
+    };
+
     // ─── Bulk sequence enrollment ────────────────────────────
     const openBulkSequenceDialog = useCallback(async () => {
         setShowBulkSequenceDialog(true);
@@ -372,14 +528,17 @@ export default function LeadList({
         });
     };
 
-    const allSelected = filteredContacts.length > 0 && selectedLeads.size === filteredContacts.length;
-    const someSelected = selectedLeads.size > 0 && selectedLeads.size < filteredContacts.length;
+    const displayedContacts = requiresFullDataset ? filteredContacts as ContactRow[] : contacts;
+    const allSelected = displayedContacts.length > 0 && selectedLeads.size === displayedContacts.length;
+    const someSelected = selectedLeads.size > 0 && selectedLeads.size < displayedContacts.length;
 
     // Pagination
-    const totalPages = Math.ceil(filteredContacts.length / PAGE_SIZE);
-    const paginatedContacts = filteredContacts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE) as ContactRow[];
+    const totalPages = requiresFullDataset ? Math.max(1, Math.ceil(filteredContacts.length / PAGE_SIZE)) : Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    const paginatedContacts = requiresFullDataset
+        ? filteredContacts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE) as ContactRow[]
+        : contacts;
     const startIdx = (currentPage - 1) * PAGE_SIZE + 1;
-    const endIdx = Math.min(currentPage * PAGE_SIZE, filteredContacts.length);
+    const endIdx = Math.min(startIdx + paginatedContacts.length - 1, requiresFullDataset ? filteredContacts.length : totalCount);
 
     // Group paginated contacts by company
     const companyGroups = useMemo(() => {
@@ -430,7 +589,7 @@ export default function LeadList({
                         <Users className="w-4 h-4 text-primary" />
                         {title}
                         <Badge variant="secondary" className="bg-secondary text-secondary-foreground ml-2 text-xs px-1.5 py-0 tabular-nums">
-                            {filteredContacts.length}
+                            {requiresFullDataset ? filteredContacts.length : totalCount}
                         </Badge>
                     </CardTitle>
                 </div>
@@ -458,6 +617,15 @@ export default function LeadList({
                             </Button>
                             <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 px-2.5" onClick={() => setBulkAction('type')}>
                                 <Tag className="w-3 h-3" /> Type
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 px-2.5" onClick={() => handleBulkLifecycleUpdate('held', 4)} disabled={updatingLifecycle}>
+                                {updatingLifecycle ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />} Hold 4m
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 px-2.5" onClick={() => handleBulkLifecycleUpdate('held', 6)} disabled={updatingLifecycle}>
+                                {updatingLifecycle ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />} Hold 6m
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 px-2.5" onClick={() => handleBulkLifecycleUpdate('active')} disabled={updatingLifecycle}>
+                                {updatingLifecycle ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Activate
                             </Button>
                             <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 px-2.5" onClick={openBulkSequenceDialog}>
                                 <Play className="w-3 h-3" /> Sequence
@@ -529,6 +697,39 @@ export default function LeadList({
                     </Button>
                 </div>
             )}
+
+            {/* Lifecycle Filters */}
+            <div className="px-3 pt-2 flex flex-wrap gap-1.5">
+                {(() => {
+                    const lifecycles: { value: ContactLifecycleFilter; label: string; color: string }[] = [
+                        { value: 'active', label: 'Active', color: 'bg-emerald-100 text-emerald-800' },
+                        { value: 'held', label: 'Held', color: 'bg-amber-100 text-amber-900' },
+                        { value: 'suppressed', label: 'Suppressed', color: 'bg-red-100 text-red-800' },
+                        { value: 'all', label: 'All', color: 'bg-secondary text-secondary-foreground' },
+                    ];
+                    return lifecycles.map(item => {
+                        const count = lifecycleCounts[item.value] || 0;
+                        if (item.value !== 'all' && count === 0) return null;
+                        const isActive = lifecycleFilter === item.value;
+                        return (
+                            <button
+                                key={item.value}
+                                onClick={() => { setLifecycleFilter(item.value); setCurrentPage(1); }}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all
+                                    ${isActive
+                                        ? `${item.color} ring-2 ring-offset-1 ring-primary/30 shadow-sm`
+                                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                                    }`}
+                            >
+                                {item.label}
+                                <span className={`tabular-nums text-[10px] ${isActive ? 'opacity-90' : 'opacity-60'}`}>
+                                    {count}
+                                </span>
+                            </button>
+                        );
+                    });
+                })()}
+            </div>
 
             {/* Status Badge Filters */}
             <div className="px-3 py-2 flex flex-wrap gap-1.5">
@@ -615,11 +816,15 @@ export default function LeadList({
                             ))}
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    {hasActiveFilters && (
+                    {hasAnyFilters && (
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={resetFilters}
+                            onClick={() => {
+                                resetFilters();
+                                setLifecycleFilter('active');
+                                setCurrentPage(1);
+                            }}
                             className="h-9 px-2 hover:bg-muted text-muted-foreground hover:text-foreground"
                             title="Reset all filters"
                         >
@@ -634,7 +839,7 @@ export default function LeadList({
 
 
             <CardContent className="p-0 flex-1 overflow-hidden flex flex-col">
-                {filteredContacts.length === 0 ? (
+                {displayedContacts.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-muted/50">
                         <Search className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                         <p className="text-lg font-medium text-foreground">No matching contacts</p>
@@ -681,6 +886,7 @@ export default function LeadList({
                                                         onSelect={(checked) => handleSelectLead(group.contacts[0].contact.id!, checked)}
                                                         onRowClick={onRowClick}
                                                         visibleColumns={visibleColumns}
+                                                        facilityTypeLabels={facilityTypeLabels}
                                                     />
                                                 ) : (
                                                     /* Multiple contacts — show collapsible group header */
@@ -714,6 +920,7 @@ export default function LeadList({
                                                                 onSelect={(checked) => handleSelectLead(contact.id!, checked)}
                                                                 onRowClick={onRowClick}
                                                                 visibleColumns={visibleColumns}
+                                                                facilityTypeLabels={facilityTypeLabels}
                                                             />
                                                         ))}
                                                     </>
@@ -730,6 +937,7 @@ export default function LeadList({
                                                 onSelect={(checked) => handleSelectLead(contact.id!, checked)}
                                                 onRowClick={onRowClick}
                                                 visibleColumns={visibleColumns}
+                                                facilityTypeLabels={facilityTypeLabels}
                                             />
                                         ))
                                     )}
@@ -746,6 +954,7 @@ export default function LeadList({
                                     index={startIdx + index - 1}
                                     isSelected={selectedLeads.has(contact.id!)}
                                     onSelect={(checked) => handleSelectLead(contact.id!, checked)}
+                                    facilityTypeLabels={facilityTypeLabels}
                                 />
                             ))}
                         </div>
@@ -756,7 +965,7 @@ export default function LeadList({
                 {totalPages > 1 && (
                     <div className="flex items-center justify-between px-4 py-3 border-t bg-card">
                         <p className="text-sm text-muted-foreground">
-                            Showing {startIdx}–{endIdx} of {filteredContacts.length} contacts
+                            Showing {startIdx}–{endIdx} of {requiresFullDataset ? filteredContacts.length : totalCount} contacts
                         </p>
                         <div className="flex items-center gap-2">
                             <Button
@@ -775,7 +984,7 @@ export default function LeadList({
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
+                                disabled={requiresFullDataset ? currentPage === totalPages : !hasNextPage}
                                 className="h-8"
                             >
                                 Next <ChevronRight className="w-4 h-4 ml-1" />

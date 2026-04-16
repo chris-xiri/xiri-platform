@@ -1,6 +1,6 @@
 "use client";
 
-import { Contact, LeadStatus, FACILITY_TYPE_LABELS } from '@xiri-facility-solutions/shared';
+import { Contact, LeadStatus } from '@xiri-facility-solutions/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,6 +21,7 @@ interface LeadCardProps {
     index: number;
     isSelected?: boolean;
     onSelect?: (checked: boolean) => void;
+    facilityTypeLabels: Record<string, string>;
 }
 
 const STATUS_COLORS: Record<LeadStatus, string> = {
@@ -47,7 +48,7 @@ function toDate(value: any): Date | null {
     }
 }
 
-export function LeadCard({ lead, index, isSelected, onSelect }: LeadCardProps) {
+export function LeadCard({ lead, index, isSelected, onSelect, facilityTypeLabels }: LeadCardProps) {
     const router = useRouter();
 
     const handleClick = () => {
@@ -84,7 +85,7 @@ export function LeadCard({ lead, index, isSelected, onSelect }: LeadCardProps) {
                                 <Building2 className="w-3 h-3" />
                                 {lead.companyName}
                                 {lead._companyFacilityType && (
-                                    <span className="ml-1">· {FACILITY_TYPE_LABELS[lead._companyFacilityType as keyof typeof FACILITY_TYPE_LABELS] || lead._companyFacilityType}</span>
+                                    <span className="ml-1">· {facilityTypeLabels[lead._companyFacilityType] || lead._companyFacilityType}</span>
                                 )}
                             </div>
                         </div>

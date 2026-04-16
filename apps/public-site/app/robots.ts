@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { SITE } from '@/lib/constants';
+import { SEO_ROBOTS_DISALLOW } from '@/lib/seo-rules';
 
 export default function robots(): MetadataRoute.Robots {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || SITE.url;
@@ -10,7 +11,7 @@ export default function robots(): MetadataRoute.Robots {
             {
                 userAgent: '*',
                 allow: '/',
-                disallow: ['/private/', '/onboarding/', '/test-firebase/', '/waitlist/', '/admin/'],
+                disallow: [...SEO_ROBOTS_DISALLOW],
             },
             // Explicitly allow AI search crawlers (signals intent to be cited)
             { userAgent: 'GPTBot', allow: '/' },

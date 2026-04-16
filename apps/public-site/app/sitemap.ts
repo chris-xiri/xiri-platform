@@ -8,6 +8,7 @@ import { INDUSTRY_PILLARS, getPillarForIndustry } from '@/lib/industry-pillars';
 import { BLOG_POSTS } from '@/data/blog-posts';
 import { COMPARISON_PAGES } from '@/data/dlp-comparisons';
 import { SITE } from '@/lib/constants';
+import { SITEMAP_CONTRACTOR_TRADE_SLUGS, SITEMAP_LEAD_SERVICE_SLUGS, SITEMAP_STATIC_ROUTES } from '@/lib/seo-rules';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || SITE.url;
 
@@ -16,7 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const toSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     // 1. Static Pages
-    ['', '/contractors', '/contact', '/directory/locations', '/directory/solutions', '/about', '/services', '/services/facility-management', '/solutions', '/industries', '/blog', '/calculator', '/pricing'].forEach((route) => {
+    SITEMAP_STATIC_ROUTES.forEach((route) => {
         sitemapEntries.push({ url: `${BASE_URL}${route}`, lastModified: new Date(), changeFrequency: 'weekly', priority: route === '' ? 1.0 : 0.8 });
     });
 
@@ -45,15 +46,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     });
 
     // 4. Service × Location Pages — core cleaning services only (crawl budget)
-    const SITEMAP_SERVICES = [
-        'medical-office-cleaning',
-        'urgent-care-cleaning',
-        'janitorial-services',
-        'commercial-cleaning',
-        'day-porter',
-    ];
     const locations = seoData.locations || [];
-    services.filter((s) => SITEMAP_SERVICES.includes(s.slug)).forEach((service) => {
+    services.filter((s) => SITEMAP_LEAD_SERVICE_SLUGS.includes(s.slug as any)).forEach((service) => {
         locations.forEach((location) => {
             const countySlug = toSlug(location.region);
             const townSlug = toSlug(location.name.split(',')[0]);
@@ -85,8 +79,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Pages still exist and are accessible — just not submitted to Google.
 
     // 9. Contractor — Janitorial × Location only (focus crawl budget)
-    const SITEMAP_TRADES = ['janitorial-subcontractor'];
-    SITEMAP_TRADES.forEach((tradeSlug) => {
+    SITEMAP_CONTRACTOR_TRADE_SLUGS.forEach((tradeSlug) => {
         locations.forEach((location) => {
             sitemapEntries.push({ url: `${BASE_URL}/contractors/${tradeSlug}-in-${(location as any).slug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 });
         });
@@ -118,7 +111,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     });
 
     // 14. Referral Partner Pages (hub + 12 trade pages)
-    sitemapEntries.push({ url: `${BASE_URL}/refer`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 });
     ['plumber-referral-partner', 'electrician-referral-partner', 'hvac-referral-partner',
      'pest-control-referral-partner', 'fire-protection-referral-partner', 'elevator-service-referral-partner',
      'locksmith-referral-partner', 'property-manager-referral-partner', 'commercial-real-estate-broker-referral-partner',
