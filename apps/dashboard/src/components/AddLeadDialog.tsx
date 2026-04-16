@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, X, Sparkles, Plus, User, ChevronDown, ChevronUp, Building2, Search, MapPin } from "lucide-react";
-import { collection, doc, serverTimestamp, writeBatch, onSnapshot, query, orderBy, getDocs, where, limit } from "firebase/firestore";
+import { collection, doc, serverTimestamp, writeBatch, onSnapshot, query, getDocs, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { EnrichButton } from "@/components/EnrichButton";
@@ -64,6 +64,10 @@ interface CompanyOption {
     address?: string;
     city?: string;
     state?: string;
+}
+
+function sortCompanyOptions(options: CompanyOption[]): CompanyOption[] {
+    return [...options].sort((a, b) => a.businessName.localeCompare(b.businessName));
 }
 
 const ATTRIBUTION_SOURCES = [
@@ -236,9 +240,11 @@ function CompanyCombobox({
     autoFocus?: boolean;
 }) {
     const [companies, setCompanies] = useState<CompanyOption[]>([]);
+    const [contactCompanies, setContactCompanies] = useState<CompanyOption[]>([]);
     const [search, setSearch] = useState("");
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const { autoFocus } = { autoFocus: arguments[0].autoFocus };
 
@@ -253,8 +259,7 @@ function CompanyCombobox({
 
     // Fetch companies once on mount
     useEffect(() => {
-        const q = query(collection(db, "companies"), orderBy("businessName", "asc"));
-        const unsub = onSnapshot(q, (snap) => {
+        const unsub = onSnapshot(collection(db, "companies"), (snap) => {
             const list: CompanyOption[] = [];
             snap.forEach((d) => {
                 const data = d.data();
@@ -266,7 +271,12 @@ function CompanyCombobox({
                     state: data.state,
                 });
             });
-            setCompanies(list);
+            setCompanies(sortCompanyOptions(list));
+            setLoading(false);
+            setLoadError(null);
+        }, (error) => {
+            console.error("Failed to load companies:", error);
+            setLoadError("Could not load companies.");
             setLoading(false);
         });
         return () => unsub();
@@ -275,8 +285,7 @@ function CompanyCombobox({
     // Also check 'leads' collection for backward compat (existing leads not yet migrated)
     const [legacyCompanies, setLegacyCompanies] = useState<CompanyOption[]>([]);
     useEffect(() => {
-        const q = query(collection(db, "leads"), orderBy("businessName", "asc"));
-        const unsub = onSnapshot(q, (snap) => {
+        const unsub = onSnapshot(collection(db, "leads"), (snap) => {
             const list: CompanyOption[] = [];
             snap.forEach((d) => {
                 const data = d.data();
@@ -290,15 +299,49 @@ function CompanyCombobox({
                     });
                 }
             });
-            setLegacyCompanies(list);
+            setLegacyCompanies(sortCompanyOptions(list));
+        }, (error) => {
+            console.error("Failed to load legacy leads:", error);
         });
         return () => unsub();
     }, []);
 
-    const allCompanies = [...companies, ...legacyCompanies];
+    // Final fallback: derive company options from contacts if company docs are incomplete.
+    useEffect(() => {
+        const unsub = onSnapshot(collection(db, "contacts"), (snap) => {
+            const byCompany = new Map<string, CompanyOption>();
+            snap.forEach((d) => {
+                const data = d.data();
+                const companyId = data.companyId;
+                const companyName = data.companyName;
+                if (!companyId || !companyName) return;
+                if (!byCompany.has(companyId)) {
+                    byCompany.set(companyId, {
+                        id: companyId,
+                        businessName: companyName,
+                    });
+                }
+            });
+            setContactCompanies(sortCompanyOptions(Array.from(byCompany.values())));
+        }, (error) => {
+            console.error("Failed to derive companies from contacts:", error);
+        });
+        return () => unsub();
+    }, []);
 
-    // Deduplicate by id
-    const uniqueCompanies = allCompanies.filter((c, i, arr) => arr.findIndex(x => x.id === c.id) === i);
+    const allCompanies = [...companies, ...legacyCompanies, ...contactCompanies];
+
+    // Deduplicate by company id; prefer richer company docs over contact-derived fallbacks.
+    const uniqueCompanies = Array.from(
+        allCompanies.reduce((map, company) => {
+            const existing = map.get(company.id);
+            if (!existing || ((!existing.address && company.address) || (!existing.city && company.city))) {
+                map.set(company.id, company);
+            }
+            return map;
+        }, new Map<string, CompanyOption>())
+            .values()
+    );
 
     const filtered = search
         ? uniqueCompanies.filter(c =>
@@ -365,6 +408,10 @@ function CompanyCombobox({
                     {loading ? (
                         <div className="px-3 py-3 text-sm text-muted-foreground flex items-center gap-2">
                             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading companies...
+                        </div>
+                    ) : loadError ? (
+                        <div className="px-3 py-2 text-sm text-destructive">
+                            {loadError}
                         </div>
                     ) : (
                         <>

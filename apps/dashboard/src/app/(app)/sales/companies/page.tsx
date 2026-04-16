@@ -2,17 +2,15 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-    Plus, Search, Building2, MapPin, Users, Globe, Phone,
-    Mail, ChevronRight, ExternalLink, Loader2
+    Search, Building2, MapPin, Users, Globe, ChevronRight, Loader2
 } from 'lucide-react';
-import { collection, onSnapshot, query, orderBy, where, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
-import { FACILITY_TYPE_OPTIONS } from '@xiri-facility-solutions/shared';
+import { useFacilityTypes } from '@/lib/facilityTypes';
 
 interface Company {
     id: string;
@@ -44,29 +42,35 @@ const STATUS_COLORS: Record<string, string> = {
     churned: 'bg-gray-100 text-gray-600',
 };
 
-function getFacilityLabel(value: string | undefined): string {
-    if (!value) return '';
-    return FACILITY_TYPE_OPTIONS.find(t => t.value === value)?.label || value;
+function sortCompanies(companies: Company[]): Company[] {
+    return [...companies].sort((a, b) => a.businessName.localeCompare(b.businessName));
 }
 
 export default function CompaniesPage() {
     const [companies, setCompanies] = useState<Company[]>([]);
     const [legacyLeads, setLegacyLeads] = useState<Company[]>([]);
+    const [contactDerivedCompanies, setContactDerivedCompanies] = useState<Company[]>([]);
     const [contactCounts, setContactCounts] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const { facilityTypeLabels } = useFacilityTypes();
 
     // Fetch from 'companies' collection
     useEffect(() => {
-        const q = query(collection(db, 'companies'), orderBy('businessName', 'asc'));
-        const unsub = onSnapshot(q, (snap) => {
+        const unsub = onSnapshot(collection(db, 'companies'), (snap) => {
             const list: Company[] = [];
             snap.forEach((d) => {
                 const data = d.data();
                 list.push({ id: d.id, ...data } as Company);
             });
-            setCompanies(list);
+            setCompanies(sortCompanies(list));
+            setLoading(false);
+            setLoadError(null);
+        }, (error) => {
+            console.error('Failed to load companies:', error);
+            setLoadError('Could not load companies.');
             setLoading(false);
         });
         return () => unsub();
@@ -74,8 +78,7 @@ export default function CompaniesPage() {
 
     // Also fetch legacy 'leads' that haven't been migrated
     useEffect(() => {
-        const q = query(collection(db, 'leads'), orderBy('businessName', 'asc'));
-        const unsub = onSnapshot(q, (snap) => {
+        const unsub = onSnapshot(collection(db, 'leads'), (snap) => {
             const list: Company[] = [];
             snap.forEach((d) => {
                 const data = d.data();
@@ -98,37 +101,55 @@ export default function CompaniesPage() {
                     });
                 }
             });
-            setLegacyLeads(list);
+            setLegacyLeads(sortCompanies(list));
+        }, (error) => {
+            console.error('Failed to load legacy leads:', error);
         });
         return () => unsub();
     }, []);
 
-    // Fetch contact counts per company
+    // Fetch contact counts per company and derive fallback company rows from contacts.
     useEffect(() => {
         const unsub = onSnapshot(collection(db, 'contacts'), (snap) => {
             const counts: Record<string, number> = {};
+            const fallbackCompanies = new Map<string, Company>();
             snap.forEach((d) => {
-                const companyId = d.data().companyId;
+                const data = d.data();
+                const companyId = data.companyId;
                 if (companyId) {
                     counts[companyId] = (counts[companyId] || 0) + 1;
+                    if (data.companyName && !fallbackCompanies.has(companyId)) {
+                        fallbackCompanies.set(companyId, {
+                            id: companyId,
+                            businessName: data.companyName,
+                        });
+                    }
                 }
             });
             setContactCounts(counts);
+            setContactDerivedCompanies(sortCompanies(Array.from(fallbackCompanies.values())));
         });
         return () => unsub();
     }, []);
 
     // Merge & deduplicate
     const allCompanies = useMemo(() => {
-        const merged = [...companies];
-        const existingIds = new Set(companies.map(c => c.id));
+        const merged = new Map<string, Company>();
+        for (const company of companies) {
+            merged.set(company.id, company);
+        }
         for (const lead of legacyLeads) {
-            if (!existingIds.has(lead.id)) {
-                merged.push(lead);
+            if (!merged.has(lead.id)) {
+                merged.set(lead.id, lead);
             }
         }
-        return merged;
-    }, [companies, legacyLeads]);
+        for (const contactCompany of contactDerivedCompanies) {
+            if (!merged.has(contactCompany.id)) {
+                merged.set(contactCompany.id, contactCompany);
+            }
+        }
+        return sortCompanies(Array.from(merged.values()));
+    }, [companies, legacyLeads, contactDerivedCompanies]);
 
     // Status counts
     const statusCounts = useMemo(() => {
@@ -234,6 +255,12 @@ export default function CompaniesPage() {
                             <Loader2 className="w-8 h-8 animate-spin" />
                             <p className="text-sm">Loading companies...</p>
                         </div>
+                    ) : loadError ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-destructive gap-3">
+                            <Building2 className="w-12 h-12 opacity-40" />
+                            <p className="font-medium text-lg">{loadError}</p>
+                            <p className="text-sm text-muted-foreground">Contacts can still be used as a fallback source for companies once data loads successfully.</p>
+                        </div>
                     ) : filtered.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
                             <Building2 className="w-12 h-12 opacity-40" />
@@ -249,6 +276,7 @@ export default function CompaniesPage() {
                                     <CompanyCard
                                         company={company}
                                         contactCount={contactCounts[company.id] || 0}
+                                        facilityTypeLabels={facilityTypeLabels}
                                     />
                                 </Link>
                             ))}
@@ -260,8 +288,8 @@ export default function CompaniesPage() {
     );
 }
 
-function CompanyCard({ company, contactCount }: { company: Company; contactCount: number }) {
-    const facilityLabel = getFacilityLabel(company.facilityType);
+function CompanyCard({ company, contactCount, facilityTypeLabels }: { company: Company; contactCount: number; facilityTypeLabels: Record<string, string> }) {
+    const facilityLabel = company.facilityType ? (facilityTypeLabels[company.facilityType] || company.facilityType) : '';
     const location = [company.address, company.city, company.state].filter(Boolean).join(', ');
     const statusClass = STATUS_COLORS[company.status || ''] || 'bg-gray-100 text-gray-600';
 
