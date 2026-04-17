@@ -61,11 +61,52 @@ const DEFAULT_VISIBLE: ColumnKey[] = ['contact', 'business', 'type', 'location',
 
 export type EngagementFilter = 'clicked' | 'opened' | 'delivered' | 'bounced' | null;
 type ContactLifecycleFilter = 'active' | 'held' | 'suppressed' | 'all';
+type CompanyStageFilter = LeadStatus | 'all';
+
+const CONTACTED_OUTREACH_STATUSES = new Set([
+    'PENDING',
+    'IN_PROGRESS',
+    'SENT',
+    'COMPLETED',
+    'FAILED',
+    'BOUNCED',
+    'SPAM_COMPLAINT',
+    'NEEDS_MANUAL',
+]);
+
+const CONTACTED_EMAIL_EVENTS = new Set([
+    'delivered',
+    'opened',
+    'clicked',
+    'bounced',
+    'spam',
+]);
 
 function resolveLifecycleStatus(contact: Partial<ContactRow>): Exclude<ContactLifecycleFilter, 'all'> | 'review' | 'duplicate' | 'archived' {
     if (contact.lifecycleStatus) return contact.lifecycleStatus as any;
     if (contact.unsubscribed) return 'suppressed';
     return 'active';
+}
+
+function resolveCompanyStage(company: any, contact: any): LeadStatus {
+    const storedStatus = typeof company?.status === 'string' ? company.status : 'new';
+    if (storedStatus !== 'new') return storedStatus as LeadStatus;
+
+    const outreachStatus = typeof company?.outreachStatus === 'string' ? company.outreachStatus : null;
+    const companyEvent = typeof company?.emailEngagement?.lastEvent === 'string' ? company.emailEngagement.lastEvent : null;
+    const contactEvent = typeof contact?.emailEngagement?.lastEvent === 'string' ? contact.emailEngagement.lastEvent : null;
+    const hasSequenceHistory = !!contact?.sequenceHistory && Object.keys(contact.sequenceHistory).length > 0;
+
+    if (
+        (outreachStatus && CONTACTED_OUTREACH_STATUSES.has(outreachStatus)) ||
+        (companyEvent && CONTACTED_EMAIL_EVENTS.has(companyEvent)) ||
+        (contactEvent && CONTACTED_EMAIL_EVENTS.has(contactEvent)) ||
+        hasSequenceHistory
+    ) {
+        return 'contacted';
+    }
+
+    return 'new';
 }
 
 interface LeadListProps {
@@ -189,7 +230,7 @@ export default function LeadList({
                 createdBy: data.createdBy,
                 emailEngagement: data.emailEngagement,
                 sequenceHistory: data.sequenceHistory || undefined,
-                _companyStatus: company.status || "new",
+                _companyStatus: resolveCompanyStage(company, data),
                 _companyLeadType: company.leadType,
                 _companyFacilityType: company.facilityType,
                 _companyAddress: company.address,
@@ -562,6 +603,29 @@ export default function LeadList({
         return groups;
     }, [paginatedContacts, groupByCompany, startIdx]);
 
+    const companyStageOptions = useMemo(
+        (): { value: CompanyStageFilter; label: string; color: string }[] => [
+            { value: 'all', label: 'All', color: 'bg-secondary text-secondary-foreground' },
+            { value: 'new', label: 'New', color: 'bg-blue-100 text-blue-700' },
+            { value: 'contacted', label: 'Contacted', color: 'bg-yellow-100 text-yellow-700' },
+            { value: 'qualified', label: 'Qualified', color: 'bg-purple-100 text-purple-700' },
+            { value: 'walkthrough', label: 'Walkthrough', color: 'bg-indigo-100 text-indigo-700' },
+            { value: 'proposal', label: 'Proposal', color: 'bg-orange-100 text-orange-700' },
+            { value: 'quoted', label: 'Quoted', color: 'bg-pink-100 text-pink-700' },
+            { value: 'won', label: 'Won', color: 'bg-green-100 text-green-700' },
+            { value: 'lost', label: 'Lost', color: 'bg-red-100 text-red-700' },
+        ],
+        []
+    );
+
+    const companyStageCounts = useMemo(() => {
+        return contacts.reduce((acc, contact) => {
+            const stage = (contact as any)._companyStatus || 'new';
+            acc[stage] = (acc[stage] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+    }, [contacts]);
+
     const toggleGroup = (key: string) => {
         setCollapsedGroups(prev => {
             const next = new Set(prev);
@@ -698,8 +762,11 @@ export default function LeadList({
                 </div>
             )}
 
-            {/* Lifecycle Filters */}
-            <div className="px-3 pt-2 flex flex-wrap gap-1.5">
+            <div className="px-3 pt-2">
+                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    Contact Lifecycle
+                </p>
+                <div className="flex flex-wrap gap-1.5">
                 {(() => {
                     const lifecycles: { value: ContactLifecycleFilter; label: string; color: string }[] = [
                         { value: 'active', label: 'Active', color: 'bg-emerald-100 text-emerald-800' },
@@ -729,30 +796,24 @@ export default function LeadList({
                         );
                     });
                 })()}
+                </div>
             </div>
 
-            {/* Status Badge Filters */}
-            <div className="px-3 py-2 flex flex-wrap gap-1.5">
-                {(() => {
-                    const statuses: { value: LeadStatus | 'all'; label: string; color: string }[] = [
-                        { value: 'all', label: 'All', color: 'bg-secondary text-secondary-foreground' },
-                        { value: 'new', label: 'New', color: 'bg-blue-100 text-blue-700' },
-                        { value: 'contacted', label: 'Contacted', color: 'bg-yellow-100 text-yellow-700' },
-                        { value: 'qualified', label: 'Qualified', color: 'bg-purple-100 text-purple-700' },
-                        { value: 'walkthrough', label: 'Walkthrough', color: 'bg-indigo-100 text-indigo-700' },
-                        { value: 'proposal', label: 'Proposal', color: 'bg-orange-100 text-orange-700' },
-                        { value: 'quoted', label: 'Quoted', color: 'bg-pink-100 text-pink-700' },
-                        { value: 'won', label: 'Won', color: 'bg-green-100 text-green-700' },
-                        { value: 'lost', label: 'Lost', color: 'bg-red-100 text-red-700' },
-                    ];
-                    const counts = contacts.reduce((acc, c) => {
-                        const s = (c as any)._companyStatus || 'new';
-                        acc[s] = (acc[s] || 0) + 1;
-                        return acc;
-                    }, {} as Record<string, number>);
-                    return statuses.map(s => {
-                        const count = s.value === 'all' ? contacts.length : (counts[s.value] || 0);
-                        if (s.value !== 'all' && count === 0) return null;
+            <div className="px-3 py-2">
+                <div className="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Company Stage
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                        {requiresFullDataset
+                            ? 'Counts reflect all matching contacts.'
+                            : 'Counts are hidden until a stage filter or search loads the full dataset.'}
+                    </p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                    {companyStageOptions.map(s => {
+                        const count = s.value === 'all' ? contacts.length : (companyStageCounts[s.value] || 0);
+                        if (requiresFullDataset && s.value !== 'all' && count === 0) return null;
                         const isActive = statusFilter === s.value;
                         return (
                             <button
@@ -765,13 +826,15 @@ export default function LeadList({
                                     }`}
                             >
                                 {s.label}
-                                <span className={`tabular-nums text-[10px] ${isActive ? 'opacity-90' : 'opacity-60'}`}>
-                                    {count}
-                                </span>
+                                {requiresFullDataset ? (
+                                    <span className={`tabular-nums text-[10px] ${isActive ? 'opacity-90' : 'opacity-60'}`}>
+                                        {count}
+                                    </span>
+                                ) : null}
                             </button>
                         );
-                    });
-                })()}
+                    })}
+                </div>
             </div>
 
             <div className="px-3 py-2 border-b border-border bg-muted/20 flex flex-col md:flex-row gap-2">

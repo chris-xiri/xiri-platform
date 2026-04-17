@@ -63635,9 +63635,11 @@ var resendWebhook = (0, import_https4.onRequest)({
     };
     const newPriority = ENGAGEMENT_PRIORITY[mapping.deliveryStatus] ?? 0;
     let shouldUpdateLastEvent = true;
+    let currentEntityStatus;
     try {
       const entityDoc = await db20.collection(entityCollection).doc(entityId).get();
       const currentEvent = entityDoc.data()?.emailEngagement?.lastEvent;
+      currentEntityStatus = entityDoc.data()?.status;
       const currentPriority = ENGAGEMENT_PRIORITY[currentEvent] ?? -1;
       if (newPriority > 0 && currentPriority >= newPriority) {
         shouldUpdateLastEvent = false;
@@ -63666,6 +63668,17 @@ var resendWebhook = (0, import_https4.onRequest)({
       import_v22.logger.info(`${entityType} ${entityId}: emailEngagement updated (${mapping.deliveryStatus}, lastEvent=${shouldUpdateLastEvent ? "updated" : "preserved"})`);
     } catch (engErr) {
       import_v22.logger.warn(`Failed to update ${entityType} engagement:`, engErr);
+    }
+    if (entityType === "lead" && currentEntityStatus === "new" && !isUnsubscribeClick && ["email.delivered", "email.opened", "email.clicked"].includes(eventType)) {
+      try {
+        await db20.collection(entityCollection).doc(entityId).update({
+          status: "contacted",
+          updatedAt: /* @__PURE__ */ new Date()
+        });
+        import_v22.logger.info(`${entityType} ${entityId}: promoted status new -> contacted after ${eventType}`);
+      } catch (statusErr) {
+        import_v22.logger.warn(`Failed to promote ${entityType} ${entityId} to contacted:`, statusErr);
+      }
     }
     if (resolvedContactId) {
       const contactEngagement = {
