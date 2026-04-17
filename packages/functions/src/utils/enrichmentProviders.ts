@@ -139,11 +139,13 @@ export async function runEnrichmentWaterfall(
         contactName?: string;
         knownGenericEmail?: string;
         preferredTitles?: string[];
+        avoidTitles?: string[];
     }
 ): Promise<WaterfallResult> {
     const log: string[] = [];
     const allEmails: EnrichedEmail[] = [];
     const preferredTitles = (context?.preferredTitles || []).map(t => t.toLowerCase());
+    const avoidTitles = (context?.avoidTitles || []).map(t => t.toLowerCase());
 
     // ── Step 1: Pattern Guesser (always runs, free) ──
     try {
@@ -242,7 +244,7 @@ export async function runEnrichmentWaterfall(
         }
 
         const rankedEmails = [...result.emails].sort((a, b) => {
-            return scoreEnrichedEmail(b, preferredTitles) - scoreEnrichedEmail(a, preferredTitles);
+            return scoreEnrichedEmail(b, preferredTitles, avoidTitles) - scoreEnrichedEmail(a, preferredTitles, avoidTitles);
         });
 
         allEmails.push(...rankedEmails);
@@ -304,7 +306,7 @@ export async function runEnrichmentWaterfall(
     return { type: 'none', provider: 'none', allEmails: [], log };
 }
 
-function scoreEnrichedEmail(email: EnrichedEmail, preferredTitles: string[]): number {
+function scoreEnrichedEmail(email: EnrichedEmail, preferredTitles: string[], avoidTitles: string[]): number {
     let score = email.type === 'personal' ? 100 : 10;
     score += email.confidence || 0;
 
@@ -316,8 +318,12 @@ function scoreEnrichedEmail(email: EnrichedEmail, preferredTitles: string[]): nu
         }
     }
 
-    if (position.includes('owner') || position.includes('founder')) score += 25;
+    if (position && avoidTitles.some(title => position.includes(title))) score -= 120;
+    if (position.includes('owner') || position.includes('founder')) score += preferredTitles.length === 0 ? 25 : 5;
     if (position.includes('manager')) score += 20;
+    if (position.includes('facilit')) score += 25;
+    if (position.includes('operation')) score += 25;
+    if (position.includes('admin')) score += 15;
     if (position.includes('director')) score += 15;
     if (position.includes('assistant')) score -= 20;
     if (position.includes('intern')) score -= 40;

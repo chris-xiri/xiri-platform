@@ -20,6 +20,7 @@ interface ScrapedData {
     ownerTitle?: string;
     ownerEmail?: string;
     allEmails?: { email: string; type: 'personal' | 'generic' }[];
+    organizationScope?: 'single_location' | 'multi_location';
 }
 
 interface EnrichmentResult {
@@ -141,6 +142,7 @@ export async function scrapeWebsite(url: string, geminiApiKey: string): Promise<
         combinedData.ownerName = aiData.ownerName;
         combinedData.ownerTitle = aiData.ownerTitle;
         combinedData.ownerEmail = aiData.ownerEmail;
+        combinedData.organizationScope = aiData.organizationScope;
 
         // Merge AI-discovered staff emails into allEmails (deduped)
         if (aiData.allEmails && aiData.allEmails.length > 0) {
@@ -432,15 +434,17 @@ async function extractWithAI(html: string, geminiApiKey: string): Promise<Partia
         // Strip HTML to plain text and limit size
         const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').substring(0, 15000);
 
-        const FALLBACK = `Extract business contact information AND owner/decision-maker info from this website content.
+        const FALLBACK = `Extract business contact information AND the BEST local decision-maker for commercial cleaning / facilities vendor outreach from this website content.
 
-PRIORITY: Find PERSONAL email addresses (e.g. john@business.com, jsmith@business.com).
-Generic emails like info@, contact@, hello@, office@, admin@ are LOW VALUE — only return those if absolutely nothing else exists.
+PRIORITY:
+1. Find the LOCAL person most likely responsible for vendor management, facilities, operations, office management, practice administration, branch/studio/store management, or site administration.
+2. For multi-location brands or franchises, prefer the branch/studio/store/site leader over a founder, CEO, or corporate executive.
+3. Find PERSONAL email addresses (e.g. john@business.com, jsmith@business.com). Generic emails like info@, contact@, hello@, office@, admin@ are LOW VALUE and should only be the fallback.
 
 Look specifically for:
-1. The highest-ranking person — owner, founder, CEO, president, managing director, doctor, principal, or office manager
-2. Any named person with an email address listed (e.g. on About Us, Our Team, Staff, Leadership, Meet the Doctor sections)
-3. Email addresses that contain a person's name (e.g. sarah@, mike.johnson@, etc.)
+1. A local general manager, studio manager, office manager, practice manager, administrator, facilities manager, operations manager, store manager, branch manager, or site director
+2. Any named person with an email address listed (e.g. on About Us, Our Team, Staff, Leadership, Meet the Doctor, Location, Studio, Branch sections)
+3. Evidence the business is multi-location or franchise-based (e.g. "locations", "find a studio", "franchise", "our offices", "our stores")
 
 Return ONLY a JSON object with these fields (use null if not found):
 {
@@ -448,9 +452,10 @@ Return ONLY a JSON object with these fields (use null if not found):
   "phone": "primary phone number in format (xxx) xxx-xxxx",
   "address": "full physical address if available",
   "businessName": "official business name",
-  "ownerName": "full name of owner/highest decision-maker (e.g. 'Dr. John Smith')",
-  "ownerTitle": "their title (e.g. 'Owner', 'CEO', 'Managing Director', 'DDS')",
-  "ownerEmail": "owner's personal email if different from the general email",
+  "ownerName": "full name of the BEST local decision-maker for facilities/vendor outreach",
+  "ownerTitle": "their title (prefer local operational titles over founder/CEO titles)",
+  "ownerEmail": "that person's direct email if found",
+  "organizationScope": "single_location or multi_location",
   "allStaffEmails": ["array of ALL email addresses found for named individuals, e.g. john@biz.com"]
 }
 
@@ -489,6 +494,7 @@ Website content:
                 ownerName: clean(data.ownerName),
                 ownerTitle: clean(data.ownerTitle),
                 ownerEmail: clean(data.ownerEmail),
+                organizationScope: data.organizationScope === 'multi_location' ? 'multi_location' : data.organizationScope === 'single_location' ? 'single_location' : undefined,
                 allEmails: aiStaffEmails.length > 0 ? aiStaffEmails : undefined,
             };
         }

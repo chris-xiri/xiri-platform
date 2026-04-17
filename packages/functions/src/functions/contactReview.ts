@@ -13,6 +13,8 @@ type ContactDoc = admin.firestore.DocumentData & {
     firstName?: string;
     lastName?: string;
     email?: string;
+    phone?: string;
+    role?: string;
     isPrimary?: boolean;
     lifecycleStatus?: string;
     lifecycleReason?: string | null;
@@ -24,6 +26,40 @@ type ContactDoc = admin.firestore.DocumentData & {
     };
     reviewReasons?: string[];
 };
+
+const GENERIC_LOCAL_PARTS = new Set([
+    "admin",
+    "billing",
+    "bookkeeping",
+    "contact",
+    "front",
+    "frontdesk",
+    "hello",
+    "help",
+    "info",
+    "inquiries",
+    "inquiry",
+    "manager",
+    "office",
+    "reception",
+    "sales",
+    "service",
+    "support",
+]);
+
+const FREE_EMAIL_DOMAINS = new Set([
+    "gmail.com",
+    "yahoo.com",
+    "hotmail.com",
+    "outlook.com",
+    "aol.com",
+    "icloud.com",
+    "me.com",
+    "msn.com",
+    "live.com",
+    "proton.me",
+    "protonmail.com",
+]);
 
 function asCleanString(value: unknown): string {
     return typeof value === "string" ? value.trim() : "";
@@ -43,6 +79,41 @@ function normalizeName(firstName?: string, lastName?: string): string {
     return `${first} ${last}`.trim();
 }
 
+function normalizePhone(phone?: string): string {
+    return asCleanString(phone).replace(/\D/g, "");
+}
+
+function getEmailParts(email?: string): { local: string; domain: string } {
+    const normalized = normalizeEmail(email);
+    const [local = "", domain = ""] = normalized.split("@");
+    return { local, domain };
+}
+
+function looksPersonalEmail(contact: ContactDoc): boolean {
+    const { local } = getEmailParts(contact.email);
+    if (!local) return false;
+    if (GENERIC_LOCAL_PARTS.has(local)) return false;
+
+    const first = asCleanString(contact.firstName).toLowerCase();
+    const last = asCleanString(contact.lastName).toLowerCase();
+    if (!first && !last) return false;
+
+    return (!!first && local.includes(first)) || (!!last && local.includes(last));
+}
+
+function isGenericInbox(contact: ContactDoc): boolean {
+    const { local, domain } = getEmailParts(contact.email);
+    if (!local || !domain) return false;
+    if (GENERIC_LOCAL_PARTS.has(local)) return true;
+    if (FREE_EMAIL_DOMAINS.has(domain)) return !looksPersonalEmail(contact);
+    return !looksPersonalEmail(contact) && !normalizeName(contact.firstName, contact.lastName);
+}
+
+function isSuppressedLike(contact: ContactDoc): boolean {
+    const lifecycle = contact.lifecycleStatus || (contact.unsubscribed ? "suppressed" : "active");
+    return lifecycle === "suppressed" || contact.emailEngagement?.lastEvent === "bounced" || contact.emailEngagement?.lastEvent === "spam";
+}
+
 function scoreContact(contact: ContactDoc): number {
     let score = 0;
     const lifecycle = contact.lifecycleStatus || (contact.unsubscribed ? "suppressed" : "active");
@@ -59,8 +130,14 @@ function scoreContact(contact: ContactDoc): number {
     if (engagement?.lastEvent === "bounced" || engagement?.lastEvent === "spam") score -= 20;
 
     const email = normalizeEmail(contact.email);
-    if (email && !email.startsWith("info@") && !email.startsWith("hello@") && !email.startsWith("admin@")) {
-        score += 5;
+    const { domain } = getEmailParts(email);
+    if (email) {
+        if (looksPersonalEmail(contact)) score += 18;
+        if (isGenericInbox(contact)) score -= 14;
+        if (FREE_EMAIL_DOMAINS.has(domain)) score -= 18;
+        if (!email.startsWith("info@") && !email.startsWith("hello@") && !email.startsWith("admin@")) {
+            score += 5;
+        }
     }
 
     return score;
@@ -92,6 +169,7 @@ export const refreshContactReviewQueue = onCall({
     const updates = new Map<string, Record<string, any>>();
     let exactDuplicateCount = 0;
     let nameCandidateCount = 0;
+    let inboxClusterCount = 0;
     let lifecycleBackfillCount = 0;
     let malformedReviewReasonsCount = 0;
 
@@ -104,11 +182,11 @@ export const refreshContactReviewQueue = onCall({
     for (const contacts of byCompany.values()) {
         const byEmail = new Map<string, Array<{ id: string; data: ContactDoc }>>();
         const byName = new Map<string, Array<{ id: string; data: ContactDoc }>>();
+        const byDomain = new Map<string, Array<{ id: string; data: ContactDoc }>>();
 
         for (const contact of contacts) {
             const email = normalizeEmail(contact.data.email);
             const name = normalizeName(contact.data.firstName, contact.data.lastName);
-            const reviewReasons = asStringArray(contact.data.reviewReasons);
             if (contact.data.reviewReasons && !Array.isArray(contact.data.reviewReasons)) {
                 malformedReviewReasonsCount++;
             }
@@ -124,12 +202,61 @@ export const refreshContactReviewQueue = onCall({
                 const emailGroup = byEmail.get(email) || [];
                 emailGroup.push(contact);
                 byEmail.set(email, emailGroup);
+
+                const { domain } = getEmailParts(email);
+                if (domain) {
+                    const domainGroup = byDomain.get(domain) || [];
+                    domainGroup.push(contact);
+                    byDomain.set(domain, domainGroup);
+                }
             }
 
             if (name) {
                 const nameGroup = byName.get(name) || [];
                 nameGroup.push(contact);
                 byName.set(name, nameGroup);
+            }
+        }
+
+        for (const [domain, group] of byDomain.entries()) {
+            if (group.length < 3) continue;
+            if (FREE_EMAIL_DOMAINS.has(domain)) continue;
+
+            const genericContacts = group.filter((contact) => isGenericInbox(contact.data));
+            if (genericContacts.length < 3) continue;
+            const suppressedGenericContacts = genericContacts.filter((contact) => isSuppressedLike(contact.data));
+            if (suppressedGenericContacts.length === 0) continue;
+
+            const phoneCounts = new Map<string, number>();
+            for (const contact of genericContacts) {
+                const phone = normalizePhone(contact.data.phone);
+                if (phone) {
+                    phoneCounts.set(phone, (phoneCounts.get(phone) || 0) + 1);
+                }
+            }
+
+            const hasSharedPhone = Array.from(phoneCounts.values()).some((count) => count >= 2);
+            if (!hasSharedPhone) continue;
+
+            const winner = pickWinner(group);
+            for (const contact of suppressedGenericContacts) {
+                const update = ensureUpdate(contact.id);
+                const existingReasons = new Set(
+                    asStringArray(contact.data.reviewReasons).filter(
+                        (reason) => reason !== "duplicate_name_candidate" && reason !== "suppressed_company_inbox_cluster"
+                    )
+                );
+
+                if (contact.id === winner.id) {
+                    update.reviewReasons = Array.from(existingReasons);
+                    update.duplicateOfContactId = null;
+                    continue;
+                }
+
+                existingReasons.add("suppressed_company_inbox_cluster");
+                update.reviewReasons = Array.from(existingReasons);
+                update.duplicateOfContactId = winner.id;
+                inboxClusterCount++;
             }
         }
 
@@ -142,9 +269,12 @@ export const refreshContactReviewQueue = onCall({
                 const existingReasons = new Set(asStringArray(contact.data.reviewReasons).filter(reason => reason !== "duplicate_name_candidate"));
 
                 if (contact.id === winner.id) {
-                    if (contact.data.lifecycleStatus === "duplicate" && contact.data.lifecycleReason === "duplicate_email") {
-                        update.lifecycleStatus = "active";
-                        update.lifecycleReason = null;
+                    if (
+                        contact.data.lifecycleStatus === "duplicate" &&
+                        contact.data.lifecycleReason === "duplicate_email"
+                    ) {
+                        update.lifecycleStatus = isSuppressedLike(contact.data) ? "suppressed" : "active";
+                        update.lifecycleReason = isSuppressedLike(contact.data) ? contact.data.lifecycleReason || "suppressed" : null;
                         update.lifecycleUpdatedAt = admin.firestore.FieldValue.serverTimestamp();
                     }
                     update.duplicateOfContactId = null;
@@ -215,6 +345,7 @@ export const refreshContactReviewQueue = onCall({
         updatedContacts: entries.length,
         exactDuplicateCount,
         nameCandidateCount,
+        inboxClusterCount,
         lifecycleBackfillCount,
         malformedReviewReasonsCount,
     };

@@ -58601,6 +58601,7 @@ async function scrapeWebsite(url, geminiApiKey) {
     combinedData.ownerName = aiData.ownerName;
     combinedData.ownerTitle = aiData.ownerTitle;
     combinedData.ownerEmail = aiData.ownerEmail;
+    combinedData.organizationScope = aiData.organizationScope;
     if (aiData.allEmails && aiData.allEmails.length > 0) {
       const existingEmails = new Set(combinedData.allEmails?.map((e2) => e2.email) || []);
       for (const aiEmail of aiData.allEmails) {
@@ -58794,15 +58795,17 @@ async function extractWithAI(html, geminiApiKey) {
     const genAI4 = new import_generative_ai.GoogleGenerativeAI(geminiApiKey);
     const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
     const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 15e3);
-    const FALLBACK = `Extract business contact information AND owner/decision-maker info from this website content.
+    const FALLBACK = `Extract business contact information AND the BEST local decision-maker for commercial cleaning / facilities vendor outreach from this website content.
 
-PRIORITY: Find PERSONAL email addresses (e.g. john@business.com, jsmith@business.com).
-Generic emails like info@, contact@, hello@, office@, admin@ are LOW VALUE \u2014 only return those if absolutely nothing else exists.
+PRIORITY:
+1. Find the LOCAL person most likely responsible for vendor management, facilities, operations, office management, practice administration, branch/studio/store management, or site administration.
+2. For multi-location brands or franchises, prefer the branch/studio/store/site leader over a founder, CEO, or corporate executive.
+3. Find PERSONAL email addresses (e.g. john@business.com, jsmith@business.com). Generic emails like info@, contact@, hello@, office@, admin@ are LOW VALUE and should only be the fallback.
 
 Look specifically for:
-1. The highest-ranking person \u2014 owner, founder, CEO, president, managing director, doctor, principal, or office manager
-2. Any named person with an email address listed (e.g. on About Us, Our Team, Staff, Leadership, Meet the Doctor sections)
-3. Email addresses that contain a person's name (e.g. sarah@, mike.johnson@, etc.)
+1. A local general manager, studio manager, office manager, practice manager, administrator, facilities manager, operations manager, store manager, branch manager, or site director
+2. Any named person with an email address listed (e.g. on About Us, Our Team, Staff, Leadership, Meet the Doctor, Location, Studio, Branch sections)
+3. Evidence the business is multi-location or franchise-based (e.g. "locations", "find a studio", "franchise", "our offices", "our stores")
 
 Return ONLY a JSON object with these fields (use null if not found):
 {
@@ -58810,9 +58813,10 @@ Return ONLY a JSON object with these fields (use null if not found):
   "phone": "primary phone number in format (xxx) xxx-xxxx",
   "address": "full physical address if available",
   "businessName": "official business name",
-  "ownerName": "full name of owner/highest decision-maker (e.g. 'Dr. John Smith')",
-  "ownerTitle": "their title (e.g. 'Owner', 'CEO', 'Managing Director', 'DDS')",
-  "ownerEmail": "owner's personal email if different from the general email",
+  "ownerName": "full name of the BEST local decision-maker for facilities/vendor outreach",
+  "ownerTitle": "their title (prefer local operational titles over founder/CEO titles)",
+  "ownerEmail": "that person's direct email if found",
+  "organizationScope": "single_location or multi_location",
   "allStaffEmails": ["array of ALL email addresses found for named individuals, e.g. john@biz.com"]
 }
 
@@ -58845,6 +58849,7 @@ Website content:
         ownerName: clean(data.ownerName),
         ownerTitle: clean(data.ownerTitle),
         ownerEmail: clean(data.ownerEmail),
+        organizationScope: data.organizationScope === "multi_location" ? "multi_location" : data.organizationScope === "single_location" ? "single_location" : void 0,
         allEmails: aiStaffEmails.length > 0 ? aiStaffEmails : void 0
       };
     }
@@ -65938,6 +65943,38 @@ if (!admin32.apps.length) {
   admin32.initializeApp();
 }
 var db28 = admin32.firestore();
+var GENERIC_LOCAL_PARTS = /* @__PURE__ */ new Set([
+  "admin",
+  "billing",
+  "bookkeeping",
+  "contact",
+  "front",
+  "frontdesk",
+  "hello",
+  "help",
+  "info",
+  "inquiries",
+  "inquiry",
+  "manager",
+  "office",
+  "reception",
+  "sales",
+  "service",
+  "support"
+]);
+var FREE_EMAIL_DOMAINS = /* @__PURE__ */ new Set([
+  "gmail.com",
+  "yahoo.com",
+  "hotmail.com",
+  "outlook.com",
+  "aol.com",
+  "icloud.com",
+  "me.com",
+  "msn.com",
+  "live.com",
+  "proton.me",
+  "protonmail.com"
+]);
 function asCleanString(value) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -65951,6 +65988,34 @@ function normalizeName(firstName, lastName) {
   const first = asCleanString(firstName).toLowerCase();
   const last = asCleanString(lastName).toLowerCase();
   return `${first} ${last}`.trim();
+}
+function normalizePhone(phone) {
+  return asCleanString(phone).replace(/\D/g, "");
+}
+function getEmailParts(email) {
+  const normalized = normalizeEmail(email);
+  const [local = "", domain = ""] = normalized.split("@");
+  return { local, domain };
+}
+function looksPersonalEmail(contact) {
+  const { local } = getEmailParts(contact.email);
+  if (!local) return false;
+  if (GENERIC_LOCAL_PARTS.has(local)) return false;
+  const first = asCleanString(contact.firstName).toLowerCase();
+  const last = asCleanString(contact.lastName).toLowerCase();
+  if (!first && !last) return false;
+  return !!first && local.includes(first) || !!last && local.includes(last);
+}
+function isGenericInbox(contact) {
+  const { local, domain } = getEmailParts(contact.email);
+  if (!local || !domain) return false;
+  if (GENERIC_LOCAL_PARTS.has(local)) return true;
+  if (FREE_EMAIL_DOMAINS.has(domain)) return !looksPersonalEmail(contact);
+  return !looksPersonalEmail(contact) && !normalizeName(contact.firstName, contact.lastName);
+}
+function isSuppressedLike(contact) {
+  const lifecycle = contact.lifecycleStatus || (contact.unsubscribed ? "suppressed" : "active");
+  return lifecycle === "suppressed" || contact.emailEngagement?.lastEvent === "bounced" || contact.emailEngagement?.lastEvent === "spam";
 }
 function scoreContact(contact) {
   let score = 0;
@@ -65966,8 +66031,14 @@ function scoreContact(contact) {
   if (engagement?.lastEvent === "delivered") score += 4;
   if (engagement?.lastEvent === "bounced" || engagement?.lastEvent === "spam") score -= 20;
   const email = normalizeEmail(contact.email);
-  if (email && !email.startsWith("info@") && !email.startsWith("hello@") && !email.startsWith("admin@")) {
-    score += 5;
+  const { domain } = getEmailParts(email);
+  if (email) {
+    if (looksPersonalEmail(contact)) score += 18;
+    if (isGenericInbox(contact)) score -= 14;
+    if (FREE_EMAIL_DOMAINS.has(domain)) score -= 18;
+    if (!email.startsWith("info@") && !email.startsWith("hello@") && !email.startsWith("admin@")) {
+      score += 5;
+    }
   }
   return score;
 }
@@ -65993,6 +66064,7 @@ var refreshContactReviewQueue = (0, import_https13.onCall)({
   const updates = /* @__PURE__ */ new Map();
   let exactDuplicateCount = 0;
   let nameCandidateCount = 0;
+  let inboxClusterCount = 0;
   let lifecycleBackfillCount = 0;
   let malformedReviewReasonsCount = 0;
   const ensureUpdate = (contactId) => {
@@ -66003,10 +66075,10 @@ var refreshContactReviewQueue = (0, import_https13.onCall)({
   for (const contacts of byCompany.values()) {
     const byEmail = /* @__PURE__ */ new Map();
     const byName = /* @__PURE__ */ new Map();
+    const byDomain = /* @__PURE__ */ new Map();
     for (const contact of contacts) {
       const email = normalizeEmail(contact.data.email);
       const name = normalizeName(contact.data.firstName, contact.data.lastName);
-      const reviewReasons = asStringArray(contact.data.reviewReasons);
       if (contact.data.reviewReasons && !Array.isArray(contact.data.reviewReasons)) {
         malformedReviewReasonsCount++;
       }
@@ -66020,11 +66092,52 @@ var refreshContactReviewQueue = (0, import_https13.onCall)({
         const emailGroup = byEmail.get(email) || [];
         emailGroup.push(contact);
         byEmail.set(email, emailGroup);
+        const { domain } = getEmailParts(email);
+        if (domain) {
+          const domainGroup = byDomain.get(domain) || [];
+          domainGroup.push(contact);
+          byDomain.set(domain, domainGroup);
+        }
       }
       if (name) {
         const nameGroup = byName.get(name) || [];
         nameGroup.push(contact);
         byName.set(name, nameGroup);
+      }
+    }
+    for (const [domain, group] of byDomain.entries()) {
+      if (group.length < 3) continue;
+      if (FREE_EMAIL_DOMAINS.has(domain)) continue;
+      const genericContacts = group.filter((contact) => isGenericInbox(contact.data));
+      if (genericContacts.length < 3) continue;
+      const suppressedGenericContacts = genericContacts.filter((contact) => isSuppressedLike(contact.data));
+      if (suppressedGenericContacts.length === 0) continue;
+      const phoneCounts = /* @__PURE__ */ new Map();
+      for (const contact of genericContacts) {
+        const phone = normalizePhone(contact.data.phone);
+        if (phone) {
+          phoneCounts.set(phone, (phoneCounts.get(phone) || 0) + 1);
+        }
+      }
+      const hasSharedPhone = Array.from(phoneCounts.values()).some((count) => count >= 2);
+      if (!hasSharedPhone) continue;
+      const winner = pickWinner(group);
+      for (const contact of suppressedGenericContacts) {
+        const update = ensureUpdate(contact.id);
+        const existingReasons = new Set(
+          asStringArray(contact.data.reviewReasons).filter(
+            (reason) => reason !== "duplicate_name_candidate" && reason !== "suppressed_company_inbox_cluster"
+          )
+        );
+        if (contact.id === winner.id) {
+          update.reviewReasons = Array.from(existingReasons);
+          update.duplicateOfContactId = null;
+          continue;
+        }
+        existingReasons.add("suppressed_company_inbox_cluster");
+        update.reviewReasons = Array.from(existingReasons);
+        update.duplicateOfContactId = winner.id;
+        inboxClusterCount++;
       }
     }
     for (const group of byEmail.values()) {
@@ -66035,8 +66148,8 @@ var refreshContactReviewQueue = (0, import_https13.onCall)({
         const existingReasons = new Set(asStringArray(contact.data.reviewReasons).filter((reason) => reason !== "duplicate_name_candidate"));
         if (contact.id === winner.id) {
           if (contact.data.lifecycleStatus === "duplicate" && contact.data.lifecycleReason === "duplicate_email") {
-            update.lifecycleStatus = "active";
-            update.lifecycleReason = null;
+            update.lifecycleStatus = isSuppressedLike(contact.data) ? "suppressed" : "active";
+            update.lifecycleReason = isSuppressedLike(contact.data) ? contact.data.lifecycleReason || "suppressed" : null;
             update.lifecycleUpdatedAt = admin32.firestore.FieldValue.serverTimestamp();
           }
           update.duplicateOfContactId = null;
@@ -66100,6 +66213,7 @@ var refreshContactReviewQueue = (0, import_https13.onCall)({
     updatedContacts: entries.length,
     exactDuplicateCount,
     nameCandidateCount,
+    inboxClusterCount,
     lifecycleBackfillCount,
     malformedReviewReasonsCount
   };
@@ -69699,6 +69813,7 @@ async function runEnrichmentWaterfall(domain, secrets, context) {
   const log = [];
   const allEmails = [];
   const preferredTitles = (context?.preferredTitles || []).map((t) => t.toLowerCase());
+  const avoidTitles = (context?.avoidTitles || []).map((t) => t.toLowerCase());
   try {
     log.push(`[PatternGuesser] Trying pattern guesses for ${domain}...`);
     const guessResult = await guessEmails(
@@ -69774,7 +69889,7 @@ async function runEnrichmentWaterfall(domain, secrets, context) {
       continue;
     }
     const rankedEmails = [...result.emails].sort((a2, b) => {
-      return scoreEnrichedEmail(b, preferredTitles) - scoreEnrichedEmail(a2, preferredTitles);
+      return scoreEnrichedEmail(b, preferredTitles, avoidTitles) - scoreEnrichedEmail(a2, preferredTitles, avoidTitles);
     });
     allEmails.push(...rankedEmails);
     const personalEmail = rankedEmails.find((e2) => e2.type === "personal");
@@ -69823,7 +69938,7 @@ async function runEnrichmentWaterfall(domain, secrets, context) {
   log.push("All enrichment providers exhausted \u2014 no emails found");
   return { type: "none", provider: "none", allEmails: [], log };
 }
-function scoreEnrichedEmail(email, preferredTitles) {
+function scoreEnrichedEmail(email, preferredTitles, avoidTitles) {
   let score = email.type === "personal" ? 100 : 10;
   score += email.confidence || 0;
   const position2 = email.position?.toLowerCase() || "";
@@ -69833,8 +69948,12 @@ function scoreEnrichedEmail(email, preferredTitles) {
       score += 120 - matchIndex * 10;
     }
   }
-  if (position2.includes("owner") || position2.includes("founder")) score += 25;
+  if (position2 && avoidTitles.some((title) => position2.includes(title))) score -= 120;
+  if (position2.includes("owner") || position2.includes("founder")) score += preferredTitles.length === 0 ? 25 : 5;
   if (position2.includes("manager")) score += 20;
+  if (position2.includes("facilit")) score += 25;
+  if (position2.includes("operation")) score += 25;
+  if (position2.includes("admin")) score += 15;
   if (position2.includes("director")) score += 15;
   if (position2.includes("assistant")) score -= 20;
   if (position2.includes("intern")) score -= 40;
@@ -70023,6 +70142,17 @@ var FREE_EMAIL_PROVIDERS = /* @__PURE__ */ new Set([
   "atlanticbbn.net"
   // regional ISP
 ]);
+var CORPORATE_ONLY_TITLES = [
+  "founder",
+  "co-founder",
+  "ceo",
+  "chief executive",
+  "president",
+  "owner",
+  "managing director",
+  "executive chairman",
+  "chief operating officer"
+];
 function stripDomainNoise(root) {
   return root.replace(/[-_]/g, "").replace(/(mail|email|web|site|online|center|centres?|ny|li|usa|inc|llc|corp|org|hq|app|the)$/gi, "").replace(/(mail|email|web|site|online|center|centres?|ny|li|usa|inc|llc|corp|org|hq|app|the)$/gi, "");
 }
@@ -70060,6 +70190,56 @@ function validateEmailForBusiness(email, businessWebsite) {
 function getDecisionMakerTitles(facilityType, fallbackQuery) {
   const resolved = facilityType || inferFacilityType(fallbackQuery) || "other";
   return FACILITY_DECISION_MAKERS[resolved] || FACILITY_DECISION_MAKERS.other;
+}
+function uniqStrings(values) {
+  return [...new Set(values.map((v) => v.toLowerCase()))];
+}
+function hasCorporateOnlyTitle(title) {
+  const lower = title?.toLowerCase() || "";
+  return !!lower && CORPORATE_ONLY_TITLES.some((t) => lower.includes(t));
+}
+function looksLikeMultiLocationBrand(businessName, website, organizationScope) {
+  if (organizationScope === "multi_location") return true;
+  if (organizationScope === "single_location") return false;
+  const name = businessName.toLowerCase();
+  const domainRoot = website ? extractDomain(website)?.split(".")[0].replace(/[^a-z0-9]/g, "") : "";
+  const normalizedName = name.replace(/[^a-z0-9]/g, "");
+  const franchiseBrandCues = [
+    "orangetheory",
+    "planet fitness",
+    "anytime fitness",
+    "crunch",
+    "burn boot camp",
+    "mathnasium",
+    "kumon",
+    "sylvan",
+    "the learning experience"
+  ];
+  if (franchiseBrandCues.some((cue) => name.includes(cue) || domainRoot?.includes(cue.replace(/[^a-z0-9]/g, "")))) {
+    return true;
+  }
+  return !!domainRoot && !normalizedName.includes(domainRoot) && /(fitness|studio|club|academy|school|clinic|care|center|dealership)/i.test(businessName);
+}
+function getBranchAwareDecisionMakerTitles(facilityType, fallbackQuery, multiLocation) {
+  const base = getDecisionMakerTitles(facilityType, fallbackQuery);
+  if (!multiLocation) return base;
+  const resolved = facilityType || inferFacilityType(fallbackQuery) || "other";
+  const localOverrides = {
+    fitness_gym: ["studio manager", "general manager", "operations manager", "regional manager"],
+    retail_storefront: ["store manager", "general manager", "operations manager", "district manager"],
+    medical_dental: ["practice manager", "office manager", "clinic manager", "administrator"],
+    medical_private: ["practice manager", "office manager", "clinic manager", "administrator"],
+    medical_urgent_care: ["clinic manager", "operations manager", "administrator"],
+    edu_tutoring: ["center director", "center manager", "operations manager"],
+    edu_private_school: ["principal", "director of operations", "administrator"],
+    auto_dealer_showroom: ["general manager", "service manager", "operations manager"],
+    office_general: ["office manager", "facilities manager", "operations manager", "site manager"],
+    other: ["general manager", "operations manager", "office manager", "site manager"]
+  };
+  return uniqStrings([
+    ...localOverrides[resolved] || localOverrides.other,
+    ...base.filter((title) => !hasCorporateOnlyTitle(title))
+  ]);
 }
 var FACILITY_DECISION_MAKERS = {
   medical_dental: ["practice manager", "office manager", "practice administrator", "owner", "dentist"],
@@ -70164,6 +70344,7 @@ async function prospectAndEnrich(input, secrets) {
 async function enrichSingleBusiness(vendor, secrets, input) {
   const log = [];
   let targetTitles = inferPreferredDecisionMakerTitles(input.query);
+  let avoidTitles = [];
   const prospect = {
     businessName: vendor.name,
     address: vendor.location,
@@ -70191,10 +70372,20 @@ async function enrichSingleBusiness(vendor, secrets, input) {
     const scrapeResult = await scrapeWebsite(vendor.website, secrets.geminiApiKey);
     if (scrapeResult.success && scrapeResult.data) {
       const data = scrapeResult.data;
+      const multiLocation = looksLikeMultiLocationBrand(vendor.name, vendor.website, data.organizationScope);
+      if (multiLocation) {
+        avoidTitles = CORPORATE_ONLY_TITLES;
+        targetTitles = getBranchAwareDecisionMakerTitles(prospect.facilityType, input.query, true);
+        log.push("Detected multi-location/branch business \u2014 prioritizing local branch operators over founders/corporate leadership");
+      }
       if (data.ownerName) {
-        prospect.contactName = data.ownerName;
-        prospect.contactTitle = data.ownerTitle;
-        log.push(`AI found owner: ${data.ownerName} (${data.ownerTitle || "unknown title"})`);
+        if (multiLocation && hasCorporateOnlyTitle(data.ownerTitle)) {
+          log.push(`AI found corporate contact ${data.ownerName} (${data.ownerTitle || "unknown title"}) \u2014 continuing search for local branch lead`);
+        } else {
+          prospect.contactName = data.ownerName;
+          prospect.contactTitle = data.ownerTitle;
+          log.push(`AI found decision-maker: ${data.ownerName} (${data.ownerTitle || "unknown title"})`);
+        }
       }
       if (data.socialMedia?.facebook) {
         prospect.facebookUrl = data.socialMedia.facebook;
@@ -70210,6 +70401,8 @@ async function enrichSingleBusiness(vendor, secrets, input) {
         } else if (emailValid === "mismatch") {
           log.push(`\u26A0\uFE0F Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} \u2014 skipping`);
           log.push(`Skipping off-domain email from website scrape: ${bestEmail}`);
+        } else if (multiLocation && hasCorporateOnlyTitle(data.ownerTitle)) {
+          log.push(`Skipping corporate-level direct email for branch business: ${bestEmail} (${data.ownerTitle || "unknown title"})`);
         } else {
           prospect.contactEmail = bestEmail;
           prospect.emailSource = data.ownerEmail ? "ai_extraction" : "mailto";
@@ -70270,7 +70463,8 @@ async function enrichSingleBusiness(vendor, secrets, input) {
         input.location,
         secrets.serperApiKey,
         log,
-        targetTitles
+        targetTitles,
+        avoidTitles
       );
       if (linkedinName) {
         prospect.contactName = linkedinName.name;
@@ -70291,7 +70485,8 @@ async function enrichSingleBusiness(vendor, secrets, input) {
         {
           contactName: prospect.contactName,
           knownGenericEmail: prospect.genericEmail,
-          preferredTitles: targetTitles
+          preferredTitles: targetTitles,
+          avoidTitles
         }
       );
       log.push(...waterfallResult.log);
@@ -70402,7 +70597,7 @@ function extractDomain(url) {
     return void 0;
   }
 }
-async function searchLinkedInForDecisionMaker(businessName, location, serperApiKey, log, preferredTitles) {
+async function searchLinkedInForDecisionMaker(businessName, location, serperApiKey, log, preferredTitles, avoidTitles = []) {
   const DECISION_MAKER_TITLES = [
     ...preferredTitles,
     "owner",
@@ -70419,7 +70614,11 @@ async function searchLinkedInForDecisionMaker(businessName, location, serperApiK
     "director of operations",
     "principal"
   ];
-  const dedupedTitles = [...new Set(DECISION_MAKER_TITLES)];
+  const dedupedTitles = [...new Set(
+    DECISION_MAKER_TITLES.filter(
+      (title) => !avoidTitles.some((avoid) => title.toLowerCase().includes(avoid))
+    )
+  )];
   const titleQuery = dedupedTitles.slice(0, 8).map((t) => `"${t}"`).join(" OR ");
   const query = `site:linkedin.com/in "${businessName}" "${location}" (${titleQuery})`;
   log.push(`Layer 2.5: LinkedIn search for decision-maker at "${businessName}"...`);
@@ -70450,6 +70649,7 @@ async function searchLinkedInForDecisionMaker(businessName, location, serperApiK
         const nameWords = candidateName.split(/\s+/);
         if (nameWords.length >= 2 && nameWords.length <= 4 && candidateName.length < 40) {
           const titleLower = candidateTitle.toLowerCase();
+          if (avoidTitles.some((title2) => titleLower.includes(title2))) continue;
           const isDecisionMaker = dedupedTitles.some((t) => titleLower.includes(t));
           if (isDecisionMaker) {
             return { name: candidateName, title: candidateTitle };

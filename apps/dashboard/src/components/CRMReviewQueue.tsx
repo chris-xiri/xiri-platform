@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { db, functions } from "@/lib/firebase";
+import { isAuthRelatedError, reportAuthRequired } from "@/lib/authRecovery";
 import { Contact } from "@xiri-facility-solutions/shared";
 import {
     collection,
@@ -78,6 +79,10 @@ function getReasonLabel(contact: ReviewContact) {
     if (contact.lifecycleStatus === "held") {
         const holdUntil = toDate(contact.holdUntilAt);
         return holdUntil ? `Hold expired ${format(holdUntil, "MMM d, yyyy")}` : "Hold expired";
+    }
+
+    if (contact.reviewReasons?.includes("suppressed_company_inbox_cluster")) {
+        return "Bounced company inbox alias";
     }
 
     if (contact.lifecycleStatus === "suppressed") {
@@ -194,6 +199,11 @@ export default function CRMReviewQueue({ onRowClick }: CRMReviewQueueProps) {
                 loadCounts(),
             ]);
             setItems((prev) => ({ ...prev, [bucket]: bucketItems }));
+        } catch (error) {
+            if (isAuthRelatedError(error)) {
+                reportAuthRequired("The review queue could not be loaded because your session is no longer authorized.");
+            }
+            console.error("Failed to load review queue:", error);
         } finally {
             setLoading(false);
         }
@@ -239,6 +249,11 @@ export default function CRMReviewQueue({ onRowClick }: CRMReviewQueueProps) {
             await batch.commit();
             setSelectedIds(new Set());
             await loadData(activeBucket);
+        } catch (error) {
+            if (isAuthRelatedError(error)) {
+                reportAuthRequired("Your session expired while updating the review queue.");
+            }
+            console.error("Failed to bulk update review queue:", error);
         } finally {
             setUpdating(false);
         }
@@ -249,6 +264,11 @@ export default function CRMReviewQueue({ onRowClick }: CRMReviewQueueProps) {
         try {
             await updateDoc(doc(db, "contacts", contactId), update);
             await loadData(activeBucket);
+        } catch (error) {
+            if (isAuthRelatedError(error)) {
+                reportAuthRequired("Your session expired while updating a contact.");
+            }
+            console.error("Failed to update review contact:", error);
         } finally {
             setUpdating(false);
         }
@@ -260,6 +280,11 @@ export default function CRMReviewQueue({ onRowClick }: CRMReviewQueueProps) {
             const callable = httpsCallable(functions, "refreshContactReviewQueue");
             await callable({});
             await loadData(activeBucket);
+        } catch (error) {
+            if (isAuthRelatedError(error)) {
+                reportAuthRequired("Your session expired while refreshing duplicates.");
+            }
+            console.error("Failed to refresh duplicates:", error);
         } finally {
             setRefreshingDuplicates(false);
         }
@@ -270,9 +295,9 @@ export default function CRMReviewQueue({ onRowClick }: CRMReviewQueueProps) {
             case "due_held":
                 return "Contacts whose hold window has expired and are ready to reactivate.";
             case "invalid_email":
-                return "Suppressed contacts with bounced or blocked outreach that need fixing or archiving.";
+                return "Suppressed contacts with bounced or blocked outreach, including company inbox aliases that should be cleaned up.";
             case "duplicates":
-                return "Exact duplicates and same-name duplicate candidates that need approval.";
+                return "Exact duplicates and same-name candidates that need approval.";
         }
     }, [activeBucket]);
 

@@ -4,23 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { LogOut, RefreshCw } from 'lucide-react';
-
-// Errors that indicate a broken session / logged-out state
-const AUTH_ERROR_PATTERNS = [
-    "before initialization",   // "Cannot access 'em' before initialization" (Firebase SDK race)
-    "auth/network-request-failed",
-    "auth/user-token-expired",
-    "auth/requires-recent-login",
-    "permission-denied",
-    "PERMISSION_DENIED",
-    "Missing or insufficient permissions",
-    "auth/invalid-user-token",
-];
-
-function isAuthRelatedError(error: Error): boolean {
-    const msg = error.message || '';
-    return AUTH_ERROR_PATTERNS.some(pattern => msg.includes(pattern));
-}
+import { isAuthRelatedError } from '@/lib/authRecovery';
 
 export default function Error({
     error,

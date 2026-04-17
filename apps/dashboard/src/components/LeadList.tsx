@@ -38,6 +38,7 @@ import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight, Che
 import { httpsCallable } from "firebase/functions";
 import { collection, getCountFromServer, query, orderBy, doc, writeBatch, getDoc, getDocs, limit, startAfter, where } from "firebase/firestore";
 import { db, functions } from "@/lib/firebase";
+import { isAuthRelatedError, reportAuthRequired } from "@/lib/authRecovery";
 import { LeadStatus, LeadType } from "@xiri-facility-solutions/shared";
 import { useFacilityTypes } from "@/lib/facilityTypes";
 import { useLeadFilter } from "@/hooks/useLeadFilter";
@@ -358,6 +359,9 @@ export default function LeadList({
                 }
             } catch (error) {
                 console.error("Error fetching contacts:", error);
+                if (isAuthRelatedError(error)) {
+                    reportAuthRequired("Contacts could not be loaded because your session is no longer authorized.");
+                }
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -409,6 +413,9 @@ export default function LeadList({
             setBulkStatus("");
         } catch (error) {
             console.error("Error updating status:", error);
+            if (isAuthRelatedError(error)) {
+                reportAuthRequired("Your session expired while updating contact status.");
+            }
             window.alert(`Failed to update status: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setUpdatingStatus(false);
@@ -435,6 +442,9 @@ export default function LeadList({
             setDeleteConfirmText("");
         } catch (error: any) {
             console.error("Error deleting contacts:", error);
+            if (isAuthRelatedError(error)) {
+                reportAuthRequired("Your session expired while deleting contacts.");
+            }
             setShowDeleteDialog(false);
             setDeleteConfirmText("");
             window.alert(
@@ -469,6 +479,9 @@ export default function LeadList({
             setBulkLeadType("");
         } catch (error) {
             console.error("Error updating lead types:", error);
+            if (isAuthRelatedError(error)) {
+                reportAuthRequired("Your session expired while updating company type.");
+            }
             window.alert(`Failed to update type: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setUpdatingType(false);
@@ -501,6 +514,9 @@ export default function LeadList({
             setSelectedLeads(new Set());
         } catch (error) {
             console.error("Error updating contact lifecycle:", error);
+            if (isAuthRelatedError(error)) {
+                reportAuthRequired("Your session expired while updating contact lifecycle.");
+            }
             window.alert(`Failed to update contact lifecycle: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setUpdatingLifecycle(false);

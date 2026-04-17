@@ -541,6 +541,9 @@ export default function ProspectsPage() {
         filtered.filter(p => selected.has(p.id)),
         [filtered, selected]
     );
+    const visibleSelectedCount = selectedProspects.length;
+    const allVisibleSelected = filtered.length > 0 && visibleSelectedCount === filtered.length;
+    const someVisibleSelected = visibleSelectedCount > 0 && !allVisibleSelected;
 
     const handleSkip = async (ids: string[]) => {
         setActing(true);
@@ -1009,12 +1012,16 @@ export default function ProspectsPage() {
         });
     };
 
-    const toggleAll = () => {
-        if (selected.size === filtered.length) {
-            setSelected(new Set());
-        } else {
-            setSelected(new Set(filtered.map(p => p.id)));
-        }
+    const toggleAllVisible = (checked?: boolean) => {
+        const shouldSelect = checked ?? !allVisibleSelected;
+        setSelected(prev => {
+            const next = new Set(prev);
+            for (const prospect of filtered) {
+                if (shouldSelect) next.add(prospect.id);
+                else next.delete(prospect.id);
+            }
+            return next;
+        });
     };
 
     // ── Render ───────────────────────────────────────────────────────
@@ -1270,6 +1277,22 @@ export default function ProspectsPage() {
                     ))}
                 </div>
 
+                {filtered.length > 0 && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="self-start"
+                        onClick={() => toggleAllVisible()}
+                    >
+                        <Checkbox
+                            checked={allVisibleSelected ? true : someVisibleSelected ? 'indeterminate' : false}
+                            className="mr-2 pointer-events-none"
+                        />
+                        {allVisibleSelected ? 'Clear visible' : `Select visible (${filtered.length})`}
+                    </Button>
+                )}
+
                 {/* Bulk actions */}
                 {selected.size > 0 && (
                     <div className="flex flex-wrap items-center gap-2 xl:ml-auto">
@@ -1422,7 +1445,13 @@ export default function ProspectsPage() {
                 <div className="rounded-lg border overflow-hidden">
                 {/* Column header */}
                 <div className="hidden xl:flex items-center gap-3 px-4 py-2 bg-muted/50 border-b text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    <div className="w-4 shrink-0" />
+                    <div className="flex w-4 shrink-0 justify-center">
+                        <Checkbox
+                            checked={allVisibleSelected ? true : someVisibleSelected ? 'indeterminate' : false}
+                            onCheckedChange={(checked) => toggleAllVisible(checked === true)}
+                            aria-label="Select all visible prospects"
+                        />
+                    </div>
                     <div className="w-1 shrink-0" />{/* border accent spacer */}
                     <div className="flex-1 min-w-0">Business</div>
                     <div className="w-px h-3 bg-border shrink-0" />

@@ -45,6 +45,11 @@ const FREE_EMAIL_PROVIDERS = new Set([
     'atlanticbbn.net', // regional ISP
 ]);
 
+const CORPORATE_ONLY_TITLES = [
+    'founder', 'co-founder', 'ceo', 'chief executive', 'president', 'owner',
+    'managing director', 'executive chairman', 'chief operating officer',
+];
+
 /**
  * Strip common suffixes/noise words from a domain root for better matching.
  * e.g. "exceedlearningcenterny" → "exceedlearning"
@@ -120,6 +125,68 @@ function validateEmailForBusiness(
 function getDecisionMakerTitles(facilityType?: FacilityType | null, fallbackQuery?: string): string[] {
     const resolved = facilityType || inferFacilityType(fallbackQuery) || 'other';
     return FACILITY_DECISION_MAKERS[resolved] || FACILITY_DECISION_MAKERS.other;
+}
+
+function uniqStrings(values: string[]): string[] {
+    return [...new Set(values.map(v => v.toLowerCase()))];
+}
+
+function hasCorporateOnlyTitle(title?: string | null): boolean {
+    const lower = title?.toLowerCase() || '';
+    return !!lower && CORPORATE_ONLY_TITLES.some(t => lower.includes(t));
+}
+
+function looksLikeMultiLocationBrand(
+    businessName: string,
+    website?: string | null,
+    organizationScope?: 'single_location' | 'multi_location'
+): boolean {
+    if (organizationScope === 'multi_location') return true;
+    if (organizationScope === 'single_location') return false;
+
+    const name = businessName.toLowerCase();
+    const domainRoot = website ? extractDomain(website)?.split('.')[0].replace(/[^a-z0-9]/g, '') : '';
+    const normalizedName = name.replace(/[^a-z0-9]/g, '');
+
+    const franchiseBrandCues = [
+        'orangetheory', 'planet fitness', 'anytime fitness', 'crunch',
+        'burn boot camp', 'mathnasium', 'kumon', 'sylvan', 'the learning experience',
+    ];
+
+    if (franchiseBrandCues.some(cue => name.includes(cue) || domainRoot?.includes(cue.replace(/[^a-z0-9]/g, '')))) {
+        return true;
+    }
+
+    return !!domainRoot && !normalizedName.includes(domainRoot) &&
+        /(fitness|studio|club|academy|school|clinic|care|center|dealership)/i.test(businessName);
+}
+
+function getBranchAwareDecisionMakerTitles(
+    facilityType?: FacilityType | null,
+    fallbackQuery?: string,
+    multiLocation?: boolean
+): string[] {
+    const base = getDecisionMakerTitles(facilityType, fallbackQuery);
+    if (!multiLocation) return base;
+
+    const resolved = facilityType || inferFacilityType(fallbackQuery) || 'other';
+    const localOverrides: Record<string, string[]> = {
+        fitness_gym: ['studio manager', 'general manager', 'operations manager', 'regional manager'],
+        retail_storefront: ['store manager', 'general manager', 'operations manager', 'district manager'],
+        medical_dental: ['practice manager', 'office manager', 'clinic manager', 'administrator'],
+        medical_private: ['practice manager', 'office manager', 'clinic manager', 'administrator'],
+        medical_urgent_care: ['clinic manager', 'operations manager', 'administrator'],
+        edu_tutoring: ['center director', 'center manager', 'operations manager'],
+        edu_private_school: ['principal', 'director of operations', 'administrator'],
+        auto_dealer_showroom: ['general manager', 'service manager', 'operations manager'],
+        office_general: ['office manager', 'facilities manager', 'operations manager', 'site manager'],
+        other: ['general manager', 'operations manager', 'office manager', 'site manager'],
+    };
+
+    return uniqStrings([
+        ...(localOverrides[resolved] || localOverrides.other),
+        ...base.filter(title => !hasCorporateOnlyTitle(title)),
+    ]);
 }
 
 interface ProspectorInput {
@@ -288,6 +355,7 @@ async function enrichSingleBusiness(
 ): Promise<EnrichedProspect> {
     const log: string[] = [];
     let targetTitles = inferPreferredDecisionMakerTitles(input.query);
+    let avoidTitles: string[] = [];
     const prospect: EnrichedProspect = {
         businessName: vendor.name,
         address: vendor.location,
@@ -329,12 +397,22 @@ async function enrichSingleBusiness(
 
         if (scrapeResult.success && scrapeResult.data) {
             const data = scrapeResult.data;
+            const multiLocation = looksLikeMultiLocationBrand(vendor.name, vendor.website, data.organizationScope);
+            if (multiLocation) {
+                avoidTitles = CORPORATE_ONLY_TITLES;
+                targetTitles = getBranchAwareDecisionMakerTitles(prospect.facilityType, input.query, true);
+                log.push('Detected multi-location/branch business — prioritizing local branch operators over founders/corporate leadership');
+            }
 
             // Capture owner info from AI extraction
             if (data.ownerName) {
-                prospect.contactName = data.ownerName;
-                prospect.contactTitle = data.ownerTitle;
-                log.push(`AI found owner: ${data.ownerName} (${data.ownerTitle || 'unknown title'})`);
+                if (multiLocation && hasCorporateOnlyTitle(data.ownerTitle)) {
+                    log.push(`AI found corporate contact ${data.ownerName} (${data.ownerTitle || 'unknown title'}) — continuing search for local branch lead`);
+                } else {
+                    prospect.contactName = data.ownerName;
+                    prospect.contactTitle = data.ownerTitle;
+                    log.push(`AI found decision-maker: ${data.ownerName} (${data.ownerTitle || 'unknown title'})`);
+                }
             }
 
             // Capture social links
@@ -355,6 +433,8 @@ async function enrichSingleBusiness(
                 } else if (emailValid === 'mismatch') {
                     log.push(`⚠️ Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} — skipping`);
                     log.push(`Skipping off-domain email from website scrape: ${bestEmail}`);
+                } else if (multiLocation && hasCorporateOnlyTitle(data.ownerTitle)) {
+                    log.push(`Skipping corporate-level direct email for branch business: ${bestEmail} (${data.ownerTitle || 'unknown title'})`);
                 } else {
                     prospect.contactEmail = bestEmail;
                     prospect.emailSource = data.ownerEmail ? 'ai_extraction' : 'mailto';
@@ -436,7 +516,8 @@ async function enrichSingleBusiness(
                 input.location,
                 secrets.serperApiKey,
                 log,
-                targetTitles
+                targetTitles,
+                avoidTitles
             );
             if (linkedinName) {
                 prospect.contactName = linkedinName.name;
@@ -463,6 +544,7 @@ async function enrichSingleBusiness(
                     contactName: prospect.contactName,
                     knownGenericEmail: prospect.genericEmail,
                     preferredTitles: targetTitles,
+                    avoidTitles,
                 },
             );
 
@@ -631,7 +713,8 @@ async function searchLinkedInForDecisionMaker(
     location: string,
     serperApiKey: string,
     log: string[],
-    preferredTitles: string[]
+    preferredTitles: string[],
+    avoidTitles: string[] = []
 ): Promise<{ name: string; title: string } | null> {
     const DECISION_MAKER_TITLES = [
         ...preferredTitles,
@@ -641,7 +724,11 @@ async function searchLinkedInForDecisionMaker(
         'director of operations', 'principal',
     ];
 
-    const dedupedTitles = [...new Set(DECISION_MAKER_TITLES)];
+    const dedupedTitles = [...new Set(
+        DECISION_MAKER_TITLES.filter(title =>
+            !avoidTitles.some(avoid => title.toLowerCase().includes(avoid))
+        )
+    )];
     const titleQuery = dedupedTitles.slice(0, 8).map(t => `"${t}"`).join(' OR ');
     const query = `site:linkedin.com/in "${businessName}" "${location}" (${titleQuery})`;
     log.push(`Layer 2.5: LinkedIn search for decision-maker at "${businessName}"...`);
@@ -684,6 +771,7 @@ async function searchLinkedInForDecisionMaker(
                 if (nameWords.length >= 2 && nameWords.length <= 4 && candidateName.length < 40) {
                     // Check that title matches one of our decision-maker roles
                     const titleLower = candidateTitle.toLowerCase();
+                    if (avoidTitles.some(title => titleLower.includes(title))) continue;
                     const isDecisionMaker = dedupedTitles.some(t => titleLower.includes(t));
                     if (isDecisionMaker) {
                         return { name: candidateName, title: candidateTitle };

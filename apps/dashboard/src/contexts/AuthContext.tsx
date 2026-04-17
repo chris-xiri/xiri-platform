@@ -7,13 +7,24 @@ import {
     signInWithPopup,
     GoogleAuthProvider,
     signOut as firebaseSignOut,
-    onAuthStateChanged,
+    onIdTokenChanged,
     browserLocalPersistence,
     setPersistence,
 } from 'firebase/auth';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { AUTH_REQUIRED_EVENT, isAuthRelatedError, reportAuthRequired } from '@/lib/authRecovery';
 
 export type UserRole = 'admin' | 'recruiter' | 'sales' | 'sales_exec' | 'sales_mgr' | 'fsm' | 'night_manager' | 'accounting';
 
@@ -53,6 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [sessionRecoveryOpen, setSessionRecoveryOpen] = useState(false);
+    const [sessionRecoveryBusy, setSessionRecoveryBusy] = useState(false);
     const router = useRouter();
 
     // Smart redirect — land each role on their highest-use page
@@ -94,6 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         } catch (error) {
             console.error('Error fetching user profile:', error);
+            if (isAuthRelatedError(error)) {
+                reportAuthRequired('Your session is no longer authorized.');
+            }
         }
         return null;
     };
@@ -204,7 +220,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await firebaseSignOut(auth);
         setUser(null);
         setProfile(null);
+        setSessionRecoveryOpen(false);
         router.push('/login');
+    };
+
+    const refreshSession = async () => {
+        if (!auth.currentUser) {
+            router.push('/login');
+            return;
+        }
+
+        setSessionRecoveryBusy(true);
+        try {
+            await auth.currentUser.getIdToken(true);
+            const userProfile = await fetchUserProfile(auth.currentUser.uid);
+            setUser(auth.currentUser);
+            setProfile(userProfile);
+            setSessionRecoveryOpen(false);
+        } catch (error) {
+            console.error('[Auth] Session refresh failed:', error);
+            await firebaseSignOut(auth).catch(() => undefined);
+            setUser(null);
+            setProfile(null);
+            setSessionRecoveryOpen(false);
+            router.push('/login');
+        } finally {
+            setSessionRecoveryBusy(false);
+        }
     };
 
     const hasRole = (role: UserRole): boolean => {
@@ -217,24 +259,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen to auth state changes
     useEffect(() => {
-        // Ensure auth persists in localStorage/IndexedDB across sessions
-        setPersistence(auth, browserLocalPersistence).catch(console.error);
+        let unsubscribeAuth: (() => void) | undefined;
 
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            setUser(firebaseUser);
-
-            if (firebaseUser) {
-                const userProfile = await fetchUserProfile(firebaseUser.uid);
-                setProfile(userProfile);
-            } else {
-                setProfile(null);
-                if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
-                    router.push('/login');
-                }
+        const initAuth = async () => {
+            try {
+                await setPersistence(auth, browserLocalPersistence);
+            } catch (error) {
+                console.error('[Auth] Failed to set persistence:', error);
             }
 
-            setLoading(false);
-        });
+            unsubscribeAuth = onIdTokenChanged(auth, async (firebaseUser) => {
+                setUser(firebaseUser);
+
+                if (firebaseUser) {
+                    const userProfile = await fetchUserProfile(firebaseUser.uid);
+                    setProfile(userProfile);
+                } else {
+                    setProfile(null);
+                    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+                        router.push('/login');
+                    }
+                }
+
+                setLoading(false);
+            });
+        };
+
+        void initAuth();
 
         // Proactive token refresh every 30 minutes to prevent the 1-hour
         // ID token from silently expiring while the user is working.
@@ -256,21 +307,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     await auth.currentUser.getIdToken(true);
                 } catch (err) {
                     console.warn('[Auth] Visibility token refresh failed:', err);
+                    if (isAuthRelatedError(err)) {
+                        setSessionRecoveryOpen(true);
+                    }
                 }
             }
         };
+        const handleWindowFocus = async () => {
+            if (!auth.currentUser) return;
+            try {
+                await auth.currentUser.getIdToken(true);
+            } catch (err) {
+                console.warn('[Auth] Focus token refresh failed:', err);
+                if (isAuthRelatedError(err)) {
+                    setSessionRecoveryOpen(true);
+                }
+            }
+        };
+        const handleAuthRequired = () => {
+            setSessionRecoveryOpen(true);
+        };
+        const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+            if (isAuthRelatedError(event.reason)) {
+                reportAuthRequired('A request was rejected because your session is no longer authorized.');
+            }
+        };
+        const handleGlobalError = (event: ErrorEvent) => {
+            if (isAuthRelatedError(event.error || event.message)) {
+                reportAuthRequired('A request failed because your session is no longer authorized.');
+            }
+        };
         document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleWindowFocus);
+        window.addEventListener(AUTH_REQUIRED_EVENT, handleAuthRequired);
+        window.addEventListener('unhandledrejection', handleUnhandledRejection);
+        window.addEventListener('error', handleGlobalError);
 
         return () => {
-            unsubscribe();
+            unsubscribeAuth?.();
             clearInterval(tokenRefreshInterval);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleWindowFocus);
+            window.removeEventListener(AUTH_REQUIRED_EVENT, handleAuthRequired);
+            window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+            window.removeEventListener('error', handleGlobalError);
         };
-    }, []);
+    }, [router]);
 
     return (
         <AuthContext.Provider value={{ user, profile, loading, signIn, signInWithGoogle: signInWithGoogleHandler, signOut, hasRole, hasAnyRole }}>
             {!loading && children}
+            <AlertDialog open={sessionRecoveryOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Session needs to be refreshed</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your dashboard session is no longer authorized. Refresh the session to continue working. If refresh fails, go back to login.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => router.push('/login')}>
+                            Go to Login
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={refreshSession} disabled={sessionRecoveryBusy}>
+                            {sessionRecoveryBusy ? 'Refreshing…' : 'Refresh Session'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AuthContext.Provider>
     );
 }
