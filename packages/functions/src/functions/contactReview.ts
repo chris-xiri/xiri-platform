@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import { DASHBOARD_CORS } from "../utils/cors";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -24,12 +25,22 @@ type ContactDoc = admin.firestore.DocumentData & {
     reviewReasons?: string[];
 };
 
+function asCleanString(value: unknown): string {
+    return typeof value === "string" ? value.trim() : "";
+}
+
+function asStringArray(value: unknown): string[] {
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
 function normalizeEmail(email?: string): string {
-    return (email || "").trim().toLowerCase();
+    return asCleanString(email).toLowerCase();
 }
 
 function normalizeName(firstName?: string, lastName?: string): string {
-    return `${(firstName || "").trim().toLowerCase()} ${(lastName || "").trim().toLowerCase()}`.trim();
+    const first = asCleanString(firstName).toLowerCase();
+    const last = asCleanString(lastName).toLowerCase();
+    return `${first} ${last}`.trim();
 }
 
 function scoreContact(contact: ContactDoc): number {
@@ -59,7 +70,9 @@ function pickWinner(contacts: Array<{ id: string; data: ContactDoc }>) {
     return [...contacts].sort((a, b) => scoreContact(b.data) - scoreContact(a.data))[0];
 }
 
-export const refreshContactReviewQueue = onCall(async (request) => {
+export const refreshContactReviewQueue = onCall({
+    cors: DASHBOARD_CORS,
+}, async (request) => {
     if (!request.auth) {
         throw new HttpsError("unauthenticated", "Authentication required");
     }
@@ -80,6 +93,7 @@ export const refreshContactReviewQueue = onCall(async (request) => {
     let exactDuplicateCount = 0;
     let nameCandidateCount = 0;
     let lifecycleBackfillCount = 0;
+    let malformedReviewReasonsCount = 0;
 
     const ensureUpdate = (contactId: string) => {
         const existing = updates.get(contactId) || {};
@@ -94,6 +108,10 @@ export const refreshContactReviewQueue = onCall(async (request) => {
         for (const contact of contacts) {
             const email = normalizeEmail(contact.data.email);
             const name = normalizeName(contact.data.firstName, contact.data.lastName);
+            const reviewReasons = asStringArray(contact.data.reviewReasons);
+            if (contact.data.reviewReasons && !Array.isArray(contact.data.reviewReasons)) {
+                malformedReviewReasonsCount++;
+            }
 
             if (!contact.data.lifecycleStatus) {
                 const update = ensureUpdate(contact.id);
@@ -121,7 +139,7 @@ export const refreshContactReviewQueue = onCall(async (request) => {
 
             for (const contact of group) {
                 const update = ensureUpdate(contact.id);
-                const existingReasons = new Set((contact.data.reviewReasons || []).filter(reason => reason !== "duplicate_name_candidate"));
+                const existingReasons = new Set(asStringArray(contact.data.reviewReasons).filter(reason => reason !== "duplicate_name_candidate"));
 
                 if (contact.id === winner.id) {
                     if (contact.data.lifecycleStatus === "duplicate" && contact.data.lifecycleReason === "duplicate_email") {
@@ -152,15 +170,15 @@ export const refreshContactReviewQueue = onCall(async (request) => {
             for (const contact of group) {
                 if (contact.id === winner.id) {
                     const update = ensureUpdate(contact.id);
-                    const remainingReasons = (contact.data.reviewReasons || []).filter(reason => reason !== "duplicate_name_candidate");
+                    const remainingReasons = asStringArray(contact.data.reviewReasons).filter(reason => reason !== "duplicate_name_candidate");
                     update.reviewReasons = remainingReasons;
                     continue;
                 }
 
                 const update = ensureUpdate(contact.id);
-                const reviewReasons = new Set(contact.data.reviewReasons || []);
-                reviewReasons.add("duplicate_name_candidate");
-                update.reviewReasons = Array.from(reviewReasons);
+                const nextReviewReasons = new Set(asStringArray(contact.data.reviewReasons));
+                nextReviewReasons.add("duplicate_name_candidate");
+                update.reviewReasons = Array.from(nextReviewReasons);
 
                 if (!contact.data.lifecycleStatus || contact.data.lifecycleStatus === "active") {
                     update.lifecycleStatus = "review";
@@ -198,5 +216,6 @@ export const refreshContactReviewQueue = onCall(async (request) => {
         exactDuplicateCount,
         nameCandidateCount,
         lifecycleBackfillCount,
+        malformedReviewReasonsCount,
     };
 });

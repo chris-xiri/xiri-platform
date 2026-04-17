@@ -65925,11 +65925,19 @@ if (!admin32.apps.length) {
   admin32.initializeApp();
 }
 var db28 = admin32.firestore();
+function asCleanString(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+function asStringArray(value) {
+  return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+}
 function normalizeEmail(email) {
-  return (email || "").trim().toLowerCase();
+  return asCleanString(email).toLowerCase();
 }
 function normalizeName(firstName, lastName) {
-  return `${(firstName || "").trim().toLowerCase()} ${(lastName || "").trim().toLowerCase()}`.trim();
+  const first = asCleanString(firstName).toLowerCase();
+  const last = asCleanString(lastName).toLowerCase();
+  return `${first} ${last}`.trim();
 }
 function scoreContact(contact) {
   let score = 0;
@@ -65953,7 +65961,9 @@ function scoreContact(contact) {
 function pickWinner(contacts) {
   return [...contacts].sort((a2, b) => scoreContact(b.data) - scoreContact(a2.data))[0];
 }
-var refreshContactReviewQueue = (0, import_https13.onCall)(async (request) => {
+var refreshContactReviewQueue = (0, import_https13.onCall)({
+  cors: DASHBOARD_CORS
+}, async (request) => {
   if (!request.auth) {
     throw new import_https13.HttpsError("unauthenticated", "Authentication required");
   }
@@ -65971,6 +65981,7 @@ var refreshContactReviewQueue = (0, import_https13.onCall)(async (request) => {
   let exactDuplicateCount = 0;
   let nameCandidateCount = 0;
   let lifecycleBackfillCount = 0;
+  let malformedReviewReasonsCount = 0;
   const ensureUpdate = (contactId) => {
     const existing = updates.get(contactId) || {};
     updates.set(contactId, existing);
@@ -65982,6 +65993,10 @@ var refreshContactReviewQueue = (0, import_https13.onCall)(async (request) => {
     for (const contact of contacts) {
       const email = normalizeEmail(contact.data.email);
       const name = normalizeName(contact.data.firstName, contact.data.lastName);
+      const reviewReasons = asStringArray(contact.data.reviewReasons);
+      if (contact.data.reviewReasons && !Array.isArray(contact.data.reviewReasons)) {
+        malformedReviewReasonsCount++;
+      }
       if (!contact.data.lifecycleStatus) {
         const update = ensureUpdate(contact.id);
         update.lifecycleStatus = contact.data.unsubscribed ? "suppressed" : "active";
@@ -66004,7 +66019,7 @@ var refreshContactReviewQueue = (0, import_https13.onCall)(async (request) => {
       const winner = pickWinner(group);
       for (const contact of group) {
         const update = ensureUpdate(contact.id);
-        const existingReasons = new Set((contact.data.reviewReasons || []).filter((reason) => reason !== "duplicate_name_candidate"));
+        const existingReasons = new Set(asStringArray(contact.data.reviewReasons).filter((reason) => reason !== "duplicate_name_candidate"));
         if (contact.id === winner.id) {
           if (contact.data.lifecycleStatus === "duplicate" && contact.data.lifecycleReason === "duplicate_email") {
             update.lifecycleStatus = "active";
@@ -66031,14 +66046,14 @@ var refreshContactReviewQueue = (0, import_https13.onCall)(async (request) => {
       for (const contact of group) {
         if (contact.id === winner.id) {
           const update2 = ensureUpdate(contact.id);
-          const remainingReasons = (contact.data.reviewReasons || []).filter((reason) => reason !== "duplicate_name_candidate");
+          const remainingReasons = asStringArray(contact.data.reviewReasons).filter((reason) => reason !== "duplicate_name_candidate");
           update2.reviewReasons = remainingReasons;
           continue;
         }
         const update = ensureUpdate(contact.id);
-        const reviewReasons = new Set(contact.data.reviewReasons || []);
-        reviewReasons.add("duplicate_name_candidate");
-        update.reviewReasons = Array.from(reviewReasons);
+        const nextReviewReasons = new Set(asStringArray(contact.data.reviewReasons));
+        nextReviewReasons.add("duplicate_name_candidate");
+        update.reviewReasons = Array.from(nextReviewReasons);
         if (!contact.data.lifecycleStatus || contact.data.lifecycleStatus === "active") {
           update.lifecycleStatus = "review";
           update.lifecycleReason = "duplicate_name_candidate";
@@ -66072,7 +66087,8 @@ var refreshContactReviewQueue = (0, import_https13.onCall)(async (request) => {
     updatedContacts: entries.length,
     exactDuplicateCount,
     nameCandidateCount,
-    lifecycleBackfillCount
+    lifecycleBackfillCount,
+    malformedReviewReasonsCount
   };
 });
 
