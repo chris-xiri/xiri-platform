@@ -21,6 +21,10 @@ const INDUSTRY_TO_PILLAR: Record<string, string> = {
 };
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['@xiri/calculator-ui'],
+  experimental: {
+    externalDir: true,
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },

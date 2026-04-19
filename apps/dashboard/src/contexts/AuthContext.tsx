@@ -11,7 +11,7 @@ import {
     browserLocalPersistence,
     setPersistence,
 } from 'firebase/auth';
-import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp, enableNetwork } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import {
@@ -24,7 +24,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { AUTH_REQUIRED_EVENT, isAuthRelatedError, reportAuthRequired } from '@/lib/authRecovery';
+import { AUTH_REQUIRED_EVENT, isAuthRelatedError, isOfflineLikeError, reportAuthRequired } from '@/lib/authRecovery';
 
 export type UserRole = 'admin' | 'recruiter' | 'sales' | 'sales_exec' | 'sales_mgr' | 'fsm' | 'night_manager' | 'accounting';
 
@@ -314,6 +314,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         };
         const handleWindowFocus = async () => {
+            try {
+                await enableNetwork(db);
+            } catch (err) {
+                if (!isOfflineLikeError(err)) {
+                    console.warn('[Auth] Firestore network recovery failed on focus:', err);
+                }
+            }
             if (!auth.currentUser) return;
             try {
                 await auth.currentUser.getIdToken(true);
@@ -322,6 +329,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (isAuthRelatedError(err)) {
                     setSessionRecoveryOpen(true);
                 }
+            }
+        };
+        const handleBrowserOnline = async () => {
+            try {
+                await enableNetwork(db);
+            } catch (err) {
+                if (!isOfflineLikeError(err)) {
+                    console.warn('[Auth] Firestore network recovery failed online:', err);
+                }
+            }
+            if (!auth.currentUser) return;
+            try {
+                await auth.currentUser.getIdToken(true);
+            } catch (err) {
+                console.warn('[Auth] Online token refresh failed:', err);
             }
         };
         const handleAuthRequired = () => {
@@ -339,6 +361,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
         window.addEventListener('focus', handleWindowFocus);
+        window.addEventListener('online', handleBrowserOnline);
         window.addEventListener(AUTH_REQUIRED_EVENT, handleAuthRequired);
         window.addEventListener('unhandledrejection', handleUnhandledRejection);
         window.addEventListener('error', handleGlobalError);
@@ -348,6 +371,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             clearInterval(tokenRefreshInterval);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('focus', handleWindowFocus);
+            window.removeEventListener('online', handleBrowserOnline);
             window.removeEventListener(AUTH_REQUIRED_EVENT, handleAuthRequired);
             window.removeEventListener('unhandledrejection', handleUnhandledRejection);
             window.removeEventListener('error', handleGlobalError);

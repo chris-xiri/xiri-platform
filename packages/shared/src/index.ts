@@ -495,6 +495,9 @@ export type CompanyStatus = LeadStatus;
 /** Role a contact plays at a company */
 export type ContactRole = 'Owner' | 'Property Manager' | 'Office Manager' | 'Billing' | 'Tenant' | 'Other';
 export type ContactLifecycleStatus = 'active' | 'held' | 'suppressed' | 'review' | 'duplicate' | 'archived';
+export type ContactEmailStatus = 'unknown' | 'deliverable' | 'risky' | 'invalid' | 'bounced' | 'spam';
+export type ContactSuppressionReason = 'hard_bounce' | 'spam_complaint' | 'unsubscribe' | 'manual' | 'invalid_email' | null;
+export type ContactValidationSource = 'resend' | 'manual' | 'import' | 'provider' | null;
 
 /**
  * A CRM contact — the primary entity in the contact-centric model.
@@ -519,6 +522,10 @@ export interface Contact {
     duplicateOfContactId?: string | null;
     unsubscribed?: boolean;
     unsubscribedAt?: any;
+    emailStatus?: ContactEmailStatus;
+    suppressionReason?: ContactSuppressionReason;
+    lastValidatedAt?: any;
+    validationSource?: ContactValidationSource;
     notes?: string;
     createdAt: any;
     createdBy?: string;
@@ -539,6 +546,94 @@ export interface Contact {
  * @see Lead — the legacy interface; Company extends it with primaryContactId.
  */
 export type Company = Lead;
+
+export interface CrmContactRow {
+    id?: string;
+    contactId: string;
+    companyId: string;
+    contactName: string;
+    firstName?: string;
+    lastName?: string;
+    email: string;
+    phone?: string;
+    role?: string;
+    companyName: string;
+    facilityType?: string;
+    leadType?: LeadType;
+    locationText?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    lifecycleStatus: ContactLifecycleStatus;
+    lifecycleReason?: string | null;
+    lifecycleUpdatedAt?: any;
+    holdUntilAt?: any;
+    reviewReasons?: string[];
+    duplicateOfContactId?: string | null;
+    emailStatus: ContactEmailStatus;
+    suppressionReason?: ContactSuppressionReason;
+    lastValidatedAt?: any;
+    validationSource?: ContactValidationSource;
+    lastEngagementEvent?: string;
+    lastEngagementAt?: any;
+    emailEngagement?: {
+        lastEvent?: string;
+        lastEventAt?: any;
+        openCount?: number;
+        clickCount?: number;
+    };
+    sequenceHistory?: Record<string, { startedAt?: any; status?: string; sequenceName?: string; stepCount?: number }>;
+    hasActiveSequence: boolean;
+    sequenceEligible: boolean;
+    isPrimary: boolean;
+    companyStage: LeadStatus;
+    outreachStatus?: string | null;
+    attribution?: {
+        source?: string;
+        medium?: string;
+        campaign?: string;
+        landingPage?: string;
+    };
+    preferredAuditTimes?: any[];
+    createdAt?: any;
+    updatedAt?: any;
+    searchText?: string;
+    sortCompanyName?: string;
+    sortContactName?: string;
+}
+
+export interface CrmCompanyRow {
+    id?: string;
+    companyId: string;
+    businessName: string;
+    facilityType?: string;
+    leadType?: LeadType;
+    locationText?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    phone?: string;
+    website?: string;
+    companyStage: LeadStatus;
+    outreachStatus?: string | null;
+    primaryContactId?: string | null;
+    primaryContactName?: string | null;
+    primaryContactEmail?: string | null;
+    deliverableContactCount: number;
+    activeContactCount: number;
+    suppressedContactCount: number;
+    needsReviewCount: number;
+    totalContactCount: number;
+    primaryContactIdLegacy?: string | null;
+    contractId?: string;
+    assignedFsmId?: string;
+    createdAt?: any;
+    updatedAt?: any;
+    searchText?: string;
+    sortBusinessName?: string;
+}
 
 export type VendorStatus =
     | 'PENDING_REVIEW'        // Legacy uppercase (deprecated)

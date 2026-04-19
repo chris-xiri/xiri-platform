@@ -33,6 +33,12 @@ service cloud.firestore {
     match /contacts/{contactId} {
       allow read, write: if isAuthenticated();
     }
+    match /crm_contact_rows/{contactId} {
+      allow read: if isAuthenticated();
+    }
+    match /crm_company_rows/{companyId} {
+      allow read: if isAuthenticated();
+    }
 
     // ── Sales pipeline ──
     match /quotes/{quoteId} {

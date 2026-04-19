@@ -13,6 +13,7 @@ export { sendBookingConfirmation } from "./triggers/sendBookingConfirmation";
 export { sendVendorBookingConfirmation } from "./triggers/sendVendorBookingConfirmation";
 export { enrichFromWebsite } from "./triggers/enrichFromWebsite";
 export { onOnboardingComplete } from "./triggers/onOnboardingComplete";
+export { onCalculatorLeadCaptured } from "./triggers/onCalculatorLeadCaptured";
 export { onAwaitingOnboarding, onVendorAdvancedPastOutreach } from "./triggers/dripScheduler";
 export { handleUnsubscribe } from "./triggers/handleUnsubscribe";
 export { sendOnboardingInvite } from "./triggers/sendOnboardingInvite";
@@ -36,6 +37,7 @@ export { sendSingleLeadEmail } from "./triggers/sendSingleLeadEmail";
 export { sendPreviewEmail } from "./triggers/sendPreviewEmail";
 export { onContactDeleted } from "./triggers/onContactDeleted";
 export { onExperienceUpdated } from "./triggers/onExperienceUpdated";
+export { onContactProjected, onCompanyProjected, onLegacyLeadProjected } from "./triggers/crmProjection";
 
 // ── Social AI Engine (scheduled) ──
 export { runSocialContentGenerator } from "./triggers/socialContentGenerator";
@@ -44,6 +46,7 @@ export { runSocialPublisher } from "./triggers/socialPublisher";
 // ── Auth functions (onCall) ──
 export { adminUpdateAuthUser, adminCreateUser, changeMyPassword } from "./functions/auth";
 export { refreshContactReviewQueue } from "./functions/contactReview";
+export { rebuildCrmContactRows, rebuildCrmCompanyRows } from "./functions/crmProjection";
 
 // ── Lead & Vendor sourcing (onCall / onRequest) ──
 export { generateLeads, clearPipeline, runRecruiterAgent, testSendEmail, sourceProperties } from "./functions/leads";

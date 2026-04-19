@@ -36,9 +36,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight, ChevronDown, Building2, Settings2, Tag, Play, Mail, Send } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
-import { collection, getCountFromServer, query, orderBy, doc, writeBatch, getDoc, getDocs, limit, startAfter, where } from "firebase/firestore";
+import { collection, enableNetwork, getCountFromServer, query, orderBy, doc, writeBatch, getDocs, limit, startAfter, where } from "firebase/firestore";
 import { db, functions } from "@/lib/firebase";
-import { isAuthRelatedError, reportAuthRequired } from "@/lib/authRecovery";
+import { isAuthRelatedError, isOfflineLikeError, reportAuthRequired } from "@/lib/authRecovery";
 import { LeadStatus, LeadType } from "@xiri-facility-solutions/shared";
 import { useFacilityTypes } from "@/lib/facilityTypes";
 import { useLeadFilter } from "@/hooks/useLeadFilter";
@@ -64,50 +64,52 @@ export type EngagementFilter = 'clicked' | 'opened' | 'delivered' | 'bounced' | 
 type ContactLifecycleFilter = 'active' | 'held' | 'suppressed' | 'all';
 type CompanyStageFilter = LeadStatus | 'all';
 
-const CONTACTED_OUTREACH_STATUSES = new Set([
-    'PENDING',
-    'IN_PROGRESS',
-    'SENT',
-    'COMPLETED',
-    'FAILED',
-    'BOUNCED',
-    'SPAM_COMPLAINT',
-    'NEEDS_MANUAL',
-]);
-
-const CONTACTED_EMAIL_EVENTS = new Set([
-    'delivered',
-    'opened',
-    'clicked',
-    'bounced',
-    'spam',
-]);
-
 function resolveLifecycleStatus(contact: Partial<ContactRow>): Exclude<ContactLifecycleFilter, 'all'> | 'review' | 'duplicate' | 'archived' {
     if (contact.lifecycleStatus) return contact.lifecycleStatus as any;
     if (contact.unsubscribed) return 'suppressed';
     return 'active';
 }
 
-function resolveCompanyStage(company: any, contact: any): LeadStatus {
-    const storedStatus = typeof company?.status === 'string' ? company.status : 'new';
-    if (storedStatus !== 'new') return storedStatus as LeadStatus;
+function mapCrmRowToContactRow(docSnap: any): ContactRow {
+    const data = docSnap.data();
+    const firstName = data.firstName || "";
+    const lastName = data.lastName || "";
+    const companyName = data.companyName || "Unknown";
 
-    const outreachStatus = typeof company?.outreachStatus === 'string' ? company.outreachStatus : null;
-    const companyEvent = typeof company?.emailEngagement?.lastEvent === 'string' ? company.emailEngagement.lastEvent : null;
-    const contactEvent = typeof contact?.emailEngagement?.lastEvent === 'string' ? contact.emailEngagement.lastEvent : null;
-    const hasSequenceHistory = !!contact?.sequenceHistory && Object.keys(contact.sequenceHistory).length > 0;
-
-    if (
-        (outreachStatus && CONTACTED_OUTREACH_STATUSES.has(outreachStatus)) ||
-        (companyEvent && CONTACTED_EMAIL_EVENTS.has(companyEvent)) ||
-        (contactEvent && CONTACTED_EMAIL_EVENTS.has(contactEvent)) ||
-        hasSequenceHistory
-    ) {
-        return 'contacted';
-    }
-
-    return 'new';
+    return {
+        id: docSnap.id,
+        firstName,
+        lastName,
+        email: data.email || "",
+        phone: data.phone || "",
+        companyId: data.companyId || "",
+        companyName,
+        role: data.role || undefined,
+        isPrimary: data.isPrimary ?? false,
+        lifecycleStatus: data.lifecycleStatus || (data.unsubscribed ? 'suppressed' : 'active'),
+        lifecycleReason: data.lifecycleReason || null,
+        holdUntilAt: data.holdUntilAt || null,
+        holdCreatedAt: data.holdCreatedAt || null,
+        lifecycleUpdatedAt: data.lifecycleUpdatedAt || null,
+        reviewReasons: data.reviewReasons || [],
+        duplicateOfContactId: data.duplicateOfContactId || null,
+        unsubscribed: !!data.unsubscribed,
+        notes: data.notes || "",
+        createdAt: data.createdAt || null,
+        createdBy: data.createdBy,
+        emailEngagement: data.emailEngagement,
+        sequenceHistory: data.sequenceHistory || undefined,
+        _companyStatus: data.companyStage || "new",
+        _companyLeadType: data.leadType,
+        _companyFacilityType: data.facilityType,
+        _companyAddress: data.address,
+        _companyCity: data.city,
+        _companyState: data.state,
+        _companyZip: data.zip,
+        _companyAttribution: data.attribution,
+        _companyOutreachStatus: data.outreachStatus,
+        _companyPreferredAuditTimes: data.preferredAuditTimes,
+    } as ContactRow;
 }
 
 interface LeadListProps {
@@ -150,13 +152,13 @@ export default function LeadList({
     const [loadingBulkSequences, setLoadingBulkSequences] = useState(false);
     const [bulkSequenceProgress, setBulkSequenceProgress] = useState<{done:number;total:number;errors:string[]}|null>(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [refreshNonce, setRefreshNonce] = useState(0);
     const PAGE_SIZE = 50;
     const SERVER_PAGE_SIZE = 120;
     const [totalCount, setTotalCount] = useState(0);
     const [hasNextPage, setHasNextPage] = useState(false);
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
     const [groupByCompany, setGroupByCompany] = useState(false);
-    const companyCacheRef = useRef<Map<string, any>>(new Map());
     const pageCursorRef = useRef<Record<number, any>>({});
     const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(() => {
         if (typeof window !== 'undefined') {
@@ -182,67 +184,14 @@ export default function LeadList({
     const hasAnyFilters = hasActiveFilters || lifecycleFilter !== 'active';
     const requiresFullDataset = searchQuery.trim() !== '' || statusFilter !== 'all' || !!engagementFilter;
 
-    const hydrateContacts = useCallback(async (docSnaps: any[]): Promise<ContactRow[]> => {
-        const companyIdsToFetch = new Set<string>();
-
-        docSnaps.forEach((docSnap) => {
-            const data = docSnap.data();
-            const companyId = data.companyId;
-            if (companyId && !companyCacheRef.current.has(companyId)) {
-                companyIdsToFetch.add(companyId);
+    const recoverFirestoreNetwork = useCallback(async () => {
+        try {
+            await enableNetwork(db);
+        } catch (error) {
+            if (!isOfflineLikeError(error)) {
+                console.warn("[LeadList] Firestore network recovery failed:", error);
             }
-        });
-
-        await Promise.all(Array.from(companyIdsToFetch).map(async (companyId) => {
-            try {
-                const companyDoc = await getDoc(doc(db, "companies", companyId));
-                if (companyDoc.exists()) {
-                    companyCacheRef.current.set(companyId, companyDoc.data());
-                }
-            } catch (error) {
-                console.error(`Failed to hydrate company ${companyId}:`, error);
-            }
-        }));
-
-        return docSnaps.map((docSnap) => {
-            const data = docSnap.data();
-            const company = companyCacheRef.current.get(data.companyId) || {};
-
-            return {
-                id: docSnap.id,
-                firstName: data.firstName || "",
-                lastName: data.lastName || "",
-                email: data.email || "",
-                phone: data.phone || "",
-                companyId: data.companyId || "",
-                companyName: data.companyName || company.businessName || "Unknown",
-                role: data.role || undefined,
-                isPrimary: data.isPrimary ?? false,
-                lifecycleStatus: data.lifecycleStatus || (data.unsubscribed ? 'suppressed' : 'active'),
-                lifecycleReason: data.lifecycleReason || null,
-                holdUntilAt: data.holdUntilAt || null,
-                holdCreatedAt: data.holdCreatedAt || null,
-                lifecycleUpdatedAt: data.lifecycleUpdatedAt || null,
-                reviewReasons: data.reviewReasons || [],
-                duplicateOfContactId: data.duplicateOfContactId || null,
-                unsubscribed: data.unsubscribed || false,
-                notes: data.notes || "",
-                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now()),
-                createdBy: data.createdBy,
-                emailEngagement: data.emailEngagement,
-                sequenceHistory: data.sequenceHistory || undefined,
-                _companyStatus: resolveCompanyStage(company, data),
-                _companyLeadType: company.leadType,
-                _companyFacilityType: company.facilityType,
-                _companyAddress: company.address,
-                _companyCity: company.city,
-                _companyState: company.state,
-                _companyZip: company.zip,
-                _companyAttribution: company.attribution,
-                _companyOutreachStatus: company.outreachStatus,
-                _companyPreferredAuditTimes: company.preferredAuditTimes,
-            } as ContactRow;
-        });
+        }
     }, []);
 
     useEffect(() => {
@@ -261,7 +210,7 @@ export default function LeadList({
         let cancelled = false;
 
         const loadLifecycleCounts = async () => {
-            const contactsRef = collection(db, "contacts");
+            const contactsRef = collection(db, "crm_contact_rows");
             const [allSnap, heldSnap, suppressedSnap, reviewSnap, duplicateSnap, archivedSnap] = await Promise.all([
                 getCountFromServer(contactsRef),
                 getCountFromServer(query(contactsRef, where("lifecycleStatus", "==", "held"))),
@@ -295,7 +244,7 @@ export default function LeadList({
         };
 
         const loadServerPage = async () => {
-            const contactsRef = collection(db, "contacts");
+            const contactsRef = collection(db, "crm_contact_rows");
             const previousCursor = currentPage === 1 ? null : pageCursorRef.current[currentPage - 1];
             let scannedCursor = previousCursor;
             let pageRows: ContactRow[] = [];
@@ -303,7 +252,7 @@ export default function LeadList({
 
             while (pageRows.length < PAGE_SIZE && !exhausted) {
                 const constraints: any[] = [];
-                if (lifecycleFilter === "held" || lifecycleFilter === "suppressed") {
+                if (lifecycleFilter !== "all") {
                     constraints.push(where("lifecycleStatus", "==", lifecycleFilter));
                 }
                 constraints.push(orderBy("createdAt", "desc"));
@@ -317,12 +266,7 @@ export default function LeadList({
                 }
 
                 scannedCursor = snapshot.docs[snapshot.docs.length - 1];
-                let rows = await hydrateContacts(snapshot.docs);
-                if (lifecycleFilter === "active") {
-                    rows = rows.filter((contact) => resolveLifecycleStatus(contact) === "active");
-                } else if (lifecycleFilter !== "all" && lifecycleFilter !== "held" && lifecycleFilter !== "suppressed") {
-                    rows = rows.filter((contact) => resolveLifecycleStatus(contact) === lifecycleFilter);
-                }
+                const rows = snapshot.docs.map(mapCrmRowToContactRow);
 
                 pageRows = [...pageRows, ...rows].slice(0, PAGE_SIZE);
                 if (snapshot.size < SERVER_PAGE_SIZE) {
@@ -337,8 +281,8 @@ export default function LeadList({
         };
 
         const loadFullDataset = async () => {
-            const snapshot = await getDocs(query(collection(db, "contacts"), orderBy("createdAt", "desc")));
-            let rows = await hydrateContacts(snapshot.docs);
+            const snapshot = await getDocs(query(collection(db, "crm_contact_rows"), orderBy("createdAt", "desc")));
+            let rows = snapshot.docs.map(mapCrmRowToContactRow);
             if (lifecycleFilter !== "all") {
                 rows = rows.filter((contact) => resolveLifecycleStatus(contact) === lifecycleFilter);
             }
@@ -369,7 +313,25 @@ export default function LeadList({
 
         void run();
         return () => { cancelled = true; };
-    }, [currentPage, lifecycleFilter, requiresFullDataset, hydrateContacts]);
+    }, [currentPage, lifecycleFilter, requiresFullDataset, refreshNonce]);
+
+    useEffect(() => {
+        const handleOnline = () => {
+            void recoverFirestoreNetwork();
+            setRefreshNonce((value) => value + 1);
+        };
+        const handleFocus = () => {
+            void recoverFirestoreNetwork();
+        };
+
+        window.addEventListener("online", handleOnline);
+        window.addEventListener("focus", handleFocus);
+
+        return () => {
+            window.removeEventListener("online", handleOnline);
+            window.removeEventListener("focus", handleFocus);
+        };
+    }, [recoverFirestoreNetwork]);
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {

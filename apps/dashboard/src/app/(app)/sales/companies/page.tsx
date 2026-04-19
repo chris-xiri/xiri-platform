@@ -11,9 +11,11 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import { useFacilityTypes } from '@/lib/facilityTypes';
+import type { LeadStatus } from '@xiri-facility-solutions/shared';
 
-interface Company {
+interface CompanyRow {
     id: string;
+    companyId: string;
     businessName: string;
     website?: string;
     address?: string;
@@ -22,48 +24,56 @@ interface Company {
     zip?: string;
     facilityType?: string;
     leadType?: string;
-    status?: string;
+    companyStage?: LeadStatus;
     phone?: string;
-    email?: string;
-    notes?: string;
-    contactCount?: number;
-    createdAt?: any;
+    totalContactCount?: number;
 }
 
 const STATUS_COLORS: Record<string, string> = {
     new: 'bg-blue-100 text-blue-700',
     contacted: 'bg-yellow-100 text-yellow-700',
     qualified: 'bg-purple-100 text-purple-700',
+    walkthrough: 'bg-indigo-100 text-indigo-700',
     proposal: 'bg-orange-100 text-orange-700',
-    negotiation: 'bg-pink-100 text-pink-700',
+    quoted: 'bg-pink-100 text-pink-700',
     won: 'bg-green-100 text-green-700',
     lost: 'bg-red-100 text-red-700',
     active: 'bg-green-100 text-green-700',
     churned: 'bg-gray-100 text-gray-600',
 };
 
-function sortCompanies(companies: Company[]): Company[] {
+function sortCompanies(companies: CompanyRow[]): CompanyRow[] {
     return [...companies].sort((a, b) => a.businessName.localeCompare(b.businessName));
 }
 
 export default function CompaniesPage() {
-    const [companies, setCompanies] = useState<Company[]>([]);
-    const [legacyLeads, setLegacyLeads] = useState<Company[]>([]);
-    const [contactDerivedCompanies, setContactDerivedCompanies] = useState<Company[]>([]);
-    const [contactCounts, setContactCounts] = useState<Record<string, number>>({});
+    const [companies, setCompanies] = useState<CompanyRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const { facilityTypeLabels } = useFacilityTypes();
 
-    // Fetch from 'companies' collection
     useEffect(() => {
-        const unsub = onSnapshot(collection(db, 'companies'), (snap) => {
-            const list: Company[] = [];
+        const unsub = onSnapshot(collection(db, 'crm_company_rows'), (snap) => {
+            const list: CompanyRow[] = [];
             snap.forEach((d) => {
-                const data = d.data();
-                list.push({ id: d.id, ...data } as Company);
+                const data = d.data() as any;
+                list.push({
+                    id: d.id,
+                    companyId: data.companyId || d.id,
+                    businessName: data.businessName || 'Unknown',
+                    website: data.website,
+                    address: data.address,
+                    city: data.city,
+                    state: data.state,
+                    zip: data.zip,
+                    facilityType: data.facilityType,
+                    leadType: data.leadType,
+                    companyStage: data.companyStage || 'new',
+                    phone: data.phone,
+                    totalContactCount: typeof data.totalContactCount === 'number' ? data.totalContactCount : 0,
+                });
             });
             setCompanies(sortCompanies(list));
             setLoading(false);
@@ -76,115 +86,35 @@ export default function CompaniesPage() {
         return () => unsub();
     }, []);
 
-    // Also fetch legacy 'leads' that haven't been migrated
-    useEffect(() => {
-        const unsub = onSnapshot(collection(db, 'leads'), (snap) => {
-            const list: Company[] = [];
-            snap.forEach((d) => {
-                const data = d.data();
-                if (data.businessName) {
-                    list.push({
-                        id: d.id,
-                        businessName: data.businessName,
-                        website: data.website,
-                        address: data.address,
-                        city: data.city,
-                        state: data.state,
-                        zip: data.zip,
-                        facilityType: data.facilityType,
-                        leadType: data.leadType,
-                        status: data.status,
-                        phone: data.phone,
-                        email: data.email,
-                        notes: data.notes,
-                        createdAt: data.createdAt,
-                    });
-                }
-            });
-            setLegacyLeads(sortCompanies(list));
-        }, (error) => {
-            console.error('Failed to load legacy leads:', error);
-        });
-        return () => unsub();
-    }, []);
-
-    // Fetch contact counts per company and derive fallback company rows from contacts.
-    useEffect(() => {
-        const unsub = onSnapshot(collection(db, 'contacts'), (snap) => {
-            const counts: Record<string, number> = {};
-            const fallbackCompanies = new Map<string, Company>();
-            snap.forEach((d) => {
-                const data = d.data();
-                const companyId = data.companyId;
-                if (companyId) {
-                    counts[companyId] = (counts[companyId] || 0) + 1;
-                    if (data.companyName && !fallbackCompanies.has(companyId)) {
-                        fallbackCompanies.set(companyId, {
-                            id: companyId,
-                            businessName: data.companyName,
-                        });
-                    }
-                }
-            });
-            setContactCounts(counts);
-            setContactDerivedCompanies(sortCompanies(Array.from(fallbackCompanies.values())));
-        });
-        return () => unsub();
-    }, []);
-
-    // Merge & deduplicate
-    const allCompanies = useMemo(() => {
-        const merged = new Map<string, Company>();
-        for (const company of companies) {
-            merged.set(company.id, company);
-        }
-        for (const lead of legacyLeads) {
-            if (!merged.has(lead.id)) {
-                merged.set(lead.id, lead);
-            }
-        }
-        for (const contactCompany of contactDerivedCompanies) {
-            if (!merged.has(contactCompany.id)) {
-                merged.set(contactCompany.id, contactCompany);
-            }
-        }
-        return sortCompanies(Array.from(merged.values()));
-    }, [companies, legacyLeads, contactDerivedCompanies]);
-
-    // Status counts
     const statusCounts = useMemo(() => {
         const counts: Record<string, number> = {};
-        allCompanies.forEach(c => {
-            const s = c.status || 'new';
-            counts[s] = (counts[s] || 0) + 1;
+        companies.forEach((c) => {
+            const stage = c.companyStage || 'new';
+            counts[stage] = (counts[stage] || 0) + 1;
         });
         return counts;
-    }, [allCompanies]);
+    }, [companies]);
 
-    // Filter by status + search
     const filtered = useMemo(() => {
-        let result = allCompanies;
+        let result = companies;
 
-        // Status filter
         if (statusFilter !== 'all') {
-            result = result.filter(c => (c.status || 'new') === statusFilter);
+            result = result.filter((c) => (c.companyStage || 'new') === statusFilter);
         }
 
-        // Search filter
         if (search.trim()) {
             const q = search.toLowerCase();
-            result = result.filter(c =>
+            result = result.filter((c) =>
                 c.businessName?.toLowerCase().includes(q) ||
                 c.address?.toLowerCase().includes(q) ||
                 c.city?.toLowerCase().includes(q) ||
                 c.state?.toLowerCase().includes(q) ||
-                c.facilityType?.toLowerCase().includes(q) ||
-                c.email?.toLowerCase().includes(q)
+                c.facilityType?.toLowerCase().includes(q)
             );
         }
 
         return result;
-    }, [allCompanies, search, statusFilter]);
+    }, [companies, search, statusFilter]);
 
     const STATUS_BADGES: { value: string; label: string; color: string }[] = [
         { value: 'all', label: 'All', color: 'bg-secondary text-secondary-foreground' },
@@ -202,20 +132,18 @@ export default function CompaniesPage() {
     return (
         <ProtectedRoute resource="sales/crm">
             <div className="h-full flex flex-col space-y-4">
-                {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold">Companies</h1>
                         <p className="text-muted-foreground">
-                            {allCompanies.length} {allCompanies.length === 1 ? 'company' : 'companies'}
+                            {companies.length} {companies.length === 1 ? 'company' : 'companies'}
                         </p>
                     </div>
                 </div>
 
-                {/* Status Badge Filters */}
                 <div className="flex flex-wrap gap-1.5">
-                    {STATUS_BADGES.map(s => {
-                        const count = s.value === 'all' ? allCompanies.length : (statusCounts[s.value] || 0);
+                    {STATUS_BADGES.map((s) => {
+                        const count = s.value === 'all' ? companies.length : (statusCounts[s.value] || 0);
                         if (s.value !== 'all' && count === 0) return null;
                         const isActive = statusFilter === s.value;
                         return (
@@ -237,7 +165,6 @@ export default function CompaniesPage() {
                     })}
                 </div>
 
-                {/* Search */}
                 <div className="relative max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -248,7 +175,6 @@ export default function CompaniesPage() {
                     />
                 </div>
 
-                {/* List */}
                 <div className="flex-1 min-h-0 overflow-auto">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
@@ -259,23 +185,23 @@ export default function CompaniesPage() {
                         <div className="flex flex-col items-center justify-center py-20 text-destructive gap-3">
                             <Building2 className="w-12 h-12 opacity-40" />
                             <p className="font-medium text-lg">{loadError}</p>
-                            <p className="text-sm text-muted-foreground">Contacts can still be used as a fallback source for companies once data loads successfully.</p>
+                            <p className="text-sm text-muted-foreground">Run CRM row rebuild to repopulate company rows if needed.</p>
                         </div>
                     ) : filtered.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
                             <Building2 className="w-12 h-12 opacity-40" />
                             <p className="font-medium text-lg">No companies found</p>
                             <p className="text-sm">
-                                {search || statusFilter !== 'all' ? 'Try adjusting your filters.' : 'Companies will appear here as contacts are added.'}
+                                {search || statusFilter !== 'all' ? 'Try adjusting your filters.' : 'Companies will appear here once CRM rows are projected.'}
                             </p>
                         </div>
                     ) : (
                         <div className="grid gap-3">
                             {filtered.map((company) => (
-                                <Link key={company.id} href={`/sales/crm/${company.id}`}>
+                                <Link key={company.id} href={`/sales/crm/${company.companyId || company.id}`}>
                                     <CompanyCard
                                         company={company}
-                                        contactCount={contactCounts[company.id] || 0}
+                                        contactCount={company.totalContactCount || 0}
                                         facilityTypeLabels={facilityTypeLabels}
                                     />
                                 </Link>
@@ -288,27 +214,24 @@ export default function CompaniesPage() {
     );
 }
 
-function CompanyCard({ company, contactCount, facilityTypeLabels }: { company: Company; contactCount: number; facilityTypeLabels: Record<string, string> }) {
+function CompanyCard({ company, contactCount, facilityTypeLabels }: { company: CompanyRow; contactCount: number; facilityTypeLabels: Record<string, string> }) {
     const facilityLabel = company.facilityType ? (facilityTypeLabels[company.facilityType] || company.facilityType) : '';
     const location = [company.address, company.city, company.state].filter(Boolean).join(', ');
-    const statusClass = STATUS_COLORS[company.status || ''] || 'bg-gray-100 text-gray-600';
+    const statusValue = company.companyStage || 'new';
+    const statusClass = STATUS_COLORS[statusValue] || 'bg-gray-100 text-gray-600';
 
     return (
         <div className="group flex items-center gap-4 p-4 rounded-xl border bg-card hover:bg-accent/30 hover:shadow-sm transition-all cursor-pointer">
-            {/* Icon */}
             <div className="shrink-0 w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Building2 className="w-5 h-5 text-primary" />
             </div>
 
-            {/* Main info */}
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                     <h3 className="font-semibold text-sm truncate">{company.businessName}</h3>
-                    {company.status && (
-                        <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${statusClass}`}>
-                            {company.status}
-                        </Badge>
-                    )}
+                    <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${statusClass}`}>
+                        {statusValue}
+                    </Badge>
                 </div>
 
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -323,13 +246,11 @@ function CompanyCard({ company, contactCount, facilityTypeLabels }: { company: C
                 </div>
             </div>
 
-            {/* Contact count */}
             <div className="shrink-0 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Users className="w-3.5 h-3.5" />
                 <span>{contactCount} {contactCount === 1 ? 'contact' : 'contacts'}</span>
             </div>
 
-            {/* Website */}
             {company.website && (
                 <a
                     href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
@@ -343,7 +264,6 @@ function CompanyCard({ company, contactCount, facilityTypeLabels }: { company: C
                 </a>
             )}
 
-            {/* Arrow */}
             <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         </div>
     );

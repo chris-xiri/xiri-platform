@@ -138,18 +138,37 @@ export const addProspectsToCrm = onCall({
             }
 
             // Write all contacts to Firestore
-            for (const contact of contactsToCreate) {
+            for (let index = 0; index < contactsToCreate.length; index++) {
+                const contact = contactsToCreate[index];
                 const contactRef = db.collection("contacts").doc();
                 contactIds.push(contactRef.id);
+                const parsedName = contact.name ? contact.name.trim().split(/\s+/) : [];
+                const firstName = parsedName[0] || '';
+                const lastName = parsedName.length > 1 ? parsedName.slice(1).join(' ') : '';
+                const shouldActivate = index === 0 || (!!contact.confidence && contact.confidence >= 85 && !contact.isGeneric);
+                const lifecycleStatus = shouldActivate ? 'active' : 'review';
 
                 batch.set(contactRef, {
                     name: contact.name || prospect.businessName,
+                    firstName,
+                    lastName,
                     email: contact.email,
                     phone: prospect.phone || null,
                     title: contact.title || null,
+                    role: contact.title || null,
                     companyId: companyRef.id,
                     companyName: prospect.businessName,
                     isGenericEmail: contact.isGeneric,
+                    isPrimary: index === 0,
+                    lifecycleStatus,
+                    lifecycleReason: lifecycleStatus === 'review' ? 'prospector_additional_contact' : null,
+                    reviewReasons: lifecycleStatus === 'review' ? ['prospector_additional_contact'] : [],
+                    emailStatus: 'unknown',
+                    suppressionReason: null,
+                    validationSource: 'import',
+                    lastValidatedAt: new Date(),
+                    duplicateOfContactId: null,
+                    unsubscribed: false,
                     source: 'prospector',
                     status: 'new',
                     stage: 'lead',

@@ -360,6 +360,12 @@ export const resendWebhook = onRequest({
             if (shouldUpdateLastEvent && !isUnsubscribeClick) {
                 contactEngagement['emailEngagement.lastEvent'] = effectiveMapping.deliveryStatus;
             }
+            if (['email.delivered', 'email.opened', 'email.clicked'].includes(eventType) && !isUnsubscribeClick) {
+                contactEngagement.emailStatus = 'deliverable';
+                contactEngagement.suppressionReason = null;
+                contactEngagement.lastValidatedAt = new Date();
+                contactEngagement.validationSource = 'resend';
+            }
             if (eventType === 'email.opened') {
                 contactEngagement['emailEngagement.openCount'] = admin.firestore.FieldValue.increment(1);
             } else if (eventType === 'email.clicked' && !isUnsubscribeClick) {
@@ -446,6 +452,10 @@ export const resendWebhook = onRequest({
                                 lifecycleStatus: 'suppressed',
                                 lifecycleReason: reason,
                                 lifecycleUpdatedAt: new Date(),
+                                emailStatus: reason === 'spam_complaint' ? 'spam' : 'bounced',
+                                suppressionReason: reason,
+                                lastValidatedAt: new Date(),
+                                validationSource: 'resend',
                             });
                         }
 

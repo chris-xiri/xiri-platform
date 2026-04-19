@@ -28,6 +28,7 @@ import {
     type ZoneResult,
     type ReportIssue,
 } from "../utils/morningReportEmail";
+import { resolveOperationalCompany } from "../utils/companyResolver";
 
 // ─── Config ──────────────────────────────────────────────────────────
 
@@ -158,9 +159,9 @@ async function resolveWorkOrder(doc: FirebaseFirestore.DocumentSnapshot): Promis
     let clientEmail = '';
     let clientName = '';
     if (wo.leadId) {
-        const leadDoc = await db.collection("leads").doc(wo.leadId).get();
-        if (leadDoc.exists) {
-            const lead = leadDoc.data()!;
+        const leadDoc = await resolveOperationalCompany(wo.leadId);
+        if (leadDoc?.exists) {
+            const lead = leadDoc.data;
             clientEmail = lead.email || lead.contactEmail || '';
             clientName = lead.contactName || lead.businessName || '';
         }

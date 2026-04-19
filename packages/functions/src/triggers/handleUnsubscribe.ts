@@ -4,6 +4,7 @@ import * as logger from "firebase-functions/logger";
 import { cancelVendorTasks, cancelLeadTasks, cancelLeadScheduledEmails } from "../utils/queueUtils";
 import { addToResendSuppression } from "../utils/suppressionUtils";
 import { COMPANY_NAME, COMPANY_ADDRESS, SERVICE_AREA } from "../utils/emailUtils";
+import { resolveOperationalCompany } from "../utils/companyResolver";
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -128,8 +129,8 @@ async function handleVendorUnsubscribe(vendorId: string, res: any) {
 // ── Lead unsubscribe ────────────────────────────────────────────
 
 async function handleLeadUnsubscribe(leadId: string, res: any, contactId?: string) {
-    const leadDoc = await db.collection("leads").doc(leadId).get();
-    if (!leadDoc.exists) {
+    const resolvedLead = await resolveOperationalCompany(leadId);
+    if (!resolvedLead) {
         res.status(404).send(renderPage(
             'Not Found',
             'We couldn\'t find your record. You may have already been unsubscribed.',
@@ -138,7 +139,7 @@ async function handleLeadUnsubscribe(leadId: string, res: any, contactId?: strin
         return;
     }
 
-    const lead = leadDoc.data()!;
+    const lead = resolvedLead.data;
     const businessName = lead.businessName || 'Business';
 
     // ── Resolve contact for contact-level unsubscribe ──
@@ -195,12 +196,18 @@ async function handleLeadUnsubscribe(leadId: string, res: any, contactId?: strin
         await db.collection('contacts').doc(resolvedContactId).update({
             unsubscribed: true,
             unsubscribedAt: new Date(),
+            lifecycleStatus: 'suppressed',
+            lifecycleReason: 'unsubscribe',
+            lifecycleUpdatedAt: new Date(),
+            suppressionReason: 'unsubscribe',
+            lastValidatedAt: new Date(),
+            validationSource: 'manual',
         });
     }
 
     // Update lead — mark as lost with unsubscribe reason
     const previousStatus = lead.status;
-    await db.collection("leads").doc(leadId).update({
+    await db.collection(resolvedLead.collection).doc(leadId).update({
         status: 'lost',
         unsubscribedAt: new Date(),
         lostReason: 'unsubscribed',
@@ -211,10 +218,7 @@ async function handleLeadUnsubscribe(leadId: string, res: any, contactId?: strin
     const cancelledCount = await cancelLeadTasks(db, leadId);
 
     // Cancel any Resend-native-scheduled emails
-    // Check companies first, then leads
-    let leadCollection: 'companies' | 'leads' = 'leads';
-    const compDoc = await db.collection('companies').doc(leadId).get();
-    if (compDoc.exists) leadCollection = 'companies';
+    const leadCollection: 'companies' | 'leads' = resolvedLead.collection;
     const resendCancelled = await cancelLeadScheduledEmails(db, leadId, leadCollection);
 
     // Sync to Resend suppression audience

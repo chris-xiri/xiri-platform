@@ -154,6 +154,38 @@
         { "fieldPath": "lifecycleStatus", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "crm_contact_rows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lifecycleStatus", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "crm_contact_rows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "companyStage", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "crm_contact_rows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sequenceEligible", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "crm_contact_rows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lastEngagementEvent", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

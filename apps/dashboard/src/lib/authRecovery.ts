@@ -16,6 +16,15 @@ const AUTH_ERROR_PATTERNS = [
     "token expired",
 ];
 
+const OFFLINE_ERROR_PATTERNS = [
+    "client is offline",
+    "the client is offline",
+    "failed to get document because the client is offline",
+    "failed to get document because the client is offline.",
+    "unavailable",
+    "network-request-failed",
+];
+
 export function isAuthRelatedError(error: unknown): boolean {
     if (!error) return false;
 
@@ -51,3 +60,27 @@ export function reportAuthRequired(reason = "Session expired or authorization fa
     );
 }
 
+export function isOfflineLikeError(error: unknown): boolean {
+    if (!error) return false;
+
+    const candidate = error as {
+        code?: string;
+        message?: string;
+        status?: number;
+        name?: string;
+    };
+
+    if (candidate.code === "unavailable") return true;
+
+    const haystack = [
+        candidate.code,
+        candidate.message,
+        candidate.name,
+        typeof error === "string" ? error : "",
+    ]
+        .filter(Boolean)
+        .join(" | ")
+        .toLowerCase();
+
+    return OFFLINE_ERROR_PATTERNS.some((pattern) => haystack.includes(pattern));
+}
