@@ -561,6 +561,17 @@ export interface CalculatorInputs {
     supplyCostPerSqft: number;
     /** Who covers supplies: company (full), client ($0), or shared (50/50) */
     supplyPolicy: SupplyPolicy;
+    /**
+     * Optional override for global production rate in sqft/hour.
+     * When provided, task-time model is scaled from ISSA baseline by:
+     * baselineProductionRate / productionRateOverride
+     */
+    productionRateOverride?: number;
+    /**
+     * Optional per-task override for ISSA minutes per 1,000 sqft.
+     * Key is CleaningTask.id, value is minutes/1k sqft.
+     */
+    taskMinutesPer1kOverrides?: Record<string, number>;
 }
 
 export interface CalculatorResults {
@@ -699,8 +710,13 @@ export function calculate(inputs: CalculatorInputs, rooms?: RoomScope[]): Calcul
                     : applyFloorType(roomSqft, taskDef.floorType, buildingType.carpetPercent);
                 if (effectiveSqft <= 0) continue;
 
-                // Base task time or user override
-                const baseMinutes = taskDef.minutesPer1kSqft * (effectiveSqft / 1000);
+                // Base task time from ISSA task model, with optional per-task override
+                const minutesPer1k = inputs.taskMinutesPer1kOverrides?.[taskId];
+                const effectiveMinutesPer1k =
+                    Number.isFinite(minutesPer1k) && (minutesPer1k as number) > 0
+                        ? (minutesPer1k as number)
+                        : taskDef.minutesPer1kSqft;
+                const baseMinutes = effectiveMinutesPer1k * (effectiveSqft / 1000);
                 const taskMinutes = room.taskTimeOverrides?.[taskId] ?? baseMinutes;
 
                 // Task frequency
@@ -798,6 +814,14 @@ export function calculate(inputs: CalculatorInputs, rooms?: RoomScope[]): Calcul
             urinals: Math.round(buildingType.fixturesPer10k.urinals * fixtureMultiplier),
             sinks: Math.round(buildingType.fixturesPer10k.sinks * fixtureMultiplier),
         };
+
+    // Apply global production-rate override (faster rate => fewer hours)
+    if (inputs.productionRateOverride && inputs.productionRateOverride > 0) {
+        const baselineRate = buildingType.productionRate || 1;
+        const speedFactor = baselineRate / inputs.productionRateOverride;
+        totalMonthlyMinutes *= speedFactor;
+        maxFreqMinutesPerVisit *= speedFactor;
+    }
 
     // Apply building complexity multiplier
     totalMonthlyMinutes *= buildingType.complexityMultiplier;

@@ -88,7 +88,7 @@ export default function ContractorCalculatorPage() {
 
             {/* ═══ COMPACT HERO ═══ */}
             <section className="bg-white border-b border-slate-200 pt-6 pb-4 sm:pt-8 sm:pb-6">
-                <div className="max-w-3xl mx-auto px-4">
+                <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
                     <div className="flex items-center gap-3 mb-1 sm:mb-2">
                         <h1 className="text-2xl sm:text-3xl font-heading font-bold text-slate-900">
                             Janitorial Bid Calculator
@@ -106,7 +106,7 @@ export default function ContractorCalculatorPage() {
 
             {/* ═══ CALCULATOR ═══ */}
             <section className="py-12 bg-slate-50 border-b border-slate-200">
-                <div className="max-w-3xl mx-auto px-4">
+                <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
                     <PublicCalculator mode="contractor" />
                 </div>
             </section>

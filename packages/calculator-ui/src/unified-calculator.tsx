@@ -37,8 +37,8 @@ const SERVED_COUNTIES = ['nassau', 'suffolk', 'queens'] as const;
 type ServedCounty = (typeof SERVED_COUNTIES)[number] | 'other' | 'unknown';
 const FEATURED_BUILDING_TYPES = 6;
 
-function isServedArea(county: ServedCounty): boolean {
-    return SERVED_COUNTIES.includes(county as (typeof SERVED_COUNTIES)[number]);
+function isServedArea(state: string, county: ServedCounty): boolean {
+    return state === 'NY' && SERVED_COUNTIES.includes(county as (typeof SERVED_COUNTIES)[number]);
 }
 
 function buildXiriOsUrl(params: {
@@ -72,6 +72,82 @@ function buildVendorOnboardingUrl(county: ServedCounty) {
     return `/onboarding/start?${q.toString()}`;
 }
 
+interface WizardParsedValues {
+    buildingTypeId?: string;
+    stateCode?: string;
+    county?: ServedCounty;
+    sqft?: number;
+    frequency?: Frequency;
+    productionRate?: number;
+}
+
+function parseWizardPrompt(prompt: string): WizardParsedValues {
+    const text = prompt.toLowerCase();
+    const out: WizardParsedValues = {};
+
+    // Building type
+    for (const bt of BUILDING_TYPES) {
+        const name = bt.name.toLowerCase();
+        const compact = name.replace(/[^a-z0-9]/g, '');
+        if (text.includes(name) || text.includes(compact)) {
+            out.buildingTypeId = bt.id;
+            break;
+        }
+        const keyWords = name.split(/[\/\s]+/).filter((w) => w.length > 3);
+        if (keyWords.some((w) => text.includes(w))) {
+            out.buildingTypeId = bt.id;
+            break;
+        }
+    }
+
+    // State
+    for (const s of STATES) {
+        const codePattern = new RegExp(`\\b${s.code.toLowerCase()}\\b`, 'i');
+        if (text.includes(s.name.toLowerCase()) || codePattern.test(text)) {
+            out.stateCode = s.code;
+            break;
+        }
+    }
+
+    // County (NY service-area logic)
+    if (text.includes('nassau')) out.county = 'nassau';
+    else if (text.includes('suffolk')) out.county = 'suffolk';
+    else if (text.includes('queens')) out.county = 'queens';
+    else if (text.includes('other')) out.county = 'other';
+    if ((out.county === 'nassau' || out.county === 'suffolk' || out.county === 'queens') && !out.stateCode) {
+        out.stateCode = 'NY';
+    }
+
+    // Square footage
+    const sqftMatch =
+        text.match(/(\d[\d,]*)\s*(sq\s*ft|sqft|square\s*feet|square\s*foot|sf)\b/i) ||
+        text.match(/(\d[\d,]*)\s*(k)\s*(sq\s*ft|sqft|square\s*feet|square\s*foot|sf)\b/i) ||
+        text.match(/\b(\d{3,6})\b/);
+    if (sqftMatch?.[1]) {
+        const parsed = Number(sqftMatch[1].replace(/,/g, '')) * (sqftMatch?.[2] === 'k' ? 1000 : 1);
+        if (Number.isFinite(parsed) && parsed >= 100) out.sqft = parsed;
+    }
+
+    // Frequency
+    if (text.includes('one-time') || text.includes('one time') || text.includes('deep clean')) out.frequency = 'once';
+    else {
+        const fx = text.match(/\b([1-7])\s*x\b/);
+        if (fx?.[1]) out.frequency = fx[1] as Frequency;
+        else if (text.includes('daily')) out.frequency = '7';
+        else if (text.includes('weekdays')) out.frequency = '5';
+        else if (text.includes('weekly')) out.frequency = '1';
+    }
+
+    // Production rate override
+    const prMatch = text.match(/production\s*rate[^\d]{0,10}(\d[\d,]*)/i) || text.match(/(\d[\d,]*)\s*(sqft\/hr|sqft per hour)/i);
+    if (prMatch?.[1]) {
+        const parsed = Number(prMatch[1].replace(/,/g, ''));
+        if (Number.isFinite(parsed) && parsed > 0) out.productionRate = parsed;
+    }
+
+    return out;
+}
+
 interface UnifiedCalculatorProps {
     mode?: UnifiedCalculatorMode;
     onContractorCapture?: (payload: ContractorCapturePayload) => Promise<void> | void;
@@ -96,14 +172,30 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
     const [captureError, setCaptureError] = useState('');
     const [captureSaving, setCaptureSaving] = useState(false);
     const [captureIntent, setCaptureIntent] = useState<'onboarding' | 'os' | null>(null);
+    const [showAdvancedProduction, setShowAdvancedProduction] = useState(false);
+    const [useProductionOverride, setUseProductionOverride] = useState(false);
+    const [productionRateOverride, setProductionRateOverride] = useState<number>(0);
+    const [showAdvancedTaskRates, setShowAdvancedTaskRates] = useState(false);
+    const [taskRateOverrides, setTaskRateOverrides] = useState<Record<string, number>>({});
+    const [wizardPrompt, setWizardPrompt] = useState('');
+    const [wizardStatus, setWizardStatus] = useState('');
+    const [wizardNudges, setWizardNudges] = useState<string[]>([]);
+    const [showStickySummary, setShowStickySummary] = useState(false);
 
     const safeSqft = Math.max(100, sqft || 0);
+    const selectedBuildingType = useMemo(
+        () => BUILDING_TYPES.find((b) => b.id === buildingTypeId) ?? BUILDING_TYPES[0],
+        [buildingTypeId]
+    );
 
     useEffect(() => {
         setRooms(getDefaultRooms(buildingTypeId, safeSqft));
         initializedSqftRef.current = true;
         prevSqftRef.current = safeSqft;
-    }, [buildingTypeId]);
+        if (!useProductionOverride) {
+            setProductionRateOverride(selectedBuildingType.productionRate);
+        }
+    }, [buildingTypeId, safeSqft, selectedBuildingType.productionRate, useProductionOverride]);
 
     useEffect(() => {
         if (!initializedSqftRef.current || rooms.length === 0) {
@@ -122,7 +214,18 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
         prevSqftRef.current = safeSqft;
     }, [safeSqft, rooms.length]);
 
+    useEffect(() => {
+        const onScroll = () => setShowStickySummary(window.scrollY > 280);
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
     const stateDefaults = useMemo(() => getStateDefaults(stateCode) ?? {}, [stateCode]);
+    const hasTaskRateOverrides = useMemo(
+        () => Object.values(taskRateOverrides).some((v) => Number.isFinite(v) && v > 0),
+        [taskRateOverrides]
+    );
     const inputs = useMemo(
         () => ({
             ...DEFAULT_INPUTS,
@@ -130,12 +233,14 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
             buildingTypeId,
             sqft: safeSqft,
             frequency,
+            productionRateOverride: useProductionOverride && productionRateOverride > 0 ? productionRateOverride : undefined,
+            taskMinutesPer1kOverrides: hasTaskRateOverrides ? taskRateOverrides : undefined,
         }),
-        [stateDefaults, buildingTypeId, safeSqft, frequency]
+        [stateDefaults, buildingTypeId, safeSqft, frequency, useProductionOverride, productionRateOverride, hasTaskRateOverrides, taskRateOverrides]
     );
 
     const results = useMemo(() => calculate(inputs, rooms), [inputs, rooms]);
-    const inArea = useMemo(() => isServedArea(county), [county]);
+    const inArea = useMemo(() => isServedArea(stateCode, county), [stateCode, county]);
     const osUrl = useMemo(
         () =>
             buildXiriOsUrl({
@@ -225,12 +330,134 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
         }
     };
 
+    const applyWizardPrompt = () => {
+        const parsed = parseWizardPrompt(wizardPrompt);
+        let updates = 0;
+        const missing: string[] = [];
+        if (parsed.buildingTypeId) {
+            setBuildingTypeId(parsed.buildingTypeId);
+            updates++;
+        } else {
+            missing.push('building type');
+        }
+        if (parsed.stateCode) {
+            setStateCode(parsed.stateCode);
+            if (parsed.stateCode !== 'NY') setCounty('unknown');
+            updates++;
+        } else {
+            missing.push('state');
+        }
+        const resolvedState = parsed.stateCode ?? stateCode;
+        if (parsed.county && resolvedState === 'NY') {
+            setCounty(parsed.county);
+            updates++;
+        }
+        if (parsed.sqft) {
+            setSqft(parsed.sqft);
+            updates++;
+        } else {
+            missing.push('square footage');
+        }
+        if (parsed.frequency) {
+            setFrequency(parsed.frequency);
+            updates++;
+        } else {
+            missing.push('cleaning frequency');
+        }
+        if (parsed.productionRate) {
+            setUseProductionOverride(true);
+            setShowAdvancedProduction(true);
+            setProductionRateOverride(parsed.productionRate);
+            updates++;
+        }
+
+        if (updates > 0) {
+            setWizardStatus(`Great start. I updated ${updates} field${updates > 1 ? 's' : ''}.`);
+            const nudgePool: string[] = [];
+            if (missing.includes('building type')) {
+                nudgePool.push('What type of building is it? (office, medical, school, retail...)');
+            }
+            if (missing.includes('state')) {
+                nudgePool.push('What state is the facility in?');
+            }
+            if (missing.includes('square footage')) {
+                nudgePool.push('Approximately how many square feet is the facility?');
+            }
+            if (missing.includes('cleaning frequency')) {
+                nudgePool.push('How often should it be cleaned? (example: 5x/week)');
+            }
+            setWizardNudges(nudgePool.slice(0, 3));
+        } else {
+            setWizardStatus('I can help fill this out. Give me a little more detail and I’ll do the rest.');
+            setWizardNudges([
+                'Tell me your building type and square footage.',
+                'Add the state and cleaning frequency (like 3x/week or daily).',
+                'Optional: include a target production rate in sqft/hour.',
+            ]);
+        }
+    };
+
+    const setTaskRateOverride = (taskId: string, value: number) => {
+        setTaskRateOverrides((prev) => ({
+            ...prev,
+            [taskId]: Math.max(0, value),
+        }));
+    };
+
     return (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <>
+            {showStickySummary && (
+                <div className="fixed top-[84px] left-0 right-0 z-40 px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
+                    <div className="rounded-xl border border-sky-200 bg-white/95 backdrop-blur px-3 py-2 shadow-sm">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="text-sm text-slate-600">Live Bid Summary</div>
+                            <div className="text-sm sm:text-base font-semibold text-sky-700">
+                                {fmt(results.totalPricePerMonth)} <span className="text-slate-500 font-normal">/month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
             <div className="space-y-4">
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+                    <h3 className="font-semibold text-slate-900">AI Wizard</h3>
+                    <p className="text-xs text-slate-500">Describe what you know. I’ll fill what I can and ask for only what’s missing.</p>
+                    <textarea
+                        value={wizardPrompt}
+                        onChange={(e) => setWizardPrompt(e.target.value)}
+                        placeholder="Example: 12,000 sqft medical clinic in Queens, New York, cleaned 5x/week, production rate 3200 sqft/hr."
+                        className="w-full rounded-xl border border-slate-300 bg-white min-h-24 px-3 py-2 text-sm"
+                    />
+                    <div className="flex items-center justify-between gap-3">
+                        <button
+                            type="button"
+                            onClick={applyWizardPrompt}
+                            className="rounded-lg bg-sky-700 text-white text-sm font-semibold px-3.5 py-2 hover:bg-sky-800"
+                        >
+                            Auto-Fill With AI
+                        </button>
+                        {wizardStatus && <p className="text-xs text-slate-600">{wizardStatus}</p>}
+                    </div>
+                    {wizardNudges.length > 0 && (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            {wizardNudges.map((nudge) => (
+                                <button
+                                    key={nudge}
+                                    type="button"
+                                    onClick={() => setWizardPrompt((prev) => (prev ? `${prev}\n${nudge}` : nudge))}
+                                    className="text-xs rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-700 hover:bg-slate-100"
+                                >
+                                    {nudge}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </section>
+
                 <section className="rounded-2xl border border-slate-200 bg-white p-4">
                     <h3 className="font-semibold text-slate-900 mb-3">Building Type</h3>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
                         {BUILDING_TYPES.slice(0, FEATURED_BUILDING_TYPES).map((b) => (
                             <button
                                 key={b.id}
@@ -248,20 +475,29 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                         ))}
                     </div>
                     {BUILDING_TYPES.length > FEATURED_BUILDING_TYPES && (
-                        <div className="mt-3">
-                            <label className="text-xs uppercase tracking-wide text-slate-500">More Building Types</label>
-                            <select
-                                value={buildingTypeId}
-                                onChange={(e) => setBuildingTypeId(e.target.value)}
-                                className="mt-1 w-full rounded-xl border border-slate-300 bg-white h-10 px-3 text-sm"
-                            >
-                                {BUILDING_TYPES.map((b) => (
-                                    <option key={b.id} value={b.id}>
-                                        {b.name}
-                                    </option>
+                        <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                            <summary className="cursor-pointer text-sm font-medium text-slate-700 flex items-center justify-between">
+                                <span>More building types</span>
+                                <span aria-hidden className="text-slate-500">▾</span>
+                            </summary>
+                            <div className="mt-2 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
+                                {BUILDING_TYPES.slice(FEATURED_BUILDING_TYPES).map((b) => (
+                                    <button
+                                        key={b.id}
+                                        type="button"
+                                        onClick={() => setBuildingTypeId(b.id)}
+                                        className={`rounded-xl border px-3 py-2 text-left text-sm flex items-center gap-2 min-h-14 ${
+                                            buildingTypeId === b.id
+                                                ? 'border-sky-500 bg-sky-50 text-sky-800'
+                                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                                        }`}
+                                    >
+                                        <span className="text-lg leading-none">{b.icon}</span>
+                                        <div className="font-medium">{b.name}</div>
+                                    </button>
                                 ))}
-                            </select>
-                        </div>
+                            </div>
+                        </details>
                     )}
                 </section>
 
@@ -309,7 +545,7 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                         </div>
                     </div>
 
-                    {mode === 'contractor' && (
+                    {mode === 'contractor' && stateCode === 'NY' && (
                         <div>
                             <label className="text-xs uppercase tracking-wide text-slate-500">Your Service Area</label>
                             <select
@@ -358,9 +594,12 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                                         </div>
                                     </div>
                                     <details className="mt-3 rounded-lg border border-slate-200 bg-white p-2">
-                                        <summary className="cursor-pointer list-none text-xs font-medium text-sky-700 flex items-center justify-between">
-                                            <span>Smart Tasks</span>
-                                            <span className="text-slate-500">{room.tasks.length} selected</span>
+                                        <summary className="cursor-pointer text-xs font-medium text-sky-700 flex items-center justify-between">
+                                            <span>Task Checklist</span>
+                                            <span className="text-slate-500 flex items-center gap-1">
+                                                <span>{room.tasks.length} selected</span>
+                                                <span aria-hidden>▾</span>
+                                            </span>
                                         </summary>
                                         <div className="mt-2 space-y-1 max-h-48 overflow-auto">
                                             {CLEANING_TASKS.map((task) => {
@@ -392,9 +631,103 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                         Room total: {roomTotalSqft.toLocaleString('en-US')} / {safeSqft.toLocaleString('en-US')} sqft
                     </p>
                 </section>
+
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-slate-900">Production Rate</h3>
+                        <button
+                            type="button"
+                            onClick={() => setShowAdvancedProduction((v) => !v)}
+                            className="text-xs font-medium text-sky-700 hover:text-sky-800"
+                        >
+                            {showAdvancedProduction ? 'Hide Advanced' : 'Show Advanced'}
+                        </button>
+                    </div>
+                    <p className="text-sm text-slate-600">
+                        Default uses ISSA standard for <span className="font-medium">{selectedBuildingType.name}</span>:
+                        <span className="font-semibold"> {selectedBuildingType.productionRate.toLocaleString('en-US')} sqft/hr</span>
+                    </p>
+                    {showAdvancedProduction && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+                            <label className="flex items-center gap-2 text-sm text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={useProductionOverride}
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setUseProductionOverride(checked);
+                                        if (!checked) setProductionRateOverride(selectedBuildingType.productionRate);
+                                    }}
+                                />
+                                Use custom production rate
+                            </label>
+                            {useProductionOverride && (
+                                <div>
+                                    <label className="text-sm font-medium text-slate-700">Custom Production Rate (sqft/hour)</label>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={productionRateOverride ? productionRateOverride.toLocaleString('en-US') : ''}
+                                        onChange={(e) =>
+                                            setProductionRateOverride(Number(e.target.value.replace(/[^0-9]/g, '')) || 0)
+                                        }
+                                        className="mt-1 w-full rounded-xl border border-slate-300 bg-white h-10 px-3 text-sm"
+                                    />
+                                </div>
+                            )}
+                            <div className="pt-1 border-t border-slate-200">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAdvancedTaskRates((v) => !v)}
+                                    className="text-sm font-medium text-sky-700 hover:text-sky-800"
+                                >
+                                    {showAdvancedTaskRates ? 'Hide Task-Level ISSA Overrides' : 'Show Task-Level ISSA Overrides'}
+                                </button>
+                                <p className="mt-1 text-xs text-slate-500">
+                                    Optional: override minutes per 1,000 sqft per task. Leave blank to use ISSA defaults.
+                                </p>
+                            </div>
+                            {showAdvancedTaskRates && (
+                                <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Task-level rates (min / 1,000 sqft)</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setTaskRateOverrides({})}
+                                            className="text-xs font-medium text-slate-600 hover:text-slate-800"
+                                        >
+                                            Reset to ISSA defaults
+                                        </button>
+                                    </div>
+                                    <div className="space-y-2 max-h-72 overflow-auto pr-1">
+                                        {CLEANING_TASKS.map((task) => (
+                                            <div key={task.id} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_150px] gap-2 items-center rounded-lg border border-slate-100 p-2">
+                                                <div>
+                                                    <p className="text-sm font-medium text-slate-800">{task.name}</p>
+                                                    <p className="text-xs text-slate-500">Default ISSA: {task.minutesPer1kSqft} min / 1k sqft</p>
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    value={taskRateOverrides[task.id] ? String(taskRateOverrides[task.id]) : ''}
+                                                    onChange={(e) => {
+                                                        const parsed = Number(e.target.value.replace(/[^0-9.]/g, ''));
+                                                        setTaskRateOverride(task.id, Number.isFinite(parsed) ? parsed : 0);
+                                                    }}
+                                                    placeholder={String(task.minutesPer1kSqft)}
+                                                    className="w-full rounded-lg border border-slate-300 bg-white h-9 px-2.5 text-sm"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </section>
             </div>
 
-            <aside className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4 h-fit xl:sticky xl:top-24">
+            <aside className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4 h-fit lg:sticky lg:top-24">
                 <h3 className="font-semibold text-slate-900">Bid Summary</h3>
                 <div>
                     <p className="text-3xl font-bold text-sky-700">{fmt(results.totalPricePerMonth)}</p>
@@ -443,7 +776,7 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                                             }}
                                             className="block w-full text-center rounded-xl border border-sky-300 text-sky-700 font-semibold py-2.5 hover:bg-sky-50"
                                         >
-                                            Save Bid & Create XIRI OS Account
+                                            Save Bid & Create xiriOS account
                                         </button>
                                         <p className="text-xs text-slate-500">In Nassau, Suffolk, and Queens we can onboard you directly into our managed network.</p>
                                     </>
@@ -456,7 +789,7 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                                         }}
                                         className="block w-full text-center rounded-xl bg-sky-700 text-white font-semibold py-2.5 hover:bg-sky-800"
                                     >
-                                        Save Bid & Create XIRI OS Account
+                                        Save Bid & Create xiriOS account
                                     </button>
                                 )}
                             </>
@@ -504,7 +837,7 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                                         ? 'Saving...'
                                         : captureIntent === 'onboarding'
                                           ? 'Continue To Vendor Onboarding'
-                                          : 'Save Bid & Create XIRI OS Account'}
+                                          : 'Save Bid & Create xiriOS account'}
                                 </button>
                                 <button
                                     type="button"
@@ -530,6 +863,7 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                     </a>
                 )}
             </aside>
-        </div>
+            </div>
+        </>
     );
 }
