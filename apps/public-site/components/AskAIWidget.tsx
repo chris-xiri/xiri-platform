@@ -260,7 +260,7 @@ export function AskAIWidget() {
             {/* ── Floating Action Button ── */}
             <button
                 onClick={toggleOpen}
-                aria-label="Ask AI about XIRI"
+                aria-label="Ask about XIRI"
                 className={`fixed z-50 group transition-all duration-300 ease-out ${
                     isOpen
                         ? 'bottom-[540px] md:bottom-[560px] right-4 md:right-6'
@@ -270,8 +270,8 @@ export function AskAIWidget() {
             >
                 <div className="relative flex items-center gap-2 bg-gradient-to-r from-sky-600 to-sky-500 text-white px-5 py-3 rounded-full shadow-lg shadow-sky-600/30 hover:shadow-xl hover:shadow-sky-600/40 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer">
                     <Sparkles className="w-4 h-4" />
-                    <span className="text-sm font-medium hidden sm:inline">Ask AI about XIRI</span>
-                    <span className="text-sm font-medium sm:hidden">Ask AI</span>
+                    <span className="text-sm font-medium hidden sm:inline">Ask about XIRI</span>
+                    <span className="text-sm font-medium sm:hidden">Ask</span>
                     {/* Subtle pulse indicator */}
                     <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full animate-pulse" />
                 </div>

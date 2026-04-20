@@ -43,6 +43,11 @@ export function middleware(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || '';
     const botInfo = detectAIBot(userAgent);
 
+    // Explicit crawler blocklist
+    if (botInfo?.bot === 'PetalBot' || /huawei/i.test(userAgent)) {
+        return new NextResponse('Forbidden', { status: 403 });
+    }
+
     if (botInfo) {
         // Fire-and-forget: log the bot visit via internal API route
         // We use waitUntil-style approach — the response is returned immediately

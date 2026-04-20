@@ -20,6 +20,8 @@ export default function robots(): MetadataRoute.Robots {
             { userAgent: 'ClaudeBot', allow: '/' },
             { userAgent: 'anthropic-ai', allow: '/' },
             { userAgent: 'Google-Extended', allow: '/' },
+            { userAgent: 'PetalBot', disallow: '/' },
+            { userAgent: 'HuaweiBot', disallow: '/' },
         ],
         sitemap: `${baseUrl}/sitemap.xml`,
     };

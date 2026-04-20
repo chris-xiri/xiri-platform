@@ -289,7 +289,7 @@ export function getMetroDefaults(metroId: string): Partial<CalculatorInputs> | n
 export interface CleaningTask {
     id: string;
     name: string;
-    category: "general" | "restrooms" | "floors" | "specialty";
+    category: "general" | "restrooms" | "floors" | "surfaces" | "prep" | "travel" | "specialty";
     /** Whether this is included by default */
     defaultIncluded: boolean;
     /** ISSA-calibrated minutes per 1,000 sqft */
@@ -311,13 +311,41 @@ export const CLEANING_TASKS: CleaningTask[] = [
     { id: "dust", name: "Dust surfaces & desks", category: "general", defaultIncluded: true, minutesPer1kSqft: 3.0, floorType: "none", description: "Dust all reachable horizontal surfaces, desks, ledges, and countertops", recommendedFrequency: "max" },
     { id: "wipe", name: "Wipe & sanitize surfaces", category: "general", defaultIncluded: true, minutesPer1kSqft: 2.5, floorType: "none", description: "Wipe down and sanitize high-touch surfaces: door handles, light switches, railings", recommendedFrequency: "max" },
     { id: "glass-entry", name: "Clean entry glass & doors", category: "general", defaultIncluded: true, minutesPer1kSqft: 1.0, floorType: "none", description: "Clean and polish entry glass doors and sidelights", recommendedFrequency: "3" },
+    { id: "high-touch-disinfect", name: "High-touch point disinfection", category: "general", defaultIncluded: false, minutesPer1kSqft: 1.8, floorType: "none", description: "Disinfect touch points such as pulls, switches, handles, railings, and shared controls", recommendedFrequency: "max" },
     // Restrooms — every visit
     { id: "restroom-clean", name: "Clean & disinfect restrooms", category: "restrooms", defaultIncluded: true, minutesPer1kSqft: 3.5, floorType: "none", description: "Clean and disinfect toilets, urinals, sinks, mirrors, and partitions", recommendedFrequency: "max" },
     { id: "restroom-restock", name: "Restock restroom supplies", category: "restrooms", defaultIncluded: true, minutesPer1kSqft: 0.75, floorType: "none", description: "Restock paper towels, toilet paper, hand soap, and sanitizer", recommendedFrequency: "max" },
+    { id: "restroom-fixture-detail", name: "Restroom fixture detail cleaning", category: "restrooms", defaultIncluded: false, minutesPer1kSqft: 1.6, floorType: "none", description: "Detail-clean partitions, fixtures, dispensers, and metal hardware", recommendedFrequency: "2" },
     // Floors — every visit (affected by carpet/hard split)
     { id: "vacuum", name: "Vacuum carpeted areas", category: "floors", defaultIncluded: true, minutesPer1kSqft: 4.5, floorType: "carpet", description: "Vacuum all carpeted areas including edges and corners", recommendedFrequency: "max" },
     { id: "mop", name: "Mop hard floors", category: "floors", defaultIncluded: true, minutesPer1kSqft: 5.0, floorType: "hard", description: "Damp mop all hard-surface flooring", recommendedFrequency: "max" },
     { id: "sweep", name: "Sweep hard floors", category: "floors", defaultIncluded: false, minutesPer1kSqft: 3.5, floorType: "hard", description: "Sweep all hard-surface floors before mopping", recommendedFrequency: "max" },
+    { id: "dust-mop", name: "Dust mop hard floors", category: "floors", defaultIncluded: false, minutesPer1kSqft: 2.9, floorType: "hard", description: "Dry dust mop to remove loose debris prior to wet floor steps", recommendedFrequency: "max" },
+    { id: "auto-scrub", name: "Auto-scrub hard floors", category: "floors", defaultIncluded: false, minutesPer1kSqft: 3.2, floorType: "hard", description: "Machine scrub and recover solution on hard floor surfaces", recommendedFrequency: "2" },
+    // Surfaces / detail production tasks
+    { id: "dust-treated", name: "Dust with treated cloth", category: "surfaces", defaultIncluded: false, minutesPer1kSqft: 1.8, floorType: "none", description: "Detailed dusting of horizontal surfaces using treated cloth method", recommendedFrequency: "3" },
+    { id: "wipe-disinfect-surfaces", name: "Damp wipe with disinfectant", category: "surfaces", defaultIncluded: false, minutesPer1kSqft: 2.2, floorType: "none", description: "Damp wipe and disinfect desks, counters, ledges, and contact surfaces", recommendedFrequency: "3" },
+    { id: "detail-crevice", name: "Corners & crevices detail cleaning", category: "surfaces", defaultIncluded: false, minutesPer1kSqft: 2.6, floorType: "none", description: "Detail clean corners and crevices with hand tools or vacuum attachments", recommendedFrequency: "1" },
+    { id: "glass-panel-clean", name: "Interior glass panel / partition cleaning", category: "surfaces", defaultIncluded: false, minutesPer1kSqft: 2.4, floorType: "none", description: "Clean interior glass panels, partitions, and spot-prone glazed surfaces", recommendedFrequency: "1" },
+    { id: "handrail-wipe", name: "Handrail / banister wipe", category: "surfaces", defaultIncluded: false, minutesPer1kSqft: 1.0, floorType: "none", description: "Dust and damp wipe handrails and banisters in circulation zones", recommendedFrequency: "max" },
+    { id: "mat-vacuum", name: "Walk-off mat vacuuming", category: "surfaces", defaultIncluded: false, minutesPer1kSqft: 1.2, floorType: "none", description: "Vacuum and detail entry walk-off mats and adjacent transitions", recommendedFrequency: "max" },
+    { id: "stair-damp-mop", name: "Stairwell damp mopping", category: "surfaces", defaultIncluded: false, minutesPer1kSqft: 2.1, floorType: "none", description: "Damp mop stair treads and landings, including nosing edges", recommendedFrequency: "3" },
+    { id: "elevator-spot-clean", name: "Elevator cab spot cleaning", category: "surfaces", defaultIncluded: false, minutesPer1kSqft: 1.1, floorType: "none", description: "Spot clean elevator glass, control panels, tracks, and interior surfaces", recommendedFrequency: "3" },
+    // Prep / solution handling (modeled as low-overhead per-area adders)
+    { id: "solution-fill-1gal", name: "Solution prep: fill 1-gallon bottles", category: "prep", defaultIncluded: false, minutesPer1kSqft: 0.2, floorType: "none", description: "Mix and fill trigger and quart bottles for route use", recommendedFrequency: "max" },
+    { id: "solution-fill-5gal", name: "Solution prep: fill 5-gallon container", category: "prep", defaultIncluded: false, minutesPer1kSqft: 0.4, floorType: "none", description: "Prepare and fill 5-gallon bucket or solution reservoir", recommendedFrequency: "max" },
+    { id: "solution-fill-20gal", name: "Solution prep: fill 20-gallon tank", category: "prep", defaultIncluded: false, minutesPer1kSqft: 0.8, floorType: "none", description: "Fill larger machine tank/reservoir for route deployment", recommendedFrequency: "3" },
+    { id: "sprayer-empty-rinse", name: "Empty/rinse trigger sprayers", category: "prep", defaultIncluded: false, minutesPer1kSqft: 0.15, floorType: "none", description: "Empty and rinse trigger sprayers to prevent residue and clogging", recommendedFrequency: "3" },
+    { id: "dustmop-cleanup", name: "Post-job dust mop cleanup", category: "prep", defaultIncluded: false, minutesPer1kSqft: 0.3, floorType: "none", description: "Shake out and refresh dust mop after route", recommendedFrequency: "max" },
+    { id: "mopbucket-cleanup", name: "Post-job mop bucket/wringer cleanup", category: "prep", defaultIncluded: false, minutesPer1kSqft: 0.4, floorType: "none", description: "Clean and rinse mop bucket and wringer after use", recommendedFrequency: "max" },
+    { id: "vacuum-cleanup", name: "Post-job vacuum cleanup", category: "prep", defaultIncluded: false, minutesPer1kSqft: 0.3, floorType: "none", description: "Empty and wipe vacuum unit and attachments", recommendedFrequency: "max" },
+    { id: "change-dustmop", name: "Change dust mop head", category: "prep", defaultIncluded: false, minutesPer1kSqft: 0.2, floorType: "none", description: "Change out dust mop head or disposable pad", recommendedFrequency: "max" },
+    { id: "change-wetmop", name: "Change wet mop head", category: "prep", defaultIncluded: false, minutesPer1kSqft: 0.2, floorType: "none", description: "Swap wet mop head during route as needed", recommendedFrequency: "max" },
+    { id: "cord-wrap", name: "Equipment cord wrap/reset", category: "prep", defaultIncluded: false, minutesPer1kSqft: 0.1, floorType: "none", description: "Secure machine cords and reset equipment after service", recommendedFrequency: "max" },
+    // Travel / circulation overhead adders
+    { id: "travel-walk-slow", name: "Travel overhead: slow interior walking", category: "travel", defaultIncluded: false, minutesPer1kSqft: 0.9, floorType: "none", description: "Interior walking/travel overhead for fragmented layouts", recommendedFrequency: "max" },
+    { id: "travel-walk-standard", name: "Travel overhead: standard walking", category: "travel", defaultIncluded: false, minutesPer1kSqft: 0.6, floorType: "none", description: "Typical circulation/travel overhead between areas", recommendedFrequency: "max" },
+    { id: "travel-machine-rider", name: "Travel overhead: rider machine movement", category: "travel", defaultIncluded: false, minutesPer1kSqft: 0.4, floorType: "none", description: "Rider machine routing overhead in large-format facilities", recommendedFrequency: "max" },
     // Specialty / Add-ons — periodic
     { id: "breakroom", name: "Kitchen / breakroom cleaning", category: "specialty", defaultIncluded: false, minutesPer1kSqft: 2.5, floorType: "none", description: "Clean breakroom counters, tables, sinks, and appliance exteriors", recommendedFrequency: "3" },
     { id: "glass-interior", name: "Interior glass & partitions", category: "specialty", defaultIncluded: false, minutesPer1kSqft: 2.0, floorType: "none", description: "Clean interior glass partitions, conference room glass, and mirrors", recommendedFrequency: "1" },
@@ -331,6 +359,9 @@ export const TASK_CATEGORIES = [
     { id: "general" as const, label: "General Cleaning", icon: "🧹" },
     { id: "restrooms" as const, label: "Restrooms", icon: "🚻" },
     { id: "floors" as const, label: "Floors", icon: "🧽" },
+    { id: "surfaces" as const, label: "Surfaces & Detail", icon: "🪟" },
+    { id: "prep" as const, label: "Setup & Refill", icon: "🧪" },
+    { id: "travel" as const, label: "Travel & Movement", icon: "🚶" },
     { id: "specialty" as const, label: "Specialty / Add-ons", icon: "✨" },
 ];
 
@@ -827,9 +858,11 @@ export function calculate(inputs: CalculatorInputs, rooms?: RoomScope[]): Calcul
     totalMonthlyMinutes *= buildingType.complexityMultiplier;
     maxFreqMinutesPerVisit *= buildingType.complexityMultiplier;
 
-    const totalHoursPerMonth = Math.round((totalMonthlyMinutes / 60) * 100) / 100;
+    const rawTotalHoursPerMonth = totalMonthlyMinutes / 60;
+    const minTotalHoursPerMonth = bidVisitsPerMonth > 0 ? bidVisitsPerMonth * 1 : 0;
+    const totalHoursPerMonth = Math.round(Math.max(rawTotalHoursPerMonth, minTotalHoursPerMonth) * 100) / 100;
     const hoursPerVisit = bidVisitsPerMonth > 0
-        ? Math.round((maxFreqMinutesPerVisit / 60) * 100) / 100
+        ? Math.round(Math.max(1, totalHoursPerMonth / bidVisitsPerMonth) * 100) / 100
         : 0;
 
     // --- Cost Calculation ---

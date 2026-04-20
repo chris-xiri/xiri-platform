@@ -8,6 +8,7 @@ import {
     FREQUENCIES,
     ROOM_TYPES,
     STATES,
+    TASK_CATEGORIES,
     calculate,
     getDefaultRooms,
     getStateDefaults,
@@ -36,6 +37,8 @@ export interface ContractorCapturePayload {
 const SERVED_COUNTIES = ['nassau', 'suffolk', 'queens'] as const;
 type ServedCounty = (typeof SERVED_COUNTIES)[number] | 'other' | 'unknown';
 const FEATURED_BUILDING_TYPES = 6;
+const LEAD_LOCKED_OVERHEAD_PERCENT = 12;
+const LEAD_LOCKED_PROFIT_PERCENT = 25;
 
 function isServedArea(state: string, county: ServedCounty): boolean {
     return state === 'NY' && SERVED_COUNTIES.includes(county as (typeof SERVED_COUNTIES)[number]);
@@ -79,6 +82,13 @@ interface WizardParsedValues {
     sqft?: number;
     frequency?: Frequency;
     productionRate?: number;
+    replaceRooms?: boolean;
+    rooms?: Array<{
+        roomTypeId?: string;
+        sqft?: number;
+        tasks?: string[];
+    }>;
+    taskMinutesPer1kOverrides?: Record<string, number>;
 }
 
 const BUILDING_TYPE_ALIASES: Array<{ id: string; patterns: RegExp[] }> = [
@@ -91,7 +101,7 @@ const BUILDING_TYPE_ALIASES: Array<{ id: string; patterns: RegExp[] }> = [
     { id: 'church', patterns: [/\bchurch\b/i, /\bworship\b/i, /\btemple\b/i, /\bsynagogue\b/i, /\bmosque\b/i] },
     { id: 'gym', patterns: [/\bgym\b/i, /\bfitness\b/i, /\bhealth\s*club\b/i] },
     { id: 'bank', patterns: [/\bbank\b/i, /\bfinancial\b/i, /\bcredit\s*union\b/i] },
-    { id: 'daycare', patterns: [/\bdaycare\b/i, /\bchild\s*care\b/i, /\bpreschool\b/i] },
+    { id: 'daycare', patterns: [/\bdaycare\b/i, /\bday\s*care\b/i, /\bchild\s*care\b/i, /\bchildcare\b/i, /\bpreschool\b/i] },
     { id: 'hotel', patterns: [/\bhotel\b/i, /\bhospitality\b/i, /\bmotel\b/i] },
     { id: 'auto-dealer', patterns: [/\bauto\s*dealership\b/i, /\bdealership\b/i, /\bcar\s*dealer\b/i] },
     { id: 'salon', patterns: [/\bsalon\b/i, /\bspa\b/i, /\bbarber\b/i, /\bbeauty\b/i] },
@@ -100,7 +110,8 @@ const BUILDING_TYPE_ALIASES: Array<{ id: string; patterns: RegExp[] }> = [
 ];
 
 function parseWizardPrompt(prompt: string): WizardParsedValues {
-    const text = prompt.toLowerCase();
+    const raw = prompt.trim();
+    const text = raw.toLowerCase();
     const out: WizardParsedValues = {};
 
     // Building type (explicit alias map first for deterministic matching)
@@ -128,12 +139,33 @@ function parseWizardPrompt(prompt: string): WizardParsedValues {
         }
     }
 
-    // State
+    // State: pass 1 (full state name), pass 2 (explicit abbreviation)
     for (const s of STATES) {
-        const codePattern = new RegExp(`\\b${s.code.toLowerCase()}\\b`, 'i');
-        if (text.includes(s.name.toLowerCase()) || codePattern.test(text)) {
+        if (text.includes(s.name.toLowerCase())) {
             out.stateCode = s.code;
             break;
+        }
+    }
+    if (!out.stateCode) {
+        // Prefer explicit uppercase abbreviations (e.g. "NJ", "NY")
+        const upperTokens = raw.match(/\b[A-Z]{2}\b/g) ?? [];
+        for (const token of upperTokens) {
+            const state = STATES.find((s) => s.code === token);
+            if (state) {
+                out.stateCode = state.code;
+                break;
+            }
+        }
+    }
+    if (!out.stateCode) {
+        // Allow lowercase abbreviation only when explicitly labeled as state
+        const labeledCode =
+            text.match(/\bstate\s*[:\-]?\s*([a-z]{2})\b/i)?.[1] ||
+            text.match(/\(([a-z]{2})\)/i)?.[1];
+        if (labeledCode) {
+            const upper = labeledCode.toUpperCase();
+            const state = STATES.find((s) => s.code === upper);
+            if (state) out.stateCode = state.code;
         }
     }
 
@@ -179,18 +211,22 @@ function parseWizardPrompt(prompt: string): WizardParsedValues {
 interface UnifiedCalculatorProps {
     mode?: UnifiedCalculatorMode;
     onContractorCapture?: (payload: ContractorCapturePayload) => Promise<void> | void;
+    onAiParsePrompt?: (prompt: string) => Promise<Record<string, unknown> | null>;
 }
 
-export function UnifiedCalculator({ mode = 'client', onContractorCapture }: UnifiedCalculatorProps) {
+export function UnifiedCalculator({ mode = 'client', onContractorCapture, onAiParsePrompt }: UnifiedCalculatorProps) {
     const [buildingTypeId, setBuildingTypeId] = useState(DEFAULT_INPUTS.buildingTypeId);
     const [stateCode, setStateCode] = useState('NY');
     const [county, setCounty] = useState<ServedCounty>('unknown');
     const [sqft, setSqft] = useState(10000);
     const [frequency, setFrequency] = useState<Frequency>('5');
+    const [overheadPercent, setOverheadPercent] = useState(LEAD_LOCKED_OVERHEAD_PERCENT);
+    const [profitPercent, setProfitPercent] = useState(LEAD_LOCKED_PROFIT_PERCENT);
 
     const [rooms, setRooms] = useState<RoomScope[]>([]);
     const prevSqftRef = useRef(10000);
     const initializedSqftRef = useRef(false);
+    const syncingRoomsFromSqftRef = useRef(false);
 
     const [showCaptureForm, setShowCaptureForm] = useState(false);
     const [contactName, setContactName] = useState('');
@@ -207,10 +243,23 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
     const [taskRateOverrides, setTaskRateOverrides] = useState<Record<string, number>>({});
     const [wizardPrompt, setWizardPrompt] = useState('');
     const [wizardStatus, setWizardStatus] = useState('');
-    const [wizardNudges, setWizardNudges] = useState<string[]>([]);
+    const [wizardNudges, setWizardNudges] = useState<string[]>([
+        '12,000 sqft medical clinic in Queens, New York cleaned 5x/week.',
+        'Replace scope with: lobby 1200 sqft, offices 7000 sqft, restrooms 1200 sqft, hallways 2600 sqft.',
+        'Use slower restroom cleaning and faster office dusting based on our crew workflow.',
+    ]);
     const [showStickySummary, setShowStickySummary] = useState(false);
+    const [taskSearchByRoom, setTaskSearchByRoom] = useState<Record<string, string>>({});
+    const [taskCategoryByRoom, setTaskCategoryByRoom] = useState<Record<string, string>>({});
+    const [selectedOnlyByRoom, setSelectedOnlyByRoom] = useState<Record<string, boolean>>({});
+    const [showManualSections, setShowManualSections] = useState(false);
+    const [taskRateSearch, setTaskRateSearch] = useState('');
+    const [taskRateCategory, setTaskRateCategory] = useState<'all' | 'overridden' | string>('all');
 
     const safeSqft = Math.max(100, sqft || 0);
+    const effectiveOverheadPercent = mode === 'client' ? LEAD_LOCKED_OVERHEAD_PERCENT : overheadPercent;
+    const effectiveProfitPercent = mode === 'client' ? LEAD_LOCKED_PROFIT_PERCENT : profitPercent;
+    const roomTotalSqft = useMemo(() => rooms.reduce((sum, r) => sum + (r.sqft || 0), 0), [rooms]);
     const selectedBuildingType = useMemo(
         () => BUILDING_TYPES.find((b) => b.id === buildingTypeId) ?? BUILDING_TYPES[0],
         [buildingTypeId]
@@ -220,10 +269,11 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
         setRooms(getDefaultRooms(buildingTypeId, safeSqft));
         initializedSqftRef.current = true;
         prevSqftRef.current = safeSqft;
+        syncingRoomsFromSqftRef.current = false;
         if (!useProductionOverride) {
             setProductionRateOverride(selectedBuildingType.productionRate);
         }
-    }, [buildingTypeId, safeSqft, selectedBuildingType.productionRate, useProductionOverride]);
+    }, [buildingTypeId, selectedBuildingType.productionRate, useProductionOverride]);
 
     useEffect(() => {
         if (!initializedSqftRef.current || rooms.length === 0) {
@@ -231,16 +281,47 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
         }
         const prev = prevSqftRef.current;
         if (prev <= 0 || prev === safeSqft) return;
+        syncingRoomsFromSqftRef.current = true;
         setRooms((prevRooms) => {
             const total = prevRooms.reduce((sum, r) => sum + (r.sqft || 0), 0);
             if (total <= 0) return prevRooms;
-            return prevRooms.map((r) => ({
+            if (total === safeSqft) return prevRooms;
+
+            const weighted = prevRooms.map((r) => ((r.sqft || 0) / total) * safeSqft);
+            const floors = weighted.map((w) => Math.max(0, Math.floor(w)));
+            let remaining = Math.max(0, safeSqft - floors.reduce((sum, v) => sum + v, 0));
+
+            const order = weighted
+                .map((w, idx) => ({ idx, frac: w - Math.floor(w) }))
+                .sort((a, b) => b.frac - a.frac);
+            for (let i = 0; i < order.length && remaining > 0; i += 1) {
+                floors[order[i].idx] += 1;
+                remaining -= 1;
+            }
+
+            return prevRooms.map((r, idx) => ({
                 ...r,
-                sqft: Math.max(0, Math.round(((r.sqft || 0) / total) * safeSqft)),
+                sqft: floors[idx],
             }));
         });
         prevSqftRef.current = safeSqft;
     }, [safeSqft, rooms.length]);
+
+    useEffect(() => {
+        if (!initializedSqftRef.current) return;
+        if (roomTotalSqft <= 0) return;
+        if (syncingRoomsFromSqftRef.current) {
+            if (roomTotalSqft === safeSqft) {
+                syncingRoomsFromSqftRef.current = false;
+            }
+            return;
+        }
+        if (roomTotalSqft !== safeSqft) {
+            const nextSqft = roomTotalSqft;
+            prevSqftRef.current = nextSqft;
+            setSqft(nextSqft);
+        }
+    }, [roomTotalSqft, safeSqft]);
 
     useEffect(() => {
         const onScroll = () => setShowStickySummary(window.scrollY > 280);
@@ -254,6 +335,24 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
         () => Object.values(taskRateOverrides).some((v) => Number.isFinite(v) && v > 0),
         [taskRateOverrides]
     );
+    const taskRateCountsByCategory = useMemo(() => {
+        const counts: Record<string, number> = { all: CLEANING_TASKS.length, overridden: 0 };
+        for (const cat of TASK_CATEGORIES) counts[cat.id] = 0;
+        for (const task of CLEANING_TASKS) {
+            counts[task.category] = (counts[task.category] || 0) + 1;
+            if ((taskRateOverrides[task.id] || 0) > 0) counts.overridden += 1;
+        }
+        return counts;
+    }, [taskRateOverrides]);
+    const filteredTaskRates = useMemo(() => {
+        const q = taskRateSearch.trim().toLowerCase();
+        return CLEANING_TASKS.filter((task) => {
+            if (taskRateCategory === 'overridden' && !(taskRateOverrides[task.id] > 0)) return false;
+            if (taskRateCategory !== 'all' && taskRateCategory !== 'overridden' && task.category !== taskRateCategory) return false;
+            if (!q) return true;
+            return task.name.toLowerCase().includes(q) || task.id.toLowerCase().includes(q) || task.category.toLowerCase().includes(q);
+        });
+    }, [taskRateSearch, taskRateCategory, taskRateOverrides]);
     const inputs = useMemo(
         () => ({
             ...DEFAULT_INPUTS,
@@ -261,10 +360,12 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
             buildingTypeId,
             sqft: safeSqft,
             frequency,
-            productionRateOverride: useProductionOverride && productionRateOverride > 0 ? productionRateOverride : undefined,
+            overheadPercent: effectiveOverheadPercent,
+            profitPercent: effectiveProfitPercent,
+            productionRateOverride: mode === 'contractor' && useProductionOverride && productionRateOverride > 0 ? productionRateOverride : undefined,
             taskMinutesPer1kOverrides: hasTaskRateOverrides ? taskRateOverrides : undefined,
         }),
-        [stateDefaults, buildingTypeId, safeSqft, frequency, useProductionOverride, productionRateOverride, hasTaskRateOverrides, taskRateOverrides]
+        [mode, stateDefaults, buildingTypeId, safeSqft, frequency, effectiveOverheadPercent, effectiveProfitPercent, useProductionOverride, productionRateOverride, hasTaskRateOverrides, taskRateOverrides]
     );
 
     const results = useMemo(() => calculate(inputs, rooms), [inputs, rooms]);
@@ -323,10 +424,43 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
             maximumFractionDigits: 0,
         }).format(n || 0);
 
-    const roomTotalSqft = useMemo(() => rooms.reduce((sum, r) => sum + (r.sqft || 0), 0), [rooms]);
-
     const setRoomSqft = (roomId: string, value: number) => {
         setRooms((prev) => prev.map((r) => (r.id === roomId ? { ...r, sqft: Math.max(0, value) } : r)));
+    };
+
+    const addRoom = (roomTypeId = 'custom') => {
+        const roomType = ROOM_TYPES.find((r) => r.id === roomTypeId) ?? ROOM_TYPES.find((r) => r.id === 'custom') ?? ROOM_TYPES[0];
+        const roomId = `room-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const defaultSqft = Math.max(100, Math.round(safeSqft / Math.max(rooms.length + 1, 1)));
+        setRooms((prev) => [
+            ...prev,
+            {
+                id: roomId,
+                roomTypeId: roomType.id,
+                sqft: defaultSqft,
+                tasks: [...roomType.defaultTasks],
+            },
+        ]);
+    };
+
+    const removeRoom = (roomId: string) => {
+        setRooms((prev) => (prev.length <= 1 ? prev : prev.filter((r) => r.id !== roomId)));
+    };
+
+    const setRoomType = (roomId: string, roomTypeId: string) => {
+        const roomType = ROOM_TYPES.find((r) => r.id === roomTypeId);
+        if (!roomType) return;
+        setRooms((prev) =>
+            prev.map((r) =>
+                r.id === roomId
+                    ? {
+                        ...r,
+                        roomTypeId: roomType.id,
+                        tasks: [...roomType.defaultTasks],
+                    }
+                    : r
+            )
+        );
     };
 
     const toggleRoomTask = (roomId: string, taskId: string) => {
@@ -338,6 +472,31 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                 return { ...r, tasks: nextTasks };
             })
         );
+    };
+
+    const setTaskSearch = (roomId: string, value: string) => {
+        setTaskSearchByRoom((prev) => ({ ...prev, [roomId]: value }));
+    };
+    const setTaskCategory = (roomId: string, value: string) => {
+        setTaskCategoryByRoom((prev) => ({ ...prev, [roomId]: value }));
+    };
+    const setSelectedOnly = (roomId: string, value: boolean) => {
+        setSelectedOnlyByRoom((prev) => ({ ...prev, [roomId]: value }));
+    };
+
+    const normalizeWizardRoom = (room: NonNullable<WizardParsedValues['rooms']>[number], fallbackSqft: number): RoomScope => {
+        const roomTypeId = ROOM_TYPES.some((r) => r.id === room.roomTypeId) ? (room.roomTypeId as string) : 'custom';
+        const roomType = ROOM_TYPES.find((r) => r.id === roomTypeId) ?? ROOM_TYPES.find((r) => r.id === 'custom') ?? ROOM_TYPES[0];
+        const validTasks = Array.isArray(room.tasks)
+            ? room.tasks.filter((taskId) => CLEANING_TASKS.some((task) => task.id === taskId))
+            : [];
+        const baseSqft = Number.isFinite(room.sqft) && (room.sqft as number) > 0 ? Math.round(room.sqft as number) : fallbackSqft;
+        return {
+            id: `room-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+            roomTypeId,
+            sqft: Math.max(0, baseSqft),
+            tasks: validTasks.length > 0 ? validTasks : [...roomType.defaultTasks],
+        };
     };
 
     const saveCapture = async (): Promise<boolean> => {
@@ -358,8 +517,29 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
         }
     };
 
-    const applyWizardPrompt = () => {
-        const parsed = parseWizardPrompt(wizardPrompt);
+    const applyWizardPrompt = async () => {
+        const parsedLocal = parseWizardPrompt(wizardPrompt);
+        let parsed: WizardParsedValues = { ...parsedLocal };
+
+        if (onAiParsePrompt) {
+            try {
+                const parsedAI = await onAiParsePrompt(wizardPrompt);
+                if (parsedAI) {
+                    const ai = parsedAI as Partial<WizardParsedValues>;
+                    parsed = {
+                        ...ai,
+                        ...parsedLocal, // deterministic parser wins when both are present
+                        // These are usually only present from AI and should still flow through.
+                        rooms: ai.rooms ?? parsedLocal.rooms,
+                        taskMinutesPer1kOverrides:
+                            ai.taskMinutesPer1kOverrides ?? parsedLocal.taskMinutesPer1kOverrides,
+                    };
+                }
+            } catch {
+                // keep local parser results only
+            }
+        }
+
         let updates = 0;
         const missing: string[] = [];
         if (parsed.buildingTypeId) {
@@ -392,15 +572,28 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
         } else {
             missing.push('cleaning frequency');
         }
-        if (parsed.productionRate) {
+        if (mode === 'contractor' && parsed.productionRate) {
             setUseProductionOverride(true);
             setShowAdvancedProduction(true);
             setProductionRateOverride(parsed.productionRate);
             updates++;
         }
+        if (mode === 'contractor' && parsed.taskMinutesPer1kOverrides && Object.keys(parsed.taskMinutesPer1kOverrides).length > 0) {
+            setTaskRateOverrides((prev) => ({ ...prev, ...parsed.taskMinutesPer1kOverrides }));
+            setShowAdvancedProduction(true);
+            setShowAdvancedTaskRates(true);
+            updates++;
+        }
+        if (parsed.rooms && parsed.rooms.length > 0) {
+            const fallbackSqft = Math.max(100, Math.round(safeSqft / Math.max(parsed.rooms.length, 1)));
+            const normalizedRooms = parsed.rooms.map((room) => normalizeWizardRoom(room, fallbackSqft));
+            setRooms((prev) => (parsed.replaceRooms ? normalizedRooms : [...prev, ...normalizedRooms]));
+            updates++;
+        }
 
         if (updates > 0) {
             setWizardStatus(`Great start. I updated ${updates} field${updates > 1 ? 's' : ''}.`);
+            setShowManualSections(true);
             const nudgePool: string[] = [];
             if (missing.includes('building type')) {
                 nudgePool.push('What type of building is it? (office, medical, school, retail...)');
@@ -414,13 +607,16 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
             if (missing.includes('cleaning frequency')) {
                 nudgePool.push('How often should it be cleaned? (example: 5x/week)');
             }
+            if (!parsed.rooms || parsed.rooms.length === 0) {
+                nudgePool.push('If you know the layout, list zones like lobby 1,500 sqft, offices 6,000 sqft, restrooms 1,000 sqft.');
+            }
             setWizardNudges(nudgePool.slice(0, 3));
         } else {
             setWizardStatus('I can help fill this out. Give me a little more detail and I’ll do the rest.');
             setWizardNudges([
                 'Tell me your building type and square footage.',
                 'Add the state and cleaning frequency (like 3x/week or daily).',
-                'Optional: include a target production rate in sqft/hour.',
+                'Optional: include room-by-room zones and any task-level ISSA overrides.',
             ]);
         }
     };
@@ -448,9 +644,9 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
             )}
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
             <div className="space-y-4">
-                <section className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
-                    <h3 className="font-semibold text-slate-900">AI Wizard</h3>
-                    <p className="text-xs text-slate-500">Describe what you know. I’ll fill what I can and ask for only what’s missing.</p>
+                <section className="rounded-2xl border border-slate-300 bg-white p-4 space-y-2 shadow-sm">
+                    <h3 className="font-semibold text-slate-900">Quick Fill</h3>
+                    <p className="text-xs text-slate-500">Fastest way to quote: describe the space once and I’ll pre-fill the details for you.</p>
                     <textarea
                         value={wizardPrompt}
                         onChange={(e) => setWizardPrompt(e.target.value)}
@@ -463,7 +659,7 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                             onClick={applyWizardPrompt}
                             className="rounded-lg bg-sky-700 text-white text-sm font-semibold px-3.5 py-2 hover:bg-sky-800"
                         >
-                            Auto-Fill With AI
+                            Quick Fill Now
                         </button>
                         {wizardStatus && <p className="text-xs text-slate-600">{wizardStatus}</p>}
                     </div>
@@ -483,7 +679,27 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                     )}
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-4">
+                <section className="rounded-2xl border border-slate-300 bg-white p-4 shadow-sm">
+                    <div className="flex items-center justify-between gap-3">
+                        <div>
+                            <h3 className="font-semibold text-slate-900">Manual Details</h3>
+                            <p className="text-xs text-slate-500">
+                                Start with Quick Fill first, then open manual controls only if you need to adjust the quote.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowManualSections((v) => !v)}
+                            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                            {showManualSections ? 'Hide Details' : 'Review / Edit Details'}
+                        </button>
+                    </div>
+                </section>
+
+                {showManualSections && (
+                <>
+                <section className="rounded-2xl border border-slate-300 bg-white p-4 shadow-sm">
                     <h3 className="font-semibold text-slate-900 mb-3">Building Type</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
                         {BUILDING_TYPES.slice(0, FEATURED_BUILDING_TYPES).map((b) => (
@@ -529,7 +745,58 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                     )}
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+                {mode === 'contractor' && (
+                <section className="rounded-2xl border border-slate-300 bg-white p-4 space-y-3 shadow-sm">
+                    <h3 className="font-semibold text-slate-900">Pricing Assumptions</h3>
+                    <p className="text-xs text-slate-500">
+                        Defaults: {LEAD_LOCKED_OVERHEAD_PERCENT}% overhead and {LEAD_LOCKED_PROFIT_PERCENT}% profit.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <span className="text-xs uppercase tracking-wide text-slate-500">Overhead %</span>
+                            <input
+                                type="range"
+                                min={0}
+                                max={40}
+                                step={1}
+                                value={overheadPercent}
+                                onChange={(e) => setOverheadPercent(Number(e.target.value))}
+                                className="mt-2 w-full"
+                            />
+                            <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={overheadPercent}
+                                onChange={(e) => setOverheadPercent(Math.max(0, Number(e.target.value) || 0))}
+                                className="mt-2 w-full rounded-lg border border-slate-300 bg-white h-9 px-2 text-sm"
+                            />
+                        </label>
+                        <label className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <span className="text-xs uppercase tracking-wide text-slate-500">Profit %</span>
+                            <input
+                                type="range"
+                                min={0}
+                                max={50}
+                                step={1}
+                                value={profitPercent}
+                                onChange={(e) => setProfitPercent(Number(e.target.value))}
+                                className="mt-2 w-full"
+                            />
+                            <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={profitPercent}
+                                onChange={(e) => setProfitPercent(Math.max(0, Number(e.target.value) || 0))}
+                                className="mt-2 w-full rounded-lg border border-slate-300 bg-white h-9 px-2 text-sm"
+                            />
+                        </label>
+                    </div>
+                </section>
+                )}
+
+                <section className="rounded-2xl border border-slate-300 bg-white p-4 space-y-3 shadow-sm">
                     <h3 className="font-semibold text-slate-900">Size & Frequency</h3>
                     <div>
                         <label className="text-xs uppercase tracking-wide text-slate-500">State</label>
@@ -591,22 +858,96 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                     )}
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+                <section className="rounded-2xl border border-slate-300 bg-white p-4 space-y-3 shadow-sm">
                     <div className="flex items-center justify-between">
                         <h3 className="font-semibold text-slate-900">Cleaning Scope</h3>
-                        <span className="text-xs rounded-full bg-sky-100 text-sky-800 px-2 py-0.5">{rooms.length} rooms</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs rounded-full bg-sky-100 text-sky-800 px-2 py-0.5">{rooms.length} rooms</span>
+                            <details className="relative">
+                                <summary className="list-none cursor-pointer text-xs rounded-lg border border-sky-300 text-sky-700 px-2.5 py-1 hover:bg-sky-50 flex items-center gap-1">
+                                    <span>+ Add Zone</span>
+                                    <span aria-hidden>▾</span>
+                                </summary>
+                                <div className="absolute right-0 mt-1 z-20 w-[min(92vw,560px)] rounded-xl border border-slate-200 bg-white p-2 shadow-lg grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                    {ROOM_TYPES.map((rt) => (
+                                        <button
+                                            key={rt.id}
+                                            type="button"
+                                            onClick={() => addRoom(rt.id)}
+                                            className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-left flex items-start gap-2 text-slate-700 hover:border-slate-300"
+                                        >
+                                            <span className="text-sm">{rt.icon}</span>
+                                            <span className="whitespace-normal leading-tight">{rt.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </details>
+                        </div>
                     </div>
                     <div className="space-y-2">
-                        {rooms.map((room) => {
+                        {rooms.map((room, roomIndex) => {
                             const roomType = ROOM_TYPES.find((r) => r.id === room.roomTypeId);
                             const selectedTasks = CLEANING_TASKS.filter((t) => room.tasks.includes(t.id));
+                            const taskSearch = (taskSearchByRoom[room.id] || '').trim().toLowerCase();
+                            const categoryFilter = taskCategoryByRoom[room.id] || 'all';
+                            const selectedOnly = selectedOnlyByRoom[room.id] || false;
+                            const visibleTasks = CLEANING_TASKS.filter((task) => {
+                                if (categoryFilter !== 'all' && task.category !== categoryFilter) return false;
+                                if (selectedOnly && !room.tasks.includes(task.id)) return false;
+                                if (taskSearch) {
+                                    const q = taskSearch.toLowerCase();
+                                    if (!task.name.toLowerCase().includes(q) && !task.id.toLowerCase().includes(q)) return false;
+                                }
+                                return true;
+                            });
                             return (
-                                <div key={room.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                <div
+                                    key={room.id}
+                                    className={`rounded-xl border p-3 ${
+                                        roomIndex % 2 === 0
+                                            ? 'border-slate-300 bg-white'
+                                            : 'border-slate-300 bg-slate-50'
+                                    }`}
+                                >
                                     <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
                                         <div className="flex items-start gap-2">
                                             <span className="mt-0.5 text-base leading-none">{roomType?.icon || '•'}</span>
                                             <div>
-                                                <p className="text-sm font-medium text-slate-900">{roomType?.name || room.roomTypeId}</p>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <details className="group relative">
+                                                        <summary className="list-none cursor-pointer text-sm rounded-md border border-slate-300 bg-white min-h-8 px-2 py-1 text-slate-800 flex items-center gap-2 min-w-[230px] sm:min-w-[280px]">
+                                                            <span>{roomType?.icon ?? '🧩'}</span>
+                                                            <span className="whitespace-normal leading-tight">{roomType?.name ?? 'Select zone type'}</span>
+                                                            <span className="ml-auto text-slate-500">▾</span>
+                                                        </summary>
+                                                        <div className="absolute mt-1 z-20 w-[min(92vw,560px)] rounded-xl border border-slate-200 bg-white p-2 shadow-lg grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                                            {ROOM_TYPES.map((rt) => (
+                                                                <button
+                                                                    key={rt.id}
+                                                                    type="button"
+                                                                    onClick={() => setRoomType(room.id, rt.id)}
+                                                                    className={`rounded-lg border px-2 py-1.5 text-xs text-left flex items-start gap-2 ${
+                                                                        room.roomTypeId === rt.id
+                                                                            ? 'border-sky-500 bg-sky-50 text-sky-800'
+                                                                            : 'border-slate-200 text-slate-700 hover:border-slate-300'
+                                                                    }`}
+                                                                >
+                                                                    <span className="text-sm">{rt.icon}</span>
+                                                                    <span className="whitespace-normal leading-tight">{rt.name}</span>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </details>
+                                                    {rooms.length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeRoom(room.id)}
+                                                            className="text-xs rounded-md border border-rose-300 text-rose-700 px-2 py-1 hover:bg-rose-50"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    )}
+                                                </div>
                                                 <p className="text-xs text-slate-500">{room.tasks.length} tasks selected</p>
                                             </div>
                                         </div>
@@ -621,7 +962,7 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                                             <span className="text-xs text-slate-500">sqft</span>
                                         </div>
                                     </div>
-                                    <details className="mt-3 rounded-lg border border-slate-200 bg-white p-2">
+                                    <details className="mt-3 rounded-lg border border-slate-300 bg-slate-50 p-2">
                                         <summary className="cursor-pointer text-xs font-medium text-sky-700 flex items-center justify-between">
                                             <span>Task Checklist</span>
                                             <span className="text-slate-500 flex items-center gap-1">
@@ -629,11 +970,47 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                                                 <span aria-hidden>▾</span>
                                             </span>
                                         </summary>
-                                        <div className="mt-2 space-y-1 max-h-48 overflow-auto">
-                                            {CLEANING_TASKS.map((task) => {
+                                        <div className="mt-2">
+                                            <input
+                                                type="text"
+                                                value={taskSearchByRoom[room.id] || ''}
+                                                onChange={(e) => setTaskSearch(room.id, e.target.value)}
+                                                placeholder="Search tasks..."
+                                                className="w-full rounded-md border border-slate-300 bg-white h-8 px-2.5 text-xs text-slate-700"
+                                            />
+                                        </div>
+                                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => setTaskCategory(room.id, 'all')}
+                                                className={`text-[11px] rounded-full px-2 py-1 border ${categoryFilter === 'all' ? 'bg-sky-100 border-sky-300 text-sky-800' : 'bg-white border-slate-300 text-slate-600'}`}
+                                            >
+                                                All
+                                            </button>
+                                            {TASK_CATEGORIES.map((cat) => (
+                                                <button
+                                                    key={cat.id}
+                                                    type="button"
+                                                    onClick={() => setTaskCategory(room.id, cat.id)}
+                                                    className={`text-[11px] rounded-full px-2 py-1 border ${categoryFilter === cat.id ? 'bg-sky-100 border-sky-300 text-sky-800' : 'bg-white border-slate-300 text-slate-600'}`}
+                                                >
+                                                    {cat.label}
+                                                </button>
+                                            ))}
+                                            <label className="ml-auto flex items-center gap-1 text-[11px] text-slate-600">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedOnly}
+                                                    onChange={(e) => setSelectedOnly(room.id, e.target.checked)}
+                                                />
+                                                Selected only
+                                            </label>
+                                        </div>
+                                        <div className="mt-2 space-y-1 max-h-48 overflow-auto rounded-md border border-slate-200 bg-white p-1.5">
+                                            {visibleTasks.map((task) => {
                                                 const checked = room.tasks.includes(task.id);
                                                 return (
-                                                    <label key={task.id} className="flex items-center gap-2 px-1.5 py-1 text-sm text-slate-700">
+                                                    <label key={task.id} className="flex items-center gap-2 px-1.5 py-1 text-sm text-slate-700 rounded hover:bg-slate-50">
                                                         <input
                                                             type="checkbox"
                                                             checked={checked}
@@ -643,6 +1020,9 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                                                     </label>
                                                 );
                                             })}
+                                            {visibleTasks.length === 0 && (
+                                                <p className="px-1.5 py-2 text-xs text-slate-500">No matching tasks.</p>
+                                            )}
                                             <div className="pt-2 border-t border-slate-100">
                                                 <p className="text-xs text-slate-500">Selected:</p>
                                                 <p className="text-xs text-slate-700">
@@ -660,7 +1040,8 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                     </p>
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+                {mode === 'contractor' && (
+                <section className="rounded-2xl border border-slate-300 bg-white p-4 space-y-3 shadow-sm">
                     <div className="flex items-center justify-between">
                         <h3 className="font-semibold text-slate-900">Production Rate</h3>
                         <button
@@ -727,8 +1108,43 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                                             Reset to ISSA defaults
                                         </button>
                                     </div>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                                        <input
+                                            type="text"
+                                            value={taskRateSearch}
+                                            onChange={(e) => setTaskRateSearch(e.target.value)}
+                                            placeholder="Search task-level rates..."
+                                            className="w-full rounded-lg border border-slate-300 bg-white h-9 px-2.5 text-sm"
+                                        />
+                                        <div className="flex items-center gap-1.5 flex-wrap justify-start lg:justify-end">
+                                            <button
+                                                type="button"
+                                                onClick={() => setTaskRateCategory('all')}
+                                                className={`text-[11px] rounded-full px-2 py-1 border ${taskRateCategory === 'all' ? 'bg-sky-100 border-sky-300 text-sky-800' : 'bg-white border-slate-300 text-slate-600'}`}
+                                            >
+                                                All {taskRateCountsByCategory.all}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setTaskRateCategory('overridden')}
+                                                className={`text-[11px] rounded-full px-2 py-1 border ${taskRateCategory === 'overridden' ? 'bg-sky-100 border-sky-300 text-sky-800' : 'bg-white border-slate-300 text-slate-600'}`}
+                                            >
+                                                Overridden {taskRateCountsByCategory.overridden}
+                                            </button>
+                                            {TASK_CATEGORIES.map((cat) => (
+                                                <button
+                                                    key={cat.id}
+                                                    type="button"
+                                                    onClick={() => setTaskRateCategory(cat.id)}
+                                                    className={`text-[11px] rounded-full px-2 py-1 border ${taskRateCategory === cat.id ? 'bg-sky-100 border-sky-300 text-sky-800' : 'bg-white border-slate-300 text-slate-600'}`}
+                                                >
+                                                    {cat.label} {taskRateCountsByCategory[cat.id] || 0}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                     <div className="space-y-2 max-h-72 overflow-auto pr-1">
-                                        {CLEANING_TASKS.map((task) => (
+                                        {filteredTaskRates.map((task) => (
                                             <div key={task.id} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_150px] gap-2 items-center rounded-lg border border-slate-100 p-2">
                                                 <div>
                                                     <p className="text-sm font-medium text-slate-800">{task.name}</p>
@@ -747,15 +1163,21 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                                                 />
                                             </div>
                                         ))}
+                                        {filteredTaskRates.length === 0 && (
+                                            <p className="text-xs text-slate-500">No task rates match this filter.</p>
+                                        )}
                                     </div>
                                 </div>
                             )}
                         </div>
                     )}
                 </section>
+                )}
+                </>
+                )}
             </div>
 
-            <aside className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4 h-fit lg:sticky lg:top-24">
+            <aside className="rounded-2xl border border-slate-300 bg-white p-4 space-y-4 h-fit lg:sticky lg:top-24 shadow-sm">
                 <h3 className="font-semibold text-slate-900">Bid Summary</h3>
                 <div>
                     <p className="text-3xl font-bold text-sky-700">{fmt(results.totalPricePerMonth)}</p>
@@ -777,6 +1199,10 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture }: Unif
                     <div className="rounded-lg bg-slate-50 p-2">
                         <p className="text-slate-500">Per Sqft</p>
                         <p className="font-semibold">${results.pricePerSqft.toFixed(3)}</p>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 p-2 col-span-2">
+                        <p className="text-slate-500">Quote / Hr</p>
+                        <p className="font-semibold">{fmt(results.effectiveHourlyRate)}</p>
                     </div>
                 </div>
 

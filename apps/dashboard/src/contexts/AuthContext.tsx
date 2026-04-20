@@ -314,13 +314,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         };
         const handleWindowFocus = async () => {
-            try {
-                await enableNetwork(db);
-            } catch (err) {
-                if (!isOfflineLikeError(err)) {
-                    console.warn('[Auth] Firestore network recovery failed on focus:', err);
-                }
-            }
             if (!auth.currentUser) return;
             try {
                 await auth.currentUser.getIdToken(true);
@@ -329,21 +322,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (isAuthRelatedError(err)) {
                     setSessionRecoveryOpen(true);
                 }
+                return;
+            }
+            try {
+                await enableNetwork(db);
+            } catch (err) {
+                if (!isOfflineLikeError(err)) {
+                    console.warn('[Auth] Firestore network recovery failed on focus:', err);
+                }
             }
         };
         const handleBrowserOnline = async () => {
+            if (!auth.currentUser) return;
+            try {
+                await auth.currentUser.getIdToken(true);
+            } catch (err) {
+                console.warn('[Auth] Online token refresh failed:', err);
+                if (isAuthRelatedError(err)) {
+                    setSessionRecoveryOpen(true);
+                }
+                return;
+            }
             try {
                 await enableNetwork(db);
             } catch (err) {
                 if (!isOfflineLikeError(err)) {
                     console.warn('[Auth] Firestore network recovery failed online:', err);
                 }
-            }
-            if (!auth.currentUser) return;
-            try {
-                await auth.currentUser.getIdToken(true);
-            } catch (err) {
-                console.warn('[Auth] Online token refresh failed:', err);
             }
         };
         const handleAuthRequired = () => {

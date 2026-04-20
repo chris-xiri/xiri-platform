@@ -53820,7 +53820,7 @@ var require_verify_stream = __commonJS({
     function isObject(thing) {
       return Object.prototype.toString.call(thing) === "[object Object]";
     }
-    function safeJsonParse(thing) {
+    function safeJsonParse2(thing) {
       if (isObject(thing))
         return thing;
       try {
@@ -53831,7 +53831,7 @@ var require_verify_stream = __commonJS({
     }
     function headerFromJWS(jwsSig) {
       var encodedHeader = jwsSig.split(".", 1)[0];
-      return safeJsonParse(Buffer2.from(encodedHeader, "base64").toString("binary"));
+      return safeJsonParse2(Buffer2.from(encodedHeader, "base64").toString("binary"));
     }
     function securedInputFromJWS(jwsSig) {
       return jwsSig.split(".", 2).join(".");
@@ -58448,6 +58448,7 @@ __export(index_exports, {
   onWorkOrderAssigned: () => onWorkOrderAssigned,
   onWorkOrderHandoff: () => onWorkOrderHandoff,
   optimizeTemplate: () => optimizeTemplate,
+  parseCalculatorPrompt: () => parseCalculatorPrompt,
   processCommissionPayouts: () => processCommissionPayouts,
   processMailQueue: () => processMailQueue,
   processOutreachQueue: () => processOutreachQueue,
@@ -67902,9 +67903,9 @@ var regeneratePostCaption = (0, import_https16.onCall)({
   const post = postDoc.data();
   const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
   console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
-  const { GoogleGenerativeAI: GoogleGenerativeAI13 } = await import("@google/generative-ai");
+  const { GoogleGenerativeAI: GoogleGenerativeAI14 } = await import("@google/generative-ai");
   const API_KEY3 = process.env.GEMINI_API_KEY || "";
-  const genAI4 = new GoogleGenerativeAI13(API_KEY3);
+  const genAI4 = new GoogleGenerativeAI14(API_KEY3);
   const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
   const FALLBACK = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for {{audience}}:
 
@@ -74301,8 +74302,211 @@ var askAI = (0, import_https27.onCall)({
   }
 });
 
-// src/functions/pseoAuth.ts
+// src/functions/parseCalculatorPrompt.ts
 var import_https28 = require("firebase-functions/v2/https");
+var import_generative_ai12 = require("@google/generative-ai");
+var BUILDING_TYPE_IDS = [
+  "office",
+  "medical",
+  "school",
+  "retail",
+  "restaurant",
+  "warehouse",
+  "church",
+  "gym",
+  "bank",
+  "daycare",
+  "hotel",
+  "auto-dealer",
+  "salon",
+  "movie-theater",
+  "residential"
+];
+var ROOM_TYPE_IDS = [
+  "lobby",
+  "offices",
+  "restrooms",
+  "hallways",
+  "kitchen",
+  "conference",
+  "patient",
+  "common",
+  "warehouse",
+  "exterior",
+  "custom"
+];
+var TASK_IDS = [
+  "trash",
+  "dust",
+  "wipe",
+  "glass-entry",
+  "high-touch-disinfect",
+  "restroom-clean",
+  "restroom-restock",
+  "restroom-fixture-detail",
+  "vacuum",
+  "mop",
+  "sweep",
+  "dust-mop",
+  "auto-scrub",
+  "dust-treated",
+  "wipe-disinfect-surfaces",
+  "detail-crevice",
+  "glass-panel-clean",
+  "handrail-wipe",
+  "mat-vacuum",
+  "stair-damp-mop",
+  "elevator-spot-clean",
+  "solution-fill-1gal",
+  "solution-fill-5gal",
+  "solution-fill-20gal",
+  "sprayer-empty-rinse",
+  "dustmop-cleanup",
+  "mopbucket-cleanup",
+  "vacuum-cleanup",
+  "change-dustmop",
+  "change-wetmop",
+  "cord-wrap",
+  "travel-walk-slow",
+  "travel-walk-standard",
+  "travel-machine-rider",
+  "breakroom",
+  "glass-interior",
+  "high-dust",
+  "floor-wax",
+  "carpet-extract",
+  "pressure-wash"
+];
+function safeJsonParse(text) {
+  const trimmed = text.trim();
+  const codeFence = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const candidate = codeFence?.[1] ?? trimmed;
+  const parsed = JSON.parse(candidate);
+  return parsed || {};
+}
+function sanitizeParsedOutput(input) {
+  const out = {};
+  if (input.buildingTypeId && BUILDING_TYPE_IDS.includes(input.buildingTypeId)) {
+    out.buildingTypeId = input.buildingTypeId;
+  }
+  if (input.stateCode && /^[A-Z]{2}$/.test(input.stateCode)) {
+    out.stateCode = input.stateCode;
+  }
+  if (input.county && ["nassau", "suffolk", "queens", "other", "unknown"].includes(input.county)) {
+    out.county = input.county;
+  }
+  if (typeof input.sqft === "number" && Number.isFinite(input.sqft) && input.sqft >= 100) {
+    out.sqft = Math.round(input.sqft);
+  }
+  if (input.frequency && ["once", "1", "2", "3", "4", "5", "6", "7"].includes(input.frequency)) {
+    out.frequency = input.frequency;
+  }
+  if (typeof input.productionRate === "number" && Number.isFinite(input.productionRate) && input.productionRate > 0) {
+    out.productionRate = Math.round(input.productionRate);
+  }
+  if (typeof input.replaceRooms === "boolean") {
+    out.replaceRooms = input.replaceRooms;
+  }
+  if (Array.isArray(input.rooms)) {
+    const sanitizedRooms = input.rooms.map((room) => {
+      const next = {};
+      if (room?.roomTypeId && ROOM_TYPE_IDS.includes(room.roomTypeId)) {
+        next.roomTypeId = room.roomTypeId;
+      }
+      if (typeof room?.sqft === "number" && Number.isFinite(room.sqft) && room.sqft >= 0) {
+        next.sqft = Math.round(room.sqft);
+      }
+      if (Array.isArray(room?.tasks)) {
+        const tasks = room.tasks.filter((t) => TASK_IDS.includes(t));
+        if (tasks.length > 0) next.tasks = tasks;
+      }
+      return next;
+    }).filter((r) => r.roomTypeId || r.sqft || r.tasks && r.tasks.length > 0);
+    if (sanitizedRooms.length > 0) out.rooms = sanitizedRooms;
+  }
+  if (input.taskMinutesPer1kOverrides && typeof input.taskMinutesPer1kOverrides === "object") {
+    const overrides = {};
+    for (const [taskId, value] of Object.entries(input.taskMinutesPer1kOverrides)) {
+      if (!TASK_IDS.includes(taskId)) continue;
+      if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) continue;
+      overrides[taskId] = Math.round(value * 100) / 100;
+    }
+    if (Object.keys(overrides).length > 0) out.taskMinutesPer1kOverrides = overrides;
+  }
+  return out;
+}
+var parseCalculatorPrompt = (0, import_https28.onCall)({
+  secrets: ["GEMINI_API_KEY"],
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 30,
+  memory: "256MiB"
+}, async (request) => {
+  const data = request.data;
+  const prompt = data?.prompt?.trim();
+  if (!prompt) {
+    return { parsed: {} };
+  }
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn("[parseCalculatorPrompt] GEMINI_API_KEY not set; returning empty parse");
+    return { parsed: {} };
+  }
+  const genAI4 = new import_generative_ai12.GoogleGenerativeAI(apiKey);
+  const extractionPrompt = `
+Extract structured fields from this janitorial bid text and return ONLY valid JSON.
+
+Allowed JSON keys:
+- buildingTypeId: one of ${BUILDING_TYPE_IDS.join(", ")}
+- stateCode: 2-letter US code (uppercase)
+- county: one of nassau|suffolk|queens|other|unknown
+- sqft: integer
+- frequency: one of once|1|2|3|4|5|6|7
+- productionRate: integer
+- replaceRooms: boolean (true if user asks to rebuild/replace cleaning scope)
+- rooms: array of { roomTypeId, sqft, tasks[] }
+  - roomTypeId must be one of ${ROOM_TYPE_IDS.join(", ")}
+  - tasks entries must be from ${TASK_IDS.join(", ")}
+- taskMinutesPer1kOverrides: object of taskId -> minutesPer1k
+
+Rules:
+- Infer stateCode from clear full state names (e.g., "new jersey" -> "NJ").
+- Infer county only when clearly mentioned.
+- For "5x per week" map frequency to "5". For "daily" -> "7". For one-time/deep clean -> "once".
+- If user asks to change/add/remove zones/rooms, express that in rooms (+ replaceRooms when appropriate).
+- If user asks to tune ISSA task rates, return taskMinutesPer1kOverrides.
+- If uncertain on any key, omit it.
+- Return JSON object only; no markdown.
+
+Input:
+${prompt}
+`.trim();
+  const modelsToTry = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash"
+  ];
+  for (const modelName of modelsToTry) {
+    try {
+      const model2 = genAI4.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          temperature: 0,
+          maxOutputTokens: 420,
+          topP: 0.8
+        }
+      });
+      const result = await model2.generateContent(extractionPrompt);
+      const text = result.response.text();
+      const parsed = sanitizeParsedOutput(safeJsonParse(text));
+      return { parsed };
+    } catch (error19) {
+      console.error(`[parseCalculatorPrompt] ${modelName} failed:`, error19?.message || error19);
+    }
+  }
+  return { parsed: {} };
+});
+
+// src/functions/pseoAuth.ts
+var import_https29 = require("firebase-functions/v2/https");
 var import_params8 = require("firebase-functions/params");
 var gscClientId = (0, import_params8.defineSecret)("GSC_CLIENT_ID");
 var gscClientSecret = (0, import_params8.defineSecret)("GSC_CLIENT_SECRET");
@@ -74322,7 +74526,7 @@ var TOKEN_DOC_PATH = "pseo_config/gsc_credentials";
 function getRedirectUri(isDev) {
   return isDev ? REDIRECT_URI_DEV : REDIRECT_URI_PROD;
 }
-var getGscAuthUrl = (0, import_https28.onCall)({
+var getGscAuthUrl = (0, import_https29.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10,
   secrets: [gscClientId]
@@ -74343,7 +74547,7 @@ var getGscAuthUrl = (0, import_https28.onCall)({
     url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
   };
 });
-var exchangeGscToken = (0, import_https28.onCall)({
+var exchangeGscToken = (0, import_https29.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30,
   secrets: [gscClientId, gscClientSecret]
@@ -74351,7 +74555,7 @@ var exchangeGscToken = (0, import_https28.onCall)({
   const code = request.data?.code;
   const isDev = request.data?.isDev === true;
   if (!code) {
-    throw new import_https28.HttpsError("invalid-argument", "Missing authorization code");
+    throw new import_https29.HttpsError("invalid-argument", "Missing authorization code");
   }
   const redirectUri = getRedirectUri(isDev);
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -74368,7 +74572,7 @@ var exchangeGscToken = (0, import_https28.onCall)({
   const tokenData = await tokenResponse.json();
   if (tokenData.error) {
     console.error("[pSEO] Token exchange failed:", tokenData);
-    throw new import_https28.HttpsError("internal", `Token exchange failed: ${tokenData.error_description || tokenData.error}`);
+    throw new import_https29.HttpsError("internal", `Token exchange failed: ${tokenData.error_description || tokenData.error}`);
   }
   const expiresAt = admin.firestore.Timestamp.fromMillis(
     Date.now() + tokenData.expires_in * 1e3
@@ -74401,7 +74605,7 @@ var exchangeGscToken = (0, import_https28.onCall)({
     message: "Google Search Console and Analytics connected successfully"
   };
 });
-var getGscConnectionStatus = (0, import_https28.onCall)({
+var getGscConnectionStatus = (0, import_https29.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10
 }, async () => {
@@ -74417,7 +74621,7 @@ var getGscConnectionStatus = (0, import_https28.onCall)({
     connectedAt: data.connectedAt?.toDate?.()?.toISOString() || null
   };
 });
-var disconnectGsc = (0, import_https28.onCall)({
+var disconnectGsc = (0, import_https29.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 15
 }, async () => {
@@ -74475,7 +74679,7 @@ async function getValidAccessToken() {
   });
   return refreshData.access_token;
 }
-var testGscConnection = (0, import_https28.onCall)({
+var testGscConnection = (0, import_https29.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 30
 }, async () => {
@@ -74519,9 +74723,9 @@ var testGscConnection = (0, import_https28.onCall)({
 
 // src/triggers/pseoAnalysis.ts
 var import_scheduler13 = require("firebase-functions/v2/scheduler");
-var import_https29 = require("firebase-functions/v2/https");
+var import_https30 = require("firebase-functions/v2/https");
 var logger39 = __toESM(require("firebase-functions/logger"));
-var import_generative_ai12 = require("@google/generative-ai");
+var import_generative_ai13 = require("@google/generative-ai");
 
 // src/pseo/config.ts
 var DEFAULT_PSEO_BATCH_SIZE = 100;
@@ -75188,7 +75392,7 @@ async function generateCopySuggestion(nudge, segment, winningPatterns = [], topP
   if (!apiKey) {
     return `[GEMINI_API_KEY not configured \u2014 manual suggestion needed for ${nudge.targetField}]`;
   }
-  const genAI4 = new import_generative_ai12.GoogleGenerativeAI(apiKey);
+  const genAI4 = new import_generative_ai13.GoogleGenerativeAI(apiKey);
   const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
   const audienceContext = segment === "leads" ? "facility managers, office managers, and property managers evaluating commercial cleaning partners. They are B2B decision-makers who prioritize compliance documentation, verified quality, and operational reliability over price." : "independent janitorial contractors and cleaning company owners seeking commercial cleaning contracts and subcontracting opportunities in the Long Island/NYC market.";
   const trustContext = nudge.dataPoints.trustSignal ? `
@@ -75650,7 +75854,7 @@ var weeklyPseoAnalysis = (0, import_scheduler13.onSchedule)({
   await runAnalysisPipeline("leads");
   await runAnalysisPipeline("contractors");
 });
-var triggerPseoAnalysis = (0, import_https29.onCall)({
+var triggerPseoAnalysis = (0, import_https30.onCall)({
   cors: DASHBOARD_CORS,
   secrets: ["GEMINI_API_KEY", "GSC_CLIENT_ID", "GSC_CLIENT_SECRET"],
   timeoutSeconds: 540,
@@ -75658,11 +75862,11 @@ var triggerPseoAnalysis = (0, import_https29.onCall)({
 }, async (request) => {
   const segment = request.data?.segment || "leads";
   if (!["leads", "contractors"].includes(segment)) {
-    throw new import_https29.HttpsError("invalid-argument", "Invalid segment. Use 'leads' or 'contractors'.");
+    throw new import_https30.HttpsError("invalid-argument", "Invalid segment. Use 'leads' or 'contractors'.");
   }
   const statusDoc = await db.collection("pseo_config").doc("run_status").get();
   if (statusDoc.exists && statusDoc.data()?.running) {
-    throw new import_https29.HttpsError("already-exists", "Analysis is already running. Please wait for it to complete.");
+    throw new import_https30.HttpsError("already-exists", "Analysis is already running. Please wait for it to complete.");
   }
   logger39.info(`[pSEO] Manual trigger invoked for segment "${segment}"`);
   const result = await runAnalysisPipeline(segment);
@@ -75671,7 +75875,7 @@ var triggerPseoAnalysis = (0, import_https29.onCall)({
     ...result
   };
 });
-var getPseoRunStatus = (0, import_https29.onCall)({
+var getPseoRunStatus = (0, import_https30.onCall)({
   cors: DASHBOARD_CORS,
   timeoutSeconds: 10
 }, async () => {
@@ -75695,7 +75899,7 @@ var getPseoRunStatus = (0, import_https29.onCall)({
 });
 
 // src/functions/pseoDeployment.ts
-var import_https30 = require("firebase-functions/v2/https");
+var import_https31 = require("firebase-functions/v2/https");
 var logger40 = __toESM(require("firebase-functions/logger"));
 var import_params9 = require("firebase-functions/params");
 init_src();
@@ -75992,7 +76196,7 @@ async function notifyDeployment(params) {
   ].join("\n");
   await sendText(threadKey, summary);
 }
-var deployApprovedNudges = (0, import_https30.onCall)({
+var deployApprovedNudges = (0, import_https31.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [githubTokenSecret, googleChatWebhookSecret2],
   timeoutSeconds: 120,
@@ -76000,16 +76204,16 @@ var deployApprovedNudges = (0, import_https30.onCall)({
 }, async (request) => {
   const { batchId, force } = request.data || {};
   if (!batchId || typeof batchId !== "string") {
-    throw new import_https30.HttpsError("invalid-argument", "batchId is required.");
+    throw new import_https31.HttpsError("invalid-argument", "batchId is required.");
   }
   const token = getGithubToken();
   if (!token) {
-    throw new import_https30.HttpsError("failed-precondition", "GITHUB_PAT secret not configured. Set it in Firebase Secrets.");
+    throw new import_https31.HttpsError("failed-precondition", "GITHUB_PAT secret not configured. Set it in Firebase Secrets.");
   }
   logger40.info(`[pSEO Deploy] Starting deployment for batch "${batchId}"`);
   const nudgesSnap = await db.collection("pseo_nudges").where("batchId", "==", batchId).where("status", "==", "approved").get();
   if (nudgesSnap.empty) {
-    throw new import_https30.HttpsError("not-found", `No approved nudges found for batch "${batchId}".`);
+    throw new import_https31.HttpsError("not-found", `No approved nudges found for batch "${batchId}".`);
   }
   const nudges = nudgesSnap.docs.map((d) => ({
     id: d.id,
@@ -76038,11 +76242,11 @@ var deployApprovedNudges = (0, import_https30.onCall)({
     expansionQueue
   } = applySeoDataChanges(seoDataRaw, nudges);
   if (skipped.length !== skippedByReason.length) {
-    throw new import_https30.HttpsError("internal", "Deploy aborted: skipped nudges must include explicit reason codes.");
+    throw new import_https31.HttpsError("internal", "Deploy aborted: skipped nudges must include explicit reason codes.");
   }
   if (applied.length === 0) {
     if (!force) {
-      throw new import_https30.HttpsError(
+      throw new import_https31.HttpsError(
         "failed-precondition",
         "Deploy aborted: zero applicable nudges in batch. Re-run with force=true if this is expected."
       );
@@ -76170,14 +76374,14 @@ Skipped ${skipped.length} nudges.`;
     branchName
   };
 });
-var getPseoDeployStatus = (0, import_https30.onCall)({
+var getPseoDeployStatus = (0, import_https31.onCall)({
   cors: DASHBOARD_CORS,
   secrets: [githubTokenSecret],
   timeoutSeconds: 15
 }, async (request) => {
   const { batchId } = request.data || {};
   if (!batchId) {
-    throw new import_https30.HttpsError("invalid-argument", "batchId is required.");
+    throw new import_https31.HttpsError("invalid-argument", "batchId is required.");
   }
   const batchDoc = await db.collection("pseo_batches").doc(batchId).get();
   if (!batchDoc.exists) {
@@ -76277,6 +76481,7 @@ var getPseoDeployStatus = (0, import_https30.onCall)({
   onWorkOrderAssigned,
   onWorkOrderHandoff,
   optimizeTemplate,
+  parseCalculatorPrompt,
   processCommissionPayouts,
   processMailQueue,
   processOutreachQueue,
