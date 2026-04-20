@@ -81,22 +81,50 @@ interface WizardParsedValues {
     productionRate?: number;
 }
 
+const BUILDING_TYPE_ALIASES: Array<{ id: string; patterns: RegExp[] }> = [
+    { id: 'medical', patterns: [/\bmedical\b/i, /\bclinic\b/i, /\burgent\s*care\b/i, /\bdental\b/i, /\bhealth\s*center\b/i] },
+    { id: 'office', patterns: [/\boffice\b/i, /\bcorporate\b/i, /\bheadquarters\b/i] },
+    { id: 'school', patterns: [/\bschool\b/i, /\buniversity\b/i, /\bcollege\b/i, /\bcampus\b/i] },
+    { id: 'retail', patterns: [/\bretail\b/i, /\bstorefront\b/i, /\bstore\b/i, /\bshop\b/i] },
+    { id: 'restaurant', patterns: [/\brestaurant\b/i, /\bfood\s*service\b/i, /\bcafe\b/i, /\bkitchen\b/i] },
+    { id: 'warehouse', patterns: [/\bwarehouse\b/i, /\bindustrial\b/i, /\bdistribution\b/i] },
+    { id: 'church', patterns: [/\bchurch\b/i, /\bworship\b/i, /\btemple\b/i, /\bsynagogue\b/i, /\bmosque\b/i] },
+    { id: 'gym', patterns: [/\bgym\b/i, /\bfitness\b/i, /\bhealth\s*club\b/i] },
+    { id: 'bank', patterns: [/\bbank\b/i, /\bfinancial\b/i, /\bcredit\s*union\b/i] },
+    { id: 'daycare', patterns: [/\bdaycare\b/i, /\bchild\s*care\b/i, /\bpreschool\b/i] },
+    { id: 'hotel', patterns: [/\bhotel\b/i, /\bhospitality\b/i, /\bmotel\b/i] },
+    { id: 'auto-dealer', patterns: [/\bauto\s*dealership\b/i, /\bdealership\b/i, /\bcar\s*dealer\b/i] },
+    { id: 'salon', patterns: [/\bsalon\b/i, /\bspa\b/i, /\bbarber\b/i, /\bbeauty\b/i] },
+    { id: 'movie-theater', patterns: [/\bmovie\s*theater\b/i, /\bcinema\b/i, /\btheater\b/i] },
+    { id: 'residential', patterns: [/\bresidential\b/i, /\bhome\b/i, /\bhouse\b/i, /\bapartment\b/i] },
+];
+
 function parseWizardPrompt(prompt: string): WizardParsedValues {
     const text = prompt.toLowerCase();
     const out: WizardParsedValues = {};
 
-    // Building type
-    for (const bt of BUILDING_TYPES) {
-        const name = bt.name.toLowerCase();
-        const compact = name.replace(/[^a-z0-9]/g, '');
-        if (text.includes(name) || text.includes(compact)) {
-            out.buildingTypeId = bt.id;
+    // Building type (explicit alias map first for deterministic matching)
+    for (const rule of BUILDING_TYPE_ALIASES) {
+        if (rule.patterns.some((p) => p.test(text))) {
+            out.buildingTypeId = rule.id;
             break;
         }
-        const keyWords = name.split(/[\/\s]+/).filter((w) => w.length > 3);
-        if (keyWords.some((w) => text.includes(w))) {
-            out.buildingTypeId = bt.id;
-            break;
+    }
+
+    // Fallback to name-based matching when aliases don't hit
+    if (!out.buildingTypeId) {
+        for (const bt of BUILDING_TYPES) {
+            const name = bt.name.toLowerCase();
+            const compact = name.replace(/[^a-z0-9]/g, '');
+            if (text.includes(name) || text.includes(compact)) {
+                out.buildingTypeId = bt.id;
+                break;
+            }
+            const keyWords = name.split(/[\/\s]+/).filter((w) => w.length > 3);
+            if (keyWords.some((w) => text.includes(w))) {
+                out.buildingTypeId = bt.id;
+                break;
+            }
         }
     }
 
@@ -120,8 +148,8 @@ function parseWizardPrompt(prompt: string): WizardParsedValues {
 
     // Square footage
     const sqftMatch =
+        text.match(/(\d[\d,]*(?:\.\d+)?)\s*(k)\s*(sq\s*ft|sqft|square\s*feet|square\s*foot|sf)\b/i) ||
         text.match(/(\d[\d,]*)\s*(sq\s*ft|sqft|square\s*feet|square\s*foot|sf)\b/i) ||
-        text.match(/(\d[\d,]*)\s*(k)\s*(sq\s*ft|sqft|square\s*feet|square\s*foot|sf)\b/i) ||
         text.match(/\b(\d{3,6})\b/);
     if (sqftMatch?.[1]) {
         const parsed = Number(sqftMatch[1].replace(/,/g, '')) * (sqftMatch?.[2] === 'k' ? 1000 : 1);

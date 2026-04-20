@@ -53,7 +53,7 @@ export async function searchOpportunities(params: SamSearchParams = {}): Promise
         throw new Error('SAM_GOV_API_KEY is not configured. Please add it to your .env.local file.');
     }
 
-    const url = new URL(`${BASE_URL}/opportunities/v1/search`);
+    const url = new URL(`${BASE_URL}/opportunities/v2/search`);
     
     // Add default Janitorial NAICS if none specified
     const naics = params.nCode || '561720'; 
@@ -116,7 +116,7 @@ export async function getOpportunityDetails(noticeId: string): Promise<SamOpport
     const apiKey = process.env.SAM_GOV_API_KEY || process.env.VITE_SAM_GOV_API_KEY;
     if (!apiKey) throw new Error('SAM_GOV_API_KEY is not configured.');
 
-    const url = `${BASE_URL}/opportunities/v1/search?api_key=${apiKey}&noticeId=${noticeId}`;
+    const url = `${BASE_URL}/opportunities/v2/search?api_key=${apiKey}&noticeId=${noticeId}`;
     const response = await fetch(url);
     
     if (!response.ok) throw new Error(`SAM.gov Opportunity Detail error: ${response.status}`);

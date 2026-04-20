@@ -24,6 +24,27 @@ interface AskAIRequest {
     sessionId?: string;
 }
 
+// Request/response callable path prefers non-live models.
+// Use 2.5 Flash first, then fall back to older flash variants.
+const AI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"] as const;
+
+function delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableAiError(error: any): boolean {
+    const message = String(error?.message || "").toLowerCase();
+    return (
+        message.includes("429") ||
+        message.includes("quota") ||
+        message.includes("rate") ||
+        message.includes("resource_exhausted") ||
+        message.includes("unavailable") ||
+        message.includes("503") ||
+        message.includes("deadline")
+    );
+}
+
 // ── System Prompt ─────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are XIRI's Facility Solutions Advisor — a knowledgeable, professional AI assistant on xiri.ai.  Your job is to help facility managers, building owners, and practice managers understand how XIRI works and determine whether it's a fit for their building.
@@ -162,23 +183,41 @@ export const askAI = onCall({
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
-            systemInstruction: fullSystemPrompt,
-            generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 800,
-                topP: 0.9,
-            },
-        });
+        let lastError: any = null;
 
-        const result = await model.generateContent({ contents });
-        const reply = result.response.text();
+        for (const modelName of AI_MODELS) {
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    const model = genAI.getGenerativeModel({
+                        model: modelName,
+                        systemInstruction: fullSystemPrompt,
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 800,
+                            topP: 0.9,
+                        },
+                    });
 
-        return { reply };
+                    const result = await model.generateContent({ contents });
+                    const reply = result.response.text();
+                    if (reply && reply.trim()) {
+                        return { reply: reply.trim() };
+                    }
+                    throw new Error(`[askAI] Empty reply from model ${modelName}`);
+                } catch (error: any) {
+                    lastError = error;
+                    const retryable = isRetryableAiError(error);
+                    console.error(`[askAI] model=${modelName} attempt=${attempt} retryable=${retryable} error=${error?.message || error}`);
+                    if (!retryable || attempt === 3) break;
+                    await delay(250 * attempt);
+                }
+            }
+        }
+
+        throw lastError || new Error("No model could generate a response");
     } catch (error: any) {
         console.error("[askAI] Gemini error:", error.message);
-        if (error.message?.includes("quota") || error.message?.includes("429")) {
+        if (error.message?.includes("quota") || error.message?.includes("429") || error.message?.includes("resource_exhausted")) {
             throw new HttpsError("resource-exhausted", "Our AI assistant is experiencing high demand. Please try again in a moment.");
         }
         throw new HttpsError("internal", "I had trouble generating a response. Please try again.");

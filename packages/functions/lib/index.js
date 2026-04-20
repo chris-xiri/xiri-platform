@@ -47411,10 +47411,10 @@ var require_retry = __commonJS({
       if (!await shouldRetryFn(err2)) {
         return { shouldRetry: false, config: err2.config };
       }
-      const delay = getNextRetryDelay(config2);
+      const delay2 = getNextRetryDelay(config2);
       err2.config.retryConfig.currentRetryAttempt += 1;
-      const backoff = config2.retryBackoff ? config2.retryBackoff(err2, delay) : new Promise((resolve2) => {
-        setTimeout(resolve2, delay);
+      const backoff = config2.retryBackoff ? config2.retryBackoff(err2, delay2) : new Promise((resolve2) => {
+        setTimeout(resolve2, delay2);
       });
       if (config2.onRetryAttempt) {
         config2.onRetryAttempt(err2);
@@ -74139,6 +74139,14 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
 // src/functions/askAI.ts
 var import_https27 = require("firebase-functions/v2/https");
 var import_generative_ai11 = require("@google/generative-ai");
+var AI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+function delay(ms) {
+  return new Promise((resolve2) => setTimeout(resolve2, ms));
+}
+function isRetryableAiError(error19) {
+  const message = String(error19?.message || "").toLowerCase();
+  return message.includes("429") || message.includes("quota") || message.includes("rate") || message.includes("resource_exhausted") || message.includes("unavailable") || message.includes("503") || message.includes("deadline");
+}
 var SYSTEM_PROMPT = `You are XIRI's Facility Solutions Advisor \u2014 a knowledgeable, professional AI assistant on xiri.ai.  Your job is to help facility managers, building owners, and practice managers understand how XIRI works and determine whether it's a fit for their building.
 
 ABOUT XIRI FACILITY SOLUTIONS:
@@ -74255,21 +74263,38 @@ var askAI = (0, import_https27.onCall)({
   }));
   try {
     const genAI4 = new import_generative_ai11.GoogleGenerativeAI(apiKey);
-    const model2 = genAI4.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      systemInstruction: fullSystemPrompt,
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 800,
-        topP: 0.9
+    let lastError = null;
+    for (const modelName of AI_MODELS) {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const model2 = genAI4.getGenerativeModel({
+            model: modelName,
+            systemInstruction: fullSystemPrompt,
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 800,
+              topP: 0.9
+            }
+          });
+          const result = await model2.generateContent({ contents });
+          const reply = result.response.text();
+          if (reply && reply.trim()) {
+            return { reply: reply.trim() };
+          }
+          throw new Error(`[askAI] Empty reply from model ${modelName}`);
+        } catch (error19) {
+          lastError = error19;
+          const retryable = isRetryableAiError(error19);
+          console.error(`[askAI] model=${modelName} attempt=${attempt} retryable=${retryable} error=${error19?.message || error19}`);
+          if (!retryable || attempt === 3) break;
+          await delay(250 * attempt);
+        }
       }
-    });
-    const result = await model2.generateContent({ contents });
-    const reply = result.response.text();
-    return { reply };
+    }
+    throw lastError || new Error("No model could generate a response");
   } catch (error19) {
     console.error("[askAI] Gemini error:", error19.message);
-    if (error19.message?.includes("quota") || error19.message?.includes("429")) {
+    if (error19.message?.includes("quota") || error19.message?.includes("429") || error19.message?.includes("resource_exhausted")) {
       throw new import_https27.HttpsError("resource-exhausted", "Our AI assistant is experiencing high demand. Please try again in a moment.");
     }
     throw new import_https27.HttpsError("internal", "I had trouble generating a response. Please try again.");

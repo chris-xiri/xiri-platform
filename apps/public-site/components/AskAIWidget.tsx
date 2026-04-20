@@ -38,6 +38,26 @@ const SUGGESTED_QUESTIONS = [
     'Do you service my area?',
 ];
 
+const ASK_AI_REGIONS = ['us-central1', 'us-east1'] as const;
+
+function extractFunctionErrorCode(error: any): string {
+    return String(error?.code || '');
+}
+
+function fallbackAdvisorReply(question: string): string {
+    const q = question.toLowerCase();
+    if (q.includes('nfc') || q.includes('verification') || q.includes('proof')) {
+        return "Here’s the quick version: we use **physical NFC tags in each zone**, and cleaners tap each tag on-site to create a timestamped proof-of-work trail. It’s harder to fake than simple GPS and gives you room-level accountability.\n\nWant to see if this fits your building? [Start a Free Site Audit →](https://xiri.ai/#audit)";
+    }
+    if (q.includes('service') || q.includes('cover') || q.includes('offer')) {
+        return "We manage commercial cleaning plus related facility services under one partner model.\n\n- Commercial/medical cleaning\n- Floor care and window cleaning\n- Pest control and HVAC filter maintenance\n- Snow/ice, handyman, supplies, and more\n\nIf you share your building type and location, I can suggest a practical service mix.";
+    }
+    if (q.includes('price') || q.includes('cost') || q.includes('quote')) {
+        return "Pricing depends on your facility’s size, layout, scope, and frequency. The fastest way to get an accurate number is the free audit workflow.\n\n[Start a Free Site Audit →](https://xiri.ai/#audit)";
+    }
+    return "I can still help while the live AI service is busy. Tell me your building type, square footage, and location, and I’ll give you a practical recommendation.\n\nOr start here: [Free Site Audit →](https://xiri.ai/#audit)";
+}
+
 // ── Markdown-lite renderer ────────────────────────────────────────
 
 function renderMessage(text: string) {
@@ -137,18 +157,44 @@ export function AskAIWidget() {
         });
 
         try {
-            const functions = getFunctions(app);
-            const askAIFn = httpsCallable<
-                { messages: ChatMessage[]; pageUrl: string },
-                { reply: string }
-            >(functions, 'askAI');
-
-            const result = await askAIFn({
+            const payload = {
                 messages: newMessages,
                 pageUrl: typeof window !== 'undefined' ? window.location.href : '',
-            });
+            };
 
-            const aiMessage: ChatMessage = { role: 'model', text: result.data.reply };
+            let reply = '';
+            let lastError: any = null;
+
+            for (const region of ASK_AI_REGIONS) {
+                try {
+                    const functions = getFunctions(app, region);
+                    const askAIFn = httpsCallable<
+                        { messages: ChatMessage[]; pageUrl: string },
+                        { reply: string }
+                    >(functions, 'askAI');
+                    const result = await askAIFn(payload);
+                    reply = String(result?.data?.reply || '').trim();
+                    if (reply) break;
+                } catch (error) {
+                    lastError = error;
+                    const code = extractFunctionErrorCode(error);
+                    // Try alternate region only for infra-style errors.
+                    if (
+                        code !== 'functions/not-found' &&
+                        code !== 'functions/unavailable' &&
+                        code !== 'functions/internal' &&
+                        code !== 'functions/deadline-exceeded'
+                    ) {
+                        break;
+                    }
+                }
+            }
+
+            if (!reply) {
+                throw lastError || new Error('askAI returned empty reply');
+            }
+
+            const aiMessage: ChatMessage = { role: 'model', text: reply };
             setMessages([...newMessages, aiMessage]);
 
             // Show lead capture after 3 user messages (and haven't captured yet)
@@ -157,9 +203,13 @@ export function AskAIWidget() {
             }
         } catch (error: any) {
             console.error('[AskAIWidget] Error:', error);
+            const code = extractFunctionErrorCode(error);
+            const overloaded = code === 'functions/resource-exhausted' || String(error?.message || '').includes('429');
             const errorMessage: ChatMessage = {
                 role: 'model',
-                text: 'I had a brief hiccup — could you try asking that again? If the issue persists, you can always reach us at (516) 399-0350.',
+                text: overloaded
+                    ? `The live advisor is seeing high demand right now, so I’m using backup mode.\n\n${fallbackAdvisorReply(text)}`
+                    : `I had a brief hiccup reaching the live advisor, so here’s a quick fallback answer:\n\n${fallbackAdvisorReply(text)}`,
             };
             setMessages([...newMessages, errorMessage]);
         } finally {
