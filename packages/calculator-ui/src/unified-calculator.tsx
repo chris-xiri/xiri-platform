@@ -18,22 +18,6 @@ import {
 
 export type UnifiedCalculatorMode = 'client' | 'contractor';
 
-export interface ContractorCapturePayload {
-    name: string;
-    email: string;
-    company: string;
-    phone: string;
-    state: string;
-    county: string;
-    buildingTypeId: string;
-    sqft: number;
-    frequency: Frequency;
-    estimate: number;
-    inArea: boolean;
-    osUrl: string;
-    onboardingUrl: string;
-}
-
 const SERVED_COUNTIES = ['nassau', 'suffolk', 'queens'] as const;
 type ServedCounty = (typeof SERVED_COUNTIES)[number] | 'other' | 'unknown';
 const FEATURED_BUILDING_TYPES = 6;
@@ -210,11 +194,10 @@ function parseWizardPrompt(prompt: string): WizardParsedValues {
 
 interface UnifiedCalculatorProps {
     mode?: UnifiedCalculatorMode;
-    onContractorCapture?: (payload: ContractorCapturePayload) => Promise<void> | void;
     onAiParsePrompt?: (prompt: string) => Promise<Record<string, unknown> | null>;
 }
 
-export function UnifiedCalculator({ mode = 'client', onContractorCapture, onAiParsePrompt }: UnifiedCalculatorProps) {
+export function UnifiedCalculator({ mode = 'client', onAiParsePrompt }: UnifiedCalculatorProps) {
     const [buildingTypeId, setBuildingTypeId] = useState(DEFAULT_INPUTS.buildingTypeId);
     const [stateCode, setStateCode] = useState('NY');
     const [county, setCounty] = useState<ServedCounty>('unknown');
@@ -228,14 +211,6 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture, onAiPa
     const initializedSqftRef = useRef(false);
     const syncingRoomsFromSqftRef = useRef(false);
 
-    const [showCaptureForm, setShowCaptureForm] = useState(false);
-    const [contactName, setContactName] = useState('');
-    const [contactEmail, setContactEmail] = useState('');
-    const [companyName, setCompanyName] = useState('');
-    const [contactPhone, setContactPhone] = useState('');
-    const [captureError, setCaptureError] = useState('');
-    const [captureSaving, setCaptureSaving] = useState(false);
-    const [captureIntent, setCaptureIntent] = useState<'onboarding' | 'os' | null>(null);
     const [showAdvancedProduction, setShowAdvancedProduction] = useState(false);
     const [useProductionOverride, setUseProductionOverride] = useState(false);
     const [productionRateOverride, setProductionRateOverride] = useState<number>(0);
@@ -383,39 +358,6 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture, onAiPa
     );
     const onboardingUrl = useMemo(() => buildVendorOnboardingUrl(county), [county]);
 
-    const capturePayload = useMemo<ContractorCapturePayload>(
-        () => ({
-            name: contactName.trim(),
-            email: contactEmail.trim(),
-            company: companyName.trim(),
-            phone: contactPhone.trim(),
-            state: stateCode,
-            county,
-            buildingTypeId,
-            sqft: safeSqft,
-            frequency,
-            estimate: results.totalPricePerMonth,
-            inArea,
-            osUrl,
-            onboardingUrl,
-        }),
-        [
-            contactName,
-            contactEmail,
-            companyName,
-            contactPhone,
-            stateCode,
-            county,
-            buildingTypeId,
-            safeSqft,
-            frequency,
-            results.totalPricePerMonth,
-            inArea,
-            osUrl,
-            onboardingUrl,
-        ]
-    );
-
     const fmt = (n: number) =>
         new Intl.NumberFormat('en-US', {
             style: 'currency',
@@ -497,24 +439,6 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture, onAiPa
             sqft: Math.max(0, baseSqft),
             tasks: validTasks.length > 0 ? validTasks : [...roomType.defaultTasks],
         };
-    };
-
-    const saveCapture = async (): Promise<boolean> => {
-        if (!capturePayload.email) {
-            setCaptureError('Email is required to continue.');
-            return false;
-        }
-        setCaptureError('');
-        try {
-            setCaptureSaving(true);
-            if (onContractorCapture) await onContractorCapture(capturePayload);
-            return true;
-        } catch {
-            setCaptureError('Could not save your info. Please try again.');
-            return false;
-        } finally {
-            setCaptureSaving(false);
-        }
     };
 
     const applyWizardPrompt = async () => {
@@ -1208,106 +1132,31 @@ export function UnifiedCalculator({ mode = 'client', onContractorCapture, onAiPa
 
                 {mode === 'contractor' ? (
                     <div className="space-y-2">
-                        {!showCaptureForm ? (
+                        {inArea ? (
                             <>
-                                {inArea ? (
-                                    <>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setCaptureIntent('onboarding');
-                                                setShowCaptureForm(true);
-                                            }}
-                                            className="block w-full text-center rounded-xl bg-sky-700 text-white font-semibold py-2.5 hover:bg-sky-800"
-                                        >
-                                            Continue To Vendor Onboarding
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setCaptureIntent('os');
-                                                setShowCaptureForm(true);
-                                            }}
-                                            className="block w-full text-center rounded-xl border border-sky-300 text-sky-700 font-semibold py-2.5 hover:bg-sky-50"
-                                        >
-                                            Save Bid & Create xiriOS account
-                                        </button>
-                                        <p className="text-xs text-slate-500">In Nassau, Suffolk, and Queens we can onboard you directly into our managed network.</p>
-                                    </>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setCaptureIntent('os');
-                                            setShowCaptureForm(true);
-                                        }}
-                                        className="block w-full text-center rounded-xl bg-sky-700 text-white font-semibold py-2.5 hover:bg-sky-800"
-                                    >
-                                        Save Bid & Create xiriOS account
-                                    </button>
-                                )}
+                                <a
+                                    href={onboardingUrl}
+                                    className="block w-full text-center rounded-xl bg-sky-700 text-white font-semibold py-2.5 hover:bg-sky-800"
+                                >
+                                    Continue To Vendor Onboarding
+                                </a>
+                                <a
+                                    href={osUrl}
+                                    className="block w-full text-center rounded-xl border border-sky-300 text-sky-700 font-semibold py-2.5 hover:bg-sky-50"
+                                >
+                                    Save Bid & Create xiriOS account
+                                </a>
+                                <p className="text-xs text-slate-500">In Nassau, Suffolk, and Queens we can onboard you directly into our managed network.</p>
                             </>
                         ) : (
                             <>
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-                                    <p className="text-xs uppercase tracking-wide text-slate-500">Your info</p>
-                                    <input
-                                        value={contactName}
-                                        onChange={(e) => setContactName(e.target.value)}
-                                        placeholder="Contact name"
-                                        className="w-full rounded-lg border border-slate-300 bg-white h-9 px-3 text-sm"
-                                    />
-                                    <input
-                                        value={companyName}
-                                        onChange={(e) => setCompanyName(e.target.value)}
-                                        placeholder="Company name"
-                                        className="w-full rounded-lg border border-slate-300 bg-white h-9 px-3 text-sm"
-                                    />
-                                    <input
-                                        value={contactEmail}
-                                        onChange={(e) => setContactEmail(e.target.value)}
-                                        placeholder="Email *"
-                                        className="w-full rounded-lg border border-slate-300 bg-white h-9 px-3 text-sm"
-                                    />
-                                    <input
-                                        value={contactPhone}
-                                        onChange={(e) => setContactPhone(e.target.value)}
-                                        placeholder="Phone"
-                                        className="w-full rounded-lg border border-slate-300 bg-white h-9 px-3 text-sm"
-                                    />
-                                    {captureError && <p className="text-xs text-rose-600">{captureError}</p>}
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={async () => {
-                                        if (captureSaving) return;
-                                        const ok = await saveCapture();
-                                        if (!ok) return;
-                                        window.location.href = captureIntent === 'onboarding' ? onboardingUrl : osUrl;
-                                    }}
+                                <a
+                                    href={osUrl}
                                     className="block w-full text-center rounded-xl bg-sky-700 text-white font-semibold py-2.5 hover:bg-sky-800"
                                 >
-                                    {captureSaving
-                                        ? 'Saving...'
-                                        : captureIntent === 'onboarding'
-                                          ? 'Continue To Vendor Onboarding'
-                                          : 'Save Bid & Create xiriOS account'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (captureSaving) return;
-                                        setShowCaptureForm(false);
-                                        setCaptureIntent(null);
-                                        setCaptureError('');
-                                    }}
-                                    className="block w-full text-center rounded-xl border border-slate-300 text-slate-700 font-semibold py-2.5 hover:bg-slate-50"
-                                >
-                                    Back
-                                </button>
-                                {!inArea && (
-                                    <p className="text-xs text-slate-500">Outside our current managed-service area, continue in XIRI OS.</p>
-                                )}
+                                    Save Bid & Create xiriOS account
+                                </a>
+                                <p className="text-xs text-slate-500">Outside our current managed-service area, continue in XIRI OS.</p>
                             </>
                         )}
                     </div>

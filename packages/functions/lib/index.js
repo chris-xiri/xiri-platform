@@ -58540,7 +58540,7 @@ async function fetchPage(url) {
     return null;
   }
 }
-async function scrapeWebsite(url, geminiApiKey) {
+async function scrapeWebsite(url, geminiApiKey, context) {
   try {
     const homepage = await fetchPage(url);
     if (!homepage) {
@@ -58600,7 +58600,7 @@ async function scrapeWebsite(url, geminiApiKey) {
       }
     }
     const aiHtml = allAdditionalHtml.length > 500 ? allAdditionalHtml : homepage.html;
-    const aiData = await extractWithAI(aiHtml, geminiApiKey);
+    const aiData = await extractWithAI(aiHtml, geminiApiKey, context);
     combinedData.email = combinedData.email || aiData.email;
     combinedData.phone = combinedData.phone || aiData.phone;
     combinedData.address = combinedData.address || aiData.address;
@@ -58797,15 +58797,24 @@ function mergeContactPages(pages) {
   }
   return merged;
 }
-async function extractWithAI(html, geminiApiKey) {
+async function extractWithAI(html, geminiApiKey, context) {
   try {
     const genAI4 = new import_generative_ai.GoogleGenerativeAI(geminiApiKey);
     const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
     const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 15e3);
     const FALLBACK = `Extract business contact information AND the BEST local decision-maker for commercial cleaning / facilities vendor outreach from this website content.
 
+TARGET BUSINESS:
+- Name: ${context?.name || "Unknown"}
+- Address: ${context?.address || "Unknown"}
+
+CRITICAL VALIDATION:
+1. Only return a decision-maker (ownerName/ownerEmail) if they are explicitly associated with the TARGET BUSINESS mentioned above.
+2. If the website contains a directory of multiple facilities (e.g. a school district or hospital network), ENSURE the person extracted is assigned to the specific facility/location at the provided address.
+3. If a person is listed for a DIFFERENT location or is a district-wide employee not tied to this specific facility, DO NOT return them as the decision-maker for this prospect.
+
 PRIORITY:
-1. Find the LOCAL person most likely responsible for vendor management, facilities, operations, office management, practice administration, branch/studio/store management, or site administration.
+1. Find the LOCAL person most likely responsible for vendor management, facilities, operations, office management, practice administration, branch/studio/store management, or site administration at this SPECIFIC location.
 2. For multi-location brands or franchises, prefer the branch/studio/store/site leader over a founder, CEO, or corporate executive.
 3. Find PERSONAL email addresses (e.g. john@business.com, jsmith@business.com). Generic emails like info@, contact@, hello@, office@, admin@ are LOW VALUE and should only be the fallback.
 
