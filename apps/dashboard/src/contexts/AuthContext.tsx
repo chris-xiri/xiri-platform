@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
     User,
     signInWithEmailAndPassword,
@@ -11,7 +11,7 @@ import {
     browserLocalPersistence,
     setPersistence,
 } from 'firebase/auth';
-import { doc, getDoc, updateDoc, setDoc, serverTimestamp, enableNetwork } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import {
@@ -24,7 +24,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { AUTH_REQUIRED_EVENT, isAuthRelatedError, isOfflineLikeError, reportAuthRequired } from '@/lib/authRecovery';
+import { AUTH_REQUIRED_EVENT, isAuthRelatedError, reportAuthRequired } from '@/lib/authRecovery';
 
 export type UserRole = 'admin' | 'recruiter' | 'sales' | 'sales_exec' | 'sales_mgr' | 'fsm' | 'night_manager' | 'accounting';
 
@@ -66,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [sessionRecoveryOpen, setSessionRecoveryOpen] = useState(false);
     const [sessionRecoveryBusy, setSessionRecoveryBusy] = useState(false);
+    const googleSignInInFlight = useRef(false);
     const router = useRouter();
 
     // Smart redirect — land each role on their highest-use page
@@ -151,68 +152,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Sign in with Google (primary method)
     const signInWithGoogleHandler = async () => {
-        const userCredential = await signInWithPopup(auth, googleProvider);
-        const firebaseUser = userCredential.user;
+        googleSignInInFlight.current = true;
+        try {
+            const userCredential = await signInWithPopup(auth, googleProvider);
+            const firebaseUser = userCredential.user;
 
-        // Enforce @xiri.ai domain
-        if (firebaseUser.email && !firebaseUser.email.endsWith('@xiri.ai')) {
-            await firebaseSignOut(auth);
-            throw new Error('Only @xiri.ai accounts are allowed.');
-        }
+            // Enforce @xiri.ai domain
+            if (firebaseUser.email && !firebaseUser.email.endsWith('@xiri.ai')) {
+                await firebaseSignOut(auth);
+                throw new Error('Only @xiri.ai accounts are allowed.');
+            }
 
-        // Check if user doc exists for this Firebase UID
-        let userProfile = await fetchUserProfile(firebaseUser.uid);
-        const googleProv = firebaseUser.providerData.find(p => p.providerId === 'google.com');
+            // Check if user doc exists for this Firebase UID
+            let userProfile = await fetchUserProfile(firebaseUser.uid);
+            const googleProv = firebaseUser.providerData.find(p => p.providerId === 'google.com');
 
-        if (!userProfile) {
-            // No doc for this UID — check if there's a legacy password-based user
-            // with the same email whose roles we should migrate
-            let migratedRoles: UserRole[] = [];
-            let migratedData: Record<string, any> = {};
+            if (!userProfile) {
+                // No doc for this UID — check if there's a legacy password-based user
+                // with the same email whose roles we should migrate
+                let migratedRoles: UserRole[] = [];
+                let migratedData: Record<string, any> = {};
 
-            if (firebaseUser.email) {
-                const { collection, query, where, getDocs } = await import('firebase/firestore');
-                const usersQuery = query(
-                    collection(db, 'users'),
-                    where('email', '==', firebaseUser.email)
-                );
-                const snapshot = await getDocs(usersQuery);
-                if (!snapshot.empty) {
-                    const legacyDoc = snapshot.docs[0];
-                    const legacyData = legacyDoc.data();
-                    migratedRoles = legacyData.roles || [];
-                    migratedData = {
-                        companyId: legacyData.companyId || null,
-                    };
-                    console.log(`🔄 Migrating roles from legacy user ${legacyDoc.id} → ${firebaseUser.uid}`);
+                if (firebaseUser.email) {
+                    const { collection, query, where, getDocs } = await import('firebase/firestore');
+                    const usersQuery = query(
+                        collection(db, 'users'),
+                        where('email', '==', firebaseUser.email)
+                    );
+                    const snapshot = await getDocs(usersQuery);
+                    if (!snapshot.empty) {
+                        const legacyDoc = snapshot.docs[0];
+                        const legacyData = legacyDoc.data();
+                        migratedRoles = legacyData.roles || [];
+                        migratedData = {
+                            companyId: legacyData.companyId || null,
+                        };
+                        console.log(`🔄 Migrating roles from legacy user ${legacyDoc.id} → ${firebaseUser.uid}`);
+                    }
+                }
+
+                await setDoc(doc(db, 'users', firebaseUser.uid), {
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email,
+                    displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+                    roles: migratedRoles,
+                    googleUserId: googleProv?.uid || null,
+                    ...migratedData,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    lastLogin: serverTimestamp(),
+                });
+
+                userProfile = await fetchUserProfile(firebaseUser.uid);
+            } else {
+                // Existing user — store Google UID and update login timestamp
+                await storeGoogleUserId(firebaseUser);
+            }
+
+            if (userProfile) {
+                setProfile(userProfile);
+                if (userProfile.roles.length === 0) {
+                    router.push('/unauthorized');
+                } else {
+                    redirectByRole(userProfile.roles);
                 }
             }
-
-            await setDoc(doc(db, 'users', firebaseUser.uid), {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email,
-                displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-                roles: migratedRoles,
-                googleUserId: googleProv?.uid || null,
-                ...migratedData,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                lastLogin: serverTimestamp(),
-            });
-
-            userProfile = await fetchUserProfile(firebaseUser.uid);
-        } else {
-            // Existing user — store Google UID and update login timestamp
-            await storeGoogleUserId(firebaseUser);
-        }
-
-        if (userProfile) {
-            setProfile(userProfile);
-            if (userProfile.roles.length === 0) {
-                router.push('/unauthorized');
-            } else {
-                redirectByRole(userProfile.roles);
-            }
+        } finally {
+            // Let popup/redirect settle before reenabling proactive refresh hooks
+            setTimeout(() => {
+                googleSignInInFlight.current = false;
+            }, 1500);
         }
     };
 
@@ -303,8 +312,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Also refresh when the tab regains focus (user comes back after break)
         const handleVisibilityChange = async () => {
             if (document.visibilityState === 'visible' && auth.currentUser) {
+                if (googleSignInInFlight.current) return;
                 try {
-                    await auth.currentUser.getIdToken(true);
+                    await auth.currentUser.getIdToken();
                 } catch (err) {
                     console.warn('[Auth] Visibility token refresh failed:', err);
                     if (isAuthRelatedError(err)) {
@@ -315,39 +325,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         const handleWindowFocus = async () => {
             if (!auth.currentUser) return;
+            if (googleSignInInFlight.current) return;
             try {
-                await auth.currentUser.getIdToken(true);
+                await auth.currentUser.getIdToken();
             } catch (err) {
                 console.warn('[Auth] Focus token refresh failed:', err);
                 if (isAuthRelatedError(err)) {
                     setSessionRecoveryOpen(true);
                 }
-                return;
-            }
-            try {
-                await enableNetwork(db);
-            } catch (err) {
-                if (!isOfflineLikeError(err)) {
-                    console.warn('[Auth] Firestore network recovery failed on focus:', err);
-                }
             }
         };
         const handleBrowserOnline = async () => {
             if (!auth.currentUser) return;
+            if (googleSignInInFlight.current) return;
             try {
-                await auth.currentUser.getIdToken(true);
+                await auth.currentUser.getIdToken();
             } catch (err) {
                 console.warn('[Auth] Online token refresh failed:', err);
                 if (isAuthRelatedError(err)) {
                     setSessionRecoveryOpen(true);
-                }
-                return;
-            }
-            try {
-                await enableNetwork(db);
-            } catch (err) {
-                if (!isOfflineLikeError(err)) {
-                    console.warn('[Auth] Firestore network recovery failed online:', err);
                 }
             }
         };

@@ -36,9 +36,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Users, Loader2, X, Search, Trash2, Edit, ChevronLeft, ChevronRight, ChevronDown, Building2, Settings2, Tag, Play, Mail, Send } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
-import { collection, enableNetwork, getCountFromServer, query, orderBy, doc, writeBatch, getDocs, limit, startAfter, where } from "firebase/firestore";
+import { collection, getCountFromServer, query, orderBy, doc, writeBatch, getDocs, limit, startAfter, where } from "firebase/firestore";
 import { db, functions } from "@/lib/firebase";
-import { isAuthRelatedError, isOfflineLikeError, reportAuthRequired } from "@/lib/authRecovery";
+import { isAuthRelatedError, reportAuthRequired } from "@/lib/authRecovery";
 import { LeadStatus, LeadType } from "@xiri-facility-solutions/shared";
 import { useFacilityTypes } from "@/lib/facilityTypes";
 import { useLeadFilter } from "@/hooks/useLeadFilter";
@@ -184,16 +184,6 @@ export default function LeadList({
     const hasAnyFilters = hasActiveFilters || lifecycleFilter !== 'active';
     const requiresFullDataset = searchQuery.trim() !== '' || statusFilter !== 'all' || !!engagementFilter;
 
-    const recoverFirestoreNetwork = useCallback(async () => {
-        try {
-            await enableNetwork(db);
-        } catch (error) {
-            if (!isOfflineLikeError(error)) {
-                console.warn("[LeadList] Firestore network recovery failed:", error);
-            }
-        }
-    }, []);
-
     useEffect(() => {
         setCurrentPage(1);
         setSelectedLeads(new Set());
@@ -317,11 +307,10 @@ export default function LeadList({
 
     useEffect(() => {
         const handleOnline = () => {
-            void recoverFirestoreNetwork();
             setRefreshNonce((value) => value + 1);
         };
         const handleFocus = () => {
-            void recoverFirestoreNetwork();
+            setRefreshNonce((value) => value + 1);
         };
 
         window.addEventListener("online", handleOnline);
@@ -331,7 +320,7 @@ export default function LeadList({
             window.removeEventListener("online", handleOnline);
             window.removeEventListener("focus", handleFocus);
         };
-    }, [recoverFirestoreNetwork]);
+    }, []);
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
