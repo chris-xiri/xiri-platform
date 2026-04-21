@@ -649,6 +649,90 @@ export async function deepMailtoScan(baseUrl: string): Promise<{ email?: string;
     }
 }
 
+function normalizeBusinessNameForSearch(name: string): string {
+    const legalSuffixes = new Set([
+        'inc', 'incorporated', 'llc', 'l.l.c', 'co', 'company', 'corp', 'corporation',
+        'ltd', 'limited', 'pllc', 'llp', 'pc', 'p.c', 'group', 'holdings',
+    ]);
+    const normalized = name
+        .toLowerCase()
+        .replace(/&/g, ' and ')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const parts = normalized.split(' ').filter(Boolean);
+    while (parts.length > 1 && legalSuffixes.has(parts[parts.length - 1])) {
+        parts.pop();
+    }
+    return parts.join(' ').trim();
+}
+
+function getMeaningfulTokens(text: string): string[] {
+    const stop = new Set(['the', 'and', 'for', 'of', 'at', 'in', 'on', 'by', 'a', 'an', 'to', 'services', 'service']);
+    return text
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(t => t.length >= 3 && !stop.has(t));
+}
+
+function getRegistrableDomain(domain: string): string {
+    const parts = domain.toLowerCase().split('.').filter(Boolean);
+    if (parts.length <= 2) return parts.join('.');
+    const secondLevelTlds = new Set(['co', 'com', 'org', 'net', 'gov', 'ac', 'edu']);
+    const tld = parts[parts.length - 1];
+    const sld = parts[parts.length - 2];
+    if (tld.length === 2 && secondLevelTlds.has(sld) && parts.length >= 3) {
+        return parts.slice(-3).join('.');
+    }
+    return parts.slice(-2).join('.');
+}
+
+function extractHostname(url?: string): string | undefined {
+    if (!url) return undefined;
+    try {
+        return new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+    } catch {
+        return undefined;
+    }
+}
+
+function isSearchResultAssociatedWithBusiness(
+    result: { title?: string; snippet?: string; link?: string },
+    businessName: string,
+    location?: string,
+    domain?: string
+): boolean {
+    const normalizedBusiness = normalizeBusinessNameForSearch(businessName);
+    if (!normalizedBusiness) return false;
+
+    const businessTokens = getMeaningfulTokens(normalizedBusiness);
+    if (businessTokens.length === 0) return false;
+
+    const rawText = `${result.title || ''} ${result.snippet || ''} ${result.link || ''}`;
+    const normalizedText = rawText.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    const textTokens = new Set(getMeaningfulTokens(normalizedText));
+
+    const overlap = businessTokens.filter(t => textTokens.has(t)).length;
+    const tokenRatio = overlap / Math.min(Math.max(businessTokens.length, 1), 4);
+    const exactPhraseMatch = normalizedText.includes(normalizedBusiness);
+
+    const hostname = extractHostname(result.link);
+    const domainMatch = !!hostname && !!domain && (
+        hostname === domain.toLowerCase() ||
+        hostname.endsWith(`.${domain.toLowerCase()}`) ||
+        getRegistrableDomain(hostname) === getRegistrableDomain(domain.toLowerCase())
+    );
+
+    const locationHit = !!location && normalizedText.includes(location.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim());
+
+    if (exactPhraseMatch) return true;
+    if (domainMatch && overlap >= 1) return true;
+    if (overlap >= 2 && tokenRatio >= 0.5) return true;
+    if (locationHit && overlap >= 2) return true;
+    return false;
+}
+
 // ═══════════════════════════════════════════════════════
 // SERPER WEB EMAIL SEARCH
 // ═══════════════════════════════════════════════════════
@@ -667,8 +751,20 @@ export async function searchWebForEmail(
     location: string,
     domain?: string,
     serperApiKey?: string,
-    contactName?: string
-): Promise<{ email?: string; phone?: string; facebookUrl?: string; source: string }> {
+    contactName?: string,
+    options?: {
+        deepResearch?: boolean;
+        decisionMakerTitles?: string[];
+    }
+): Promise<{
+    email?: string;
+    phone?: string;
+    facebookUrl?: string;
+    source: string;
+    evidenceTitle?: string;
+    evidenceSnippet?: string;
+    evidenceUrl?: string;
+}> {
     const apiKey = serperApiKey || process.env.SERPER_API_KEY;
     if (!apiKey) {
         console.warn('No SERPER_API_KEY available for web email search.');
@@ -679,25 +775,37 @@ export async function searchWebForEmail(
     const phoneRegex = /(\+1[-.\\s]?)?\(?\d{3}\)?[-.\\s]?\d{3}[-.\\s]?\d{4}/g;
 
     const queries: string[] = [];
+    const deepResearch = !!options?.deepResearch;
+    const titleHints = (options?.decisionMakerTitles || []).slice(0, 4).map(t => `"${t}"`);
+    const normalizedBusiness = normalizeBusinessNameForSearch(businessName) || businessName.trim();
+    const strictBusinessPhrase = `"${normalizedBusiness}"`;
+    const shortBusinessPhrase = `"${normalizedBusiness.split(' ').slice(0, 4).join(' ')}"`;
 
     // Strategy 1: site-specific search (most targeted) — only if we have a domain
     if (domain) {
-        queries.push(`site:${domain} email OR contact`);
+        queries.push(`site:${domain} (${strictBusinessPhrase} OR ${shortBusinessPhrase}) (email OR contact)`);
     }
 
     // Strategy 2: Facebook page search — many small businesses list email here
-    queries.push(`site:facebook.com "${businessName}" ${location} email`);
+    queries.push(`site:facebook.com ${strictBusinessPhrase} ${location} email`);
 
     // Strategy 3: Named person search (if we found an owner via AI)
     if (contactName) {
-        queries.push(`"${contactName}" "${businessName}" email`);
+        queries.push(`"${contactName}" ${strictBusinessPhrase} email`);
     } else if (!domain) {
         // Fallback: General business + location search (only if no domain-specific search ran)
-        queries.push(`"${businessName}" ${location} email contact`);
+        queries.push(`${strictBusinessPhrase} ${location} (email OR contact)`);
     }
 
     // Strategy 4: Yelp — highest-yield directory for local business contact info
-    queries.push(`site:yelp.com "${businessName}" ${location} email OR contact`);
+    queries.push(`site:yelp.com ${strictBusinessPhrase} ${location} email OR contact`);
+
+    // Strategy 5 (optional): deeper, role-aware contact research
+    if (deepResearch && domain) {
+        const titleQuery = titleHints.length > 0 ? titleHints.join(' OR ') : '"operations manager" OR "general manager" OR "office manager"';
+        queries.push(`site:${domain} (${strictBusinessPhrase} OR ${shortBusinessPhrase}) ("team" OR "staff" OR "about" OR "contact") (${titleQuery}) email`);
+        queries.push(`${strictBusinessPhrase} "${location}" (${titleQuery}) ("email" OR "@${domain}")`);
+    }
 
     // NOTE: BBB, Manta, YellowPages, Instagram removed — low email-in-snippet yield
     // was burning ~4 extra Serper calls per prospect with negligible return
@@ -723,10 +831,14 @@ export async function searchWebForEmail(
 
             // Extract emails from snippets
             for (const result of organic) {
+                const associated = isSearchResultAssociatedWithBusiness(result, businessName, location, domain);
+
                 // Capture Facebook URL if found
-                if (!facebookUrl && result.link?.includes('facebook.com') && !result.link?.includes('sharer')) {
+                if (associated && !facebookUrl && result.link?.includes('facebook.com') && !result.link?.includes('sharer')) {
                     facebookUrl = result.link;
                 }
+
+                if (!associated) continue;
 
                 const text = `${result.snippet || ''} ${result.title || ''}`;
                 const emails = text.match(emailRegex) || [];
@@ -747,7 +859,10 @@ export async function searchWebForEmail(
                         email: validEmails[0].toLowerCase(),
                         phone: phones[0],
                         facebookUrl,
-                        source: query.includes('facebook.com') ? 'serper_facebook' : 'serper_web_search'
+                        source: query.includes('facebook.com') ? 'serper_facebook' : 'serper_web_search',
+                        evidenceTitle: result.title || undefined,
+                        evidenceSnippet: result.snippet || undefined,
+                        evidenceUrl: result.link || undefined,
                     };
                 }
             }
@@ -755,11 +870,33 @@ export async function searchWebForEmail(
             // Check knowledge graph if present
             if (data.knowledgeGraph) {
                 const kg = data.knowledgeGraph;
+                const kgAssociated = isSearchResultAssociatedWithBusiness(
+                    { title: kg.title || kg.name, snippet: kg.description, link: kg.website },
+                    businessName,
+                    location,
+                    domain
+                );
+                if (!kgAssociated) continue;
                 if (kg.email) {
-                    return { email: kg.email.toLowerCase(), phone: kg.phone, facebookUrl, source: 'serper_knowledge_graph' };
+                    return {
+                        email: kg.email.toLowerCase(),
+                        phone: kg.phone,
+                        facebookUrl,
+                        source: 'serper_knowledge_graph',
+                        evidenceTitle: kg.title || kg.name || undefined,
+                        evidenceSnippet: kg.description || undefined,
+                        evidenceUrl: kg.website || undefined,
+                    };
                 }
                 if (kg.phone && !data.organic?.length) {
-                    return { phone: kg.phone, facebookUrl, source: 'serper_knowledge_graph' };
+                    return {
+                        phone: kg.phone,
+                        facebookUrl,
+                        source: 'serper_knowledge_graph',
+                        evidenceTitle: kg.title || kg.name || undefined,
+                        evidenceSnippet: kg.description || undefined,
+                        evidenceUrl: kg.website || undefined,
+                    };
                 }
             }
 

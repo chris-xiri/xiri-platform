@@ -39363,7 +39363,7 @@ function inferFacilityType(searchQuery) {
   if (q.includes("cleanroom") || q.includes("lab ")) return "lab_cleanroom";
   if (q.includes("bsl") || q.includes("biosafety")) return "lab_bsl";
   if (q.includes("manufacturing") || q.includes("factory") || q.includes("warehouse")) return "manufacturing_light";
-  if (q.includes("gym") || q.includes("fitness") || q.includes("crossfit") || q.includes("yoga")) return "fitness_gym";
+  if (q.includes("gym") || q.includes("fitness") || q.includes("crossfit") || q.includes("yoga") || q.includes("pilates")) return "fitness_gym";
   if (q.includes("retail") || q.includes("store") || q.includes("shop") || q.includes("boutique")) return "retail_storefront";
   if (q.includes("church") || q.includes("religious") || q.includes("mosque") || q.includes("synagogue") || q.includes("temple") || q.includes("worship")) return "religious_center";
   if (q.includes("funeral") || q.includes("mortuary") || q.includes("cremation")) return "funeral_home";
@@ -58387,6 +58387,7 @@ __export(index_exports, {
   adminCreateUser: () => adminCreateUser,
   adminUpdateAuthUser: () => adminUpdateAuthUser,
   askAI: () => askAI,
+  autoCategorizeProspects: () => autoCategorizeProspects,
   backfillEngagement: () => backfillEngagement,
   bookDiscoveryCall: () => bookDiscoveryCall,
   bookOnboardingCall: () => bookOnboardingCall,
@@ -58540,7 +58541,7 @@ async function fetchPage(url) {
     return null;
   }
 }
-async function scrapeWebsite(url, geminiApiKey, context) {
+async function scrapeWebsite(url, geminiApiKey) {
   try {
     const homepage = await fetchPage(url);
     if (!homepage) {
@@ -58600,7 +58601,7 @@ async function scrapeWebsite(url, geminiApiKey, context) {
       }
     }
     const aiHtml = allAdditionalHtml.length > 500 ? allAdditionalHtml : homepage.html;
-    const aiData = await extractWithAI(aiHtml, geminiApiKey, context);
+    const aiData = await extractWithAI(aiHtml, geminiApiKey);
     combinedData.email = combinedData.email || aiData.email;
     combinedData.phone = combinedData.phone || aiData.phone;
     combinedData.address = combinedData.address || aiData.address;
@@ -58797,24 +58798,15 @@ function mergeContactPages(pages) {
   }
   return merged;
 }
-async function extractWithAI(html, geminiApiKey, context) {
+async function extractWithAI(html, geminiApiKey) {
   try {
     const genAI4 = new import_generative_ai.GoogleGenerativeAI(geminiApiKey);
     const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
     const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").substring(0, 15e3);
     const FALLBACK = `Extract business contact information AND the BEST local decision-maker for commercial cleaning / facilities vendor outreach from this website content.
 
-TARGET BUSINESS:
-- Name: ${context?.name || "Unknown"}
-- Address: ${context?.address || "Unknown"}
-
-CRITICAL VALIDATION:
-1. Only return a decision-maker (ownerName/ownerEmail) if they are explicitly associated with the TARGET BUSINESS mentioned above.
-2. If the website contains a directory of multiple facilities (e.g. a school district or hospital network), ENSURE the person extracted is assigned to the specific facility/location at the provided address.
-3. If a person is listed for a DIFFERENT location or is a district-wide employee not tied to this specific facility, DO NOT return them as the decision-maker for this prospect.
-
 PRIORITY:
-1. Find the LOCAL person most likely responsible for vendor management, facilities, operations, office management, practice administration, branch/studio/store management, or site administration at this SPECIFIC location.
+1. Find the LOCAL person most likely responsible for vendor management, facilities, operations, office management, practice administration, branch/studio/store management, or site administration.
 2. For multi-location brands or franchises, prefer the branch/studio/store/site leader over a founder, CEO, or corporate executive.
 3. Find PERSONAL email addresses (e.g. john@business.com, jsmith@business.com). Generic emails like info@, contact@, hello@, office@, admin@ are LOW VALUE and should only be the fallback.
 
@@ -58954,7 +58946,76 @@ async function deepMailtoScan(baseUrl) {
     return { pagesScanned: visited.size };
   }
 }
-async function searchWebForEmail(businessName, location, domain, serperApiKey, contactName) {
+function normalizeBusinessNameForSearch(name) {
+  const legalSuffixes = /* @__PURE__ */ new Set([
+    "inc",
+    "incorporated",
+    "llc",
+    "l.l.c",
+    "co",
+    "company",
+    "corp",
+    "corporation",
+    "ltd",
+    "limited",
+    "pllc",
+    "llp",
+    "pc",
+    "p.c",
+    "group",
+    "holdings"
+  ]);
+  const normalized = name.toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  const parts = normalized.split(" ").filter(Boolean);
+  while (parts.length > 1 && legalSuffixes.has(parts[parts.length - 1])) {
+    parts.pop();
+  }
+  return parts.join(" ").trim();
+}
+function getMeaningfulTokens(text) {
+  const stop = /* @__PURE__ */ new Set(["the", "and", "for", "of", "at", "in", "on", "by", "a", "an", "to", "services", "service"]);
+  return text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((t) => t.length >= 3 && !stop.has(t));
+}
+function getRegistrableDomain(domain) {
+  const parts = domain.toLowerCase().split(".").filter(Boolean);
+  if (parts.length <= 2) return parts.join(".");
+  const secondLevelTlds = /* @__PURE__ */ new Set(["co", "com", "org", "net", "gov", "ac", "edu"]);
+  const tld = parts[parts.length - 1];
+  const sld = parts[parts.length - 2];
+  if (tld.length === 2 && secondLevelTlds.has(sld) && parts.length >= 3) {
+    return parts.slice(-3).join(".");
+  }
+  return parts.slice(-2).join(".");
+}
+function extractHostname(url) {
+  if (!url) return void 0;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return void 0;
+  }
+}
+function isSearchResultAssociatedWithBusiness(result, businessName, location, domain) {
+  const normalizedBusiness = normalizeBusinessNameForSearch(businessName);
+  if (!normalizedBusiness) return false;
+  const businessTokens = getMeaningfulTokens(normalizedBusiness);
+  if (businessTokens.length === 0) return false;
+  const rawText = `${result.title || ""} ${result.snippet || ""} ${result.link || ""}`;
+  const normalizedText = rawText.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  const textTokens = new Set(getMeaningfulTokens(normalizedText));
+  const overlap = businessTokens.filter((t) => textTokens.has(t)).length;
+  const tokenRatio = overlap / Math.min(Math.max(businessTokens.length, 1), 4);
+  const exactPhraseMatch = normalizedText.includes(normalizedBusiness);
+  const hostname = extractHostname(result.link);
+  const domainMatch = !!hostname && !!domain && (hostname === domain.toLowerCase() || hostname.endsWith(`.${domain.toLowerCase()}`) || getRegistrableDomain(hostname) === getRegistrableDomain(domain.toLowerCase()));
+  const locationHit = !!location && normalizedText.includes(location.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim());
+  if (exactPhraseMatch) return true;
+  if (domainMatch && overlap >= 1) return true;
+  if (overlap >= 2 && tokenRatio >= 0.5) return true;
+  if (locationHit && overlap >= 2) return true;
+  return false;
+}
+async function searchWebForEmail(businessName, location, domain, serperApiKey, contactName, options) {
   const apiKey = serperApiKey || process.env.SERPER_API_KEY;
   if (!apiKey) {
     console.warn("No SERPER_API_KEY available for web email search.");
@@ -58963,16 +59024,26 @@ async function searchWebForEmail(businessName, location, domain, serperApiKey, c
   const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
   const phoneRegex = /(\+1[-.\\s]?)?\(?\d{3}\)?[-.\\s]?\d{3}[-.\\s]?\d{4}/g;
   const queries = [];
+  const deepResearch = !!options?.deepResearch;
+  const titleHints = (options?.decisionMakerTitles || []).slice(0, 4).map((t) => `"${t}"`);
+  const normalizedBusiness = normalizeBusinessNameForSearch(businessName) || businessName.trim();
+  const strictBusinessPhrase = `"${normalizedBusiness}"`;
+  const shortBusinessPhrase = `"${normalizedBusiness.split(" ").slice(0, 4).join(" ")}"`;
   if (domain) {
-    queries.push(`site:${domain} email OR contact`);
+    queries.push(`site:${domain} (${strictBusinessPhrase} OR ${shortBusinessPhrase}) (email OR contact)`);
   }
-  queries.push(`site:facebook.com "${businessName}" ${location} email`);
+  queries.push(`site:facebook.com ${strictBusinessPhrase} ${location} email`);
   if (contactName) {
-    queries.push(`"${contactName}" "${businessName}" email`);
+    queries.push(`"${contactName}" ${strictBusinessPhrase} email`);
   } else if (!domain) {
-    queries.push(`"${businessName}" ${location} email contact`);
+    queries.push(`${strictBusinessPhrase} ${location} (email OR contact)`);
   }
-  queries.push(`site:yelp.com "${businessName}" ${location} email OR contact`);
+  queries.push(`site:yelp.com ${strictBusinessPhrase} ${location} email OR contact`);
+  if (deepResearch && domain) {
+    const titleQuery = titleHints.length > 0 ? titleHints.join(" OR ") : '"operations manager" OR "general manager" OR "office manager"';
+    queries.push(`site:${domain} (${strictBusinessPhrase} OR ${shortBusinessPhrase}) ("team" OR "staff" OR "about" OR "contact") (${titleQuery}) email`);
+    queries.push(`${strictBusinessPhrase} "${location}" (${titleQuery}) ("email" OR "@${domain}")`);
+  }
   let facebookUrl;
   for (const query of queries) {
     try {
@@ -58989,9 +59060,11 @@ async function searchWebForEmail(businessName, location, domain, serperApiKey, c
       const data = await response.json();
       const organic = data.organic || [];
       for (const result of organic) {
-        if (!facebookUrl && result.link?.includes("facebook.com") && !result.link?.includes("sharer")) {
+        const associated = isSearchResultAssociatedWithBusiness(result, businessName, location, domain);
+        if (associated && !facebookUrl && result.link?.includes("facebook.com") && !result.link?.includes("sharer")) {
           facebookUrl = result.link;
         }
+        if (!associated) continue;
         const text = `${result.snippet || ""} ${result.title || ""}`;
         const emails = text.match(emailRegex) || [];
         const phones = text.match(phoneRegex) || [];
@@ -59003,17 +59076,42 @@ async function searchWebForEmail(businessName, location, domain, serperApiKey, c
             email: validEmails[0].toLowerCase(),
             phone: phones[0],
             facebookUrl,
-            source: query.includes("facebook.com") ? "serper_facebook" : "serper_web_search"
+            source: query.includes("facebook.com") ? "serper_facebook" : "serper_web_search",
+            evidenceTitle: result.title || void 0,
+            evidenceSnippet: result.snippet || void 0,
+            evidenceUrl: result.link || void 0
           };
         }
       }
       if (data.knowledgeGraph) {
         const kg = data.knowledgeGraph;
+        const kgAssociated = isSearchResultAssociatedWithBusiness(
+          { title: kg.title || kg.name, snippet: kg.description, link: kg.website },
+          businessName,
+          location,
+          domain
+        );
+        if (!kgAssociated) continue;
         if (kg.email) {
-          return { email: kg.email.toLowerCase(), phone: kg.phone, facebookUrl, source: "serper_knowledge_graph" };
+          return {
+            email: kg.email.toLowerCase(),
+            phone: kg.phone,
+            facebookUrl,
+            source: "serper_knowledge_graph",
+            evidenceTitle: kg.title || kg.name || void 0,
+            evidenceSnippet: kg.description || void 0,
+            evidenceUrl: kg.website || void 0
+          };
         }
         if (kg.phone && !data.organic?.length) {
-          return { phone: kg.phone, facebookUrl, source: "serper_knowledge_graph" };
+          return {
+            phone: kg.phone,
+            facebookUrl,
+            source: "serper_knowledge_graph",
+            evidenceTitle: kg.title || kg.name || void 0,
+            evidenceSnippet: kg.description || void 0,
+            evidenceUrl: kg.website || void 0
+          };
         }
       }
     } catch (error19) {
@@ -67912,9 +68010,9 @@ var regeneratePostCaption = (0, import_https16.onCall)({
   const post = postDoc.data();
   const audience = post.audience === "client" ? "FACILITY CLIENTS" : "CONTRACTORS/VENDORS";
   console.log(`[RegenCaption] Regenerating caption for post ${postId} with feedback: "${feedback || "none"}"`);
-  const { GoogleGenerativeAI: GoogleGenerativeAI14 } = await import("@google/generative-ai");
+  const { GoogleGenerativeAI: GoogleGenerativeAI16 } = await import("@google/generative-ai");
   const API_KEY3 = process.env.GEMINI_API_KEY || "";
-  const genAI4 = new GoogleGenerativeAI14(API_KEY3);
+  const genAI4 = new GoogleGenerativeAI16(API_KEY3);
   const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
   const FALLBACK = `You are the social media manager for XIRI Facility Solutions. You previously generated this Facebook post for {{audience}}:
 
@@ -70682,6 +70780,7 @@ async function classifyFacilityType(url, businessName, searchQuery, geminiApiKey
 
 // src/agents/prospector.ts
 init_src();
+var import_generative_ai9 = require("@google/generative-ai");
 var GENERIC_PREFIXES = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support|billing|accounting|bookkeeping|inquiries|front|manager)@/i;
 var JUNK_EMAIL_DOMAINS = /* @__PURE__ */ new Set([
   "example.com",
@@ -70765,39 +70864,88 @@ var CORPORATE_ONLY_TITLES = [
   "executive chairman",
   "chief operating officer"
 ];
-function stripDomainNoise(root) {
-  return root.replace(/[-_]/g, "").replace(/(mail|email|web|site|online|center|centres?|ny|li|usa|inc|llc|corp|org|hq|app|the)$/gi, "").replace(/(mail|email|web|site|online|center|centres?|ny|li|usa|inc|llc|corp|org|hq|app|the)$/gi, "");
+function getRegistrableDomain2(domain) {
+  const parts = domain.toLowerCase().split(".").filter(Boolean);
+  if (parts.length <= 2) return parts.join(".");
+  const secondLevelTlds = /* @__PURE__ */ new Set(["co", "com", "org", "net", "gov", "ac", "edu"]);
+  const tld = parts[parts.length - 1];
+  const sld = parts[parts.length - 2];
+  if (tld.length === 2 && secondLevelTlds.has(sld) && parts.length >= 3) {
+    return parts.slice(-3).join(".");
+  }
+  return parts.slice(-2).join(".");
 }
 function validateEmailForBusiness(email, businessWebsite) {
   const emailDomain = email.split("@")[1]?.toLowerCase();
   if (!emailDomain) return "junk";
   if (JUNK_EMAIL_DOMAINS.has(emailDomain)) return "junk";
-  if (FREE_EMAIL_PROVIDERS.has(emailDomain)) return "free_provider";
+  const isFreeProvider = FREE_EMAIL_PROVIDERS.has(emailDomain);
   if (businessWebsite) {
     const bizDomain = extractDomain(businessWebsite);
     if (bizDomain) {
       if (emailDomain === bizDomain || emailDomain.endsWith("." + bizDomain)) {
         return "domain_match";
       }
-      const bizRoot = bizDomain.split(".")[0].replace(/[-_]/g, "");
-      const emailRoot = emailDomain.split(".")[0].replace(/[-_]/g, "");
-      if (bizRoot.length >= 5 && emailRoot.length >= 5 && (bizRoot.includes(emailRoot) || emailRoot.includes(bizRoot))) {
+      if (getRegistrableDomain2(emailDomain) === getRegistrableDomain2(bizDomain)) {
         return "domain_match";
       }
-      const bizStripped = stripDomainNoise(bizRoot);
-      const emailStripped = stripDomainNoise(emailRoot);
-      if (bizStripped.length >= 5 && emailStripped.length >= 5 && (bizStripped.includes(emailStripped) || emailStripped.includes(bizStripped))) {
-        return "domain_match";
-      }
-      const bizBase = bizDomain.split(".").slice(0, -1).join(".");
-      const emailBase = emailDomain.split(".").slice(0, -1).join(".");
-      if (bizBase === emailBase) {
-        return "domain_match";
-      }
+      if (isFreeProvider) return "free_provider";
       return "mismatch";
     }
   }
-  return "free_provider";
+  return isFreeProvider ? "free_provider" : "domain_match";
+}
+async function llmAssociationGuard(params) {
+  if (!params.geminiApiKey) {
+    return { accept: params.deterministicValidation === "domain_match", confidence: params.deterministicValidation === "domain_match" ? 0.9 : 0.2, reason: "no_model_key" };
+  }
+  const prompt = `
+You are validating whether a candidate email likely belongs to a real person working at the target business.
+Return ONLY valid JSON: {"accept":boolean,"confidence":number,"reason":string}
+
+Rules:
+- Be strict. Reject if evidence is weak or ambiguous.
+- Accept only if there is clear association between email/contact and target business.
+- Prefer evidence from same website/domain or explicit profile mentioning the business.
+- Generic/free emails are allowed only if evidence strongly ties person to business.
+- Confidence is 0 to 1.
+
+Target business:
+- Name: ${params.businessName}
+- Website: ${params.businessWebsite || "unknown"}
+- Address: ${params.businessAddress || "unknown"}
+
+Candidate:
+- Email: ${params.candidateEmail}
+- Name: ${params.candidateName || "unknown"}
+- Title: ${params.candidateTitle || "unknown"}
+- Source: ${params.source}
+- Deterministic validation: ${params.deterministicValidation}
+
+Search evidence:
+- Title: ${params.evidenceTitle || "none"}
+- Snippet: ${params.evidenceSnippet || "none"}
+- URL: ${params.evidenceUrl || "none"}
+`.trim();
+  try {
+    const genAI4 = new import_generative_ai9.GoogleGenerativeAI(params.geminiApiKey);
+    const model2 = genAI4.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: { temperature: 0, maxOutputTokens: 180 }
+    });
+    const result = await model2.generateContent(prompt);
+    const raw = result.response.text();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { accept: false, confidence: 0, reason: "non_json_response" };
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      accept: !!parsed.accept,
+      confidence: Number.isFinite(parsed.confidence) ? Math.max(0, Math.min(1, Number(parsed.confidence))) : 0,
+      reason: parsed.reason || "no_reason"
+    };
+  } catch (error19) {
+    return { accept: params.deterministicValidation === "domain_match", confidence: 0.1, reason: `guard_error:${error19?.message || "unknown"}` };
+  }
 }
 function getDecisionMakerTitles(facilityType, fallbackQuery) {
   const resolved = facilityType || inferFacilityType(fallbackQuery) || "other";
@@ -70957,6 +71105,7 @@ async function enrichSingleBusiness(vendor, secrets, input) {
   const log = [];
   let targetTitles = inferPreferredDecisionMakerTitles(input.query);
   let avoidTitles = [];
+  let fallbackPersonalEmail;
   const prospect = {
     businessName: vendor.name,
     address: vendor.location,
@@ -70971,7 +71120,10 @@ async function enrichSingleBusiness(vendor, secrets, input) {
   log.push(`Starting enrichment for "${vendor.name}"`);
   if (!vendor.website) {
     log.push("No website available \u2014 skipping to Layer 2 (web search)");
-    await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log);
+    await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log, false, targetTitles, secrets.geminiApiKey);
+    if (!prospect.contactEmail) {
+      await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log, true, targetTitles, secrets.geminiApiKey);
+    }
     if (!prospect.contactEmail && !input.skipPaidApis) {
       log.push("Skipping Layer 3 \u2014 no domain available for enrichment APIs");
     }
@@ -71010,6 +71162,13 @@ async function enrichSingleBusiness(vendor, secrets, input) {
         const emailValid = validateEmailForBusiness(bestEmail, vendor.website);
         if (emailValid === "junk") {
           log.push(`\u26A0\uFE0F Rejected junk email: ${bestEmail} (domain is blocklisted)`);
+        } else if (emailValid === "free_provider") {
+          fallbackPersonalEmail = fallbackPersonalEmail || {
+            email: bestEmail,
+            source: data.ownerEmail ? "ai_extraction" : "mailto",
+            reason: "website_free_provider"
+          };
+          log.push(`Holding free-provider personal email as fallback: ${bestEmail} (source: ${fallbackPersonalEmail.source})`);
         } else if (emailValid === "mismatch") {
           log.push(`\u26A0\uFE0F Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} \u2014 skipping`);
           log.push(`Skipping off-domain email from website scrape: ${bestEmail}`);
@@ -71039,8 +71198,8 @@ async function enrichSingleBusiness(vendor, secrets, input) {
             log.push(`\u26A0\uFE0F Filtered junk mailto: ${e2.email}`);
             return false;
           }
-          if (v === "mismatch") {
-            log.push(`\u26A0\uFE0F Filtered mismatched mailto: ${e2.email} (doesn't match ${vendor.website})`);
+          if (v === "mismatch" || v === "free_provider") {
+            log.push(`\u26A0\uFE0F Filtered non-company mailto: ${e2.email} (${v})`);
             return false;
           }
           return true;
@@ -71052,6 +71211,15 @@ async function enrichSingleBusiness(vendor, secrets, input) {
           prospect.emailConfidence = "high";
           log.push(`Found personal email from mailto scan: ${personalFromMailto.email}`);
           return prospect;
+        }
+        const freeProviderMailto = data.allEmails.find((e2) => e2.type === "personal" && validateEmailForBusiness(e2.email, vendor.website) === "free_provider");
+        if (freeProviderMailto) {
+          fallbackPersonalEmail = fallbackPersonalEmail || {
+            email: freeProviderMailto.email,
+            source: "mailto",
+            reason: "mailto_free_provider"
+          };
+          log.push(`Holding free-provider mailto as fallback: ${freeProviderMailto.email}`);
         }
         const genericFromMailto = data.allEmails.find((e2) => e2.type === "generic");
         if (genericFromMailto && !prospect.genericEmail) {
@@ -71066,7 +71234,9 @@ async function enrichSingleBusiness(vendor, secrets, input) {
   } catch (error19) {
     log.push(`Layer 1 error: ${error19.message}`);
   }
-  await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log);
+  await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log, false, targetTitles, secrets.geminiApiKey);
+  if (prospect.contactEmail) return prospect;
+  await trySerperSearch(prospect, vendor, secrets.serperApiKey, input.location, log, true, targetTitles, secrets.geminiApiKey);
   if (prospect.contactEmail) return prospect;
   if (!prospect.contactName && secrets.serperApiKey) {
     try {
@@ -71134,18 +71304,28 @@ async function enrichSingleBusiness(vendor, secrets, input) {
   }
   if (!prospect.contactEmail) {
     const bestPatternGuess = prospect.allContacts?.find(
-      (c) => c.type === "personal" && c.provider === "pattern_guess" && (c.confidence || 0) >= 60
+      (c) => c.type === "personal" && c.provider === "pattern_guess" && (c.confidence || 0) >= 60 && validateEmailForBusiness(c.email, vendor.website) === "domain_match"
     );
     if (bestPatternGuess && prospect.contactName && prospect.genericEmail) {
       prospect.contactEmail = bestPatternGuess.email;
       prospect.emailSource = "pattern_guess";
       prospect.emailConfidence = "medium";
       log.push(`Using pattern-guessed personal email: ${bestPatternGuess.email} (confidence: ${bestPatternGuess.confidence}, fallback: ${prospect.genericEmail})`);
-    } else if (prospect.genericEmail) {
-      prospect.contactEmail = prospect.genericEmail;
-      prospect.emailSource = "none";
+    } else if (fallbackPersonalEmail) {
+      prospect.contactEmail = fallbackPersonalEmail.email;
+      prospect.emailSource = fallbackPersonalEmail.source;
       prospect.emailConfidence = "low";
-      log.push(`No personal email found \u2014 using generic: ${prospect.genericEmail}`);
+      log.push(`No validated company-domain personal email found \u2014 using website-linked fallback: ${fallbackPersonalEmail.email} (${fallbackPersonalEmail.reason})`);
+    } else if (prospect.genericEmail) {
+      const genericValidation = validateEmailForBusiness(prospect.genericEmail, vendor.website);
+      if (genericValidation === "domain_match" || !vendor.website && genericValidation !== "junk") {
+        prospect.contactEmail = prospect.genericEmail;
+        prospect.emailSource = "none";
+        prospect.emailConfidence = "low";
+        log.push(`No personal email found \u2014 using generic: ${prospect.genericEmail}`);
+      } else {
+        log.push(`Generic email rejected (validation: ${genericValidation}): ${prospect.genericEmail}`);
+      }
     } else {
       log.push("No email found across all layers.");
     }
@@ -71155,8 +71335,8 @@ async function enrichSingleBusiness(vendor, secrets, input) {
 function inferPreferredDecisionMakerTitles(searchQuery) {
   return getDecisionMakerTitles(void 0, searchQuery);
 }
-async function trySerperSearch(prospect, vendor, serperApiKey, location, log) {
-  log.push("Layer 2: Searching web (Facebook, directories, person search)...");
+async function trySerperSearch(prospect, vendor, serperApiKey, location, log, deepResearch = false, decisionMakerTitles = [], geminiApiKey) {
+  log.push(deepResearch ? "Layer 2 (deep): Running title-specific web research for non-generic contacts..." : "Layer 2: Searching web (Facebook, directories, person search)...");
   try {
     const domain = vendor.website ? extractDomain(vendor.website) : void 0;
     const searchResult = await searchWebForEmail(
@@ -71164,8 +71344,9 @@ async function trySerperSearch(prospect, vendor, serperApiKey, location, log) {
       location,
       domain,
       serperApiKey,
-      prospect.contactName
+      prospect.contactName,
       // If AI found an owner name, use it for targeted search
+      { deepResearch, decisionMakerTitles }
     );
     if (searchResult.facebookUrl && !prospect.facebookUrl) {
       prospect.facebookUrl = searchResult.facebookUrl;
@@ -71182,6 +71363,28 @@ async function trySerperSearch(prospect, vendor, serperApiKey, location, log) {
       } else {
         const isPersonal = !GENERIC_PREFIXES.test(searchResult.email);
         if (isPersonal) {
+          const shouldAdjudicate = webEmailValid !== "domain_match" || deepResearch;
+          if (shouldAdjudicate) {
+            const guard = await llmAssociationGuard({
+              geminiApiKey,
+              businessName: vendor.name,
+              businessWebsite: vendor.website || void 0,
+              businessAddress: vendor.location || void 0,
+              candidateEmail: searchResult.email,
+              candidateName: prospect.contactName,
+              candidateTitle: prospect.contactTitle,
+              source: searchResult.source,
+              evidenceTitle: searchResult.evidenceTitle,
+              evidenceSnippet: searchResult.evidenceSnippet,
+              evidenceUrl: searchResult.evidenceUrl,
+              deterministicValidation: webEmailValid
+            });
+            if (!guard.accept || guard.confidence < 0.55) {
+              log.push(`LLM guard rejected web-search email ${searchResult.email} (confidence=${guard.confidence.toFixed(2)}, reason=${guard.reason})`);
+              return;
+            }
+            log.push(`LLM guard accepted web-search email ${searchResult.email} (confidence=${guard.confidence.toFixed(2)}, reason=${guard.reason})`);
+          }
           prospect.contactEmail = searchResult.email;
           prospect.emailSource = searchResult.source.includes("facebook") ? "serper_facebook" : "serper_search";
           prospect.emailConfidence = webEmailValid === "domain_match" ? "high" : "medium";
@@ -71465,6 +71668,201 @@ var expandLocation = (0, import_https21.onCall)({
     console.error("[expandLocation] Error:", error19);
     throw new import_https21.HttpsError("internal", error19.message || "Failed to expand location.");
   }
+});
+var COMMON_BUSINESS_STOP_WORDS = /* @__PURE__ */ new Set([
+  "the",
+  "and",
+  "for",
+  "of",
+  "at",
+  "in",
+  "to",
+  "a",
+  "an",
+  "inc",
+  "llc",
+  "ltd",
+  "co",
+  "corp",
+  "company",
+  "group",
+  "services",
+  "service",
+  "center",
+  "centre"
+]);
+function normalizeText(value) {
+  return (value || "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+function extractTokens(value) {
+  return normalizeText(value).split(" ").filter((token) => token.length >= 4 && !COMMON_BUSINESS_STOP_WORDS.has(token));
+}
+function buildLearnedTokenMap(prospects) {
+  const tokenStats = /* @__PURE__ */ new Map();
+  for (const p of prospects) {
+    const type = (p.facilityType || "").trim();
+    if (!type || type === "unknown" || type === "other") continue;
+    const uniqueTokens = new Set(extractTokens(p.businessName));
+    const words = Array.from(uniqueTokens);
+    for (let i = 0; i < words.length - 1; i++) {
+      const bigram = `${words[i]} ${words[i + 1]}`;
+      uniqueTokens.add(bigram);
+    }
+    for (const token of uniqueTokens) {
+      const current = tokenStats.get(token) || { total: 0, byType: /* @__PURE__ */ new Map() };
+      current.total += 1;
+      current.byType.set(type, (current.byType.get(type) || 0) + 1);
+      tokenStats.set(token, current);
+    }
+  }
+  const learned = /* @__PURE__ */ new Map();
+  for (const [token, stats] of tokenStats) {
+    if (stats.total < 3) continue;
+    const ranked = Array.from(stats.byType.entries()).sort((a2, b) => b[1] - a2[1]);
+    const [topType, topCount] = ranked[0];
+    const purity = topCount / stats.total;
+    if (purity < 0.8) continue;
+    learned.set(token, { facilityType: topType, weight: Math.min(3, 1 + Math.log10(stats.total) + purity) });
+  }
+  return learned;
+}
+function predictFacilityTypeFromLearned(haystack, learned) {
+  if (!haystack) return null;
+  const scores = /* @__PURE__ */ new Map();
+  for (const [token, info33] of learned.entries()) {
+    if (!haystack.includes(token)) continue;
+    scores.set(info33.facilityType, (scores.get(info33.facilityType) || 0) + info33.weight);
+  }
+  const ranked = Array.from(scores.entries()).sort((a2, b) => b[1] - a2[1]);
+  if (ranked.length === 0) return null;
+  const [topType, topScore] = ranked[0];
+  const second = ranked[1]?.[1] || 0;
+  if (topScore < 2.2 || topScore - second < 0.6) return null;
+  return { facilityType: topType, score: topScore };
+}
+function buildCustomPatternMap(customDocs) {
+  const map = /* @__PURE__ */ new Map();
+  for (const c of customDocs) {
+    const patterns = /* @__PURE__ */ new Set();
+    for (const raw of c.inferPatterns || []) {
+      const n = normalizeText(raw);
+      if (n.length >= 3) patterns.add(n);
+    }
+    const labelTokens = extractTokens(c.label);
+    for (const token of labelTokens) patterns.add(token);
+    map.set(c.slug, Array.from(patterns));
+  }
+  return map;
+}
+function matchCustomType(haystack, customPatternMap) {
+  let best = null;
+  for (const [slug, patterns] of customPatternMap.entries()) {
+    let score = 0;
+    for (const pat of patterns) {
+      if (haystack.includes(pat)) score += pat.includes(" ") ? 2 : 1;
+    }
+    if (score <= 0) continue;
+    if (!best || score > best.score) best = { slug, score };
+  }
+  return best?.slug || null;
+}
+var autoCategorizeProspects = (0, import_https21.onCall)({
+  secrets: ["GEMINI_API_KEY"],
+  cors: DASHBOARD_CORS,
+  timeoutSeconds: 180,
+  memory: "512MiB"
+}, async (request) => {
+  const maxToProcess = Math.max(1, Math.min(Number(request.data?.maxToProcess || 500), 2e3));
+  const [prospectSnap, customTypeSnap] = await Promise.all([
+    db.collection("prospect_queue").get(),
+    db.collection("facility_types_custom").get()
+  ]);
+  const allProspects = prospectSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const uncategorized = allProspects.filter((p) => (p.status || "pending_review") === "pending_review").filter((p) => !p.facilityType || p.facilityType === "unknown").sort((a2, b) => {
+    const aMs = a2.createdAt?.toMillis?.() || 0;
+    const bMs = b.createdAt?.toMillis?.() || 0;
+    return bMs - aMs;
+  }).slice(0, maxToProcess);
+  if (uncategorized.length === 0) {
+    return { scanned: 0, updated: 0, bySource: { custom: 0, heuristic: 0, learned: 0, website: 0 } };
+  }
+  const labeled = allProspects.filter((p) => !!p.facilityType && p.facilityType !== "unknown");
+  const learnedTokenMap = buildLearnedTokenMap(labeled);
+  const customTypes = customTypeSnap.docs.map((d) => ({
+    slug: d.id,
+    label: String(d.data()?.label || d.id),
+    inferPatterns: Array.isArray(d.data()?.inferPatterns) ? d.data().inferPatterns : []
+  }));
+  const customPatternMap = buildCustomPatternMap(customTypes);
+  const updates = [];
+  let websiteLookups = 0;
+  const MAX_WEBSITE_LOOKUPS = 120;
+  for (const p of uncategorized) {
+    const haystack = normalizeText(`${p.businessName || ""} ${p.searchQuery || ""}`);
+    let chosen = null;
+    const customMatch = matchCustomType(haystack, customPatternMap);
+    if (customMatch) {
+      chosen = { facilityType: customMatch, source: "custom" };
+    }
+    if (!chosen) {
+      const staticMatch = inferFacilityType(p.searchQuery) || inferFacilityType(p.businessName);
+      if (staticMatch) {
+        chosen = { facilityType: staticMatch, source: "heuristic" };
+      }
+    }
+    if (!chosen) {
+      const learned = predictFacilityTypeFromLearned(haystack, learnedTokenMap);
+      if (learned) {
+        chosen = { facilityType: learned.facilityType, source: "learned" };
+      }
+    }
+    if (!chosen && p.website && process.env.GEMINI_API_KEY && websiteLookups < MAX_WEBSITE_LOOKUPS) {
+      websiteLookups += 1;
+      const log = [];
+      const websiteType = await classifyFacilityType(
+        p.website,
+        p.businessName || "",
+        p.searchQuery || "",
+        process.env.GEMINI_API_KEY,
+        log
+      );
+      if (websiteType) {
+        chosen = { facilityType: websiteType, source: "website" };
+      }
+    }
+    if (chosen) {
+      updates.push({ id: p.id, ...chosen });
+    }
+  }
+  if (updates.length === 0) {
+    return {
+      scanned: uncategorized.length,
+      updated: 0,
+      websiteLookups,
+      bySource: { custom: 0, heuristic: 0, learned: 0, website: 0 }
+    };
+  }
+  const bySource = { custom: 0, heuristic: 0, learned: 0, website: 0 };
+  const BATCH_SIZE = 450;
+  for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    for (const u2 of updates.slice(i, i + BATCH_SIZE)) {
+      bySource[u2.source] += 1;
+      batch.update(db.collection("prospect_queue").doc(u2.id), {
+        facilityType: u2.facilityType,
+        facilityTypeSource: u2.source,
+        facilityTypeAutoTaggedAt: /* @__PURE__ */ new Date(),
+        updatedAt: /* @__PURE__ */ new Date()
+      });
+    }
+    await batch.commit();
+  }
+  return {
+    scanned: uncategorized.length,
+    updated: updates.length,
+    websiteLookups,
+    bySource
+  };
 });
 
 // src/triggers/dailyProspector.ts
@@ -72770,7 +73168,7 @@ var import_https24 = require("firebase-functions/v2/https");
 
 // src/utils/facebookEnricher.ts
 var cheerio2 = __toESM(require("cheerio"));
-var import_generative_ai9 = require("@google/generative-ai");
+var import_generative_ai10 = require("@google/generative-ai");
 init_promptUtils();
 var TIMEOUT_MS2 = 12e3;
 var USER_AGENT3 = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -72974,7 +73372,7 @@ function extractFromPatterns2($, html) {
 }
 async function extractWithAI2(pageText, geminiApiKey) {
   try {
-    const genAI4 = new import_generative_ai9.GoogleGenerativeAI(geminiApiKey);
+    const genAI4 = new import_generative_ai10.GoogleGenerativeAI(geminiApiKey);
     const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
     const truncated = pageText.substring(0, 12e3);
     const FALLBACK = `You are extracting business information from a Facebook business page.
@@ -73085,6 +73483,7 @@ function mergeResults(patterns, ai) {
 }
 
 // src/agents/vendorProspector.ts
+var import_generative_ai11 = require("@google/generative-ai");
 var GENERIC_PREFIXES2 = /^(info|contact|hello|office|admin|sales|team|service|services|marketing|support|billing|accounting|bookkeeping|inquiries|front|manager)@/i;
 var JUNK_EMAIL_DOMAINS2 = /* @__PURE__ */ new Set([
   "example.com",
@@ -73166,39 +73565,88 @@ function generateQueriesForCapability(capabilityLabel, group) {
   const base = capabilityLabel.toLowerCase();
   return suffixes.map((suffix) => `${base} ${suffix}`);
 }
-function stripDomainNoise2(root) {
-  return root.replace(/[-_]/g, "").replace(/(mail|email|web|site|online|center|centres?|ny|li|usa|inc|llc|corp|org|hq|app|the)$/gi, "").replace(/(mail|email|web|site|online|center|centres?|ny|li|usa|inc|llc|corp|org|hq|app|the)$/gi, "");
+function getRegistrableDomain3(domain) {
+  const parts = domain.toLowerCase().split(".").filter(Boolean);
+  if (parts.length <= 2) return parts.join(".");
+  const secondLevelTlds = /* @__PURE__ */ new Set(["co", "com", "org", "net", "gov", "ac", "edu"]);
+  const tld = parts[parts.length - 1];
+  const sld = parts[parts.length - 2];
+  if (tld.length === 2 && secondLevelTlds.has(sld) && parts.length >= 3) {
+    return parts.slice(-3).join(".");
+  }
+  return parts.slice(-2).join(".");
 }
 function validateEmailForBusiness2(email, businessWebsite) {
   const emailDomain = email.split("@")[1]?.toLowerCase();
   if (!emailDomain) return "junk";
   if (JUNK_EMAIL_DOMAINS2.has(emailDomain)) return "junk";
-  if (FREE_EMAIL_PROVIDERS2.has(emailDomain)) return "free_provider";
+  const isFreeProvider = FREE_EMAIL_PROVIDERS2.has(emailDomain);
   if (businessWebsite) {
     const bizDomain = extractDomain2(businessWebsite);
     if (bizDomain) {
       if (emailDomain === bizDomain || emailDomain.endsWith("." + bizDomain)) {
         return "domain_match";
       }
-      const bizRoot = bizDomain.split(".")[0].replace(/[-_]/g, "");
-      const emailRoot = emailDomain.split(".")[0].replace(/[-_]/g, "");
-      if (bizRoot.length > 2 && emailRoot.length > 2 && (bizRoot.includes(emailRoot) || emailRoot.includes(bizRoot))) {
+      if (getRegistrableDomain3(emailDomain) === getRegistrableDomain3(bizDomain)) {
         return "domain_match";
       }
-      const bizStripped = stripDomainNoise2(bizRoot);
-      const emailStripped = stripDomainNoise2(emailRoot);
-      if (bizStripped.length > 2 && emailStripped.length > 2 && (bizStripped.includes(emailStripped) || emailStripped.includes(bizStripped))) {
-        return "domain_match";
-      }
-      const bizBase = bizDomain.split(".").slice(0, -1).join(".");
-      const emailBase = emailDomain.split(".").slice(0, -1).join(".");
-      if (bizBase === emailBase) {
-        return "domain_match";
-      }
+      if (isFreeProvider) return "free_provider";
       return "mismatch";
     }
   }
-  return "free_provider";
+  return isFreeProvider ? "free_provider" : "domain_match";
+}
+async function llmAssociationGuard2(params) {
+  if (!params.geminiApiKey) {
+    return { accept: params.deterministicValidation === "domain_match", confidence: params.deterministicValidation === "domain_match" ? 0.9 : 0.2, reason: "no_model_key" };
+  }
+  const prompt = `
+You are validating whether a candidate email likely belongs to a real person working at the target business.
+Return ONLY valid JSON: {"accept":boolean,"confidence":number,"reason":string}
+
+Rules:
+- Be strict. Reject if evidence is weak or ambiguous.
+- Accept only if there is clear association between email/contact and target business.
+- Prefer evidence from same website/domain or explicit profile mentioning the business.
+- Generic/free emails are allowed only if evidence strongly ties person to business.
+- Confidence is 0 to 1.
+
+Target business:
+- Name: ${params.businessName}
+- Website: ${params.businessWebsite || "unknown"}
+- Address: ${params.businessAddress || "unknown"}
+
+Candidate:
+- Email: ${params.candidateEmail}
+- Name: ${params.candidateName || "unknown"}
+- Title: ${params.candidateTitle || "unknown"}
+- Source: ${params.source}
+- Deterministic validation: ${params.deterministicValidation}
+
+Search evidence:
+- Title: ${params.evidenceTitle || "none"}
+- Snippet: ${params.evidenceSnippet || "none"}
+- URL: ${params.evidenceUrl || "none"}
+`.trim();
+  try {
+    const genAI4 = new import_generative_ai11.GoogleGenerativeAI(params.geminiApiKey);
+    const model2 = genAI4.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: { temperature: 0, maxOutputTokens: 180 }
+    });
+    const result = await model2.generateContent(prompt);
+    const raw = result.response.text();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { accept: false, confidence: 0, reason: "non_json_response" };
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      accept: !!parsed.accept,
+      confidence: Number.isFinite(parsed.confidence) ? Math.max(0, Math.min(1, Number(parsed.confidence))) : 0,
+      reason: parsed.reason || "no_reason"
+    };
+  } catch (error19) {
+    return { accept: params.deterministicValidation === "domain_match", confidence: 0.1, reason: `guard_error:${error19?.message || "unknown"}` };
+  }
 }
 async function vendorProspectAndEnrich(input, secrets) {
   const maxResults = input.maxResults || 20;
@@ -73312,6 +73760,8 @@ async function vendorProspectAndEnrich(input, secrets) {
 }
 async function enrichSingleVendor(vendor, secrets, input) {
   const log = [];
+  const decisionMakerTitles = ["owner", "operations manager", "general manager", "office manager", "facility manager", "service manager"];
+  let fallbackPersonalEmail;
   const prospect = {
     businessName: vendor.name,
     address: vendor.location,
@@ -73380,7 +73830,10 @@ async function enrichSingleVendor(vendor, secrets, input) {
       if (prospect.website) {
         log.push(`Facebook revealed external website \u2014 continuing to Layer 1...`);
       } else {
-        await trySerperSearch2(prospect, vendor, secrets.serperApiKey, input.location, log);
+        await trySerperSearch2(prospect, vendor, secrets.serperApiKey, input.location, log, false, decisionMakerTitles, secrets.geminiApiKey);
+        if (!prospect.contactEmail) {
+          await trySerperSearch2(prospect, vendor, secrets.serperApiKey, input.location, log, true, decisionMakerTitles, secrets.geminiApiKey);
+        }
         if (!prospect.contactEmail && prospect.genericEmail) {
           prospect.contactEmail = prospect.genericEmail;
           prospect.emailSource = "none";
@@ -73391,7 +73844,10 @@ async function enrichSingleVendor(vendor, secrets, input) {
       }
     } else {
       log.push("No website available \u2014 skipping to Layer 2 (web search)");
-      await trySerperSearch2(prospect, vendor, secrets.serperApiKey, input.location, log);
+      await trySerperSearch2(prospect, vendor, secrets.serperApiKey, input.location, log, false, decisionMakerTitles, secrets.geminiApiKey);
+      if (!prospect.contactEmail) {
+        await trySerperSearch2(prospect, vendor, secrets.serperApiKey, input.location, log, true, decisionMakerTitles, secrets.geminiApiKey);
+      }
       if (!prospect.contactEmail && !input.skipPaidApis) {
         log.push("Skipping Layer 3 \u2014 no domain available for enrichment APIs");
       }
@@ -73419,6 +73875,13 @@ async function enrichSingleVendor(vendor, secrets, input) {
         const emailValid = validateEmailForBusiness2(bestEmail, vendor.website);
         if (emailValid === "junk") {
           log.push(`\u26A0\uFE0F Rejected junk email: ${bestEmail} (domain is blocklisted)`);
+        } else if (emailValid === "free_provider") {
+          fallbackPersonalEmail = fallbackPersonalEmail || {
+            email: bestEmail,
+            source: data.ownerEmail ? "ai_extraction" : "mailto",
+            reason: "website_free_provider"
+          };
+          log.push(`Holding free-provider personal email as fallback: ${bestEmail} (source: ${fallbackPersonalEmail.source})`);
         } else if (emailValid === "mismatch") {
           log.push(`\u26A0\uFE0F Email domain mismatch: ${bestEmail} doesn't match website ${vendor.website} \u2014 skipping`);
           log.push(`Skipping off-domain email from website scrape: ${bestEmail}`);
@@ -73446,8 +73909,8 @@ async function enrichSingleVendor(vendor, secrets, input) {
             log.push(`\u26A0\uFE0F Filtered junk mailto: ${e2.email}`);
             return false;
           }
-          if (v === "mismatch") {
-            log.push(`\u26A0\uFE0F Filtered mismatched mailto: ${e2.email}`);
+          if (v === "mismatch" || v === "free_provider") {
+            log.push(`\u26A0\uFE0F Filtered non-company mailto: ${e2.email} (${v})`);
             return false;
           }
           return true;
@@ -73459,6 +73922,15 @@ async function enrichSingleVendor(vendor, secrets, input) {
           prospect.emailConfidence = "high";
           log.push(`Found personal email from mailto scan: ${personalFromMailto.email}`);
           return prospect;
+        }
+        const freeProviderMailto = data.allEmails.find((e2) => e2.type === "personal" && validateEmailForBusiness2(e2.email, vendor.website) === "free_provider");
+        if (freeProviderMailto) {
+          fallbackPersonalEmail = fallbackPersonalEmail || {
+            email: freeProviderMailto.email,
+            source: "mailto",
+            reason: "mailto_free_provider"
+          };
+          log.push(`Holding free-provider mailto as fallback: ${freeProviderMailto.email}`);
         }
         const genericFromMailto = data.allEmails.find((e2) => e2.type === "generic");
         if (genericFromMailto && !prospect.genericEmail) {
@@ -73473,7 +73945,9 @@ async function enrichSingleVendor(vendor, secrets, input) {
   } catch (error19) {
     log.push(`Layer 1 error: ${error19.message}`);
   }
-  await trySerperSearch2(prospect, vendor, secrets.serperApiKey, input.location, log);
+  await trySerperSearch2(prospect, vendor, secrets.serperApiKey, input.location, log, false, decisionMakerTitles, secrets.geminiApiKey);
+  if (prospect.contactEmail) return prospect;
+  await trySerperSearch2(prospect, vendor, secrets.serperApiKey, input.location, log, true, decisionMakerTitles, secrets.geminiApiKey);
   if (prospect.contactEmail) return prospect;
   if (!input.skipPaidApis) {
     const domain = extractDomain2(vendor.website);
@@ -73518,18 +73992,28 @@ async function enrichSingleVendor(vendor, secrets, input) {
       }
     }
   }
-  if (!prospect.contactEmail && prospect.genericEmail) {
-    prospect.contactEmail = prospect.genericEmail;
-    prospect.emailSource = "none";
+  if (!prospect.contactEmail && fallbackPersonalEmail) {
+    prospect.contactEmail = fallbackPersonalEmail.email;
+    prospect.emailSource = fallbackPersonalEmail.source;
     prospect.emailConfidence = "low";
-    log.push(`No personal email found \u2014 using generic: ${prospect.genericEmail}`);
+    log.push(`No validated company-domain personal email found \u2014 using website-linked fallback: ${fallbackPersonalEmail.email} (${fallbackPersonalEmail.reason})`);
+  } else if (!prospect.contactEmail && prospect.genericEmail) {
+    const genericValidation = validateEmailForBusiness2(prospect.genericEmail, vendor.website);
+    if (genericValidation === "domain_match" || !vendor.website && genericValidation !== "junk") {
+      prospect.contactEmail = prospect.genericEmail;
+      prospect.emailSource = "none";
+      prospect.emailConfidence = "low";
+      log.push(`No personal email found \u2014 using generic: ${prospect.genericEmail}`);
+    } else {
+      log.push(`Generic email rejected (validation: ${genericValidation}): ${prospect.genericEmail}`);
+    }
   } else if (!prospect.contactEmail) {
     log.push("No email found across all layers.");
   }
   return prospect;
 }
-async function trySerperSearch2(prospect, vendor, serperApiKey, location, log) {
-  log.push("Layer 2: Searching web (Facebook, directories, person search)...");
+async function trySerperSearch2(prospect, vendor, serperApiKey, location, log, deepResearch = false, decisionMakerTitles = [], geminiApiKey) {
+  log.push(deepResearch ? "Layer 2 (deep): Running title-specific web research for non-generic contacts..." : "Layer 2: Searching web (Facebook, directories, person search)...");
   try {
     const domain = vendor.website ? extractDomain2(vendor.website) : void 0;
     const searchResult = await searchWebForEmail(
@@ -73537,7 +74021,8 @@ async function trySerperSearch2(prospect, vendor, serperApiKey, location, log) {
       location,
       domain,
       serperApiKey,
-      prospect.contactName
+      prospect.contactName,
+      { deepResearch, decisionMakerTitles }
     );
     if (searchResult.facebookUrl && !prospect.facebookUrl) {
       prospect.facebookUrl = searchResult.facebookUrl;
@@ -73554,6 +74039,28 @@ async function trySerperSearch2(prospect, vendor, serperApiKey, location, log) {
       } else {
         const isPersonal = !GENERIC_PREFIXES2.test(searchResult.email);
         if (isPersonal) {
+          const shouldAdjudicate = webEmailValid !== "domain_match" || deepResearch;
+          if (shouldAdjudicate) {
+            const guard = await llmAssociationGuard2({
+              geminiApiKey,
+              businessName: vendor.name,
+              businessWebsite: vendor.website || void 0,
+              businessAddress: vendor.location || void 0,
+              candidateEmail: searchResult.email,
+              candidateName: prospect.contactName,
+              candidateTitle: prospect.contactTitle,
+              source: searchResult.source,
+              evidenceTitle: searchResult.evidenceTitle,
+              evidenceSnippet: searchResult.evidenceSnippet,
+              evidenceUrl: searchResult.evidenceUrl,
+              deterministicValidation: webEmailValid
+            });
+            if (!guard.accept || guard.confidence < 0.55) {
+              log.push(`LLM guard rejected web-search email ${searchResult.email} (confidence=${guard.confidence.toFixed(2)}, reason=${guard.reason})`);
+              return;
+            }
+            log.push(`LLM guard accepted web-search email ${searchResult.email} (confidence=${guard.confidence.toFixed(2)}, reason=${guard.reason})`);
+          }
           prospect.contactEmail = searchResult.email;
           prospect.emailSource = searchResult.source.includes("facebook") ? "serper_facebook" : "serper_search";
           prospect.emailConfidence = webEmailValid === "domain_match" ? "high" : "medium";
@@ -74032,7 +74539,7 @@ var getVendorProspectingConfig = (0, import_https25.onCall)({
 
 // src/functions/sequenceGenerator.ts
 var import_https26 = require("firebase-functions/v2/https");
-var import_generative_ai10 = require("@google/generative-ai");
+var import_generative_ai12 = require("@google/generative-ai");
 init_promptUtils();
 var FALLBACK_SYSTEM_PROMPT = `You are an expert B2B email copywriter for XIRI Facility Solutions, a commercial cleaning and facility management platform based in New York.
 
@@ -74097,7 +74604,7 @@ Number of steps: ${numSteps}
 
 Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
   try {
-    const genAI4 = new import_generative_ai10.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+    const genAI4 = new import_generative_ai12.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     const model2 = genAI4.getGenerativeModel({
       model: "gemini-3.1-pro-preview",
       generationConfig: {
@@ -74148,7 +74655,7 @@ Space the emails out naturally (e.g., Day 0, Day 3, Day 7, Day 14, etc.).`;
 
 // src/functions/askAI.ts
 var import_https27 = require("firebase-functions/v2/https");
-var import_generative_ai11 = require("@google/generative-ai");
+var import_generative_ai13 = require("@google/generative-ai");
 var AI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
 function delay(ms) {
   return new Promise((resolve2) => setTimeout(resolve2, ms));
@@ -74272,7 +74779,7 @@ var askAI = (0, import_https27.onCall)({
     parts: [{ text: msg.text }]
   }));
   try {
-    const genAI4 = new import_generative_ai11.GoogleGenerativeAI(apiKey);
+    const genAI4 = new import_generative_ai13.GoogleGenerativeAI(apiKey);
     let lastError = null;
     for (const modelName of AI_MODELS) {
       for (let attempt = 1; attempt <= 3; attempt++) {
@@ -74313,7 +74820,7 @@ var askAI = (0, import_https27.onCall)({
 
 // src/functions/parseCalculatorPrompt.ts
 var import_https28 = require("firebase-functions/v2/https");
-var import_generative_ai12 = require("@google/generative-ai");
+var import_generative_ai14 = require("@google/generative-ai");
 var BUILDING_TYPE_IDS = [
   "office",
   "medical",
@@ -74460,7 +74967,7 @@ var parseCalculatorPrompt = (0, import_https28.onCall)({
     console.warn("[parseCalculatorPrompt] GEMINI_API_KEY not set; returning empty parse");
     return { parsed: {} };
   }
-  const genAI4 = new import_generative_ai12.GoogleGenerativeAI(apiKey);
+  const genAI4 = new import_generative_ai14.GoogleGenerativeAI(apiKey);
   const extractionPrompt = `
 Extract structured fields from this janitorial bid text and return ONLY valid JSON.
 
@@ -74734,7 +75241,7 @@ var testGscConnection = (0, import_https29.onCall)({
 var import_scheduler13 = require("firebase-functions/v2/scheduler");
 var import_https30 = require("firebase-functions/v2/https");
 var logger39 = __toESM(require("firebase-functions/logger"));
-var import_generative_ai13 = require("@google/generative-ai");
+var import_generative_ai15 = require("@google/generative-ai");
 
 // src/pseo/config.ts
 var DEFAULT_PSEO_BATCH_SIZE = 100;
@@ -75401,7 +75908,7 @@ async function generateCopySuggestion(nudge, segment, winningPatterns = [], topP
   if (!apiKey) {
     return `[GEMINI_API_KEY not configured \u2014 manual suggestion needed for ${nudge.targetField}]`;
   }
-  const genAI4 = new import_generative_ai13.GoogleGenerativeAI(apiKey);
+  const genAI4 = new import_generative_ai15.GoogleGenerativeAI(apiKey);
   const model2 = genAI4.getGenerativeModel({ model: "gemini-2.0-flash" });
   const audienceContext = segment === "leads" ? "facility managers, office managers, and property managers evaluating commercial cleaning partners. They are B2B decision-makers who prioritize compliance documentation, verified quality, and operational reliability over price." : "independent janitorial contractors and cleaning company owners seeking commercial cleaning contracts and subcontracting opportunities in the Long Island/NYC market.";
   const trustContext = nudge.dataPoints.trustSignal ? `
@@ -76429,6 +76936,7 @@ var getPseoDeployStatus = (0, import_https31.onCall)({
   adminCreateUser,
   adminUpdateAuthUser,
   askAI,
+  autoCategorizeProspects,
   backfillEngagement,
   bookDiscoveryCall,
   bookOnboardingCall,

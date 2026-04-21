@@ -397,7 +397,7 @@ export function inferFacilityType(searchQuery?: string): FacilityType | null {
     if (q.includes('cleanroom') || q.includes('lab ')) return 'lab_cleanroom';
     if (q.includes('bsl') || q.includes('biosafety')) return 'lab_bsl';
     if (q.includes('manufacturing') || q.includes('factory') || q.includes('warehouse')) return 'manufacturing_light';
-    if (q.includes('gym') || q.includes('fitness') || q.includes('crossfit') || q.includes('yoga')) return 'fitness_gym';
+    if (q.includes('gym') || q.includes('fitness') || q.includes('crossfit') || q.includes('yoga') || q.includes('pilates')) return 'fitness_gym';
     if (q.includes('retail') || q.includes('store') || q.includes('shop') || q.includes('boutique')) return 'retail_storefront';
     if (q.includes('church') || q.includes('religious') || q.includes('mosque') || q.includes('synagogue') || q.includes('temple') || q.includes('worship')) return 'religious_center';
     if (q.includes('funeral') || q.includes('mortuary') || q.includes('cremation')) return 'funeral_home';

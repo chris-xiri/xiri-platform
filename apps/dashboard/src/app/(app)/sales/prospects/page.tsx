@@ -438,50 +438,26 @@ export default function ProspectsPage() {
 
     /** Re-run auto-categorization against static inference + custom types' inferPatterns */
     const handleAutoRecategorize = async () => {
-        const uncategorized = prospects.filter(p => getEffectiveFacilityType(p) === 'unknown');
-        if (uncategorized.length === 0) {
-            toast({ title: 'All categorized', description: 'No uncategorized prospects found.' });
-            return;
-        }
-
-        let matched = 0;
-        const updates: { id: string; slug: string }[] = [];
-
-        for (const p of uncategorized) {
-            const haystack = `${p.businessName || ''} ${p.searchQuery || ''}`.toLowerCase();
-
-            // 1. Try the static inferFacilityType from shared package (on searchQuery, then businessName)
-            const staticMatch = inferFacilityType(p.searchQuery) || inferFacilityType(p.businessName);
-            if (staticMatch) {
-                updates.push({ id: p.id, slug: staticMatch });
-                matched++;
-                continue;
-            }
-
-            // Note: customFacilityTypes is a slug→label map; no pattern matching supported for custom types
-        }
-
-        if (updates.length === 0) {
-            toast({ title: 'No matches', description: `${uncategorized.length} uncategorized prospects didn't match any patterns.` });
-            return;
-        }
-
         try {
-            const BATCH_SIZE = 450;
-            for (let i = 0; i < updates.length; i += BATCH_SIZE) {
-                const chunk = updates.slice(i, i + BATCH_SIZE);
-                const batch = writeBatch(db);
-                for (const u of chunk) {
-                    batch.update(doc(db, 'prospect_queue', u.id), {
-                        facilityType: u.slug,
-                        updatedAt: new Date(),
-                    });
-                }
-                await batch.commit();
+            const fn = httpsCallable(functions, 'autoCategorizeProspects');
+            const result = await fn({ maxToProcess: 750 });
+            const data = result.data as {
+                scanned: number;
+                updated: number;
+                websiteLookups?: number;
+                bySource?: { custom: number; heuristic: number; learned: number; website: number };
+            };
+            if (!data.updated) {
+                toast({
+                    title: 'No new matches',
+                    description: `Scanned ${data.scanned || 0} uncategorized prospects.`,
+                });
+                return;
             }
+            const source = data.bySource || { custom: 0, heuristic: 0, learned: 0, website: 0 };
             toast({
                 title: 'Auto-categorized',
-                description: `${matched} of ${uncategorized.length} uncategorized prospects categorized.`,
+                description: `${data.updated} updated (custom ${source.custom}, heuristic ${source.heuristic}, learned ${source.learned}, website ${source.website}).`,
             });
         } catch (err) {
             toast({ title: 'Error auto-categorizing', description: String(err) });

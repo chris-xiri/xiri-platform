@@ -3,7 +3,8 @@ import { db } from "../utils/firebase";
 import { DASHBOARD_CORS } from "../utils/cors";
 import { prospectAndEnrich } from "../agents/prospector";
 import type { EnrichedProspect } from "@xiri/shared";
-import { inferFacilityType } from "@xiri/shared";
+import { inferFacilityType, type FacilityType } from "@xiri/shared";
+import { classifyFacilityType } from "../utils/facilityClassifier";
 
 // ── Prospect & Enrich ──
 // Runs the full multi-source enrichment pipeline:
@@ -245,4 +246,234 @@ export const expandLocation = onCall({
         console.error("[expandLocation] Error:", error);
         throw new HttpsError("internal", error.message || "Failed to expand location.");
     }
+});
+
+type ProspectQueueDoc = {
+    id: string;
+    businessName?: string;
+    searchQuery?: string;
+    website?: string;
+    facilityType?: string | null;
+    status?: string;
+    createdAt?: any;
+};
+
+const COMMON_BUSINESS_STOP_WORDS = new Set([
+    "the", "and", "for", "of", "at", "in", "to", "a", "an",
+    "inc", "llc", "ltd", "co", "corp", "company", "group", "services", "service", "center", "centre",
+]);
+
+function normalizeText(value?: string | null): string {
+    return (value || "")
+        .toLowerCase()
+        .replace(/&/g, " and ")
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function extractTokens(value?: string | null): string[] {
+    return normalizeText(value)
+        .split(" ")
+        .filter(token => token.length >= 4 && !COMMON_BUSINESS_STOP_WORDS.has(token));
+}
+
+function buildLearnedTokenMap(prospects: ProspectQueueDoc[]) {
+    const tokenStats = new Map<string, { total: number; byType: Map<string, number> }>();
+
+    for (const p of prospects) {
+        const type = (p.facilityType || "").trim();
+        if (!type || type === "unknown" || type === "other") continue;
+
+        const uniqueTokens = new Set<string>(extractTokens(p.businessName));
+        const words = Array.from(uniqueTokens);
+        for (let i = 0; i < words.length - 1; i++) {
+            const bigram = `${words[i]} ${words[i + 1]}`;
+            uniqueTokens.add(bigram);
+        }
+
+        for (const token of uniqueTokens) {
+            const current = tokenStats.get(token) || { total: 0, byType: new Map<string, number>() };
+            current.total += 1;
+            current.byType.set(type, (current.byType.get(type) || 0) + 1);
+            tokenStats.set(token, current);
+        }
+    }
+
+    const learned = new Map<string, { facilityType: FacilityType; weight: number }>();
+    for (const [token, stats] of tokenStats) {
+        if (stats.total < 3) continue;
+        const ranked = Array.from(stats.byType.entries()).sort((a, b) => b[1] - a[1]);
+        const [topType, topCount] = ranked[0];
+        const purity = topCount / stats.total;
+        if (purity < 0.8) continue;
+        learned.set(token, { facilityType: topType as FacilityType, weight: Math.min(3, 1 + Math.log10(stats.total) + purity) });
+    }
+
+    return learned;
+}
+
+function predictFacilityTypeFromLearned(
+    haystack: string,
+    learned: Map<string, { facilityType: FacilityType; weight: number }>
+): { facilityType: FacilityType; score: number } | null {
+    if (!haystack) return null;
+    const scores = new Map<FacilityType, number>();
+    for (const [token, info] of learned.entries()) {
+        if (!haystack.includes(token)) continue;
+        scores.set(info.facilityType, (scores.get(info.facilityType) || 0) + info.weight);
+    }
+    const ranked = Array.from(scores.entries()).sort((a, b) => b[1] - a[1]);
+    if (ranked.length === 0) return null;
+    const [topType, topScore] = ranked[0];
+    const second = ranked[1]?.[1] || 0;
+    if (topScore < 2.2 || topScore - second < 0.6) return null;
+    return { facilityType: topType, score: topScore };
+}
+
+function buildCustomPatternMap(customDocs: Array<{ slug: string; label: string; inferPatterns: string[] }>) {
+    const map = new Map<string, string[]>();
+    for (const c of customDocs) {
+        const patterns = new Set<string>();
+        for (const raw of c.inferPatterns || []) {
+            const n = normalizeText(raw);
+            if (n.length >= 3) patterns.add(n);
+        }
+        const labelTokens = extractTokens(c.label);
+        for (const token of labelTokens) patterns.add(token);
+        map.set(c.slug, Array.from(patterns));
+    }
+    return map;
+}
+
+function matchCustomType(haystack: string, customPatternMap: Map<string, string[]>): string | null {
+    let best: { slug: string; score: number } | null = null;
+    for (const [slug, patterns] of customPatternMap.entries()) {
+        let score = 0;
+        for (const pat of patterns) {
+            if (haystack.includes(pat)) score += pat.includes(" ") ? 2 : 1;
+        }
+        if (score <= 0) continue;
+        if (!best || score > best.score) best = { slug, score };
+    }
+    return best?.slug || null;
+}
+
+export const autoCategorizeProspects = onCall({
+    secrets: ["GEMINI_API_KEY"],
+    cors: DASHBOARD_CORS,
+    timeoutSeconds: 180,
+    memory: "512MiB",
+}, async (request) => {
+    const maxToProcess = Math.max(1, Math.min(Number(request.data?.maxToProcess || 500), 2000));
+
+    const [prospectSnap, customTypeSnap] = await Promise.all([
+        db.collection("prospect_queue").get(),
+        db.collection("facility_types_custom").get(),
+    ]);
+
+    const allProspects: ProspectQueueDoc[] = prospectSnap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+
+    const uncategorized = allProspects
+        .filter(p => (p.status || "pending_review") === "pending_review")
+        .filter(p => !p.facilityType || p.facilityType === "unknown")
+        .sort((a, b) => {
+            const aMs = a.createdAt?.toMillis?.() || 0;
+            const bMs = b.createdAt?.toMillis?.() || 0;
+            return bMs - aMs;
+        })
+        .slice(0, maxToProcess);
+
+    if (uncategorized.length === 0) {
+        return { scanned: 0, updated: 0, bySource: { custom: 0, heuristic: 0, learned: 0, website: 0 } };
+    }
+
+    const labeled = allProspects.filter(p => !!p.facilityType && p.facilityType !== "unknown");
+    const learnedTokenMap = buildLearnedTokenMap(labeled);
+
+    const customTypes = customTypeSnap.docs.map(d => ({
+        slug: d.id,
+        label: String(d.data()?.label || d.id),
+        inferPatterns: Array.isArray(d.data()?.inferPatterns) ? d.data()!.inferPatterns : [],
+    }));
+    const customPatternMap = buildCustomPatternMap(customTypes);
+
+    const updates: Array<{ id: string; facilityType: string; source: "custom" | "heuristic" | "learned" | "website" }> = [];
+    let websiteLookups = 0;
+    const MAX_WEBSITE_LOOKUPS = 120;
+
+    for (const p of uncategorized) {
+        const haystack = normalizeText(`${p.businessName || ""} ${p.searchQuery || ""}`);
+        let chosen: { facilityType: string; source: "custom" | "heuristic" | "learned" | "website" } | null = null;
+
+        const customMatch = matchCustomType(haystack, customPatternMap);
+        if (customMatch) {
+            chosen = { facilityType: customMatch, source: "custom" };
+        }
+
+        if (!chosen) {
+            const staticMatch = inferFacilityType(p.searchQuery) || inferFacilityType(p.businessName);
+            if (staticMatch) {
+                chosen = { facilityType: staticMatch, source: "heuristic" };
+            }
+        }
+
+        if (!chosen) {
+            const learned = predictFacilityTypeFromLearned(haystack, learnedTokenMap);
+            if (learned) {
+                chosen = { facilityType: learned.facilityType, source: "learned" };
+            }
+        }
+
+        if (!chosen && p.website && process.env.GEMINI_API_KEY && websiteLookups < MAX_WEBSITE_LOOKUPS) {
+            websiteLookups += 1;
+            const log: string[] = [];
+            const websiteType = await classifyFacilityType(
+                p.website,
+                p.businessName || "",
+                p.searchQuery || "",
+                process.env.GEMINI_API_KEY,
+                log
+            );
+            if (websiteType) {
+                chosen = { facilityType: websiteType, source: "website" };
+            }
+        }
+
+        if (chosen) {
+            updates.push({ id: p.id, ...chosen });
+        }
+    }
+
+    if (updates.length === 0) {
+        return {
+            scanned: uncategorized.length,
+            updated: 0,
+            websiteLookups,
+            bySource: { custom: 0, heuristic: 0, learned: 0, website: 0 },
+        };
+    }
+
+    const bySource = { custom: 0, heuristic: 0, learned: 0, website: 0 };
+    const BATCH_SIZE = 450;
+    for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+        const batch = db.batch();
+        for (const u of updates.slice(i, i + BATCH_SIZE)) {
+            bySource[u.source] += 1;
+            batch.update(db.collection("prospect_queue").doc(u.id), {
+                facilityType: u.facilityType,
+                facilityTypeSource: u.source,
+                facilityTypeAutoTaggedAt: new Date(),
+                updatedAt: new Date(),
+            });
+        }
+        await batch.commit();
+    }
+
+    return {
+        scanned: uncategorized.length,
+        updated: updates.length,
+        websiteLookups,
+        bySource,
+    };
 });
