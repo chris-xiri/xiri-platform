@@ -14,6 +14,7 @@ import { IndustryMarketStat } from '@/components/MarketSnapshot';
 import { CountyDataBar } from '@/components/CountyDataBar';
 import type { CensusEstablishmentResult } from '@/lib/census';
 import type { CountySummary, MarketWageContext } from '@/data/open-data';
+import { getIndustryHeroSlides } from '@/lib/hero-media';
 
 interface Location {
     slug: string;
@@ -137,6 +138,7 @@ export function IndustryHubPage({ industry, pillar, location, censusResult, cens
                     title={`${industry.name} Cleaning in ${location.name}`}
                     subtitle={location.localInsight || `${industry.heroSubtitle} Proudly serving facilities near ${location.landmarks?.join(', ') || location.region}.`}
                     ctaText={`Get a Quote for ${townName}`}
+                    mediaSlides={getIndustryHeroSlides(industry.slug)}
                 />
 
                 {/* Trust Bar */}
@@ -336,6 +338,7 @@ export function IndustryHubPage({ industry, pillar, location, censusResult, cens
                 subtitle={industry.heroSubtitle || "Standardized cleaning and compliance for single-tenant facilities."}
                 ctaText="Get a Facility Audit"
                 ctaLink="#audit"
+                mediaSlides={getIndustryHeroSlides(industry.slug)}
             />
 
             {/* Census Market Stat */}

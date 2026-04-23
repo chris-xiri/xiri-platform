@@ -4,14 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { LeadFormModal } from './LeadFormModal';
 import { SITE, CTA } from '@/lib/constants';
-
-interface HeroMediaSlide {
-    imageSrc: string;
-    alt: string;
-    facilityName: string;
-    facilityType: string;
-    serviceFocus: string;
-}
+import type { HeroMediaSlide } from '@/lib/hero-media';
 
 interface HeroProps {
     title: React.ReactNode;

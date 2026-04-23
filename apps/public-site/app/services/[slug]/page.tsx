@@ -18,6 +18,7 @@ import { AuthorityBreadcrumb, getPillarForService } from '@/components/Authority
 import { regionToCountyId, getCountySummary, getMarketWageContext } from '@/data/open-data';
 import { CountyDataBar } from '@/components/CountyDataBar';
 import { getServiceFaqProfile, getIndustryFaqProfile, type FaqEntry } from '@/data/service-faq-intelligence';
+import { getServiceHeroSlides } from '@/lib/hero-media';
 
 // ─── Typical Cost Data (P1: high-intent pricing queries) ────────────────────
 // Ranges reflect commercial/institutional pricing in the Greater NY market.
@@ -392,6 +393,7 @@ export default async function ServicePage({ params }: Props) {
                     title={service.heroTitle || service.name}
                     subtitle={service.heroSubtitle || service.shortDescription}
                     ctaText="Get a Quote"
+                    mediaSlides={getServiceHeroSlides(service.slug)}
                 />
                 <ValuePropsSection
                     title={`Why Choose ${SITE.shortName} for ${service.name}`}
@@ -717,6 +719,7 @@ export default async function ServicePage({ params }: Props) {
                 title={heroTitle}
                 subtitle={heroSubtitle}
                 ctaText={`Get a Quote for ${townName}`}
+                mediaSlides={getServiceHeroSlides(service.slug)}
             />
 
             {/* ═══ TRUST BAR ═══ */}

@@ -12,6 +12,7 @@ import { SITE } from '@/lib/constants';
 import { getNAICSMappings, DEFAULT_METRO_AREA } from '@/data/gov-data';
 import { getTotalEstablishments } from '@/lib/census';
 import { PillarMarketSnapshot } from '@/components/MarketSnapshot';
+import { getPillarHeroSlides } from '@/lib/hero-media';
 
 // ─── STATIC PARAMS ─────────────────────────────────────────────────
 
@@ -116,6 +117,7 @@ export default async function IndustryPillarPage({ params }: { params: Promise<{
                 subtitle={pillar.description}
                 ctaText="Get a Facility Audit"
                 ctaLink="/#audit"
+                mediaSlides={getPillarHeroSlides(pillar.slug)}
             />
 
             {/* Census Market Snapshot */}
