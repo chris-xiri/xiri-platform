@@ -11,6 +11,7 @@ import { SITE } from '@/lib/constants';
 import { SITEMAP_CONTRACTOR_TRADE_SLUGS, SITEMAP_LEAD_SERVICE_SLUGS, SITEMAP_STATIC_ROUTES } from '@/lib/seo-rules';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || SITE.url;
+const OVERLAP_LEAD_LOCATION_SLUGS = new Set(['janitorial-services', 'commercial-cleaning']);
 
 export default function sitemap(): MetadataRoute.Sitemap {
     const sitemapEntries: MetadataRoute.Sitemap = [];
@@ -52,7 +53,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
             const countySlug = toSlug(location.region);
             const townSlug = toSlug(location.name.split(',')[0]);
             const stateSlug = location.state.toLowerCase();
-            sitemapEntries.push({ url: `${BASE_URL}/services/${service.slug}-in-${townSlug}-${countySlug}-${stateSlug}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 });
+            const isOverlapLeadLocation = OVERLAP_LEAD_LOCATION_SLUGS.has(service.slug);
+            sitemapEntries.push({
+                url: `${BASE_URL}/services/${service.slug}-in-${townSlug}-${countySlug}-${stateSlug}`,
+                lastModified: new Date(),
+                changeFrequency: isOverlapLeadLocation ? 'yearly' : 'monthly',
+                priority: isOverlapLeadLocation ? 0.55 : 0.85,
+            });
         });
     });
     // NOTE: Other 14 services × location (896 pages) excluded from sitemap.

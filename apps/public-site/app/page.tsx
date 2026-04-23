@@ -14,7 +14,7 @@ export default function Home() {
     <div className="min-h-screen bg-white font-sans">
       <Hero
         title={<>Was Your Building Actually<br /><span className="text-sky-600">Cleaned Last Night?</span></>}
-        subtitle="XIRI gives you verified proof of what was cleaned, when, and by whom. One partner for cleaning, maintenance, supplies, and compliance."
+        subtitle="Start with verified commercial cleaning: proof of what was cleaned, when, and by whom. Then scale into maintenance, supplies, and compliance with one accountable partner."
         ctaText="Get Verified Cleaning"
         ctaLink="#audit"
         features={[
@@ -22,7 +22,7 @@ export default function Home() {
           { text: '100% Insured' },
           { text: 'Compliance Ready' },
         ]}
-        secondaryCta={{ text: 'See How Verification Works →', href: '/solutions/cleaning-verification' }}
+        secondaryCta={{ text: 'See How Verification Works', href: '/solutions/cleaning-verification' }}
       />
 
       <TrustBar />

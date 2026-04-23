@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { JsonLd } from '@/components/JsonLd';
 import { CTAButton } from '@/components/CTAButton';
 import { SITE } from '@/lib/constants';
@@ -15,15 +16,15 @@ const PublicCalculator = dynamic(() => import('@/components/PublicCalculator'), 
 });
 
 export const metadata: Metadata = {
-    title: 'Janitorial Cleaning Cost Calculator (2026) | Commercial Cleaning Rates',
-    description: 'How much should office cleaning cost? Use our free calculator to get instant commercial cleaning rates by sqft, facility type, and state. Compare janitorial services pricing and see what a fair monthly cleaning cost should be in seconds.',
+    title: 'Janitorial Cleaning Cost Calculator (2026)',
+    description: 'Estimate monthly janitorial cleaning cost by square footage, facility type, and state. Compare commercial cleaning pricing and request a verified quote.',
     alternates: {
         canonical: 'https://xiri.ai/calculator',
     },
     keywords: ['janitorial cleaning cost', 'janitorial services cost', 'commercial cleaning rates', 'office cleaning cost', 'how much should office cleaning cost', 'janitorial cleaning cost calculator', 'commercial cleaning cost per square foot'],
     openGraph: {
-        title: 'Janitorial Cleaning Cost Calculator (2026) | Free Instant Estimate',
-        description: 'How much do janitorial services cost? Free calculator for commercial cleaning rates — office, medical, auto dealership & more. Instant estimate by sqft and state.',
+        title: 'Janitorial Cleaning Cost Calculator (2026)',
+        description: 'See fair monthly janitorial pricing by sqft, building type, and state. Instant estimate plus verified quote option.',
         url: 'https://xiri.ai/calculator',
         siteName: SITE.name,
         type: 'website',
@@ -183,6 +184,20 @@ export default function CalculatorPage() {
             <section className="py-12 bg-slate-50 border-b border-slate-200">
                 <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
                     <PublicCalculator />
+                    <div className="mt-6 text-center text-sm text-slate-600">
+                        Need detailed service scope instead of pricing?
+                        {' '}
+                        <Link href="/services/commercial-cleaning" className="font-semibold text-sky-700 hover:underline">
+                            See commercial cleaning services
+                        </Link>
+                        {' '}
+                        and
+                        {' '}
+                        <Link href="/services/janitorial-services" className="font-semibold text-sky-700 hover:underline">
+                            janitorial service details
+                        </Link>
+                        .
+                    </div>
                 </div>
             </section>
 
@@ -280,36 +295,20 @@ export default function CalculatorPage() {
                 </div>
             </section>
 
-            {/* ═══ DUAL CTA ═══ */}
+            {/* ═══ LEAD CTA ═══ */}
             <section className="py-20 bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 text-white">
                 <div className="max-w-4xl mx-auto px-4">
-                    <div className="grid md:grid-cols-2 gap-8">
-                        {/* For facility managers */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-                            <div className="text-3xl mb-4">🏢</div>
-                            <h3 className="text-xl font-bold mb-3">For Facility Managers</h3>
-                            <p className="text-slate-300 mb-6 text-sm">
-                                Get an exact quote with a free site walkthrough. We&apos;ll walk your facility, build a custom scope, and match you with vetted, insured contractors.
-                            </p>
-                            <CTAButton
-                                href="/#audit"
-                                text="Get Your Custom Quote →"
-                                className="inline-block bg-sky-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-sky-400 transition-colors"
-                            />
-                        </div>
-                        {/* For cleaning companies */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-                            <div className="text-3xl mb-4">🧹</div>
-                            <h3 className="text-xl font-bold mb-3">For Cleaning Companies</h3>
-                            <p className="text-slate-300 mb-6 text-sm">
-                                Use this tool to bid more accurately. Join XIRI&apos;s contractor network to get matched with facilities in your area — we handle invoicing, you handle cleaning.
-                            </p>
-                            <CTAButton
-                                href="/contractors"
-                                text="Join Our Network →"
-                                className="inline-block bg-white text-slate-900 px-6 py-3 rounded-lg font-semibold hover:bg-slate-100 transition-colors"
-                            />
-                        </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 text-center">
+                        <div className="text-3xl mb-4">🏢</div>
+                        <h3 className="text-xl font-bold mb-3">Get a Verified Cleaning Quote</h3>
+                        <p className="text-slate-300 mb-6 text-sm">
+                            Get an exact quote with a free site walkthrough. We&apos;ll map your scope, verify requirements, and return a clear monthly price.
+                        </p>
+                        <CTAButton
+                            href="/#audit"
+                            text="Get Your Custom Quote →"
+                            className="inline-block bg-sky-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-sky-400 transition-colors"
+                        />
                     </div>
                 </div>
             </section>

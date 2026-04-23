@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
   title: {
     default: `${SITE.name} | The New Standard`,
-    template: `%s | ${SITE.name}`,
+    template: `%s`,
   },
   description: SITE.description,
   robots: {

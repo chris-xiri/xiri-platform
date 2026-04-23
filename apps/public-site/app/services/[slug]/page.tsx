@@ -237,6 +237,29 @@ const META_DESCRIPTIONS: Record<string, string> = {
     'preventive-maintenance': 'Preventive maintenance programs for commercial buildings. Scheduled cleaning, pest control, HVAC, handyman — all coordinated under one invoice.',
 };
 
+const LEAD_CTR_SERVICE_SLUGS = new Set([
+    'janitorial-services',
+    'commercial-cleaning',
+]);
+
+const LEAD_CTR_SERVICE_META: Record<string, { title: string; description: string }> = {
+    'janitorial-services': {
+        title: 'Janitorial Services Pricing & Quotes (2026)',
+        description: 'Compare local janitorial services pricing for offices and commercial buildings. Get monthly cost ranges and request a verified quote.',
+    },
+    'commercial-cleaning': {
+        title: 'Commercial Cleaning Services Pricing & Quotes (2026)',
+        description: 'Compare commercial cleaning services and monthly janitorial pricing for offices, medical facilities, and retail sites.',
+    },
+};
+
+function truncateSeoTitle(input: string): string {
+    if (input.length <= 60) {
+        return input;
+    }
+    return `${input.slice(0, 57).trimEnd()}...`;
+}
+
 // Generate dynamic metadata for SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
@@ -245,10 +268,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (type === 'SERVICE') {
         const service = data as any;
         const logic = MEDICAL_LOGIC[service.slug] || DEFAULT_LOGIC;
-        // Title: service name + compliance prefix + short brand (under 60 chars)
-        const title = `${service.heroTitle || service.name} — ${logic.titlePrefix} | XIRI`;
-        // Description: use explicit description if available, otherwise auto-generate
-        const description = META_DESCRIPTIONS[service.slug] || `${service.shortDescription} ${logic.pitch}. 1 partner, 1 invoice, 365 nights/yr verified.`.slice(0, 155);
+        const leadCtrMeta = LEAD_CTR_SERVICE_META[service.slug];
+        const title = leadCtrMeta?.title || `${service.heroTitle || service.name} — ${logic.titlePrefix} | XIRI`;
+        const description =
+            leadCtrMeta?.description ||
+            META_DESCRIPTIONS[service.slug] ||
+            `${service.shortDescription} ${logic.pitch}. 1 partner, 1 invoice, 365 nights/yr verified.`.slice(0, 155);
         return {
             title,
             description,
@@ -266,13 +291,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     } else if (type === 'LOCATION') {
         const { service, location } = data as { service: any; location: Location };
         const logic = MEDICAL_LOGIC[service.slug] || DEFAULT_LOGIC;
-        // Title: service + location + short brand (under 60 chars)
-        const title = `${service.name} in ${location.name} | XIRI`;
-        // Description: local hook + surgical pitch + numbers + CTA
-        const localHook = location.localInsight
-            ? `${location.localInsight} `
-            : '';
-        const description = `${localHook}${service.name} in ${location.name} — ${logic.pitch}. $1M-insured, 1 invoice. ${logic.compliance} audit-ready. Free walkthrough →`.slice(0, 155);
+        const townName = location.name.split(',')[0]?.trim() || location.name;
+        const isLeadCtrSlug = LEAD_CTR_SERVICE_SLUGS.has(service.slug);
+        const title = isLeadCtrSlug
+            ? truncateSeoTitle(`${service.name} ${townName}, ${location.state} | Free Quote`)
+            : `${service.name} in ${location.name} | XIRI`;
+        const localHook = location.localInsight ? `${location.localInsight} ` : '';
+        const description = isLeadCtrSlug
+            ? `${service.name} in ${townName}, ${location.state}. Compare local monthly pricing, review scope options, and request a verified quote.`.slice(0, 155)
+            : `${localHook}${service.name} in ${location.name} — ${logic.pitch}. $1M-insured, 1 invoice. ${logic.compliance} audit-ready. Free walkthrough →`.slice(0, 155);
 
         return {
             title,
@@ -410,16 +437,21 @@ export default async function ServicePage({ params }: Props) {
                         'day-porter', 'disinfecting-services',
                     ];
                     const isCleaning = CLEANING_SERVICES.includes(service.slug);
+                    const isLeadCtrService = LEAD_CTR_SERVICE_SLUGS.has(service.slug);
 
                     if (isCleaning) {
                         return (
                             <section className="py-12 bg-sky-50 border-y border-sky-100">
                                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                                     <h2 className="text-2xl font-bold text-slate-900 mb-3">
-                                        💰 How Much Does {service.name} Cost?
+                                        {isLeadCtrService
+                                            ? '💰 Get Instant Pricing with the Cost Calculator'
+                                            : `💰 How Much Does ${service.name} Cost?`}
                                     </h2>
                                     <p className="text-slate-600 mb-2 max-w-2xl mx-auto">
-                                        Get an instant estimate with our free janitorial cleaning cost calculator. Enter your square footage, facility type, and state — results in seconds.
+                                        {isLeadCtrService
+                                            ? 'This page explains service scope and delivery. For instant pricing, use our calculator with your square footage, facility type, and state.'
+                                            : 'Get an instant estimate with our free janitorial cleaning cost calculator. Enter your square footage, facility type, and state — results in seconds.'}
                                     </p>
                                     <p className="text-sm text-slate-500 mb-6">Used by 20+ facilities across New York · No sign-up required</p>
                                     <Link
@@ -453,7 +485,11 @@ export default async function ServicePage({ params }: Props) {
                 })()}
 
                 {(() => {
-                    const otherServices = seoData.services.filter(s => s.slug !== service.slug).slice(0, 6);
+                    const isLeadCtrService = LEAD_CTR_SERVICE_SLUGS.has(service.slug);
+                    const otherServices = seoData.services
+                        .filter(s => s.slug !== service.slug)
+                        .filter(s => !(isLeadCtrService && LEAD_CTR_SERVICE_SLUGS.has(s.slug)))
+                        .slice(0, 6);
                     if (otherServices.length === 0) return null;
                     return (
                         <section className="py-16 bg-white border-t border-gray-200">

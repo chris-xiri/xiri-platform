@@ -10,11 +10,11 @@ import { SITE } from '@/lib/constants';
 // ─── SEO METADATA ──────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-    title: 'Commercial Cleaning Services | XIRI',
-    description: 'Professional commercial cleaning for medical offices, urgent care, daycares, and commercial buildings in Nassau County & NYC. Janitorial, floor care, disinfecting, day porters — fully insured, nightly audited, one invoice.',
+    title: 'Commercial Cleaning Services Pricing & Quotes (2026)',
+    description: 'Compare commercial cleaning services and monthly janitorial pricing for offices, medical facilities, and retail sites. Request a verified local quote.',
     openGraph: {
-        title: 'Commercial Cleaning Services | XIRI',
-        description: 'Clinical-grade janitorial, floor care, carpet cleaning, disinfecting, and day porter services. Fully insured with nightly audits.',
+        title: 'Commercial Cleaning Services Pricing & Quotes (2026)',
+        description: 'Compare commercial cleaning services, scope options, and monthly janitorial pricing. Request a verified quote.',
         url: 'https://xiri.ai/services/commercial-cleaning',
     },
     alternates: {
@@ -234,6 +234,21 @@ export default function CommercialCleaningPage() {
                 ctaText="Get a Building Scope"
                 ctaLink="/#audit"
             />
+
+            {/* Pricing intent handoff */}
+            <section className="py-8 bg-white border-b border-slate-200">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <p className="text-slate-600">
+                        Looking for pricing first?
+                        {' '}
+                        <Link href="/calculator" className="font-semibold text-sky-700 hover:underline">
+                            Use the janitorial cost calculator
+                        </Link>
+                        {' '}
+                        for instant monthly estimates, then return here for service scope details.
+                    </p>
+                </div>
+            </section>
 
             {/* Value Props */}
             <section className="py-16 bg-slate-50 border-y border-slate-200">

@@ -67287,6 +67287,449 @@ var analyzeVendorLeads = async (rawVendors, jobQuery, hasActiveContract = false,
 // src/agents/sourcer.ts
 var import_axios2 = __toESM(require("axios"));
 var crypto3 = __toESM(require("crypto"));
+
+// src/utils/prospectingTargets.ts
+var ICP_CATEGORIES = [
+  // ── TIER 1: Medical & Healthcare (highest LTV, strictest cleaning needs) ──
+  {
+    label: "Dental",
+    icpReason: "Always single-tenant suite. OSHA mandates sterile environment. High cleaning frequency.",
+    queries: ["dental office", "orthodontist", "pediatric dentist", "oral surgeon office", "endodontist"],
+    tier: 1
+  },
+  {
+    label: "Medical Office",
+    icpReason: "Private practices lease suites and manage own cleaning. Compliance-driven.",
+    queries: ["medical office", "doctor office", "family medicine practice", "pediatrician office", "internal medicine office"],
+    tier: 1
+  },
+  {
+    label: "Specialist Medical",
+    icpReason: "Specialist suites are always tenant-responsible for cleaning.",
+    queries: ["dermatologist office", "eye doctor optometrist", "ENT doctor office", "allergist office", "podiatrist office"],
+    tier: 1
+  },
+  {
+    label: "Urgent Care & Surgery",
+    icpReason: "Standalone or anchor tenant. High-margin terminal cleaning.",
+    queries: ["urgent care clinic", "outpatient surgery center", "walk-in clinic"],
+    tier: 1
+  },
+  {
+    label: "Veterinary",
+    icpReason: "Almost always standalone buildings. Odor/sanitation critical.",
+    queries: ["veterinary clinic", "animal hospital", "pet emergency vet"],
+    tier: 1
+  },
+  {
+    label: "Physical Therapy & Rehab",
+    icpReason: "Suite or standalone. Equipment requires specialized cleaning.",
+    queries: ["physical therapy center", "chiropractor office", "rehabilitation center"],
+    tier: 1
+  },
+  {
+    label: "Dialysis",
+    icpReason: "Standalone. Biohazard cleaning, CMS regulated.",
+    queries: ["dialysis center"],
+    tier: 1
+  },
+  // ── TIER 2: Commercial Businesses (good volume, moderate LTV) ──
+  {
+    label: "Automotive",
+    icpReason: "Always standalone lot + building. Showroom + service bays.",
+    queries: ["car dealership", "auto repair shop", "auto body shop", "tire shop"],
+    tier: 2
+  },
+  {
+    label: "Childcare & Education",
+    icpReason: "Standalone or strip mall. Health dept mandates cleaning. Parents expect spotless.",
+    queries: ["daycare center", "preschool", "childcare center", "Montessori school"],
+    tier: 2
+  },
+  {
+    label: "Tutoring & Learning",
+    icpReason: "Strip mall/standalone suite. Manage own cleaning.",
+    queries: ["tutoring center", "learning center", "test prep center"],
+    tier: 2
+  },
+  {
+    label: "Fitness & Wellness",
+    icpReason: "Standalone or anchor tenant. High-traffic, equipment sanitation critical.",
+    queries: ["gym fitness center", "CrossFit gym", "yoga studio", "pilates studio", "martial arts studio"],
+    tier: 2
+  },
+  {
+    label: "Retail Storefront",
+    icpReason: "Strip mall or standalone. Tenant manages own cleaning.",
+    queries: ["retail store", "boutique shop", "bridal shop", "furniture store"],
+    tier: 2
+  },
+  {
+    label: "Salon & Personal Care",
+    icpReason: "Suite/strip mall tenant. Cleaning is tenant responsibility.",
+    queries: ["hair salon", "barbershop", "nail salon", "spa day spa", "med spa"],
+    tier: 2
+  },
+  {
+    label: "Religious Centers",
+    icpReason: "Standalone buildings. Large common areas. Weekly deep clean.",
+    queries: ["church", "synagogue", "mosque", "temple"],
+    tier: 2
+  },
+  {
+    label: "Funeral Homes",
+    icpReason: "Always standalone. Discretion and presentation critical.",
+    queries: ["funeral home", "funeral parlor"],
+    tier: 2
+  },
+  {
+    label: "Pet Services",
+    icpReason: "Standalone/strip mall. Odor control and sanitation critical.",
+    queries: ["pet grooming", "doggy daycare", "pet boarding kennel"],
+    tier: 2
+  },
+  // ── TIER 3: Professional Services (in small buildings or strip malls) ──
+  {
+    label: "Legal",
+    icpReason: "Small firms in standalone or strip. NOT in Class A towers (those have building janitorial).",
+    queries: ["law firm office", "attorney office"],
+    tier: 3
+  },
+  {
+    label: "Insurance & Finance",
+    icpReason: "Agency offices in strip malls / small buildings. Manage own cleaning.",
+    queries: ["insurance agency office", "accounting firm office", "tax preparation office"],
+    tier: 3
+  },
+  {
+    label: "Real Estate",
+    icpReason: "Brokerage offices in standalone / strip. Manage own cleaning.",
+    queries: ["real estate office"],
+    tier: 3
+  },
+  {
+    label: "Pharmacy",
+    icpReason: "Independent pharmacies in strip malls. Chain pharmacies less likely.",
+    queries: ["pharmacy", "compounding pharmacy"],
+    tier: 3
+  },
+  {
+    label: "Dance & Performing Arts",
+    icpReason: "Studios in strip or standalone. High floor care needs.",
+    queries: ["dance studio", "music school", "performing arts studio"],
+    tier: 3
+  },
+  {
+    label: "Private Schools",
+    icpReason: "Campus buildings. Large-scale cleaning needs.",
+    queries: ["private school", "preparatory school"],
+    tier: 3
+  },
+  {
+    label: "Light Industrial",
+    icpReason: "Warehouse/light manufacturing. Standalone or industrial park.",
+    queries: ["warehouse", "light manufacturing facility"],
+    tier: 3
+  }
+];
+var SERVICE_REGIONS = [
+  {
+    county: "Nassau",
+    state: "NY",
+    towns: [
+      "Garden City",
+      "Mineola",
+      "Hicksville",
+      "Levittown",
+      "Freeport",
+      "Hempstead",
+      "Westbury",
+      "Great Neck",
+      "Manhasset",
+      "Floral Park",
+      "Massapequa",
+      "Rockville Centre",
+      "Long Beach",
+      "Valley Stream",
+      "Port Washington",
+      "Syosset",
+      "Glen Cove",
+      "Farmingdale",
+      "Merrick",
+      "Bellmore",
+      "Wantagh",
+      "Plainview",
+      "Bethpage",
+      "Oceanside",
+      "East Meadow",
+      "Franklin Square",
+      "Lynbrook",
+      "New Hyde Park",
+      "Jericho",
+      "Carle Place"
+    ]
+  },
+  {
+    county: "Suffolk",
+    state: "NY",
+    towns: [
+      "Huntington",
+      "Babylon",
+      "Bay Shore",
+      "Islip",
+      "Brentwood",
+      "Smithtown",
+      "Commack",
+      "Hauppauge",
+      "Patchogue",
+      "Ronkonkoma",
+      "Lake Grove",
+      "Riverhead",
+      "Deer Park",
+      "Lindenhurst",
+      "West Islip",
+      "Centereach",
+      "Bohemia",
+      "Holbrook",
+      "Medford",
+      "Sayville",
+      "East Northport",
+      "Kings Park",
+      "Port Jefferson",
+      "Stony Brook",
+      "Coram",
+      "Selden"
+    ]
+  },
+  {
+    county: "Queens",
+    state: "NY",
+    towns: [
+      "Flushing",
+      "Jamaica",
+      "Astoria",
+      "Long Island City",
+      "Forest Hills",
+      "Bayside",
+      "Jackson Heights",
+      "Rego Park",
+      "Elmhurst",
+      "Ridgewood",
+      "Fresh Meadows",
+      "Whitestone",
+      "College Point",
+      "Woodside",
+      "Kew Gardens",
+      "Howard Beach",
+      "Ozone Park",
+      "Richmond Hill",
+      "Maspeth",
+      "Glendale"
+    ]
+  }
+];
+function generateProspectingConfig(options) {
+  const tiers = options?.tiers ?? [1, 2, 3];
+  const maxPerCat = options?.maxQueriesPerCategory ?? 99;
+  const includeCounty = options?.includeCountyFallback ?? false;
+  const dailyTarget = options?.dailyTarget ?? 100;
+  const queries = [];
+  const tierBreakdown = {};
+  for (const cat of ICP_CATEGORIES) {
+    if (!tiers.includes(cat.tier)) continue;
+    const tierKey = `tier${cat.tier}`;
+    const catQueries = cat.queries.slice(0, maxPerCat);
+    queries.push(...catQueries);
+    tierBreakdown[tierKey] = (tierBreakdown[tierKey] || 0) + catQueries.length;
+  }
+  const locations = [];
+  for (const region of SERVICE_REGIONS) {
+    for (const town of region.towns) {
+      locations.push(`${town}, ${region.state}`);
+    }
+    if (includeCounty) {
+      locations.push(`${region.county} County, ${region.state}`);
+    }
+  }
+  const totalCombos = queries.length * locations.length;
+  const estimatedWeeksOfFreshData = Math.floor(totalCombos / (dailyTarget / 3) / 7);
+  return {
+    queries,
+    locations,
+    dailyTarget,
+    enabled: true,
+    excludePatterns: [],
+    _generatorMeta: {
+      totalCombos,
+      estimatedWeeksOfFreshData,
+      tierBreakdown,
+      generatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    }
+  };
+}
+function getConfigSummary(config2) {
+  const meta = config2._generatorMeta;
+  return [
+    `\u{1F4CA} Prospecting Config Generated`,
+    `   Queries: ${config2.queries.length}`,
+    `   Locations: ${config2.locations.length}`,
+    `   Total Combos: ${meta.totalCombos}`,
+    `   Daily Target: ${config2.dailyTarget}`,
+    `   Est. Weeks of Fresh Data: ${meta.estimatedWeeksOfFreshData}`,
+    `   Tier Breakdown: ${JSON.stringify(meta.tierBreakdown)}`,
+    ``,
+    `   Sample queries: ${config2.queries.slice(0, 5).join(", ")}...`,
+    `   Sample locations: ${config2.locations.slice(0, 5).join(", ")}...`
+  ].join("\n");
+}
+
+// src/agents/sourcer.ts
+var STATE_NAME_TO_CODE = {
+  alabama: "AL",
+  alaska: "AK",
+  arizona: "AZ",
+  arkansas: "AR",
+  california: "CA",
+  colorado: "CO",
+  connecticut: "CT",
+  delaware: "DE",
+  florida: "FL",
+  georgia: "GA",
+  hawaii: "HI",
+  idaho: "ID",
+  illinois: "IL",
+  indiana: "IN",
+  iowa: "IA",
+  kansas: "KS",
+  kentucky: "KY",
+  louisiana: "LA",
+  maine: "ME",
+  maryland: "MD",
+  massachusetts: "MA",
+  michigan: "MI",
+  minnesota: "MN",
+  mississippi: "MS",
+  missouri: "MO",
+  montana: "MT",
+  nebraska: "NE",
+  nevada: "NV",
+  "new hampshire": "NH",
+  "new jersey": "NJ",
+  "new mexico": "NM",
+  "new york": "NY",
+  "north carolina": "NC",
+  "north dakota": "ND",
+  ohio: "OH",
+  oklahoma: "OK",
+  oregon: "OR",
+  pennsylvania: "PA",
+  "rhode island": "RI",
+  "south carolina": "SC",
+  "south dakota": "SD",
+  tennessee: "TN",
+  texas: "TX",
+  utah: "UT",
+  vermont: "VT",
+  virginia: "VA",
+  washington: "WA",
+  "west virginia": "WV",
+  wisconsin: "WI",
+  wyoming: "WY",
+  "district of columbia": "DC"
+};
+var STATE_CODE_TO_NAME = Object.fromEntries(
+  Object.entries(STATE_NAME_TO_CODE).map(([name, code]) => [code, name])
+);
+function normalizeWhitespace(value) {
+  return value.replace(/\s+/g, " ").trim();
+}
+function normalizeToken(value) {
+  return normalizeWhitespace(value.toLowerCase().replace(/[^a-z0-9\s]/g, ""));
+}
+function extractStateCode(value) {
+  const token = normalizeToken(value);
+  if (!token) return null;
+  const maybeCode = token.toUpperCase();
+  if (/^[A-Z]{2}$/.test(maybeCode) && STATE_CODE_TO_NAME[maybeCode]) return maybeCode;
+  return STATE_NAME_TO_CODE[token] || null;
+}
+function parseLocationConstraint(location) {
+  const parts = location.split(",").map((p) => normalizeWhitespace(p)).filter(Boolean);
+  let stateCode = null;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const code = extractStateCode(parts[i]);
+    if (code) {
+      stateCode = code;
+      break;
+    }
+  }
+  const firstPart = parts[0] || "";
+  const city = firstPart ? normalizeToken(firstPart.replace(/\bcounty\b/gi, "")) : null;
+  return {
+    city: city || null,
+    stateCode
+  };
+}
+var ALLOWED_SERVICE_STATE = "NY";
+var ALLOWED_SERVICE_COUNTY_TOKENS = new Set(
+  SERVICE_REGIONS.map((r) => normalizeToken(r.county))
+);
+var ALLOWED_SERVICE_CITY_TOKENS = new Set(
+  SERVICE_REGIONS.flatMap((r) => r.towns.map((t) => normalizeToken(t)))
+);
+function extractCityTokenFromAddress(address) {
+  const parts = address.split(",").map((p) => normalizeWhitespace(p)).filter(Boolean);
+  if (parts.length >= 2) return normalizeToken(parts[1]);
+  return null;
+}
+function extractCountyTokenFromAddress(address) {
+  const normalized = normalizeToken(address);
+  for (const county of ALLOWED_SERVICE_COUNTY_TOKENS) {
+    if (normalized.includes(`${county} county`) || normalized.includes(county)) {
+      return county;
+    }
+  }
+  return null;
+}
+function isInsideCoreServiceArea(vendorLocation) {
+  if (!vendorLocation) return false;
+  if (!addressHasState(vendorLocation, ALLOWED_SERVICE_STATE)) return false;
+  const city = extractCityTokenFromAddress(vendorLocation);
+  if (city && ALLOWED_SERVICE_CITY_TOKENS.has(city)) return true;
+  const county = extractCountyTokenFromAddress(vendorLocation);
+  if (county && ALLOWED_SERVICE_COUNTY_TOKENS.has(county)) return true;
+  return false;
+}
+function addressContainsCity(address, city) {
+  const normalizedAddress = normalizeToken(address);
+  if (!normalizedAddress || !city) return false;
+  return normalizedAddress.includes(city);
+}
+function addressHasState(address, stateCode) {
+  const normalizedAddress = normalizeWhitespace(address);
+  if (!normalizedAddress || !stateCode) return false;
+  const codeRegex = new RegExp(`[,\\s]${stateCode}(?:\\s+\\d{5}(?:-\\d{4})?|[,\\s]|$)`, "i");
+  if (codeRegex.test(normalizedAddress)) return true;
+  const fullName = STATE_CODE_TO_NAME[stateCode];
+  if (!fullName) return false;
+  const fullNameRegex = new RegExp(`\\b${fullName}\\b`, "i");
+  return fullNameRegex.test(normalizedAddress);
+}
+function vendorMatchesLocationConstraint(vendorLocation, requestedLocation) {
+  if (!vendorLocation) return false;
+  if (!isInsideCoreServiceArea(vendorLocation)) return false;
+  const constraint = parseLocationConstraint(requestedLocation);
+  const hasCityConstraint = !!constraint.city;
+  const hasStateConstraint = !!constraint.stateCode;
+  if (!hasCityConstraint && !hasStateConstraint) return true;
+  if (hasStateConstraint && !addressHasState(vendorLocation, constraint.stateCode)) {
+    return false;
+  }
+  if (hasCityConstraint && !addressContainsCity(vendorLocation, constraint.city)) {
+    return false;
+  }
+  return true;
+}
 var CACHE_COLLECTION = "serper_places_cache";
 var CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1e3;
 function cacheKey(query, location) {
@@ -67340,7 +67783,11 @@ var searchVendors = async (query, location, provider = "google_maps", dcaCategor
   }
   const cached = await getCachedPlaces(query, location);
   if (cached !== null) {
-    return cached;
+    const filteredCached = cached.filter((v) => vendorMatchesLocationConstraint(v.location, location));
+    if (filteredCached.length !== cached.length) {
+      console.log(`[PlacesCache] Geo-filtered cached results ${cached.length} -> ${filteredCached.length} (location="${location}").`);
+    }
+    return filteredCached;
   }
   const fullQuery = `${query} in ${location}`;
   console.log(`Searching for: ${fullQuery} using Serper (places)...`);
@@ -67363,8 +67810,10 @@ var searchVendors = async (query, location, provider = "google_maps", dcaCategor
       rating: place.rating,
       user_ratings_total: place.userRatingsTotal
     }));
-    googleResults = rawVendors.filter((v) => v.rating === void 0 || v.rating >= 3.5);
-    console.log(`Filtered ${rawVendors.length} -> ${googleResults.length} vendors (Rating >= 3.5 or N/A).`);
+    const locationFiltered = rawVendors.filter((v) => vendorMatchesLocationConstraint(v.location, location));
+    console.log(`Geo-filtered ${rawVendors.length} -> ${locationFiltered.length} vendors (location="${location}").`);
+    googleResults = locationFiltered.filter((v) => v.rating === void 0 || v.rating >= 3.5);
+    console.log(`Quality-filtered ${locationFiltered.length} -> ${googleResults.length} vendors (Rating >= 3.5 or N/A).`);
     await setCachedPlaces(query, location, googleResults);
   } catch (error19) {
     console.error("Error searching vendors via Google:", error19.message);
@@ -71870,303 +72319,6 @@ var import_scheduler10 = require("firebase-functions/v2/scheduler");
 var import_https22 = require("firebase-functions/v2/https");
 var logger35 = __toESM(require("firebase-functions/logger"));
 var crypto5 = __toESM(require("crypto"));
-
-// src/utils/prospectingTargets.ts
-var ICP_CATEGORIES = [
-  // ── TIER 1: Medical & Healthcare (highest LTV, strictest cleaning needs) ──
-  {
-    label: "Dental",
-    icpReason: "Always single-tenant suite. OSHA mandates sterile environment. High cleaning frequency.",
-    queries: ["dental office", "orthodontist", "pediatric dentist", "oral surgeon office", "endodontist"],
-    tier: 1
-  },
-  {
-    label: "Medical Office",
-    icpReason: "Private practices lease suites and manage own cleaning. Compliance-driven.",
-    queries: ["medical office", "doctor office", "family medicine practice", "pediatrician office", "internal medicine office"],
-    tier: 1
-  },
-  {
-    label: "Specialist Medical",
-    icpReason: "Specialist suites are always tenant-responsible for cleaning.",
-    queries: ["dermatologist office", "eye doctor optometrist", "ENT doctor office", "allergist office", "podiatrist office"],
-    tier: 1
-  },
-  {
-    label: "Urgent Care & Surgery",
-    icpReason: "Standalone or anchor tenant. High-margin terminal cleaning.",
-    queries: ["urgent care clinic", "outpatient surgery center", "walk-in clinic"],
-    tier: 1
-  },
-  {
-    label: "Veterinary",
-    icpReason: "Almost always standalone buildings. Odor/sanitation critical.",
-    queries: ["veterinary clinic", "animal hospital", "pet emergency vet"],
-    tier: 1
-  },
-  {
-    label: "Physical Therapy & Rehab",
-    icpReason: "Suite or standalone. Equipment requires specialized cleaning.",
-    queries: ["physical therapy center", "chiropractor office", "rehabilitation center"],
-    tier: 1
-  },
-  {
-    label: "Dialysis",
-    icpReason: "Standalone. Biohazard cleaning, CMS regulated.",
-    queries: ["dialysis center"],
-    tier: 1
-  },
-  // ── TIER 2: Commercial Businesses (good volume, moderate LTV) ──
-  {
-    label: "Automotive",
-    icpReason: "Always standalone lot + building. Showroom + service bays.",
-    queries: ["car dealership", "auto repair shop", "auto body shop", "tire shop"],
-    tier: 2
-  },
-  {
-    label: "Childcare & Education",
-    icpReason: "Standalone or strip mall. Health dept mandates cleaning. Parents expect spotless.",
-    queries: ["daycare center", "preschool", "childcare center", "Montessori school"],
-    tier: 2
-  },
-  {
-    label: "Tutoring & Learning",
-    icpReason: "Strip mall/standalone suite. Manage own cleaning.",
-    queries: ["tutoring center", "learning center", "test prep center"],
-    tier: 2
-  },
-  {
-    label: "Fitness & Wellness",
-    icpReason: "Standalone or anchor tenant. High-traffic, equipment sanitation critical.",
-    queries: ["gym fitness center", "CrossFit gym", "yoga studio", "pilates studio", "martial arts studio"],
-    tier: 2
-  },
-  {
-    label: "Retail Storefront",
-    icpReason: "Strip mall or standalone. Tenant manages own cleaning.",
-    queries: ["retail store", "boutique shop", "bridal shop", "furniture store"],
-    tier: 2
-  },
-  {
-    label: "Salon & Personal Care",
-    icpReason: "Suite/strip mall tenant. Cleaning is tenant responsibility.",
-    queries: ["hair salon", "barbershop", "nail salon", "spa day spa", "med spa"],
-    tier: 2
-  },
-  {
-    label: "Religious Centers",
-    icpReason: "Standalone buildings. Large common areas. Weekly deep clean.",
-    queries: ["church", "synagogue", "mosque", "temple"],
-    tier: 2
-  },
-  {
-    label: "Funeral Homes",
-    icpReason: "Always standalone. Discretion and presentation critical.",
-    queries: ["funeral home", "funeral parlor"],
-    tier: 2
-  },
-  {
-    label: "Pet Services",
-    icpReason: "Standalone/strip mall. Odor control and sanitation critical.",
-    queries: ["pet grooming", "doggy daycare", "pet boarding kennel"],
-    tier: 2
-  },
-  // ── TIER 3: Professional Services (in small buildings or strip malls) ──
-  {
-    label: "Legal",
-    icpReason: "Small firms in standalone or strip. NOT in Class A towers (those have building janitorial).",
-    queries: ["law firm office", "attorney office"],
-    tier: 3
-  },
-  {
-    label: "Insurance & Finance",
-    icpReason: "Agency offices in strip malls / small buildings. Manage own cleaning.",
-    queries: ["insurance agency office", "accounting firm office", "tax preparation office"],
-    tier: 3
-  },
-  {
-    label: "Real Estate",
-    icpReason: "Brokerage offices in standalone / strip. Manage own cleaning.",
-    queries: ["real estate office"],
-    tier: 3
-  },
-  {
-    label: "Pharmacy",
-    icpReason: "Independent pharmacies in strip malls. Chain pharmacies less likely.",
-    queries: ["pharmacy", "compounding pharmacy"],
-    tier: 3
-  },
-  {
-    label: "Dance & Performing Arts",
-    icpReason: "Studios in strip or standalone. High floor care needs.",
-    queries: ["dance studio", "music school", "performing arts studio"],
-    tier: 3
-  },
-  {
-    label: "Private Schools",
-    icpReason: "Campus buildings. Large-scale cleaning needs.",
-    queries: ["private school", "preparatory school"],
-    tier: 3
-  },
-  {
-    label: "Light Industrial",
-    icpReason: "Warehouse/light manufacturing. Standalone or industrial park.",
-    queries: ["warehouse", "light manufacturing facility"],
-    tier: 3
-  }
-];
-var SERVICE_REGIONS = [
-  {
-    county: "Nassau",
-    state: "NY",
-    towns: [
-      "Garden City",
-      "Mineola",
-      "Hicksville",
-      "Levittown",
-      "Freeport",
-      "Hempstead",
-      "Westbury",
-      "Great Neck",
-      "Manhasset",
-      "Floral Park",
-      "Massapequa",
-      "Rockville Centre",
-      "Long Beach",
-      "Valley Stream",
-      "Port Washington",
-      "Syosset",
-      "Glen Cove",
-      "Farmingdale",
-      "Merrick",
-      "Bellmore",
-      "Wantagh",
-      "Plainview",
-      "Bethpage",
-      "Oceanside",
-      "East Meadow",
-      "Franklin Square",
-      "Lynbrook",
-      "New Hyde Park",
-      "Jericho",
-      "Carle Place"
-    ]
-  },
-  {
-    county: "Suffolk",
-    state: "NY",
-    towns: [
-      "Huntington",
-      "Babylon",
-      "Bay Shore",
-      "Islip",
-      "Brentwood",
-      "Smithtown",
-      "Commack",
-      "Hauppauge",
-      "Patchogue",
-      "Ronkonkoma",
-      "Lake Grove",
-      "Riverhead",
-      "Deer Park",
-      "Lindenhurst",
-      "West Islip",
-      "Centereach",
-      "Bohemia",
-      "Holbrook",
-      "Medford",
-      "Sayville",
-      "East Northport",
-      "Kings Park",
-      "Port Jefferson",
-      "Stony Brook",
-      "Coram",
-      "Selden"
-    ]
-  },
-  {
-    county: "Queens",
-    state: "NY",
-    towns: [
-      "Flushing",
-      "Jamaica",
-      "Astoria",
-      "Long Island City",
-      "Forest Hills",
-      "Bayside",
-      "Jackson Heights",
-      "Rego Park",
-      "Elmhurst",
-      "Ridgewood",
-      "Fresh Meadows",
-      "Whitestone",
-      "College Point",
-      "Woodside",
-      "Kew Gardens",
-      "Howard Beach",
-      "Ozone Park",
-      "Richmond Hill",
-      "Maspeth",
-      "Glendale"
-    ]
-  }
-];
-function generateProspectingConfig(options) {
-  const tiers = options?.tiers ?? [1, 2, 3];
-  const maxPerCat = options?.maxQueriesPerCategory ?? 99;
-  const includeCounty = options?.includeCountyFallback ?? false;
-  const dailyTarget = options?.dailyTarget ?? 100;
-  const queries = [];
-  const tierBreakdown = {};
-  for (const cat of ICP_CATEGORIES) {
-    if (!tiers.includes(cat.tier)) continue;
-    const tierKey = `tier${cat.tier}`;
-    const catQueries = cat.queries.slice(0, maxPerCat);
-    queries.push(...catQueries);
-    tierBreakdown[tierKey] = (tierBreakdown[tierKey] || 0) + catQueries.length;
-  }
-  const locations = [];
-  for (const region of SERVICE_REGIONS) {
-    for (const town of region.towns) {
-      locations.push(`${town}, ${region.state}`);
-    }
-    if (includeCounty) {
-      locations.push(`${region.county} County, ${region.state}`);
-    }
-  }
-  const totalCombos = queries.length * locations.length;
-  const estimatedWeeksOfFreshData = Math.floor(totalCombos / (dailyTarget / 3) / 7);
-  return {
-    queries,
-    locations,
-    dailyTarget,
-    enabled: true,
-    excludePatterns: [],
-    _generatorMeta: {
-      totalCombos,
-      estimatedWeeksOfFreshData,
-      tierBreakdown,
-      generatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    }
-  };
-}
-function getConfigSummary(config2) {
-  const meta = config2._generatorMeta;
-  return [
-    `\u{1F4CA} Prospecting Config Generated`,
-    `   Queries: ${config2.queries.length}`,
-    `   Locations: ${config2.locations.length}`,
-    `   Total Combos: ${meta.totalCombos}`,
-    `   Daily Target: ${config2.dailyTarget}`,
-    `   Est. Weeks of Fresh Data: ${meta.estimatedWeeksOfFreshData}`,
-    `   Tier Breakdown: ${JSON.stringify(meta.tierBreakdown)}`,
-    ``,
-    `   Sample queries: ${config2.queries.slice(0, 5).join(", ")}...`,
-    `   Sample locations: ${config2.locations.slice(0, 5).join(", ")}...`
-  ].join("\n");
-}
-
-// src/triggers/dailyProspector.ts
 function normalizeName2(name) {
   return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
 }
