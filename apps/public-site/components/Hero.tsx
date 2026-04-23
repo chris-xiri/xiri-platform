@@ -32,39 +32,39 @@ interface HeroProps {
 
 const DEFAULT_MEDIA_SLIDES: HeroMediaSlide[] = [
     {
-        imageSrc: '/hero/office-lobby-cleaning.jpg',
+        imageSrc: '/hero/office-lobby-cleaning.png',
         alt: 'Professional cleaning crew servicing an office lobby after hours',
         facilityName: 'Corporate Office',
         facilityType: 'Commercial Facility',
         serviceFocus: 'Nightly Commercial Cleaning'
     },
     {
-        imageSrc: '/hero/medical-waiting-room-disinfecting.jpg',
+        imageSrc: '/hero/medical-waiting-room-disinfecting.png',
         alt: 'Janitorial professional disinfecting a medical waiting room',
         facilityName: 'Urgent Care Center',
         facilityType: 'Medical Facility',
         serviceFocus: 'Disinfection & High-Touch Sanitizing'
     },
     {
-        imageSrc: '/hero/school-hallway-cleaning.jpg',
+        imageSrc: '/hero/school-hallway-cleaning.png',
         alt: 'Cleaning technician mopping a private school hallway',
         facilityName: 'Private School',
         facilityType: 'Education Facility',
         serviceFocus: 'After-Hours Hallway Cleaning'
     },
     {
-        imageSrc: '/hero/restroom-sanitation.jpg',
-        alt: 'Commercial cleaner sanitizing a modern office restroom',
+        imageSrc: '/hero/restroom-sanitation.png',
+        alt: 'Sanitized modern office restroom with professional cleaning cart',
         facilityName: 'Corporate Campus',
         facilityType: 'Commercial Facility',
         serviceFocus: 'Restroom Sanitation Protocol'
     },
     {
-        imageSrc: '/hero/floor-care-machine.jpg',
-        alt: 'Janitorial technician using a floor scrubber in a facility corridor',
-        facilityName: 'Mixed-Use Building',
-        facilityType: 'Facility Operations',
-        serviceFocus: 'Machine Floor Care'
+        imageSrc: '/hero/conference-room-cleaning.png',
+        alt: 'After-hours conference room cleaning in a corporate office',
+        facilityName: 'Corporate HQ',
+        facilityType: 'Commercial Facility',
+        serviceFocus: 'Conference Room Detail Cleaning'
     }
 ];
 

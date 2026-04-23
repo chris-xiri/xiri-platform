@@ -271,7 +271,7 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                                 autoFocus
                                 className={inputClass}
                             />
-                            {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
+                            {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
                                 <div className="rounded-xl border border-slate-300 overflow-hidden">
                                     <GooglePlacesAutocomplete
                                         apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
@@ -279,9 +279,9 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                                             componentRestrictions: { country: ['us'] },
                                         }}
                                         selectProps={{
-                                            value: buildingAddress ? { label: buildingAddress, value: buildingAddress } : null,
+                                            value: null,
                                             onChange: (val: any) => setBuildingAddress(val?.label || ''),
-                                            placeholder: 'Building address *',
+                                            placeholder: 'Search address (optional helper)',
                                             isClearable: true,
                                             styles: {
                                                 control: (base: any) => ({ ...base, minHeight: '44px', border: 'none', boxShadow: 'none', paddingLeft: '4px', fontSize: '14px' }),
@@ -291,14 +291,13 @@ export default function ReferralForm({ tradeSlug, source }: ReferralFormProps) {
                                         }}
                                     />
                                 </div>
-                            ) : (
-                                <input
-                                    type="text" required value={buildingAddress} onChange={(e) => setBuildingAddress(e.target.value)}
-                                    placeholder="Building address *"
-                                    autoComplete="street-address" name="address" id="referral-address"
-                                    className={inputClass}
-                                />
                             )}
+                            <input
+                                type="text" required value={buildingAddress} onChange={(e) => setBuildingAddress(e.target.value)}
+                                placeholder="Building address *"
+                                autoComplete="street-address" name="address" id="referral-address"
+                                className={inputClass}
+                            />
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <input
                                     type="text" value={managerName} onChange={(e) => setManagerName(e.target.value)}
