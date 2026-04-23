@@ -227,6 +227,27 @@ const MEDICAL_WAITING_TWO = slide(
     'Medical Facility',
     'High-Touch Surface Disinfection'
 );
+const URGENT_CARE_TRIAGE = slide(
+    '/hero/urgent-care-triage-bay-cleaning.png',
+    'Cleaning technician sanitizing an urgent care triage bay and exam area',
+    'Urgent Care Triage',
+    'Medical Facility',
+    'Triage Bay Sanitization'
+);
+const SURGERY_OR_TURNOVER = slide(
+    '/hero/surgery-center-or-turnover-cleaning.png',
+    'Surgery center operating room turnover cleaning with PPE-compliant protocol',
+    'Surgery Center OR',
+    'Surgical Facility',
+    'Operating Room Turnover Cleaning'
+);
+const MEDICAL_EXAM_ROOM = slide(
+    '/hero/medical-exam-room-disinfection.png',
+    'Disinfection of high-touch surfaces in a medical office exam room',
+    'Medical Exam Room',
+    'Medical Facility',
+    'Exam Room Surface Disinfection'
+);
 const SCHOOL_HALL_TWO = slide(
     '/hero/school-hallway-mopping.png',
     'Custodial crew mopping a school corridor after class hours',
@@ -236,9 +257,9 @@ const SCHOOL_HALL_TWO = slide(
 );
 
 const INDUSTRY_SLIDES: Record<string, HeroMediaSlide[]> = {
-    'medical-offices': [MEDICAL_WAITING, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
-    'urgent-care': [MEDICAL_WAITING, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
-    'surgery-centers': [CLEANROOM, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
+    'medical-offices': [MEDICAL_WAITING, MEDICAL_EXAM_ROOM, RESTROOM_TOUCHPOINT],
+    'urgent-care': [URGENT_CARE_TRIAGE, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
+    'surgery-centers': [SURGERY_OR_TURNOVER, MEDICAL_EXAM_ROOM, RESTROOM_TOUCHPOINT],
     'auto-dealerships': [AUTO_DEALERSHIP, OFFICE_BUFF, RESTROOM_CART],
     'daycare-preschool': [DAYCARE, SCHOOL_HALL, RESTROOM_TOUCHPOINT],
     'dental-offices': [DENTAL, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
@@ -254,9 +275,9 @@ const INDUSTRY_SLIDES: Record<string, HeroMediaSlide[]> = {
 };
 
 const SERVICE_SLIDES: Record<string, HeroMediaSlide[]> = {
-    'medical-office-cleaning': [MEDICAL_WAITING, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
-    'urgent-care-cleaning': [MEDICAL_WAITING, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
-    'surgery-center-cleaning': [CLEANROOM, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
+    'medical-office-cleaning': [MEDICAL_WAITING, MEDICAL_EXAM_ROOM, RESTROOM_TOUCHPOINT],
+    'urgent-care-cleaning': [URGENT_CARE_TRIAGE, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
+    'surgery-center-cleaning': [SURGERY_OR_TURNOVER, MEDICAL_EXAM_ROOM, RESTROOM_TOUCHPOINT],
     'daycare-cleaning': [DAYCARE, SCHOOL_HALL, SCHOOL_HALL_TWO],
     'floor-care': [OFFICE_BUFF, OFFICE_SCRUB, AUTO_DEALERSHIP],
     'carpet-upholstery': [CONFERENCE_ROOM, OFFICE_SCRUB, RETAIL],

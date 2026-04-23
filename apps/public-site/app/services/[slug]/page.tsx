@@ -243,6 +243,11 @@ const LEAD_CTR_SERVICE_SLUGS = new Set([
     'commercial-cleaning',
 ]);
 
+const VERIFIED_CLEANING_CTA_SLUGS = new Set([
+    'janitorial-services',
+    'commercial-cleaning',
+]);
+
 const LEAD_CTR_SERVICE_META: Record<string, { title: string; description: string }> = {
     'janitorial-services': {
         title: 'Janitorial Services Pricing & Quotes (2026)',
@@ -392,7 +397,7 @@ export default async function ServicePage({ params }: Props) {
                 <Hero
                     title={service.heroTitle || service.name}
                     subtitle={service.heroSubtitle || service.shortDescription}
-                    ctaText="Get a Quote"
+                    ctaText={VERIFIED_CLEANING_CTA_SLUGS.has(service.slug) ? 'Get Verified Cleaning' : 'Get a Quote'}
                     mediaSlides={getServiceHeroSlides(service.slug)}
                 />
                 <ValuePropsSection
@@ -718,7 +723,7 @@ export default async function ServicePage({ params }: Props) {
             <Hero
                 title={heroTitle}
                 subtitle={heroSubtitle}
-                ctaText={`Get a Quote for ${townName}`}
+                ctaText={VERIFIED_CLEANING_CTA_SLUGS.has(service.slug) ? 'Get Verified Cleaning' : `Get a Quote for ${townName}`}
                 mediaSlides={getServiceHeroSlides(service.slug)}
             />
 
