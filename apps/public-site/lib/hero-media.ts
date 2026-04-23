@@ -4,6 +4,7 @@ export interface HeroMediaSlide {
     facilityName: string;
     facilityType: string;
     serviceFocus: string;
+    showCleaningVerifiedBadge?: boolean;
 }
 
 const slide = (
@@ -11,13 +12,15 @@ const slide = (
     alt: string,
     facilityName: string,
     facilityType: string,
-    serviceFocus: string
+    serviceFocus: string,
+    showCleaningVerifiedBadge: boolean = true
 ): HeroMediaSlide => ({
     imageSrc,
     alt,
     facilityName,
     facilityType,
     serviceFocus,
+    showCleaningVerifiedBadge,
 });
 
 const CLEANING_CORE = slide(
@@ -123,28 +126,32 @@ const PEST = slide(
     'Licensed technician applying pest control treatment in a commercial space',
     'Office Interior',
     'Commercial Facility',
-    'Integrated Pest Control'
+    'Integrated Pest Control',
+    false
 );
 const HVAC = slide(
     '/hero/hvac-filter-maintenance.png',
     'Technician replacing HVAC filtration components in a commercial mechanical room',
     'Mechanical Room',
     'Building Systems',
-    'HVAC Filter Maintenance'
+    'HVAC Filter Maintenance',
+    false
 );
 const PRESSURE = slide(
     '/hero/exterior-pressure-washing.png',
     'Exterior pressure washing along a commercial building facade',
     'Building Exterior',
     'Commercial Facility',
-    'Exterior Pressure Washing'
+    'Exterior Pressure Washing',
+    false
 );
 const SNOW = slide(
     '/hero/snow-ice-removal-sidewalk.png',
     'Crew clearing snow and ice from a commercial sidewalk at dawn',
     'Property Entrance',
     'Commercial Facility',
-    'Snow and Ice Management'
+    'Snow and Ice Management',
+    false
 );
 const POST_CONSTRUCTION = slide(
     '/hero/post-construction-cleanup.png',
@@ -172,28 +179,32 @@ const PLANT = slide(
     'Technician watering and maintaining indoor plants in a commercial lobby',
     'Corporate Lobby',
     'Commercial Facility',
-    'Indoor Plant Watering'
+    'Indoor Plant Watering',
+    false
 );
 const HANDYMAN = slide(
     '/hero/handyman-light-maintenance.png',
     'Handyman performing light fixture and wall maintenance in an office',
     'Office Interior',
     'Commercial Facility',
-    'Light Repair and Maintenance'
+    'Light Repair and Maintenance',
+    false
 );
 const WASTE = slide(
     '/hero/waste-management-collection.png',
     'Managed commercial waste and recycling collection at a facility dock',
     'Service Yard',
     'Commercial Facility',
-    'Waste and Recycling Management'
+    'Waste and Recycling Management',
+    false
 );
 const PARKING = slide(
     '/hero/parking-lot-sweeping.png',
     'Parking lot sweeping crew maintaining paved surfaces at a commercial property',
     'Parking Area',
     'Commercial Facility',
-    'Parking Lot Sweeping'
+    'Parking Lot Sweeping',
+    false
 );
 const OFFICE_BUFF = slide(
     '/hero/office-lobby-floor-buffing.png',
@@ -254,16 +265,16 @@ const SERVICE_SLIDES: Record<string, HeroMediaSlide[]> = {
     'disinfecting-services': [MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT, GYM],
     'janitorial-services': [CLEANING_CORE, RESTROOM_CART, CONFERENCE_ROOM],
     'window-cleaning': [WINDOW, RETAIL, OFFICE_SCRUB],
-    'pressure-washing': [PRESSURE, PARKING, SNOW],
-    'snow-ice-removal': [SNOW, PARKING, PRESSURE],
-    'hvac-maintenance': [HVAC, LIGHT_MANUFACTURING, CLEANROOM],
-    'pest-control': [PEST, RETAIL, OFFICE_BUFF],
-    'waste-management': [WASTE, PARKING, LIGHT_MANUFACTURING],
+    'pressure-washing': [PRESSURE],
+    'snow-ice-removal': [SNOW],
+    'hvac-maintenance': [HVAC],
+    'pest-control': [PEST],
+    'waste-management': [WASTE],
     'parking-lot-maintenance': [PARKING, PRESSURE, SNOW],
-    'handyman-services': [HANDYMAN, OFFICE_SCRUB, CONFERENCE_ROOM],
-    'post-construction-cleanup': [POST_CONSTRUCTION, PRESSURE, OFFICE_BUFF],
+    'handyman-services': [HANDYMAN],
+    'post-construction-cleanup': [POST_CONSTRUCTION],
     'preventive-maintenance': [HVAC, HANDYMAN, PEST],
-    'indoor-plant-watering': [PLANT, OFFICE_BUFF, RETAIL],
+    'indoor-plant-watering': [PLANT],
 };
 
 const PILLAR_SLIDES: Record<string, HeroMediaSlide[]> = {

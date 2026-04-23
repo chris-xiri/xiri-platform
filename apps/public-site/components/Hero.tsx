@@ -248,9 +248,11 @@ export function Hero({
                                 </div>
                             </div>
 
-                            <div className="absolute top-6 left-6 bg-sky-600/95 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow">
-                                Cleaning Verified
-                            </div>
+                            {currentSlide.showCleaningVerifiedBadge !== false && (
+                                <div className="absolute top-6 left-6 bg-sky-600/95 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow">
+                                    Cleaning Verified
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
