@@ -237,26 +237,26 @@ const SCHOOL_HALL_TWO = slide(
 
 const INDUSTRY_SLIDES: Record<string, HeroMediaSlide[]> = {
     'medical-offices': [MEDICAL_WAITING, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
-    'urgent-care': [MEDICAL_WAITING_TWO, DIALYSIS, RESTROOM_TOUCHPOINT],
-    'surgery-centers': [DENTAL, DIALYSIS, CLEANROOM],
+    'urgent-care': [MEDICAL_WAITING, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
+    'surgery-centers': [CLEANROOM, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
     'auto-dealerships': [AUTO_DEALERSHIP, OFFICE_BUFF, RESTROOM_CART],
     'daycare-preschool': [DAYCARE, SCHOOL_HALL, RESTROOM_TOUCHPOINT],
     'dental-offices': [DENTAL, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
     'dialysis-centers': [DIALYSIS, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
-    'veterinary-clinics': [VETERINARY, RESTROOM_TOUCHPOINT, CONFERENCE_ROOM],
+    'veterinary-clinics': [VETERINARY, RESTROOM_TOUCHPOINT, RESTROOM_CART],
     'fitness-gyms': [GYM, RESTROOM_TOUCHPOINT, OFFICE_SCRUB],
     'professional-offices': [OFFICE_BUFF, CONFERENCE_ROOM, RESTROOM_CART],
     'private-schools': [SCHOOL_HALL, SCHOOL_HALL_TWO, DAYCARE],
     'retail-storefronts': [RETAIL, WINDOW, RESTROOM_CART],
-    'labs-cleanrooms': [CLEANROOM, LIGHT_MANUFACTURING, DIALYSIS],
+    'labs-cleanrooms': [CLEANROOM, LIGHT_MANUFACTURING, HVAC],
     'light-manufacturing': [LIGHT_MANUFACTURING, CLEANROOM, POST_CONSTRUCTION],
-    'converted-clinical-suites': [MEDICAL_WAITING, DENTAL, DIALYSIS],
+    'converted-clinical-suites': [MEDICAL_WAITING, CLEANROOM, HVAC],
 };
 
 const SERVICE_SLIDES: Record<string, HeroMediaSlide[]> = {
     'medical-office-cleaning': [MEDICAL_WAITING, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
-    'urgent-care-cleaning': [MEDICAL_WAITING_TWO, DIALYSIS, RESTROOM_TOUCHPOINT],
-    'surgery-center-cleaning': [DENTAL, CLEANROOM, DIALYSIS],
+    'urgent-care-cleaning': [MEDICAL_WAITING, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
+    'surgery-center-cleaning': [CLEANROOM, MEDICAL_WAITING_TWO, RESTROOM_TOUCHPOINT],
     'daycare-cleaning': [DAYCARE, SCHOOL_HALL, SCHOOL_HALL_TWO],
     'floor-care': [OFFICE_BUFF, OFFICE_SCRUB, AUTO_DEALERSHIP],
     'carpet-upholstery': [CONFERENCE_ROOM, OFFICE_SCRUB, RETAIL],
