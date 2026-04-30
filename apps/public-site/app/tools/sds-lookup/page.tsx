@@ -87,12 +87,15 @@ export default function SDSLookupPage() {
                         Cleaning Chemical SDS Lookup
                     </h1>
                     <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-6">
-                        Look up Safety Data Sheets, VOC compliance, PPE requirements, and regulation notes for janitorial chemicals. No signup required.
+                        Built for facility managers and building operations teams: review SDS references, VOC compliance, PPE requirements, and regulatory notes before approving products.
                     </p>
                     <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white text-sm font-semibold backdrop-blur-sm border border-white/20">
                         <Shield className="w-4 h-4 text-emerald-400" />
                         {SDS_DATABASE.length} Chemicals Indexed — Cleaning & Facility Management
                     </div>
+                    <p className="text-sm text-slate-400 mt-4">
+                        Contractor or vendor looking to join XIRI? <Link href="/contractors" className="underline hover:text-slate-200">Start here</Link>.
+                    </p>
                 </div>
             </section>
 

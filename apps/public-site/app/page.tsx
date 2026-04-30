@@ -8,6 +8,7 @@ import { IndustriesSection } from '@/components/IndustriesSection';
 import { Testimonials } from '@/components/Testimonials';
 import { HomepageFAQ } from '@/components/HomepageFAQ';
 import { MidPageCTA } from '@/components/MidPageCTA';
+import { Rocket, ShieldCheck, ClipboardCheck, Receipt } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -60,7 +61,10 @@ export default function Home() {
             {/* Left: Copy */}
             <div className="text-white">
               <div className="inline-block px-4 py-2 rounded-full bg-sky-800 text-sky-200 font-bold text-sm mb-6 border border-sky-700">
-                🚀 One Partner. One Invoice. Done.
+                <span className="inline-flex items-center gap-2">
+                  <Rocket className="w-4 h-4" />
+                  One Partner. One Invoice. Done.
+                </span>
               </div>
               <h2 className="text-4xl md:text-5xl font-heading font-bold mb-6 leading-tight">
                 Get a custom cleaning scope for your building
@@ -71,8 +75,8 @@ export default function Home() {
 
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-sky-800 flex items-center justify-center text-sky-300 text-2xl flex-shrink-0">
-                    🛡️
+                  <div className="w-12 h-12 rounded-xl bg-sky-800 flex items-center justify-center text-sky-300 flex-shrink-0">
+                    <ShieldCheck className="w-6 h-6" />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">100% Insured &amp; Vetted</h3>
@@ -80,8 +84,8 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-sky-800 flex items-center justify-center text-sky-300 text-2xl flex-shrink-0">
-                    🌙
+                  <div className="w-12 h-12 rounded-xl bg-sky-800 flex items-center justify-center text-sky-300 flex-shrink-0">
+                    <ClipboardCheck className="w-6 h-6" />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Nightly Verified. Protocol-Driven.</h3>
@@ -89,8 +93,8 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-sky-800 flex items-center justify-center text-sky-300 text-2xl flex-shrink-0">
-                    💰
+                  <div className="w-12 h-12 rounded-xl bg-sky-800 flex items-center justify-center text-sky-300 flex-shrink-0">
+                    <Receipt className="w-6 h-6" />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Consolidated Billing</h3>

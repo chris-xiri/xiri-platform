@@ -2,14 +2,14 @@ import { Metadata } from 'next';
 import { SITE } from '@/lib/constants';
 
 export const metadata: Metadata = {
-    title: 'Free Compliance Readiness Checker — OSHA, HIPAA, CMS, AAAHC | XIRI',
-    description: 'Free tool: Assess your facility\'s cleaning compliance across OSHA, HIPAA, CMS, AAAHC, and NYS regulations in under 3 minutes. Get a score with specific recommendations.',
+    title: 'Facility Compliance Readiness Checker for Owners & Managers | XIRI',
+    description: 'Free tool for facility managers, business owners, and property operators: assess cleaning compliance risk across OSHA, HIPAA, CMS, AAAHC, and NYS rules in minutes.',
     alternates: {
         canonical: 'https://xiri.ai/tools/compliance-checker',
     },
     openGraph: {
-        title: 'Facility Compliance Readiness Checker',
-        description: 'Free compliance assessment for medical offices, surgery centers, dialysis clinics and more. Score your cleaning program across 5 major regulations.',
+        title: 'Compliance Readiness Checker for Facility Managers',
+        description: 'Assess facility-level cleaning compliance risk and identify gaps before inspections, citations, or operational disruption.',
         url: 'https://xiri.ai/tools/compliance-checker',
         siteName: SITE.name,
         type: 'website',

@@ -8,6 +8,8 @@ export interface Testimonial {
     location: string;
     initials: string;
     rating: number;
+    imageSrc: string;
+    imageAlt: string;
     /** Optional: tag by industry for filtering on industry pages */
     industry?: string;
 }
@@ -20,6 +22,8 @@ export const TESTIMONIALS: Testimonial[] = [
         location: 'Nassau County, NY',
         initials: 'R.M.',
         rating: 5,
+        imageSrc: '/testimonials/medical-office.jpg',
+        imageAlt: 'Medical office operations team reviewing supplies and compliance workflow',
         industry: 'medical-offices',
     },
     {
@@ -29,6 +33,8 @@ export const TESTIMONIALS: Testimonial[] = [
         location: 'Long Island, NY',
         initials: 'T.K.',
         rating: 5,
+        imageSrc: '/testimonials/urgent-care.jpg',
+        imageAlt: 'Urgent care facilities leaders reviewing nightly verification process',
         industry: 'urgent-care',
     },
     {
@@ -38,6 +44,8 @@ export const TESTIMONIALS: Testimonial[] = [
         location: 'Queens, NY',
         initials: 'S.P.',
         rating: 5,
+        imageSrc: '/testimonials/property-manager.jpg',
+        imageAlt: 'Property manager reviewing consolidated facility service reporting',
         industry: 'professional-offices',
     },
 ];

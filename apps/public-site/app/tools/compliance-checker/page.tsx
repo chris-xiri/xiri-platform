@@ -175,7 +175,10 @@ export default function ComplianceCheckerPage() {
                         Facility Compliance Readiness Checker
                     </h1>
                     <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-                        Assess your facility&apos;s cleaning compliance across OSHA, HIPAA, CMS, AAAHC, and NYS regulations in under 3 minutes. No signup required.
+                        Built for facility managers, owners, and operators: assess your building&apos;s cleaning compliance exposure across OSHA, HIPAA, CMS, AAAHC, and NYS regulations in under 3 minutes.
+                    </p>
+                    <p className="text-sm text-slate-400 mt-4">
+                        Contractor or vendor looking to join our network? <Link href="/contractors" className="underline hover:text-slate-200">Go to contractor onboarding</Link>.
                     </p>
                 </div>
             </section>

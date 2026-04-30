@@ -1,7 +1,7 @@
 import { VendorLeadForm } from '@/components/VendorLeadForm';
 import { ContractorValueProps } from '@/components/ContractorValueProps';
 import { ContractorHero } from '@/components/ContractorHero';
-import { Search, DollarSign } from 'lucide-react';
+import { Search, DollarSign, ShieldCheck, HardHat } from 'lucide-react';
 import { SITE } from '@/lib/constants';
 import { JsonLd } from '@/components/JsonLd';
 
@@ -139,7 +139,7 @@ export default function ContractorsPage() {
                                 </div>
                                 <div className="flex items-start gap-4">
                                     <div className="p-2 bg-sky-900/50 rounded-lg">
-                                        <svg className="w-6 h-6 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                                        <ShieldCheck className="w-6 h-6 text-sky-400" />
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-white">General Liability Insurance</h3>
@@ -148,7 +148,7 @@ export default function ContractorsPage() {
                                 </div>
                                 <div className="flex items-start gap-4">
                                     <div className="p-2 bg-sky-900/50 rounded-lg">
-                                        <svg className="w-6 h-6 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                                        <HardHat className="w-6 h-6 text-sky-400" />
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-white">Workers&apos; Compensation</h3>

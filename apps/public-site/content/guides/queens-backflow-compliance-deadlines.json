@@ -1,0 +1,62 @@
+{
+  "title": "Queens Backflow Compliance Deadlines for Commercial Buildings",
+  "heroTitle": "Queens Backflow Compliance Deadlines",
+  "heroSubtitle": "Plan annual testing windows and filing workflow before your building falls out of compliance.",
+  "metaDescription": "Queens backflow compliance deadlines for commercial properties. Build an annual testing and filing calendar that prevents violations.",
+  "datePublished": "2026-04-30",
+  "dateModified": "2026-04-30",
+  "sections": [
+    {
+      "title": "Annual Deadline Planning Is the Core Control",
+      "content": "Queens properties with multiple devices should run a fixed annual schedule by site, not ad-hoc testing calls.",
+      "items": [
+        "Map all devices by property",
+        "Assign annual testing month per site",
+        "Add reminder cadence at 90/60/30 days",
+        "Reserve vendor capacity in advance"
+      ]
+    },
+    {
+      "title": "What to Track Each Year",
+      "content": "Tracking quality matters as much as testing itself.",
+      "items": [
+        "Test due date",
+        "Test completion date",
+        "Result status (pass/fail)",
+        "Submission and receipt status"
+      ]
+    },
+    {
+      "title": "Operational Model for Queens Portfolios",
+      "content": "For multi-site operators, centralize compliance ops under one owner and one reporting format."
+    }
+  ],
+  "calloutTitle": "Need a Queens Compliance Calendar Built?",
+  "calloutContent": "XIRI can map your portfolio into an annual backflow testing and filing cadence with escalation paths for failed devices.",
+  "relatedServices": [
+    "facility-management",
+    "preventive-maintenance"
+  ],
+  "faqs": [
+    {
+      "question": "When should I schedule annual backflow tests?",
+      "answer": "Most operators schedule 30-60 days before due windows to allow for repairs and retest if needed."
+    },
+    {
+      "question": "What if one building has multiple devices?",
+      "answer": "Track each device independently but close each site as one compliance package."
+    },
+    {
+      "question": "Can I outsource deadline tracking?",
+      "answer": "Yes. Many portfolios use a managed compliance coordinator to avoid missed cycles."
+    },
+    {
+      "question": "How do I tie this into maintenance?",
+      "answer": "Link annual testing milestones to your preventive maintenance calendar and quarterly reviews."
+    },
+    {
+      "question": "Related reading?",
+      "answer": "See: /blog/how-queens-property-managers-can-prevent-backflow-violations"
+    }
+  ]
+}

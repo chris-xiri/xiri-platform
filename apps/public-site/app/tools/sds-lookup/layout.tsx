@@ -2,14 +2,14 @@ import { Metadata } from 'next';
 import { SITE } from '@/lib/constants';
 
 export const metadata: Metadata = {
-    title: 'Free Cleaning Chemical SDS Lookup — 50+ Chemicals, VOC & PPE Data | XIRI',
-    description: 'Search 50+ cleaning chemicals with Safety Data Sheets, VOC compliance, PPE requirements, EPA List N status, and Green Seal certifications. Filter by category, regulatory status, and EPA Safer Choice. Free — no signup required.',
+    title: 'SDS & Chemical Risk Lookup for Facility Managers | XIRI',
+    description: 'Free SDS and chemical compliance lookup for facility managers and building operators. Review VOC, PPE, and regulatory risk indicators before approving cleaning products.',
     alternates: {
         canonical: 'https://xiri.ai/tools/sds-lookup',
     },
     openGraph: {
-        title: 'Cleaning Chemical SDS Lookup',
-        description: 'Free searchable database of common janitorial chemicals with VOC compliance, PPE, and regulatory notes.',
+        title: 'SDS Lookup for Building Operations Teams',
+        description: 'Evaluate cleaning chemical risk, compliance flags, and documentation needs for your facility program.',
         url: 'https://xiri.ai/tools/sds-lookup',
         siteName: SITE.name,
         type: 'website',

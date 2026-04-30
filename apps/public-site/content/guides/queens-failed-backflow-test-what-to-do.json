@@ -1,0 +1,68 @@
+{
+  "title": "Queens Failed Backflow Test: What to Do Next",
+  "heroTitle": "Failed Backflow Test in Queens?",
+  "heroSubtitle": "Repair-to-retest workflow for Queens commercial properties, including timeline control and documentation standards.",
+  "metaDescription": "Queens failed backflow test guide. Learn immediate next steps, repair sequencing, retest strategy, and documentation.",
+  "datePublished": "2026-04-30",
+  "dateModified": "2026-04-30",
+  "sections": [
+    {
+      "title": "First Priority: Contain Timeline Risk",
+      "content": "A failed result is manageable if you move quickly. Delay creates reinspection pressure and raises labor costs.",
+      "items": [
+        "Log failed components by device",
+        "Approve repair scope same day",
+        "Book retest during repair dispatch",
+        "Prepare filing package in parallel"
+      ]
+    },
+    {
+      "title": "Common Failure Causes in Commercial Buildings",
+      "content": "Most failures come from wear, fouling, pressure issues, or prior deferred maintenance.",
+      "items": [
+        "Check valve leakage",
+        "Relief valve malfunction",
+        "Damaged seals and internal wear",
+        "Debris buildup from line conditions"
+      ]
+    },
+    {
+      "title": "Repair and Retest Best Practices",
+      "content": "Treat test, repair, and filing as one closed loop so no step gets dropped.",
+      "items": [
+        "Use certified test + qualified repair team",
+        "Document parts replaced and calibration",
+        "Capture passing retest record immediately",
+        "Confirm final submission receipt"
+      ]
+    }
+  ],
+  "calloutTitle": "Need Help Closing a Failed Cycle?",
+  "calloutContent": "XIRI manages coordination across tester, repair crew, and filing workflow so failed tests do not turn into repeat violations.",
+  "relatedServices": [
+    "preventive-maintenance",
+    "facility-management"
+  ],
+  "faqs": [
+    {
+      "question": "Can I wait until next month after a failed test?",
+      "answer": "Waiting increases enforcement and scheduling risk. Same-week repair and retest is the safer path."
+    },
+    {
+      "question": "Who handles repairs after a failed test?",
+      "answer": "A qualified technician should complete repairs, followed by a certified retest and formal report submission."
+    },
+    {
+      "question": "What if it fails again after repair?",
+      "answer": "Run a second diagnostics pass immediately and escalate with full component-level notes before another retest."
+    },
+    {
+      "question": "How do I prevent repeat failures?",
+      "answer": "Use annual scheduling plus interim inspection checkpoints tied to your preventive maintenance calendar."
+    },
+    {
+      "question": "Related reading?",
+      "answer": "See: /blog/queens-backflow-test-checklist-for-building-engineers"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "title": "Queens Backflow Reinspection Guide",
+  "heroTitle": "How to Pass Backflow Reinspection in Queens",
+  "heroSubtitle": "Clear, documented sequence to resolve violations and pass reinspection without avoidable delays.",
+  "metaDescription": "Queens backflow reinspection guide for commercial properties. Learn checklist, documentation, and scheduling best practices.",
+  "datePublished": "2026-04-30",
+  "dateModified": "2026-04-30",
+  "sections": [
+    {
+      "title": "Reinspection Is a Documentation Test Too",
+      "content": "Most reinspection setbacks are not technical - they are missing paperwork, unclear repair records, or weak handoffs.",
+      "items": [
+        "Repair evidence by device",
+        "Passing retest proof",
+        "Submission confirmation",
+        "Single compliance packet per property"
+      ]
+    },
+    {
+      "title": "Pre-Reinspection Checklist",
+      "content": "Complete this before any reinspection date is locked.",
+      "items": [
+        "All failed components repaired",
+        "Retest completed and signed",
+        "Device identifiers match records",
+        "Escalation contact assigned"
+      ]
+    },
+    {
+      "title": "How to Avoid Repeat Notices",
+      "content": "Convert your reinspection process into a repeatable annual workflow.",
+      "items": [
+        "Set annual test month by site",
+        "Track devices in one master sheet",
+        "Use preventive check reminders",
+        "Audit submissions quarterly"
+      ]
+    }
+  ],
+  "calloutTitle": "Need Reinspection Coordination in Queens?",
+  "calloutContent": "We can coordinate your team and vendors so reinspection closes cleanly and compliance stays on schedule.",
+  "relatedServices": [
+    "facility-management",
+    "preventive-maintenance"
+  ],
+  "faqs": [
+    {
+      "question": "What is the #1 reason reinspection fails?",
+      "answer": "Incomplete documentation handoff between repair, testing, and filing teams."
+    },
+    {
+      "question": "Should I keep separate files by vendor?",
+      "answer": "No. Keep one property-level packet so any inspector response is immediate."
+    },
+    {
+      "question": "Can a passing test still lead to issues?",
+      "answer": "Yes, if records are incomplete or filed incorrectly."
+    },
+    {
+      "question": "How do I shorten closeout time?",
+      "answer": "Book retest at the same time as repair dispatch and finalize packet same day."
+    },
+    {
+      "question": "Related page?",
+      "answer": "See: /guides/queens-backflow-violation-help"
+    }
+  ]
+}

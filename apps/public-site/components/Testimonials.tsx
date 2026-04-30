@@ -18,8 +18,15 @@ export function Testimonials() {
                     {TESTIMONIALS.map((t, i) => (
                         <div
                             key={i}
-                            className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-md transition-shadow"
+                            className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-md transition-shadow"
                         >
+                            <img
+                                src={t.imageSrc}
+                                alt={t.imageAlt}
+                                className="w-full h-44 object-cover"
+                                loading="lazy"
+                            />
+                            <div className="p-8">
                             {/* Stars */}
                             <div className="flex gap-0.5 mb-4">
                                 {Array.from({ length: t.rating }).map((_, j) => (
@@ -41,6 +48,7 @@ export function Testimonials() {
                                     <p className="font-semibold text-sm text-slate-900">{t.role}</p>
                                     <p className="text-xs text-slate-500">{t.facility} · {t.location}</p>
                                 </div>
+                            </div>
                             </div>
                         </div>
                     ))}
